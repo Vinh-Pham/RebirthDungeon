@@ -14,7 +14,7 @@ This checklist converts `dart-game-plan.md` into an implementation sequence. Pha
 ## Phase Overview
 
 - [ ] Phase 0 — Project bootstrap and engineering baseline
-- [ ] Phase 1 — Core domain foundations and deterministic randomness
+- [x] Phase 1 — Core domain foundations and deterministic randomness
 - [ ] Phase 2 — Data-driven game content
 - [ ] Phase 3 — Dice combat engine
 - [ ] Phase 4 — Dungeon generation and run model
@@ -57,11 +57,17 @@ Completion criteria:
 
 ## Phase 1 — Core Domain Foundations and Deterministic Randomness
 
-- [ ] Define shared identifiers, value objects, failures, and immutable model conventions.
-- [ ] Implement `RandomSource`, a seeded implementation, and a controllable fake for tests.
-- [ ] Keep combat RNG and gacha RNG as separate dependencies.
-- [ ] Define the base command/result/event pattern used by domain engines.
-- [ ] Define time and ID abstractions where deterministic tests require them.
+- [x] Define shared identifiers, value objects, failures, and immutable model conventions.
+- [x] Implement `RandomSource`, a seeded implementation, and a controllable fake for tests.
+- [x] Keep combat RNG and gacha RNG as separate dependencies.
+- [x] Define the base command/result/event pattern used by domain engines.
+- [x] Define time and ID abstractions where deterministic tests require them.
+
+Note (2026-08-31): foundations live in `lib/core/` (`random/`, `time/`,
+`ids/`, `errors/`, `engine/`, `value_objects/`). Channel separation is done
+with `deriveSeed(rootSeed, 'combat' | 'gacha')` so a run keeps a single root
+seed while subsystem streams stay independent. Model conventions are
+documented in `lib/domain/README.md`.
 
 Completion criteria:
 
@@ -280,6 +286,7 @@ Record phase completion here so later assistants can quickly identify when and w
 | Phase | Completed date | Verified by | Evidence or notes |
 |---|---|---|---|
 | Phase 0 | 2026-08-31 (tasks) | ZCode assistant | All five tasks done and verified: `make check` green (format, `flutter analyze` no issues, boundary check, `flutter test` 1/1); builds verified — macOS debug `.app` (launched and quit cleanly), Android debug APK, iOS simulator Runner.app. Phase box intentionally left unchecked: Linux/Windows builds could not be verified on this macOS host (and `riverpod_generator` codegen path is exercised but no generated models exist until Phase 1+). Check the phase box after verifying Linux/Windows builds on a compatible host or in CI. |
+| Phase 1 | 2026-08-31 | ZCode assistant | All five tasks done. Foundations in `lib/core/`: `RandomSource` + `SeededRandomSource` + `FakeRandomSource` + `deriveSeed` (combat/gacha channel separation), `TimeSource`/`IdGenerator` abstractions with fakes, `ContentId` convention, `Failure` union (freezed) + `DomainException`, `GameCommand`/`GameEvent`/`EngineResult`/`DomainEngine` contracts, `IntRange` value object (json_serializable). 54 tests green; `flutter analyze` clean; boundary check scans 12 pure-Dart files. Seeded repeatability, exact-value faking, and platform-free domains are covered by tests in `test/core/`. |
 | Phase 1 |  |  |  |
 | Phase 2 |  |  |  |
 | Phase 3 |  |  |  |

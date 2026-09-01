@@ -31,7 +31,7 @@ rules and how they are enforced.
 ```text
 lib/
 ├── app/            MaterialApp shell, go_router, theme
-├── core/           randomness, time, errors (pure Dart)
+├── core/           randomness, time, ids, errors, engine contracts (pure Dart)
 ├── domain/         combat, dungeon, loot, progression, economy, gacha
 ├── application/    Riverpod controllers
 ├── data/           Drift database, repositories

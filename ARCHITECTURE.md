@@ -46,7 +46,7 @@ Forbidden everywhere:
 lib/
 ├── main.dart            ProviderScope + app bootstrap
 ├── app/                 MaterialApp shell, go_router, theme
-├── core/                randomness, time, errors, logging (pure Dart)
+├── core/                randomness, time, ids, errors, engine contracts, value objects (pure Dart)
 ├── domain/              combat, dungeon, loot, progression, economy, gacha
 ├── application/         Riverpod controllers/providers
 ├── data/                Drift database, repositories, platform integrations
