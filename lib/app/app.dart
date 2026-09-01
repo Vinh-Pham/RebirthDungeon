@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'router.dart';
 
@@ -6,15 +7,21 @@ import 'router.dart';
 ///
 /// Flutter owns navigation, menus, and meta-game UI. Flame only ever renders
 /// the dungeon scene inside this shell (see ARCHITECTURE.md).
-class RebirthDungeonApp extends StatelessWidget {
+class RebirthDungeonApp extends ConsumerWidget {
   const RebirthDungeonApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp.router(
       title: 'Rebirth Dungeon',
-      theme: ThemeData(colorSchemeSeed: Colors.deepPurple, useMaterial3: true),
-      routerConfig: appRouter,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.deepPurple,
+          brightness: Brightness.dark,
+        ),
+        useMaterial3: true,
+      ),
+      routerConfig: ref.watch(routerProvider),
     );
   }
 }

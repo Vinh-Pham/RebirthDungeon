@@ -25,7 +25,7 @@ Allowed dependencies:
 |---------------|----------------------------------------|
 | `presentation`| `application`, `domain`                |
 | `game`        | `application`, `domain` (events)       |
-| `application` | `domain`, repository interfaces        |
+| `application` | `domain`, repository interfaces (data/repositories) |
 | `data`        | `domain`, repository interfaces        |
 | `domain`      | `core`, pure-Dart packages only        |
 | `core`        | pure-Dart packages only                |
