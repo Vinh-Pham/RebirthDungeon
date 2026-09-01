@@ -1,387 +1,373 @@
-# Rebirth Dungeon Implementation Phases
+# Rebirth Dungeon Project Phases
 
-This checklist converts `dart-game-plan.md` into an implementation sequence. Phases are ordered by dependency; later phases should not begin until their required earlier phases are stable.
+This checklist turns [`react-native-expo-game-plan.md`](react-native-expo-game-plan.md) into an ordered implementation tracker for AI assistants. The phases are dependency-ordered: complete the earliest unfinished phase before starting later work unless the user explicitly changes the priority.
 
-## How AI Assistants Should Use This File
+The project targets [Expo SDK 57](https://docs.expo.dev/versions/v57.0.0/). Check the exact SDK 57 documentation before adding or configuring Expo packages.
 
-- `[ ]` means the phase is not complete.
-- `[x]` means every completion criterion for the phase has been implemented and verified.
-- Update the phase checkbox only after running the relevant tests and checks.
-- If a phase is partially implemented, leave its phase checkbox unchecked and check only its completed tasks.
-- Add a short note under a phase when work is intentionally deferred or blocked.
-- Keep pure-Dart game rules independent of Flutter and Flame throughout every phase.
+## Tracking Rules for AI Assistants
+
+- `[ ]` means incomplete; `[x]` means implemented **and verified**.
+- The first unchecked phase in the overview is the default phase to work on.
+- A phase remains unchecked while any task or exit criterion is incomplete.
+- Check tasks only after inspecting the implementation and running relevant tests or builds. Do not trust a stale checkbox by itself.
+- Keep notes under partially completed or blocked phases. Include the date, blocker, and next action.
+- When completing a phase, update the overview, its task checklist, the current-focus section, and the completion log in the same change.
+- Record concrete evidence such as test commands, build targets, device checks, migration versions, or file paths.
+- Preserve the dependency rule: presentation, renderer, and data layers may depend inward on application/domain code; the pure TypeScript domain must not import React, React Native, Expo, Skia, Reanimated, Zustand, SQLite, or provider SDKs.
+- Add dependencies only when their phase begins. Use `npx expo install` where Expo supplies a compatible version.
+- Do not mark a phase complete because a placeholder screen, mock, or happy-path demo exists when its exit criteria require production behavior.
+
+## Current Focus
+
+- **Current phase:** Phase 1 — Rendering architecture spike
+- **Status:** Not started
+- **Next objective:** Choose the portrait logical resolution and base tile size, render one dungeon room from a Skia tile atlas, and prove the camera/sprite/HUD presentation boundary.
+- **Baseline inspected:** 2026-09-01
+- **Known baseline:** Phase 0 complete (see completion log). Expo SDK 57 + Router + Reanimated/Worklets + Skia 2.6.2 + Zustand + Zod + expo-asset/audio/haptics + expo-dev-client are installed; ESLint boundary zones, Prettier, two-project Jest, CI, and EAS profiles are configured. Layer folders exist only for `src/app` and `src/core` so far; grow the rest feature by feature.
 
 ## Phase Overview
 
-- [ ] Phase 0 — Project bootstrap and engineering baseline
-- [x] Phase 1 — Core domain foundations and deterministic randomness
-- [x] Phase 2 — Data-driven game content
-- [x] Phase 3 — Dice combat engine
-- [x] Phase 4 — Dungeon generation and run model
-- [x] Phase 5 — Flutter application shell and Riverpod orchestration
-- [x] Phase 6 — Flame dungeon presentation and event bridge
-- [ ] Phase 7 — Playable vertical slice
-- [ ] Phase 8 — Local persistence and save recovery
-- [ ] Phase 9 — Progression, inventory, equipment, and economy
-- [ ] Phase 10 — Local gacha prototype
-- [ ] Phase 11 — Presentation polish, audio, and Rive
-- [ ] Phase 12 — Authentication, purchases, and production gacha boundaries
-- [ ] Phase 13 — Testing, balancing, performance, and accessibility
-- [ ] Phase 14 — Release readiness and future online services
+- [x] Phase 0 — Project bootstrap and architecture baseline
+- [ ] Phase 1 — Rendering architecture spike
+- [ ] Phase 2 — Domain foundations and data-driven content
+- [ ] Phase 3 — Deterministic dice combat engine
+- [ ] Phase 4 — Playable combat vertical slice
+- [ ] Phase 5 — Dungeon generation and complete run loop
+- [ ] Phase 6 — Local persistence and deterministic recovery
+- [ ] Phase 7 — Meta-game, progression, inventory, and economy
+- [ ] Phase 8 — Local gacha prototype
+- [ ] Phase 9 — Presentation polish, audio, haptics, and Rive
+- [ ] Phase 10 — Authentication, backend, and cloud synchronization
+- [ ] Phase 11 — Purchases and production-authoritative gacha
+- [ ] Phase 12 — Quality, balance, performance, and accessibility
+- [ ] Phase 13 — Release readiness and live operations
 
 ---
 
-## Phase 0 — Project Bootstrap and Engineering Baseline
+## Phase 0 — Project Bootstrap and Architecture Baseline
 
-- [x] Create the Flutter project and the initial feature-oriented `lib/` and `test/` structure.
-- [x] Add only the first-prototype dependencies: Flame, Riverpod, go_router, Freezed/JSON serialization, Drift, SharedPreferences, Rive, and Flame Audio.
-- [x] Configure code generation, static analysis, formatting, and test commands.
-- [x] Establish the architectural boundaries between presentation, application, domain, data, and Flame game code.
-- [x] Add a minimal continuous-integration check for analysis and tests.
+**Goal:** Create a reliable Expo SDK 57 foundation with enforceable architectural boundaries and a repeatable native-development workflow.
 
-Note (2026-08-31): `flame_riverpod` was omitted from the dependency set — its
-current release pins Riverpod 2.x, which conflicts with the Riverpod 3 /
-Freezed 3 toolchain and with `riverpod_generator`. The Phase 6 event bridge
-will use plain stream subscriptions instead; revisit this package then.
-Toolchain: `mise.toml` pins dart 3.13.1 / flutter 3.47.0-stable for this
-project, and the `Makefile` resolves `dart` from the active Flutter SDK so
-formatting and codegen always match the app's Dart version. See
-`ARCHITECTURE.md` for layer rules and `tool/check_architecture_boundaries.dart`
-for their enforcement.
+- [x] Initialize an Expo SDK 57 TypeScript project.
+- [x] Configure Expo Router as the application entry point with typed routes.
+- [x] Install the SDK-compatible navigation and animation baseline: Gesture Handler, Reanimated, and Worklets.
+- [x] Replace or remove the `create-expo-app` example UI and assets that are not part of the game.
+- [x] Establish the initial `app`/`src` structure for bootstrap, core, domain, application, data, game, stores, and presentation code; create folders only as features need them.
+- [x] Define and document dependency-direction rules, including an automated boundary check where practical.
+- [x] Install only the remaining spike dependencies: Skia, Zustand, Zod, Expo Asset, Expo Audio, Expo Haptics, and test tooling.
+- [x] Configure formatting, linting, TypeScript checks, unit tests, and continuous integration.
+- [x] Configure EAS development, preview, and production profiles.
+- [x] Produce and launch development builds on both Android and iOS.
 
-Completion criteria:
+Exit criteria:
 
-- The app builds and launches on every initially supported platform.
-- Code generation, formatting, static analysis, and the empty test suite run successfully.
-- Domain code can be imported without importing Flutter or Flame.
+- The starter app launches through an Expo development build on Android and iOS.
+- Formatting, linting, type checking, and the initial test suite pass from documented commands.
+- A pure TypeScript domain module can be imported and tested without loading React Native or Expo.
+- The repository documents how later assistants should install SDK-compatible Expo dependencies and verify native changes.
 
-## Phase 1 — Core Domain Foundations and Deterministic Randomness
+## Phase 1 — Rendering Architecture Spike
 
-- [x] Define shared identifiers, value objects, failures, and immutable model conventions.
-- [x] Implement `RandomSource`, a seeded implementation, and a controllable fake for tests.
-- [x] Keep combat RNG and gacha RNG as separate dependencies.
-- [x] Define the base command/result/event pattern used by domain engines.
-- [x] Define time and ID abstractions where deterministic tests require them.
+**Goal:** Prove the highest-risk rendering and animation boundary before investing in full game systems.
 
-Note (2026-08-31): foundations live in `lib/core/` (`random/`, `time/`,
-`ids/`, `errors/`, `engine/`, `value_objects/`). Channel separation is done
-with `deriveSeed(rootSeed, 'combat' | 'gacha')` so a run keeps a single root
-seed while subsystem streams stay independent. Model conventions are
-documented in `lib/domain/README.md`.
+- [ ] Choose and document the portrait logical resolution and base tile size.
+- [ ] Render one dungeon room from a Skia tile atlas using nearest-neighbor sampling.
+- [ ] Render animated player and monster sprites from atlas metadata.
+- [ ] Implement a small camera module with target focus, map clamping, logical-pixel snapping, and screen shake.
+- [ ] Place an accessible React Native HUD over the Skia canvas.
+- [ ] Use a Reanimated frame callback only for presentation state such as sprite clocks, interpolation, particles, and camera motion.
+- [ ] Keep authoritative positions and game outcomes out of Skia and Reanimated objects.
+- [ ] Preload critical assets through an asset manifest and fail clearly when an asset is missing.
+- [ ] Measure frame time on representative physical Android and iOS devices, including a mid-range Android target.
 
-Completion criteria:
+Exit criteria:
 
-- Seeded randomness produces repeatable results.
-- Tests can supply exact random values without using `Random()` directly.
-- No domain engine depends on platform or rendering packages.
+- A development build displays a crisp, animated room with a working camera and native HUD on Android and iOS.
+- The renderer consumes an immutable scene snapshot and cannot mutate gameplay state.
+- The team is comfortable owning the required camera, scene, atlas, and sprite lifecycle without a full game engine.
+- The spike meets an initial 60 fps budget on the supported baseline device or has a documented remediation plan.
 
-## Phase 2 — Data-Driven Game Content
+## Phase 2 — Domain Foundations and Data-Driven Content
 
-- [x] Define serializable schemas for heroes, monsters, dice, abilities, status effects, items, loot tables, dungeons, banners, rarity rates, and experience curves.
-- [x] Add a small starter content set under `assets/data/`.
-- [x] Implement content loading, validation, ID/reference resolution, and useful validation errors.
-- [x] Version content formats that may change after saves exist.
-- [x] Add validation tests for malformed data and broken references.
+**Goal:** Establish deterministic, platform-independent rules and validated content models.
 
-Note (2026-08-31): schemas live in `lib/domain/content/` (freezed +
-json_serializable, enums serialized by name). Every content file is wrapped
-as `{ "schemaVersion": 1, "entries": [...] }`; the supported version is
-`GameContent.currentSchemaVersion`. `GameContent.parse` takes already-decoded
-JSON per file (pure Dart) and fails with one aggregated `DomainException`
-whose details list every issue with a `file[index].field` path. Rates are
-weight-based; banner availability windows are ISO-8601 and order-checked.
-Reading assets via rootBundle is deferred to the Phase 5 application wiring;
-`test/domain/content/starter_content_test.dart` already exercises the shipped
-`assets/data/` files end-to-end.
+- [ ] Define shared IDs, immutable-update conventions, errors, engine results, commands, and domain events.
+- [ ] Implement `RandomSource`, a serializable seeded generator, RNG snapshots/draw indexes, and a sequence-backed test fake.
+- [ ] Derive separate RNG streams for dungeon generation, combat, loot, cosmetics, and gacha.
+- [ ] Define typed and Zod-validated schemas for heroes, monsters, dice, abilities, status effects, items, equipment, loot tables, dungeons, encounters, banners, rarity tables, and experience curves.
+- [ ] Add a minimal starter content set under `assets/data/`.
+- [ ] Validate content versions, IDs, cross-references, ranges, rates, and weights during tests or a build step.
+- [ ] Define repository interfaces in the domain/application boundary without importing concrete storage or network types.
+- [ ] Add unit and property-based tests for randomness and content validation.
 
-Completion criteria:
+Exit criteria:
 
-- Gameplay entities can be created from data rather than hardcoded engine values.
-- All bundled starter content passes validation.
-- Invalid IDs, rates, ranges, and references fail with actionable errors.
+- Seed and restored RNG state reproduce the same random sequence.
+- Every bundled content file passes validation; malformed or broken references fail with actionable paths.
+- Domain tests run in a plain TypeScript environment with no React Native, Expo, Skia, or Zustand imports.
+- Gameplay definitions can change through data rather than engine source edits.
 
-## Phase 3 — Dice Combat Engine
+## Phase 3 — Deterministic Dice Combat Engine
 
-- [x] Model immutable `CombatState`, combatants, dice pools, abilities, buffs, debuffs, turns, and combat phases.
-- [x] Implement commands for starting combat, rolling, rerolling, assigning dice, using abilities, ending turns, and enemy actions.
-- [x] Implement damage, healing, critical hits, shields, defeat, victory, and status-effect timing.
-- [x] Return updated state plus domain events for every resolved command.
-- [x] Implement deterministic enemy decision logic suitable for the first prototype.
-- [x] Add focused unit tests for rules, phase transitions, illegal commands, and edge cases.
+**Goal:** Implement a headless, replayable combat state machine before attaching presentation behavior.
 
-Note (2026-08-31): engine lives in `lib/domain/combat/` (`CombatState`,
-`CombatEngine`, command/event unions, serializable combatants/dice/statuses).
-Rules: damage = `power roll + effective attack`, any consumed max-face die
-crits (doubles), defense subtracts first (min 1), shield absorbs before HP,
-debuffs tick at the bearer's turn start bypassing defense/shield, buffs add
-potency to attack, reapplication keeps max potency/duration. Enemies pick
-their strongest ability (`power.max/min/id` order) or a basic strike derived
-from their attack stat; `EnemyAct` resolves one enemy per command so
-presentation can animate between actions. Phase 2 schemas were extended
-(data-driven dice/status riders): `HeroData.dieId` (default `die_standard`)
-and `AbilityData.statusId` (applied as an on-hit rider), both validated in
-`GameContent`; schemaVersion stays 1 — no saves exist yet. The state machine
-uses the observable phases `rolling → awaitingPlayerAction → enemyTurn →
-victory/defeat`; the plan's transient `startTurn`/`resolvingAction` phases
-are resolved inline. The combat RNG is injected, never stored in state.
+- [ ] Model combat state, combatants, dice, abilities, targets, status effects, turn count, and explicit combat phases.
+- [ ] Implement discriminated commands for start, roll, reroll, assign die, use ability, enemy action, and end turn.
+- [ ] Implement state transitions for damage, healing, critical hits, shields, buffs/debuffs, status timing, victory, and defeat.
+- [ ] Return a new state plus domain events for every valid command.
+- [ ] Reject commands that are illegal for the current phase without corrupting state.
+- [ ] Implement deterministic enemy decisions suitable for the first playable build.
+- [ ] Add focused tests for phase transitions, edge cases, replay, and seeded repeatability.
+- [ ] Add property tests for invariants such as nonnegative HP, valid dice ownership, and terminal-state behavior.
 
-Completion criteria:
+Exit criteria:
 
 - A complete combat can run headlessly from start to victory or defeat.
-- The same starting state, commands, and random seed always produce the same state and events.
-- Critical-hit, poison, shield, enemy-defeat, and player-defeat cases are covered by tests.
+- The same initial state, RNG state, and commands produce identical states and event logs.
+- Critical, poison/status, shield, enemy-defeat, and player-defeat cases are tested.
+- Combat contains no React, React Native, Expo, Zustand, Skia, Reanimated, audio, or haptics dependencies.
 
-## Phase 4 — Dungeon Generation and Run Model
+## Phase 4 — Playable Combat Vertical Slice
 
-- [x] Model dungeons, rooms, doors, encounters, treasure, events, floors, and boss rooms in pure Dart.
-- [x] Implement seeded procedural topology generation.
-- [x] Support hand-authored room templates if the prototype requires them.
-- [x] Model an immutable, serializable `DungeonRunState` containing the seed and current progress.
-- [x] Implement encounter and loot resolution using injected randomness.
-- [x] Add tests for generation validity, reachability, and seed repeatability.
+**Goal:** Connect the headless combat engine to real controls and presentation without compromising authority boundaries.
 
-Note (2026-08-31): everything lives in `lib/domain/dungeon/`.
-`generateDungeonFloor` grows a room tree on a grid (reachability by
-construction, reciprocal doors), places the boss in the BFS-farthest room,
-assigns combat/treasure/event kinds to middle rooms, and pre-rolls
-encounters and treasure from `DungeonData` + the dungeon's loot table using
-the dungeon/loot RNG channels — same seed, same floor. `DungeonRunState`
-(immutable, JSON-serializable) stores the root seed, hero HP between
-combats, the current floor's rooms, collected loot, and the active
-`CombatState`; `RunEngine` bridges into the Phase 3 `CombatEngine` via a
-`CombatAction` command (combat events bubble up wrapped as
-`RunEvent.combat`). Movement/loot/shrine rules: combat and boss rooms block
-until won, treasure grants on entry, event rooms are shrines healing 30% of
-max HP, `Descend` requires a cleared boss and either generates the next
-floor or completes the run. Hand-authored room templates were **not**
-required by the prototype and are intentionally deferred (documented in
-`lib/domain/README.md`); content validation now also requires
-`roomsPerFloor.min >= 2` (a floor needs an entry and a boss room).
+- [ ] Implement a focused combat controller/store with narrow selectors.
+- [ ] Build the dice tray, health display, turn indicator, ability controls, and enemy targeting as React Native UI.
+- [ ] Implement drag/drop die assignment with a non-drag tap alternative.
+- [ ] Map combat domain events to explicit presentation events.
+- [ ] Add a presentation queue for attack, damage-number, death, particle, and camera effects while committing authoritative state immediately.
+- [ ] Gate inputs during required visual sequences without letting animation completion decide gameplay.
+- [ ] Add initial SFX and haptic adapters behind application-facing interfaces.
+- [ ] Support victory, defeat, retry, and return flows for a single encounter.
+- [ ] Add integration tests covering command-to-store-to-presentation behavior.
 
-Completion criteria:
+Exit criteria:
 
-- A seed generates a valid traversable dungeon with an entry, encounters, and an exit or boss.
-- Reusing a seed produces the same dungeon.
-- A run can advance through rooms without Flame or Flutter dependencies.
+- A player can finish one polished dice battle on Android and iOS.
+- Skipping, delaying, or replaying presentation does not alter the combat result.
+- High-frequency animation values do not write to Zustand every frame.
+- Controls are usable with touch, screen readers, and a non-drag interaction.
 
-## Phase 5 — Flutter Application Shell and Riverpod Orchestration
+## Phase 5 — Dungeon Generation and Complete Run Loop
 
-- [x] Create app routes for splash, login/guest entry, home, dungeon selection, game, characters, inventory, gacha, shop, and settings.
-- [x] Configure `go_router`, including placeholder guards and deep-link-safe route parameters.
-- [x] Create focused Riverpod providers/controllers for account, current run, combat, inventory, progression, gacha, shop, and settings.
-- [x] Keep long-lived game state in Riverpod/application state and transient visual state out of it.
-- [x] Implement loading, empty, and error states for the initial screens.
+**Goal:** Expand the combat slice into a deterministic dungeon run with traversal, encounters, rewards, and a boss.
 
-Note (2026-08-31): all ten routes live in `lib/app/router.dart` (Riverpod
-`routerProvider` with `refreshListenable` wired to the account and run
-controllers). Guards: unsigned sessions are pushed to `/login`, signed-in
-sessions skip it, and `/game/:runId` validates the deep-linked runId against
-the live run. Controllers (Riverpod codegen) live in `lib/application/`:
-`RunController` builds the run + combat engines per run with channel-seeded
-RNGs and exposes `RunUiState` (run + last events + last error); combat gets
-a façade controller plus an `activeCombat` projection rather than a second
-owner of run state; settings persist to SharedPreferences (preloaded in
-`main.dart`); account is a session-scoped guest identity (real auth is
-Phase 12); inventory/progression/gacha/shop are typed placeholders, with
-gacha already listing banners from content. Content loading is wired for
-real: `AssetContentRepository` (data layer) parses `assets/data/` through
-`GameContent.parse`, surfaced by `contentProvider` with loading/error
-states on splash, dungeon selection, characters, and gacha. The game screen
-is a functional Flutter-only run HUD (doors, dice tap-assignment, ability
-buttons, enemy turns, event log) — Flame arrives in Phase 6, polish in
-Phase 7. Die selection and enemy targeting are local widget state by
-design. The old Phase 0 placeholder app test was superseded by the new
-navigation tests.
+- [ ] Model dungeon floors, rooms, doors, encounters, treasure, events, boss rooms, and run state in pure TypeScript.
+- [ ] Implement seeded procedural floor topology with reachability guarantees.
+- [ ] Create two or three hand-authored room templates and a Tiled JSON validation/conversion pipeline.
+- [ ] Combine procedural topology with validated room templates.
+- [ ] Implement room traversal, encounter entry, loot resolution, progression rewards, floor transitions, and boss completion.
+- [ ] Render generated maps and encounter markers through immutable scene snapshots.
+- [ ] Implement current-run controls for start, resume, abandon, defeat, and completion.
+- [ ] Test generation validity, seed repeatability, reachability, reward legality, and full headless runs.
 
-Completion criteria:
+Exit criteria:
 
-- All major screens are reachable through Flutter navigation.
-- Controllers invoke pure-Dart engines and expose immutable state.
-- No single global provider owns unrelated areas of game state.
+- A player can select a dungeon, traverse multiple rooms, fight encounters, defeat a boss, receive rewards, and finish or lose the run.
+- Every generated floor is traversable and contains valid entry, encounter, and boss/exit structures.
+- Replaying a seed and command sequence reproduces the same floor, combat, loot, and event log.
+- Remote requests are not required during combat or dungeon generation.
 
-## Phase 6 — Flame Dungeon Presentation and Event Bridge
+## Phase 6 — Local Persistence and Deterministic Recovery
 
-- [x] Create `DungeonGame`, `DungeonWorld`, a fixed-resolution camera, and initial world components.
-- [x] Establish a consistent tile size, integer-aligned world positions, and nearest-neighbor pixel rendering.
-- [x] Render player, monsters, rooms, chests, and environment from domain/application state.
-- [x] Translate domain events into presentation events through a dedicated bridge.
-- [x] Implement initial attack, damage-number, death, particle, camera, and screen-shake effects.
-- [x] Ensure Flame components never calculate authoritative combat outcomes.
+**Goal:** Persist permanent progress and active runs safely across app interruption and schema changes.
 
-Note (2026-08-31): `lib/game/` — `DungeonGame` (FlameGame with a fixed
-360×640 logical camera, 16px tiles, 8×8-tile rooms on an integer-aligned
-grid) and `DungeonWorld`, which rebuilds structure from `DungeonRunState`
-snapshots while room-to-room moves animate via events. A dedicated
-`EventBridge` (pure, value-equal output) translates domain `RunEvent`s into
-`PresentationEvent`s (lunges, damage numbers, crit flashes, shield/heal
-puffs, death fades, camera shake, loot sparkles) carried on a keep-alive
-`RunEventBus` published by `RunController`. The game screen embeds the
-`GameWidget` above the Flutter panels; die selection and targeting stay in
-local widget state. Domain support: `RunRoom` gained x/y grid coordinates
-for world placement. Placeholder rendering uses pixel shapes; sprite
-atlases arrive in Phase 11.
+- [ ] Add Expo SQLite, Drizzle ORM, Drizzle Kit, and a tested migration workflow.
+- [ ] Create normalized tables for profile, characters, inventory, currencies, equipment, progression, quests, pity, completed dungeons, and save metadata.
+- [ ] Map database rows to domain types rather than leaking Drizzle types into the domain.
+- [ ] Store the active dungeon run as a versioned JSON snapshot containing run state, combat state when applicable, content version, and complete RNG state/draw indexes.
+- [ ] Validate loaded snapshots with Zod and implement explicit corrupt/incompatible-save behavior.
+- [ ] Save at deliberate checkpoints and app-background events; debounce noncritical writes.
+- [ ] Use transactions when committing run rewards or changing currency, ownership, inventory, or equipment.
+- [ ] Store only small, noncritical preferences in `expo-sqlite/kv-store` or AsyncStorage.
+- [ ] Add round-trip, interruption, corruption, atomicity, and migration tests from every shipped schema version.
 
-Completion criteria:
+Exit criteria:
 
-- Flame renders a domain-generated room and reacts to combat events.
-- Rebuilding or replaying presentation does not change gameplay results.
-- Sprite positions and animation timers stay inside Flame rather than Riverpod.
+- Permanent progression survives restart and an interrupted run resumes equivalently.
+- Save/load preserves deterministic RNG and active combat when mid-combat saving is supported.
+- At least one forward migration path is tested without deleting the database.
+- Premium currency, ownership, pity, and active-run data are never treated as simple preferences.
 
-## Phase 7 — Playable Vertical Slice
+## Phase 7 — Meta-Game, Progression, Inventory, and Economy
 
-- [ ] Combine Flutter overlays with the Flame canvas for dice, abilities, health, turn state, and combat actions.
-- [ ] Implement drag/drop or tap assignment of dice to abilities.
-- [ ] Connect dungeon selection, room traversal, one or more encounters, loot, a boss, and run completion.
-- [ ] Add a minimal home screen, character loadout, inventory view, and run-result screen.
-- [ ] Handle victory, defeat, retry, abandon-run, and return-home flows.
+**Goal:** Build the durable player loop around dungeon runs.
 
-Completion criteria:
+- [ ] Create thin Expo Router routes and authenticated-area layouts for home, dungeon selection, characters, inventory, equipment, settings, gacha, shop, and run results.
+- [ ] Implement focused Zustand stores/controllers for account, player, inventory, current run, combat, gacha, and settings.
+- [ ] Use narrow selectors and keep dialog/form-only state local to components.
+- [ ] Implement character ownership, leveling, experience curves, and derived combat stats.
+- [ ] Implement item stacking, equipment slots, equip/unequip validation, and loadouts.
+- [ ] Implement currencies, costs, grants, sinks, and validated economy transactions.
+- [ ] Apply run loot and experience exactly once through an atomic run-result transaction.
+- [ ] Add loading, empty, error, and recovery states for every meta-game screen.
+- [ ] Add a Rive or temporary reward/level-up sequence that consumes already-known results.
 
-- A player can start a run, traverse a small dungeon, fight with dice, receive loot, and finish or lose the run.
-- Gameplay rules remain correct when animations are skipped or delayed.
-- The complete slice works without authentication, purchases, or a remote server.
+Exit criteria:
 
-## Phase 8 — Local Persistence and Save Recovery
+- The full local loop works: prepare a character, start a run, finish it, apply rewards once, improve the loadout, and start another run.
+- Invalid, duplicate, negative, and unaffordable economy operations are rejected and tested.
+- Route files remain thin and no single store owns unrelated application areas.
+- Equipment and progression affect subsequent combat only through domain rules.
 
-- [ ] Configure Drift and migrations for player profile, characters, inventory, currencies, equipment, progression, quests, pity, completed dungeons, and save metadata.
-- [ ] Store the active dungeon run as a versioned snapshot rather than fully normalized tables.
-- [ ] Use transactions for atomic progression, loot, currency, and inventory changes.
-- [ ] Store only UI preferences such as audio, language, haptics, graphics, and tutorial state in SharedPreferences.
-- [ ] Implement autosave, resume, schema migration, corrupt-save handling, and recovery behavior.
+## Phase 8 — Local Gacha Prototype
 
-Completion criteria:
+**Goal:** Prove banner, pity, reward, and interruption behavior behind a repository that can later become remote.
 
-- Permanent progress survives restart.
-- An interrupted active run resumes to an equivalent state.
-- Save/load round trips and at least one migration path are covered by tests.
-- Premium currency, ownership, pity, and critical run data are never stored in SharedPreferences.
+- [ ] Model versioned banners, server-style availability inputs, costs, rates, featured units, pity, guarantees, and duplicate conversion.
+- [ ] Define `GachaRepository` and implement a local seeded repository for development only.
+- [ ] Implement single-pull and ten-pull commands with idempotency keys.
+- [ ] Atomically spend local currency, update pity/guarantee state, grant rewards, and append pull history.
+- [ ] Build banner details, rate disclosure, confirmation, reveal, history, and collection-update screens.
+- [ ] Resolve and persist results before starting the reveal animation.
+- [ ] Recover a completed result if the app closes during the reveal.
+- [ ] Test rate tables, pity, guarantees, reset rules, duplicate handling, insufficient currency, retry, and idempotency.
 
-## Phase 9 — Progression, Inventory, Equipment, and Economy
+Exit criteria:
 
-- [ ] Implement character ownership, leveling, experience curves, and stat calculation.
-- [ ] Implement inventory, item stacking, equipment slots, equip/unequip rules, and derived stats.
-- [ ] Implement loot rewards and durable run-result application.
-- [ ] Define currencies, costs, grants, sinks, and validation rules in an economy domain.
-- [ ] Build usable character, inventory, equipment, and progression screens.
+- Local pulls always produce valid, recoverable, transactionally applied results.
+- The UI depends on `GachaRepository`, not the local engine or RNG implementation.
+- Reveal animation timing cannot change inventory, currency, pity, or results.
+- The local implementation is visibly and technically separated from production real-money behavior.
 
-Completion criteria:
+## Phase 9 — Presentation Polish, Audio, Haptics, and Rive
 
-- Loot and experience earned in a run update permanent progression exactly once.
-- Equipment changes affect subsequent combat through domain rules.
-- Invalid, duplicate, negative, or unaffordable economy operations are rejected and tested.
+**Goal:** Replace prototype presentation with production-quality assets and feedback while respecting settings and performance budgets.
 
-## Phase 10 — Local Gacha Prototype
+- [ ] Replace temporary art with organized sprite sheets/atlases and validated metadata.
+- [ ] Add sprite animations, pixel VFX, bounded particle pools, floating text, transitions, and screen feedback.
+- [ ] Implement `AudioService` with preloading, music/SFX channels, volume, lifecycle handling, and graceful failures.
+- [ ] Implement `HapticsService` and map presentation events through user settings.
+- [ ] Add Rive summon, reward, rarity-reveal, level-up, loading, or menu sequences where they improve the experience.
+- [ ] Keep heroes, monsters, dungeon objects, attacks, and pixel VFX in Skia rather than Rive unless an exception is documented.
+- [ ] Implement music, SFX, haptics, graphics, language, reduced-motion, and accessibility preferences.
+- [ ] Verify logical scaling, safe areas, atlas sampling, and pixel clarity on small phones, tall phones, tablets, and high-refresh displays.
 
-- [ ] Model versioned banners, availability, costs, featured units, rarity rates, pity rules, and guarantees.
-- [ ] Define `GachaRepository` and implement a local repository backed by a pure-Dart `GachaEngine`.
-- [ ] Implement single and ten-pull flows with separate injected RNG.
-- [ ] Persist pity and featured-guarantee state transactionally with currency spending and reward grants.
-- [ ] Convert duplicate rewards according to an explicit, data-driven rule.
-- [ ] Build banner, confirmation, pull-result, and collection-update UI.
+Exit criteria:
 
-Completion criteria:
+- Audio, haptics, Rive, and optional effects can be disabled without changing game state.
+- Critical assets are preloaded before dungeon entry and no visible fetch occurs after the transition starts.
+- UI remains legible and pixel-crisp across supported sizes and densities.
+- Presentation remains within the established frame-time and memory budgets.
 
-- Rate, pity, guarantee, reset, insufficient-currency, and duplicate cases are tested.
-- Pulls atomically spend currency, update pity, and grant valid rewards.
-- The UI depends only on `GachaRepository`, allowing a remote implementation later.
+## Phase 10 — Authentication, Backend, and Cloud Synchronization
 
-## Phase 11 — Presentation Polish, Audio, and Rive
+**Goal:** Introduce production services without coupling game rules or UI to a specific provider.
 
-- [ ] Replace temporary images with sprite sheets or atlases and organize production asset directories.
-- [ ] Add sprite animations, pixel VFX, transitions, feedback, and performance-conscious particles.
-- [ ] Implement `AudioService` and map presentation events to music and SFX.
-- [ ] Add Rive UI animations for summon sequences, rarity reveals, level-up moments, loading, or menus where they add value.
-- [ ] Add settings for music, SFX, haptics, language, and graphics.
-- [ ] Verify scaling and pixel clarity across supported aspect ratios and display densities.
+- [ ] Finalize provider-neutral `AuthRepository`, session models, and route guards; retain guest mode where product requirements allow it.
+- [ ] Implement `TokenStorage` with Expo SecureStore for small session secrets only.
+- [ ] Choose and integrate the production identity provider behind the repository.
+- [ ] Add a remote data layer and TanStack Query for server-cache/request state.
+- [ ] Define versioned API contracts, runtime validation, error mapping, retries, cancellation, and idempotency behavior.
+- [ ] Design and implement a cloud-save/sync strategy with explicit conflict resolution and content/save compatibility rules.
+- [ ] Hydrate sessions before initial routing to avoid incorrect route flashes.
+- [ ] Add privacy-conscious analytics, crash reporting, and remote configuration boundaries.
 
-Completion criteria:
+Exit criteria:
 
-- Game-world character animation remains sprite-based unless there is a documented exception.
-- Audio and animation can be disabled without changing domain behavior.
-- UI remains legible, responsive, and pixel-crisp on target device sizes.
+- Provider SDK types and APIs do not escape the data layer.
+- Expired session, offline, retry, conflict, sign-out, and account-switch behavior are tested.
+- Local and cloud saves cannot silently overwrite newer progress.
+- Secrets are not stored in SQLite game tables, preferences, logs, or source control.
 
-## Phase 12 — Authentication, Purchases, and Production Gacha Boundaries
+## Phase 11 — Purchases and Production-Authoritative Gacha
 
-- [ ] Define provider-neutral `AuthRepository`, `TokenStorage`, and account-session models.
-- [ ] Implement guest authentication before choosing a production identity provider.
-- [ ] Store tokens and session secrets through `flutter_secure_storage`, not the game database or preferences.
-- [ ] Define `PurchaseRepository` and integrate `in_app_purchase` behind it.
-- [ ] Implement purchase loading, pending, success, failure, cancellation, and restore flows without client-authoritative currency grants.
-- [ ] Define remote API contracts for purchase verification, server-authoritative gacha, cloud saves, and account sync.
-- [ ] Replace local gacha with a remote repository before using real-money-derived currency in production.
+**Goal:** Make commerce and paid-resource rewards server-verified, idempotent, auditable, and recoverable.
 
-Completion criteria:
+- [ ] Choose RevenueCat or `expo-iap` and document the backend/operations tradeoff.
+- [ ] Implement `PurchaseRepository` behind the selected provider.
+- [ ] Handle product loading, purchase pending, success, failure, cancellation, restore, and interrupted flows.
+- [ ] Verify store transactions on the backend or through RevenueCat before granting premium value.
+- [ ] Implement idempotent server-side grants and authoritative balance refresh.
+- [ ] Replace local production gacha with a remote repository using server time and server-side randomness.
+- [ ] Return pull results, updated currency, pity, ownership, banner version, and audit/receipt ID atomically.
+- [ ] Test store sandboxes, duplicate callbacks, retries, restores, revoked purchases, and app interruption.
 
-- UI and application layers do not call provider SDKs directly.
-- Premium rewards are granted only after server verification.
-- Production gacha results and pity updates are server-authoritative and auditable.
-- Offline, expired-session, retry, and idempotency behavior is specified and tested at repository boundaries.
+Exit criteria:
 
-## Phase 13 — Testing, Balancing, Performance, and Accessibility
+- The client cannot grant premium currency or paid rewards from a local callback or local RNG.
+- Retrying a purchase or gacha request cannot double-charge or double-grant.
+- Purchase restore and interrupted-transaction recovery work on Android and iOS store test accounts.
+- Production pull history and pity updates are server-authoritative and auditable.
 
-- [ ] Complete domain tests for combat, status effects, loot, dungeon generation, progression, economy, and gacha.
-- [ ] Add application/controller, repository, migration, widget, and critical end-to-end tests.
-- [ ] Add seeded simulations for combat balance, loot distribution, dungeon generation, and gacha-rate verification.
-- [ ] Profile frame time, memory, asset loading, startup, database work, and battery-sensitive behavior on target devices.
-- [ ] Add accessibility labels, scalable text handling, reduced-motion behavior, color-safe indicators, and non-drag alternatives.
-- [ ] Add structured logging and privacy-conscious crash/error reporting hooks.
+## Phase 12 — Quality, Balance, Performance, and Accessibility
 
-Completion criteria:
+**Goal:** Turn the feature-complete build into a stable, measurable, inclusive release candidate.
 
-- The critical start-run-to-result and pull-to-inventory flows have automated coverage.
-- Statistical simulations fall within documented tolerances.
-- No known release-blocking correctness, accessibility, or performance issues remain.
-- Analysis, tests, and release builds pass in continuous integration.
+- [ ] Complete domain coverage for combat, status effects, loot, generation, progression, economy, persistence, and gacha.
+- [ ] Add application/controller, repository, migration, presentation-mapping, route, and critical end-to-end tests.
+- [ ] Add seeded simulations for combat balance, loot distribution, dungeon generation, and gacha-rate invariants.
+- [ ] Define and enforce budgets for startup, dungeon entry, command execution, frame time, memory, snapshots, and React rerenders.
+- [ ] Profile production-mode builds on representative physical Android and iOS devices at 60 Hz and high refresh rates.
+- [ ] Test app background/resume during combat, snapshot writes, purchases, and gacha reveals.
+- [ ] Audit screen readers, semantic labels, focus order, larger text, reduced motion, non-drag alternatives, contrast, and color-independent indicators.
+- [ ] Verify localization and long-text layouts.
+- [ ] Triage all release-blocking correctness, performance, accessibility, security, and privacy defects.
 
-## Phase 14 — Release Readiness and Future Online Services
+Exit criteria:
 
-- [ ] Finalize platform configuration, signing, package metadata, icons, launch assets, permissions, and store disclosures.
-- [ ] Verify data migration, backup/recovery, purchase restore, offline behavior, and account deletion/export requirements.
-- [ ] Add privacy policy, terms, gacha probability disclosures, age-rating information, and regional compliance materials as required.
-- [ ] Run closed testing, capture feedback, triage launch blockers, and complete a release checklist.
-- [ ] Document operational plans for cloud saves, live events, analytics, remote configuration, social features, and content updates.
-- [ ] Document rollback, compatibility, and content-versioning procedures.
+- Critical start-run-to-result, save/resume, pull-to-inventory, purchase-restore, and account-recovery flows have automated coverage.
+- Statistical simulations stay within documented tolerances.
+- Production builds meet agreed budgets on baseline devices.
+- No known release-blocking correctness, accessibility, security, privacy, or performance issues remain.
 
-Completion criteria:
+## Phase 13 — Release Readiness and Live Operations
 
-- Signed release builds pass smoke tests on supported platforms and representative physical devices.
-- Store, privacy, purchase, and probability-disclosure requirements are satisfied for target regions.
-- Monitoring, support, rollback, and save/content compatibility plans exist before public launch.
+**Goal:** Ship safely with tested platform configuration, compliance, monitoring, rollback, and compatibility procedures.
+
+- [ ] Finalize identifiers, signing, EAS profiles, icons, splash assets, permissions, entitlements, and store metadata.
+- [ ] Define Expo Update runtime-version policy and prevent OTA bundles from assuming unavailable native modules.
+- [ ] Test migration and resume behavior from the previous production binary and content version.
+- [ ] Create deployment, staged rollout, rollback, incident, support, and save/content compatibility runbooks.
+- [ ] Complete privacy policy, terms, account deletion/export, age rating, purchase disclosures, and regional gacha probability requirements.
+- [ ] Run internal and closed testing on representative devices and fix launch blockers.
+- [ ] Verify analytics, crash reporting, operational dashboards, remote configuration, and live-ops access controls.
+- [ ] Submit signed production builds through EAS Submit and perform post-release smoke checks.
+
+Exit criteria:
+
+- Signed Android and iOS production builds pass smoke tests on representative physical devices.
+- Store, privacy, purchase, account, and probability-disclosure requirements are satisfied for every launch region.
+- Migration, monitoring, support, rollback, and content/save compatibility procedures have named owners and have been rehearsed.
+- The released binary, OTA runtime version, backend API, and content schemas are mutually compatible.
 
 ---
 
-## Recommended Milestones
+## Milestone Map
 
-- **Architecture milestone:** Phases 0–2 complete.
-- **Headless gameplay milestone:** Phases 3–4 complete.
-- **First playable milestone:** Phases 5–7 complete.
-- **Local MVP milestone:** Phases 8–11 complete.
-- **Production candidate milestone:** Phases 12–14 complete.
+| Milestone            | Required phases | Outcome                                                          |
+| -------------------- | --------------: | ---------------------------------------------------------------- |
+| Architecture proven  |             0–1 | Native workflow and renderer risk retired                        |
+| Headless game proven |             2–3 | Deterministic content and combat rules                           |
+| First playable       |             4–5 | Complete local dungeon run                                       |
+| Local MVP            |             6–9 | Persistence, meta-game, local gacha, and polished presentation   |
+| Production candidate |           10–12 | Online services, verified commerce, and release-quality behavior |
+| Public release       |              13 | Store-ready build with operational safeguards                    |
+
+## Open Decisions
+
+Resolve each decision in the phase where it becomes necessary; do not block earlier phases prematurely.
+
+| Decision                                               | Needed by | Status | Resolution/evidence                        |
+| ------------------------------------------------------ | --------: | ------ | ------------------------------------------ |
+| Logical game resolution and tile size                  |   Phase 1 | Open   | —                                          |
+| Supported baseline Android/iOS devices                 |   Phase 1 | Open   | —                                          |
+| AsyncStorage vs `expo-sqlite/kv-store` for preferences |   Phase 6 | Open   | Prefer SQLite KV if SQLite is already core |
+| Production authentication provider                     |  Phase 10 | Open   | Repository boundary must be defined first  |
+| Cloud-save conflict policy                             |  Phase 10 | Open   | —                                          |
+| RevenueCat vs `expo-iap`                               |  Phase 11 | Open   | —                                          |
+| Launch regions and gacha compliance scope              |  Phase 13 | Open   | —                                          |
 
 ## Completion Log
 
-Record phase completion here so later assistants can quickly identify when and why a checkbox changed.
+Add one row only when a phase is fully complete. Evidence should identify the exact verification performed.
 
-| Phase | Completed date | Verified by | Evidence or notes |
-|---|---|---|---|
-| Phase 0 | 2026-08-31 (tasks) | ZCode assistant | All five tasks done and verified: `make check` green (format, `flutter analyze` no issues, boundary check, `flutter test` 1/1); builds verified — macOS debug `.app` (launched and quit cleanly), Android debug APK, iOS simulator Runner.app. Phase box intentionally left unchecked: Linux/Windows builds could not be verified on this macOS host (and `riverpod_generator` codegen path is exercised but no generated models exist until Phase 1+). Check the phase box after verifying Linux/Windows builds on a compatible host or in CI. |
-| Phase 1 | 2026-08-31 | ZCode assistant | All five tasks done. Foundations in `lib/core/`: `RandomSource` + `SeededRandomSource` + `FakeRandomSource` + `deriveSeed` (combat/gacha channel separation), `TimeSource`/`IdGenerator` abstractions with fakes, `ContentId` convention, `Failure` union (freezed) + `DomainException`, `GameCommand`/`GameEvent`/`EngineResult`/`DomainEngine` contracts, `IntRange` value object (json_serializable). 54 tests green; `flutter analyze` clean; boundary check scans 12 pure-Dart files. Seeded repeatability, exact-value faking, and platform-free domains are covered by tests in `test/core/`. |
-| Phase 2 | 2026-08-31 | ZCode assistant | All five tasks done. 11 schema types in `lib/domain/content/`; starter content set (2 heroes, 4 monsters incl. a boss, 2 dice, 6 abilities, 2 status effects, 4 items, 2 loot tables, 1 dungeon, 1 banner, 1 rarity table, 1 xp curve) under `assets/data/`, declared in pubspec and validated by a rootBundle-based test. `GameContent.parse` validates ids, cross-table references, weights, ranges, banner dates, and schemaVersion, aggregating all failures with `file[index].field` paths. 86 tests green; `flutter analyze` clean; boundary check scans 47 pure-Dart files. |
-| Phase 3 | 2026-08-31 | ZCode assistant | All six tasks done. `CombatEngine` + immutable serializable `CombatState` in `lib/domain/combat/`; all 7 plan commands; damage/heal/crit/shield/defeat/victory plus status ticking, expiry, and reapplication rules; deterministic enemy AI (strongest ability or stat-derived basic strike). Completion criteria verified: scripted headless auto-play reaches victory vs a goblin and defeat vs the Bone King; seeded runs with identical seeds produce identical states and event lists; dedicated tests cover the two-sixes crit, single-max-face crit, shield absorbing before HP, poison ticks/expiry/reapplication, poison kills (including mid-enemy-turn), enemy defeat, and player defeat. Phase 2 schemas gained `HeroData.dieId` and `AbilityData.statusId` with content validation; starter heroes/abilities updated. 117 tests green; `flutter analyze` clean; boundary check scans 61 pure-Dart files. |
-| Phase 4 | 2026-08-31 | ZCode assistant | All six tasks done. `lib/domain/dungeon/`: seeded grid-tree topology (BFS-farthest boss room, reciprocal doors), combat/treasure/event room kinds, pre-rolled encounters (monster pool) and treasure (weighted loot-table picks via new `RandomSource.pickWeighted`), serializable `DungeonRunState` (root seed, hero HP, current floor, collected loot, active `CombatState`), and `RunEngine` bridging `StartRun`/`EnterRoom`/`CombatAction`/`Descend` into the combat engine. Criteria verified: 30-seed sweep asserts valid counts, single entry/boss, reachability, and pool/table-legal contents; same-seed floors and full runs replay identically; auto-played runs reach victory on a 2-floor cellar dungeon and defeat against the Bone King dungeon headlessly; run-state JSON round trips mid-combat. Content: `roomsPerFloor.min >= 2` validation added; fixtures gained a slime and a weak 2-floor dungeon. 140 tests green; `flutter analyze` clean; boundary check scans 73 pure-Dart files. |
-| Phase 6 | 2026-08-31 | ZCode assistant | All six tasks done. `DungeonGame` + `DungeonWorld` + fixed-resolution camera + room/doorway/player/monster components render the domain-generated floor from run snapshots; the `EventBridge` (pure, tested for replay determinism) turns domain events into presentation effects (lunge, damage numbers, crit flash + shake, shield/heal/status bursts, death fades, loot sparkles). `RunEventBus` carries domain events from `RunController` to the game; the game screen embeds the `GameWidget` above the Flutter HUD. Criteria verified by tests: widget-env smoke tests pump a real `DungeonGame` over a domain-generated floor — rooms/player/monsters spawn from state, damage numbers and death fades appear and expire, player movement animates to the entered room; bridge tests assert exact translations and replay purity (state-sync never mutates engines). 156 tests green; `flutter analyze` clean; boundary check scans 73 pure-Dart files; macOS debug build succeeds.
-| Phase 5 | 2026-08-31 | ZCode assistant | All five tasks done. 10 routes with auth + run guards and deep-link-safe `/game/:runId`; 8 focused controllers (run, combat façade, account, settings w/ SharedPreferences persistence, inventory, progression, gacha banner listing, shop); content now loads from the real asset bundle via `AssetContentRepository`. Loading/empty/error states implemented on splash, dungeon selection, characters, gacha, inventory, and shop. Criteria verified by tests: navigation widget tests cover splash→login→home, guest sign-in, stale game deep-link fallback, and starting a run from the content-driven dungeon list; controller tests play a full cellar run to victory through the run controller and verify error surfacing without state corruption; settings tests cover write-through persistence and startup restore. 150 tests green; `flutter analyze` clean; boundary check scans 73 pure-Dart files; macOS debug build succeeds. |
-| Phase 1 |  |  |  |
-| Phase 2 |  |  |  |
-| Phase 3 |  |  |  |
-| Phase 4 |  |  |  |
-| Phase 5 |  |  |  |
-| Phase 6 |  |  |  |
-| Phase 7 |  |  |  |
-| Phase 8 |  |  |  |
-| Phase 9 |  |  |  |
-| Phase 10 |  |  |  |
-| Phase 11 |  |  |  |
-| Phase 12 |  |  |  |
-| Phase 13 |  |  |  |
-| Phase 14 |  |  |  |
+| Phase | Completed date | Verified by | Evidence                                                                                                                                                                                                                                                                                              |
+| ----- | -------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0     | 2026-09-01     | ZCode agent | Quality gates pass locally: `npm run format:check`, `npm run lint`, `npm run typecheck`, `npm test -- --ci` (2 suites / 6 tests). `npx expo-doctor` 21/21; `npx expo install --check` clean; `expo prebuild` succeeds for iOS and Android. Dev builds launched and rendered on iPhone 16 Pro simulator (Metro `iOS Bundled`) and Android Medium_Phone emulator (`Android Bundled 3659ms`, 1807 modules). Boundary rules verified: probe file importing `react-native`/`zustand` in `src/domain` fails `npm run lint` with layer messages. Pure-layer test proven via `src/core/utils/result.ts` under the `jest-expo/node` project (plain Node environment). |
+
+## Work Notes
+
+Use this section for short, temporary handoff notes. Remove resolved notes after their evidence is captured in the relevant phase or completion log.
+
+- 2026-09-01: Phase 0 complete. Notes for Phase 1: Android builds on this machine require the JDK 17 override documented in README (user-global `~/.gradle/gradle.properties` pins Temurin 25, which breaks AGP's Prefab step); iOS 26 simulators block the first dev-client deep link behind a system confirmation — use the documented `simctl launch --args --initialUrl` workaround for headless launches. `expo-dev-client` was added during Phase 0 verification (starter did not include it). The two planning markdown files are excluded from Prettier via `.prettierignore`.

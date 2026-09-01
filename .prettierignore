@@ -1,0 +1,9 @@
+node_modules/
+.expo/
+ios/
+android/
+dist/
+package-lock.json
+expo-env.d.ts
+project-phases.md
+react-native-expo-game-plan.md

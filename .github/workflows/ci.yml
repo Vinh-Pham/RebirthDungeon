@@ -1,5 +1,3 @@
-# Minimal continuous-integration check: formatting, static analysis,
-# architecture boundaries, and the test suite.
 name: CI
 
 on:
@@ -7,28 +5,35 @@ on:
     branches: [main]
   pull_request:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  check:
+  quality:
+    name: Format, lint, typecheck, test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - uses: subosito/flutter-action@v2
+      - uses: actions/setup-node@v4
         with:
-          channel: stable
-          cache: true
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test -- --ci
 
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Verify formatting
-        run: dart format --output=none --set-exit-if-changed lib test tool
-
-      - name: Static analysis
-        run: flutter analyze
-
-      - name: Architecture boundaries
-        run: dart run tool/check_architecture_boundaries.dart
-
-      - name: Tests
-        run: flutter test
+  native-config:
+    name: Expo doctor + Android prebuild check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx expo-doctor
+      - run: npx expo prebuild --platform android --no-install
