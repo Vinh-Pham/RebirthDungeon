@@ -21,6 +21,14 @@ Map<String, Object?> validContentSet() {
     ContentFiles.monsters: file([
       monsterJson(),
       monsterJson(
+        id: 'slime',
+        name: 'Slime',
+        hp: 10,
+        attack: 1,
+        defense: 0,
+        xpReward: const {'min': 1, 'max': 2},
+      ),
+      monsterJson(
         id: 'skeleton_01',
         name: 'Skeleton',
         hp: 22,
@@ -84,7 +92,16 @@ Map<String, Object?> validContentSet() {
       ),
     ]),
     ContentFiles.lootTables: file([lootTableJson()]),
-    ContentFiles.dungeons: file([dungeonJson(bossId: 'bone_king')]),
+    ContentFiles.dungeons: file([
+      dungeonJson(bossId: 'bone_king'),
+      dungeonJson(
+        id: 'dungeon_cellar',
+        floorCount: 2,
+        roomsPerFloor: const {'min': 2, 'max': 3},
+        monsterPool: const ['slime'],
+        bossId: 'slime',
+      ),
+    ]),
     ContentFiles.banners: file([bannerJson()]),
     ContentFiles.rarityTables: file([rarityTableJson()]),
     ContentFiles.experienceCurves: file([xpCurveJson()]),
@@ -210,6 +227,7 @@ Map<String, Object?> lootTableJson({String id = 'loot_basic'}) =>
 
 Map<String, Object?> dungeonJson({
   String id = 'dungeon_halls',
+  int floorCount = 3,
   Object? roomsPerFloor = const {'min': 3, 'max': 5},
   List<Object?> monsterPool = const ['goblin_01'],
   String bossId = 'bone_king',
@@ -217,7 +235,7 @@ Map<String, Object?> dungeonJson({
 }) => <String, Object?>{
   'id': id,
   'name': 'Halls',
-  'floorCount': 3,
+  'floorCount': floorCount,
   'roomsPerFloor': roomsPerFloor,
   'monsterPool': monsterPool,
   'bossId': bossId,

@@ -27,7 +27,7 @@ void main() {
       final content = GameContent.parse(validContentSet());
 
       expect(content.heroes, hasLength(2));
-      expect(content.monsters, hasLength(3));
+      expect(content.monsters, hasLength(4));
       expect(content.hero('hero_knight').name, 'Knight');
       expect(content.monster('goblin_01').hp, 18);
       expect(content.ability('slash').power.max, 6);
@@ -301,6 +301,21 @@ void main() {
         contains(
           'rarity_tables.json[0].tiers[0].weight: weight must be > 0 '
           '(found 0).',
+        ),
+      );
+    });
+
+    test('dungeon roomsPerFloor.min must allow entry and boss rooms', () {
+      final files = validContentSet();
+      entriesOf(files, ContentFiles.dungeons)[0]['roomsPerFloor'] = {
+        'min': 1,
+        'max': 5,
+      };
+      expect(
+        issuesOf(files),
+        contains(
+          'dungeons.json[0].roomsPerFloor.min: roomsPerFloor.min must be '
+          'within [2, 99] (found 1).',
         ),
       );
     });

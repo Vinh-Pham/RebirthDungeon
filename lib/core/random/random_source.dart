@@ -33,4 +33,32 @@ extension RandomSourceX on RandomSource {
     }
     return values[nextInt(values.length)];
   }
+
+  /// Weighted pick from a non-empty [values] list. Weights must be
+  /// non-negative with a positive total; a value's selection chance is its
+  /// weight relative to the total.
+  T pickWeighted<T>(List<T> values, int Function(T) weightOf) {
+    if (values.isEmpty) {
+      throw ArgumentError('Cannot pick from an empty list.');
+    }
+    var total = 0;
+    for (final value in values) {
+      final weight = weightOf(value);
+      if (weight < 0) {
+        throw ArgumentError('Weights must be non-negative.');
+      }
+      total += weight;
+    }
+    if (total <= 0) {
+      throw ArgumentError('Total weight must be positive.');
+    }
+    var roll = nextInt(total);
+    for (final value in values) {
+      roll -= weightOf(value);
+      if (roll < 0) {
+        return value;
+      }
+    }
+    return values.last;
+  }
 }

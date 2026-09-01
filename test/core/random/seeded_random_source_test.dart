@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rebirth_dungeon/core/random/fake_random_source.dart';
 import 'package:rebirth_dungeon/core/random/random_source.dart';
 import 'package:rebirth_dungeon/core/random/seeded_random_source.dart';
 
@@ -109,6 +110,27 @@ void main() {
       expect(stream(combatSeed), isNot(stream(gachaSeed)));
       expect(stream(combatSeed), stream(combatSeed));
       expect(stream(gachaSeed), stream(gachaSeed));
+    });
+
+    test('pickWeighted respects weights', () {
+      final source = FakeRandomSource()..enqueueInts([0, 9, 10, 50, 99]);
+      const values = ['common', 'rare'];
+      int weightOf(String value) => value == 'common' ? 10 : 90;
+
+      expect(source.pickWeighted(values, weightOf), 'common'); // roll 0
+      expect(source.pickWeighted(values, weightOf), 'common'); // roll 9
+      expect(source.pickWeighted(values, weightOf), 'rare'); // roll 10
+      expect(source.pickWeighted(values, weightOf), 'rare'); // roll 50
+      expect(source.pickWeighted(values, weightOf), 'rare'); // roll 99
+    });
+
+    test('pickWeighted rejects empty lists and non-positive totals', () {
+      final source = FakeRandomSource();
+      expect(() => source.pickWeighted<int>([], (_) => 1), throwsArgumentError);
+      expect(
+        () => source.pickWeighted<String>(['a'], (_) => 0),
+        throwsArgumentError,
+      );
     });
 
     test('channels keep different root seeds apart', () {

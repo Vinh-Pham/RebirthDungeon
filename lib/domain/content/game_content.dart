@@ -548,8 +548,11 @@ class GameContent {
         '$base.floorCount',
         'floorCount',
       );
-      ctx.positive(
+      // A floor needs an entry plus at least one other room (the boss).
+      ctx.inclusiveRange(
         dungeon.roomsPerFloor.min,
+        2,
+        99,
         '$base.roomsPerFloor.min',
         'roomsPerFloor.min',
       );

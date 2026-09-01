@@ -17,7 +17,7 @@ This checklist converts `dart-game-plan.md` into an implementation sequence. Pha
 - [x] Phase 1 — Core domain foundations and deterministic randomness
 - [x] Phase 2 — Data-driven game content
 - [x] Phase 3 — Dice combat engine
-- [ ] Phase 4 — Dungeon generation and run model
+- [x] Phase 4 — Dungeon generation and run model
 - [ ] Phase 5 — Flutter application shell and Riverpod orchestration
 - [ ] Phase 6 — Flame dungeon presentation and event bridge
 - [ ] Phase 7 — Playable vertical slice
@@ -133,12 +133,30 @@ Completion criteria:
 
 ## Phase 4 — Dungeon Generation and Run Model
 
-- [ ] Model dungeons, rooms, doors, encounters, treasure, events, floors, and boss rooms in pure Dart.
-- [ ] Implement seeded procedural topology generation.
-- [ ] Support hand-authored room templates if the prototype requires them.
-- [ ] Model an immutable, serializable `DungeonRunState` containing the seed and current progress.
-- [ ] Implement encounter and loot resolution using injected randomness.
-- [ ] Add tests for generation validity, reachability, and seed repeatability.
+- [x] Model dungeons, rooms, doors, encounters, treasure, events, floors, and boss rooms in pure Dart.
+- [x] Implement seeded procedural topology generation.
+- [x] Support hand-authored room templates if the prototype requires them.
+- [x] Model an immutable, serializable `DungeonRunState` containing the seed and current progress.
+- [x] Implement encounter and loot resolution using injected randomness.
+- [x] Add tests for generation validity, reachability, and seed repeatability.
+
+Note (2026-08-31): everything lives in `lib/domain/dungeon/`.
+`generateDungeonFloor` grows a room tree on a grid (reachability by
+construction, reciprocal doors), places the boss in the BFS-farthest room,
+assigns combat/treasure/event kinds to middle rooms, and pre-rolls
+encounters and treasure from `DungeonData` + the dungeon's loot table using
+the dungeon/loot RNG channels — same seed, same floor. `DungeonRunState`
+(immutable, JSON-serializable) stores the root seed, hero HP between
+combats, the current floor's rooms, collected loot, and the active
+`CombatState`; `RunEngine` bridges into the Phase 3 `CombatEngine` via a
+`CombatAction` command (combat events bubble up wrapped as
+`RunEvent.combat`). Movement/loot/shrine rules: combat and boss rooms block
+until won, treasure grants on entry, event rooms are shrines healing 30% of
+max HP, `Descend` requires a cleared boss and either generates the next
+floor or completes the run. Hand-authored room templates were **not**
+required by the prototype and are intentionally deferred (documented in
+`lib/domain/README.md`); content validation now also requires
+`roomsPerFloor.min >= 2` (a floor needs an entry and a boss room).
 
 Completion criteria:
 
@@ -316,6 +334,7 @@ Record phase completion here so later assistants can quickly identify when and w
 | Phase 1 | 2026-08-31 | ZCode assistant | All five tasks done. Foundations in `lib/core/`: `RandomSource` + `SeededRandomSource` + `FakeRandomSource` + `deriveSeed` (combat/gacha channel separation), `TimeSource`/`IdGenerator` abstractions with fakes, `ContentId` convention, `Failure` union (freezed) + `DomainException`, `GameCommand`/`GameEvent`/`EngineResult`/`DomainEngine` contracts, `IntRange` value object (json_serializable). 54 tests green; `flutter analyze` clean; boundary check scans 12 pure-Dart files. Seeded repeatability, exact-value faking, and platform-free domains are covered by tests in `test/core/`. |
 | Phase 2 | 2026-08-31 | ZCode assistant | All five tasks done. 11 schema types in `lib/domain/content/`; starter content set (2 heroes, 4 monsters incl. a boss, 2 dice, 6 abilities, 2 status effects, 4 items, 2 loot tables, 1 dungeon, 1 banner, 1 rarity table, 1 xp curve) under `assets/data/`, declared in pubspec and validated by a rootBundle-based test. `GameContent.parse` validates ids, cross-table references, weights, ranges, banner dates, and schemaVersion, aggregating all failures with `file[index].field` paths. 86 tests green; `flutter analyze` clean; boundary check scans 47 pure-Dart files. |
 | Phase 3 | 2026-08-31 | ZCode assistant | All six tasks done. `CombatEngine` + immutable serializable `CombatState` in `lib/domain/combat/`; all 7 plan commands; damage/heal/crit/shield/defeat/victory plus status ticking, expiry, and reapplication rules; deterministic enemy AI (strongest ability or stat-derived basic strike). Completion criteria verified: scripted headless auto-play reaches victory vs a goblin and defeat vs the Bone King; seeded runs with identical seeds produce identical states and event lists; dedicated tests cover the two-sixes crit, single-max-face crit, shield absorbing before HP, poison ticks/expiry/reapplication, poison kills (including mid-enemy-turn), enemy defeat, and player defeat. Phase 2 schemas gained `HeroData.dieId` and `AbilityData.statusId` with content validation; starter heroes/abilities updated. 117 tests green; `flutter analyze` clean; boundary check scans 61 pure-Dart files. |
+| Phase 4 | 2026-08-31 | ZCode assistant | All six tasks done. `lib/domain/dungeon/`: seeded grid-tree topology (BFS-farthest boss room, reciprocal doors), combat/treasure/event room kinds, pre-rolled encounters (monster pool) and treasure (weighted loot-table picks via new `RandomSource.pickWeighted`), serializable `DungeonRunState` (root seed, hero HP, current floor, collected loot, active `CombatState`), and `RunEngine` bridging `StartRun`/`EnterRoom`/`CombatAction`/`Descend` into the combat engine. Criteria verified: 30-seed sweep asserts valid counts, single entry/boss, reachability, and pool/table-legal contents; same-seed floors and full runs replay identically; auto-played runs reach victory on a 2-floor cellar dungeon and defeat against the Bone King dungeon headlessly; run-state JSON round trips mid-combat. Content: `roomsPerFloor.min >= 2` validation added; fixtures gained a slime and a weak 2-floor dungeon. 140 tests green; `flutter analyze` clean; boundary check scans 73 pure-Dart files. |
 | Phase 1 |  |  |  |
 | Phase 2 |  |  |  |
 | Phase 3 |  |  |  |

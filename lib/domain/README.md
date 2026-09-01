@@ -77,3 +77,26 @@ contracts.
   the monster's attack stat.
 - Illegal commands throw `DomainException` before any randomness is
   consumed.
+
+## Dungeon runs (Phase 4)
+
+`dungeon/` holds seeded procedural generation and the run model on top of
+the combat engine.
+
+- `generateDungeonFloor` grows a room tree on a grid (every room reachable
+  from the entry, doors reciprocal), puts the boss in the room farthest
+  from the entry, assigns kinds (combat/treasure/event) to middle rooms,
+  and pre-rolls encounters (from the monster pool) and treasure (weighted
+  picks from the dungeon's loot table). Same seed → same floor.
+- `DungeonRunState` is immutable and fully serializable (run snapshots,
+  Phase 8): root seed, hero HP between combats, current floor's rooms,
+  collected loot, and the active `CombatState` if any. Subsystems derive
+  their RNG streams from the root seed (`dungeon`, `loot`, `combat`).
+- `RunEngine` commands: `StartRun`, `EnterRoom` (combat/boss rooms start a
+  blocking combat, treasure grants pre-rolled loot, event rooms are shrines
+  healing 30% of max HP), `CombatAction` (bridges a `CombatCommand` into
+  the active combat; victory clears the room, defeat fails the run), and
+  `Descend` (after the boss: next floor, or run victory on the last floor).
+- Hand-authored room templates are intentionally deferred — the prototype
+  generates all rooms procedurally; `DungeonData` can carry template
+  references later without changing the run model.
