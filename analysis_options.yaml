@@ -1,0 +1,25 @@
+# This file configures the analyzer, which statically analyzes Dart code to
+# check for errors, warnings, and lints. Run with `flutter analyze`.
+
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
+
+linter:
+  rules:
+    # Declare return types on all public APIs — keeps engine APIs precise.
+    - always_declare_return_types
+    # Consistent import ordering keeps layer dependencies auditable.
+    - directives_ordering
+    # Single quotes match the surrounding Flutter/Dart ecosystem style.
+    - prefer_single_quotes
+    # Fire-and-forget futures hide bugs in controllers and engines.
+    - unawaited_futures

@@ -1,0 +1,34 @@
+# Minimal continuous-integration check: formatting, static analysis,
+# architecture boundaries, and the test suite.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Verify formatting
+        run: dart format --output=none --set-exit-if-changed lib test tool
+
+      - name: Static analysis
+        run: flutter analyze
+
+      - name: Architecture boundaries
+        run: dart run tool/check_architecture_boundaries.dart
+
+      - name: Tests
+        run: flutter test
