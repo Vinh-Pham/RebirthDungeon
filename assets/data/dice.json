@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "id": "die_standard",
+      "name": "Standard Die",
+      "description": "A fair six-sided die.",
+      "sides": 6
+    },
+    {
+      "id": "die_cursed",
+      "name": "Cursed Die",
+      "description": "An eight-sided die that carries a taint on some faces.",
+      "sides": 8,
+      "faces": [
+        { "value": 1, "tags": ["cursed"] },
+        { "value": 2, "tags": [] },
+        { "value": 3, "tags": [] },
+        { "value": 4, "tags": [] },
+        { "value": 5, "tags": [] },
+        { "value": 6, "tags": [] },
+        { "value": 7, "tags": [] },
+        { "value": 8, "tags": ["cursed"] }
+      ]
+    }
+  ]
+}

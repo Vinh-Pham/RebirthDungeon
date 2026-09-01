@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "id": "slime",
+      "name": "Cell Slime",
+      "description": "A creeping blob of dungeon mold.",
+      "hp": 14,
+      "attack": 1,
+      "defense": 0,
+      "abilityIds": [],
+      "xpReward": { "min": 2, "max": 4 },
+      "lootTableId": "loot_whispering_halls"
+    },
+    {
+      "id": "goblin_01",
+      "name": "Goblin Scrapper",
+      "description": "Quick, mean, and armed with a rusty blade.",
+      "hp": 18,
+      "attack": 2,
+      "defense": 1,
+      "abilityIds": ["slash"],
+      "xpReward": { "min": 3, "max": 6 },
+      "lootTableId": "loot_whispering_halls"
+    },
+    {
+      "id": "skeleton_01",
+      "name": "Rattling Skeleton",
+      "description": "Old bones animated by old grudges.",
+      "hp": 22,
+      "attack": 3,
+      "defense": 2,
+      "abilityIds": ["slash", "poison_strike"],
+      "xpReward": { "min": 5, "max": 8 },
+      "lootTableId": "loot_whispering_halls"
+    },
+    {
+      "id": "bone_king",
+      "name": "The Bone King",
+      "description": "A crowned tyrant of ossified remains.",
+      "hp": 60,
+      "attack": 5,
+      "defense": 3,
+      "abilityIds": ["slash", "power_strike"],
+      "xpReward": { "min": 20, "max": 30 },
+      "lootTableId": "loot_bone_king"
+    }
+  ]
+}

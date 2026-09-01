@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "id": "health_potion",
+      "name": "Health Potion",
+      "description": "Restores health when drunk.",
+      "category": "consumable",
+      "rarityId": "rarity_common",
+      "baseValue": 25
+    },
+    {
+      "id": "tonic_of_might",
+      "name": "Tonic of Might",
+      "description": "A bitter draught that emboldens the drinker.",
+      "category": "consumable",
+      "rarityId": "rarity_uncommon",
+      "baseValue": 40
+    },
+    {
+      "id": "iron_scrap",
+      "name": "Iron Scrap",
+      "description": "Salvaged metal for the forge.",
+      "category": "material",
+      "rarityId": "rarity_common",
+      "baseValue": 8
+    },
+    {
+      "id": "ancient_coin",
+      "name": "Ancient Coin",
+      "description": "Currency of a kingdom long buried.",
+      "category": "treasure",
+      "rarityId": "rarity_epic",
+      "baseValue": 250
+    }
+  ]
+}

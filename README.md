@@ -38,3 +38,6 @@ lib/
 ├── game/           Flame scene: DungeonGame, components, effects
 └── presentation/   Flutter screens and widgets
 ```
+
+Versioned game content lives in `assets/data/` (one `schemaVersion`-wrapped
+JSON file per entity type), parsed and validated by `lib/domain/content/`.

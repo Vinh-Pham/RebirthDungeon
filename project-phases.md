@@ -15,7 +15,7 @@ This checklist converts `dart-game-plan.md` into an implementation sequence. Pha
 
 - [ ] Phase 0 — Project bootstrap and engineering baseline
 - [x] Phase 1 — Core domain foundations and deterministic randomness
-- [ ] Phase 2 — Data-driven game content
+- [x] Phase 2 — Data-driven game content
 - [ ] Phase 3 — Dice combat engine
 - [ ] Phase 4 — Dungeon generation and run model
 - [ ] Phase 5 — Flutter application shell and Riverpod orchestration
@@ -77,11 +77,22 @@ Completion criteria:
 
 ## Phase 2 — Data-Driven Game Content
 
-- [ ] Define serializable schemas for heroes, monsters, dice, abilities, status effects, items, loot tables, dungeons, banners, rarity rates, and experience curves.
-- [ ] Add a small starter content set under `assets/data/`.
-- [ ] Implement content loading, validation, ID/reference resolution, and useful validation errors.
-- [ ] Version content formats that may change after saves exist.
-- [ ] Add validation tests for malformed data and broken references.
+- [x] Define serializable schemas for heroes, monsters, dice, abilities, status effects, items, loot tables, dungeons, banners, rarity rates, and experience curves.
+- [x] Add a small starter content set under `assets/data/`.
+- [x] Implement content loading, validation, ID/reference resolution, and useful validation errors.
+- [x] Version content formats that may change after saves exist.
+- [x] Add validation tests for malformed data and broken references.
+
+Note (2026-08-31): schemas live in `lib/domain/content/` (freezed +
+json_serializable, enums serialized by name). Every content file is wrapped
+as `{ "schemaVersion": 1, "entries": [...] }`; the supported version is
+`GameContent.currentSchemaVersion`. `GameContent.parse` takes already-decoded
+JSON per file (pure Dart) and fails with one aggregated `DomainException`
+whose details list every issue with a `file[index].field` path. Rates are
+weight-based; banner availability windows are ISO-8601 and order-checked.
+Reading assets via rootBundle is deferred to the Phase 5 application wiring;
+`test/domain/content/starter_content_test.dart` already exercises the shipped
+`assets/data/` files end-to-end.
 
 Completion criteria:
 
@@ -287,6 +298,7 @@ Record phase completion here so later assistants can quickly identify when and w
 |---|---|---|---|
 | Phase 0 | 2026-08-31 (tasks) | ZCode assistant | All five tasks done and verified: `make check` green (format, `flutter analyze` no issues, boundary check, `flutter test` 1/1); builds verified — macOS debug `.app` (launched and quit cleanly), Android debug APK, iOS simulator Runner.app. Phase box intentionally left unchecked: Linux/Windows builds could not be verified on this macOS host (and `riverpod_generator` codegen path is exercised but no generated models exist until Phase 1+). Check the phase box after verifying Linux/Windows builds on a compatible host or in CI. |
 | Phase 1 | 2026-08-31 | ZCode assistant | All five tasks done. Foundations in `lib/core/`: `RandomSource` + `SeededRandomSource` + `FakeRandomSource` + `deriveSeed` (combat/gacha channel separation), `TimeSource`/`IdGenerator` abstractions with fakes, `ContentId` convention, `Failure` union (freezed) + `DomainException`, `GameCommand`/`GameEvent`/`EngineResult`/`DomainEngine` contracts, `IntRange` value object (json_serializable). 54 tests green; `flutter analyze` clean; boundary check scans 12 pure-Dart files. Seeded repeatability, exact-value faking, and platform-free domains are covered by tests in `test/core/`. |
+| Phase 2 | 2026-08-31 | ZCode assistant | All five tasks done. 11 schema types in `lib/domain/content/`; starter content set (2 heroes, 4 monsters incl. a boss, 2 dice, 6 abilities, 2 status effects, 4 items, 2 loot tables, 1 dungeon, 1 banner, 1 rarity table, 1 xp curve) under `assets/data/`, declared in pubspec and validated by a rootBundle-based test. `GameContent.parse` validates ids, cross-table references, weights, ranges, banner dates, and schemaVersion, aggregating all failures with `file[index].field` paths. 86 tests green; `flutter analyze` clean; boundary check scans 47 pure-Dart files. |
 | Phase 1 |  |  |  |
 | Phase 2 |  |  |  |
 | Phase 3 |  |  |  |

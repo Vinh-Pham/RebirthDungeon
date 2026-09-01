@@ -33,3 +33,22 @@ in CI.
   snake_case) and may be wrapped in zero-cost extension types.
 - Time comes from an injected `TimeSource`; generated ids from an injected
   `IdGenerator`.
+
+## Data-driven content (Phase 2)
+
+`content/` holds the content schemas (`HeroData`, `MonsterData`, `DieData`,
+`AbilityData`, `StatusEffectData`, `ItemData`, `LootTableData`,
+`DungeonData`, `BannerData`, `RarityTableData`, `ExperienceCurveData`) and
+`GameContent`, which parses and validates the decoded JSON of every
+`assets/data/*.json` file.
+
+- Every file is wrapped in `{ "schemaVersion": 1, "entries": [...] }`;
+  `GameContent.currentSchemaVersion` is bumped together with a migration
+  path when a format changes after saves exist.
+- Ids follow the `ContentId` convention; references resolve across tables;
+  weights must be positive; numeric ranges are bounds-checked; banner dates
+  must be ISO-8601 and ordered.
+- All problems are collected into one `DomainException` whose failure
+  details list every issue with a `file[index].field` path.
+- `GameContent.parse` stays pure Dart — reading/decoding the asset bundle is
+  the data layer's job (wired up in Phase 5).
