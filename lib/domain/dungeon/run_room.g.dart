@@ -18,6 +18,8 @@ Map<String, dynamic> _$RunLootToJson(_RunLoot instance) => <String, dynamic>{
 
 _RunRoom _$RunRoomFromJson(Map<String, dynamic> json) => _RunRoom(
   index: (json['index'] as num).toInt(),
+  x: (json['x'] as num).toInt(),
+  y: (json['y'] as num).toInt(),
   kind: $enumDecode(_$RoomKindEnumMap, json['kind']),
   doors:
       (json['doors'] as List<dynamic>?)
@@ -39,6 +41,8 @@ _RunRoom _$RunRoomFromJson(Map<String, dynamic> json) => _RunRoom(
 
 Map<String, dynamic> _$RunRoomToJson(_RunRoom instance) => <String, dynamic>{
   'index': instance.index,
+  'x': instance.x,
+  'y': instance.y,
   'kind': _$RoomKindEnumMap[instance.kind]!,
   'doors': instance.doors,
   'monsterIds': instance.monsterIds,

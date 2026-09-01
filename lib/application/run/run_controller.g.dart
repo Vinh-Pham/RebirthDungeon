@@ -56,7 +56,7 @@ final class RunControllerProvider
   }
 }
 
-String _$runControllerHash() => r'e606fb7b39c795ce550e243469eb4c69d3678141';
+String _$runControllerHash() => r'567adfb239e34b79fbfe85af5f002534d53599b6';
 
 /// Bridges the Flutter app to the pure-Dart run and combat engines.
 ///

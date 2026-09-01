@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:rebirth_dungeon/application/providers/shared_providers.dart';
+import 'package:rebirth_dungeon/application/run/run_event_bus.dart';
 import 'package:rebirth_dungeon/core/errors/domain_exception.dart';
 import 'package:rebirth_dungeon/core/errors/failure.dart';
 import 'package:rebirth_dungeon/core/ids/id_generator.dart';
@@ -51,6 +52,10 @@ class RunController extends _$RunController {
     return const RunUiState();
   }
 
+  void _publish(Iterable<RunEvent> events) {
+    ref.read(runEventBusProvider).publish(events);
+  }
+
   GameContent get _content {
     final content = ref.read(contentProvider).value;
     if (content == null) {
@@ -86,6 +91,7 @@ class RunController extends _$RunController {
     _engine = engine;
     _run = result.state;
     state = RunUiState(run: result.state, lastEvents: result.events);
+    _publish(result.events);
     return result.state.runId;
   }
 
@@ -106,6 +112,7 @@ class RunController extends _$RunController {
       final result = engine.execute(run, command);
       _run = result.state;
       state = RunUiState(run: result.state, lastEvents: result.events);
+      _publish(result.events);
     } on DomainException catch (error) {
       state = RunUiState(run: run, error: error.failure.message);
     }

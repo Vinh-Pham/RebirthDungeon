@@ -20,6 +20,9 @@ abstract class RunLoot with _$RunLoot {
 
 /// One room of the current dungeon floor.
 ///
+/// Doors always connect grid-adjacent rooms, so a floor is drawable as a
+/// tiled map.
+///
 /// [doors] holds the indices of directly connected rooms (always
 /// reciprocal). Combat and boss rooms pre-roll their [monsterIds]; treasure
 /// rooms pre-roll their [loot] — all at generation time, so a floor is fully
@@ -28,6 +31,11 @@ abstract class RunLoot with _$RunLoot {
 abstract class RunRoom with _$RunRoom {
   const factory RunRoom({
     required int index,
+
+    /// Grid cell of this room on the floor, used by the presentation layer
+    /// to place the room in the world.
+    required int x,
+    required int y,
     required RoomKind kind,
     @Default([]) List<int> doors,
     @Default([]) List<String> monsterIds,

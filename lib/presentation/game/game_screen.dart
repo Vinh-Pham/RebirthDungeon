@@ -1,3 +1,4 @@
+import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:rebirth_dungeon/application/combat/combat_controller.dart';
 import 'package:rebirth_dungeon/application/providers/shared_providers.dart';
 import 'package:rebirth_dungeon/application/run/run_controller.dart';
+import 'package:rebirth_dungeon/application/run/run_event_bus.dart';
 import 'package:rebirth_dungeon/domain/combat/combat_die.dart';
 import 'package:rebirth_dungeon/domain/combat/combat_event.dart';
 import 'package:rebirth_dungeon/domain/combat/combat_state.dart';
@@ -12,28 +14,50 @@ import 'package:rebirth_dungeon/domain/content/ability_data.dart';
 import 'package:rebirth_dungeon/domain/dungeon/dungeon_run_state.dart';
 import 'package:rebirth_dungeon/domain/dungeon/run_event.dart';
 import 'package:rebirth_dungeon/domain/dungeon/run_room.dart';
+import 'package:rebirth_dungeon/game/dungeon_game.dart';
 
-/// Head-up view of the current run: floor progress, hero HP, room
-/// navigation, and the combat panel.
+/// Head-up view of the current run: the Flame dungeon view on top, and
+/// Flutter panels for navigation, dice, abilities, and the event log below
+/// (dart-game-plan.md section 9).
 ///
-/// This is a plain Flutter placeholder — Phase 6 replaces the world view
-/// with the Flame canvas and Phase 7 adds the polished dice interactions.
-/// Selected dice and the targeted enemy are intentionally *local* widget
-/// state: transient visual state stays out of Riverpod.
-class GameScreen extends ConsumerWidget {
+/// The [DungeonGame] receives the run snapshot for structure and the event
+/// stream for animation. Selected dice and the targeted enemy are
+/// intentionally *local* widget state: transient visual state stays out of
+/// Riverpod.
+class GameScreen extends ConsumerStatefulWidget {
   const GameScreen({required this.runId, super.key});
 
   final String runId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<GameScreen> createState() => _GameScreenState();
+}
+
+class _GameScreenState extends ConsumerState<GameScreen> {
+  DungeonGame? _game;
+
+  @override
+  Widget build(BuildContext context) {
     final ui = ref.watch(runControllerProvider);
     final run = ui.run;
 
-    if (run == null || run.runId != runId) {
+    if (run == null || run.runId != widget.runId) {
       // The router guard normally redirects; this is a safety net.
       return _NoRunScaffold(onBack: () => context.go('/dungeon'));
     }
+
+    final game = _game ??= DungeonGame(
+      runEvents: ref.read(runEventBusProvider).stream,
+      initialRun: run,
+    );
+    // Keep the world in sync with every state change (structural data only;
+    // animation arrives through the event bus).
+    ref.listen(runControllerProvider, (_, next) {
+      final nextRun = next.run;
+      if (nextRun != null && nextRun.runId == widget.runId) {
+        game.syncRun(nextRun);
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -55,6 +79,7 @@ class GameScreen extends ConsumerWidget {
               ),
             ),
           _HeroStatusBar(run: run),
+          Expanded(flex: 5, child: GameWidget(game: game)),
           if (run.status == RunStatus.victory)
             const _RunResultCard(victory: true)
           else if (run.status == RunStatus.defeat)

@@ -19,7 +19,7 @@ This checklist converts `dart-game-plan.md` into an implementation sequence. Pha
 - [x] Phase 3 — Dice combat engine
 - [x] Phase 4 — Dungeon generation and run model
 - [x] Phase 5 — Flutter application shell and Riverpod orchestration
-- [ ] Phase 6 — Flame dungeon presentation and event bridge
+- [x] Phase 6 — Flame dungeon presentation and event bridge
 - [ ] Phase 7 — Playable vertical slice
 - [ ] Phase 8 — Local persistence and save recovery
 - [ ] Phase 9 — Progression, inventory, equipment, and economy
@@ -201,12 +201,25 @@ Completion criteria:
 
 ## Phase 6 — Flame Dungeon Presentation and Event Bridge
 
-- [ ] Create `DungeonGame`, `DungeonWorld`, a fixed-resolution camera, and initial world components.
-- [ ] Establish a consistent tile size, integer-aligned world positions, and nearest-neighbor pixel rendering.
-- [ ] Render player, monsters, rooms, chests, and environment from domain/application state.
-- [ ] Translate domain events into presentation events through a dedicated bridge.
-- [ ] Implement initial attack, damage-number, death, particle, camera, and screen-shake effects.
-- [ ] Ensure Flame components never calculate authoritative combat outcomes.
+- [x] Create `DungeonGame`, `DungeonWorld`, a fixed-resolution camera, and initial world components.
+- [x] Establish a consistent tile size, integer-aligned world positions, and nearest-neighbor pixel rendering.
+- [x] Render player, monsters, rooms, chests, and environment from domain/application state.
+- [x] Translate domain events into presentation events through a dedicated bridge.
+- [x] Implement initial attack, damage-number, death, particle, camera, and screen-shake effects.
+- [x] Ensure Flame components never calculate authoritative combat outcomes.
+
+Note (2026-08-31): `lib/game/` — `DungeonGame` (FlameGame with a fixed
+360×640 logical camera, 16px tiles, 8×8-tile rooms on an integer-aligned
+grid) and `DungeonWorld`, which rebuilds structure from `DungeonRunState`
+snapshots while room-to-room moves animate via events. A dedicated
+`EventBridge` (pure, value-equal output) translates domain `RunEvent`s into
+`PresentationEvent`s (lunges, damage numbers, crit flashes, shield/heal
+puffs, death fades, camera shake, loot sparkles) carried on a keep-alive
+`RunEventBus` published by `RunController`. The game screen embeds the
+`GameWidget` above the Flutter panels; die selection and targeting stay in
+local widget state. Domain support: `RunRoom` gained x/y grid coordinates
+for world placement. Placeholder rendering uses pixel shapes; sprite
+atlases arrive in Phase 11.
 
 Completion criteria:
 
@@ -356,6 +369,7 @@ Record phase completion here so later assistants can quickly identify when and w
 | Phase 2 | 2026-08-31 | ZCode assistant | All five tasks done. 11 schema types in `lib/domain/content/`; starter content set (2 heroes, 4 monsters incl. a boss, 2 dice, 6 abilities, 2 status effects, 4 items, 2 loot tables, 1 dungeon, 1 banner, 1 rarity table, 1 xp curve) under `assets/data/`, declared in pubspec and validated by a rootBundle-based test. `GameContent.parse` validates ids, cross-table references, weights, ranges, banner dates, and schemaVersion, aggregating all failures with `file[index].field` paths. 86 tests green; `flutter analyze` clean; boundary check scans 47 pure-Dart files. |
 | Phase 3 | 2026-08-31 | ZCode assistant | All six tasks done. `CombatEngine` + immutable serializable `CombatState` in `lib/domain/combat/`; all 7 plan commands; damage/heal/crit/shield/defeat/victory plus status ticking, expiry, and reapplication rules; deterministic enemy AI (strongest ability or stat-derived basic strike). Completion criteria verified: scripted headless auto-play reaches victory vs a goblin and defeat vs the Bone King; seeded runs with identical seeds produce identical states and event lists; dedicated tests cover the two-sixes crit, single-max-face crit, shield absorbing before HP, poison ticks/expiry/reapplication, poison kills (including mid-enemy-turn), enemy defeat, and player defeat. Phase 2 schemas gained `HeroData.dieId` and `AbilityData.statusId` with content validation; starter heroes/abilities updated. 117 tests green; `flutter analyze` clean; boundary check scans 61 pure-Dart files. |
 | Phase 4 | 2026-08-31 | ZCode assistant | All six tasks done. `lib/domain/dungeon/`: seeded grid-tree topology (BFS-farthest boss room, reciprocal doors), combat/treasure/event room kinds, pre-rolled encounters (monster pool) and treasure (weighted loot-table picks via new `RandomSource.pickWeighted`), serializable `DungeonRunState` (root seed, hero HP, current floor, collected loot, active `CombatState`), and `RunEngine` bridging `StartRun`/`EnterRoom`/`CombatAction`/`Descend` into the combat engine. Criteria verified: 30-seed sweep asserts valid counts, single entry/boss, reachability, and pool/table-legal contents; same-seed floors and full runs replay identically; auto-played runs reach victory on a 2-floor cellar dungeon and defeat against the Bone King dungeon headlessly; run-state JSON round trips mid-combat. Content: `roomsPerFloor.min >= 2` validation added; fixtures gained a slime and a weak 2-floor dungeon. 140 tests green; `flutter analyze` clean; boundary check scans 73 pure-Dart files. |
+| Phase 6 | 2026-08-31 | ZCode assistant | All six tasks done. `DungeonGame` + `DungeonWorld` + fixed-resolution camera + room/doorway/player/monster components render the domain-generated floor from run snapshots; the `EventBridge` (pure, tested for replay determinism) turns domain events into presentation effects (lunge, damage numbers, crit flash + shake, shield/heal/status bursts, death fades, loot sparkles). `RunEventBus` carries domain events from `RunController` to the game; the game screen embeds the `GameWidget` above the Flutter HUD. Criteria verified by tests: widget-env smoke tests pump a real `DungeonGame` over a domain-generated floor — rooms/player/monsters spawn from state, damage numbers and death fades appear and expire, player movement animates to the entered room; bridge tests assert exact translations and replay purity (state-sync never mutates engines). 156 tests green; `flutter analyze` clean; boundary check scans 73 pure-Dart files; macOS debug build succeeds.
 | Phase 5 | 2026-08-31 | ZCode assistant | All five tasks done. 10 routes with auth + run guards and deep-link-safe `/game/:runId`; 8 focused controllers (run, combat façade, account, settings w/ SharedPreferences persistence, inventory, progression, gacha banner listing, shop); content now loads from the real asset bundle via `AssetContentRepository`. Loading/empty/error states implemented on splash, dungeon selection, characters, gacha, inventory, and shop. Criteria verified by tests: navigation widget tests cover splash→login→home, guest sign-in, stale game deep-link fallback, and starting a run from the content-driven dungeon list; controller tests play a full cellar run to victory through the run controller and verify error surfacing without state corruption; settings tests cover write-through persistence and startup restore. 150 tests green; `flutter analyze` clean; boundary check scans 73 pure-Dart files; macOS debug build succeeds. |
 | Phase 1 |  |  |  |
 | Phase 2 |  |  |  |

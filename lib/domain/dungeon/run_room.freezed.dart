@@ -289,7 +289,9 @@ as int,
 /// @nodoc
 mixin _$RunRoom {
 
- int get index; RoomKind get kind; List<int> get doors; List<String> get monsterIds; List<RunLoot> get loot; bool get cleared;
+ int get index;/// Grid cell of this room on the floor, used by the presentation layer
+/// to place the room in the world.
+ int get x; int get y; RoomKind get kind; List<int> get doors; List<String> get monsterIds; List<RunLoot> get loot; bool get cleared;
 /// Create a copy of RunRoom
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -303,20 +305,20 @@ $RunRoomCopyWith<RunRoom> get copyWith => _$RunRoomCopyWithImpl<RunRoom>(this as
 @override
 bool operator ==(Object other) {
   final _this = this as RunRoom;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RunRoom&&(identical(other.index, _this.index) || other.index == _this.index)&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&const DeepCollectionEquality().equals(other.doors, _this.doors)&&const DeepCollectionEquality().equals(other.monsterIds, _this.monsterIds)&&const DeepCollectionEquality().equals(other.loot, _this.loot)&&(identical(other.cleared, _this.cleared) || other.cleared == _this.cleared));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RunRoom&&(identical(other.index, _this.index) || other.index == _this.index)&&(identical(other.x, _this.x) || other.x == _this.x)&&(identical(other.y, _this.y) || other.y == _this.y)&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&const DeepCollectionEquality().equals(other.doors, _this.doors)&&const DeepCollectionEquality().equals(other.monsterIds, _this.monsterIds)&&const DeepCollectionEquality().equals(other.loot, _this.loot)&&(identical(other.cleared, _this.cleared) || other.cleared == _this.cleared));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as RunRoom;
-  return Object.hash(runtimeType,_this.index,_this.kind,const DeepCollectionEquality().hash(_this.doors),const DeepCollectionEquality().hash(_this.monsterIds),const DeepCollectionEquality().hash(_this.loot),_this.cleared);
+  return Object.hash(runtimeType,_this.index,_this.x,_this.y,_this.kind,const DeepCollectionEquality().hash(_this.doors),const DeepCollectionEquality().hash(_this.monsterIds),const DeepCollectionEquality().hash(_this.loot),_this.cleared);
 }
 
 @override
 String toString() {
   final _this = this as RunRoom;
-  return 'RunRoom(index: ${_this.index}, kind: ${_this.kind}, doors: ${_this.doors}, monsterIds: ${_this.monsterIds}, loot: ${_this.loot}, cleared: ${_this.cleared})';
+  return 'RunRoom(index: ${_this.index}, x: ${_this.x}, y: ${_this.y}, kind: ${_this.kind}, doors: ${_this.doors}, monsterIds: ${_this.monsterIds}, loot: ${_this.loot}, cleared: ${_this.cleared})';
 }
 
 
@@ -327,7 +329,7 @@ abstract mixin class $RunRoomCopyWith<$Res>  {
   factory $RunRoomCopyWith(RunRoom value, $Res Function(RunRoom) _then) = _$RunRoomCopyWithImpl;
 @useResult
 $Res call({
- int index, RoomKind kind, List<int> doors, List<String> monsterIds, List<RunLoot> loot, bool cleared
+ int index, int x, int y, RoomKind kind, List<int> doors, List<String> monsterIds, List<RunLoot> loot, bool cleared
 });
 
 
@@ -344,9 +346,11 @@ class _$RunRoomCopyWithImpl<$Res>
 
 /// Create a copy of RunRoom
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? index = null,Object? kind = null,Object? doors = null,Object? monsterIds = null,Object? loot = null,Object? cleared = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? index = null,Object? x = null,Object? y = null,Object? kind = null,Object? doors = null,Object? monsterIds = null,Object? loot = null,Object? cleared = null,}) {
   return _then(RunRoom(
 index: null == index ? _self.index : index // ignore: cast_nullable_to_non_nullable
+as int,x: null == x ? _self.x : x // ignore: cast_nullable_to_non_nullable
+as int,y: null == y ? _self.y : y // ignore: cast_nullable_to_non_nullable
 as int,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
 as RoomKind,doors: null == doors ? _self.doors : doors // ignore: cast_nullable_to_non_nullable
 as List<int>,monsterIds: null == monsterIds ? _self.monsterIds : monsterIds // ignore: cast_nullable_to_non_nullable
@@ -437,10 +441,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int index,  RoomKind kind,  List<int> doors,  List<String> monsterIds,  List<RunLoot> loot,  bool cleared)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int index,  int x,  int y,  RoomKind kind,  List<int> doors,  List<String> monsterIds,  List<RunLoot> loot,  bool cleared)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _RunRoom() when $default != null:
-return $default(_that.index,_that.kind,_that.doors,_that.monsterIds,_that.loot,_that.cleared);case _:
+return $default(_that.index,_that.x,_that.y,_that.kind,_that.doors,_that.monsterIds,_that.loot,_that.cleared);case _:
   return orElse();
 
 }
@@ -458,10 +462,10 @@ return $default(_that.index,_that.kind,_that.doors,_that.monsterIds,_that.loot,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int index,  RoomKind kind,  List<int> doors,  List<String> monsterIds,  List<RunLoot> loot,  bool cleared)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int index,  int x,  int y,  RoomKind kind,  List<int> doors,  List<String> monsterIds,  List<RunLoot> loot,  bool cleared)  $default,) {final _that = this;
 switch (_that) {
 case _RunRoom():
-return $default(_that.index,_that.kind,_that.doors,_that.monsterIds,_that.loot,_that.cleared);case _:
+return $default(_that.index,_that.x,_that.y,_that.kind,_that.doors,_that.monsterIds,_that.loot,_that.cleared);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -478,10 +482,10 @@ return $default(_that.index,_that.kind,_that.doors,_that.monsterIds,_that.loot,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int index,  RoomKind kind,  List<int> doors,  List<String> monsterIds,  List<RunLoot> loot,  bool cleared)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int index,  int x,  int y,  RoomKind kind,  List<int> doors,  List<String> monsterIds,  List<RunLoot> loot,  bool cleared)?  $default,) {final _that = this;
 switch (_that) {
 case _RunRoom() when $default != null:
-return $default(_that.index,_that.kind,_that.doors,_that.monsterIds,_that.loot,_that.cleared);case _:
+return $default(_that.index,_that.x,_that.y,_that.kind,_that.doors,_that.monsterIds,_that.loot,_that.cleared);case _:
   return null;
 
 }
@@ -493,10 +497,14 @@ return $default(_that.index,_that.kind,_that.doors,_that.monsterIds,_that.loot,_
 @JsonSerializable()
 
 class _RunRoom implements RunRoom {
-  const _RunRoom({required this.index, required this.kind,  List<int> doors = const [],  List<String> monsterIds = const [],  List<RunLoot> loot = const [], this.cleared = false}): _doors = doors,_monsterIds = monsterIds,_loot = loot;
+  const _RunRoom({required this.index, required this.x, required this.y, required this.kind,  List<int> doors = const [],  List<String> monsterIds = const [],  List<RunLoot> loot = const [], this.cleared = false}): _doors = doors,_monsterIds = monsterIds,_loot = loot;
   factory _RunRoom.fromJson(Map<String, dynamic> json) => _$RunRoomFromJson(json);
 
 @override final  int index;
+/// Grid cell of this room on the floor, used by the presentation layer
+/// to place the room in the world.
+@override final  int x;
+@override final  int y;
 @override final  RoomKind kind;
  final  List<int> _doors;
 @override@JsonKey() List<int> get doors {
@@ -534,18 +542,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RunRoom&&(identical(other.index, index) || other.index == index)&&(identical(other.kind, kind) || other.kind == kind)&&const DeepCollectionEquality().equals(other.doors, _doors)&&const DeepCollectionEquality().equals(other.monsterIds, _monsterIds)&&const DeepCollectionEquality().equals(other.loot, _loot)&&(identical(other.cleared, cleared) || other.cleared == cleared));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RunRoom&&(identical(other.index, index) || other.index == index)&&(identical(other.x, x) || other.x == x)&&(identical(other.y, y) || other.y == y)&&(identical(other.kind, kind) || other.kind == kind)&&const DeepCollectionEquality().equals(other.doors, _doors)&&const DeepCollectionEquality().equals(other.monsterIds, _monsterIds)&&const DeepCollectionEquality().equals(other.loot, _loot)&&(identical(other.cleared, cleared) || other.cleared == cleared));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,index,kind,const DeepCollectionEquality().hash(_doors),const DeepCollectionEquality().hash(_monsterIds),const DeepCollectionEquality().hash(_loot),cleared);
+    return Object.hash(runtimeType,index,x,y,kind,const DeepCollectionEquality().hash(_doors),const DeepCollectionEquality().hash(_monsterIds),const DeepCollectionEquality().hash(_loot),cleared);
 }
 
 @override
 String toString() {
-    return 'RunRoom(index: $index, kind: $kind, doors: $doors, monsterIds: $monsterIds, loot: $loot, cleared: $cleared)';
+    return 'RunRoom(index: $index, x: $x, y: $y, kind: $kind, doors: $doors, monsterIds: $monsterIds, loot: $loot, cleared: $cleared)';
 }
 
 
@@ -556,7 +564,7 @@ abstract mixin class _$RunRoomCopyWith<$Res> implements $RunRoomCopyWith<$Res> {
   factory _$RunRoomCopyWith(_RunRoom value, $Res Function(_RunRoom) _then) = __$RunRoomCopyWithImpl;
 @override @useResult
 $Res call({
- int index, RoomKind kind, List<int> doors, List<String> monsterIds, List<RunLoot> loot, bool cleared
+ int index, int x, int y, RoomKind kind, List<int> doors, List<String> monsterIds, List<RunLoot> loot, bool cleared
 });
 
 
@@ -573,9 +581,11 @@ class __$RunRoomCopyWithImpl<$Res>
 
 /// Create a copy of RunRoom
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? index = null,Object? kind = null,Object? doors = null,Object? monsterIds = null,Object? loot = null,Object? cleared = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? index = null,Object? x = null,Object? y = null,Object? kind = null,Object? doors = null,Object? monsterIds = null,Object? loot = null,Object? cleared = null,}) {
   return _then(_RunRoom(
 index: null == index ? _self.index : index // ignore: cast_nullable_to_non_nullable
+as int,x: null == x ? _self.x : x // ignore: cast_nullable_to_non_nullable
+as int,y: null == y ? _self.y : y // ignore: cast_nullable_to_non_nullable
 as int,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
 as RoomKind,doors: null == doors ? _self._doors : doors // ignore: cast_nullable_to_non_nullable
 as List<int>,monsterIds: null == monsterIds ? _self._monsterIds : monsterIds // ignore: cast_nullable_to_non_nullable

@@ -29,10 +29,12 @@ List<RunRoom> generateDungeonFloor({
   final roomCount = dungeon.roomsPerFloor.sample(random);
 
   final positions = <(int, int), int>{};
+  final cells = List<(int, int)>.filled(roomCount, (0, 0));
   final doors = List<List<int>>.generate(roomCount, (_) => <int>[]);
 
   void place(int index, (int, int) cell, int? parent) {
     positions[cell] = index;
+    cells[index] = cell;
     if (parent != null) {
       doors[parent].add(index);
       doors[index].add(parent);
@@ -95,7 +97,13 @@ List<RunRoom> generateDungeonFloor({
           ? RoomKind.treasure
           : RoomKind.event;
     }
-    return RunRoom(index: index, kind: kind, doors: doors[index]);
+    return RunRoom(
+      index: index,
+      x: cells[index].$1,
+      y: cells[index].$2,
+      kind: kind,
+      doors: doors[index],
+    );
   });
 
   // Pre-roll encounters and treasure, walking rooms in index order so the
