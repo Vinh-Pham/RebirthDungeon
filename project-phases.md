@@ -16,7 +16,7 @@ This checklist converts `dart-game-plan.md` into an implementation sequence. Pha
 - [ ] Phase 0 — Project bootstrap and engineering baseline
 - [x] Phase 1 — Core domain foundations and deterministic randomness
 - [x] Phase 2 — Data-driven game content
-- [ ] Phase 3 — Dice combat engine
+- [x] Phase 3 — Dice combat engine
 - [ ] Phase 4 — Dungeon generation and run model
 - [ ] Phase 5 — Flutter application shell and Riverpod orchestration
 - [ ] Phase 6 — Flame dungeon presentation and event bridge
@@ -102,12 +102,28 @@ Completion criteria:
 
 ## Phase 3 — Dice Combat Engine
 
-- [ ] Model immutable `CombatState`, combatants, dice pools, abilities, buffs, debuffs, turns, and combat phases.
-- [ ] Implement commands for starting combat, rolling, rerolling, assigning dice, using abilities, ending turns, and enemy actions.
-- [ ] Implement damage, healing, critical hits, shields, defeat, victory, and status-effect timing.
-- [ ] Return updated state plus domain events for every resolved command.
-- [ ] Implement deterministic enemy decision logic suitable for the first prototype.
-- [ ] Add focused unit tests for rules, phase transitions, illegal commands, and edge cases.
+- [x] Model immutable `CombatState`, combatants, dice pools, abilities, buffs, debuffs, turns, and combat phases.
+- [x] Implement commands for starting combat, rolling, rerolling, assigning dice, using abilities, ending turns, and enemy actions.
+- [x] Implement damage, healing, critical hits, shields, defeat, victory, and status-effect timing.
+- [x] Return updated state plus domain events for every resolved command.
+- [x] Implement deterministic enemy decision logic suitable for the first prototype.
+- [x] Add focused unit tests for rules, phase transitions, illegal commands, and edge cases.
+
+Note (2026-08-31): engine lives in `lib/domain/combat/` (`CombatState`,
+`CombatEngine`, command/event unions, serializable combatants/dice/statuses).
+Rules: damage = `power roll + effective attack`, any consumed max-face die
+crits (doubles), defense subtracts first (min 1), shield absorbs before HP,
+debuffs tick at the bearer's turn start bypassing defense/shield, buffs add
+potency to attack, reapplication keeps max potency/duration. Enemies pick
+their strongest ability (`power.max/min/id` order) or a basic strike derived
+from their attack stat; `EnemyAct` resolves one enemy per command so
+presentation can animate between actions. Phase 2 schemas were extended
+(data-driven dice/status riders): `HeroData.dieId` (default `die_standard`)
+and `AbilityData.statusId` (applied as an on-hit rider), both validated in
+`GameContent`; schemaVersion stays 1 — no saves exist yet. The state machine
+uses the observable phases `rolling → awaitingPlayerAction → enemyTurn →
+victory/defeat`; the plan's transient `startTurn`/`resolvingAction` phases
+are resolved inline. The combat RNG is injected, never stored in state.
 
 Completion criteria:
 
@@ -299,6 +315,7 @@ Record phase completion here so later assistants can quickly identify when and w
 | Phase 0 | 2026-08-31 (tasks) | ZCode assistant | All five tasks done and verified: `make check` green (format, `flutter analyze` no issues, boundary check, `flutter test` 1/1); builds verified — macOS debug `.app` (launched and quit cleanly), Android debug APK, iOS simulator Runner.app. Phase box intentionally left unchecked: Linux/Windows builds could not be verified on this macOS host (and `riverpod_generator` codegen path is exercised but no generated models exist until Phase 1+). Check the phase box after verifying Linux/Windows builds on a compatible host or in CI. |
 | Phase 1 | 2026-08-31 | ZCode assistant | All five tasks done. Foundations in `lib/core/`: `RandomSource` + `SeededRandomSource` + `FakeRandomSource` + `deriveSeed` (combat/gacha channel separation), `TimeSource`/`IdGenerator` abstractions with fakes, `ContentId` convention, `Failure` union (freezed) + `DomainException`, `GameCommand`/`GameEvent`/`EngineResult`/`DomainEngine` contracts, `IntRange` value object (json_serializable). 54 tests green; `flutter analyze` clean; boundary check scans 12 pure-Dart files. Seeded repeatability, exact-value faking, and platform-free domains are covered by tests in `test/core/`. |
 | Phase 2 | 2026-08-31 | ZCode assistant | All five tasks done. 11 schema types in `lib/domain/content/`; starter content set (2 heroes, 4 monsters incl. a boss, 2 dice, 6 abilities, 2 status effects, 4 items, 2 loot tables, 1 dungeon, 1 banner, 1 rarity table, 1 xp curve) under `assets/data/`, declared in pubspec and validated by a rootBundle-based test. `GameContent.parse` validates ids, cross-table references, weights, ranges, banner dates, and schemaVersion, aggregating all failures with `file[index].field` paths. 86 tests green; `flutter analyze` clean; boundary check scans 47 pure-Dart files. |
+| Phase 3 | 2026-08-31 | ZCode assistant | All six tasks done. `CombatEngine` + immutable serializable `CombatState` in `lib/domain/combat/`; all 7 plan commands; damage/heal/crit/shield/defeat/victory plus status ticking, expiry, and reapplication rules; deterministic enemy AI (strongest ability or stat-derived basic strike). Completion criteria verified: scripted headless auto-play reaches victory vs a goblin and defeat vs the Bone King; seeded runs with identical seeds produce identical states and event lists; dedicated tests cover the two-sixes crit, single-max-face crit, shield absorbing before HP, poison ticks/expiry/reapplication, poison kills (including mid-enemy-turn), enemy defeat, and player defeat. Phase 2 schemas gained `HeroData.dieId` and `AbilityData.statusId` with content validation; starter heroes/abilities updated. 117 tests green; `flutter analyze` clean; boundary check scans 61 pure-Dart files. |
 | Phase 1 |  |  |  |
 | Phase 2 |  |  |  |
 | Phase 3 |  |  |  |

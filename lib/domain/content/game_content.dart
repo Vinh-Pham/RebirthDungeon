@@ -390,6 +390,8 @@ class GameContent {
     final itemIds = items.map((i) => i.id).toSet();
     final lootTableIds = lootTables.map((l) => l.id).toSet();
     final heroIds = heroes.map((h) => h.id).toSet();
+    final dieIds = dice.map((d) => d.id).toSet();
+    final statusEffectIds = statusEffects.map((s) => s.id).toSet();
     final rarityTableIds = rarityTables.map((r) => r.id).toSet();
     final rarityTierIds = <String>{
       for (final table in rarityTables)
@@ -410,6 +412,12 @@ class GameContent {
       ctx.nonNegative(hero.baseAttack, '$base.baseAttack', 'baseAttack');
       ctx.nonNegative(hero.baseDefense, '$base.baseDefense', 'baseDefense');
       ctx.inclusiveRange(hero.dieCount, 1, 8, '$base.dieCount', 'dieCount');
+      ctx.reference(
+        refId: hero.dieId,
+        path: '$base.dieId',
+        refKind: 'die',
+        known: dieIds,
+      );
       ctx.nonEmptyList(hero.abilityIds, '$base.abilityIds', 'abilityIds');
       for (var j = 0; j < hero.abilityIds.length; j++) {
         ctx.reference(
@@ -471,6 +479,12 @@ class GameContent {
       ctx.nonEmpty(ability.name, '$base.name', 'ability name');
       ctx.nonNegative(ability.power.min, '$base.power.min', 'power.min');
       ctx.inclusiveRange(ability.dieCost, 1, 5, '$base.dieCost', 'dieCost');
+      ctx.reference(
+        refId: ability.statusId,
+        path: '$base.statusId',
+        refKind: 'status effect',
+        known: statusEffectIds,
+      );
     }
 
     for (var i = 0; i < statusEffects.length; i++) {

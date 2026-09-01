@@ -16,7 +16,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$AbilityData {
 
- String get id; String get name; String get description; AbilityEffect get effect; IntRange get power; int get dieCost;
+ String get id; String get name; String get description; AbilityEffect get effect; IntRange get power; int get dieCost; String? get statusId;
 /// Create a copy of AbilityData
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -30,20 +30,20 @@ $AbilityDataCopyWith<AbilityData> get copyWith => _$AbilityDataCopyWithImpl<Abil
 @override
 bool operator ==(Object other) {
   final _this = this as AbilityData;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AbilityData&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.description, _this.description) || other.description == _this.description)&&(identical(other.effect, _this.effect) || other.effect == _this.effect)&&(identical(other.power, _this.power) || other.power == _this.power)&&(identical(other.dieCost, _this.dieCost) || other.dieCost == _this.dieCost));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AbilityData&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.description, _this.description) || other.description == _this.description)&&(identical(other.effect, _this.effect) || other.effect == _this.effect)&&(identical(other.power, _this.power) || other.power == _this.power)&&(identical(other.dieCost, _this.dieCost) || other.dieCost == _this.dieCost)&&(identical(other.statusId, _this.statusId) || other.statusId == _this.statusId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as AbilityData;
-  return Object.hash(runtimeType,_this.id,_this.name,_this.description,_this.effect,_this.power,_this.dieCost);
+  return Object.hash(runtimeType,_this.id,_this.name,_this.description,_this.effect,_this.power,_this.dieCost,_this.statusId);
 }
 
 @override
 String toString() {
   final _this = this as AbilityData;
-  return 'AbilityData(id: ${_this.id}, name: ${_this.name}, description: ${_this.description}, effect: ${_this.effect}, power: ${_this.power}, dieCost: ${_this.dieCost})';
+  return 'AbilityData(id: ${_this.id}, name: ${_this.name}, description: ${_this.description}, effect: ${_this.effect}, power: ${_this.power}, dieCost: ${_this.dieCost}, statusId: ${_this.statusId})';
 }
 
 
@@ -54,7 +54,7 @@ abstract mixin class $AbilityDataCopyWith<$Res>  {
   factory $AbilityDataCopyWith(AbilityData value, $Res Function(AbilityData) _then) = _$AbilityDataCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, String description, AbilityEffect effect, IntRange power, int dieCost
+ String id, String name, String description, AbilityEffect effect, IntRange power, int dieCost, String? statusId
 });
 
 
@@ -71,7 +71,7 @@ class _$AbilityDataCopyWithImpl<$Res>
 
 /// Create a copy of AbilityData
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? description = null,Object? effect = null,Object? power = null,Object? dieCost = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? description = null,Object? effect = null,Object? power = null,Object? dieCost = null,Object? statusId = freezed,}) {
   return _then(AbilityData(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -79,7 +79,8 @@ as String,description: null == description ? _self.description : description // 
 as String,effect: null == effect ? _self.effect : effect // ignore: cast_nullable_to_non_nullable
 as AbilityEffect,power: null == power ? _self.power : power // ignore: cast_nullable_to_non_nullable
 as IntRange,dieCost: null == dieCost ? _self.dieCost : dieCost // ignore: cast_nullable_to_non_nullable
-as int,
+as int,statusId: freezed == statusId ? _self.statusId : statusId // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -164,10 +165,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String description,  AbilityEffect effect,  IntRange power,  int dieCost)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String description,  AbilityEffect effect,  IntRange power,  int dieCost,  String? statusId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AbilityData() when $default != null:
-return $default(_that.id,_that.name,_that.description,_that.effect,_that.power,_that.dieCost);case _:
+return $default(_that.id,_that.name,_that.description,_that.effect,_that.power,_that.dieCost,_that.statusId);case _:
   return orElse();
 
 }
@@ -185,10 +186,10 @@ return $default(_that.id,_that.name,_that.description,_that.effect,_that.power,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String description,  AbilityEffect effect,  IntRange power,  int dieCost)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String description,  AbilityEffect effect,  IntRange power,  int dieCost,  String? statusId)  $default,) {final _that = this;
 switch (_that) {
 case _AbilityData():
-return $default(_that.id,_that.name,_that.description,_that.effect,_that.power,_that.dieCost);case _:
+return $default(_that.id,_that.name,_that.description,_that.effect,_that.power,_that.dieCost,_that.statusId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -205,10 +206,10 @@ return $default(_that.id,_that.name,_that.description,_that.effect,_that.power,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String description,  AbilityEffect effect,  IntRange power,  int dieCost)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String description,  AbilityEffect effect,  IntRange power,  int dieCost,  String? statusId)?  $default,) {final _that = this;
 switch (_that) {
 case _AbilityData() when $default != null:
-return $default(_that.id,_that.name,_that.description,_that.effect,_that.power,_that.dieCost);case _:
+return $default(_that.id,_that.name,_that.description,_that.effect,_that.power,_that.dieCost,_that.statusId);case _:
   return null;
 
 }
@@ -220,7 +221,7 @@ return $default(_that.id,_that.name,_that.description,_that.effect,_that.power,_
 @JsonSerializable()
 
 class _AbilityData implements AbilityData {
-  const _AbilityData({required this.id, required this.name, this.description = '', required this.effect, required this.power, this.dieCost = 1});
+  const _AbilityData({required this.id, required this.name, this.description = '', required this.effect, required this.power, this.dieCost = 1, this.statusId});
   factory _AbilityData.fromJson(Map<String, dynamic> json) => _$AbilityDataFromJson(json);
 
 @override final  String id;
@@ -229,6 +230,7 @@ class _AbilityData implements AbilityData {
 @override final  AbilityEffect effect;
 @override final  IntRange power;
 @override@JsonKey() final  int dieCost;
+@override final  String? statusId;
 
 /// Create a copy of AbilityData
 /// with the given fields replaced by the non-null parameter values.
@@ -243,18 +245,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _AbilityData&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.effect, effect) || other.effect == effect)&&(identical(other.power, power) || other.power == power)&&(identical(other.dieCost, dieCost) || other.dieCost == dieCost));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _AbilityData&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.effect, effect) || other.effect == effect)&&(identical(other.power, power) || other.power == power)&&(identical(other.dieCost, dieCost) || other.dieCost == dieCost)&&(identical(other.statusId, statusId) || other.statusId == statusId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,name,description,effect,power,dieCost);
+    return Object.hash(runtimeType,id,name,description,effect,power,dieCost,statusId);
 }
 
 @override
 String toString() {
-    return 'AbilityData(id: $id, name: $name, description: $description, effect: $effect, power: $power, dieCost: $dieCost)';
+    return 'AbilityData(id: $id, name: $name, description: $description, effect: $effect, power: $power, dieCost: $dieCost, statusId: $statusId)';
 }
 
 
@@ -265,7 +267,7 @@ abstract mixin class _$AbilityDataCopyWith<$Res> implements $AbilityDataCopyWith
   factory _$AbilityDataCopyWith(_AbilityData value, $Res Function(_AbilityData) _then) = __$AbilityDataCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, String description, AbilityEffect effect, IntRange power, int dieCost
+ String id, String name, String description, AbilityEffect effect, IntRange power, int dieCost, String? statusId
 });
 
 
@@ -282,7 +284,7 @@ class __$AbilityDataCopyWithImpl<$Res>
 
 /// Create a copy of AbilityData
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? description = null,Object? effect = null,Object? power = null,Object? dieCost = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? description = null,Object? effect = null,Object? power = null,Object? dieCost = null,Object? statusId = freezed,}) {
   return _then(_AbilityData(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -290,7 +292,8 @@ as String,description: null == description ? _self.description : description // 
 as String,effect: null == effect ? _self.effect : effect // ignore: cast_nullable_to_non_nullable
 as AbilityEffect,power: null == power ? _self.power : power // ignore: cast_nullable_to_non_nullable
 as IntRange,dieCost: null == dieCost ? _self.dieCost : dieCost // ignore: cast_nullable_to_non_nullable
-as int,
+as int,statusId: freezed == statusId ? _self.statusId : statusId // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

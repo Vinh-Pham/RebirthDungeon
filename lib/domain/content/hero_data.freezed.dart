@@ -16,7 +16,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$HeroData {
 
- String get id; String get name; String get description; int get baseHp; int get baseAttack; int get baseDefense; int get dieCount; List<String> get abilityIds;
+ String get id; String get name; String get description; int get baseHp; int get baseAttack; int get baseDefense; int get dieCount; String get dieId; List<String> get abilityIds;
 /// Create a copy of HeroData
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -30,20 +30,20 @@ $HeroDataCopyWith<HeroData> get copyWith => _$HeroDataCopyWithImpl<HeroData>(thi
 @override
 bool operator ==(Object other) {
   final _this = this as HeroData;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is HeroData&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.description, _this.description) || other.description == _this.description)&&(identical(other.baseHp, _this.baseHp) || other.baseHp == _this.baseHp)&&(identical(other.baseAttack, _this.baseAttack) || other.baseAttack == _this.baseAttack)&&(identical(other.baseDefense, _this.baseDefense) || other.baseDefense == _this.baseDefense)&&(identical(other.dieCount, _this.dieCount) || other.dieCount == _this.dieCount)&&const DeepCollectionEquality().equals(other.abilityIds, _this.abilityIds));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is HeroData&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.description, _this.description) || other.description == _this.description)&&(identical(other.baseHp, _this.baseHp) || other.baseHp == _this.baseHp)&&(identical(other.baseAttack, _this.baseAttack) || other.baseAttack == _this.baseAttack)&&(identical(other.baseDefense, _this.baseDefense) || other.baseDefense == _this.baseDefense)&&(identical(other.dieCount, _this.dieCount) || other.dieCount == _this.dieCount)&&(identical(other.dieId, _this.dieId) || other.dieId == _this.dieId)&&const DeepCollectionEquality().equals(other.abilityIds, _this.abilityIds));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as HeroData;
-  return Object.hash(runtimeType,_this.id,_this.name,_this.description,_this.baseHp,_this.baseAttack,_this.baseDefense,_this.dieCount,const DeepCollectionEquality().hash(_this.abilityIds));
+  return Object.hash(runtimeType,_this.id,_this.name,_this.description,_this.baseHp,_this.baseAttack,_this.baseDefense,_this.dieCount,_this.dieId,const DeepCollectionEquality().hash(_this.abilityIds));
 }
 
 @override
 String toString() {
   final _this = this as HeroData;
-  return 'HeroData(id: ${_this.id}, name: ${_this.name}, description: ${_this.description}, baseHp: ${_this.baseHp}, baseAttack: ${_this.baseAttack}, baseDefense: ${_this.baseDefense}, dieCount: ${_this.dieCount}, abilityIds: ${_this.abilityIds})';
+  return 'HeroData(id: ${_this.id}, name: ${_this.name}, description: ${_this.description}, baseHp: ${_this.baseHp}, baseAttack: ${_this.baseAttack}, baseDefense: ${_this.baseDefense}, dieCount: ${_this.dieCount}, dieId: ${_this.dieId}, abilityIds: ${_this.abilityIds})';
 }
 
 
@@ -54,7 +54,7 @@ abstract mixin class $HeroDataCopyWith<$Res>  {
   factory $HeroDataCopyWith(HeroData value, $Res Function(HeroData) _then) = _$HeroDataCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, String description, int baseHp, int baseAttack, int baseDefense, int dieCount, List<String> abilityIds
+ String id, String name, String description, int baseHp, int baseAttack, int baseDefense, int dieCount, String dieId, List<String> abilityIds
 });
 
 
@@ -71,7 +71,7 @@ class _$HeroDataCopyWithImpl<$Res>
 
 /// Create a copy of HeroData
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? description = null,Object? baseHp = null,Object? baseAttack = null,Object? baseDefense = null,Object? dieCount = null,Object? abilityIds = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? description = null,Object? baseHp = null,Object? baseAttack = null,Object? baseDefense = null,Object? dieCount = null,Object? dieId = null,Object? abilityIds = null,}) {
   return _then(HeroData(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -80,7 +80,8 @@ as String,baseHp: null == baseHp ? _self.baseHp : baseHp // ignore: cast_nullabl
 as int,baseAttack: null == baseAttack ? _self.baseAttack : baseAttack // ignore: cast_nullable_to_non_nullable
 as int,baseDefense: null == baseDefense ? _self.baseDefense : baseDefense // ignore: cast_nullable_to_non_nullable
 as int,dieCount: null == dieCount ? _self.dieCount : dieCount // ignore: cast_nullable_to_non_nullable
-as int,abilityIds: null == abilityIds ? _self.abilityIds : abilityIds // ignore: cast_nullable_to_non_nullable
+as int,dieId: null == dieId ? _self.dieId : dieId // ignore: cast_nullable_to_non_nullable
+as String,abilityIds: null == abilityIds ? _self.abilityIds : abilityIds // ignore: cast_nullable_to_non_nullable
 as List<String>,
   ));
 }
@@ -166,10 +167,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String description,  int baseHp,  int baseAttack,  int baseDefense,  int dieCount,  List<String> abilityIds)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String description,  int baseHp,  int baseAttack,  int baseDefense,  int dieCount,  String dieId,  List<String> abilityIds)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _HeroData() when $default != null:
-return $default(_that.id,_that.name,_that.description,_that.baseHp,_that.baseAttack,_that.baseDefense,_that.dieCount,_that.abilityIds);case _:
+return $default(_that.id,_that.name,_that.description,_that.baseHp,_that.baseAttack,_that.baseDefense,_that.dieCount,_that.dieId,_that.abilityIds);case _:
   return orElse();
 
 }
@@ -187,10 +188,10 @@ return $default(_that.id,_that.name,_that.description,_that.baseHp,_that.baseAtt
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String description,  int baseHp,  int baseAttack,  int baseDefense,  int dieCount,  List<String> abilityIds)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String description,  int baseHp,  int baseAttack,  int baseDefense,  int dieCount,  String dieId,  List<String> abilityIds)  $default,) {final _that = this;
 switch (_that) {
 case _HeroData():
-return $default(_that.id,_that.name,_that.description,_that.baseHp,_that.baseAttack,_that.baseDefense,_that.dieCount,_that.abilityIds);case _:
+return $default(_that.id,_that.name,_that.description,_that.baseHp,_that.baseAttack,_that.baseDefense,_that.dieCount,_that.dieId,_that.abilityIds);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -207,10 +208,10 @@ return $default(_that.id,_that.name,_that.description,_that.baseHp,_that.baseAtt
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String description,  int baseHp,  int baseAttack,  int baseDefense,  int dieCount,  List<String> abilityIds)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String description,  int baseHp,  int baseAttack,  int baseDefense,  int dieCount,  String dieId,  List<String> abilityIds)?  $default,) {final _that = this;
 switch (_that) {
 case _HeroData() when $default != null:
-return $default(_that.id,_that.name,_that.description,_that.baseHp,_that.baseAttack,_that.baseDefense,_that.dieCount,_that.abilityIds);case _:
+return $default(_that.id,_that.name,_that.description,_that.baseHp,_that.baseAttack,_that.baseDefense,_that.dieCount,_that.dieId,_that.abilityIds);case _:
   return null;
 
 }
@@ -222,7 +223,7 @@ return $default(_that.id,_that.name,_that.description,_that.baseHp,_that.baseAtt
 @JsonSerializable()
 
 class _HeroData implements HeroData {
-  const _HeroData({required this.id, required this.name, this.description = '', required this.baseHp, required this.baseAttack, required this.baseDefense, required this.dieCount,  List<String> abilityIds = const []}): _abilityIds = abilityIds;
+  const _HeroData({required this.id, required this.name, this.description = '', required this.baseHp, required this.baseAttack, required this.baseDefense, required this.dieCount, this.dieId = 'die_standard',  List<String> abilityIds = const []}): _abilityIds = abilityIds;
   factory _HeroData.fromJson(Map<String, dynamic> json) => _$HeroDataFromJson(json);
 
 @override final  String id;
@@ -232,6 +233,7 @@ class _HeroData implements HeroData {
 @override final  int baseAttack;
 @override final  int baseDefense;
 @override final  int dieCount;
+@override@JsonKey() final  String dieId;
  final  List<String> _abilityIds;
 @override@JsonKey() List<String> get abilityIds {
   if (_abilityIds is EqualUnmodifiableListView) return _abilityIds;
@@ -253,18 +255,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _HeroData&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.baseHp, baseHp) || other.baseHp == baseHp)&&(identical(other.baseAttack, baseAttack) || other.baseAttack == baseAttack)&&(identical(other.baseDefense, baseDefense) || other.baseDefense == baseDefense)&&(identical(other.dieCount, dieCount) || other.dieCount == dieCount)&&const DeepCollectionEquality().equals(other.abilityIds, _abilityIds));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _HeroData&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.baseHp, baseHp) || other.baseHp == baseHp)&&(identical(other.baseAttack, baseAttack) || other.baseAttack == baseAttack)&&(identical(other.baseDefense, baseDefense) || other.baseDefense == baseDefense)&&(identical(other.dieCount, dieCount) || other.dieCount == dieCount)&&(identical(other.dieId, dieId) || other.dieId == dieId)&&const DeepCollectionEquality().equals(other.abilityIds, _abilityIds));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,name,description,baseHp,baseAttack,baseDefense,dieCount,const DeepCollectionEquality().hash(_abilityIds));
+    return Object.hash(runtimeType,id,name,description,baseHp,baseAttack,baseDefense,dieCount,dieId,const DeepCollectionEquality().hash(_abilityIds));
 }
 
 @override
 String toString() {
-    return 'HeroData(id: $id, name: $name, description: $description, baseHp: $baseHp, baseAttack: $baseAttack, baseDefense: $baseDefense, dieCount: $dieCount, abilityIds: $abilityIds)';
+    return 'HeroData(id: $id, name: $name, description: $description, baseHp: $baseHp, baseAttack: $baseAttack, baseDefense: $baseDefense, dieCount: $dieCount, dieId: $dieId, abilityIds: $abilityIds)';
 }
 
 
@@ -275,7 +277,7 @@ abstract mixin class _$HeroDataCopyWith<$Res> implements $HeroDataCopyWith<$Res>
   factory _$HeroDataCopyWith(_HeroData value, $Res Function(_HeroData) _then) = __$HeroDataCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, String description, int baseHp, int baseAttack, int baseDefense, int dieCount, List<String> abilityIds
+ String id, String name, String description, int baseHp, int baseAttack, int baseDefense, int dieCount, String dieId, List<String> abilityIds
 });
 
 
@@ -292,7 +294,7 @@ class __$HeroDataCopyWithImpl<$Res>
 
 /// Create a copy of HeroData
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? description = null,Object? baseHp = null,Object? baseAttack = null,Object? baseDefense = null,Object? dieCount = null,Object? abilityIds = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? description = null,Object? baseHp = null,Object? baseAttack = null,Object? baseDefense = null,Object? dieCount = null,Object? dieId = null,Object? abilityIds = null,}) {
   return _then(_HeroData(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -301,7 +303,8 @@ as String,baseHp: null == baseHp ? _self.baseHp : baseHp // ignore: cast_nullabl
 as int,baseAttack: null == baseAttack ? _self.baseAttack : baseAttack // ignore: cast_nullable_to_non_nullable
 as int,baseDefense: null == baseDefense ? _self.baseDefense : baseDefense // ignore: cast_nullable_to_non_nullable
 as int,dieCount: null == dieCount ? _self.dieCount : dieCount // ignore: cast_nullable_to_non_nullable
-as int,abilityIds: null == abilityIds ? _self._abilityIds : abilityIds // ignore: cast_nullable_to_non_nullable
+as int,dieId: null == dieId ? _self.dieId : dieId // ignore: cast_nullable_to_non_nullable
+as String,abilityIds: null == abilityIds ? _self._abilityIds : abilityIds // ignore: cast_nullable_to_non_nullable
 as List<String>,
   ));
 }

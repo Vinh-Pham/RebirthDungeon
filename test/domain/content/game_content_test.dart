@@ -27,7 +27,7 @@ void main() {
       final content = GameContent.parse(validContentSet());
 
       expect(content.heroes, hasLength(2));
-      expect(content.monsters, hasLength(2));
+      expect(content.monsters, hasLength(3));
       expect(content.hero('hero_knight').name, 'Knight');
       expect(content.monster('goblin_01').hp, 18);
       expect(content.ability('slash').power.max, 6);

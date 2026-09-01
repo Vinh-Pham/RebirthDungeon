@@ -14,6 +14,7 @@ _HeroData _$HeroDataFromJson(Map<String, dynamic> json) => _HeroData(
   baseAttack: (json['baseAttack'] as num).toInt(),
   baseDefense: (json['baseDefense'] as num).toInt(),
   dieCount: (json['dieCount'] as num).toInt(),
+  dieId: json['dieId'] as String? ?? 'die_standard',
   abilityIds:
       (json['abilityIds'] as List<dynamic>?)
           ?.map((e) => e as String)
@@ -29,5 +30,6 @@ Map<String, dynamic> _$HeroDataToJson(_HeroData instance) => <String, dynamic>{
   'baseAttack': instance.baseAttack,
   'baseDefense': instance.baseDefense,
   'dieCount': instance.dieCount,
+  'dieId': instance.dieId,
   'abilityIds': instance.abilityIds,
 };

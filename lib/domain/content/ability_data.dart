@@ -9,6 +9,9 @@ part 'ability_data.g.dart';
 enum AbilityEffect { damage, heal, shield }
 
 /// Data-driven definition of an ability (`assets/data/abilities.json`).
+///
+/// When [statusId] is set, activating the ability also applies that status
+/// effect to the target (e.g. a strike that poisons).
 @freezed
 abstract class AbilityData with _$AbilityData {
   const factory AbilityData({
@@ -18,6 +21,7 @@ abstract class AbilityData with _$AbilityData {
     required AbilityEffect effect,
     required IntRange power,
     @Default(1) int dieCost,
+    String? statusId,
   }) = _AbilityData;
 
   factory AbilityData.fromJson(Map<String, dynamic> json) =>

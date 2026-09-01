@@ -9,6 +9,7 @@
       "baseAttack": 2,
       "baseDefense": 2,
       "dieCount": 3,
+      "dieId": "die_standard",
       "abilityIds": ["slash", "power_strike", "shield_wall"]
     },
     {
@@ -19,6 +20,7 @@
       "baseAttack": 3,
       "baseDefense": 0,
       "dieCount": 4,
+      "dieId": "die_standard",
       "abilityIds": ["fireball", "heal"]
     }
   ]

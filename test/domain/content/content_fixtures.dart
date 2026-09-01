@@ -15,18 +15,27 @@ Map<String, Object?> validContentSet() {
         name: 'Mage',
         baseHp: 20,
         dieCount: 4,
-        abilityIds: const ['fireball'],
+        abilityIds: const ['fireball', 'heal'],
       ),
     ]),
     ContentFiles.monsters: file([
       monsterJson(),
+      monsterJson(
+        id: 'skeleton_01',
+        name: 'Skeleton',
+        hp: 22,
+        attack: 3,
+        defense: 2,
+        abilityIds: const ['poison_strike'],
+        xpReward: const {'min': 5, 'max': 8},
+      ),
       monsterJson(
         id: 'bone_king',
         name: 'Bone King',
         hp: 60,
         attack: 5,
         defense: 3,
-        abilityIds: const ['slash'],
+        abilityIds: const ['slash', 'power_strike'],
         xpReward: const {'min': 20, 'max': 30},
         lootTableId: 'loot_basic',
       ),
@@ -44,6 +53,24 @@ Map<String, Object?> validContentSet() {
         id: 'heal',
         effect: 'heal',
         power: const {'min': 3, 'max': 7},
+      ),
+      abilityJson(
+        id: 'shield_wall',
+        effect: 'shield',
+        power: const {'min': 2, 'max': 5},
+        dieCost: 2,
+      ),
+      abilityJson(
+        id: 'poison_strike',
+        effect: 'damage',
+        power: const {'min': 1, 'max': 3},
+        statusId: 'poison',
+      ),
+      abilityJson(
+        id: 'power_strike',
+        effect: 'damage',
+        power: const {'min': 6, 'max': 12},
+        dieCost: 3,
       ),
     ]),
     ContentFiles.statusEffects: file([statusEffectJson()]),
@@ -83,7 +110,8 @@ Map<String, Object?> heroJson({
   int baseAttack = 2,
   int baseDefense = 1,
   int dieCount = 3,
-  List<Object?> abilityIds = const ['slash'],
+  String dieId = 'die_standard',
+  List<Object?> abilityIds = const ['slash', 'shield_wall', 'poison_strike'],
 }) => <String, Object?>{
   'id': id,
   'name': name,
@@ -91,6 +119,7 @@ Map<String, Object?> heroJson({
   'baseAttack': baseAttack,
   'baseDefense': baseDefense,
   'dieCount': dieCount,
+  'dieId': dieId,
   'abilityIds': abilityIds,
 };
 
@@ -130,12 +159,14 @@ Map<String, Object?> abilityJson({
   String effect = 'damage',
   Object? power = const {'min': 2, 'max': 6},
   int dieCost = 1,
+  String? statusId,
 }) => <String, Object?>{
   'id': id,
   'name': 'Slash',
   'effect': effect,
   'power': power,
   'dieCost': dieCost,
+  'statusId': ?statusId,
 };
 
 Map<String, Object?> statusEffectJson({

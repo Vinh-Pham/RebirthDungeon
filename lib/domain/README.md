@@ -52,3 +52,28 @@ in CI.
   details list every issue with a `file[index].field` path.
 - `GameContent.parse` stays pure Dart — reading/decoding the asset bundle is
   the data layer's job (wired up in Phase 5).
+
+## Dice combat (Phase 3)
+
+`combat/` holds the headless dice combat engine built on the Phase 1
+contracts.
+
+- `CombatState` (combatants, dice pool, statuses, turn, phase) is immutable
+  and fully serializable for run snapshots; the combat RNG is *not* part of
+  the state — the engine receives a combat-channel `RandomSource`
+  (`deriveSeed(runSeed, 'combat')`).
+- Commands: `StartCombat`, `RollDice`, `RerollDice` (once per turn),
+  `AssignDieToAbility`, `UseAbility`, `EndTurn`, `EnemyAct` (one per acting
+  enemy during `enemyTurn`).
+- Damage = `power roll + effective attack` (attack + buff potencies); any
+  consumed die on its max face crits (doubles). Mitigation: defense first
+  (min 1 remains), shield absorbs before HP.
+- Debuffs tick their potency at the start of the bearer's turn (bypassing
+  defense/shield); buffs add potency to attack; effects expire after their
+  duration. Abilities with a `statusId` apply that status as a rider;
+  reapplication keeps the higher potency and longer duration.
+- Enemies act deterministically: strongest ability by
+  `(power.max, power.min, id)` descending, else a basic strike derived from
+  the monster's attack stat.
+- Illegal commands throw `DomainException` before any randomness is
+  consumed.

@@ -5,8 +5,8 @@ part 'hero_data.g.dart';
 
 /// Data-driven definition of a playable hero (`assets/data/heroes.json`).
 ///
-/// Reference fields (`abilityIds`) are validated against their target tables
-/// when the whole content set is parsed.
+/// Reference fields (`dieId`, `abilityIds`) are validated against their
+/// target tables when the whole content set is parsed.
 @freezed
 abstract class HeroData with _$HeroData {
   const factory HeroData({
@@ -17,6 +17,7 @@ abstract class HeroData with _$HeroData {
     required int baseAttack,
     required int baseDefense,
     required int dieCount,
+    @Default('die_standard') String dieId,
     @Default([]) List<String> abilityIds,
   }) = _HeroData;
 

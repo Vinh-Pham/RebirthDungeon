@@ -13,6 +13,7 @@ _AbilityData _$AbilityDataFromJson(Map<String, dynamic> json) => _AbilityData(
   effect: $enumDecode(_$AbilityEffectEnumMap, json['effect']),
   power: IntRange.fromJson(json['power'] as Map<String, dynamic>),
   dieCost: (json['dieCost'] as num?)?.toInt() ?? 1,
+  statusId: json['statusId'] as String?,
 );
 
 Map<String, dynamic> _$AbilityDataToJson(_AbilityData instance) =>
@@ -23,6 +24,7 @@ Map<String, dynamic> _$AbilityDataToJson(_AbilityData instance) =>
       'effect': _$AbilityEffectEnumMap[instance.effect]!,
       'power': instance.power,
       'dieCost': instance.dieCost,
+      'statusId': instance.statusId,
     };
 
 const _$AbilityEffectEnumMap = {
