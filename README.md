@@ -65,6 +65,27 @@ Key invariants (details in the game plan):
 - Data layer implementations are injected at bootstrap; domain/application code
   depends on interfaces, never on SQLite/HTTP/provider SDKs.
 
+## Rendering baseline (Phase 1 decision)
+
+- **Logical reference viewport: 240 × 320** logical pixels (portrait); **base
+  tile: 16 × 16** (`src/game/config.ts`). A 15 × 20-tile view is the reference
+  screenful.
+- The renderer picks the **largest integer device-pixel scale** that fits the
+  reference viewport and centers it, so one logical pixel is always a whole
+  number of device pixels. The HUD can cycle zoom steps (device-pixel
+  multiples) at runtime.
+- **Nearest-neighbor sampling everywhere**: the static map is baked once into a
+  Skia picture with `FilterMode.Nearest`, and actors draw from the atlas via
+  the `Atlas` component with `sampling={{ filter: nearest, mipmap: none }}`.
+- Camera translations are snapped to whole device pixels after follow-lerp and
+  screen shake, keeping texel edges aligned while panning.
+- Spike atlases are generated pixel-by-pixel by
+  `scripts/generate-spike-atlases.mjs` (deterministic, dependency-free PNG
+  writer) and described by `assets/atlases/manifest.json`, which is
+  Zod-validated and cross-checked against the decoded image dimensions at
+  load time. `loadGameAssets()` fails with a typed `AssetLoadingError` listing
+  every missing/invalid asset by name.
+
 ## Tests
 
 Jest runs two projects (see [`jest.config.js`](jest.config.js)):

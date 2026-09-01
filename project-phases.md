@@ -19,11 +19,11 @@ The project targets [Expo SDK 57](https://docs.expo.dev/versions/v57.0.0/). Chec
 
 ## Current Focus
 
-- **Current phase:** Phase 1 — Rendering architecture spike
-- **Status:** Not started
-- **Next objective:** Choose the portrait logical resolution and base tile size, render one dungeon room from a Skia tile atlas, and prove the camera/sprite/HUD presentation boundary.
+- **Current phase:** Phase 1 — Rendering architecture spike (in progress)
+- **Status:** All spike work implemented and verified on simulator/emulator; **one task remains**: measure the on-screen frame-time meter on physical Android/iOS devices (including a mid-range Android target). Everything else is complete — see the Phase 1 checklist and work notes for evidence.
+- **Next objective:** Install a development build on the baseline physical devices, read the HUD frame-time meter in the spike screen, record the numbers, then close Phase 1 and start Phase 2 (domain foundations).
 - **Baseline inspected:** 2026-09-01
-- **Known baseline:** Phase 0 complete (see completion log). Expo SDK 57 + Router + Reanimated/Worklets + Skia 2.6.2 + Zustand + Zod + expo-asset/audio/haptics + expo-dev-client are installed; ESLint boundary zones, Prettier, two-project Jest, CI, and EAS profiles are configured. Layer folders exist only for `src/app` and `src/core` so far; grow the rest feature by feature.
+- **Known baseline:** Phase 0 complete (see completion log). Rendering baseline decided and documented (240×320 logical, 16 px tiles, integer device-pixel scaling, nearest-neighbor sampling). Layer folders now exist for `src/game` (config, scene, camera, sprites, assets, render) and `src/presentation/spike`.
 
 ## Phase Overview
 
@@ -70,15 +70,16 @@ Exit criteria:
 
 **Goal:** Prove the highest-risk rendering and animation boundary before investing in full game systems.
 
-- [ ] Choose and document the portrait logical resolution and base tile size.
-- [ ] Render one dungeon room from a Skia tile atlas using nearest-neighbor sampling.
-- [ ] Render animated player and monster sprites from atlas metadata.
-- [ ] Implement a small camera module with target focus, map clamping, logical-pixel snapping, and screen shake.
-- [ ] Place an accessible React Native HUD over the Skia canvas.
-- [ ] Use a Reanimated frame callback only for presentation state such as sprite clocks, interpolation, particles, and camera motion.
-- [ ] Keep authoritative positions and game outcomes out of Skia and Reanimated objects.
-- [ ] Preload critical assets through an asset manifest and fail clearly when an asset is missing.
+- [x] Choose and document the portrait logical resolution and base tile size.
+- [x] Render one dungeon room from a Skia tile atlas using nearest-neighbor sampling.
+- [x] Render animated player and monster sprites from atlas metadata.
+- [x] Implement a small camera module with target focus, map clamping, logical-pixel snapping, and screen shake.
+- [x] Place an accessible React Native HUD over the Skia canvas.
+- [x] Use a Reanimated frame callback only for presentation state such as sprite clocks, interpolation, particles, and camera motion.
+- [x] Keep authoritative positions and game outcomes out of Skia and Reanimated objects.
+- [x] Preload critical assets through an asset manifest and fail clearly when an asset is missing.
 - [ ] Measure frame time on representative physical Android and iOS devices, including a mid-range Android target.
+  - 2026-09-01: The on-device frame-time meter (60 fps · 16.7 ms UI-thread worst frame) was verified on the iPhone 16 Pro simulator and Android Medium_Phone emulator, but **physical devices were not reachable from this environment**. Remaining action: run the dev build on a baseline physical Android (mid-range) and an iOS device and record the meter readings; the meter itself requires no further code.
 
 Exit criteria:
 
@@ -371,3 +372,4 @@ Add one row only when a phase is fully complete. Evidence should identify the ex
 Use this section for short, temporary handoff notes. Remove resolved notes after their evidence is captured in the relevant phase or completion log.
 
 - 2026-09-01: Phase 0 complete. Notes for Phase 1: Android builds on this machine require the JDK 17 override documented in README (user-global `~/.gradle/gradle.properties` pins Temurin 25, which breaks AGP's Prefab step); iOS 26 simulators block the first dev-client deep link behind a system confirmation — use the documented `simctl launch --args --initialUrl` workaround for headless launches. `expo-dev-client` was added during Phase 0 verification (starter did not include it). The two planning markdown files are excluded from Prettier via `.prettierignore`.
+- 2026-09-01: Phase 1 spike implemented. Evidence: dev builds on iPhone 16 Pro simulator (Zoom ×5, "62 fps · 0.0 ms") and Android Medium_Phone emulator (Zoom ×4, "62 fps · 16.7 ms") render the room, animated hero + patrolling slimes, working camera (Follow toggle pans/clamps), zoom cycling, and shake. HUD interactions exercised over adb (`input tap`): follow toggle + zoom cycle confirmed by screenshots. Quality gates: format/lint/typecheck clean, 40 tests pass across the `unit` and `ui` Jest projects. Two gotchas recorded in code comments: (1) functions called inside worklets need the `'worklet'` directive and inner `Array.map` callbacks are not reliably auto-workletized — use plain loops (`src/game/camera/camera-math.ts`, `src/game/render/use-spike-presentation.ts`); (2) React Compiler's `react-hooks/immutability` rule cannot model Reanimated `.value` writes — mutations are centralized in `useSpikePresentation` with a scoped lint exemption. Atlases are generated by `scripts/generate-spike-atlases.mjs` (re-run after editing; deterministic).

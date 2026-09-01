@@ -125,4 +125,13 @@ module.exports = defineConfig([
       aliases(['data', 'app']),
     ),
   },
+  {
+    // Presentation shared values are intentionally mutable Reanimated state.
+    // The React Compiler immutability rule cannot model `.value` writes on
+    // shared values, so this one hook file is exempted.
+    files: ['src/game/render/use-spike-presentation.ts'],
+    rules: {
+      'react-hooks/immutability': 'off',
+    },
+  },
 ]);

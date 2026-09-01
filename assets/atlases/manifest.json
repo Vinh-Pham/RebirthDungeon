@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "tileSize": 16,
+  "atlases": {
+    "dungeon-tiles": { "file": "dungeon-tiles.png", "columns": 8, "rows": 1 },
+    "actors": { "file": "actors.png", "columns": 4, "rows": 2 }
+  },
+  "tileNames": [
+    "floor",
+    "floor-alt",
+    "wall",
+    "wall-top",
+    "door",
+    "stairs",
+    "crack",
+    "rubble"
+  ],
+  "animations": {
+    "hero/idle": {
+      "atlas": "actors",
+      "row": 0,
+      "startFrame": 0,
+      "frameCount": 4,
+      "fps": 3,
+      "loop": true
+    },
+    "slime/idle": {
+      "atlas": "actors",
+      "row": 1,
+      "startFrame": 0,
+      "frameCount": 4,
+      "fps": 5,
+      "loop": true
+    }
+  }
+}
