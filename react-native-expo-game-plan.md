@@ -1,1864 +1,1076 @@
-# React Native + Expo Game Plan
+# Rebirth Dungeon: React Native + Expo Game Plan
 
 ## Overview
 
-The game is a **2D pixel-art RPG dungeon crawler with dice-based combat and gacha mechanics**, built with React Native and Expo.
+Rebirth Dungeon is a **2D pixel-art, grid-based roguelike dungeon crawler with dice combat, progression, loot, and gacha mechanics**. It runs on Expo SDK 57 and React Native.
 
-This is a good fit for React Native because the game is driven mainly by turns, commands, menus, progression, and deterministic rules—not continuous physics or twitch-heavy action. The design should use React Native for the app and controls, Skia for the rendered game world, Reanimated for per-frame presentation work, and pure TypeScript for the actual game rules.
+The in-dungeon game is turn-based. A player action advances the simulation; rendering can continue at 60/120 Hz without changing game rules.
 
-The recommended stack is:
+The core stack is:
 
 - **Expo SDK 57 + React Native + TypeScript** for the application shell
-- **Expo Router** for file-based navigation and deep links
-- **React Native Skia** for dungeon, sprite, particle, and combat rendering
-- **React Native Reanimated** for the visual frame loop and UI-thread animation values
-- **React Native Gesture Handler** for gestures and drag/drop interaction
-- **Zustand** for application state, controllers, and dependency wiring
-- **Pure TypeScript domain logic** for combat, dice, progression, dungeon generation, loot, economy, and gacha rules
+- **Expo Router** for navigation
+- **`@esengine/ecs-framework`** for the authoritative in-run entity/component/system model
+- **`rot-js`** for dungeon generation, four-way pathfinding, field of view, seeded RNG, and actor turn ordering
+- **Effect** for typed operational errors, dependency wiring, async workflows, retries, scoped background fibers, and wall-clock schedules
+- **React Native Skia** for the dungeon, sprites, particles, and combat VFX
+- **Reanimated** for presentation interpolation, camera motion, and per-frame animation
+- **React Native Gesture Handler** for swipes, taps, drag/drop, and gesture composition
+- **Zustand** for UI-facing projections and application screen state, not authoritative simulation state
 - **Expo SQLite + Drizzle ORM** for local persistence and migrations
-- **Zod** for validating JSON, save files, and API responses at trust boundaries
-- **Rive React Native** for polished gacha, reward, and menu animations
-- **Expo Audio** for music and sound effects
-- **Expo SecureStore** for authentication and session secrets
-- **Expo Haptics** for tactile feedback
-- **RevenueCat (`react-native-purchases`) or `expo-iap`** for store integration
-- **EAS Development Builds, Build, Update, and Submit** for native development and delivery
+- **Zod** for the existing content/save/API validation boundaries
+- **Expo Audio, Haptics, Asset, and SecureStore** behind Effect services
 
-The most important architectural principle is:
+The central rule is:
 
-> **Skia renders the game. The TypeScript domain decides what happens in the game.**
+> **The ECS decides what exists and what happens. `rot-js` supplies roguelike algorithms. Effect runs fallible and asynchronous work. Skia and Reanimated show the result.**
 
-Do not turn React components, Zustand, Skia, or Reanimated into the source of truth for gameplay. React Native is the app shell and meta-game UI. Skia and Reanimated own visual presentation. The pure TypeScript domain owns the RPG rules.
+Do not duplicate authoritative positions, health, turn order, or combat state in React state, Zustand, Skia, or Reanimated.
 
 ---
 
-# 1. Recommended Architecture
+# 1. Documentation Findings and Architectural Consequences
+
+The project currently resolves these package versions (the manifest still uses ranges):
 
 ```text
-┌──────────────────────────────────────────────┐
-│          React Native / Expo App             │
-│                                              │
-│ Login / Home / Gacha / Shop / Inventory     │
-│ Characters / Settings / Dialogs / HUD       │
-│                                              │
-│ React Native + Reanimated + Rive             │
-└──────────────────────┬───────────────────────┘
-                       │
-                Zustand / Controllers
-                       │
-┌──────────────────────▼───────────────────────┐
-│              Application Layer               │
-│                                              │
-│ CombatController                             │
-│ DungeonController                            │
-│ GachaController                              │
-│ InventoryController                          │
-│ ProgressionController                        │
-└──────────────────────┬───────────────────────┘
-                       │
-┌──────────────────────▼───────────────────────┐
-│          Pure TypeScript Game Domain         │
-│                                              │
-│ CombatEngine                                 │
-│ DiceResolver                                 │
-│ StatusEffectSystem                           │
-│ DungeonGenerator                             │
-│ LootResolver                                 │
-│ GachaEngine                                  │
-│ ProgressionSystem                            │
-│ Economy                                      │
-│                                              │
-│ NO React / React Native / Expo / Skia deps   │
-└───────────────┬────────────────┬─────────────┘
-                │                │
-        Repositories        Domain Events
-                │                │
-┌───────────────▼──────┐  ┌──────▼─────────────┐
-│      Data Layer      │  │  Presentation      │
-│                      │  │  Bridge            │
-│ Expo SQLite          │  │                    │
-│ Drizzle ORM          │  │ Skia canvas        │
-│ SecureStore          │  │ Shared values      │
-│ IAP / future API     │  │ Audio / haptics    │
-└──────────────────────┘  └────────────────────┘
+Expo                         57.0.19
+@esengine/ecs-framework      2.11.2
+effect                       4.0.0-rc.112
+rot-js                       2.2.1
 ```
 
-Dependency direction should point inward:
+## `@esengine/ecs-framework`
 
-```text
-presentation ─┐
-game renderer ├─→ application ─→ domain
-data          ┘
-```
+The framework is renderer-agnostic. Its documented model uses `Component` data classes, `EntitySystem` processors, `Matcher` queries, a `Scene`, explicit `updateOrder`, a deferred command buffer, and scene serialization.
 
-The domain may define repository interfaces, but it must not import their SQLite, HTTP, Expo, or store-specific implementations.
+Consequences for this game:
+
+- One active dungeon run maps naturally to one ECS `Scene`.
+- Dynamic actors and interactive objects are entities.
+- Components contain mutable game data only.
+- Systems resolve synchronous, deterministic rules in a fixed order.
+- Entity structural changes during processing go through the ECS command buffer.
+- The ECS scene is the source of truth for a live run.
+- Effect, React, and rendering APIs must not be called from an ECS system.
+
+The framework requires component subclasses to use `@ECSComponent` for stable registration and serialization. Systems should use `@ECSSystem` and explicit `updateOrder` values.
+
+## Effect
+
+Effect 4 models a computation as `Effect<Success, Error, Requirements>`. Its documentation distinguishes expected typed failures from unexpected defects, and provides structured concurrency, interruption, retry, repetition, and composable `Schedule` values.
+
+Consequences for this game:
+
+- Repository and platform failures belong in Effect's typed error channel.
+- Bugs and broken invariants remain defects and are reported at the app boundary.
+- App/route lifetime owns Effect fibers; leaving a dungeon interrupts its scoped work.
+- `Schedule` handles wall-clock retry/repetition such as remote sync and save coalescing.
+- Effect does not run deterministic ECS rules and does not replace the roguelike turn scheduler.
+- An Effect fiber cannot keep JavaScript alive after iOS or Android suspends the app. Lifecycle saves must be requested immediately; true OS background work still requires the relevant Expo/native API.
+
+The project currently uses an Effect 4 release candidate. Pin the exact RC during the prototype rather than allowing caret upgrades, then perform an intentional upgrade when Effect 4 stabilizes.
+
+## `rot-js`
+
+The official manual and TypeDoc expose map generators, FOV, A*/Dijkstra pathfinding, seeded RNG state, event queues, schedulers, and an asynchronous engine.
+
+Consequences for this game:
+
+- Use `ROT.Map.Digger` first, with `Uniform` or `Cellular` as later floor styles.
+- Use `ROT.Path.AStar` with topology `4` for cardinal grid movement.
+- Use `ROT.FOV.PreciseShadowcasting` with the same topology and an opacity callback.
+- Use `ROT.Scheduler.Speed` for actor order initially; hide it behind a project-owned interface.
+- Do not use `ROT.Display`; Skia remains the renderer.
+- Do not use `ROT.Engine`; manually advance the scheduler so React Native input, ECS stepping, Effect lifetimes, and animation gating remain explicit.
+- Treat the module-level `ROT.RNG` as shared mutable state. Generation must run in a synchronous save/seed/run/capture/restore wrapper.
 
 ---
 
-# 2. Expo as the Application Shell
-
-Use **Expo Router** for application navigation. Let files in `app/` define routes and keep feature implementation in `src/`.
+# 2. Target Architecture
 
 ```text
-app/
-├── _layout.tsx
-├── index.tsx
-├── login.tsx
-│
-├── (main)/
-│   ├── _layout.tsx
-│   ├── home.tsx
-│   ├── characters.tsx
-│   ├── inventory.tsx
-│   ├── gacha.tsx
-│   ├── shop.tsx
-│   └── settings.tsx
-│
-└── dungeon/
-    └── [id].tsx
+React Native screens and accessible controls
+                    │
+                    ▼
+       Zustand UI projection / route state
+                    │
+                    ▼
+          RunController (Effect program)
+          ├── serial command mailbox
+          ├── persistence services
+          ├── audio/haptics services
+          └── lifecycle and retry policies
+                    │
+             synchronous boundary
+                    ▼
+        @esengine ECS Scene (source of truth)
+          ├── entities and components
+          ├── ordered gameplay systems
+          ├── turn/encounter phase
+          └── emitted domain events
+                    │
+       ┌────────────┴─────────────┐
+       ▼                          ▼
+ rot-js adapters             scene projector
+ map/FOV/path/RNG/turns      snapshots + events
+       │                          │
+       └────────────┬─────────────┘
+                    ▼
+        Skia + Reanimated presentation
 ```
 
-Use Expo Router for:
+Dependency direction:
 
-- Login and account flows
-- Home and dungeon selection
-- Character and equipment screens
-- Inventory and shop
-- Gacha banners and history
-- Settings
-- Deep links and route guards
+```text
+presentation ────────→ application ────────→ game simulation
+Effect services ─────→ application              ↑
+rot-js adapters ────────────────────────────────┘
+data implementations → application ports
+```
 
-Do not build a second navigation system inside the Skia canvas. The canvas is a view within the dungeon route, not the application router.
+The simulation may depend on small project-owned interfaces implemented with `rot-js`. It must not depend on React, Zustand, Expo modules, SQLite, Skia, Reanimated, or Effect.
 
-Example route:
+---
 
-```tsx
-// app/dungeon/[id].tsx
-import { useLocalSearchParams } from 'expo-router';
-import { DungeonScreen } from '@/presentation/dungeon/dungeon-screen';
+# 3. Four Different Kinds of Time
 
-export default function DungeonRoute() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  return <DungeonScreen dungeonId={id} />;
+These mechanisms solve different problems and must stay separate.
+
+| Mechanism | Owns | Must not own |
+| --- | --- | --- |
+| ECS `updateOrder` | Ordering systems inside one simulation step | Actor initiative or wall-clock work |
+| `rot-js` scheduler | Which actor receives the next turn | Network retries, autosave timers, animation frames |
+| Effect `Schedule` and fibers | Retries, repetition, delays, cancellation, async jobs | Combat outcomes or grid movement |
+| Reanimated frame callbacks | Interpolation, camera, particles, VFX | Authoritative coordinates, turns, damage, loot |
+
+Turn cooldowns and status durations are integer turn counters in ECS components. They are not JavaScript timers or Effect sleeps.
+
+---
+
+# 4. ECS World Model
+
+## Entity scope
+
+Create ECS entities for dynamic or interactive objects:
+
+```text
+player
+enemies
+NPCs
+doors
+traps
+loot drops
+projectiles that participate in rules
+temporary combat effects that participate in rules
+```
+
+Do not make every floor and wall tile an entity. Keep the mostly static tile grid in a compact `DungeonGrid` owned by the run scene/service. This avoids thousands of entities and makes `rot-js` callbacks cheap.
+
+## Initial components
+
+```text
+StableId                 save-stable identifier, distinct from runtime entity ID
+GridPosition             integer x/y cell
+PreviousGridPosition     prior committed cell for presentation
+Actor                    actor metadata
+PlayerControlled         player tag
+EnemyBrain               AI policy/content ID
+BlocksMovement           occupancy tag
+BlocksVision             opacity tag
+Speed                    actor scheduling speed
+Vision                   radius and perception flags
+Health                   current/max HP
+Stats                    attack, defense, modifiers
+DicePool                 rolled/available/assigned dice
+AbilityLoadout           ability IDs
+StatusSet                poison, shield, stun, and turn durations
+InventoryRef             reference to run inventory state
+EncounterMember          encounter ID/team
+Door                     open/locked state
+Trap                     armed/type state
+Pickup                   item and quantity
+MoveIntent               transient requested step
+AttackIntent             transient attack request
+AbilityIntent            transient dice/ability request
+PendingRemoval           optional cleanup marker
+```
+
+Use components as data containers. Keep formulas, pathfinding, side effects, and state transitions in systems or pure helper functions.
+
+Example shape:
+
+```ts
+import {
+  Component,
+  ECSComponent,
+  Serializable,
+  Serialize,
+} from '@esengine/ecs-framework';
+
+@ECSComponent('GridPosition')
+@Serializable({ version: 1 })
+export class GridPosition extends Component {
+  @Serialize()
+  x = 0;
+
+  @Serialize()
+  y = 0;
+}
+
+@ECSComponent('MoveIntent')
+export class MoveIntent extends Component {
+  dx = 0;
+  dy = 0;
 }
 ```
 
-Use route groups and layouts for authenticated areas, tab navigation, and modal screens. Keep route files thin.
+Before implementation, confirm decorators compile under the project's Expo/TypeScript/Babel configuration on Hermes in both development and production builds.
+
+## Run-level state
+
+Keep small run-wide values in a dedicated singleton entity or typed scene service:
+
+```text
+run ID and floor ID
+turn number
+current actor stable ID
+run phase: generating | awaitingInput | resolving | animating | complete
+active encounter ID
+pending presentation event sequence
+```
+
+Prefer an explicit singleton component when the value participates in gameplay or saving. Use `sceneData` only for infrastructure/configuration that systems need but do not query as ordinary game state.
 
 ---
 
-# 3. Use Skia Only for Rendered Game Scenes
+# 5. Ordered ECS Systems
 
-React Native Skia is a high-performance renderer, not a full game engine. It does not replace every Flame feature automatically. Build a small, purpose-specific presentation layer instead of a general engine.
+Use explicit, well-spaced order ranges so new systems can be inserted without renumbering everything.
 
-```text
-GameCanvas
-│
-├── DungeonLayer
-│   ├── TileAtlas
-│   ├── PropsLayer
-│   └── EncounterMarkers
-│
-├── ActorLayer
-│   ├── PlayerSprite
-│   └── MonsterSprites
-│
-├── EffectsLayer
-│   ├── AttackEffects
-│   ├── Particles
-│   └── DamageNumbers
-│
-└── CameraTransform
-```
+| Order | System | Responsibility |
+| ---: | --- | --- |
+| 100 | `InputIntentSystem` | Validate and normalize the current actor's submitted command |
+| 150 | `EnemyIntentSystem` | Create an intent when the active actor is AI-controlled |
+| 200 | `MovementSystem` | Resolve one-cell movement and occupancy |
+| 300 | `InteractionSystem` | Doors, pickups, stairs, and traps |
+| 400 | `EncounterSystem` | Start/advance/finish an encounter |
+| 500 | `DiceSystem` | Roll, reroll, assign, and consume dice |
+| 600 | `AbilitySystem` | Resolve ability targeting and costs |
+| 700 | `DamageSystem` | Shield, resistance, HP, death markers |
+| 800 | `StatusEffectSystem` | Apply/tick/expire turn-based statuses |
+| 900 | `VisibilitySystem` | Recompute FOV after movement/opacity changes |
+| 1000 | `TurnFinalizationSystem` | Consume action cost and advance turn state |
+| 1100 | `CleanupSystem` | Apply deferred removals and transient-component cleanup |
+| 1200 | `EventExportSystem` | Finalize ordered domain events for presentation/persistence |
 
-Example:
+System execution is synchronous. A system may request an external action by emitting a domain event, but it must not `await`, start a fiber, write SQLite, play audio, call haptics, or mutate a Zustand store.
 
-```tsx
-function GameCanvas({ scene }: { scene: SceneSnapshot }) {
-  return (
-    <Canvas style={StyleSheet.absoluteFill}>
-      <Group transform={scene.camera.transform}>
-        <DungeonLayer map={scene.map} />
-        <ActorLayer actors={scene.actors} />
-        <EffectsLayer effects={scene.effects} />
-      </Group>
-    </Canvas>
-  );
-}
-```
-
-Skia presentation objects must not be authoritative gameplay objects.
-
-Bad:
-
-```ts
-function MonsterSprite() {
-  let hp = 100;
-
-  function receiveDamage() {
-    hp -= Math.floor(Math.random() * 20);
-  }
-}
-```
-
-Better:
-
-```ts
-const result = combatEngine.execute(
-  state,
-  {
-    type: 'USE_ABILITY',
-    actorId: player.id,
-    targetId: monster.id,
-    abilityId: 'power-slash',
-    dieId: selectedDie.id,
-  },
-  random,
-);
-```
-
-The engine returns a new state and events. The presentation bridge translates events into Skia, audio, haptic, and UI animations.
+The ECS command buffer should handle entity/component structural changes made while iterating a system query.
 
 ---
 
-# 4. Reanimated as the Visual Frame System
+# 6. Grid-Based Movement Contract
 
-Use Reanimated shared values for high-frequency presentation state:
-
-```text
-actor x/y
-camera offset and zoom
-sprite animation frame
-opacity and scale
-screen shake
-particle position and lifetime
-damage-number position
-temporary VFX progress
-```
-
-Use `useFrameCallback` only where per-frame updates are actually needed:
-
-```ts
-useFrameCallback((frame) => {
-  const dtMs = frame.timeSincePreviousFrame ?? 0;
-
-  updateCameraPresentation(dtMs);
-  updateSpriteClocks(dtMs);
-  updateParticles(dtMs);
-  updateFloatingText(dtMs);
-});
-```
-
-Do not run turn-based combat rules at 60 or 120 frames per second. Combat advances when a command is issued. The frame callback only makes already-decided results look good.
-
-Do not write high-frequency coordinates to Zustand:
-
-```ts
-// Avoid this every frame.
-useGameStore.setState({ monsterX: monsterX + velocity });
-```
-
-Use this boundary:
+Start with a rectangular, cardinal grid:
 
 ```text
-Zustand / application state
-    combat state, inventory, progression, run, account
-
-Reanimated shared values
-    coordinates, camera, animation clocks, shake, particles
+topology            4
+legal step          abs(dx) + abs(dy) === 1
+authoritative cell  integer GridPosition
+visual position     interpolated presentation value
 ```
 
-Avoid `runOnJS` in hot loops. Cross from the UI thread to JavaScript only for infrequent, meaningful events.
+One movement command resolves as follows:
+
+1. Reject input unless the run is awaiting the player.
+2. Validate that the delta is exactly one cardinal cell.
+3. Check map bounds.
+4. Check the static tile's movement rule.
+5. Check the dynamic occupancy index.
+6. If the destination is empty, commit `PreviousGridPosition` and `GridPosition`.
+7. If it contains a closed door, resolve the door interaction according to content rules.
+8. If it contains a hostile actor, convert the move into a bump attack or encounter command; do not overlap actors.
+9. Resolve traps/pickups/stairs after a successful move.
+10. Recompute visibility if position or opacity changed.
+11. Emit ordered domain events.
+12. Consume the player's action only according to an explicit rule for that result.
+
+Define early whether these consume a turn:
+
+```text
+walking into a wall
+trying a locked door
+failed ability targeting
+inventory interaction in a dungeon
+opening a menu
+```
+
+Recommended default: invalid UI input does not consume a turn; an intentional in-world attempt may consume one when the content rule says so.
+
+## Input methods
+
+Support all of these through the same `MoveCommand`:
+
+- On-screen D-pad for discoverability and accessibility
+- Swipe gesture for quick play
+- Optional tap-to-walk path preview
+- Keyboard arrows/WASD for web, simulator, and accessibility hardware
+
+Tap-to-walk submits one step at a time. Revalidate after every step because an enemy, door, trap, or new FOV result can invalidate the remaining path.
+
+Disable or queue further gameplay input while a command is resolving. Presentation animations may be skippable, but they must never decide whether movement succeeded.
 
 ---
 
-# 5. Combat as a Pure TypeScript State Machine
+# 7. `rot-js` Integration
 
-Model combat as an explicit state machine.
+Wrap every `rot-js` feature behind a small project-owned adapter. This keeps library types out of ECS components and save files.
 
-```ts
-export type CombatPhase =
-  | 'startTurn'
-  | 'rolling'
-  | 'awaitingPlayerAction'
-  | 'resolvingAction'
-  | 'enemyTurn'
-  | 'victory'
-  | 'defeat';
+## Dungeon generation
 
-export interface CombatState {
-  readonly player: PlayerCombatant;
-  readonly enemies: readonly EnemyCombatant[];
-  readonly dice: readonly Die[];
-  readonly phase: CombatPhase;
-  readonly turn: number;
-}
-```
+Start with `ROT.Map.Digger`.
 
-Commands should use discriminated unions:
+Adapter output:
 
 ```ts
-export type CombatCommand =
-  | { type: 'START_COMBAT' }
-  | { type: 'ROLL_DICE' }
-  | { type: 'REROLL_DIE'; dieId: string }
-  | { type: 'ASSIGN_DIE'; dieId: string; abilityId: string }
-  | {
-      type: 'USE_ABILITY';
-      actorId: string;
-      targetId: string;
-      abilityId: string;
-      dieId: string;
-    }
-  | { type: 'END_TURN' };
-```
-
-Events should also be discriminated unions:
-
-```ts
-export type CombatEvent =
-  | { type: 'TURN_STARTED'; turn: number }
-  | { type: 'DICE_ROLLED'; dice: readonly Die[] }
-  | { type: 'ABILITY_ACTIVATED'; actorId: string; abilityId: string }
-  | { type: 'DAMAGE_DEALT'; targetId: string; amount: number }
-  | { type: 'CRITICAL_HIT'; targetId: string }
-  | { type: 'STATUS_APPLIED'; targetId: string; status: StatusEffect }
-  | { type: 'ENEMY_DEFEATED'; enemyId: string }
-  | { type: 'COMBAT_WON' }
-  | { type: 'PLAYER_DEFEATED' };
-```
-
-Core API:
-
-```ts
-export interface CombatResult {
-  readonly state: CombatState;
-  readonly events: readonly CombatEvent[];
-}
-
-export function executeCombatCommand(
-  state: CombatState,
-  command: CombatCommand,
-  random: RandomSource,
-): CombatResult {
-  // Pure TypeScript. No React, Expo, Zustand, or Skia.
-}
-```
-
-Conceptually:
-
-```text
-State + Command
-       ↓
- Combat Engine
-       ↓
-New State + Events
-```
-
-Benefits:
-
-- Deterministic unit tests
-- Seeded dungeon runs
-- Battle replays and event logs
-- Easier debugging and balance simulation
-- Straightforward save/load behavior
-- A clean path to server-authoritative validation later
-
----
-
-# 6. Abstract Randomness
-
-Do not scatter `Math.random()` throughout the codebase.
-
-```ts
-export interface RandomSource {
-  nextInt(maxExclusive: number): number;
-  nextFloat(): number;
-}
-```
-
-Use a serializable seeded implementation for dungeon runs:
-
-```ts
-export interface StatefulRandomSource extends RandomSource {
-  snapshot(): RandomSnapshot;
-  restore(snapshot: RandomSnapshot): void;
-}
-```
-
-Inject it into engines:
-
-```ts
-const result = executeCombatCommand(state, command, runRandom);
-```
-
-Testing can use a sequence-backed fake:
-
-```ts
-const random = new SequenceRandomSource([6, 6, 2, 5]);
-```
-
-Keep these streams separate:
-
-- Dungeon generation RNG
-- Combat RNG
-- Loot RNG
-- Cosmetic RNG
-- Gacha RNG
-
-For a resumable run, store the seed **and current generator state or deterministic draw index**. A seed alone is insufficient if load order or draw count can change.
-
-Paid or production gacha must ultimately use server-authoritative randomness. The client should call a repository rather than generate rewards directly.
-
----
-
-# 7. Zustand for Application State and Orchestration
-
-Use Zustand between React Native screens, application controllers, domain engines, and repositories.
-
-```text
-React Native UI
-      │
-      ▼
-Zustand action / controller
-      │
-      ▼
-Pure TypeScript engine
-      │
-      ▼
-Repository
-```
-
-Prefer small stores or slices with narrow selectors:
-
-```text
-useAccountStore
-usePlayerStore
-useInventoryStore
-useCurrentRunStore
-useCombatStore
-useGachaStore
-useSettingsStore
-```
-
-Avoid one global `useGameStore` with hundreds of unrelated fields.
-
-Example:
-
-```ts
-interface CombatStore {
-  state: CombatState | null;
-  dispatch(command: CombatCommand): void;
-}
-
-export const useCombatStore = create<CombatStore>((set, get) => ({
-  state: null,
-  dispatch(command) {
-    const current = get().state;
-    if (!current) return;
-
-    const result = executeCombatCommand(current, command, combatRandom);
-    set({ state: result.state });
-    presentationBridge.publish(result.events);
-  },
-}));
-```
-
-Use selectors so unrelated UI does not rerender:
-
-```ts
-const phase = useCombatStore((store) => store.state?.phase);
-```
-
-For domain code or non-React controllers, Zustand's vanilla store API is also appropriate. Do not import hooks into the domain.
-
----
-
-# 8. Zustand vs Skia/Reanimated Responsibilities
-
-## Zustand should own
-
-```text
-player progression
-inventory and equipment
-current dungeon run
-combat state
-currencies
-account state
-gacha pity
-quests
-settings
-save and sync status
-```
-
-## Skia/Reanimated should own
-
-```text
-sprite positions
-animation timers
-camera transforms
-particles
-screen shake
-floating text position
-interpolation
-temporary visual effects
-```
-
-## React Native component state should own
-
-```text
-open/closed dialogs
-focused control
-temporary form input
-local menu selection
-tooltip visibility
-```
-
-Promote local UI state to Zustand only when several features genuinely need to share or persist it.
-
----
-
-# 9. Connect Game Logic to Presentation Through Events
-
-Domain events describe what happened. Presentation events describe how the app should communicate it.
-
-```ts
-export type GamePresentationEvent =
-  | { type: 'PLAY_ATTACK'; actorId: string; abilityId: string }
-  | { type: 'SHOW_DAMAGE'; targetId: string; amount: number; critical: boolean }
-  | { type: 'PLAY_DEATH'; actorId: string }
-  | { type: 'PLAY_SFX'; sound: Sfx }
-  | { type: 'HAPTIC'; style: HapticStyle };
-```
-
-Flow:
-
-```text
-User activates ability
-        ↓
-Combat controller dispatches command
-        ↓
-Combat engine returns new state + events
-        ↓
-Store commits authoritative state
-        ↓
-Presentation bridge maps domain events
-        ↓
-Skia + Reanimated + Audio + Haptics
-```
-
-Keep the mapping explicit and testable:
-
-```ts
-export function mapCombatEvents(
-  events: readonly CombatEvent[],
-): readonly GamePresentationEvent[] {
-  // Pure mapping logic.
-}
-```
-
-For multi-step visuals, use a presentation queue. The authoritative combat result should be committed immediately, while inputs can be temporarily gated until the required animation sequence finishes.
-
-Do not let animation completion decide damage, critical hits, loot, or victory.
-
----
-
-# 10. Use React Native UI Over the Canvas
-
-Place ordinary React Native controls over or around the Skia canvas.
-
-```tsx
-function CombatScreen() {
-  return (
-    <View style={styles.screen}>
-      <GameCanvas />
-
-      <View style={styles.hud} pointerEvents="box-none">
-        <HealthBar />
-        <TurnIndicator />
-        <DiceTray />
-        <AbilityBar />
-      </View>
-    </View>
-  );
-}
-```
-
-React Native is strongest for:
-
-- Buttons and forms
-- Accessible controls
-- Responsive layouts
-- Inventory grids and scrolling lists
-- Tooltips, sheets, dialogs, and menus
-- Drag/drop targets
-- Localization and dynamic text
-
-Skia is strongest for:
-
-- Tiles and world positioning
-- Sprites and sprite batching
-- Particles and shaders
-- Camera transforms
-- Damage numbers and combat VFX
-- Pixel-art composition
-
-Do not draw every button and label inside Skia. Native controls provide better semantics, accessibility, layout behavior, and testing.
-
-Use `react-native-gesture-handler` for dragging dice, panning maps, and gesture composition. Keep the final ability assignment as a domain command.
-
----
-
-# 11. Rive Usage
-
-Use `@rive-app/react-native` selectively for polished UI sequences.
-
-Use Skia sprite animation for:
-
-```text
-heroes
-monsters
-attacks
-dungeon objects
-pixel VFX
-```
-
-Use Rive for:
-
-```text
-gacha summon animation
-reward and rarity reveal
-level-up UI
-menu transitions
-animated buttons
-loading sequences
-special UI effects
-```
-
-Recommended split:
-
-```text
-Pixel-art world and combat → Skia
-Polished vector UI moments → Rive
-Ordinary UI transitions → Reanimated
-```
-
-The new Rive React Native runtime uses native code, so plan on an Expo development build. Load `.riv` assets with `require()` when possible so they participate cleanly in bundling and eligible OTA updates.
-
-Do not make Rive the source of truth for pull results. Resolve the pull first, then feed the known result into the reveal state machine.
-
----
-
-# 12. Pixel-Art Rendering
-
-Choose a fixed logical game resolution, for example:
-
-```text
-360 × 640 portrait
-320 × 180 landscape
-```
-
-Choose one base tile size:
-
-```ts
-export const TILE_SIZE = 16;
-```
-
-or:
-
-```ts
-export const TILE_SIZE = 32;
-```
-
-Scale the logical canvas to fit the available viewport while preserving aspect ratio:
-
-```ts
-const scale = Math.min(
-  viewportWidth / LOGICAL_WIDTH,
-  viewportHeight / LOGICAL_HEIGHT,
-);
-```
-
-Guidelines:
-
-- Align world coordinates and camera stops to logical pixels where practical.
-- Use nearest-neighbor sampling for pixel assets.
-- Avoid fractional source rectangles in sprite atlases.
-- Add safe-area padding to React Native HUD layers, not the logical world.
-- Test on small phones, tall phones, tablets, and 120 Hz devices.
-- Separate logical simulation coordinates from physical screen pixels.
-
-Do not assume a high-performance canvas automatically guarantees crisp pixel art. Validate sampling, scaling, atlas boundaries, and transforms on both Android and iOS.
-
----
-
-# 13. Dungeon Maps and Camera
-
-## Procedural dungeons
-
-Represent dungeons in pure TypeScript:
-
-```ts
-export interface DungeonFloor {
+export interface DungeonGrid {
   readonly width: number;
   readonly height: number;
   readonly tiles: Uint16Array;
-  readonly rooms: readonly Room[];
-  readonly doors: readonly Door[];
-  readonly encounters: readonly Encounter[];
-  readonly bossRoomId: string;
+  readonly rooms: readonly RoomSnapshot[];
+  readonly corridors: readonly CorridorSnapshot[];
+  readonly spawn: GridPoint;
+  readonly exit: GridPoint;
 }
 ```
 
-Generate maps outside Skia, then render the immutable result.
+Generation pipeline:
 
-## Hand-authored room templates
+1. Derive a floor seed from the run seed and floor index.
+2. Run `Digger.create(callback)` synchronously.
+3. Translate rot.js cell values into project-owned tile IDs inside the adapter.
+4. Convert `getRooms()` and `getCorridors()` output into plain snapshots.
+5. Choose spawn, exit, encounters, and loot using the dungeon RNG stream.
+6. Validate that spawn and exit are connected.
+7. Validate minimum room count, walkable area, and encounter constraints.
+8. Retry with a derived attempt seed up to a fixed limit, then return a typed generation failure.
 
-Use Tiled as an editor, export JSON, validate it, and convert it into your own runtime model:
+Later floor families can use `ROT.Map.Uniform`, `ROT.Map.Cellular`, or hand-authored room templates without changing ECS movement or rendering.
+
+## Pathfinding
+
+Use `ROT.Path.AStar` with `{ topology: 4 }`.
+
+The passability callback combines:
 
 ```text
-Tiled editor
-    ↓
-JSON export
-    ↓
-Zod validation / build-time conversion
-    ↓
-DungeonMap model
-    ↓
-Skia Atlas renderer
+in bounds
+static tile is walkable
+dynamic blocker is absent
+the intended target cell may be allowed when occupied by the target
 ```
 
-Recommended hybrid:
+Cache only when profiling shows a need. Dynamic occupancy and doors can invalidate paths cheaply in a turn-based game.
+
+## Field of view
+
+Use `ROT.FOV.PreciseShadowcasting` with `{ topology: 4 }`.
+
+Maintain two bitsets:
 
 ```text
-Procedural floor topology
-        +
-Hand-authored room templates
+visibleNow   recomputed for the current player position
+explored     persistent OR of every visibleNow result
 ```
 
-Avoid depending on an obscure React Native Tiled renderer. A small parser/converter for the subset of Tiled features you use is easier to own and test.
+The light-pass callback checks map opacity plus dynamic `BlocksVision` entities. Recompute after the player moves, a door opens/closes, or another opacity-changing event occurs—not every render frame.
 
-## Camera system
+## Actor scheduling
 
-Because Skia does not provide a Flame-style game camera abstraction, define one explicitly:
+Start with a project-owned `TurnScheduler` interface backed by `ROT.Scheduler.Speed`:
 
 ```ts
-export interface CameraState {
-  readonly x: number;
-  readonly y: number;
-  readonly zoom: number;
-  readonly viewportWidth: number;
-  readonly viewportHeight: number;
+export interface TurnScheduler {
+  add(actor: ScheduledActor): void;
+  remove(stableActorId: string): void;
+  next(): string | null;
+  snapshot(): TurnOrderSnapshot;
+  restore(snapshot: TurnOrderSnapshot): void;
 }
 ```
 
-The camera presentation may interpolate with Reanimated shared values, but room bounds, target selection, and logical coordinates should remain ordinary typed data.
+Store lightweight actor records keyed by stable ECS IDs. At stable turn boundaries, snapshot the current actor plus project-owned relative due times obtained through the scheduler adapter's public surface, then reconstruct the rot.js scheduler on load. Do not persist raw ECS entities or private rot.js queue internals.
 
-Implement only the camera features this game needs:
+If actions later need different costs, replace the adapter with `ROT.Scheduler.Action`. The rest of the simulation should not know which rot.js scheduler is used.
 
-- Follow player or focus target
-- Clamp to map bounds
-- Snap to logical pixels
-- Short screen shake impulse
-- Optional scripted pan or zoom
+Do not use `ROT.Engine`. Its lock/unlock loop obscures who owns async execution and makes route cancellation, animation gating, and deterministic command tests harder.
 
----
+## RNG and deterministic streams
 
-# 14. Sprite Atlases and Asset Loading
+Keep separate serializable streams for dungeon generation, enemy AI, combat/dice, loot, cosmetics, and local development gacha.
 
-Avoid hundreds of standalone frame files. Use sprite sheets or atlases.
+`ROT.RNG` exposes seed/state APIs, but the default export is shared by map generators. The dungeon adapter must:
 
-```text
-assets/
-├── images/
-│   ├── characters.png
-│   ├── monsters.png
-│   ├── dungeon.png
-│   ├── items.png
-│   └── effects.png
-│
-├── atlases/
-│   ├── characters.json
-│   ├── monsters.json
-│   └── dungeon.json
-│
-├── rive/
-│   ├── summon.riv
-│   ├── level-up.riv
-│   └── reward-reveal.riv
-│
-├── audio/
-│   ├── music/
-│   └── sfx/
-│
-├── data/
-│   ├── monsters.json
-│   ├── items.json
-│   ├── abilities.json
-│   ├── banners.json
-│   └── loot-tables.json
-│
-└── maps/
-```
+1. Save the current module-level RNG state.
+2. Set the floor generation state.
+3. Generate synchronously with no `await`.
+4. Capture the new floor RNG state.
+5. Restore the prior module-level state in `finally`.
 
-Skia `Atlas` is appropriate for efficiently drawing many tiles or sprites from one image. Store source rectangles and transforms in compact arrays and avoid rebuilding large arrays unnecessarily every React render.
+Never generate two floors concurrently against the shared rot.js RNG. Do not let Effect concurrency reorder deterministic RNG draws.
 
-Use `expo-asset` to preload critical images, audio, map files, and fonts before entering a dungeon. Create an asset manifest so missing assets fail during development rather than during combat.
-
-For atlas tooling, use TexturePacker, Aseprite export metadata, or a small build-time converter that emits the exact JSON format your renderer consumes.
+Production paid gacha remains server-authoritative and must not use client rot.js RNG.
 
 ---
 
-# 15. Make Game Content Data-Driven
+# 8. Deterministic Turn Runner
 
-Do not hardcode gameplay content inside engines.
-
-```json
-{
-  "id": "goblin_01",
-  "hp": 100,
-  "attack": 5,
-  "resistances": {
-    "poison": 0.2
-  }
-}
-```
-
-Make these data-driven:
+The controller advances the simulation only after a command, not on every animation frame.
 
 ```text
-heroes
-monsters
-items
-equipment
-abilities
-dice
-status effects
-loot tables
-dungeons
-encounter tables
-gacha banners
-rarity tables
-experience curves
+Player command arrives
+        │
+        ▼
+RunController serializes command processing
+        │
+        ▼
+Set player intent component
+        │
+        ▼
+Core.update(0) → ordered ECS systems resolve one action
+        │
+        ▼
+rot scheduler chooses next actor
+        │
+        ├── enemy: compute AI intent and step ECS again
+        │
+        └── player: stop at awaitingInput
+        │
+        ▼
+Project scene → immutable UI/render snapshot + ordered events
 ```
 
-Use TypeScript types internally and Zod at trust boundaries:
+Rules:
+
+- Only one command resolution runs at a time.
+- `Core.update(0)` is a logical step; rules must not depend on wall-clock `deltaTime`.
+- Enemy AI may use pathfinding, visible/remembered targets, and seeded AI RNG.
+- Add a maximum automatic-actor-step guard to detect scheduler bugs.
+- Commit the authoritative result before playing its animation.
+- A replay is run seed + starting content version + ordered commands.
+
+If continuous environmental effects are later added, represent them as scheduled actor/system turns rather than frame-time mutations.
+
+---
+
+# 9. Dice Combat in ECS
+
+Keep combat formulas as pure TypeScript functions, but invoke them from ECS systems operating on components.
+
+Recommended commands:
+
+```text
+ROLL_DICE
+REROLL_DIE
+ASSIGN_DIE
+USE_ABILITY
+END_TURN
+MOVE
+INTERACT
+```
+
+Recommended combat components:
+
+```text
+EncounterMember
+DicePool
+AbilityLoadout
+SelectedTarget
+Health
+Stats
+StatusSet
+Shield
+PendingDamage
+PendingHeal
+```
+
+The dice and ability systems emit `DICE_ROLLED`, `ABILITY_ACTIVATED`, `DAMAGE_DEALT`, `CRITICAL_HIT`, `STATUS_APPLIED`, `ACTOR_DEFEATED`, `COMBAT_WON`, and `PLAYER_DEFEATED` events.
+
+Grid contact can either trigger bump-to-attack or switch the run phase into a dice-combat encounter. Choose one rule set per dungeon mode, but keep actors in the same ECS scene so health, statuses, loot, and death do not need a second authoritative model.
+
+Do not keep a separate mutable `CombatState` in Zustand. Zustand receives a projected combat HUD snapshot from ECS.
+
+---
+
+# 10. Effect Application Runtime
+
+Create one app-scoped Effect runtime and provide services for platform/data boundaries:
+
+```text
+RunRepository
+ProfileRepository
+GachaRepository
+PurchaseRepository
+AuthRepository
+AssetService
+AudioService
+HapticsService
+TokenStorage
+Clock/UUID/Logger services where needed
+```
+
+The application-level shape is:
 
 ```ts
-const MonsterDefinitionSchema = z.object({
-  id: z.string().min(1),
-  hp: z.number().int().positive(),
-  attack: z.number().nonnegative(),
-  resistances: z.record(z.string(), z.number().min(0).max(1)),
-});
+import type { Effect } from 'effect';
 
-export type MonsterDefinition = z.infer<typeof MonsterDefinitionSchema>;
+type AppProgram<A, E> = Effect.Effect<A, E, AppServices>;
 ```
 
-Validate content during tests or a build step, not every time an actor is rendered. Include a content/schema version in saved runs so changes can be migrated or rejected safely.
+## Typed errors
+
+Use tagged expected errors for recoverable operational failures:
+
+```text
+RunLoadError
+RunSaveError
+InvalidSaveError
+AssetLoadError
+NetworkError
+AuthError
+PurchaseError
+GachaRequestError
+GenerationError
+```
+
+An ordinary rejected move is usually a domain result/event, not an Effect failure. An impossible occupancy state is a defect: report it with the run seed, command index, and ECS diagnostics.
+
+Map errors to UI at the controller boundary. Do not show raw third-party exceptions.
+
+## Scoped background work
+
+Use scoped fibers for work that should end when the owning screen/run ends:
+
+```text
+coalesced save worker
+remote profile sync
+content refresh while a meta screen is active
+telemetry upload
+audio preload
+```
+
+Interrupt and clean up route-owned work when leaving the dungeon. Do not create detached fibers without an explicit app-lifetime owner.
+
+## Scheduling and retry
+
+Use Effect schedules for wall-clock concerns:
+
+```text
+retry transient idempotent requests with bounded exponential backoff and jitter
+repeat a foreground refresh while a screen remains active
+coalesce/debounce noncritical save requests
+time out a best-effort lifecycle flush
+```
+
+Do not retry invalid input, save schema incompatibility, non-idempotent purchase/gacha grants without an idempotency key, or programming defects.
+
+Give each retry policy one owner. Do not stack Effect retries with TanStack Query retries or native SDK retries accidentally.
 
 ---
 
-# 16. Gacha Architecture
+# 11. React Native, Zustand, and Presentation
 
-Treat gacha as a separate domain with explicit banner and pity rules.
-
-```ts
-export interface GachaBanner {
-  readonly bannerId: string;
-  readonly version: number;
-  readonly startsAt: string;
-  readonly endsAt: string;
-  readonly cost: CurrencyCost;
-  readonly featuredUnitIds: readonly string[];
-  readonly rarityRates: Readonly<Record<Rarity, number>>;
-  readonly pityRules: PityRules;
-}
-```
-
-Repository boundary:
-
-```ts
-export interface GachaRepository {
-  pull(input: {
-    bannerId: string;
-    count: 1 | 10;
-    idempotencyKey: string;
-  }): Promise<GachaPullResult>;
-}
-```
-
-Development:
+## Zustand owns
 
 ```text
-LocalGachaRepository
-        ↓
-GachaEngine
-        ↓
-Seeded local RNG
+current route-level loading/error state
+immutable projected run snapshot
+inventory/profile/meta-game projections
+open dialogs and selected menu items shared across components
+settings
+save/sync status
 ```
 
-Production:
+## ECS owns
 
 ```text
-RemoteGachaRepository
-        ↓
-API
-        ↓
-Server-side RNG + transaction
+grid positions and occupancy
+actors and interactive objects
+health, stats, dice, abilities, statuses
+turn order and current actor
+encounter phase
+current floor state
+run rewards not yet committed
 ```
 
-The production response should atomically include:
+## Reanimated/Skia own
 
-- Pull results
-- Updated currency balance
-- Updated pity state
-- Updated inventory/ownership state or a transaction identifier
-- Banner version used
-- Server receipt or audit identifier
+```text
+interpolated sprite coordinates
+camera transform and shake
+animation clocks
+particles and floating text
+temporary opacity/scale values
+```
 
-Use idempotency keys so retries cannot charge twice or issue duplicate pulls. Never trust the client clock for banner availability, and never grant paid rewards from client-generated randomness.
-
-The UI flow remains stable when the repository implementation changes.
+The store exposes commands that invoke the controller; it does not implement gameplay rules. Use narrow selectors so tile, actor, HUD, and menu updates do not rerender unrelated UI.
 
 ---
 
-# 17. Persistence: Expo SQLite + Drizzle ORM
+# 12. Rendering the Grid
 
-Use:
-
-```text
-expo-sqlite
-drizzle-orm
-drizzle-kit
-```
-
-Possible tables:
+Use a fixed logical tile size, initially 16 or 32 pixels.
 
 ```text
-player_profile
-characters
-owned_characters
-inventory
-currencies
-equipment
-progression
-quests
-gacha_pity
-completed_dungeons
-current_run
-save_metadata
+logical cell         ECS integer x/y
+logical pixel        cell × TILE_SIZE
+screen pixel         camera transform × logical pixel
 ```
 
-Example:
+Render with Skia:
 
-```ts
-export const currentRun = sqliteTable('current_run', {
-  runId: text('run_id').primaryKey(),
-  dungeonId: text('dungeon_id').notNull(),
-  seed: integer('seed').notNull(),
-  floor: integer('floor').notNull(),
-  stateJson: text('state_json').notNull(),
-  schemaVersion: integer('schema_version').notNull(),
-  updatedAt: integer('updated_at').notNull(),
-});
+```text
+GameCanvas
+├── TileAtlasLayer
+├── ExploredFogLayer
+├── PropsLayer
+├── ActorLayer
+├── CurrentFovLayer
+├── EffectsLayer
+└── CameraTransform
 ```
 
-Use transactions for changes that must stay consistent, such as equipping an item, consuming currency, or completing a dungeon.
+On `ACTOR_MOVED`, Reanimated interpolates from the old cell center to the new cell center. ECS already contains the committed destination. Animation completion only unlocks or advances presentation; it cannot change the simulation result.
 
-Keep SQL and Drizzle types in the data layer. Map database rows to domain types rather than leaking generated table types into the engine.
+Use native React components above the canvas for HUD, dice, abilities, inventory, dialogs, and accessible movement controls.
 
-Write and test migrations from the beginning. Never rely on deleting the app database during development as the normal upgrade strategy.
+Use Rive only for gacha/reward/level-up UI sequences. It is not a dungeon renderer or source of truth.
 
 ---
 
-# 18. Snapshot the Current Dungeon Run
+# 13. Domain-to-Presentation Events
 
-Do not fully normalize an active run into many relational tables. Store a versioned snapshot:
+After every command batch, export ordered domain events from the simulation:
 
-```text
-current_run
---------------------------------
-run_id
-dungeon_id
-seed
-floor
-rng_state
-state_json
-schema_version
-content_version
-updated_at
+```ts
+export type GameEvent =
+  | { type: 'ACTOR_MOVED'; actorId: string; from: GridPoint; to: GridPoint }
+  | { type: 'DOOR_OPENED'; doorId: string }
+  | { type: 'DAMAGE_DEALT'; targetId: string; amount: number }
+  | { type: 'ACTOR_DEFEATED'; actorId: string }
+  | { type: 'FOV_CHANGED' }
+  | { type: 'ITEM_COLLECTED'; itemId: string; quantity: number };
 ```
 
-Recommended persistence split:
+The presentation bridge maps these into animation/audio/haptic instructions. Keep the mapping pure and testable.
+
+Do not subscribe React components directly to the ECS event system. Publish one stable projected snapshot plus an ordered presentation batch through the controller.
+
+---
+
+# 14. Persistence and Resume
+
+Use normalized SQLite tables for permanent account data and a versioned snapshot for the active run.
 
 ```text
-Permanent account data
-    → normalized SQLite tables
+Permanent profile/inventory/currency
+    → normalized SQLite + Drizzle tables
 
 Active dungeon run
-    → versioned JSON snapshot
-
-Small UI preferences
-    → SQLite key-value store or AsyncStorage
+    → one versioned snapshot envelope
 ```
 
-The snapshot should include everything needed to resume deterministically:
-
-- Run and dungeon identifiers
-- Floor/map state
-- Player and encounter state
-- Combat state if saving mid-combat is allowed
-- Collected rewards not yet committed
-- RNG state or draw index
-- Schema and content versions
-
-Write snapshots at explicit checkpoints and on application-background events. Debounce noncritical writes. Use an atomic transaction when moving rewards from a completed run into permanent inventory.
----
-
-# 19. Preferences Storage
-
-Use `expo-sqlite/kv-store` or `@react-native-async-storage/async-storage` for small, noncritical preferences:
+Snapshot envelope:
 
 ```text
-music enabled
-music and SFX volume
-language
-haptics enabled
-graphics quality
-tutorial acknowledged
-accessibility preferences
+runId
+schemaVersion
+contentVersion
+floorSeed
+floorIndex
+dungeon grid and room metadata
+ECS scene data or project-owned component DTOs
+rot RNG states for each deterministic stream
+project-owned scheduler snapshot
+turn number and command index
+pending/committed rewards
+last stable phase
+updatedAt
 ```
 
-Do not use key-value preferences for:
+ESEngine supports JSON/binary scene serialization and version migration, but do not persist an unversioned raw scene blob. Wrap it in the project envelope; mark persisted component classes with `@Serializable`, persisted fields with `@Serialize`, register the components, validate the envelope, and test migrations. Transient intent components should not be serialized.
+
+Prefer saving at stable command boundaries. Do not save halfway through system processing. If the app backgrounds during presentation, save the already-committed simulation state and regenerate or skip presentation on resume.
+
+The save flow is an Effect program:
 
 ```text
-premium currency
-inventory
-character ownership
-gacha pity
-active-run snapshots
-critical progression
+project ECS state
+→ encode versioned snapshot
+→ validate
+→ SQLite transaction
+→ update save status projection
 ```
 
-If SQLite is already a core dependency, `expo-sqlite/kv-store` reduces the number of persistence systems. AsyncStorage remains reasonable if the team prefers its simpler standalone API.
+Serialize save requests so an older write cannot finish after a newer one. Flush immediately on AppState background/inactive notification, while acknowledging that the OS may suspend the process quickly.
 
 ---
 
-# 20. Secure Storage
+# 15. Content, Validation, and Migrations
 
-Use `expo-secure-store` for small sensitive values:
+Keep tile definitions, heroes, monsters, dice, abilities, statuses, items, loot/encounter tables, generation profiles, banners/pity rules, and progression curves data-driven.
 
-```text
-auth refresh token
-session token
-device-bound secret
-```
+Keep Zod as the single runtime schema system for the current prototype because it is already in the plan and dependencies. Effect error handling does not require migrating to Effect Schema.
 
-Wrap it:
+If the team later adopts Effect Schema, migrate one boundary deliberately and remove the matching Zod schema. Do not maintain two schema definitions for the same payload.
 
-```ts
-export interface TokenStorage {
-  save(token: string): Promise<void>;
-  read(): Promise<string | null>;
-  clear(): Promise<void>;
-}
-```
-
-Do not use SecureStore as a game database or for large save documents. Handle read/write failures and token invalidation explicitly.
+Save and content migrations are explicit, sequential, and tested from every shipped version.
 
 ---
 
-# 21. Authentication Architecture
+# 16. Gacha, Purchases, and Meta Game
 
-Do not couple the game to Firebase, Supabase, Clerk, or a custom provider before one is chosen.
+Gacha, purchases, authentication, and permanent inventory stay outside the dungeon ECS unless a value is copied into a new run at start.
 
-```ts
-export interface AuthRepository {
-  getSession(): Promise<AuthSession | null>;
-  subscribe(listener: (state: AuthState) => void): () => void;
-  signIn(input: SignInInput): Promise<User>;
-  signOut(): Promise<void>;
-}
-```
+Effect owns their workflows and typed failures; repository interfaces keep provider SDKs at the edge.
 
-Development implementation:
+Production gacha flow:
 
 ```text
-GuestAuthRepository
+UI request with idempotency key
+→ Effect GachaRepository program
+→ server-authoritative transaction and RNG
+→ authoritative pull result, pity, balance, inventory
+→ persist/update projections
+→ play known Rive reveal
 ```
 
-Possible future implementations:
-
-```text
-FirebaseAuthRepository
-SupabaseAuthRepository
-ClerkAuthRepository
-CustomAuthRepository
-```
-
-Provider SDK types should stop at the repository boundary. The rest of the application should understand only domain-level `User`, `AuthSession`, and `AuthState` types.
-
-Use Expo Router layout guards for authenticated route groups. Hydrate the session before deciding the initial route to avoid login-screen flashes.
+Production purchases must be verified and granted server-side or through RevenueCat. Never grant premium currency from a client callback alone. Do not delay authoritative persistence until a reveal animation completes.
 
 ---
 
-# 22. Purchases
-
-Choose one client library:
-
-- **RevenueCat `react-native-purchases`** when you want hosted product configuration, receipt handling, analytics, and entitlement tooling.
-- **`expo-iap`** when you want a thinner OpenIAP-compatible client and will own more backend/store logic.
-
-Wrap either one:
-
-```ts
-export interface PurchaseRepository {
-  subscribe(listener: (event: PurchaseEvent) => void): () => void;
-  loadProducts(): Promise<readonly Product[]>;
-  purchase(productId: string): Promise<PurchaseAttempt>;
-  restorePurchases(): Promise<void>;
-}
-```
-
-Production flow:
-
-```text
-Purchase initiated
-        ↓
-Apple App Store / Google Play
-        ↓
-Store transaction or purchase token
-        ↓
-Backend or RevenueCat verification
-        ↓
-Idempotent server-side grant
-        ↓
-Client refreshes authoritative balance
-```
-
-Do not grant premium currency solely because a local purchase callback reports success. The server must verify and grant idempotently.
-
-IAP libraries require custom native code, so real purchase testing needs an Expo development build and store sandbox/test accounts. Mock the repository for unit tests and most UI development.
-
----
-
-# 23. TypeScript Models and Runtime Validation
-
-TypeScript replaces most of the role previously handled by generated immutable model packages.
-
-Use:
-
-```text
-type and interface
-readonly properties
-discriminated unions
-generics
-exhaustive switch checks
-```
-
-Use Zod only at trust boundaries:
-
-```text
-bundled JSON content
-SQLite snapshot JSON
-API requests and responses
-remote configuration
-imported debug saves
-```
-
-Do not validate the same trusted object on every render or every engine step.
-
-Use `structuredClone`, focused update functions, array mapping, or object spread for normal immutable updates. Add `immer` only if deeply nested updates become a recurring source of defects.
-
-Use exhaustive checks:
-
-```ts
-function assertNever(value: never): never {
-  throw new Error(`Unhandled variant: ${JSON.stringify(value)}`);
-}
-```
-
-Keep serialization models versioned. A TypeScript type disappears at runtime; it does not validate a save file by itself.
-
----
-
-# 24. Audio and Haptics
-
-Use `expo-audio` for music and sound effects. Wrap it:
-
-```ts
-export interface AudioService {
-  preload(): Promise<void>;
-  playSfx(sound: Sfx): void;
-  playMusic(track: MusicTrack): void;
-  setMusicVolume(value: number): void;
-  setSfxVolume(value: number): void;
-  stopMusic(): void;
-}
-```
-
-Use `expo-haptics` behind a similar adapter:
-
-```ts
-export interface HapticsService {
-  impact(style: HapticStyle): void;
-  success(): void;
-  error(): void;
-}
-```
-
-The domain must not call Expo APIs directly.
-
-```text
-DamageDealt
-    ↓
-Presentation bridge
-    ├── attack animation
-    ├── screen shake
-    ├── damage number
-    ├── sword SFX
-    └── haptic feedback
-```
-
-Respect user settings, silent-mode expectations, app lifecycle, and reduced-motion/accessibility preferences. Preload short critical SFX before combat.
-
----
-
-# 25. Recommended Packages
-
-## Core
-
-| Package                                | Purpose                                                 |        Add now?        |
-| -------------------------------------- | ------------------------------------------------------- | :--------------------: |
-| `expo`                                 | App framework and native module ecosystem               |          Yes           |
-| `expo-router`                          | File-based routing and deep links                       |          Yes           |
-| `@shopify/react-native-skia`           | Dungeon, sprite, tile, particle, and VFX rendering      |          Yes           |
-| `react-native-reanimated`              | UI-thread animation and visual frame callbacks          |          Yes           |
-| `react-native-worklets`                | Worklet runtime required by the current animation stack |          Yes           |
-| `react-native-gesture-handler`         | Gestures and drag/drop                                  |          Yes           |
-| `zustand`                              | Application state and orchestration                     |          Yes           |
-| `zod`                                  | Runtime validation at trust boundaries                  |          Yes           |
-| `expo-asset`                           | Asset loading and caching                               |          Yes           |
-| `expo-audio`                           | Music and SFX                                           |          Yes           |
-| `expo-haptics`                         | Haptic feedback                                         |          Yes           |
-| `expo-sqlite`                          | Local database and optional KV store                    |    Prototype phase     |
-| `drizzle-orm`                          | Typed SQLite schema and queries                         |    Prototype phase     |
-| `expo-secure-store`                    | Tokens and small secrets                                |    When auth begins    |
-| `@rive-app/react-native`               | Gacha/reward animation                                  | When Rive assets exist |
-| `react-native-nitro-modules`           | Required by the new Rive runtime                        |       With Rive        |
-| `@tanstack/react-query`                | Remote server cache and request state                   |  When backend begins   |
-| `react-native-purchases` or `expo-iap` | Store purchases                                         |  When commerce begins  |
-
-## Development and testing
-
-```text
-typescript
-eslint
-prettier
-jest-expo
-@testing-library/react-native
-fast-check
-drizzle-kit
-Maestro or Detox for end-to-end tests
-```
-
-`fast-check` is optional but useful for property-based tests of dice, loot, dungeon generation, and gacha invariants.
-
-## Optional packages
-
-```text
-immer                       deeply nested immutable updates
-@shopify/flash-list         large inventory/history lists
-expo-crypto                 secure IDs or digests when needed
-expo-updates                explicit OTA update policy
-Sentry React Native         production diagnostics
-```
-
-Do not add every package on day one. Add a dependency only when its feature enters the implementation milestone.
-
----
-
-# 26. Suggested Project Structure
+# 17. Suggested Project Structure
 
 ```text
 app/
 ├── _layout.tsx
-├── index.tsx
-├── login.tsx
 ├── (main)/
-└── dungeon/
+└── dungeon/[id].tsx
 
 src/
 ├── bootstrap/
-│   ├── bootstrap.ts
-│   └── dependencies.ts
-│
-├── core/
-│   ├── errors/
-│   ├── logging/
-│   ├── random/
-│   │   ├── random-source.ts
-│   │   └── seeded-random-source.ts
-│   ├── time/
-│   └── utils/
-│
-├── domain/
+│   ├── effect-runtime.ts
+│   ├── app-services.ts
+│   └── initialize-ecs.ts
+├── game/
+│   ├── ecs/
+│   │   ├── components/
+│   │   ├── systems/
+│   │   ├── run-scene.ts
+│   │   └── system-order.ts
+│   ├── grid/
+│   │   ├── dungeon-grid.ts
+│   │   ├── occupancy-index.ts
+│   │   └── movement-rules.ts
+│   ├── rot/
+│   │   ├── rot-dungeon-generator.ts
+│   │   ├── rot-pathfinder.ts
+│   │   ├── rot-fov.ts
+│   │   ├── rot-turn-scheduler.ts
+│   │   └── rot-random.ts
 │   ├── combat/
-│   │   ├── combat-engine.ts
-│   │   ├── combat-state.ts
-│   │   ├── commands.ts
-│   │   ├── events.ts
-│   │   ├── dice/
-│   │   ├── abilities/
-│   │   └── status-effects/
-│   │
-│   ├── dungeon/
-│   │   ├── dungeon.ts
-│   │   ├── room.ts
-│   │   ├── dungeon-generator.ts
-│   │   └── dungeon-run.ts
-│   │
-│   ├── character/
-│   ├── inventory/
-│   ├── equipment/
-│   ├── progression/
-│   ├── economy/
-│   └── gacha/
-│       ├── banner.ts
-│       ├── pity-state.ts
-│       ├── pull-result.ts
-│       └── gacha-engine.ts
-│
+│   ├── commands/
+│   ├── events/
+│   ├── projection/
+│   ├── replay/
+│   └── serialization/
 ├── application/
-│   ├── combat/
-│   ├── dungeon/
-│   ├── inventory/
-│   ├── gacha/
-│   ├── shop/
-│   └── account/
-│
+│   ├── run-controller.ts
+│   ├── programs/
+│   ├── errors/
+│   └── services/
 ├── data/
 │   ├── db/
-│   │   ├── schema.ts
-│   │   ├── migrations/
-│   │   └── mappers/
 │   ├── repositories/
 │   ├── secure-storage/
 │   ├── purchases/
 │   └── remote/
-│
-├── game/
-│   ├── canvas/
-│   ├── camera/
-│   ├── scene/
-│   ├── sprites/
-│   ├── tiles/
-│   ├── particles/
-│   ├── effects/
-│   ├── animation/
-│   └── bridge/
-│
 ├── stores/
-│   ├── combat-store.ts
-│   ├── current-run-store.ts
-│   ├── inventory-store.ts
+│   ├── run-view-store.ts
+│   ├── player-store.ts
 │   └── settings-store.ts
-│
 └── presentation/
-    ├── home/
     ├── dungeon/
-    ├── combat/
+    ├── canvas/
+    ├── hud/
     ├── inventory/
-    ├── characters/
     ├── gacha/
-    ├── shop/
-    ├── settings/
     └── components/
-
-assets/
-├── images/
-├── atlases/
-├── maps/
-├── data/
-├── rive/
-└── audio/
 ```
 
-Do not create every folder on day one. Grow the structure feature by feature while preserving dependency direction.
+Grow this structure by vertical slice. Do not create every folder before its first feature.
 
 ---
 
-# 27. Typical Combat Interaction
+# 18. Testing Strategy
+
+## Deterministic simulation
 
 ```text
-Player drags 🎲6 onto Power Slash
-                │
-                ▼
-       React Native Combat UI
-                │
-                ▼
-        Combat store action
-                │
-                ▼
-       USE_ABILITY command
-                │
-                ▼
-          CombatEngine
-                │
-          ┌─────┴──────┐
-          ▼            ▼
-    CombatState      Domain events
-      updated             │
-                          │
-                DAMAGE_DEALT(32)
-                CRITICAL_HIT
-                          │
-                          ▼
-                Presentation bridge
-                          │
-          ┌───────────────┼───────────────┐
-          ▼               ▼               ▼
-      Skia sprite     Reanimated       Audio/haptic
-      animation       shake + text     feedback
+cardinal movement changes exactly one cell
+diagonal and multi-cell movement is rejected
+walls and blocking entities prevent overlap
+bump-to-attack never moves into an occupied hostile cell
+doors update movement and vision consistently
+FOV changes only after relevant state changes
+the same seed and commands produce the same map, events, and final projection
+save/load preserves RNG streams, scheduler order, ECS state, and command index
 ```
 
-The state transition is deterministic. Presentation may be skipped, sped up, replayed, or changed without changing the damage result.
+## rot.js adapters
+
+```text
+generated spawn and exit are connected
+all generated cells translate to valid project tile IDs
+A* respects topology 4 and dynamic blockers
+FOV respects opaque tiles and closed doors
+shared ROT.RNG state is restored even when generation fails
+scheduler snapshot/restore preserves the next actor sequence
+```
+
+## ECS
+
+```text
+systems execute in declared order
+transient intents are removed after resolution
+structural changes use deferred commands safely
+death removes scheduling/occupancy participation
+status durations tick once per logical turn
+projecting the scene does not mutate it
+```
+
+## Effect
+
+```text
+typed save/load failures map to recoverable UI states
+retry policies retry only transient/idempotent failures
+route cancellation interrupts owned fibers
+serialized saves cannot complete out of order
+lifecycle flush is bounded
+```
+
+Use Effect's test clock/scheduler facilities for time-based programs rather than real sleeps.
+
+## Presentation and E2E
+
+```text
+D-pad, swipe, tap-path, and keyboard produce the same commands
+input gating prevents double turns
+resume during presentation restores committed state
+reduced motion can skip interpolation without changing results
+screen readers can operate movement and combat controls
+pixel output remains crisp across representative sizes
+```
+
+Profile production builds on a mid-range Android device and at least one iPhone.
 
 ---
 
-# 28. Typical Gacha Interaction
+# 19. Performance Rules
 
-```text
-Summon ×10
-    │
-    ▼
-Gacha controller
-    │
-    ▼
-GachaRepository.pull()
-    │
-    ├── Local seeded implementation during development
-    │
-    └── Remote authoritative implementation in production
-             │
-             ▼
-       GachaPullResult
-             │
-    ┌────────┴─────────┐
-    ▼                  ▼
-Authoritative      Rive reveal
-inventory/pity     sequence receives
-state updates      known results
-```
-
-Do not delay persistence until the reveal animation ends. If the app closes during the animation, the granted items must still exist and the result should be recoverable from history.
-
----
-
-# 29. Testing Strategy
-
-```text
-__tests__/
-├── domain/
-│   ├── dice/
-│   ├── combat/
-│   ├── status-effects/
-│   ├── loot/
-│   ├── dungeon-generation/
-│   └── gacha/
-│
-├── application/
-├── data/
-├── game/
-└── presentation/
-
-e2e/
-├── new-game.yaml
-├── resume-run.yaml
-├── combat-win.yaml
-└── restore-purchases.yaml
-```
-
-Important deterministic tests:
-
-```text
-rolling two sixes triggers a critical
-poison ticks at the correct phase
-shield absorbs damage before HP
-enemy dies when HP reaches zero
-pity triggers at the configured pull count
-featured guarantee resets correctly
-loot tables never produce invalid IDs
-the same seed and commands produce the same dungeon and combat
-save/load preserves RNG and active-run state
-replaying commands reproduces the same event log
-```
-
-Also test:
-
-- Zod validation for every bundled content file
-- Database migrations from every shipped schema version
-- Repository error and retry behavior
-- Idempotent gacha and purchase requests
-- Store selectors to prevent unnecessary rerenders
-- Presentation-event mappings
-- App background/resume during combat and gacha reveal
-- Pixel output and layout on representative Android/iOS sizes
-- Reduced motion, larger text, and screen-reader flows for controls
-
-Use production-mode builds for performance measurements. Development mode is not a reliable indicator of frame time or memory behavior.
-
----
-
-# 30. Performance and Lifecycle Rules
-
-Set performance budgets early:
-
-```text
-target frame rate          60 fps on supported baseline devices
-combat command execution   effectively instantaneous for normal encounters
-dungeon entry              no visible asset fetch after transition begins
-resume snapshot write      bounded and debounced
-React rerenders            isolated through narrow selectors
-```
-
-Key rules:
-
+- Keep the tile grid in typed arrays with a stable reference.
+- Maintain an O(1) occupancy lookup keyed by cell.
+- Recompute FOV only when position or opacity changes.
+- Run pathfinding only for actors that need a new decision.
 - Batch tiles and repeated sprites with Skia Atlas.
-- Keep large map arrays stable; do not recreate them on every React render.
-- Do not mirror every shared value into Zustand.
-- Preload combat-critical assets.
-- Pool or cap particles and floating text.
-- Pause presentation frame callbacks when the game screen is unfocused or backgrounded.
-- Persist the run before the OS can suspend the app.
-- Profile on a real mid-range Android device, not only a simulator or flagship phone.
-- Test both 60 Hz and high-refresh displays.
-- Keep remote fetching out of combat resolution.
+- Project one immutable render snapshot after a command batch, not after every component mutation.
+- Never write per-frame positions to ECS or Zustand.
+- Cap particles, floating text, and queued presentation events.
+- Keep ECS systems synchronous and small.
+- Never run async I/O or remote fetching during turn resolution.
+- Measure map-generation worst cases and enforce a generation time/attempt limit.
 
-Skia is the right renderer for this design, but the team owns the camera, sprite lifecycle, tile conversion, scene orchestration, and performance discipline that a full engine would normally provide.
+Target 60 fps presentation on supported baseline devices; simulation work should complete well below one frame for ordinary turns.
 
 ---
 
-# 31. Expo Development and Delivery
+# 20. Expo SDK 57 and Native Delivery
 
-Start with modern Expo and **development builds**, not an Expo-Go-only architecture.
+The project targets Expo SDK 57 / React Native 0.86 / React 19.2.3. Use the exact SDK 57 documentation when adding or changing Expo APIs.
 
-Recommended workflow:
+Use Expo development builds, Continuous Native Generation, EAS Build/Update/Submit, and separate development/preview/production profiles.
 
-```text
-Expo SDK 57
-    +
-Continuous Native Generation
-    +
-Development builds
-    +
-EAS Build / Update / Submit
-```
+Install Expo/RN ecosystem packages with `npx expo install` when Expo provides compatibility selection. Install pure TypeScript packages such as Effect and rot.js with the project's package manager.
 
-Expo Go is useful for an early shell and currently includes several core libraries, but it cannot host arbitrary custom native code. Rive and real IAP are concrete reasons to establish a development build early.
+Development builds are required early because the final native dependency set will exceed Expo Go's fixed runtime.
 
-Create separate EAS profiles:
+Before shipping an OTA update:
 
-```text
-development   local/dev-client testing
-preview       internal QA distribution
-production    store release
-```
-
-Treat OTA updates carefully:
-
-- Use runtime-version compatibility rules.
-- Do not ship JavaScript that assumes native modules absent from the installed binary.
-- Version content and save schemas.
-- Keep a rollback plan for live balance/content changes.
-- Test migrations and resume behavior against the previous production build.
-
-Build and test iOS and Android continuously. Do not defer Android validation until release; rendering, lifecycle, audio, and store behavior can differ.
+- Respect runtime-version compatibility.
+- Ensure required native modules exist in the installed binary.
+- Test previous-production save migrations.
+- Test deterministic run resume across the update.
+- Keep a rollback plan for live content.
 
 ---
 
-# 32. Recommended Implementation Milestones
+# 21. Implementation Milestones
 
-## Milestone 0: Architecture spike
-
-Prove the risky rendering boundary before building meta-game screens.
+## Milestone 0: Compatibility and architecture spike
 
 Deliver:
 
-- One Expo development build on Android and iOS
-- One Skia canvas with a tile atlas
-- Player and monster sprite animation
-- Camera clamp and screen shake
-- React Native HUD over the canvas
-- One Reanimated frame callback
-- A frame-time check on a mid-range physical device
+- Pin the three gameplay libraries to reviewed versions for the spike.
+- Confirm ESEngine decorators compile and execute on Hermes.
+- Create/dispose a `Core` + `Scene` cleanly through React route lifecycle.
+- Run a minimal ordered ECS system step.
+- Generate a seeded rot.js dungeon and restore RNG state.
+- Run/cancel an Effect fiber from the app-scoped runtime.
+- Validate production minification on Android and iOS.
 
-Exit condition: the team is comfortable owning the renderer without a full game engine.
+Exit condition: all three libraries work together in development and production builds without Node-only globals or browser DOM APIs.
 
-## Milestone 1: Vertical combat slice
+## Milestone 1: Grid roguelike vertical slice
 
 Deliver:
 
-- Pure TypeScript combat state machine
-- Seeded `RandomSource`
-- Dice tray and one drag-to-ability interaction
+- `DungeonGrid` from `ROT.Map.Digger`
+- Player and one enemy as ECS entities
+- Cardinal D-pad/swipe movement
+- Collision and occupancy
+- `ROT.Path.AStar` enemy pursuit
+- `ROT.FOV.PreciseShadowcasting` fog of war
+- Manual `ROT.Scheduler.Speed` turn advancement
+- Skia tile/sprite rendering and Reanimated cell interpolation
+- Seeded deterministic tests
+
+Exit condition: the same seed and commands reproduce the same floor and final state.
+
+## Milestone 2: Dice combat slice
+
+Deliver:
+
+- Dice, abilities, health, damage, and statuses as ECS data/systems
+- Bump/encounter transition from grid movement
 - One player ability and one enemy action
-- Event-to-presentation bridge
-- SFX and haptic feedback
-- Deterministic engine tests
+- Ordered presentation events, SFX, and haptics
+- Input gating and reduced-motion skip
 
-## Milestone 2: Dungeon run
-
-Deliver:
-
-- Procedural topology plus two or three room templates
-- Tiled JSON conversion pipeline
-- Movement/navigation and encounters
-- Loot and progression
-- Current-run snapshot including RNG state
-- Background/resume recovery
-
-## Milestone 3: Meta game
+## Milestone 3: Effect workflows and persistence
 
 Deliver:
 
-- Home, character, inventory, equipment, and settings routes
-- Zustand stores with narrow selectors
-- Expo SQLite + Drizzle schema and migrations
-- Data-driven content validated with Zod
-- Rive level-up or reward animation
+- App-scoped Effect runtime and services
+- Typed repository/platform errors
+- Versioned ECS/run snapshot
+- SQLite + Drizzle transaction and migrations
+- Serialized/coalesced save worker
+- foreground/background lifecycle recovery
+- replay fixture for a complete run
 
-## Milestone 4: Gacha prototype
+## Milestone 4: Dungeon depth and meta game
 
-Deliver:
+Deliver multiple generation profiles, doors, traps, pickups, stairs, loot, progression, meta-game routes, content validation, and performance budgets.
 
-- Versioned banner model and pity engine
-- Local seeded repository
-- Rive summon/reveal sequence
-- Atomic inventory/pity updates
-- Pull history and interruption recovery
+## Milestone 5: Gacha and production services
 
-## Milestone 5: Production services
-
-Deliver:
-
-- Auth repository implementation
-- Backend API and TanStack Query integration
-- Server-authoritative gacha
-- Cloud save/sync strategy
-- Purchase verification and idempotent grants
-- Analytics, crash reporting, remote configuration, and live-ops controls
+Deliver server-authoritative gacha, idempotent purchase flows, Rive reveals of committed results, auth, cloud save/sync, analytics, crash reporting, and live-ops controls.
 
 ---
 
-# 33. First Prototype Dependencies
+# 22. Dependency Guidance
 
-Start with the latest compatible versions for the selected Expo SDK, installed through `npx expo install` where applicable.
+Core prototype dependencies:
 
 ```text
-expo
-expo-router
-typescript
-
+@esengine/ecs-framework
+effect
+rot-js
 @shopify/react-native-skia
 react-native-reanimated
 react-native-worklets
 react-native-gesture-handler
-
 zustand
 zod
-
 expo-asset
 expo-audio
 expo-haptics
-
-jest-expo
-@testing-library/react-native
 ```
 
-Add when the vertical slice needs persistence:
+Add `expo-sqlite`, `drizzle-orm`, and `drizzle-kit` when persistence begins. Add Rive, auth, remote cache, SecureStore, and purchases only when those milestones begin.
 
-```text
-expo-sqlite
-drizzle-orm
-drizzle-kit
-```
-
-Add only when those features begin:
-
-```text
-@rive-app/react-native
-react-native-nitro-modules
-expo-secure-store
-@tanstack/react-query
-react-native-purchases or expo-iap
-```
-
-Do not begin the prototype with auth, purchases, cloud saves, or production gacha. First prove combat, rendering, camera, asset loading, performance, and deterministic resume.
+Do not add `ROT.Display`, another game loop, another ECS, or a second source of gameplay truth.
 
 ---
 
-# 34. Final Recommended Stack
-
-## React Native + Expo
-
-Use for:
-
-- Application shell
-- Navigation and deep links
-- Menus and accessible controls
-- Combat HUD
-- Inventory and character management
-- Gacha, shop, and settings screens
-- Native development and delivery workflow
-
-## React Native Skia
-
-Use for:
-
-- Dungeon tiles
-- Characters and monsters
-- Sprite animation
-- Camera transform
-- Particles
-- Damage numbers
-- Combat VFX
-
-## Reanimated + Worklets
-
-Use for:
-
-- Visual frame callbacks
-- Shared animation values
-- UI-thread interpolation
-- Camera movement and shake
-- UI transitions and gesture feedback
-
-## Zustand
-
-Use for:
-
-- Application orchestration
-- Shared application state
-- Controllers/actions
-- Dependency access at the app boundary
-
-## Pure TypeScript Domain
-
-Use for:
-
-- Dice mechanics
-- Combat rules
-- Abilities and status effects
-- Dungeon generation
-- Progression and loot
-- Economy
-- Gacha and pity rules
-
-## Zod
-
-Use for:
-
-- Bundled content validation
-- Save snapshot parsing
-- API responses
-- Remote configuration
-
-## Expo SQLite + Drizzle
-
-Use for:
-
-- Local-first persistence
-- Player progression
-- Inventory and characters
-- Gacha pity and history
-- Dungeon-run snapshots
-- Schema migrations and transactions
-
-## Expo Router
-
-Use for:
-
-- Application navigation
-- Typed routes
-- Deep links
-- Authenticated layouts
-- Screen structure
-
-## Rive
-
-Use for:
-
-- Gacha summon sequences
-- Reward and rarity reveals
-- Level-up animations
-- Polished vector UI moments
-
-## RevenueCat or Expo IAP
-
-Use for:
-
-- App Store and Google Play purchases
-- Purchase restoration
-- Store transaction integration
-
-Always wrap the selected implementation behind a repository and verify paid grants authoritatively.
-
----
-
-# 35. Overall System
+# 23. Final Ownership Summary
 
 ```text
- React Native UI              Skia + Reanimated
-        │                            │
-        └────────────┬───────────────┘
-                     ▼
-              Application Layer
-              Zustand/controllers
-                     │
-                     ▼
-            PURE TYPESCRIPT DOMAIN
-                     │
-                     ▼
-                Repositories
-                     │
-          ┌──────────┴───────────┐
-          ▼                      ▼
- Expo SQLite / native APIs   Backend later
+@esengine/ecs-framework
+    authoritative live-run entities, components, queries, and ordered rule systems
+
+rot-js
+    dungeon generation, four-way A*, FOV, seeded RNG support, and actor turn order
+
+Effect
+    typed operational errors, services, async workflows, cancellation, retries, repetition
+
+Zustand
+    UI projections and screen/application state
+
+Skia + Reanimated
+    pixel-art rendering and visual interpolation
+
+Expo + React Native
+    app shell, navigation, accessible input, lifecycle, native capabilities, delivery
+
+SQLite + Drizzle
+    durable local profile data and versioned run snapshots
 ```
 
-This architecture supports a strong local-first game now while leaving clean paths for:
+The most important implementation constraint is the synchronous boundary:
 
-- Authentication
-- Cloud saves
-- Server-authoritative gacha
-- Purchase verification
-- Live events and remote configuration
-- Cross-device progression
-- Analytics and diagnostics
-- Social or multiplayer features
-
-The key tradeoff is deliberate:
-
-> **Expo provides a stronger app ecosystem; Skia provides the renderer; the project owns the small amount of game-engine infrastructure it actually needs.**
-
-For this dice-driven RPG, that tradeoff is reasonable. If the design later becomes physics-heavy, collision-heavy, or twitch-action focused, reevaluate whether a dedicated game engine is more appropriate before adding more custom engine infrastructure.
+> **A command enters the run, the ECS and rot.js adapters resolve it deterministically, and only then does Effect perform external work and presentation animate the committed result.**
 
 ---
 
 # Official References
 
-Recommendations and package compatibility were checked on **September 1, 2026**. Install versions compatible with the chosen Expo SDK rather than copying isolated package version numbers.
+Documentation was reviewed on September 1, 2026.
 
-- [Expo SDK 57 and `create-expo-app`](https://docs.expo.dev/more/create-expo/)
-- [Expo Router introduction](https://docs.expo.dev/router/introduction/)
-- [React Native Skia in Expo](https://docs.expo.dev/versions/latest/sdk/skia/)
-- [Skia Atlas](https://shopify.github.io/react-native-skia/docs/shapes/atlas/)
-- [Reanimated `useFrameCallback`](https://docs.swmansion.com/react-native-reanimated/docs/advanced/useFrameCallback/)
-- [Expo SQLite and Drizzle integration](https://docs.expo.dev/versions/latest/sdk/sqlite/)
-- [Expo SecureStore](https://docs.expo.dev/versions/latest/sdk/securestore/)
-- [Expo in-app purchases guide](https://docs.expo.dev/guides/in-app-purchases/)
-- [Rive React Native runtime](https://rive.app/docs/runtimes/react-native/react-native)
-- [Adding Rive to Expo](https://rive.app/docs/runtimes/react-native/adding-rive-to-expo)
-- [Expo app-store delivery](https://docs.expo.dev/deploy/submit-to-app-stores/)
+## ESEngine ECS Framework
+
+- [ESEngine repository and quick start](https://github.com/esengine/esengine)
+- [ECS Framework guide](https://esengine.cn/en/guide/)
+- [System guide and update ordering](https://esengine.cn/guide/system)
+- [Entity queries and Matcher](https://esengine.cn/guide/entity-query)
+- [Scene serialization](https://esengine.cn/guide/serialization)
+- [`@esengine/ecs-framework` on npm](https://www.npmjs.com/package/@esengine/ecs-framework)
+
+## Effect 4
+
+- [The Effect type](https://www.effect.website/docs/v4/getting-started/the-effect-type)
+- [Expected errors and defects](https://www.effect.website/docs/v4/error-management/two-error-types)
+- [Basic concurrency and interruption](https://www.effect.website/docs/v4/concurrency/basic-concurrency)
+- [Scheduling](https://www.effect.website/docs/v4/scheduling/introduction/)
+- [Repetition](https://www.effect.website/docs/v4/scheduling/repetition/)
+- [Retrying](https://www.effect.website/docs/v4/error-management/retrying)
+
+## rot.js 2.2.1
+
+- [Official interactive manual](https://ondras.github.io/rot.js/manual/)
+- [`ROT.Map.Digger` API](https://ondras.github.io/rot.js/doc/classes/map_digger.default.html)
+- [`ROT.FOV.PreciseShadowcasting` API](https://ondras.github.io/rot.js/doc/classes/fov_precise_shadowcasting.default.html)
+- [`ROT.Path.AStar` API](https://ondras.github.io/rot.js/doc/classes/path_astar.default.html)
+- [`ROT.Scheduler.Speed` API](https://ondras.github.io/rot.js/doc/classes/scheduler_speed.default.html)
+- [`ROT.RNG` API](https://ondras.github.io/rot.js/doc/modules/rng.html)
+
+## Expo SDK 57
+
+- [Expo SDK 57 reference](https://docs.expo.dev/versions/v57.0.0/)
+- [React Native Skia for SDK 57](https://docs.expo.dev/versions/v57.0.0/sdk/skia/)
+- [Expo SQLite for SDK 57](https://docs.expo.dev/versions/v57.0.0/sdk/sqlite/)
+- [Expo Asset for SDK 57](https://docs.expo.dev/versions/v57.0.0/sdk/asset/)
+- [Expo Audio for SDK 57](https://docs.expo.dev/versions/v57.0.0/sdk/audio/)
+- [Expo Haptics for SDK 57](https://docs.expo.dev/versions/v57.0.0/sdk/haptics/)

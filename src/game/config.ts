@@ -24,5 +24,5 @@ export const ACTOR_FOLLOW_RATE = 14;
 export const SHAKE_DURATION_MS = 420;
 export const SHAKE_MAGNITUDE_PX = 2.5;
 
-/** How often the demo simulation tick runs on the JavaScript thread. */
-export const DEMO_TICK_INTERVAL_MS = 100;
+/** How often the spike simulation steps on the JavaScript thread (ms). */
+export const SPIKE_TICK_INTERVAL_MS = 100;

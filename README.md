@@ -33,22 +33,20 @@ npm run format:check && npm run lint && npm run typecheck && npm test -- --ci
 Dependency direction points **inward**; inner layers know nothing about outer ones:
 
 ```text
-app (routes, thin) ─┐
-presentation ───────┼─→ stores ─→ application ─→ domain ─→ core
-game (renderer) ────┤
-data ───────────────┘──────────↗ (data implements application/domain interfaces)
+app (routes, thin) ──→ presentation ──→ stores ──→ application ──→ game (ECS simulation) ──→ domain ──→ core
+data ────────────────────────────────────────────────────↗ (data implements application/domain ports)
 ```
 
-| Layer           | Path               | May import                                        | Must never import                                                         |
-| --------------- | ------------------ | ------------------------------------------------- | ------------------------------------------------------------------------- |
-| Core            | `src/core`         | nothing (pure TypeScript)                         | everything above it, incl. `domain`                                       |
-| Domain          | `src/domain`       | `core`                                            | React, React Native, Expo, Skia, Reanimated, Zustand, outer layers        |
-| Application     | `src/application`  | `domain`, `core`                                  | UI/native/state packages, `data`, `stores`, `game`, `presentation`, `app` |
-| Data            | `src/data`         | `application`, `domain`, `core`, Expo SDK         | React DOM, renderer stack, `stores`, `game`, `presentation`, `app`        |
-| Stores          | `src/stores`       | `application`, `domain`, `core`, Zustand          | renderer stack, `data`, `game`, `presentation`, `app`                     |
-| Game (renderer) | `src/game`         | `application`, `domain`, `core`, Skia/Reanimated  | Zustand, `data`, `stores`, `presentation`, `app`                          |
-| Presentation    | `src/presentation` | `stores`, `application`, `domain`, `core`, `game` | `data`, `app`                                                             |
-| Routes          | `src/app`          | everything inward (keep files thin)               | —                                                                         |
+| Layer             | Path               | May import                                                                                              | Must never import                                                                                 |
+| ----------------- | ------------------ | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Core              | `src/core`         | nothing (pure TypeScript)                                                                               | everything above it, incl. `domain` and Effect                                                    |
+| Domain            | `src/domain`       | `core`                                                                                                  | React, React Native, Expo, Skia, Reanimated, Zustand, Effect, ECS/rot-js, outer layers            |
+| Game (simulation) | `src/game`         | `domain`, `core`, `@esengine/ecs-framework`, `rot-js` (only via `src/game/rot` adapters)                | React, React Native, Expo, Zustand, SQLite, Skia, Reanimated, Effect, provider SDKs, outer layers |
+| Application       | `src/application`  | `game`, `domain`, `core`, Effect (services/programs)                                                    | UI/native packages, Expo SDK, Zustand, renderer stack, `data`, `stores`, `presentation`, `app`    |
+| Data              | `src/data`         | `application`, `domain`, `core`, Expo SDK, Effect                                                       | React DOM, renderer stack, Zustand, `stores`, `game`, `presentation`, `app`, ECS/rot-js           |
+| Stores            | `src/stores`       | `application`, `domain`, `core`, Zustand, Effect                                                        | renderer stack, `data`, `game`, `presentation`, `app`, ECS/rot-js                                 |
+| Presentation      | `src/presentation` | `stores`, `application`, `domain`, `core`, `game` (snapshots/pure helpers), RN/Skia/Reanimated, Zustand | `data`, `app`, Effect programs, direct `@esengine/ecs-framework`/`rot-js` imports                 |
+| Routes            | `src/app`          | everything inward (keep files thin)                                                                     | —                                                                                                 |
 
 These rules are **enforced automatically** by per-directory `no-restricted-imports`
 zones in [`eslint.config.js`](eslint.config.js), so `npm run lint` fails on a
@@ -56,14 +54,54 @@ boundary violation. Grow folders feature by feature; do not create empty ones.
 
 Key invariants (details in the game plan):
 
-- `src/domain` and `src/core` are pure TypeScript — no React, React Native, Expo,
-  Skia, Reanimated, or Zustand imports. They are tested in a plain Node
+- `src/core` and `src/domain` are pure TypeScript — no React, React Native,
+  Expo, Skia, Reanimated, Zustand, or Effect. They are tested in a plain Node
   environment (`jest-expo/node`), so nothing native loads to run them.
-- The renderer (`src/game`) consumes immutable scene snapshots and never mutates
-  gameplay state; Skia/Reanimated values hold no authoritative game truth.
+- `src/game` is the ECS/rot-js **simulation** and the single source of gameplay
+  truth. Its only library dependencies are the two pinned gameplay libraries;
+  `rot-js` is reached only through adapters in `src/game/rot/**`. Simulation
+  code never imports React, React Native, Expo, Zustand, SQLite, Skia,
+  Reanimated, or Effect, and never `await`s during a turn.
+- The renderer (Skia/Reanimated, under `src/presentation/canvas`) consumes
+  immutable scene snapshots and never mutates gameplay state; Skia/Reanimated
+  values hold no authoritative game truth.
+- Effect only runs fallible and asynchronous work at the application boundary
+  (`src/application` and outward); `src/core`, `src/domain`, and `src/game`
+  never import it.
 - Route files (`src/app`) stay thin and delegate to `src/presentation` screens.
 - Data layer implementations are injected at bootstrap; domain/application code
   depends on interfaces, never on SQLite/HTTP/provider SDKs.
+
+## Phase 1 spike (current)
+
+The spike retires the integration risks between the four libraries on Hermes:
+
+- **ECS** — `src/game/ecs/` builds one `Core` + `Scene` whose lifecycle the
+  spike route owns: created on mount, `dispose()`d on unmount (`Core` is an
+  app-wide singleton owning exactly one scene — one run, one Scene). Two
+  systems with explicit `updateOrder` (Patrol 100 → Sprite 200) step actors
+  through `Core.update()` with a fixed dt; an order log in `sceneData` proves
+  the ordering in tests. Components/systems use `@ECSComponent`/`@ECSSystem`
+  decorators — enabled by `experimentalDecorators` in tsconfig, while
+  babel-preset-expo applies the legacy-decorators transform automatically.
+- **rot-js** — `src/game/rot/rot-random.ts` wraps the shared module `ROT.RNG`
+  in a synchronous save/seed/run/capture/restore (`runWithRotRng`); the state
+  is restored even when generation throws. `rot-dungeon-generator.ts` runs
+  `Map.Digger` inside that wrapper, paints project tile IDs, and validates
+  spawn/exit connectivity with deterministic retry seeds and a typed
+  `GenerationError`.
+- **Effect** — `src/bootstrap/effect-runtime.ts` holds the app-scoped
+  `ManagedRuntime`. The spike ticker is a fiber started with `startTicker()`
+  and interrupted by the route on unmount (`fiber.interruptUnsafe()`), tested
+  in `__tests__/application/spike-ticker.test.ts`. `effect` ships ESM-only;
+  Metro handles it, and Jest transforms it via `transformIgnorePatterns` in
+  the unit project (babel-preset-expo's default `import.meta` polyfill keeps
+  it Hermes-safe).
+- **Rendering** — the route projects the scene into one frozen
+  `SceneSnapshot` (`src/game/projection/`); the Skia canvas renders the baked
+  map + atlas sprites while the ticker pushes committed positions into
+  Reanimated shared values. No Reanimated/Skia object ever holds gameplay
+  truth.
 
 ## Rendering baseline (Phase 1 decision)
 
@@ -90,9 +128,9 @@ Key invariants (details in the game plan):
 
 Jest runs two projects (see [`jest.config.js`](jest.config.js)):
 
-- `unit` — pure TypeScript tests under `__tests__/{core,domain,application,data}`,
+- `unit` — pure TypeScript tests under `__tests__/{core,domain,application,data,game}`,
   executed with the `jest-expo/node` preset in a plain Node environment.
-- `ui` — component/store tests under `__tests__/{app,game,presentation,stores}`,
+- `ui` — component/store tests under `__tests__/{app,presentation,stores}`,
   executed with the full `jest-expo` preset.
 
 ## Dependencies
@@ -108,15 +146,62 @@ Expo SDK 57 pins exact compatible versions of native/Expo packages.
   review them and approve with `npm install-scripts approve <pkg>@<version>`
   (done for `@shopify/react-native-skia`, `fsevents`, `unrs-resolver`).
 
+The three gameplay libraries are pinned to **exact reviewed versions** (no
+caret ranges), so an upgrade is always an intentional `package.json` change:
+
+- `@esengine/ecs-framework` `2.11.2`
+- `effect` `4.0.0-rc.112` — RC upgrades are deliberate edits, never caret bumps
+- `rot-js` `2.2.1`
+
 Current stack: Expo SDK 57 · React Native 0.86 · Expo Router (typed routes) ·
 Reanimated 4 + Worklets · Gesture Handler · Skia 2.x · Zustand 5 · Zod 4 ·
-expo-asset/audio/haptics · jest-expo · ESLint 9 flat config + Prettier.
+expo-asset/audio/haptics · jest-expo · fast-check · ESLint 9 flat config +
+Prettier.
+
+## Domain foundations & content (Phase 2)
+
+Game rules live in pure TypeScript under `src/core` and `src/domain`; the
+domain knows nothing about React, Expo, Skia, or Zustand, and its tests run in
+a plain Node Jest project.
+
+- **Randomness** (`src/core/random/`): engines receive a `RandomSource`, never
+  `Math.random()`. `SeededRandomSource` is a serializable mulberry32 PRNG
+  (snapshot/restore reproduces a sequence exactly, draw counts included);
+  `SequenceRandomSource` is the scripted test fake that throws when exhausted.
+- **RNG streams** (`src/domain/shared/rng-streams.ts`): one independent
+  generator per system (`dungeon`, `combat`, `loot`, `cosmetics`, `gacha`) is
+  derived from a master seed, so drawing in one system never shifts another.
+  Runs snapshot/restore streams individually.
+- **Engine conventions** (`src/domain/shared/`): commands are flat
+  discriminated unions, engines return `{ state, events }` results, mutations
+  use `deepFreeze`d immutable states, and exhaustive switches end in
+  `assertNever` (`src/core/utils/`).
+- **Content** (`src/domain/content/` + `assets/data/`): heroes, monsters,
+  dice, abilities, status effects, items (equipment/consumable/material),
+  loot tables, rarity tables, encounters, dungeons, banners, and experience
+  curves are data files validated with Zod at load time. IDs are branded
+  (`HeroId`, `MonsterId`, …), and `buildContentCatalog` cross-checks every
+  reference, producing `ContentValidationError` problems that name the file,
+  entry, and field.
+- **Access** (`src/application/ports/content-repository.ts`): the app depends
+  on the `ContentRepository` interface; `BundledContentRepository`
+  (`src/data/content/`) implements it with the bundled JSON.
+
+To change gameplay numbers, edit the JSON files — no engine source changes.
+`npm test` re-validates every bundled file and every cross-reference.
 
 ## Native workflow (CNG + development builds)
 
 This project uses **Continuous Native Generation**: `ios/` and `android/` are
 generated and gitignored. Never hand-edit them; change `app.json`/config
 plugins and regenerate.
+
+> **Expo Go is not supported.** Expo Go no longer bundles third-party native
+> modules, and this project requires Skia. Scanning the QR code into Expo Go
+> fails at startup with "Skia is unavailable in this runtime" (by design — the
+> asset loader reports it explicitly). Always launch through a development
+> build: `npx expo run:ios`, `npx expo run:android`, or an EAS development
+> build.
 
 Verify and use native changes:
 

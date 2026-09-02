@@ -2,10 +2,11 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import manifestJson from '@/assets/atlases/manifest.json';
+import { TILE_ID_NAMES, TileId } from '@/game/grid/dungeon-grid';
 import {
   gameAssetManifestSchema,
   validateManifestReferences,
-} from '@/game/assets/asset-manifest';
+} from '@/presentation/canvas/asset-manifest';
 
 /** Reads the IHDR of a PNG to verify actual atlas dimensions. */
 function pngSize(path: string): { width: number; height: number } {
@@ -19,6 +20,12 @@ function pngSize(path: string): { width: number; height: number } {
 }
 
 describe('game asset manifest', () => {
+  it('lists tile names in simulation TileId order', () => {
+    const manifest = gameAssetManifestSchema.parse(manifestJson);
+    expect(manifest.tileNames).toEqual(TILE_ID_NAMES);
+    expect(TILE_ID_NAMES).toHaveLength(Object.keys(TileId).length);
+  });
+
   it('validates the bundled manifest', () => {
     const parsed = gameAssetManifestSchema.safeParse(manifestJson);
     expect(parsed.success).toBe(true);

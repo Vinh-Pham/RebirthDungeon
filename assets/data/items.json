@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "kind": "equipment",
+      "id": "item_iron_sword",
+      "name": "Iron Sword",
+      "rarity": "common",
+      "value": 25,
+      "equipment": {
+        "slot": "weapon",
+        "attackBonus": 2,
+        "defenseBonus": 0,
+        "maxHpBonus": 0
+      }
+    },
+    {
+      "kind": "equipment",
+      "id": "item_leather_armor",
+      "name": "Leather Armor",
+      "rarity": "common",
+      "value": 20,
+      "equipment": {
+        "slot": "armor",
+        "attackBonus": 0,
+        "defenseBonus": 1,
+        "maxHpBonus": 2
+      }
+    },
+    {
+      "kind": "consumable",
+      "id": "item_healing_potion",
+      "name": "Healing Potion",
+      "rarity": "common",
+      "value": 15,
+      "consumable": { "healAmount": 10 }
+    },
+    {
+      "kind": "consumable",
+      "id": "item_fury_tonic",
+      "name": "Fury Tonic",
+      "rarity": "rare",
+      "value": 40,
+      "consumable": { "statusId": "status_strength", "statusStacks": 2 }
+    },
+    {
+      "kind": "material",
+      "id": "item_slime_gel",
+      "name": "Slime Gel",
+      "rarity": "common",
+      "value": 5
+    },
+    {
+      "kind": "material",
+      "id": "item_iron_scraps",
+      "name": "Iron Scraps",
+      "rarity": "common",
+      "value": 8
+    }
+  ]
+}

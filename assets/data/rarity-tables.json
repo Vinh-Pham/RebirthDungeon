@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "rarityTables": [
+    {
+      "id": "rarity_standard",
+      "name": "Standard Rates",
+      "entries": [
+        { "rarity": "common", "weight": 70 },
+        { "rarity": "rare", "weight": 20 },
+        { "rarity": "epic", "weight": 8 },
+        { "rarity": "legendary", "weight": 2 }
+      ]
+    }
+  ]
+}

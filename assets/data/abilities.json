@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "abilities": [
+    {
+      "id": "ability_slash",
+      "name": "Slash",
+      "description": "A reliable sword cut.",
+      "kind": "attack",
+      "target": "enemy",
+      "diceCost": 1,
+      "power": 4
+    },
+    {
+      "id": "ability_power_slash",
+      "name": "Power Slash",
+      "description": "A heavy overhead blow that crits more often.",
+      "kind": "attack",
+      "target": "enemy",
+      "diceCost": 2,
+      "power": 8,
+      "critBonus": 2
+    },
+    {
+      "id": "ability_heal",
+      "name": "Mend",
+      "description": "Restore health with a whispered prayer.",
+      "kind": "heal",
+      "target": "self",
+      "diceCost": 2,
+      "power": 5
+    },
+    {
+      "id": "ability_guard_up",
+      "name": "Guard Up",
+      "description": "Raise a shield that absorbs incoming damage.",
+      "kind": "shield",
+      "target": "self",
+      "diceCost": 1,
+      "power": 3
+    },
+    {
+      "id": "ability_poison_dart",
+      "name": "Poison Dart",
+      "description": "A slim dart that leaves poison behind.",
+      "kind": "attack",
+      "target": "enemy",
+      "diceCost": 1,
+      "power": 2,
+      "appliesStatus": { "statusId": "status_poison", "stacks": 2 }
+    },
+    {
+      "id": "ability_battle_cry",
+      "name": "Battle Cry",
+      "description": "Steele yourself; attacks hit harder this turn.",
+      "kind": "status",
+      "target": "self",
+      "diceCost": 1,
+      "power": 0,
+      "appliesStatus": { "statusId": "status_strength", "stacks": 1 }
+    }
+  ]
+}

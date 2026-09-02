@@ -46,6 +46,16 @@ const ATLAS_MODULE_REFS: Record<string, () => number> = {
 export async function loadGameAssets(): Promise<LoadedGameAssets> {
   const problems: string[] = [];
 
+  // Guard against runtimes without the Skia native module (Expo Go dropped
+  // third-party native modules in SDK 53). This turns a cryptic
+  // "Cannot read properties of undefined" into actionable guidance.
+  if (!Skia.Image) {
+    throw new AssetLoadingError([
+      'Skia is unavailable in this runtime. Expo Go cannot run this project — ' +
+        'build and launch a development build instead: npx expo run:ios | npx expo run:android',
+    ]);
+  }
+
   const parsed = gameAssetManifestSchema.safeParse(manifestJson);
   if (!parsed.success) {
     for (const issue of parsed.error.issues) {

@@ -13,7 +13,7 @@ import {
   type SkPicture,
 } from '@shopify/react-native-skia';
 
-import type { SceneSnapshot } from '../scene/scene-snapshot';
+import type { SceneSnapshot } from '@/game/projection/scene-snapshot';
 
 export function bakeMapPicture(
   tileAtlas: SkImage,

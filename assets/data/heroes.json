@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "heroes": [
+    {
+      "id": "hero_knight",
+      "name": "Ser Bramble",
+      "maxHp": 30,
+      "baseAttack": 2,
+      "baseDefense": 1,
+      "dice": ["dice_d6", "dice_d6", "dice_d8"],
+      "abilities": [
+        "ability_slash",
+        "ability_power_slash",
+        "ability_heal",
+        "ability_guard_up"
+      ]
+    },
+    {
+      "id": "hero_rogue",
+      "name": "Wick",
+      "maxHp": 24,
+      "baseAttack": 3,
+      "baseDefense": 0,
+      "dice": ["dice_d6", "dice_d8"],
+      "abilities": [
+        "ability_slash",
+        "ability_poison_dart",
+        "ability_battle_cry"
+      ]
+    }
+  ]
+}

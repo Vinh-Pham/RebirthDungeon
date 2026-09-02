@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "encounters": [
+    {
+      "id": "enc_slime_cave",
+      "name": "Slimy Corner",
+      "monsterIds": ["monster_slime"],
+      "lootTableId": "loot_slime"
+    },
+    {
+      "id": "enc_bat_swarm",
+      "name": "Screeching Dark",
+      "monsterIds": ["monster_bat", "monster_bat"]
+    },
+    {
+      "id": "enc_brute",
+      "name": "The Brute's Watch",
+      "monsterIds": ["monster_brute"],
+      "lootTableId": "loot_brute"
+    },
+    {
+      "id": "enc_boss_cellar_king",
+      "name": "Cellar King",
+      "monsterIds": ["monster_brute", "monster_slime"],
+      "lootTableId": "loot_brute"
+    }
+  ]
+}

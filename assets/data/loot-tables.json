@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "lootTables": [
+    {
+      "id": "loot_slime",
+      "name": "Slime Drops",
+      "rolls": 1,
+      "entries": [
+        { "itemId": "item_slime_gel", "weight": 3 },
+        { "itemId": "item_healing_potion", "weight": 1 }
+      ]
+    },
+    {
+      "id": "loot_brute",
+      "name": "Brute Hoard",
+      "rolls": 2,
+      "entries": [
+        { "itemId": "item_iron_scraps", "weight": 3 },
+        { "itemId": "item_iron_sword", "weight": 1 },
+        { "itemId": "item_leather_armor", "weight": 1 }
+      ]
+    }
+  ]
+}

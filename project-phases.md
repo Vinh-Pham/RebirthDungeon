@@ -4,6 +4,8 @@ This checklist turns [`react-native-expo-game-plan.md`](react-native-expo-game-p
 
 The project targets [Expo SDK 57](https://docs.expo.dev/versions/v57.0.0/). Check the exact SDK 57 documentation before adding or configuring Expo packages.
 
+The architecture is ECS-first: one active dungeon run is one `@esengine/ecs-framework` `Scene` and the source of truth for the run. `rot-js` supplies generation, FOV, pathfinding, and turn order behind project-owned adapters. Effect runs fallible and asynchronous work at the application boundary. Skia and Reanimated only show committed results.
+
 ## Tracking Rules for AI Assistants
 
 - `[ ]` means incomplete; `[x]` means implemented **and verified**.
@@ -13,48 +15,50 @@ The project targets [Expo SDK 57](https://docs.expo.dev/versions/v57.0.0/). Chec
 - Keep notes under partially completed or blocked phases. Include the date, blocker, and next action.
 - When completing a phase, update the overview, its task checklist, the current-focus section, and the completion log in the same change.
 - Record concrete evidence such as test commands, build targets, device checks, migration versions, or file paths.
-- Preserve the dependency rule: presentation, renderer, and data layers may depend inward on application/domain code; the pure TypeScript domain must not import React, React Native, Expo, Skia, Reanimated, Zustand, SQLite, or provider SDKs.
-- Add dependencies only when their phase begins. Use `npx expo install` where Expo supplies a compatible version.
+- Dependency direction: presentation → application → game simulation; Effect services → application; rot-js adapters → simulation; data implementations → application ports. The game simulation (ECS scene, components, systems, grid code, rot-js adapters) must not import React, React Native, Expo modules, Zustand, SQLite, Skia, Reanimated, Effect, or provider SDKs. `@esengine/ecs-framework` and `rot-js` are the simulation's only library dependencies, and rot-js is reached only through project-owned adapters.
+- Respect the synchronous boundary: a command enters the run, the ECS and rot-js adapters resolve it deterministically, and only then does Effect perform external work and presentation animate the committed result. ECS systems never `await`, start fibers, write SQLite, play audio, call haptics, or mutate Zustand stores.
+- Do not add `ROT.Display`, `ROT.Engine`, a second ECS, another game loop, or a second source of gameplay truth.
+- Add dependencies only when their phase begins. Use `npx expo install` where Expo supplies a compatible version; install pure TypeScript packages such as Effect and rot.js with the project's package manager. Pin the exact Effect RC; no caret upgrades during the prototype.
 - Do not mark a phase complete because a placeholder screen, mock, or happy-path demo exists when its exit criteria require production behavior.
 
 ## Current Focus
 
-- **Current phase:** Phase 1 — Rendering architecture spike (in progress)
-- **Status:** All spike work implemented and verified on simulator/emulator; **one task remains**: measure the on-screen frame-time meter on physical Android/iOS devices (including a mid-range Android target). Everything else is complete — see the Phase 1 checklist and work notes for evidence.
-- **Next objective:** Install a development build on the baseline physical devices, read the HUD frame-time meter in the spike screen, record the numbers, then close Phase 1 and start Phase 2 (domain foundations).
-- **Baseline inspected:** 2026-09-01
-- **Known baseline:** Phase 0 complete (see completion log). Rendering baseline decided and documented (240×320 logical, 16 px tiles, integer device-pixel scaling, nearest-neighbor sampling). Layer folders now exist for `src/game` (config, scene, camera, sprites, assets, render) and `src/presentation/spike`.
+- **Current phase:** Phase 1 — Compatibility and rendering spike.
+- **Status:** Implemented and verified on this machine as of 2026-09-02: the spike runs end-to-end in both a development build and a production (minified, Metro-free) release build on the iOS simulator, with the rot.js dungeon, patrolling ECS actors, camera, and HUD rendering at 62 fps / 16.7 ms worst frame. 111 unit tests pass. Remaining for phase completion: **frame-time measurement on representative physical devices** (task below — no physical Android/iOS device is attached to this machine) and an on-device Android smoke of the dev/release builds (no Android emulator is installed here; the release APK builds successfully).
+- **Next objective:** Run the Phase 1 physical-device checks (dev + release builds on a representative iPhone and a mid-range Android, recording the HUD fps/worst-frame numbers), then move to Phase 2.
+- **Baseline inspected:** 2026-09-02
 
 ## Phase Overview
 
 - [x] Phase 0 — Project bootstrap and architecture baseline
-- [ ] Phase 1 — Rendering architecture spike
-- [ ] Phase 2 — Domain foundations and data-driven content
-- [ ] Phase 3 — Deterministic dice combat engine
-- [ ] Phase 4 — Playable combat vertical slice
-- [ ] Phase 5 — Dungeon generation and complete run loop
-- [ ] Phase 6 — Local persistence and deterministic recovery
-- [ ] Phase 7 — Meta-game, progression, inventory, and economy
-- [ ] Phase 8 — Local gacha prototype
-- [ ] Phase 9 — Presentation polish, audio, haptics, and Rive
-- [ ] Phase 10 — Authentication, backend, and cloud synchronization
-- [ ] Phase 11 — Purchases and production-authoritative gacha
-- [ ] Phase 12 — Quality, balance, performance, and accessibility
-- [ ] Phase 13 — Release readiness and live operations
+- [ ] Phase 1 — Compatibility and rendering spike
+- [ ] Phase 2 — Content system and deterministic random streams
+- [ ] Phase 3 — Grid roguelike core: ECS world, movement, FOV, and turns
+- [ ] Phase 4 — Dice combat in the ECS
+- [ ] Phase 5 — Playable combat slice
+- [ ] Phase 6 — Dungeon depth and the complete run loop
+- [ ] Phase 7 — Effect runtime, persistence, and deterministic recovery
+- [ ] Phase 8 — Meta-game, progression, inventory, and economy
+- [ ] Phase 9 — Local gacha prototype
+- [ ] Phase 10 — Presentation polish, audio, haptics, and Rive
+- [ ] Phase 11 — Authentication, backend, and cloud synchronization
+- [ ] Phase 12 — Purchases and production-authoritative gacha
+- [ ] Phase 13 — Quality, balance, performance, and accessibility
+- [ ] Phase 14 — Release readiness and live operations
 
 ---
 
 ## Phase 0 — Project Bootstrap and Architecture Baseline
 
-**Goal:** Create a reliable Expo SDK 57 foundation with enforceable architectural boundaries and a repeatable native-development workflow.
+**Goal:** Create a reliable Expo SDK 57 foundation with the pinned gameplay libraries, enforceable architectural boundaries for the ECS/rot-js/Effect layering, and a repeatable native-development workflow.
 
 - [x] Initialize an Expo SDK 57 TypeScript project.
 - [x] Configure Expo Router as the application entry point with typed routes.
-- [x] Install the SDK-compatible navigation and animation baseline: Gesture Handler, Reanimated, and Worklets.
+- [x] Install the SDK-compatible animation baseline: Gesture Handler, Reanimated, and Worklets.
 - [x] Replace or remove the `create-expo-app` example UI and assets that are not part of the game.
-- [x] Establish the initial `app`/`src` structure for bootstrap, core, domain, application, data, game, stores, and presentation code; create folders only as features need them.
-- [x] Define and document dependency-direction rules, including an automated boundary check where practical.
-- [x] Install only the remaining spike dependencies: Skia, Zustand, Zod, Expo Asset, Expo Audio, Expo Haptics, and test tooling.
+- [x] Pin `@esengine/ecs-framework`, `effect` (exact release candidate), and `rot-js` to reviewed versions; install Skia, Zustand, Zod, Expo Asset, Expo Audio, Expo Haptics, and test tooling.
+- [x] Establish the initial `app`/`src` structure for bootstrap, game simulation, application, data, stores, and presentation code; create folders only as features need them (see the plan's project-structure section).
+- [x] Define and document dependency-direction rules per the updated layering, including an automated boundary check (lint zones) where practical.
 - [x] Configure formatting, linting, TypeScript checks, unit tests, and continuous integration.
 - [x] Configure EAS development, preview, and production profiles.
 - [x] Produce and launch development builds on both Android and iOS.
@@ -63,13 +67,19 @@ Exit criteria:
 
 - The starter app launches through an Expo development build on Android and iOS.
 - Formatting, linting, type checking, and the initial test suite pass from documented commands.
-- A pure TypeScript domain module can be imported and tested without loading React Native or Expo.
+- The three gameplay libraries resolve together at their pinned versions, and an Effect RC upgrade is an intentional act rather than a caret bump.
+- A pure TypeScript module can be imported and tested without loading React Native or Expo.
 - The repository documents how later assistants should install SDK-compatible Expo dependencies and verify native changes.
 
-## Phase 1 — Rendering Architecture Spike
+## Phase 1 — Compatibility and Rendering Spike
 
-**Goal:** Prove the highest-risk rendering and animation boundary before investing in full game systems.
+**Goal:** Retire the highest-risk integration questions — ECS, rot-js, Effect, and Skia coexisting on Hermes in production builds — and prove the rendering boundary before building game systems.
 
+- [x] Confirm `@ECSComponent`/`@ECSSystem` decorators (and `@Serializable`/`@Serialize` where used) compile and execute on Hermes in both development and production builds.
+- [x] Create and dispose an ECS `Core` + `Scene` cleanly through a React route lifecycle; run a minimal step through two systems with explicit `updateOrder`.
+- [x] Generate a seeded rot.js dungeon through the synchronous save/seed/run/capture/restore wrapper; assert the module-level `ROT.RNG` state is restored, including when generation fails.
+- [x] Run and cancel an Effect fiber from an app-scoped runtime; verify interruption when the owning route unmounts.
+- [x] Validate production minification on Android and iOS with all libraries present and no Node-only globals or browser DOM APIs.
 - [x] Choose and document the portrait logical resolution and base tile size.
 - [x] Render one dungeon room from a Skia tile atlas using nearest-neighbor sampling.
 - [x] Render animated player and monster sprites from atlas metadata.
@@ -79,68 +89,97 @@ Exit criteria:
 - [x] Keep authoritative positions and game outcomes out of Skia and Reanimated objects.
 - [x] Preload critical assets through an asset manifest and fail clearly when an asset is missing.
 - [ ] Measure frame time on representative physical Android and iOS devices, including a mid-range Android target.
-  - 2026-09-01: The on-device frame-time meter (60 fps · 16.7 ms UI-thread worst frame) was verified on the iPhone 16 Pro simulator and Android Medium_Phone emulator, but **physical devices were not reachable from this environment**. Remaining action: run the dev build on a baseline physical Android (mid-range) and an iOS device and record the meter readings; the meter itself requires no further code.
 
 Exit criteria:
 
+- All four library stacks work together in development and production builds without Node-only globals or browser DOM APIs.
+- The ECS scene lifecycle is owned by the route, and a logical step advances systems in declared order.
+- Seeded rot.js generation is reproducible and the shared module RNG is restored even on failure.
 - A development build displays a crisp, animated room with a working camera and native HUD on Android and iOS.
 - The renderer consumes an immutable scene snapshot and cannot mutate gameplay state.
-- The team is comfortable owning the required camera, scene, atlas, and sprite lifecycle without a full game engine.
 - The spike meets an initial 60 fps budget on the supported baseline device or has a documented remediation plan.
 
-## Phase 2 — Domain Foundations and Data-Driven Content
+## Phase 2 — Content System and Deterministic Random Streams
 
-**Goal:** Establish deterministic, platform-independent rules and validated content models.
+**Goal:** Establish data-driven, validated content models and serializable RNG streams (including the rot.js RNG contract) that the simulation consumes as plain data.
 
-- [ ] Define shared IDs, immutable-update conventions, errors, engine results, commands, and domain events.
+- [ ] Define shared IDs, branded content types, immutable-update conventions, errors, engine results, flat discriminated-union commands, and domain-event conventions under the new layering (no React, Effect, or React Native types).
 - [ ] Implement `RandomSource`, a serializable seeded generator, RNG snapshots/draw indexes, and a sequence-backed test fake.
-- [ ] Derive separate RNG streams for dungeon generation, combat, loot, cosmetics, and gacha.
-- [ ] Define typed and Zod-validated schemas for heroes, monsters, dice, abilities, status effects, items, equipment, loot tables, dungeons, encounters, banners, rarity tables, and experience curves.
+- [ ] Derive separate RNG streams for dungeon generation, enemy AI, combat/dice, loot, cosmetics, and local development gacha.
+- [ ] Implement the rot.js RNG adapter contract: save module state, set the floor state, generate synchronously with no `await`, capture the new state, restore the prior state in `finally`; never run two generations concurrently against the shared RNG.
+- [ ] Define typed, Zod-validated schemas for tile definitions, heroes, monsters, dice, abilities, status effects, items, equipment, loot and encounter tables, dungeons, generation profiles, banners, rarity tables, pity rules, and experience curves.
 - [ ] Add a minimal starter content set under `assets/data/`.
 - [ ] Validate content versions, IDs, cross-references, ranges, rates, and weights during tests or a build step.
-- [ ] Define repository interfaces in the domain/application boundary without importing concrete storage or network types.
-- [ ] Add unit and property-based tests for randomness and content validation.
+- [ ] Define repository interfaces (for example `ContentRepository`) at the application boundary without importing concrete storage or network types.
+- [ ] Add unit and property-based tests for randomness, stream independence, and content validation.
 
 Exit criteria:
 
-- Seed and restored RNG state reproduce the same random sequence.
+- Seed and restored RNG state reproduce the same random sequence, and the rot.js wrapper restores module RNG state even when generation fails.
 - Every bundled content file passes validation; malformed or broken references fail with actionable paths.
-- Domain tests run in a plain TypeScript environment with no React Native, Expo, Skia, or Zustand imports.
+- Content and RNG tests run in a plain TypeScript environment with no React Native, Expo, Skia, Zustand, ECS, rot-js, or Effect imports.
 - Gameplay definitions can change through data rather than engine source edits.
 
-## Phase 3 — Deterministic Dice Combat Engine
+## Phase 3 — Grid Roguelike Core: ECS World, Movement, FOV, and Turns
 
-**Goal:** Implement a headless, replayable combat state machine before attaching presentation behavior.
+**Goal:** Build the authoritative run scene: entities and components, ordered systems, the movement contract, fog of war, pathfinding, turn scheduling, and the deterministic turn runner.
 
-- [ ] Model combat state, combatants, dice, abilities, targets, status effects, turn count, and explicit combat phases.
-- [ ] Implement discriminated commands for start, roll, reroll, assign die, use ability, enemy action, and end turn.
-- [ ] Implement state transitions for damage, healing, critical hits, shields, buffs/debuffs, status timing, victory, and defeat.
-- [ ] Return a new state plus domain events for every valid command.
-- [ ] Reject commands that are illegal for the current phase without corrupting state.
-- [ ] Implement deterministic enemy decisions suitable for the first playable build.
-- [ ] Add focused tests for phase transitions, edge cases, replay, and seeded repeatability.
+- [ ] Define the initial component set (`StableId`, `GridPosition`, `PreviousGridPosition`, `Actor`, `PlayerControlled`, `EnemyBrain`, `BlocksMovement`, `BlocksVision`, `Speed`, `Vision`, `Health`, `Stats`, `StatusSet`, `Door`, `Trap`, `Pickup`, `MoveIntent`, `AttackIntent`, `PendingRemoval`, …) as data-only `@ECSComponent` classes; keep formulas and transitions in systems or pure helpers.
+- [ ] Keep the static tile grid in a compact typed-array `DungeonGrid` with an O(1) occupancy index; do not make floor or wall tiles entities.
+- [ ] Model run-level state (run/floor IDs, turn number, current actor, run phase, active encounter, pending presentation sequence) in a singleton component or typed scene service; use `sceneData` only for infrastructure.
+- [ ] Create the ordered system pipeline with well-spaced `updateOrder` ranges (InputIntent, EnemyIntent, Movement, Interaction, Visibility, TurnFinalization, Cleanup, EventExport), leaving slots for the later combat systems.
+- [ ] Implement the movement contract: reject input unless awaiting the player, one-cardinal-cell validation, bounds, tile rules, dynamic occupancy, door interactions, hostile-cell bump handling, post-move traps/pickups/stairs, FOV recompute, ordered events, and explicit turn-consumption rules (invalid UI input does not consume a turn).
+- [ ] Implement the rot-js adapters behind project-owned interfaces: `ROT.Map.Digger` generation producing a plain `DungeonGrid` snapshot with rooms/corridors/spawn/exit, derived attempt seeds with a retry limit and typed generation failure, and spawn/exit connectivity validation.
+- [ ] Implement `ROT.Path.AStar` (topology 4, static walkability + dynamic blockers, target-cell allowance) and `ROT.FOV.PreciseShadowcasting` (topology 4, opacity callback including `BlocksVision`, `visibleNow` + persistent `explored` bitsets).
+- [ ] Implement a project-owned `TurnScheduler` over `ROT.Scheduler.Speed` with add/remove/next/snapshot/restore; do not use `ROT.Engine` or `ROT.Display`.
+- [ ] Implement the RunController with a serial command mailbox: set intent → `Core.update(0)` → scheduler loop (enemy AI intents via pathfinding, visible/remembered targets, and the AI RNG stream) → stop at `awaitingInput`; add a maximum automatic-actor-step guard.
+- [ ] Support D-pad, swipe, tap-to-walk (one step at a time with revalidation), and keyboard arrows/WASD through the same move command; gate further input while a command resolves.
+- [ ] Project the scene after each command batch into one immutable snapshot plus an ordered domain-event batch; React components never subscribe directly to ECS events.
+- [ ] Interpolate movement with Reanimated from `PreviousGridPosition` to `GridPosition` on `ACTOR_MOVED`; recompute FOV only after position or opacity changes.
+- [ ] Add tests for movement legality, occupancy, doors, FOV, adapter behavior (RNG restore, scheduler snapshot/restore, passability), and seed/command determinism.
+
+Exit criteria:
+
+- The same seed and command sequence reproduces the same map, turn order, FOV, event log, and final projection.
+- Simulation code imports no React, React Native, Expo, Zustand, SQLite, Skia, Reanimated, or Effect; rot-js is reached only through the adapters.
+- Command resolution is synchronous; no `await`, timers, or async I/O occur during a turn, and animation never decides outcomes.
+- Every generated floor has connected spawn/exit, valid project tile IDs, and the generation attempt limit is enforced.
+- D-pad, swipe, tap-path, and keyboard produce identical commands.
+
+## Phase 4 — Dice Combat in the ECS
+
+**Goal:** Implement dice combat as components and systems inside the same run scene — deterministic, replayable, and free of presentation concerns.
+
+- [ ] Add combat components: `EncounterMember`, `DicePool`, `AbilityLoadout`, `SelectedTarget`, `Shield`, `PendingDamage`, `PendingHeal` (reusing `Health`, `Stats`, `StatusSet`).
+- [ ] Insert the combat systems into the order table: EncounterSystem (400), DiceSystem (500), AbilitySystem (600), DamageSystem (700), StatusEffectSystem (800).
+- [ ] Implement the combat commands (`ROLL_DICE`, `REROLL_DIE`, `ASSIGN_DIE`, `USE_ABILITY`, `END_TURN`, plus `MOVE`/`INTERACT`) as flat discriminated unions; reject commands illegal for the current phase without corrupting state.
+- [ ] Keep combat formulas (damage, healing, criticals, shields, resistances, status application/timing) as pure TypeScript functions invoked from systems; turn cooldowns and status durations are integer turn counters, never timers or sleeps.
+- [ ] Choose and implement the grid-contact rule — bump attack or encounter-phase transition, one rule set per dungeon mode — keeping actors in the same ECS scene so health, statuses, loot, and death need no second model.
+- [ ] Implement deterministic enemy combat decisions using the seeded AI RNG stream.
+- [ ] Emit ordered combat events (`DICE_ROLLED`, `ABILITY_ACTIVATED`, `DAMAGE_DEALT`, `CRITICAL_HIT`, `STATUS_APPLIED`, `ACTOR_DEFEATED`, `COMBAT_WON`, `PLAYER_DEFEATED`) through the existing EventExport system.
+- [ ] Define replay as run seed + starting content version + ordered commands, and add tests for phase transitions, critical/status/shield/defeat edge cases, replay, and seeded repeatability.
 - [ ] Add property tests for invariants such as nonnegative HP, valid dice ownership, and terminal-state behavior.
 
 Exit criteria:
 
-- A complete combat can run headlessly from start to victory or defeat.
-- The same initial state, RNG state, and commands produce identical states and event logs.
-- Critical, poison/status, shield, enemy-defeat, and player-defeat cases are tested.
-- Combat contains no React, React Native, Expo, Zustand, Skia, Reanimated, audio, or haptics dependencies.
+- A complete encounter runs headlessly from start to victory or defeat through commands alone.
+- The same initial state, RNG states, and commands produce identical states and event logs.
+- Status durations tick exactly once per logical turn and combat outcomes never depend on wall-clock time.
+- Combat code contains no React, React Native, Expo, Zustand, Skia, Reanimated, audio, haptics, or Effect dependencies.
 
-## Phase 4 — Playable Combat Vertical Slice
+## Phase 5 — Playable Combat Slice
 
-**Goal:** Connect the headless combat engine to real controls and presentation without compromising authority boundaries.
+**Goal:** Connect the combat systems to real controls and presentation without compromising authority boundaries.
 
-- [ ] Implement a focused combat controller/store with narrow selectors.
-- [ ] Build the dice tray, health display, turn indicator, ability controls, and enemy targeting as React Native UI.
-- [ ] Implement drag/drop die assignment with a non-drag tap alternative.
-- [ ] Map combat domain events to explicit presentation events.
-- [ ] Add a presentation queue for attack, damage-number, death, particle, and camera effects while committing authoritative state immediately.
-- [ ] Gate inputs during required visual sequences without letting animation completion decide gameplay.
-- [ ] Add initial SFX and haptic adapters behind application-facing interfaces.
+- [ ] Implement a focused combat controller/store that receives projected HUD snapshots from the scene; Zustand never holds a mutable authoritative combat state.
+- [ ] Build the dice tray, health display, turn indicator, ability controls, and enemy targeting as React Native UI with narrow selectors.
+- [ ] Implement drag/drop die assignment with Gesture Handler and a non-drag tap alternative.
+- [ ] Map combat domain events to explicit presentation instructions through a pure, testable presentation bridge.
+- [ ] Add a bounded presentation queue for attack, damage-number, death, particle, and camera effects while committing authoritative state immediately.
+- [ ] Gate inputs during required visual sequences, support reduced-motion skipping, and never let animation completion decide gameplay.
+- [ ] Add initial SFX and haptic adapters behind application-facing interfaces (full services arrive in Phase 10).
 - [ ] Support victory, defeat, retry, and return flows for a single encounter.
-- [ ] Add integration tests covering command-to-store-to-presentation behavior.
+- [ ] Add integration tests covering command-to-store-to-presentation behavior and accessibility of the controls.
 
 Exit criteria:
 
@@ -149,55 +188,57 @@ Exit criteria:
 - High-frequency animation values do not write to Zustand every frame.
 - Controls are usable with touch, screen readers, and a non-drag interaction.
 
-## Phase 5 — Dungeon Generation and Complete Run Loop
+## Phase 6 — Dungeon Depth and the Complete Run Loop
 
-**Goal:** Expand the combat slice into a deterministic dungeon run with traversal, encounters, rewards, and a boss.
+**Goal:** Expand the combat slice into a complete deterministic dungeon run with traversal, encounters, loot, floors, and a boss.
 
-- [ ] Model dungeon floors, rooms, doors, encounters, treasure, events, boss rooms, and run state in pure TypeScript.
-- [ ] Implement seeded procedural floor topology with reachability guarantees.
-- [ ] Create two or three hand-authored room templates and a Tiled JSON validation/conversion pipeline.
-- [ ] Combine procedural topology with validated room templates.
-- [ ] Implement room traversal, encounter entry, loot resolution, progression rewards, floor transitions, and boss completion.
-- [ ] Render generated maps and encounter markers through immutable scene snapshots.
+- [ ] Make generation profiles data-driven so a dungeon definition selects its floor style (`Digger` first; `Uniform`/`Cellular` and hand-authored templates as later families) without changing movement or rendering.
+- [ ] Implement content-driven interactions through the InteractionSystem: doors (open/locked), traps (armed/type), pickups, and stairs.
+- [ ] Place encounters from encounter tables during generation; resolve loot into run inventory and award progression rewards.
+- [ ] Implement floor transitions with derived floor seeds and explicit carry-over rules for health and statuses.
+- [ ] Add boss rooms, treasure/events where content defines them, and run completion.
 - [ ] Implement current-run controls for start, resume, abandon, defeat, and completion.
-- [ ] Test generation validity, seed repeatability, reachability, reward legality, and full headless runs.
+- [ ] Render the generated map, fog (`ExploredFogLayer`/`CurrentFovLayer`), props, and encounter markers through immutable scene snapshots.
+- [ ] Test generation validity, seed repeatability, reachability, reward legality, bump/encounter integration with movement, and full headless runs.
 
 Exit criteria:
 
-- A player can select a dungeon, traverse multiple rooms, fight encounters, defeat a boss, receive rewards, and finish or lose the run.
+- A player can select a dungeon, traverse multiple rooms and floors, fight encounters, defeat a boss, receive rewards, and finish or lose the run.
 - Every generated floor is traversable and contains valid entry, encounter, and boss/exit structures.
-- Replaying a seed and command sequence reproduces the same floor, combat, loot, and event log.
+- Replaying a seed and command sequence reproduces the same floors, combat, loot, and event log.
 - Remote requests are not required during combat or dungeon generation.
 
-## Phase 6 — Local Persistence and Deterministic Recovery
+## Phase 7 — Effect Runtime, Persistence, and Deterministic Recovery
 
-**Goal:** Persist permanent progress and active runs safely across app interruption and schema changes.
+**Goal:** Formalize the Effect application runtime and persist permanent progress and active runs safely across app interruption and schema changes.
 
-- [ ] Add Expo SQLite, Drizzle ORM, Drizzle Kit, and a tested migration workflow.
-- [ ] Create normalized tables for profile, characters, inventory, currencies, equipment, progression, quests, pity, completed dungeons, and save metadata.
-- [ ] Map database rows to domain types rather than leaking Drizzle types into the domain.
-- [ ] Store the active dungeon run as a versioned JSON snapshot containing run state, combat state when applicable, content version, and complete RNG state/draw indexes.
-- [ ] Validate loaded snapshots with Zod and implement explicit corrupt/incompatible-save behavior.
-- [ ] Save at deliberate checkpoints and app-background events; debounce noncritical writes.
+- [ ] Formalize the app-scoped Effect runtime and `AppServices`; provide `RunRepository`, `ProfileRepository`, `AssetService`, `AudioService`, `HapticsService`, and Clock/UUID/Logger services where needed.
+- [ ] Introduce tagged typed errors (`RunLoadError`, `RunSaveError`, `InvalidSaveError`, `AssetLoadError`, `GenerationError`, …), map them to UI at the controller boundary, and report defects with run seed, command index, and diagnostics.
+- [ ] Add Expo SQLite, Drizzle ORM, and Drizzle Kit via `npx expo install`, plus a tested migration workflow.
+- [ ] Create normalized tables for profile, characters, inventory, currencies, equipment, progression, quests, pity, completed dungeons, and save metadata; map rows to domain types so Drizzle types never leak inward.
+- [ ] Store the active run as a versioned snapshot envelope: run ID, schema version, content version, floor seed/index, grid and room metadata, ECS component data (project-owned DTOs or registered `@Serializable` components — never an unversioned raw scene blob; transient intents excluded), per-stream RNG states including the rot.js states, scheduler snapshot, turn number and command index, pending/committed rewards, last stable phase, and update time.
+- [ ] Validate loaded envelopes with Zod and implement explicit corrupt/incompatible-save behavior.
+- [ ] Save only at stable command boundaries; serialize save requests so an older write cannot finish after a newer one; run a coalesced save worker as a scoped Effect fiber with a bounded lifecycle flush on AppState background/inactive.
 - [ ] Use transactions when committing run rewards or changing currency, ownership, inventory, or equipment.
 - [ ] Store only small, noncritical preferences in `expo-sqlite/kv-store` or AsyncStorage.
-- [ ] Add round-trip, interruption, corruption, atomicity, and migration tests from every shipped schema version.
+- [ ] Own route-scoped fibers for save/sync/content work and interrupt them when leaving the dungeon; use Effect's test clock/scheduler facilities in tests.
+- [ ] Add round-trip, interruption, corruption, atomicity, out-of-order-save, and migration tests from every shipped schema version, plus a replay fixture for a complete run.
 
 Exit criteria:
 
 - Permanent progression survives restart and an interrupted run resumes equivalently.
-- Save/load preserves deterministic RNG and active combat when mid-combat saving is supported.
+- Save/load preserves every RNG stream, scheduler order, ECS state, and the command index.
 - At least one forward migration path is tested without deleting the database.
 - Premium currency, ownership, pity, and active-run data are never treated as simple preferences.
+- Typed save/load failures map to recoverable UI states; retries apply only to transient/idempotent work.
 
-## Phase 7 — Meta-Game, Progression, Inventory, and Economy
+## Phase 8 — Meta-Game, Progression, Inventory, and Economy
 
 **Goal:** Build the durable player loop around dungeon runs.
 
-- [ ] Create thin Expo Router routes and authenticated-area layouts for home, dungeon selection, characters, inventory, equipment, settings, gacha, shop, and run results.
-- [ ] Implement focused Zustand stores/controllers for account, player, inventory, current run, combat, gacha, and settings.
-- [ ] Use narrow selectors and keep dialog/form-only state local to components.
-- [ ] Implement character ownership, leveling, experience curves, and derived combat stats.
+- [ ] Create thin Expo Router routes and layouts for home, dungeon selection, characters, inventory, equipment, settings, gacha, shop, and run results.
+- [ ] Implement focused Zustand stores/controllers for player, inventory, current-run projection, gacha, settings, and save/sync status; keep dialog/form-only state local to components.
+- [ ] Implement character ownership, leveling, experience curves, and derived combat stats copied into a new run at start.
 - [ ] Implement item stacking, equipment slots, equip/unequip validation, and loadouts.
 - [ ] Implement currencies, costs, grants, sinks, and validated economy transactions.
 - [ ] Apply run loot and experience exactly once through an atomic run-result transaction.
@@ -209,14 +250,14 @@ Exit criteria:
 - The full local loop works: prepare a character, start a run, finish it, apply rewards once, improve the loadout, and start another run.
 - Invalid, duplicate, negative, and unaffordable economy operations are rejected and tested.
 - Route files remain thin and no single store owns unrelated application areas.
-- Equipment and progression affect subsequent combat only through domain rules.
+- Equipment and progression affect subsequent runs only through domain rules applied at run start or through run-result transactions.
 
-## Phase 8 — Local Gacha Prototype
+## Phase 9 — Local Gacha Prototype
 
 **Goal:** Prove banner, pity, reward, and interruption behavior behind a repository that can later become remote.
 
 - [ ] Model versioned banners, server-style availability inputs, costs, rates, featured units, pity, guarantees, and duplicate conversion.
-- [ ] Define `GachaRepository` and implement a local seeded repository for development only.
+- [ ] Define `GachaRepository` as an Effect service and implement a local seeded repository for development only (never the production RNG path).
 - [ ] Implement single-pull and ten-pull commands with idempotency keys.
 - [ ] Atomically spend local currency, update pity/guarantee state, grant rewards, and append pull history.
 - [ ] Build banner details, rate disclosure, confirmation, reveal, history, and collection-update screens.
@@ -231,15 +272,15 @@ Exit criteria:
 - Reveal animation timing cannot change inventory, currency, pity, or results.
 - The local implementation is visibly and technically separated from production real-money behavior.
 
-## Phase 9 — Presentation Polish, Audio, Haptics, and Rive
+## Phase 10 — Presentation Polish, Audio, Haptics, and Rive
 
 **Goal:** Replace prototype presentation with production-quality assets and feedback while respecting settings and performance budgets.
 
 - [ ] Replace temporary art with organized sprite sheets/atlases and validated metadata.
-- [ ] Add sprite animations, pixel VFX, bounded particle pools, floating text, transitions, and screen feedback.
+- [ ] Add sprite animations, pixel VFX, bounded particle pools, floating text, transitions, and screen feedback in Skia.
 - [ ] Implement `AudioService` with preloading, music/SFX channels, volume, lifecycle handling, and graceful failures.
 - [ ] Implement `HapticsService` and map presentation events through user settings.
-- [ ] Add Rive summon, reward, rarity-reveal, level-up, loading, or menu sequences where they improve the experience.
+- [ ] Add Rive summon, reward, rarity-reveal, level-up, loading, or menu sequences where they improve the experience; Rive is never a dungeon renderer or source of truth.
 - [ ] Keep heroes, monsters, dungeon objects, attacks, and pixel VFX in Skia rather than Rive unless an exception is documented.
 - [ ] Implement music, SFX, haptics, graphics, language, reduced-motion, and accessibility preferences.
 - [ ] Verify logical scaling, safe areas, atlas sampling, and pixel clarity on small phones, tall phones, tablets, and high-refresh displays.
@@ -251,7 +292,7 @@ Exit criteria:
 - UI remains legible and pixel-crisp across supported sizes and densities.
 - Presentation remains within the established frame-time and memory budgets.
 
-## Phase 10 — Authentication, Backend, and Cloud Synchronization
+## Phase 11 — Authentication, Backend, and Cloud Synchronization
 
 **Goal:** Introduce production services without coupling game rules or UI to a specific provider.
 
@@ -259,10 +300,10 @@ Exit criteria:
 - [ ] Implement `TokenStorage` with Expo SecureStore for small session secrets only.
 - [ ] Choose and integrate the production identity provider behind the repository.
 - [ ] Add a remote data layer and TanStack Query for server-cache/request state.
-- [ ] Define versioned API contracts, runtime validation, error mapping, retries, cancellation, and idempotency behavior.
+- [ ] Define versioned API contracts, runtime validation, error mapping, cancellation, and idempotency behavior; give each retry policy one owner (Effect schedules or TanStack Query, never stacked accidentally).
 - [ ] Design and implement a cloud-save/sync strategy with explicit conflict resolution and content/save compatibility rules.
 - [ ] Hydrate sessions before initial routing to avoid incorrect route flashes.
-- [ ] Add privacy-conscious analytics, crash reporting, and remote configuration boundaries.
+- [ ] Add privacy-conscious analytics, crash reporting, and remote configuration boundaries behind Effect services.
 
 Exit criteria:
 
@@ -271,7 +312,7 @@ Exit criteria:
 - Local and cloud saves cannot silently overwrite newer progress.
 - Secrets are not stored in SQLite game tables, preferences, logs, or source control.
 
-## Phase 11 — Purchases and Production-Authoritative Gacha
+## Phase 12 — Purchases and Production-Authoritative Gacha
 
 **Goal:** Make commerce and paid-resource rewards server-verified, idempotent, auditable, and recoverable.
 
@@ -280,8 +321,8 @@ Exit criteria:
 - [ ] Handle product loading, purchase pending, success, failure, cancellation, restore, and interrupted flows.
 - [ ] Verify store transactions on the backend or through RevenueCat before granting premium value.
 - [ ] Implement idempotent server-side grants and authoritative balance refresh.
-- [ ] Replace local production gacha with a remote repository using server time and server-side randomness.
-- [ ] Return pull results, updated currency, pity, ownership, banner version, and audit/receipt ID atomically.
+- [ ] Replace local production gacha with a remote repository using server time and server-side randomness — never client RNG.
+- [ ] Return pull results, updated currency, pity, ownership, banner version, and audit/receipt ID atomically; play Rive reveals only of committed results.
 - [ ] Test store sandboxes, duplicate callbacks, retries, restores, revoked purchases, and app interruption.
 
 Exit criteria:
@@ -291,14 +332,14 @@ Exit criteria:
 - Purchase restore and interrupted-transaction recovery work on Android and iOS store test accounts.
 - Production pull history and pity updates are server-authoritative and auditable.
 
-## Phase 12 — Quality, Balance, Performance, and Accessibility
+## Phase 13 — Quality, Balance, Performance, and Accessibility
 
 **Goal:** Turn the feature-complete build into a stable, measurable, inclusive release candidate.
 
-- [ ] Complete domain coverage for combat, status effects, loot, generation, progression, economy, persistence, and gacha.
+- [ ] Complete domain coverage for movement, FOV, scheduling, combat, statuses, loot, generation, progression, economy, persistence, and gacha — including the ECS tests (system order, transient-intent cleanup, deferred structural changes, death removing scheduling/occupancy, per-turn status ticks, projection purity) and rot-js adapter tests.
 - [ ] Add application/controller, repository, migration, presentation-mapping, route, and critical end-to-end tests.
 - [ ] Add seeded simulations for combat balance, loot distribution, dungeon generation, and gacha-rate invariants.
-- [ ] Define and enforce budgets for startup, dungeon entry, command execution, frame time, memory, snapshots, and React rerenders.
+- [ ] Define and enforce budgets for startup, dungeon entry, command execution, frame time, memory, snapshot size, map-generation worst cases, and React rerenders.
 - [ ] Profile production-mode builds on representative physical Android and iOS devices at 60 Hz and high refresh rates.
 - [ ] Test app background/resume during combat, snapshot writes, purchases, and gacha reveals.
 - [ ] Audit screen readers, semantic labels, focus order, larger text, reduced motion, non-drag alternatives, contrast, and color-independent indicators.
@@ -312,13 +353,13 @@ Exit criteria:
 - Production builds meet agreed budgets on baseline devices.
 - No known release-blocking correctness, accessibility, security, privacy, or performance issues remain.
 
-## Phase 13 — Release Readiness and Live Operations
+## Phase 14 — Release Readiness and Live Operations
 
 **Goal:** Ship safely with tested platform configuration, compliance, monitoring, rollback, and compatibility procedures.
 
 - [ ] Finalize identifiers, signing, EAS profiles, icons, splash assets, permissions, entitlements, and store metadata.
 - [ ] Define Expo Update runtime-version policy and prevent OTA bundles from assuming unavailable native modules.
-- [ ] Test migration and resume behavior from the previous production binary and content version.
+- [ ] Test migration and resume behavior from the previous production binary and content version, including deterministic run resume across an OTA update.
 - [ ] Create deployment, staged rollout, rollback, incident, support, and save/content compatibility runbooks.
 - [ ] Complete privacy policy, terms, account deletion/export, age rating, purchase disclosures, and regional gacha probability requirements.
 - [ ] Run internal and closed testing on representative devices and fix launch blockers.
@@ -336,40 +377,48 @@ Exit criteria:
 
 ## Milestone Map
 
-| Milestone            | Required phases | Outcome                                                          |
-| -------------------- | --------------: | ---------------------------------------------------------------- |
-| Architecture proven  |             0–1 | Native workflow and renderer risk retired                        |
-| Headless game proven |             2–3 | Deterministic content and combat rules                           |
-| First playable       |             4–5 | Complete local dungeon run                                       |
-| Local MVP            |             6–9 | Persistence, meta-game, local gacha, and polished presentation   |
-| Production candidate |           10–12 | Online services, verified commerce, and release-quality behavior |
-| Public release       |              13 | Store-ready build with operational safeguards                    |
+| Milestone                | Required phases | Outcome                                                            |
+| ------------------------ | --------------: | ------------------------------------------------------------------ |
+| Foundation proven        |             0–1 | Native workflow plus ECS, rot-js, Effect, and Skia compatibility   |
+| Deterministic simulation |             2–4 | Validated content, seeded streams, grid movement, and combat rules |
+| First playable           |             5–6 | Playable combat and a complete local dungeon run                   |
+| Local MVP                |            7–10 | Persistence, meta-game, local gacha, and polished presentation     |
+| Production candidate     |           11–13 | Online services, verified commerce, and release-quality behavior   |
+| Public release           |              14 | Store-ready build with operational safeguards                      |
 
 ## Open Decisions
 
 Resolve each decision in the phase where it becomes necessary; do not block earlier phases prematurely.
 
-| Decision                                               | Needed by | Status | Resolution/evidence                        |
-| ------------------------------------------------------ | --------: | ------ | ------------------------------------------ |
-| Logical game resolution and tile size                  |   Phase 1 | Open   | —                                          |
-| Supported baseline Android/iOS devices                 |   Phase 1 | Open   | —                                          |
-| AsyncStorage vs `expo-sqlite/kv-store` for preferences |   Phase 6 | Open   | Prefer SQLite KV if SQLite is already core |
-| Production authentication provider                     |  Phase 10 | Open   | Repository boundary must be defined first  |
-| Cloud-save conflict policy                             |  Phase 10 | Open   | —                                          |
-| RevenueCat vs `expo-iap`                               |  Phase 11 | Open   | —                                          |
-| Launch regions and gacha compliance scope              |  Phase 13 | Open   | —                                          |
+| Decision                                                                              | Needed by | Status | Resolution/evidence                            |
+| ------------------------------------------------------------------------------------- | --------: | ------ | ---------------------------------------------- |
+| Logical game resolution and tile size                                                 |   Phase 1 | Open   | —                                              |
+| Supported baseline Android/iOS devices                                                |   Phase 1 | Open   | —                                              |
+| Grid-contact combat rule: bump attack vs encounter phase (per dungeon mode)           |   Phase 4 | Open   | Keep one rule set per mode and one ECS scene   |
+| ECS snapshot style: project-owned component DTOs vs serialized scene data in envelope |   Phase 7 | Open   | Never an unversioned raw scene blob            |
+| AsyncStorage vs `expo-sqlite/kv-store` for preferences                                |   Phase 7 | Open   | Prefer SQLite KV if SQLite is already core     |
+| Production authentication provider                                                    |  Phase 11 | Open   | Repository boundary must be defined first      |
+| Cloud-save conflict policy                                                            |  Phase 11 | Open   | —                                              |
+| RevenueCat vs `expo-iap`                                                              |  Phase 12 | Open   | —                                              |
+| Launch regions and gacha compliance scope                                             |  Phase 14 | Open   | —                                              |
 
 ## Completion Log
 
 Add one row only when a phase is fully complete. Evidence should identify the exact verification performed.
 
-| Phase | Completed date | Verified by | Evidence                                                                                                                                                                                                                                                                                              |
-| ----- | -------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0     | 2026-09-01     | ZCode agent | Quality gates pass locally: `npm run format:check`, `npm run lint`, `npm run typecheck`, `npm test -- --ci` (2 suites / 6 tests). `npx expo-doctor` 21/21; `npx expo install --check` clean; `expo prebuild` succeeds for iOS and Android. Dev builds launched and rendered on iPhone 16 Pro simulator (Metro `iOS Bundled`) and Android Medium_Phone emulator (`Android Bundled 3659ms`, 1807 modules). Boundary rules verified: probe file importing `react-native`/`zustand` in `src/domain` fails `npm run lint` with layer messages. Pure-layer test proven via `src/core/utils/result.ts` under the `jest-expo/node` project (plain Node environment). |
+| Phase | Completed date | Verified by | Evidence |
+| ----- | -------------- | ----------- | -------- |
+| 0     | 2026-09-01     | ZCode audit | `npm run format:check`, `npm run lint`, `npm run typecheck`, and `npm test -- --ci` all pass (10 suites / 94 tests; pure-TS suites run on the `jest-expo/node` preset with no React Native loaded). Exact pins verified with `npm ls`: `@esengine/ecs-framework@2.11.2`, `effect@4.0.0-rc.112`, `rot-js@2.2.1`. Boundary zones negative-tested: importing `rot-js` outside `src/game/rot` and `effect` inside `src/game` both fail `npm run lint`. Development builds produced on both platforms on 2026-09-01: `android/app/build/outputs/apk/debug/app-debug.apk` and the iOS simulator `.app` in Xcode DerivedData; launch workflow (incl. the JDK 17 Android override and iOS 26 simctl workaround) documented in README → "Native workflow", and SDK-compatible dependency installation in README → "Dependencies". |
 
 ## Work Notes
 
 Use this section for short, temporary handoff notes. Remove resolved notes after their evidence is captured in the relevant phase or completion log.
 
-- 2026-09-01: Phase 0 complete. Notes for Phase 1: Android builds on this machine require the JDK 17 override documented in README (user-global `~/.gradle/gradle.properties` pins Temurin 25, which breaks AGP's Prefab step); iOS 26 simulators block the first dev-client deep link behind a system confirmation — use the documented `simctl launch --args --initialUrl` workaround for headless launches. `expo-dev-client` was added during Phase 0 verification (starter did not include it). The two planning markdown files are excluded from Prettier via `.prettierignore`.
-- 2026-09-01: Phase 1 spike implemented. Evidence: dev builds on iPhone 16 Pro simulator (Zoom ×5, "62 fps · 0.0 ms") and Android Medium_Phone emulator (Zoom ×4, "62 fps · 16.7 ms") render the room, animated hero + patrolling slimes, working camera (Follow toggle pans/clamps), zoom cycling, and shake. HUD interactions exercised over adb (`input tap`): follow toggle + zoom cycle confirmed by screenshots. Quality gates: format/lint/typecheck clean, 40 tests pass across the `unit` and `ui` Jest projects. Two gotchas recorded in code comments: (1) functions called inside worklets need the `'worklet'` directive and inner `Array.map` callbacks are not reliably auto-workletized — use plain loops (`src/game/camera/camera-math.ts`, `src/game/render/use-spike-presentation.ts`); (2) React Compiler's `react-hooks/immutability` rule cannot model Reanimated `.value` writes — mutations are centralized in `useSpikePresentation` with a scoped lint exemption. Atlases are generated by `scripts/generate-spike-atlases.mjs` (re-run after editing; deterministic).
+- 2026-09-01: Tracker re-baselined to the updated game plan (`@esengine/ecs-framework` + `rot-js` + `Effect`). All checkboxes reset and the completion log cleared. Work completed under the previous plan (bootstrap, rendering spike, content/RNG foundations) remains in the tree but must be re-verified against the reworked exit criteria — in particular, the old "pure TypeScript domain, headless combat state machine" conventions are superseded by the ECS run scene as source of truth.
+- 2026-09-01: Phase 0 audit realignment — gameplay libraries pinned exactly (`@esengine/ecs-framework@2.11.2`, `effect@4.0.0-rc.112`, `rot-js@2.2.1`; RC upgrades are manual `package.json` edits, never caret bumps). ESLint zones rewritten to the new layering: `src/game` is the pure simulation (`@esengine/ecs-framework` allowed only there; `rot-js` only inside `src/game/rot/**`; Effect banned from `src/core`, `src/domain`, and `src/game`), and README → "Architecture" documents the same table. The renderer/asset spike code moved from `src/game/{render,assets}` to `src/presentation/canvas` (`__tests__/game/asset-manifest.test.ts` moved to `__tests__/presentation/` accordingly). The first `src/game/rot` adapter lands in Phase 1 (seeded rot.js generation wrapper).
+- 2026-09-02: Phase 1 spike implemented. Simulation: `src/game/rot/rot-random.ts` (module-RNG save/seed/run/capture/restore, restore-on-throw tested), `src/game/rot/rot-dungeon-generator.ts` (Digger → project tile IDs, connectivity-validated, deterministic attempt seeds, typed `GenerationError`), `src/game/grid/dungeon-grid.ts`, `src/game/ecs/` (decorated components, PatrolSystem@100 → SpriteSystem@200 with a `sceneData` order log, `Core`+`Scene` lifecycle owned by the route; **one run = one Scene — the ECS Core is an app-wide singleton and must be `dispose()`d before the next run**), `src/game/projection/` (frozen `SceneSnapshot`). Application/bootstrap: `src/application/spike/spike-controller.ts`, `src/bootstrap/effect-runtime.ts` (`ManagedRuntime` + `startTicker`; the route interrupts the fiber on unmount — tested). Presentation: the spike screen renders the generated dungeon; legacy `demo-scene` deleted. Gotchas that cost time: tsconfig needs `experimentalDecorators` (babel-preset-expo already applies legacy decorators automatically); `effect` ships ESM-only, so the Jest `unit` project transforms it via `transformIgnorePatterns: ['node_modules/(?!effect/)']` (Metro handles it natively; the preset's default `import.meta` polyfill keeps Hermes safe); `useSpikePresentation` must return a memoized object or the route's lifecycle effect re-runs every render and disposes the scene.
+- 2026-09-02: Phase 1 verification evidence — `npm run format:check`, `npm run lint`, `npm run typecheck`, and `npm test -- --ci` all green (14 suites / 111 tests, including rot wrapper restore-on-failure, generator determinism/connectivity/attempt-limit, system order, seed determinism, projection immutability, and ticker interruption). `npx expo export --platform ios` bundles clean. iOS **debug** build launched on the iPhone 16 Pro simulator: dungeon renders, slimes patrol between screenshots, HUD reads 62 fps / 16.7 ms. iOS **release** build (`expo run:ios --configuration Release`, minified, no Metro) launched on the same simulator with identical rendering and fps — decorators, ECS, rot-js, Effect, and Skia all execute in production Hermes. Android `./gradlew assembleRelease` succeeded (`android/app/build/outputs/apk/release/app-release.apk`; run with the documented JDK 17 override plus `ANDROID_HOME`). Still open: physical-device frame-time measurement and Android on-device smoke (no Android emulator/device on this machine).
+- 2026-09-01: Conventions from the earlier content/RNG work expected to carry into Phases 2/4, but verify before reuse: `deriveRngStreams(seed)` per-system streams (never share a stream), flat discriminated-union commands, `deepFreeze`d states, `SequenceRandomSource` for pinned rolls, and `contentFileSchemas` as the single content-schema extension point. The old "engine returns `{ state, events }`" pattern is replaced by the ECS scene plus exported event batches.
+- 2026-09-01: Environment notes that remain true: Android builds require the JDK 17 override documented in README (user-global `~/.gradle/gradle.properties` pins Temurin 25, which breaks AGP's Prefab step); iOS 26 simulators block the first dev-client deep link behind a system confirmation — use the documented `simctl launch --args --initialUrl` workaround; `expo-dev-client` is installed; the two planning markdown files are excluded from Prettier via `.prettierignore`.
+- 2026-09-01: Runtime note — the render spike fails with "Skia is unavailable in this runtime" under Expo Go (Expo Go no longer bundles Skia's native module). This is by design; always use development builds (`npx expo run:ios|android`). No canvaskit-wasm branch may enter the native bundle (Metro cannot tree-shake the deep import).
+- 2026-09-01: Rendering/codegen gotchas likely still relevant: functions called inside worklets need the `'worklet'` directive and inner `Array.map` callbacks are not reliably auto-workletized — use plain loops; React Compiler's `react-hooks/immutability` rule cannot model Reanimated `.value` writes (centralize mutations with a scoped lint exemption); atlases are generated by `scripts/generate-spike-atlases.mjs` (deterministic, re-run after editing).

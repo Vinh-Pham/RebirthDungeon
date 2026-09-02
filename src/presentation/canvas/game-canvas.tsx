@@ -27,12 +27,13 @@ import {
   SHAKE_DURATION_MS,
   SHAKE_MAGNITUDE_PX,
   TILE_SIZE,
-} from '../config';
-import { computeCameraTransform, shakeOffset } from '../camera/camera-math';
-import { frameIndex } from '../sprites/frames';
+} from '@/game/config';
+import { computeCameraTransform, shakeOffset } from '@/game/camera/camera-math';
+import { frameIndex } from '@/game/sprites/frames';
+import type { SceneSnapshot } from '@/game/projection/scene-snapshot';
+
 import { bakeMapPicture } from './bake-map-picture';
-import type { LoadedGameAssets } from '../assets/load-game-assets';
-import type { SceneSnapshot } from '../scene/scene-snapshot';
+import type { LoadedGameAssets } from './load-game-assets';
 import type { SpikePresentation } from './use-spike-presentation';
 
 export function computeDeviceScale(widthPx: number, heightPx: number): number {

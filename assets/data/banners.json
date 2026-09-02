@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "banners": [
+    {
+      "id": "banner_standard_recruitment",
+      "name": "Standard Recruitment",
+      "kind": "standard",
+      "currency": "gems",
+      "costPerPull": 100,
+      "costPerTenPull": 1000,
+      "rarityTableId": "rarity_standard"
+    },
+    {
+      "id": "banner_bramble_focus",
+      "name": "Bramble Focus",
+      "kind": "featured",
+      "currency": "gems",
+      "costPerPull": 120,
+      "costPerTenPull": 1200,
+      "rarityTableId": "rarity_standard",
+      "featuredHeroId": "hero_knight"
+    }
+  ]
+}

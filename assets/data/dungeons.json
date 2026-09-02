@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "dungeons": [
+    {
+      "id": "dungeon_gloom_cellar",
+      "name": "The Gloom Cellar",
+      "description": "A damp cellar crawl for new adventurers, ending with the Cellar King.",
+      "floorCount": 2,
+      "encountersPerFloor": 2,
+      "encounterIds": ["enc_slime_cave", "enc_bat_swarm", "enc_brute"],
+      "bossEncounterId": "enc_boss_cellar_king",
+      "rewardLootTableId": "loot_brute"
+    }
+  ]
+}

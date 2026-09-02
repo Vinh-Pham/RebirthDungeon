@@ -19,6 +19,10 @@ module.exports = {
       displayName: 'unit',
       preset: 'jest-expo/node',
       moduleNameMapper,
+      // `effect` ships ESM-only (no require export), so babel must transform
+      // it; babel-preset-expo's default import.meta polyfill keeps it
+      // Hermes/node safe.
+      transformIgnorePatterns: ['node_modules/(?!effect/)'],
       testMatch: [
         '<rootDir>/__tests__/{core,domain,application,data,game}/**/*.test.[jt]s?(x)',
       ],

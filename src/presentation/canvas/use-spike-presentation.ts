@@ -10,15 +10,16 @@
  * presentational.
  */
 
+import { useMemo } from 'react';
 import {
   useFrameCallback,
   useSharedValue,
   type SharedValue,
 } from 'react-native-reanimated';
 
-import { ACTOR_FOLLOW_RATE, CAMERA_FOLLOW_RATE } from '../config';
-import { lerpFactor } from '../camera/camera-math';
-import type { ActorSnapshot } from '../scene/scene-snapshot';
+import { ACTOR_FOLLOW_RATE, CAMERA_FOLLOW_RATE } from '@/game/config';
+import { lerpFactor } from '@/game/camera/camera-math';
+import type { ActorSnapshot } from '@/game/projection/scene-snapshot';
 
 /** Plain copy of an actor used as a presentation target. */
 export type RenderActor = Pick<
@@ -138,31 +139,48 @@ export function useSpikePresentation(initial: {
     }
   }, true);
 
-  return {
-    clock,
-    actorTargets,
-    actorRender,
-    focusX,
-    focusY,
-    followId,
-    zoom,
-    shakeStart,
-    fps,
-    worstFrameMs,
-    triggerShake() {
-      shakeStart.value = clock.value;
-    },
-    pushActorTargets(targets) {
-      actorTargets.value = targets;
-    },
-    setFollowId(id) {
-      followId.value = id;
-    },
-    setZoom(value) {
-      zoom.value = value;
-    },
-    clampZoom(max) {
-      if (zoom.value > max) zoom.value = max;
-    },
-  };
+  // Memoized so callers can safely put this object in effect dependencies:
+  // every member is a stable shared value or a closure over stable shared
+  // values, so the identity never changes across re-renders.
+  return useMemo(
+    () => ({
+      clock,
+      actorTargets,
+      actorRender,
+      focusX,
+      focusY,
+      followId,
+      zoom,
+      shakeStart,
+      fps,
+      worstFrameMs,
+      triggerShake() {
+        shakeStart.value = clock.value;
+      },
+      pushActorTargets(targets) {
+        actorTargets.value = targets;
+      },
+      setFollowId(id) {
+        followId.value = id;
+      },
+      setZoom(value) {
+        zoom.value = value;
+      },
+      clampZoom(max) {
+        if (zoom.value > max) zoom.value = max;
+      },
+    }),
+    [
+      clock,
+      actorTargets,
+      actorRender,
+      followId,
+      focusX,
+      focusY,
+      zoom,
+      shakeStart,
+      fps,
+      worstFrameMs,
+    ],
+  );
 }
