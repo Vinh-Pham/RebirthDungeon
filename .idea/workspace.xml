@@ -6,35 +6,19 @@
   <component name="BackendCodeEditorMiscSettings">
     <option name="/Default/Environment/Hierarchy/GeneratedFilesCacheKey/Timestamp/@EntryValue" value="52" type="long" />
   </component>
+  <component name="CMakeProjectFlavorService">
+    <option name="flavorId" value="CMakePlainProjectFlavor" />
+  </component>
+  <component name="CMakeSettings">
+    <configurations>
+      <configuration PROFILE_NAME="Debug" ENABLED="true" CONFIG_NAME="Debug" />
+    </configurations>
+  </component>
   <component name="ChangeListManager">
     <list default="true" id="8589fb97-3e42-48f8-8914-55710236f3e1" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/RebirthDungeon.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/go.imports.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/php.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/prettier.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/__tests__/game/asset-manifest.test.ts" beforeDir="false" afterPath="$PROJECT_DIR$/__tests__/presentation/asset-manifest.test.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/__tests__/game/demo-scene.test.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/eslint.config.js" beforeDir="false" afterPath="$PROJECT_DIR$/eslint.config.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/jest.config.js" beforeDir="false" afterPath="$PROJECT_DIR$/jest.config.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/project-phases.md" beforeDir="false" afterPath="$PROJECT_DIR$/project-phases.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/react-native-expo-game-plan.md" beforeDir="false" afterPath="$PROJECT_DIR$/react-native-expo-game-plan.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/assets/asset-manifest.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/presentation/canvas/asset-manifest.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/assets/load-game-assets.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/presentation/canvas/load-game-assets.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/game/config.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/render/bake-map-picture.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/render/game-canvas.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/render/use-spike-presentation.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/scene/demo-scene.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/scene/scene-snapshot.ts" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/src/presentation/spike/render-spike-screen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/presentation/spike/render-spike-screen.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsconfig.json" beforeDir="false" afterPath="$PROJECT_DIR$/tsconfig.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -47,7 +31,8 @@
     </execution>
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="23045" />
+    <option name="cachedIndexableFilesCount" value="23054" />
+    <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="FileEditorManager">
     <leaf>
@@ -75,6 +60,65 @@
   <component name="McpProjectServerCommands">
     <commands />
     <urls />
+  </component>
+  <component name="NextEditCompletionFeaturesState">
+    <decayedCancelled>
+      <entry key="MS100" value="2.0702375014904866" />
+      <entry key="MS500" value="5.138978947647468" />
+      <entry key="S2" value="7.085116202782233" />
+      <entry key="S5" value="7.613963159747345" />
+      <entry key="S10" value="7.803449193985496" />
+      <entry key="S30" value="7.933680114413584" />
+      <entry key="S60" value="7.967392740650996" />
+      <entry key="M2" value="8.055901288339332" />
+      <entry key="M5" value="9.432942983282805" />
+      <entry key="M10" value="14.109829325378488" />
+      <entry key="M15" value="19.75542416879186" />
+      <entry key="M30" value="33.10440986996554" />
+      <entry key="H1" value="46.06500559284788" />
+      <entry key="H2" value="55.26698660350449" />
+      <entry key="H4" value="60.77525453977285" />
+      <entry key="D1" value="65.90876280068396" />
+      <entry key="W1" value="66.84273592093834" />
+    </decayedCancelled>
+    <decayedSelected>
+      <entry key="MS100" value="0.0" />
+      <entry key="MS500" value="0.0" />
+      <entry key="S2" value="0.0" />
+      <entry key="S5" value="4.005276534887724E-146" />
+      <entry key="S10" value="2.00131869898018E-73" />
+      <entry key="S30" value="5.849320493778408E-25" />
+      <entry key="S60" value="7.648085050375945E-13" />
+      <entry key="M2" value="8.745333069915605E-7" />
+      <entry key="M5" value="0.003773206220737416" />
+      <entry key="M10" value="0.06142642933410193" />
+      <entry key="M15" value="0.1556814425950082" />
+      <entry key="M30" value="0.39456487754868447" />
+      <entry key="H1" value="0.6281439942789266" />
+      <entry key="H2" value="0.7925553572331253" />
+      <entry key="H4" value="0.8902557819150204" />
+      <entry key="D1" value="0.9808120672923015" />
+      <entry key="W1" value="0.9972360538440955" />
+    </decayedSelected>
+    <decayedShown>
+      <entry key="MS100" value="1.982127864382823" />
+      <entry key="MS500" value="5.089589405768638" />
+      <entry key="S2" value="7.067733550197372" />
+      <entry key="S5" value="7.606461790922459" />
+      <entry key="S10" value="7.799600228635514" />
+      <entry key="S30" value="7.932374605100836" />
+      <entry key="S60" value="7.966737080035469" />
+      <entry key="M2" value="8.055570992649473" />
+      <entry key="M5" value="9.436501569289407" />
+      <entry key="M10" value="14.170453300419341" />
+      <entry key="M15" value="19.909659762876515" />
+      <entry key="M30" value="33.496896301279634" />
+      <entry key="H1" value="46.69136225534167" />
+      <entry key="H2" value="56.05836683568068" />
+      <entry key="H4" value="61.664836156129866" />
+      <entry key="D1" value="66.88944883050058" />
+      <entry key="W1" value="67.83995361091004" />
+    </decayedShown>
   </component>
   <component name="PackageJsonUpdateNotifier">
     <dismissed value="$PROJECT_DIR$/package.json" />
@@ -123,7 +167,7 @@
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "ml.llm.LLMThirdPartyAiProvidersConfigurable",
+    "settings.editor.selected.configurable": "ml.llm.LLMConfigurable",
     "show.migrate.to.gradle.popup": "false",
     "ts.external.directory.path": "/Users/vinhpham/Projects/RebirthDungeon/node_modules/typescript/lib"
   }

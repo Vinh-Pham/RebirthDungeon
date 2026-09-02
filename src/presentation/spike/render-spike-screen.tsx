@@ -13,7 +13,7 @@
  * renders the immutable map snapshot.
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   PixelRatio,
   StyleSheet,
@@ -110,6 +110,15 @@ export function RenderSpikeScreen() {
     followId: snapshot?.cameraTargetActorId ?? 'hero',
     zoom: 1,
   });
+  // Latest presentation handle for the ticker closure. The lifecycle effect
+  // below must depend only on `controller`: its cleanup is the only place the
+  // ECS scene is disposed, so a re-arming dependency (React may drop a
+  // useMemo identity at any time) would otherwise tear down a live run while
+  // the restarted ticker keeps stepping the destroyed Core.
+  const presentationRef = useRef(presentation);
+  useEffect(() => {
+    presentationRef.current = presentation;
+  }, [presentation]);
 
   const zoom = zoomSteps[Math.min(zoomIndex, zoomSteps.length - 1)] ?? 1;
 
@@ -140,7 +149,7 @@ export function RenderSpikeScreen() {
     if (!controller) return;
     const fiber = startTicker(() => {
       controller.step();
-      presentation.pushActorTargets(
+      presentationRef.current.pushActorTargets(
         controller.project().actors.map(toRenderActor),
       );
     }, SPIKE_TICK_INTERVAL_MS);
@@ -148,7 +157,7 @@ export function RenderSpikeScreen() {
       fiber.interruptUnsafe();
       controller.dispose();
     };
-  }, [controller, presentation]);
+  }, [controller]);
 
   const followId = followMonster ? 'slime-0' : 'hero';
   useEffect(() => {
