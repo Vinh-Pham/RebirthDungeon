@@ -72,36 +72,67 @@ Key invariants (details in the game plan):
 - Data layer implementations are injected at bootstrap; domain/application code
   depends on interfaces, never on SQLite/HTTP/provider SDKs.
 
-## Phase 1 spike (current)
+## Phase 1–3 progress
 
-The spike retires the integration risks between the four libraries on Hermes:
+**Phase 1 (compatibility & rendering spike)** retired the integration risks
+between the four libraries on Hermes:
 
 - **ECS** — `src/game/ecs/` builds one `Core` + `Scene` whose lifecycle the
-  spike route owns: created on mount, `dispose()`d on unmount (`Core` is an
-  app-wide singleton owning exactly one scene — one run, one Scene). Two
-  systems with explicit `updateOrder` (Patrol 100 → Sprite 200) step actors
-  through `Core.update()` with a fixed dt; an order log in `sceneData` proves
-  the ordering in tests. Components/systems use `@ECSComponent`/`@ECSSystem`
-  decorators — enabled by `experimentalDecorators` in tsconfig, while
-  babel-preset-expo applies the legacy-decorators transform automatically.
+  owning route controls (`Core` is an app-wide singleton owning exactly one
+  scene — one run, one Scene). Components/systems use
+  `@ECSComponent`/`@ECSSystem` decorators — enabled by
+  `experimentalDecorators` in tsconfig, while babel-preset-expo applies the
+  legacy-decorators transform automatically.
 - **rot-js** — `src/game/rot/rot-random.ts` wraps the shared module `ROT.RNG`
   in a synchronous save/seed/run/capture/restore (`runWithRotRng`); the state
   is restored even when generation throws. `rot-dungeon-generator.ts` runs
-  `Map.Digger` inside that wrapper, paints project tile IDs, and validates
-  spawn/exit connectivity with deterministic retry seeds and a typed
-  `GenerationError`.
+  `Map.Digger` inside that wrapper and validates spawn/exit connectivity with
+  deterministic retry seeds and a typed `GenerationError`.
 - **Effect** — `src/bootstrap/effect-runtime.ts` holds the app-scoped
-  `ManagedRuntime`. The spike ticker is a fiber started with `startTicker()`
-  and interrupted by the route on unmount (`fiber.interruptUnsafe()`), tested
-  in `__tests__/application/spike-ticker.test.ts`. `effect` ships ESM-only;
-  Metro handles it, and Jest transforms it via `transformIgnorePatterns` in
-  the unit project (babel-preset-expo's default `import.meta` polyfill keeps
-  it Hermes-safe).
-- **Rendering** — the route projects the scene into one frozen
-  `SceneSnapshot` (`src/game/projection/`); the Skia canvas renders the baked
-  map + atlas sprites while the ticker pushes committed positions into
-  Reanimated shared values. No Reanimated/Skia object ever holds gameplay
-  truth.
+  `ManagedRuntime`; route-scoped fibers are interrupted on unmount.
+  `effect` ships ESM-only; Metro handles it, and Jest transforms it via
+  `transformIgnorePatterns` in the unit project (babel-preset-expo's default
+  `import.meta` polyfill keeps it Hermes-safe).
+- **Rendering** — the Skia canvas renders the baked map + atlas sprites while
+  committed positions are pushed into Reanimated shared values. No
+  Reanimated/Skia object ever holds gameplay truth.
+
+**Phase 3 (grid roguelike core)** builds the authoritative run on that base —
+see "The run loop (Phase 3)" below.
+
+## The run loop (Phase 3)
+
+- **Simulation** (`src/game/`): the full initial component set lives in
+  `ecs/components.ts`; run/floor/turn state is a singleton `RunState`
+  component; the static grid is a typed array with tile rules from content
+  (`grid/tile-rules.ts`, backed by `assets/data/tile-definitions.json`) and an
+  O(1) occupancy index (`grid/occupancy-index.ts`).
+- **Systems** (`ecs/systems/`): eight systems with well-spaced `updateOrder`
+  (InputIntent 100 → EnemyIntent 200 → Movement 300 → Interaction 400 →
+  Visibility 500 → TurnFinalization 600 → Cleanup 700 → EventExport 800).
+  One `Core.update(0)` resolves exactly the current actor's turn; Phase 4
+  slots combat systems into the 400–800 range.
+- **Movement contract** (game plan §6): invalid player input never consumes a
+  turn; walking into a closed door opens it (turn consumed); hostile cells
+  become bump attacks (`AttackIntent` recorded, combat lands in Phase 4);
+  traps trigger and disarm, pickups collect and despawn, the player reaching
+  the stairs emits `STAIRS_REACHED`.
+- **rot-js adapters** (`game/rot/`): `rot-pathfinder.ts` (A*, topology 4,
+  origin-allowing passability), `rot-fov.ts` (PreciseShadowcasting with
+  `visibleNow` + persistent `explored` bitsets, recomputed only on position
+  or opacity change), `rot-turn-scheduler.ts` (project-owned wrapper over
+  `ROT.Scheduler.Speed` with snapshot/restore; `ROT.Engine` is never used).
+- **Controller** (`application/run/run-controller.ts`): `startRun({ seed,
+content })` composes streams → dungeon generation → the ECS scene; the
+  serial command path (`submitMove` / `submitWait` / `submitTapMove`)
+  validates, resolves synchronously until the schedule returns to the player
+  (bounded by a 64-step guard), and returns the committed snapshot.
+- **Input** (`presentation/run/`): D-pad, swipe, tap-to-walk (one step per
+  command via A*, revalidated), and keyboard (arrows/WASD through a hidden
+  focusable input) all reduce to the same cardinal move command — the pure
+  mappers in `input-map.ts` are the tested contract.
+- **Determinism**: same seed + command sequence reproduces the same map,
+  spawns, turn order, FOV, event log, and projection — replay-tested.
 
 ## Rendering baseline (Phase 1 decision)
 

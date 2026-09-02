@@ -4,9 +4,12 @@
  * manifest must list tile names in the same order (see
  * `__tests__/presentation/asset-manifest.test.ts` for the contract check).
  *
- * Floor tiles are never entities: walkability and opacity come from these
- * IDs, while dynamic blocking (actors, closed doors) lives in ECS components.
+ * Floor tiles are never entities: static walkability/opacity come from the
+ * content-driven `TileRules` table, while dynamic blocking (actors, closed
+ * doors) lives in the ECS occupancy index.
  */
+
+import type { TileRules } from './tile-rules';
 
 export const TileId = {
   Floor: 0,
@@ -45,33 +48,41 @@ export interface DungeonGrid {
   readonly tiles: Uint16Array;
 }
 
+export function cellIndex(grid: DungeonGrid, x: number, y: number): number {
+  return y * grid.width + x;
+}
+
+export function isInBounds(grid: DungeonGrid, x: number, y: number): boolean {
+  return x >= 0 && y >= 0 && x < grid.width && y < grid.height;
+}
+
 export function tileAt(grid: DungeonGrid, x: number, y: number): TileIdValue {
-  if (x < 0 || y < 0 || x >= grid.width || y >= grid.height) {
+  if (!isInBounds(grid, x, y)) {
     return TileId.Wall;
   }
   return grid.tiles[y * grid.width + x] as TileIdValue;
 }
 
-const WALKABLE: ReadonlySet<number> = new Set([
-  TileId.Floor,
-  TileId.FloorAlt,
-  TileId.Door,
-  TileId.Stairs,
-  TileId.Crack,
-  TileId.Rubble,
-]);
-
-export function isWalkable(grid: DungeonGrid, x: number, y: number): boolean {
-  return WALKABLE.has(tileAt(grid, x, y));
+export function isWalkable(
+  grid: DungeonGrid,
+  rules: TileRules,
+  x: number,
+  y: number,
+): boolean {
+  return rules.walkable[tileAt(grid, x, y)] === 1;
 }
 
 /** Breadth-first reachability over cardinal moves — O(tiles), no allocation per step. */
 export function isReachable(
   grid: DungeonGrid,
+  rules: TileRules,
   from: GridPoint,
   to: GridPoint,
 ): boolean {
-  if (!isWalkable(grid, from.x, from.y) || !isWalkable(grid, to.x, to.y)) {
+  if (
+    !isWalkable(grid, rules, from.x, from.y) ||
+    !isWalkable(grid, rules, to.x, to.y)
+  ) {
     return false;
   }
   const seen = new Uint8Array(grid.width * grid.height);
@@ -83,22 +94,30 @@ export function isReachable(
     if (index === goal) return true;
     const x = index % grid.width;
     const y = (index - x) / grid.width;
-    if (x > 0 && !seen[index - 1] && isWalkable(grid, x - 1, y)) {
+    if (x > 0 && !seen[index - 1] && isWalkable(grid, rules, x - 1, y)) {
       seen[index - 1] = 1;
       queue.push(index - 1);
     }
-    if (x + 1 < grid.width && !seen[index + 1] && isWalkable(grid, x + 1, y)) {
+    if (
+      x + 1 < grid.width &&
+      !seen[index + 1] &&
+      isWalkable(grid, rules, x + 1, y)
+    ) {
       seen[index + 1] = 1;
       queue.push(index + 1);
     }
-    if (y > 0 && !seen[index - grid.width] && isWalkable(grid, x, y - 1)) {
+    if (
+      y > 0 &&
+      !seen[index - grid.width] &&
+      isWalkable(grid, rules, x, y - 1)
+    ) {
       seen[index - grid.width] = 1;
       queue.push(index - grid.width);
     }
     if (
       y + 1 < grid.height &&
       !seen[index + grid.width] &&
-      isWalkable(grid, x, y + 1)
+      isWalkable(grid, rules, x, y + 1)
     ) {
       seen[index + grid.width] = 1;
       queue.push(index + grid.width);

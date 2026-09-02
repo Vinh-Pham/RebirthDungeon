@@ -1,6 +1,7 @@
 /**
  * rot.js `Map.Digger` adapter: produces a plain, project-owned `DungeonGrid`
- * snapshot. All rot.js types stay inside this file.
+ * snapshot with rooms, corridors, spawn, and exit. All rot.js types stay
+ * inside this file.
  *
  * Every attempt runs synchronously through `runWithRotRng` so the module RNG
  * is always restored — including when generation throws. Failed attempts are
@@ -17,6 +18,8 @@ import {
   isReachable,
   isWalkable,
 } from '@/game/grid/dungeon-grid';
+import type { TileRules } from '@/game/grid/tile-rules';
+import type { GenerationProfileDefinition } from '@/domain/content/schemas';
 
 import { runWithRotRng } from './rot-random';
 
@@ -28,11 +31,19 @@ export interface RoomSnapshot {
   readonly doors: readonly GridPoint[];
 }
 
+export interface CorridorSnapshot {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
 export interface GeneratedFloor {
   /** The derived attempt seed that finally produced this floor. */
   readonly attemptSeed: number;
   readonly grid: DungeonGrid;
   readonly rooms: readonly RoomSnapshot[];
+  readonly corridors: readonly CorridorSnapshot[];
   readonly spawn: GridPoint;
   readonly exit: GridPoint;
   /** Module RNG state after generation — captured for saves/replays. */
@@ -58,9 +69,10 @@ export class GenerationError extends Error {
 
 export interface GenerateDungeonOptions {
   seed: number;
-  width?: number;
-  height?: number;
-  maxAttempts?: number;
+  /** Content-driven tile semantics (walkability) for validation. */
+  rules: TileRules;
+  /** Content-driven generation profile; defaults mirror the starter profile. */
+  profile?: GenerationProfileDefinition;
   minRooms?: number;
 }
 
@@ -68,6 +80,9 @@ const DEFAULT_WIDTH = 30;
 const DEFAULT_HEIGHT = 22;
 const DEFAULT_MAX_ATTEMPTS = 5;
 const DEFAULT_MIN_ROOMS = 3;
+const DEFAULT_ROOM_WIDTH: [number, number] = [3, 9];
+const DEFAULT_ROOM_HEIGHT: [number, number] = [3, 7];
+const DEFAULT_CORRIDOR_LENGTH: [number, number] = [2, 10];
 
 /** Golden-ratio step so attempt seeds diverge far apart for any base seed. */
 function deriveAttemptSeed(seed: number, attempt: number): number {
@@ -84,19 +99,26 @@ function roomCenter(room: RoomSnapshot): GridPoint {
 export function generateDungeon(
   options: GenerateDungeonOptions,
 ): GeneratedFloor {
-  const {
-    seed,
-    width = DEFAULT_WIDTH,
-    height = DEFAULT_HEIGHT,
-    maxAttempts = DEFAULT_MAX_ATTEMPTS,
-    minRooms = DEFAULT_MIN_ROOMS,
-  } = options;
+  const { seed, rules, profile, minRooms = DEFAULT_MIN_ROOMS } = options;
+  const width = profile?.width ?? DEFAULT_WIDTH;
+  const height = profile?.height ?? DEFAULT_HEIGHT;
+  const maxAttempts = profile?.maxAttempts ?? DEFAULT_MAX_ATTEMPTS;
+  const roomWidth = profile?.roomWidth ?? DEFAULT_ROOM_WIDTH;
+  const roomHeight = profile?.roomHeight ?? DEFAULT_ROOM_HEIGHT;
+  const corridorLength = profile?.corridorLength ?? DEFAULT_CORRIDOR_LENGTH;
 
   const problems: string[] = [];
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const attemptSeed = deriveAttemptSeed(seed, attempt);
     try {
-      return generateOnce(attemptSeed, width, height, minRooms);
+      return generateOnce({
+        attemptSeed,
+        width,
+        height,
+        minRooms,
+        rules,
+        diggerOptions: { roomWidth, roomHeight, corridorLength },
+      });
     } catch (error) {
       if (error instanceof GenerationAttemptError) {
         problems.push(
@@ -120,16 +142,30 @@ class GenerationAttemptError extends Error {
   }
 }
 
-function generateOnce(
-  attemptSeed: number,
-  width: number,
-  height: number,
-  minRooms: number,
-): GeneratedFloor {
+interface GenerateOnceArgs {
+  readonly attemptSeed: number;
+  readonly width: number;
+  readonly height: number;
+  readonly minRooms: number;
+  readonly rules: TileRules;
+  readonly diggerOptions: {
+    roomWidth: [number, number];
+    roomHeight: [number, number];
+    corridorLength: [number, number];
+  };
+}
+
+function generateOnce(args: GenerateOnceArgs): GeneratedFloor {
+  const { attemptSeed, width, height, minRooms, rules, diggerOptions } = args;
+
   // rot.js cell values: 1 = wall, 0 = dug floor. Everything rot.js touches
   // (construction, create, getRooms) happens inside the wrapper.
   const outcome = runWithRotRng(attemptSeed, () => {
-    const digger = new RotMap.Digger(width, height);
+    const digger = new RotMap.Digger(width, height, {
+      roomWidth: diggerOptions.roomWidth,
+      roomHeight: diggerOptions.roomHeight,
+      corridorLength: diggerOptions.corridorLength,
+    });
     const cells = new Uint16Array(width * height).fill(1);
     digger.create((x, y, wall) => {
       cells[y * width + x] = wall ? 1 : 0;
@@ -145,10 +181,18 @@ function generateOnce(
         doors,
       };
     });
-    return { cells, rooms };
+    const corridors: CorridorSnapshot[] = digger
+      .getCorridors()
+      .map((corridor) => ({
+        x: Math.min(corridor._startX, corridor._endX),
+        y: Math.min(corridor._startY, corridor._endY),
+        width: Math.abs(corridor._endX - corridor._startX) + 1,
+        height: Math.abs(corridor._endY - corridor._startY) + 1,
+      }));
+    return { cells, rooms, corridors };
   });
 
-  const { cells, rooms } = outcome.value;
+  const { cells, rooms, corridors } = outcome.value;
   if (rooms.length < minRooms) {
     throw new GenerationAttemptError(
       `only ${rooms.length} room(s) generated, need ${minRooms}`,
@@ -160,12 +204,12 @@ function generateOnce(
   const exit = roomCenter(rooms[rooms.length - 1]);
 
   if (
-    !isWalkable(grid, spawn.x, spawn.y) ||
-    !isWalkable(grid, exit.x, exit.y)
+    !isWalkable(grid, rules, spawn.x, spawn.y) ||
+    !isWalkable(grid, rules, exit.x, exit.y)
   ) {
     throw new GenerationAttemptError('spawn or exit landed on a wall tile');
   }
-  if (!isReachable(grid, spawn, exit)) {
+  if (!isReachable(grid, rules, spawn, exit)) {
     throw new GenerationAttemptError('spawn and exit are not connected');
   }
 
@@ -173,6 +217,7 @@ function generateOnce(
     attemptSeed,
     grid,
     rooms,
+    corridors,
     spawn,
     exit,
     rngState: outcome.rngState,

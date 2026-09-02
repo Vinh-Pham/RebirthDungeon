@@ -1,5 +1,5 @@
-import { RenderSpikeScreen } from '@/presentation/spike/render-spike-screen';
+import { RunScreen } from '@/presentation/run/run-screen';
 
 export default function HomeRoute() {
-  return <RenderSpikeScreen />;
+  return <RunScreen />;
 }
