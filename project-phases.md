@@ -23,16 +23,17 @@ The architecture is ECS-first: one active dungeon run is one `@esengine/ecs-fram
 
 ## Current Focus
 
-- **Current phase:** Phase 1 — Compatibility and rendering spike.
-- **Status:** Implemented and verified on this machine as of 2026-09-02 (second pass). Emulator/simulator smoke testing of the release build surfaced a real production bug — a mid-mount effect re-run disposed the ECS `Core` while the restarted ticker kept stepping it (see Work Notes) — now fixed. After the fix, the spike runs with a demonstrably alive patrol simulation at 62 fps / 16.7 ms on: Android emulator release build (minified), Android emulator dev build (Metro), and iPhone 16 Pro simulator release build. Quality gates green: format/lint/typecheck + 111 tests, `expo export --platform ios` bundles clean. Remaining for phase completion: **frame-time measurement on representative physical devices** (task below). The paired iPhone 14 Pro Max is reachable (`devicectl` over local network, Developer Mode on) but deployment is blocked: no Apple ID is signed into Xcode and no Apple signing identity/team exists on this machine (only a self-signed "hl-cert"; all keychain profiles are expired QuiAri profiles). No physical Android device is attached; the local emulator (`Medium_Phone` AVD) smoke stands in for now but cannot satisfy the physical-device criterion.
-- **Next objective:** Sign into Xcode with an Apple ID (a free personal team is sufficient for a debug run) to deploy to the paired iPhone 14 Pro Max, and connect a mid-range Android phone; record HUD fps/worst-frame numbers on both in dev + release, then move to Phase 2.
+- **Current phase:** Phase 3 — Grid roguelike core: ECS world, movement, FOV, and turns.
+- **Status:** Phase 2 completed on 2026-09-02: the content/RNG foundations from the earlier plan were audited against the reworked tasks and the gaps closed — `enemyAi` added as a sixth RNG stream; tile-definition, generation-profile, and pity-rule schemas with starter data, catalog indexing, and cross-validation (banner→pity references, contiguous tile ids); a fast-check property test proving corrupted references always fail with the file named; tile-definitions contract-tested against the grid's `TileId` space and the atlas manifest. 120 tests green in the plain Node environment. Phase 1 remains open **only** for the physical-device frame-time measurement (hardware/credentials blocker below).
+- **Phase 1 remaining blocker (unchanged):** the paired iPhone 14 Pro Max needs an Apple ID signed into Xcode (free personal team suffices) before `npx expo run:ios --device`; a mid-range Android phone with USB debugging is needed for `dumpsys gfxinfo`. Emulator/simulator smokes all pass (see Work Notes) but do not satisfy the criterion.
+- **Next objective:** Implement the Phase 3 run scene: the real component set, the typed-array `DungeonGrid` consuming tile rules from content, the ordered system pipeline, the movement contract, the rot-js pathfinder/FOV/scheduler adapters, and the command-driven RunController.
 - **Baseline inspected:** 2026-09-02
 
 ## Phase Overview
 
 - [x] Phase 0 — Project bootstrap and architecture baseline
 - [ ] Phase 1 — Compatibility and rendering spike
-- [ ] Phase 2 — Content system and deterministic random streams
+- [x] Phase 2 — Content system and deterministic random streams
 - [ ] Phase 3 — Grid roguelike core: ECS world, movement, FOV, and turns
 - [ ] Phase 4 — Dice combat in the ECS
 - [ ] Phase 5 — Playable combat slice
@@ -104,15 +105,15 @@ Exit criteria:
 
 **Goal:** Establish data-driven, validated content models and serializable RNG streams (including the rot.js RNG contract) that the simulation consumes as plain data.
 
-- [ ] Define shared IDs, branded content types, immutable-update conventions, errors, engine results, flat discriminated-union commands, and domain-event conventions under the new layering (no React, Effect, or React Native types).
-- [ ] Implement `RandomSource`, a serializable seeded generator, RNG snapshots/draw indexes, and a sequence-backed test fake.
-- [ ] Derive separate RNG streams for dungeon generation, enemy AI, combat/dice, loot, cosmetics, and local development gacha.
-- [ ] Implement the rot.js RNG adapter contract: save module state, set the floor state, generate synchronously with no `await`, capture the new state, restore the prior state in `finally`; never run two generations concurrently against the shared RNG.
-- [ ] Define typed, Zod-validated schemas for tile definitions, heroes, monsters, dice, abilities, status effects, items, equipment, loot and encounter tables, dungeons, generation profiles, banners, rarity tables, pity rules, and experience curves.
-- [ ] Add a minimal starter content set under `assets/data/`.
-- [ ] Validate content versions, IDs, cross-references, ranges, rates, and weights during tests or a build step.
-- [ ] Define repository interfaces (for example `ContentRepository`) at the application boundary without importing concrete storage or network types.
-- [ ] Add unit and property-based tests for randomness, stream independence, and content validation.
+- [x] Define shared IDs, branded content types, immutable-update conventions, errors, engine results, flat discriminated-union commands, and domain-event conventions under the new layering (no React, Effect, or React Native types).
+- [x] Implement `RandomSource`, a serializable seeded generator, RNG snapshots/draw indexes, and a sequence-backed test fake.
+- [x] Derive separate RNG streams for dungeon generation, enemy AI, combat/dice, loot, cosmetics, and local development gacha.
+- [x] Implement the rot.js RNG adapter contract: save module state, set the floor state, generate synchronously with no `await`, capture the new state, restore the prior state in `finally`; never run two generations concurrently against the shared RNG.
+- [x] Define typed, Zod-validated schemas for tile definitions, heroes, monsters, dice, abilities, status effects, items, equipment, loot and encounter tables, dungeons, generation profiles, banners, rarity tables, pity rules, and experience curves.
+- [x] Add a minimal starter content set under `assets/data/`.
+- [x] Validate content versions, IDs, cross-references, ranges, rates, and weights during tests or a build step.
+- [x] Define repository interfaces (for example `ContentRepository`) at the application boundary without importing concrete storage or network types.
+- [x] Add unit and property-based tests for randomness, stream independence, and content validation.
 
 Exit criteria:
 
@@ -410,10 +411,13 @@ Add one row only when a phase is fully complete. Evidence should identify the ex
 | Phase | Completed date | Verified by | Evidence |
 | ----- | -------------- | ----------- | -------- |
 | 0     | 2026-09-01     | ZCode audit | `npm run format:check`, `npm run lint`, `npm run typecheck`, and `npm test -- --ci` all pass (10 suites / 94 tests; pure-TS suites run on the `jest-expo/node` preset with no React Native loaded). Exact pins verified with `npm ls`: `@esengine/ecs-framework@2.11.2`, `effect@4.0.0-rc.112`, `rot-js@2.2.1`. Boundary zones negative-tested: importing `rot-js` outside `src/game/rot` and `effect` inside `src/game` both fail `npm run lint`. Development builds produced on both platforms on 2026-09-01: `android/app/build/outputs/apk/debug/app-debug.apk` and the iOS simulator `.app` in Xcode DerivedData; launch workflow (incl. the JDK 17 Android override and iOS 26 simctl workaround) documented in README → "Native workflow", and SDK-compatible dependency installation in README → "Dependencies". |
+| 2     | 2026-09-02     | ZCode audit + implementation | Full CI-parity suite green: `npm run format:check`, `npm run lint`, `npm run typecheck`, `npm test -- --ci` — 15 suites / 120 tests, all content+RNG suites on `jest-expo/node` with no React Native/ECS/rot-js/Effect loaded (eslint zones also forbid `rot-js`/`effect` imports in `src/core` and `src/domain`). Exited criteria: seeded snapshot/restore + draw-count reproducibility property-tested (`__tests__/core/random/random-source.test.ts`); stream independence, per-stream derivation, and six-stream set (incl. new `enemyAi`) tested (`__tests__/domain/rng-streams.test.ts`); rot.js wrapper restore-on-failure tested (`__tests__/game/rot-random.test.ts`, `rot-dungeon-generator.test.ts`); all 15 bundled files validate through `BundledContentRepository` with cross-references, version literals, ranges, rates, and weights checked by `buildContentCatalog` (`__tests__/domain/content-catalog.test.ts`, `__tests__/data/bundled-content-repository.test.ts`); new fast-check property test proves corrupted references always fail naming file + id. Added: `tile-definitions`/`generation-profiles`/`pity-rules` schemas + starter data, banner→pity cross-refs, contiguous-tile-id validation, and a tile-definitions ↔ `TileId`/atlas-manifest contract test (`__tests__/game/tile-definitions.test.ts`). |
 
 ## Work Notes
 
 Use this section for short, temporary handoff notes. Remove resolved notes after their evidence is captured in the relevant phase or completion log.
+
+- 2026-09-02: Phase 2 implementation notes — most content/RNG work carried over from the earlier plan and re-verified; the deltas were: `enemyAi` added to `RNG_STREAM_NAMES` (Phase 3's enemy-intent system and Phase 4's AI decisions must draw from it, never from `combat`); new `tile-definitions` (numeric ids, contiguous-from-0 enforced by the catalog), `generation-profiles` (`floorStyle` enum currently only `'digger'` — Uniform/Cellular join in Phase 6), and `pity-rules` (rates in [0,1], soft-pity pair refinement) schemas plus starter data; `banner.pityRuleId` is an optional catalog-checked reference; `indexById` now accepts numeric ids so `tileDefinitions` indexes by tile id. Content/RNG layers stay rot-js-free — the module-RNG contract lives only in `src/game/rot/rot-random.ts`, where full synchronicity makes concurrent generation structurally impossible (nested calls unwind correctly). Content-schema extension point remains `contentFileSchemas` in `src/domain/content/schemas.ts` — adding a collection means: schema there, a file under `assets/data/`, an entry in `BundledContentRepository`, and a `validInput()` entry in the catalog test.
 
 - 2026-09-02: Phase 1 second pass found and fixed a **production dispose bug**: on Android release cold start, the ticker `useEffect` re-ran ~17 ms after mount (React may legally drop a `useMemo` identity — the effect depended on the `presentation` memo object), and its cleanup disposed the ECS `Core` while the restarted ticker kept calling `Core.update()` on the destroyed singleton — logcat showed `Core实例未创建` every ~515 ms and the patrol simulation was dead while rendering stayed alive at 62 fps. Fix (`src/presentation/spike/render-spike-screen.tsx`): the lifecycle effect now depends only on the `useState`-held `controller`; `presentation` is read through a `useRef` refreshed by a separate effect. Verified on Android emulator release + dev and iOS simulator release (logcat clean, slimes patrol between screenshots, 62 fps / 16.7 ms in all three). Lesson generalized: **never put a `useMemo` object that gates a teardown-only cleanup into effect dependencies** — route owned lifecycles must depend on stable state identities only. Rebuild note: Android release needs both overrides this time — `ANDROID_HOME` in addition to the JDK 17 (`JAVA_HOME`/`GRADLE_OPTS`) override.
 - 2026-09-02: Android emulator environment discovered present (Work Notes from 09-01 said none): `Medium_Phone`/`Medium_Tablet`/`7_Inch_tablet` AVDs exist with HVF acceleration; release APK installs and cold-starts cleanly via `adb install` + monkey launch. Emulator fps numbers are **not** physical-device evidence — the 62 fps on the emulator reflects the host Mac's GPU, not a baseline phone.

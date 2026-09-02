@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "tileDefinitions": [
+    { "id": 0, "name": "floor", "walkable": true, "blocksVision": false },
+    { "id": 1, "name": "floor-alt", "walkable": true, "blocksVision": false },
+    { "id": 2, "name": "wall", "walkable": false, "blocksVision": true },
+    { "id": 3, "name": "wall-top", "walkable": false, "blocksVision": true },
+    { "id": 4, "name": "door", "walkable": true, "blocksVision": false },
+    { "id": 5, "name": "stairs", "walkable": true, "blocksVision": false },
+    { "id": 6, "name": "crack", "walkable": true, "blocksVision": false },
+    { "id": 7, "name": "rubble", "walkable": true, "blocksVision": false }
+  ]
+}

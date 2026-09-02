@@ -17,12 +17,15 @@ import diceJson from '@/assets/data/dice.json';
 import dungeonsJson from '@/assets/data/dungeons.json';
 import encountersJson from '@/assets/data/encounters.json';
 import experienceCurvesJson from '@/assets/data/experience-curves.json';
+import generationProfilesJson from '@/assets/data/generation-profiles.json';
 import heroesJson from '@/assets/data/heroes.json';
 import itemsJson from '@/assets/data/items.json';
 import lootTablesJson from '@/assets/data/loot-tables.json';
 import monstersJson from '@/assets/data/monsters.json';
+import pityRulesJson from '@/assets/data/pity-rules.json';
 import rarityTablesJson from '@/assets/data/rarity-tables.json';
 import statusEffectsJson from '@/assets/data/status-effects.json';
+import tileDefinitionsJson from '@/assets/data/tile-definitions.json';
 
 export class BundledContentRepository implements ContentRepository {
   private catalogPromise: Promise<ContentCatalog> | null = null;
@@ -42,6 +45,9 @@ export class BundledContentRepository implements ContentRepository {
         dungeons: dungeonsJson,
         banners: bannersJson,
         'experience-curves': experienceCurvesJson,
+        'tile-definitions': tileDefinitionsJson,
+        'generation-profiles': generationProfilesJson,
+        'pity-rules': pityRulesJson,
       }),
     );
     return this.catalogPromise;

@@ -169,20 +169,24 @@ a plain Node Jest project.
   (snapshot/restore reproduces a sequence exactly, draw counts included);
   `SequenceRandomSource` is the scripted test fake that throws when exhausted.
 - **RNG streams** (`src/domain/shared/rng-streams.ts`): one independent
-  generator per system (`dungeon`, `combat`, `loot`, `cosmetics`, `gacha`) is
-  derived from a master seed, so drawing in one system never shifts another.
-  Runs snapshot/restore streams individually.
+  generator per system (`dungeon`, `enemyAi`, `combat`, `loot`, `cosmetics`,
+  `gacha`) is derived from a master seed, so drawing in one system never
+  shifts another. Runs snapshot/restore streams individually. Randomness and
+  stream independence are property-tested with fast-check.
 - **Engine conventions** (`src/domain/shared/`): commands are flat
-  discriminated unions, engines return `{ state, events }` results, mutations
-  use `deepFreeze`d immutable states, and exhaustive switches end in
-  `assertNever` (`src/core/utils/`).
+  discriminated unions, systems emit ordered domain events exported from the
+  scene as immutable batches (`EngineResult` remains for pure helper
+  engines), mutations use `deepFreeze`d immutable states, and exhaustive
+  switches end in `assertNever` (`src/core/utils/`).
 - **Content** (`src/domain/content/` + `assets/data/`): heroes, monsters,
   dice, abilities, status effects, items (equipment/consumable/material),
-  loot tables, rarity tables, encounters, dungeons, banners, and experience
-  curves are data files validated with Zod at load time. IDs are branded
-  (`HeroId`, `MonsterId`, …), and `buildContentCatalog` cross-checks every
-  reference, producing `ContentValidationError` problems that name the file,
-  entry, and field.
+  loot tables, rarity tables, encounters, dungeons, generation profiles,
+  banners (with optional pity-rule references), pity rules, tile definitions
+  (contract-tested against the grid's `TileId` space and the atlas manifest),
+  and experience curves are data files validated with Zod at load time. IDs
+  are branded (`HeroId`, `MonsterId`, …), and `buildContentCatalog`
+  cross-checks every reference, producing `ContentValidationError` problems
+  that name the file, entry, and field.
 - **Access** (`src/application/ports/content-repository.ts`): the app depends
   on the `ContentRepository` interface; `BundledContentRepository`
   (`src/data/content/`) implements it with the bundled JSON.

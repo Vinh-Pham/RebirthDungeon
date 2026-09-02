@@ -44,8 +44,8 @@ export function computeCameraTransform(
 
   // `+ 0` normalizes -0 to +0 so equality checks stay sane.
   return {
-    translateX: Math.round(-left * scale) + 0,
-    translateY: Math.round(-top * scale) + 0,
+    translateX: Math.round(-left * scale),
+    translateY: Math.round(-top * scale),
   };
 }
 

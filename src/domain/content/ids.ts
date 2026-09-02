@@ -26,6 +26,8 @@ export const encounterIdSchema = brandedId('EncounterId');
 export const dungeonIdSchema = brandedId('DungeonId');
 export const bannerIdSchema = brandedId('BannerId');
 export const experienceCurveIdSchema = brandedId('ExperienceCurveId');
+export const generationProfileIdSchema = brandedId('GenerationProfileId');
+export const pityRuleIdSchema = brandedId('PityRuleId');
 
 export type DieId = z.infer<typeof dieIdSchema>;
 export type AbilityId = z.infer<typeof abilityIdSchema>;
@@ -39,3 +41,5 @@ export type EncounterId = z.infer<typeof encounterIdSchema>;
 export type DungeonId = z.infer<typeof dungeonIdSchema>;
 export type BannerId = z.infer<typeof bannerIdSchema>;
 export type ExperienceCurveId = z.infer<typeof experienceCurveIdSchema>;
+export type GenerationProfileId = z.infer<typeof generationProfileIdSchema>;
+export type PityRuleId = z.infer<typeof pityRuleIdSchema>;

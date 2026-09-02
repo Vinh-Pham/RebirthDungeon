@@ -2,10 +2,12 @@
  * Synchronous save/seed/run/capture/restore wrapper around the module-level
  * `ROT.RNG`, which every rot.js map generator shares as mutable global state.
  *
- * Generation must never `await` inside `run`, and two generations must never
- * run concurrently: the wrapper guarantees the previous module state is
- * restored in `finally` even when `run` throws, so a failed generation can
- * never poison later draws.
+ * The contract: save the module state, set the floor state, generate
+ * synchronously with no `await`, capture the new state, and restore the prior
+ * state in `finally` — so a failed generation can never poison later draws.
+ * Because `run` must not await, two generations can never interleave against
+ * the shared RNG (nested calls unwind correctly: inner restores the outer's
+ * seeded state, outer finally restores the original).
  */
 
 import { RNG } from 'rot-js';

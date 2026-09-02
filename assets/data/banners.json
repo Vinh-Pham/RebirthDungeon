@@ -8,7 +8,8 @@
       "currency": "gems",
       "costPerPull": 100,
       "costPerTenPull": 1000,
-      "rarityTableId": "rarity_standard"
+      "rarityTableId": "rarity_standard",
+      "pityRuleId": "pity_standard_epic"
     },
     {
       "id": "banner_bramble_focus",
@@ -18,6 +19,7 @@
       "costPerPull": 120,
       "costPerTenPull": 1200,
       "rarityTableId": "rarity_standard",
+      "pityRuleId": "pity_standard_epic",
       "featuredHeroId": "hero_knight"
     }
   ]

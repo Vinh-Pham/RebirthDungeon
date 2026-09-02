@@ -7,8 +7,8 @@
 
 import { z } from 'zod';
 
-import { DomainError } from '../../core/errors/domain-error';
-import { deepFreeze } from '../../core/utils/deep-freeze';
+import { DomainError } from '@/core/errors/domain-error';
+import { deepFreeze } from '@/core/utils/deep-freeze';
 import {
   contentFileSchemas,
   type ContentFileName,
@@ -19,12 +19,15 @@ import {
   type DungeonDefinition,
   type EncounterDefinition,
   type ExperienceCurveDefinition,
+  type GenerationProfileDefinition,
   type HeroDefinition,
   type ItemDefinition,
   type LootTableDefinition,
   type MonsterDefinition,
+  type PityRuleDefinition,
   type RarityTableDefinition,
   type StatusEffectDefinition,
+  type TileDefinition,
 } from './schemas';
 
 export class ContentValidationError extends DomainError {
@@ -57,6 +60,11 @@ export interface ContentCatalog {
   readonly experienceCurves: Readonly<
     Record<string, ExperienceCurveDefinition>
   >;
+  readonly tileDefinitions: Readonly<Record<number, TileDefinition>>;
+  readonly generationProfiles: Readonly<
+    Record<string, GenerationProfileDefinition>
+  >;
+  readonly pityRules: Readonly<Record<string, PityRuleDefinition>>;
 }
 
 type ParsedCollections = {
@@ -88,13 +96,13 @@ function parseFiles(files: ContentFilesInput): {
   return problems.length > 0 ? { problems } : { collections, problems };
 }
 
-function indexById<T extends { readonly id: string }>(
+function indexById<T extends { readonly id: string | number }>(
   file: ContentFileName,
   collectionKey: string,
   entries: readonly T[],
   problems: string[],
-): Readonly<Record<string, T>> {
-  const record: Record<string, T> = {};
+): Readonly<Record<string | number, T>> {
+  const record: Record<string | number, T> = {};
   for (const entry of entries) {
     if (record[entry.id] !== undefined) {
       problems.push(
@@ -171,6 +179,24 @@ export function buildContentCatalog(files: ContentFilesInput): ContentCatalog {
     'experience-curves',
     'experienceCurves',
     collections['experience-curves'].experienceCurves,
+    problems,
+  );
+  const tileDefinitions = indexById(
+    'tile-definitions',
+    'tileDefinitions',
+    collections['tile-definitions'].tileDefinitions,
+    problems,
+  );
+  const generationProfiles = indexById(
+    'generation-profiles',
+    'generationProfiles',
+    collections['generation-profiles'].generationProfiles,
+    problems,
+  );
+  const pityRules = indexById(
+    'pity-rules',
+    'pityRules',
+    collections['pity-rules'].pityRules,
     problems,
   );
 
@@ -322,6 +348,15 @@ export function buildContentCatalog(files: ContentFilesInput): ContentCatalog {
       banner.rarityTableId,
       rarityTables,
     );
+    if (banner.pityRuleId) {
+      requireRef(
+        'banners',
+        banner.id,
+        'pityRuleId',
+        banner.pityRuleId,
+        pityRules,
+      );
+    }
     if (banner.featuredHeroId) {
       requireRef(
         'banners',
@@ -332,6 +367,19 @@ export function buildContentCatalog(files: ContentFilesInput): ContentCatalog {
       );
     }
   }
+
+  // Tile definitions must tile the id space densely starting at 0 so arrays
+  // can index by tile id (renderer atlases, grid rules).
+  const tileIds = Object.keys(tileDefinitions)
+    .map(Number)
+    .sort((a, b) => a - b);
+  tileIds.forEach((id, index) => {
+    if (id !== index) {
+      problems.push(
+        `tile-definitions.json: tile ids must be contiguous from 0 (found ${id} at position ${index})`,
+      );
+    }
+  });
 
   if (problems.length > 0) throw new ContentValidationError(problems);
 
@@ -349,5 +397,8 @@ export function buildContentCatalog(files: ContentFilesInput): ContentCatalog {
     dungeons,
     banners,
     experienceCurves,
+    tileDefinitions,
+    generationProfiles,
+    pityRules,
   });
 }

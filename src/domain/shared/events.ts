@@ -1,8 +1,11 @@
 /**
- * Engine-result convention: every valid command returns a NEW state plus the
- * domain events that the presentation layer may react to. Invalid commands
- * throw a DomainError (or return an error Result, once engines adopt it) and
- * leave state untouched.
+ * Domain-event convention: gameplay systems emit ordered domain events
+ * (`ACTOR_MOVED`, `DAMAGE_DEALT`, …) that the scene exports as an immutable
+ * batch after each command; presentation maps events to instructions and
+ * never subscribes to the ECS directly. `EngineResult` remains available for
+ * pure helper engines (dice rolls, loot rolls) that return a new state plus
+ * the events they produced. Invalid commands throw a DomainError (or return
+ * an error Result) and leave state untouched.
  */
 
 export interface DomainEvent<

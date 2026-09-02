@@ -1,4 +1,5 @@
 import { BundledContentRepository } from '@/data/content/bundled-content-repository';
+import { TileId } from '@/game/grid/dungeon-grid';
 
 /**
  * Exit-criterion check: every bundled content file validates and all
@@ -31,6 +32,17 @@ describe('BundledContentRepository', () => {
     expect(Object.keys(catalog.dungeons)).toEqual(['dungeon_gloom_cellar']);
     expect(Object.keys(catalog.banners)).toHaveLength(2);
     expect(catalog.experienceCurves['curve_standard']).toBeDefined();
+    expect(catalog.tileDefinitions[TileId.Floor]?.walkable).toBe(true);
+    expect(Object.keys(catalog.generationProfiles)).toEqual([
+      'profile_gloom_digger',
+    ]);
+    expect(Object.keys(catalog.pityRules)).toEqual([
+      'pity_standard_epic',
+      'pity_standard_legendary',
+    ]);
+    expect(catalog.banners['banner_standard_recruitment']?.pityRuleId).toBe(
+      'pity_standard_epic',
+    );
   });
 
   it('serves consistent, frozen content', async () => {

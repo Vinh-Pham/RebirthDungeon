@@ -26,12 +26,13 @@ describe('deriveStreamSeed', () => {
 });
 
 describe('deriveRngStreams', () => {
-  it('exposes exactly the five planned streams', () => {
+  it('exposes exactly the six planned streams', () => {
     const streams = deriveRngStreams(1);
     expect(Object.keys(streams).sort()).toEqual([
       'combat',
       'cosmetics',
       'dungeon',
+      'enemyAi',
       'gacha',
       'loot',
     ]);

@@ -17,8 +17,20 @@
   <component name="ChangeListManager">
     <list default="true" id="8589fb97-3e42-48f8-8914-55710236f3e1" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/__tests__/data/bundled-content-repository.test.ts" beforeDir="false" afterPath="$PROJECT_DIR$/__tests__/data/bundled-content-repository.test.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/__tests__/domain/content-catalog.test.ts" beforeDir="false" afterPath="$PROJECT_DIR$/__tests__/domain/content-catalog.test.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/__tests__/domain/rng-streams.test.ts" beforeDir="false" afterPath="$PROJECT_DIR$/__tests__/domain/rng-streams.test.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/data/banners.json" beforeDir="false" afterPath="$PROJECT_DIR$/assets/data/banners.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/project-phases.md" beforeDir="false" afterPath="$PROJECT_DIR$/project-phases.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/presentation/spike/render-spike-screen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/presentation/spike/render-spike-screen.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/data/content/bundled-content-repository.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/data/content/bundled-content-repository.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/domain/content/catalog.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/domain/content/catalog.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/domain/content/ids.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/domain/content/ids.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/domain/content/schemas.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/domain/content/schemas.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/domain/shared/events.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/domain/shared/events.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/domain/shared/rng-streams.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/domain/shared/rng-streams.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/game/camera/camera-math.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/game/camera/camera-math.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/game/rot/rot-random.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/game/rot/rot-random.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

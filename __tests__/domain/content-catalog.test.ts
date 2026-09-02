@@ -1,3 +1,5 @@
+import fc from 'fast-check';
+
 import {
   buildContentCatalog,
   ContentValidationError,
@@ -146,6 +148,7 @@ function validInput() {
           costPerPull: 100,
           costPerTenPull: 1000,
           rarityTableId: 'rarity_standard',
+          pityRuleId: 'pity_epic',
           featuredHeroId: 'hero_knight',
         },
       ],
@@ -160,6 +163,44 @@ function validInput() {
             { level: 1, totalXp: 0 },
             { level: 2, totalXp: 20 },
           ],
+        },
+      ],
+    },
+    'tile-definitions': {
+      version: 1,
+      tileDefinitions: [
+        { id: 0, name: 'floor', walkable: true, blocksVision: false },
+        { id: 1, name: 'wall', walkable: false, blocksVision: true },
+      ],
+    },
+    'generation-profiles': {
+      version: 1,
+      generationProfiles: [
+        {
+          id: 'profile_cellar',
+          name: 'Cellar Digger',
+          floorStyle: 'digger',
+          width: 30,
+          height: 22,
+          maxAttempts: 5,
+          minRooms: 3,
+          roomWidth: [3, 9],
+          roomHeight: [3, 7],
+          corridorLength: [2, 10],
+        },
+      ],
+    },
+    'pity-rules': {
+      version: 1,
+      pityRules: [
+        {
+          id: 'pity_epic',
+          name: 'Epic Pity',
+          rarity: 'epic',
+          baseRate: 0.02,
+          softPityStart: 65,
+          softPityRateStep: 0.06,
+          guaranteedBy: 80,
         },
       ],
     },
@@ -320,5 +361,102 @@ describe('buildContentCatalog', () => {
     const heroes = input.heroes as { heroes: { id: string }[] };
     heroes.heroes[0].id = 'Hero Knight';
     expectProblems(input, 'heroes.heroes.0.id');
+  });
+
+  it('flags banners referencing unknown pity rules', () => {
+    const input = validInput();
+    const banners = input.banners as { banners: { pityRuleId: string }[] };
+    banners.banners[0].pityRuleId = 'pity_missing';
+    expectProblems(input, "references unknown pityRuleId 'pity_missing'");
+  });
+
+  it('rejects pity rules whose soft pity starts after the guarantee', () => {
+    const input = validInput();
+    const pityRules = input['pity-rules'] as {
+      pityRules: { softPityStart: number }[];
+    };
+    pityRules.pityRules[0].softPityStart = 80;
+    expectProblems(input, 'softPityStart must come before guaranteedBy');
+  });
+
+  it('rejects soft pity set without its rate step', () => {
+    const input = validInput();
+    const pityRules = input['pity-rules'] as {
+      pityRules: Record<string, unknown>[];
+    };
+    delete pityRules.pityRules[0].softPityRateStep;
+    expectProblems(
+      input,
+      'softPityStart and softPityRateStep must be set together',
+    );
+  });
+
+  it('rejects tile ids that are not contiguous from zero', () => {
+    const input = validInput();
+    const tiles = input['tile-definitions'] as {
+      tileDefinitions: { id: number }[];
+    };
+    tiles.tileDefinitions[1].id = 5;
+    expectProblems(input, 'tile ids must be contiguous from 0');
+  });
+
+  it('rejects generation profiles with inverted size ranges', () => {
+    const input = validInput();
+    const profiles = input['generation-profiles'] as {
+      generationProfiles: { roomWidth: number[] }[];
+    };
+    profiles.generationProfiles[0].roomWidth = [9, 3];
+    expectProblems(input, 'range minimum must be <= maximum');
+  });
+
+  it('property: corrupting any reference fails with the file named', () => {
+    fc.assert(
+      fc.property(
+        fc.constantFrom('dice', 'statusId', 'itemId', 'pityRuleId'),
+        fc.stringMatching(/^missing_[a-z0-9_]{1,10}$/),
+        (field, garbageId) => {
+          const input = validInput();
+          switch (field) {
+            case 'dice':
+              (
+                input.heroes as { heroes: { dice: string[] }[] }
+              ).heroes[0].dice = [garbageId];
+              break;
+            case 'statusId':
+              (
+                input.abilities as {
+                  abilities: { appliesStatus: { statusId: string } }[];
+                }
+              ).abilities[0].appliesStatus.statusId = garbageId;
+              break;
+            case 'itemId':
+              (
+                input['loot-tables'] as {
+                  lootTables: { entries: { itemId: string }[] }[];
+                }
+              ).lootTables[0].entries[0].itemId = garbageId;
+              break;
+            case 'pityRuleId':
+              (
+                input.banners as { banners: { pityRuleId: string }[] }
+              ).banners[0].pityRuleId = garbageId;
+              break;
+          }
+          try {
+            buildContentCatalog(input);
+            throw new Error('expected ContentValidationError');
+          } catch (error) {
+            expect(error).toBeInstanceOf(ContentValidationError);
+            const problems = (error as ContentValidationError).problems;
+            expect(
+              problems.some(
+                (problem) =>
+                  problem.includes(garbageId) && problem.includes('.json'),
+              ),
+            ).toBe(true);
+          }
+        },
+      ),
+    );
   });
 });

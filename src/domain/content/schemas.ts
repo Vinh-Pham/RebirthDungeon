@@ -12,10 +12,12 @@ import {
   dungeonIdSchema,
   encounterIdSchema,
   experienceCurveIdSchema,
+  generationProfileIdSchema,
   heroIdSchema,
   itemIdSchema,
   lootTableIdSchema,
   monsterIdSchema,
+  pityRuleIdSchema,
   rarityTableIdSchema,
   statusEffectIdSchema,
 } from './ids';
@@ -211,6 +213,76 @@ export const dungeonSchema = z.object({
 });
 export type DungeonDefinition = z.infer<typeof dungeonSchema>;
 
+// --- tile definitions ----------------------------------------------------------
+//
+// Semantic tile rules as data. `id` is the numeric tile id the simulation and
+// renderer both use (contract-tested against `TileId` in src/game and the
+// atlas manifest's `tileNames` order).
+
+export const tileDefinitionSchema = z.object({
+  id: z.number().int().min(0).max(63),
+  name: z.string().regex(/^[a-z0-9_-]+$/),
+  walkable: z.boolean(),
+  blocksVision: z.boolean(),
+});
+export type TileDefinition = z.infer<typeof tileDefinitionSchema>;
+
+// --- generation profiles ---------------------------------------------------------
+//
+// Data-driven floor-generation parameters. `floorStyle` selects the generator
+// family (Phase 6 adds Uniform/Cellular/hand-authored styles).
+
+const sizeRange = z
+  .tuple([positiveInt, positiveInt])
+  .refine(([min, max]) => min <= max, {
+    message: 'range minimum must be <= maximum',
+  });
+
+export const generationProfileSchema = z.object({
+  id: generationProfileIdSchema,
+  name,
+  floorStyle: z.enum(['digger']),
+  width: z.number().int().min(16).max(128),
+  height: z.number().int().min(16).max(128),
+  maxAttempts: positiveInt.max(20),
+  minRooms: positiveInt.max(64),
+  roomWidth: sizeRange,
+  roomHeight: sizeRange,
+  corridorLength: sizeRange,
+});
+export type GenerationProfileDefinition = z.infer<
+  typeof generationProfileSchema
+>;
+
+// --- pity rules --------------------------------------------------------------------
+//
+// Gacha pity/guarantee curves. Rates are probabilities in [0, 1]; the hard
+// `guaranteedBy` cap must come after the optional soft-pity ramp.
+
+export const pityRuleSchema = z
+  .object({
+    id: pityRuleIdSchema,
+    name,
+    rarity: itemRaritySchema,
+    baseRate: z.number().min(0).max(1),
+    softPityStart: positiveInt.optional(),
+    softPityRateStep: z.number().min(0).max(1).optional(),
+    guaranteedBy: positiveInt.max(1000),
+  })
+  .refine(
+    (rule) =>
+      (rule.softPityStart === undefined) ===
+      (rule.softPityRateStep === undefined),
+    { message: 'softPityStart and softPityRateStep must be set together' },
+  )
+  .refine(
+    (rule) =>
+      rule.softPityStart === undefined ||
+      rule.softPityStart < rule.guaranteedBy,
+    { message: 'softPityStart must come before guaranteedBy' },
+  );
+export type PityRuleDefinition = z.infer<typeof pityRuleSchema>;
+
 // --- banners ---------------------------------------------------------------------
 
 export const bannerSchema = z
@@ -222,6 +294,7 @@ export const bannerSchema = z
     costPerPull: positiveInt,
     costPerTenPull: positiveInt,
     rarityTableId: rarityTableIdSchema,
+    pityRuleId: pityRuleIdSchema.optional(),
     featuredHeroId: heroIdSchema.optional(),
   })
   .refine(
@@ -310,6 +383,18 @@ export const contentFileSchemas = {
     version: contentVersion,
     experienceCurves: z.array(experienceCurveSchema),
   }),
+  'tile-definitions': z.object({
+    version: contentVersion,
+    tileDefinitions: z.array(tileDefinitionSchema),
+  }),
+  'generation-profiles': z.object({
+    version: contentVersion,
+    generationProfiles: z.array(generationProfileSchema),
+  }),
+  'pity-rules': z.object({
+    version: contentVersion,
+    pityRules: z.array(pityRuleSchema),
+  }),
 } as const;
 
 export type ContentFileName = keyof typeof contentFileSchemas;
@@ -328,3 +413,7 @@ export const dungeonsFileSchema = contentFileSchemas.dungeons;
 export const bannersFileSchema = contentFileSchemas.banners;
 export const experienceCurvesFileSchema =
   contentFileSchemas['experience-curves'];
+export const tileDefinitionsFileSchema = contentFileSchemas['tile-definitions'];
+export const generationProfilesFileSchema =
+  contentFileSchemas['generation-profiles'];
+export const pityRulesFileSchema = contentFileSchemas['pity-rules'];

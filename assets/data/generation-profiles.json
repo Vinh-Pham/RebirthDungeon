@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "generationProfiles": [
+    {
+      "id": "profile_gloom_digger",
+      "name": "Gloom Cellar Digger",
+      "floorStyle": "digger",
+      "width": 30,
+      "height": 22,
+      "maxAttempts": 5,
+      "minRooms": 3,
+      "roomWidth": [3, 9],
+      "roomHeight": [3, 7],
+      "corridorLength": [2, 10]
+    }
+  ]
+}

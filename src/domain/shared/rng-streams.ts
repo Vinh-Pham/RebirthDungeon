@@ -8,10 +8,11 @@
 import {
   createSeededRandomSource,
   type SeededRandomSource,
-} from '../../core/random/seeded-random-source';
+} from '@/core/random/seeded-random-source';
 
 export const RNG_STREAM_NAMES = [
   'dungeon',
+  'enemyAi',
   'combat',
   'loot',
   'cosmetics',
