@@ -16,150 +16,16 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f7f07e50-b8ee-49d0-92bc-0efaf6deb9b9" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.agents/skills/firecrawl/SKILL.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.agents/skills/firecrawl/rules/install.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.agents/skills/firecrawl/rules/security.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.claude/settings.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.claude/skills/firecrawl" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.github/workflows/ci.yml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/RebirthDungeon.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/editor.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/php.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/prettier.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.prettierignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.prettierrc" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.vscode/extensions.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.vscode/settings.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/AGENTS.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/CLAUDE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/LICENSE" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/__tests__/application/run-controller.test.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/__tests__/core/random/random-source.test.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/__tests__/core/result.test.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/__tests__/data/bundled-content-repository.test.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/__tests__/domain/content-catalog.test.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/__tests__/domain/rng-streams.test.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/__tests__/game/camera-math.test.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/__tests__/game/frames.test.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/__tests__/game/rot-dungeon-generator.test.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/__tests__/game/rot-fov.test.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/__tests__/game/rot-pathfinder.test.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/__tests__/game/rot-random.test.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/__tests__/game/rot-turn-scheduler.test.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/__tests__/game/run-movement.test.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/__tests__/game/run-scene.test.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/__tests__/game/support/run-test-support.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/__tests__/game/tile-definitions.test.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/__tests__/presentation/asset-manifest.test.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/__tests__/presentation/input-map.test.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/app/src/debug/AndroidManifest.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/app/src/main/AndroidManifest.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/app/src/main/res/values/styles.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/gradle.properties" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/gradle/wrapper/gradle-wrapper.properties" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/atlases/actors.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/atlases/dungeon-tiles.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/atlases/manifest.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/data/abilities.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/data/banners.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/data/dice.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/data/dungeons.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/data/encounters.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/data/experience-curves.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/data/generation-profiles.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/data/heroes.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/data/items.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/data/loot-tables.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/data/monsters.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/data/pity-rules.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/data/rarity-tables.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/data/status-effects.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/data/tile-definitions.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/expo.icon/Assets/expo-symbol 2.svg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/expo.icon/Assets/grid.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/expo.icon/icon.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/images/android-icon-background.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/images/android-icon-foreground.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/images/android-icon-monochrome.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/images/favicon.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/images/icon.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/images/splash-icon.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/babel.config.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/eas.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/eslint.config.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ios/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/jest.config.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/android/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/android/build.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/build.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/core/build.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/game-plan.md" beforeDir="false" afterPath="$PROJECT_DIR$/game-plan.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gradle.properties" beforeDir="false" afterPath="$PROJECT_DIR$/gradle.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ios/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/ios/build.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lwjgl3/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/lwjgl3/build.gradle" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/project-phases.md" beforeDir="false" afterPath="$PROJECT_DIR$/project-phases.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/react-native-expo-game-plan.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/generate-spike-atlases.mjs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/skills-lock.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/_layout.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/index.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/application/ports/content-repository.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/application/run/run-controller.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/bootstrap/content.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/bootstrap/effect-runtime.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/core/errors/domain-error.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/core/random/float-backed-random-source.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/core/random/random-source.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/core/random/seeded-random-source.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/core/random/sequence-random-source.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/core/utils/assert-never.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/core/utils/deep-freeze.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/core/utils/result.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/data/content/bundled-content-repository.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/domain/content/catalog.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/domain/content/ids.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/domain/content/schemas.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/domain/shared/commands.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/domain/shared/events.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/domain/shared/rng-streams.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/ai/enemy-ai.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/camera/camera-math.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/config.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/ecs/components.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/ecs/run-context.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/ecs/run-scene.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/ecs/run-state.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/ecs/system-order.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/ecs/systems/cleanup-system.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/ecs/systems/enemy-intent-system.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/ecs/systems/event-export-system.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/ecs/systems/input-intent-system.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/ecs/systems/interaction-system.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/ecs/systems/movement-system.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/ecs/systems/turn-finalization-system.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/ecs/systems/visibility-system.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/events/domain-events.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/grid/dungeon-grid.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/grid/occupancy-index.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/grid/tile-rules.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/projection/run-snapshot.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/projection/scene-snapshot.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/rot/rot-dungeon-generator.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/rot/rot-fov.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/rot/rot-pathfinder.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/rot/rot-random.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/rot/rot-turn-scheduler.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/sprites/frames.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/presentation/canvas/asset-manifest.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/presentation/canvas/bake-map-picture.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/presentation/canvas/game-canvas.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/presentation/canvas/load-game-assets.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/presentation/canvas/use-spike-presentation.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/presentation/run/input-map.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/presentation/run/run-hud.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/presentation/run/run-screen.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsconfig.json" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -270,10 +136,11 @@
     "RunOnceActivity.go.formatter.settings.were.checked": "true",
     "RunOnceActivity.readMode.enableVisualFormatting": "true",
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "android.gradle.sync.needed": "true",
     "cidr.known.project.marker": "true",
     "codeWithMe.voiceChat.enabledByDefault": "false",
     "external.system.has.shared.sources": "true",
-    "git-widget-placeholder": "react-native",
+    "git-widget-placeholder": "libgdx",
     "javascript.preferred.runtime.type.id": "node",
     "kotlin-language-version-configured": "true",
     "node.js.detected.package.eslint": "true",

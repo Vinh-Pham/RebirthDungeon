@@ -4,7 +4,7 @@ Rebirth Dungeon is a **2D pixel-art, grid-based roguelike dungeon crawler with d
 
 The game is turn-based: commands advance the simulation; frames advance presentation. The same initial state, content version, rules version, and commands must reproduce the same outcomes regardless of frame rate.
 
-> Ashley owns live dungeon entities and rules. SquidSquad supplies dungeon algorithms. The application controller coordinates commands, persistence, and platform services. LibGDX renders and receives input.
+> The artemis-odb `World` owns live dungeon entities and rules. SquidSquad supplies dungeon algorithms. The application controller coordinates commands, persistence, and platform services. LibGDX renders and receives input.
 
 This plan replaces the previous Expo/React Native architecture. It describes a target implementation, not completed gameplay. The dependency audit below reflects the working tree checked on **September 2, 2026**.
 
@@ -90,13 +90,14 @@ These are checked declarations/resolutions, not claims about the latest availabl
 | Dependency | Version | Target role |
 | --- | --- | --- |
 | `com.badlogicgames.gdx:gdx` | `1.14.2` | Application lifecycle, graphics, audio, input, Scene2D, assets, files, JSON |
-| `com.badlogicgames.ashley:ashley` | `1.7.4` | Authoritative run entities, components, families, ordered systems |
+| `net.onedaybeard.artemis:artemis-odb` | `2.3.0` | Authoritative run entities, components, aspects, ordered systems |
 | SquidSquad `squidcore` | `4.0.12` | Base utilities and supporting dependency graph |
 | SquidSquad `squidgrid` | `4.0.12` | Coordinates, regions, FOV and grid helpers |
 | SquidSquad `squidplace` | `4.0.12` | Dungeon generation and processing |
 | SquidSquad `squidpath` | `4.0.12` | Cardinal pathfinding with `DijkstraMap` |
 | `com.github.tommyettinger:juniper` | `0.10.5` | Explicit seeded RNG instances and state capture |
 | `com.github.tommyettinger:jdkgdxds` | `2.1.8` | Collections dependency; repair duplicate publication path first |
+| `com.fasterxml.jackson.core:jackson-databind` (+ `jackson-annotations`) | `2.22.2` / `2.22` | Versioned content definitions: `assets/data` JSON binds to plain DTOs with strict defaults (unknown fields/enum values fail the load). Java 8 bytecode; Android needs R8 keep rules for content DTOs at the release gate. Save bundles stay on LibGDX JSON (section 14). |
 | `digital`, `regexodus`, `crux`, `funderby` | `0.10.2`, `0.1.21`, `0.1.3`, `0.1.2` | Supporting dependencies; declare directly when project code imports them |
 | `com.kotcrab.vis:vis-ui` | `1.5.9` | Optional tooling/debug widgets; Scene2D UI is already in LibGDX |
 
@@ -140,6 +141,10 @@ The serialization choices are distinct: `squidstore*` integrates LibGDX JSON; `s
 - All current core libraries are exposed with `api`. Keep `api` where launcher compilation requires an exposed type, such as LibGDX's `Game`; prefer `implementation` for internal libraries after checking the public surface.
 - Add dependency locking/verification after repairing and reducing the graph. Pin new test libraries deliberately; the project currently has no explicit test framework dependency.
 
+### Phase 0 repair record (2026-09-02)
+
+The duplicate blocker was reproduced and repaired. The JitPack root POM for `com.github.tommyettinger:jdkgdxds:2.1.8` depends on both `com.github.tommyettinger.jdkgdxds:build` and `com.github.tommyettinger.jdkgdxds:jdkgdxds`, whose JARs and dependency lists (funderby, digital) are identical; the root build now excludes exactly the `:build` module from every subproject configuration, retaining `:jdkgdxds`. After also reducing the runtime to the first-slice table above (Box2D/lights/natives, controllers, and all deferred libraries removed), `:android:checkDebugDuplicateClasses` and `:android:assembleDebug` pass, and core/lwjgl3/android/ios dependency reports resolve without `FAILED`. The graph is pinned by per-module `gradle.lockfile` files and `gradle/verification-metadata.xml`; full evidence lives in project-phases.md and the README "Dependencies" section.
+
 ## 3. Architecture and ownership
 
 ```text
@@ -154,7 +159,7 @@ Desktop / Android / iOS launchers
        |                  |
        |                  +--> repositories / platform services
        v
-   RunSession: Ashley Engine + run state + grid + scheduler
+   RunSession: artemis-odb World + run state + grid + scheduler
        |
        +--> ordered rule systems
        +--> SquidSquad adapters + explicit Juniper RNG streams
@@ -169,7 +174,7 @@ Desktop / Android / iOS launchers
 
 | Owner | Authoritative data |
 | --- | --- |
-| Ashley components | Dynamic actor/object state: cells, health, dice, abilities, statuses |
+| artemis-odb components | Dynamic actor/object state: cells, health, dice, abilities, statuses |
 | `RunSession` | Grid, run phase, active actor, initiative queue, RNG streams, command index, run rewards |
 | Profile repository/application model | Permanent progression, inventory, settings and balances |
 | Screen/HUD view model | Selection, dialogs, focus, loading/error state, projected game data |
@@ -177,7 +182,7 @@ Desktop / Android / iOS launchers
 
 Components and `RunSession` together form the authoritative simulation. The occupancy index is a derived lookup maintained alongside position/blocking changes and rebuilt on load. UI snapshots are read-only copies, never a second mutable gameplay model.
 
-The simulation may depend on Ashley and project-owned algorithm interfaces. It must not reference `Gdx`, `Screen`, `Stage`, `SpriteBatch`, `AssetManager`, platform SDKs, networking, or file I/O. Backend implementations belong in their platform modules; pure repositories and adapters can live in `core`.
+The simulation may depend on artemis-odb and project-owned algorithm interfaces. It must not reference `Gdx`, `Screen`, `Stage`, `SpriteBatch`, `AssetManager`, platform SDKs, networking, or file I/O. Backend implementations belong in their platform modules; pure repositories and adapters can live in `core`.
 
 Use constructor injection and small Java interfaces. An async framework is not necessary for this scope.
 
@@ -185,24 +190,24 @@ Use constructor injection and small Java interfaces. An async framework is not n
 
 | Mechanism | Responsibility |
 | --- | --- |
-| Ashley system priority | Order within one logical simulation step |
+| artemis-odb system registration order | Order within one logical simulation step |
 | Project `TurnScheduler` | Which actor acts next and the logical action cost |
 | Java worker/executor and platform callbacks | Saves, loads, generation jobs if needed, network work |
 | `render(delta)`, `Stage.act(delta)`, animation tracks | Visual progression only |
 
-Run command resolution and Ashley mutation on the LibGDX render thread, serially. A frame drains available controller work, updates presentation, and draws. With no command or automatic actor pending, the simulation does not advance.
+Run command resolution and artemis-odb mutation on the LibGDX render thread, serially. A frame drains available controller work, updates presentation, and draws. With no command or automatic actor pending, the simulation does not advance.
 
-Call `engine.update(0f)` only for an explicit rule step. Ordinary turn systems must ignore elapsed seconds; do not use Ashley `IntervalSystem` to drive turn cooldowns. Never recursively call `Engine.update()`.
+Call `world.process()` only for an explicit rule step. Ordinary turn systems must ignore elapsed seconds; do not use artemis-odb `IntervalSystem` to drive turn cooldowns. Never recursively call `World.process()`.
 
-LibGDX lifecycle callbacks run on the render thread. Worker results return through `Gdx.app.postRunnable(...)`; workers must not operate on Ashley entities, Scene2D actors, graphics, or audio. Give each screen/run a generation token so stale callbacks cannot affect a replaced session. [LibGDX threading](https://libgdx.com/wiki/app/threading).
+LibGDX lifecycle callbacks run on the render thread. Worker results return through `Gdx.app.postRunnable(...)`; workers must not operate on artemis-odb entities, Scene2D actors, graphics, or audio. Give each screen/run a generation token so stale callbacks cannot affect a replaced session. [LibGDX threading](https://libgdx.com/wiki/app/threading).
 
 Use a bounded executor for I/O and one serialized writer for saves. Capture detached immutable data before submitting work. Cancellation is cooperative: cancel owned jobs when appropriate, and still reject late results by session ID. Required durable writes belong to the application, so changing screens does not silently discard them.
 
-## 5. Ashley world model
+## 5. artemis-odb world model
 
-Use one `Engine` per active run initially. Introduce `PooledEngine` only if measured allocation pressure justifies it; pooled components then need complete reset behavior, and presentation must never retain pooled object references.
+Use one artemis-odb `World` per active run, built through `WorldConfigurationBuilder` so system registration order is explicit. Keep the compile-time weaver off; use plain `Component` subclasses first and introduce `PooledComponent` only if measured allocation pressure justifies it. Pooled components then need complete reset behavior, and presentation must never retain pooled object references.
 
-Ashley uses `Component`, `Entity`, `Family`, `ComponentMapper`, and `EntitySystem`/`IteratingSystem`. Lower numeric system priorities run first. No component decorators or automatic game-save schema are part of this design. [Ashley guide](https://github.com/libgdx/ashley/wiki/How-to-use-Ashley).
+artemis-odb uses `Component` (with a required public constructor), `World`, `EntityEdit`, `ComponentMapper`, `Aspect`, and `BaseEntitySystem`/`IteratingSystem`. There is no per-system priority field: the default `InvocationStrategy` processes systems in registration order and flushes entity-state changes to aspect subscriptions before each system and after the last. The builder accepts at most one system instance per class, so each pipeline slot is its own class. Entities are `int` ids from `world.create()` and ids are recycled after deletion. No component decorators or automatic game-save schema are part of this design. [artemis-odb wiki](https://github.com/junkdog/artemis-odb/wiki).
 
 Create entities for players, enemies, doors, traps, pickups, and other objects that participate in rules. Keep floors and walls in a compact grid rather than making every tile an entity.
 
@@ -219,17 +224,17 @@ Minimal component shape:
 ```java
 package cloud.vinh.rebirthsaga.game.ecs.components;
 
-import com.badlogic.ashley.core.Component;
+import com.artemis.Component;
 
-public final class GridPosition implements Component {
+public class GridPosition extends Component {
     public int x;
     public int y;
 }
 ```
 
-Use project-generated stable IDs for saves, events, targeting, and replay. Ashley entity object identity and family iteration order must never determine persistent identity or initiative ties.
+Use project-generated stable IDs for saves, events, targeting, and replay. artemis entity ids are recycled after deletion, so entity id values and aspect subscription iteration order must never determine persistent identity or initiative ties.
 
-Ashley applies component changes immediately but defers family/listener updates while systems run; queued entity operations are processed between system updates. This is not the old framework's end-of-scene command buffer. Use `Entity.add/remove` and `Engine.addEntity/removeEntity`, copy event values before removal, and finish cleanup before projecting or saving. [Ashley update considerations](https://github.com/libgdx/ashley/wiki/How-to-use-Ashley#special-considerations).
+Entity and component edits go through `EntityEdit` (`world.edit(id)`, `world.delete(id)`, `mapper.create(id)`) and are applied immediately to the entity, while subscription membership catches up at the strategy's `updateEntityStates()` points around each system. This is not an end-of-scene command buffer. Copy event values before deleting an entity, prefer `IteratingSystem` deferred deletion during iteration, and finish cleanup before projecting or saving. [artemis-odb wiki: InvocationStrategy](https://github.com/junkdog/artemis-odb/wiki/InvocationStrategy).
 
 `RunSession` holds run/floor IDs, rules/content versions, turn and command counters, active actor, logical phase, scheduler, grid, RNG streams, visibility/exploration state, run inventory, and pending rewards. Rendering's `isAnimating` flag is not a saved gameplay phase.
 
@@ -237,7 +242,7 @@ Ashley applies component changes immediately but defers family/listener updates 
 
 Each command or automatic actor action resolves through an explicit context. Systems process only the active action and its effects; a system pass does not give every entity a turn.
 
-| Priority | System | Responsibility |
+| Slot | System | Responsibility |
 | ---: | --- | --- |
 | 100 | `CommandValidationSystem` | Validate actor, phase, targets and costs; reject without partial mutation |
 | 150 | `EnemyIntentSystem` | Choose an AI action when the active actor is an enemy |
@@ -251,7 +256,9 @@ Each command or automatic actor action resolves through an explicit context. Sys
 | 900 | `VisibilitySystem` | Refresh visibility after movement or opacity changes |
 | 1000 | `TurnFinalizationSystem` | Finalize action cost, select the next actor, update terminal state |
 
-Project snapshots/export event batches in the controller **after** `Engine.update()` returns and Ashley has processed pending operations. Save only at those completed command boundaries.
+Slot numbers are documentation labels for the pipeline order; execution order is fixed by the order in which the systems are registered with `WorldConfigurationBuilder` (one instance per system class).
+
+Project snapshots/export event batches in the controller **after** `World.process()` returns and artemis-odb has flushed pending entity operations. Save only at those completed command boundaries.
 
 An ability can produce several effects; resolve them in a stable order. A status tick that deals damage must use the same synchronous damage resolver before cleanup, rather than leaving pending damage for an accidental future command. Pass explicit `activationStarted`/`activationEnded` signals so rolling or assigning dice cannot tick poison repeatedly.
 
@@ -325,7 +332,7 @@ Keep distinct streams for generation, AI decisions, combat/dice, loot, cosmetic 
 
 Save the RNG algorithm ID, state format version, and **all** state words, not just the original seed. Encode long words losslessly, such as hexadecimal strings. Restore only recognized algorithms/state counts. Capture state after every accepted randomness-consuming command, including rerolls.
 
-Never use `Math.random()`, `MathUtils.random`, system time, unordered hash iteration, or Ashley entity order for authoritative decisions. Cross-platform replay fixtures must survive JVM, Android, and RoboVM execution before deterministic portability is claimed.
+Never use `Math.random()`, `MathUtils.random`, system time, unordered hash iteration, or artemis entity id order for authoritative decisions. Cross-platform replay fixtures must survive JVM, Android, and RoboVM execution before deterministic portability is claimed.
 
 ## 9. Turn scheduler and command runner
 
@@ -338,7 +345,7 @@ Snapshot the queue, current tick, active actor, next insertion sequence, and any
 ```text
 Input command
   -> validate expected session and current actor
-  -> resolve one synchronous Ashley command step
+  -> resolve one synchronous artemis-odb command step
   -> commit snapshot/events and request a checkpoint
   -> if activation ended, run scheduled automatic actors in order
   -> stop when player input is needed or the run ends
@@ -353,7 +360,7 @@ Keep command sequence numbers for accepted commands and event sequence numbers f
 
 ## 10. Dice combat vertical slice
 
-Start with one hero, one adjacent enemy type, a small dice pool, one damage ability and one defensive ability. Health, shields, dice and statuses remain in Ashley throughout exploration and combat.
+Start with one hero, one adjacent enemy type, a small dice pool, one damage ability and one defensive ability. Health, shields, dice and statuses remain in artemis-odb components throughout exploration and combat.
 
 Choose one initial contact rule: bumping an enemy enters a **dice activation for the current player turn**, without moving or immediately dealing damage. This command selects the target; a player cannot reset the activation by closing the panel or changing targets. The same initiative queue continues to govern all actors.
 
@@ -399,7 +406,7 @@ Provide remappable keys, keyboard focus, clear selection states, large touch tar
 
 Domain events are plain immutable Java values: `ActorMoved`, `DoorOpened`, `DiceRolled`, `AbilityUsed`, `DamageDealt`, `StatusApplied`, `ActorDefeated`, `ItemCollected`, `FloorChanged`, and `RunCompleted`.
 
-Include stable IDs, copied payloads, event order, and enough visibility/position information for presentation. A controller-owned presentation bridge maps these into animation, SFX and haptics. Render code does not subscribe to mutable Ashley entities or retain component references.
+Include stable IDs, copied payloads, event order, and enough visibility/position information for presentation. A controller-owned presentation bridge maps these into animation, SFX and haptics. Render code does not subscribe to mutable artemis-odb entities or retain component references.
 
 Create an application-owned `AssetManager` inside the game lifecycle. Use a loading screen and `AssetManager.update()` before activating screens that need queued resources. Keep atlases, skins, fonts, sounds and music managed through a clear ownership policy. Managed assets are released through the manager; do not manually dispose the same resource from a screen. [AssetManager guide](https://libgdx.com/wiki/managing-your-assets).
 
@@ -428,9 +435,9 @@ Bound retries and give each operation one retry owner. Retry only transient oper
 
 ## 14. Persistence, recovery, and reward consistency
 
-Use **project-owned, versioned JSON DTOs** for the first offline implementation. LibGDX already includes `JsonReader`, `JsonValue`, `JsonWriter`, and custom serialization support; SQLite and a Java database abstraction are not present in the current dependencies. [LibGDX JSON guide](https://libgdx.com/wiki/utils/reading-and-writing-json).
+Use **project-owned, versioned JSON DTOs** for the first offline implementation. LibGDX already includes `JsonReader`, `JsonValue`, `JsonWriter`, and custom serialization support; SQLite and a Java database abstraction are not present in the current dependencies. [LibGDX JSON guide](https://libgdx.com/wiki/utils/reading-and-writing-json). This save bundle intentionally uses LibGDX JSON, while versioned content definitions use Jackson (section 15); the two stacks have different jobs and must not drift into each other.
 
-Decode explicit fields and validate them before building a run. Prefer explicit codecs/custom serializers over serializing Ashley, reflection-driven class names, scheduler internals or arbitrary library graphs. This keeps schema changes deliberate and reduces reflection/linker dependence on Android and RoboVM.
+Decode explicit fields and validate them before building a run. Prefer explicit codecs/custom serializers over serializing artemis-odb internals, reflection-driven class names, scheduler internals or arbitrary library graphs. This keeps schema changes deliberate and reduces reflection/linker dependence on Android and RoboVM.
 
 A save bundle contains:
 
@@ -446,7 +453,7 @@ run: ID, floor index, original seed, generated tile data, entity DTOs
      run inventory, pending rewards and completion status
 ```
 
-Save the actual generated map and changes; do not depend on regenerating an old floor with a future library version. Rebuild occupancy, family indexes, resistance/FOV caches and presentation state after load. Exclude transient intents, in-progress system effects, textures and animation clocks.
+Save the actual generated map and changes; do not depend on regenerating an old floor with a future library version. Rebuild occupancy, aspect indexes, resistance/FOV caches and presentation state after load. Exclude transient intents, in-progress system effects, textures and animation clocks.
 
 For the first slice, use one logical bundle containing both profile and run, stored in two alternating local save slots. A serialized writer writes the inactive slot with an increasing revision and checksum, closes it, and verifies it before reporting durability. On load, validate both slots and select the newest complete supported revision. A torn write must leave the previous good slot usable; platform-specific flush/replace behavior still needs interruption testing.
 
@@ -462,7 +469,7 @@ Schema migrations are explicit and sequential. Reject unsupported future version
 
 Create validated catalogs under `assets/data/` for tiles, heroes, enemies, dice, abilities, statuses, items, loot/encounters, generation profiles, progression curves, and later banners/pity rules.
 
-Use stable content IDs and explicit schema versions. Parse into Java DTOs and validate required fields, ranges, enum values, referenced IDs, probability totals, progression monotonicity and reachable generation constraints. Parsing JSON alone does not validate game rules.
+Use stable content IDs and explicit schema versions. Content JSON is loaded with Jackson (`jackson-databind`, pinned in `gradle.properties`) into plain Java DTOs; its strict defaults are part of the contract — an unknown field or unknown enum value fails the load with the offending name, so typo'd definitions cannot silently default. Dice notation strings such as `"1d6+1"` stay strings at the parsing boundary and are parsed by the content validator. Then validate required fields, ranges, enum values, referenced IDs, probability totals, progression monotonicity and reachable generation constraints. Parsing JSON alone does not validate game rules.
 
 Load an immutable catalog before starting a run. Pin a run to its rules/content version; do not refresh definitions in the middle of a command. Keep retired content or a deliberate migration policy for resumable shipped runs.
 
@@ -490,7 +497,7 @@ core/src/main/java/cloud/vinh/rebirthsaga/
   bootstrap/                 service and screen wiring
   application/               RunController, results, repository interfaces
   game/
-    ecs/components/          Ashley data components
+    ecs/components/          artemis-odb data components
     ecs/systems/             ordered rule systems
     RunSession.java
     grid/                    DungeonGrid, occupancy, movement rules
@@ -538,7 +545,7 @@ Add a pinned Java 8-compatible test framework under `core` when implementing the
 | Movement/occupancy | Cardinal-only steps, bounds/walls, doors, traps, no actor overlap, correct action costs |
 | Generation | Bounded attempts, reachable spawn/exit, correct x/y translation, stable seeded fixtures |
 | Path/FOV | Four-way routes, dynamic blockers, door invalidation, corner visibility, explored memory |
-| Ashley | Priority behavior, structural changes between systems, cleanup before projection, no stale IDs |
+| artemis-odb | Registration-order behavior, structural changes between systems, cleanup before projection, no stale IDs |
 | Turns/combat | Stable initiative ties, single turn-boundary ticks, no extra turns from dice commands, no reroll/reset exploit |
 | Determinism | Same inputs yield identical canonical state/events; save/load mid-activation preserves the continuation |
 | Persistence | Torn slot recovery, ordered writes, migrations, future-version rejection, reward deduplication |
@@ -560,7 +567,7 @@ Test UI and rendering on actual desktop and mobile backends; a headless test can
 - Remove/defer overlapping optional libraries from the first-slice runtime; keep associated native dependencies consistent.
 - Separate desktop build tools, preserve reviewed version pins, and capture the resulting dependency graph.
 - Create a visible loading/prototype screen that loads the existing skin, draws with `SpriteBatch`, and accepts one Scene2D input.
-- Prove an ordered Ashley step, seeded SquidSquad generation and disposal/recreation of a screen.
+- Prove an ordered artemis-odb step, seeded SquidSquad generation and disposal/recreation of a screen.
 - Add the minimal JVM test setup and Java API compatibility check.
 - Run desktop, Android, and an iOS simulator build; track device/release checks separately.
 
@@ -608,11 +615,11 @@ Add server-authoritative gacha, verified purchases, account/secure storage integ
 
 ## 20. Documentation and audit evidence
 
-Official documentation was retrieved with the Firecrawl skill. Exact Ashley `1.7.4`, SquidSquad `4.0.12` and Juniper `0.10.5` signatures were also checked in resolved Gradle source JARs, so current README examples do not silently substitute newer APIs.
+Official documentation was retrieved with the Firecrawl skill. Exact artemis-odb `2.3.0`, SquidSquad `4.0.12` and Juniper `0.10.5` signatures were also checked in resolved Gradle source JARs, so current README examples do not silently substitute newer APIs.
 
 | Source | Use in this plan | Local Firecrawl cache |
 | --- | --- | --- |
-| [Ashley usage and update behavior](https://github.com/libgdx/ashley/wiki/How-to-use-Ashley) | Components, families, system priority and deferred notifications | `.firecrawl/ashley-guide.md` |
+| [artemis-odb wiki (World, BaseSystem, InvocationStrategy)](https://github.com/junkdog/artemis-odb/wiki) | World assembly, registration order, aspect subscriptions, entity-state flush points | `.firecrawl/artemis-odb-*.md` |
 | [SquidSquad repository/module guide](https://github.com/yellowstonegames/SquidSquad) | Module selection, algorithm ownership, serialization choices | `.firecrawl/squidsquad-readme.md` |
 | [jdkgdxds publication guidance](https://github.com/tommyettinger/jdkgdxds) | JitPack publication and upgrade context | `.firecrawl/jdkgdxds-readme.md` |
 | [LibGDX threading](https://libgdx.com/wiki/app/threading) | Render-thread ownership and worker handoff | `.firecrawl/libgdx-threading.md` |

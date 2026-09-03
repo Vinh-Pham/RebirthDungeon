@@ -17,10 +17,10 @@ The phases expand the game plan's six milestones. Complete the earliest unfinish
 
 ## Current Focus
 
-- **Current phase:** Phase 0 — Dependency repair and build foundation.
-- **Status:** Reset; no phase is marked complete for the Java implementation.
-- **Next objective:** Repair the duplicate jdkgdxds artifact graph, verify Android packaging, and establish the minimal shared-code/build/test baseline.
-- **Known blocker:** The game-plan audit found `:android:checkDebugDuplicateClasses` failing because two jdkgdxds `2.1.8` artifacts contain the same 533 classes. Its repair remains unverified.
+- **Current phase:** Phase 1 — Lifecycle, assets, and rendering integration.
+- **Status:** Phase 0 completed and verified on 2026-09-02 (see Completion Log); Phase 1 is not started.
+- **Next objective:** Evolve `RebirthDungeon` into asset/service wiring and replace `FirstScreen` with a visible loading/prototype screen on all three backends.
+- **Known blocker:** None for the build baseline. iOS AOT/simulator verification has not been run yet and is required by Phase 1; RoboVM 2.3.23 with a matching Xcode on this macOS host must be confirmed at that point.
 - **Baseline inspected:** 2026-09-02. Shared code contains `RebirthDungeon extends Game` and an empty `FirstScreen`; desktop, Android, and RoboVM launchers exist. The game-plan audit's successful core/desktop compilation is baseline evidence, not phase completion.
 
 ## Existing Architecture and Working Boundaries
@@ -32,7 +32,7 @@ The phases expand the game plan's six milestones. Complete the earliest unfinish
 | `android/` | Existing Android launcher, native integrations, SDK and native-library configuration |
 | `ios/` | Existing RoboVM launcher, MetalANGLE backend, iOS integrations and linking configuration |
 | `assets/` | Existing UI skin and bitmap fonts; add validated content, dungeon atlases and audio as needed |
-| Ashley `Engine` + `RunSession` | Planned authoritative entities, grid, logical phases, initiative, RNG streams and run rewards |
+| artemis-odb `World` + `RunSession` | Planned authoritative entities, grid, logical phases, initiative, RNG streams and run rewards |
 | SquidSquad/Juniper adapters | Planned generation, cardinal pathfinding, FOV and explicit seeded randomness |
 | `RunController` | Planned serialized commands, committed snapshots/events and repository coordination |
 | `SpriteBatch`, Scene2D `Stage`, presentation tracks | Planned display, controls and animation of committed results |
@@ -40,13 +40,13 @@ The phases expand the game plan's six milestones. Complete the earliest unfinish
 
 Shared source targets Java 8; the Gradle daemon criteria select Java 21. Follow the game plan's toolchain/dependency audit rather than equating the build JVM with supported application APIs.
 
-Simulation code uses Ashley and project-owned algorithm interfaces, with SquidSquad/Juniper implementations behind adapters. It must not call `Gdx`, graphics/audio, Scene2D, file I/O, networking or provider SDKs. One logical command resolves synchronously on the render thread; only then are snapshots/events exported and external work requested. Worker results return via `Gdx.app.postRunnable(...)` and are checked against the current session token.
+Simulation code uses artemis-odb and project-owned algorithm interfaces, with SquidSquad/Juniper implementations behind adapters. It must not call `Gdx`, graphics/audio, Scene2D, file I/O, networking or provider SDKs. One logical command resolves synchronously on the render thread; only then are snapshots/events exported and external work requested. Worker results return via `Gdx.app.postRunnable(...)` and are checked against the current session token.
 
 Keep live gameplay out of UI state and animation clocks. Use explicit constructor wiring and Java service interfaces; one application-owned serialized save writer survives screen changes. Follow the package structure in game-plan section 17 without scaffolding unused folders.
 
 ## Phase Overview
 
-- [ ] Phase 0 — Dependency repair and build foundation
+- [x] Phase 0 — Dependency repair and build foundation
 - [ ] Phase 1 — Lifecycle, assets, and rendering integration
 - [ ] Phase 2 — Validated content and deterministic RNG
 - [ ] Phase 3 — Grid simulation, turns, and basic checkpoints
@@ -70,22 +70,22 @@ Keep live gameplay out of UI state and animation clocks. Use explicit constructo
 
 Tasks:
 
-- [ ] Reproduce and repair the duplicate graph from `com.github.tommyettinger:jdkgdxds:2.1.8`, retaining one implementation and its required dependencies. Review a narrow exclusion or corrected publication; do not hide duplicate bytecode with packaging rules.
-- [ ] Verify core, desktop, Android and iOS dependency graphs after the repair; confirm Android duplicate-class checking and debug assembly pass.
-- [ ] Reduce the initial runtime to LibGDX, Ashley, selected SquidSquad modules and supporting libraries according to game-plan section 2. Defer overlapping SquidLib/pathfinding, physics, binary serialization, narrative and animation extras until needed.
-- [ ] Keep platform native dependencies consistent with core selections; if removing Box2D, remove its lights extension and native artifacts across every launcher.
-- [ ] Move `gdx-tools` to an offline tooling task/configuration and review `api` versus `implementation` exposure without breaking launcher compilation.
-- [ ] Preserve required JitPack access, make local Maven overrides deliberate, and capture reviewed version pins plus dependency locking/verification for the repaired graph.
-- [ ] Enforce Java 8 language/API compatibility in shared code while preserving the configured build JVM. Document Android SDK, RoboVM/Xcode and desktop build prerequisites separately.
-- [ ] Add a pinned Java 8-compatible JVM test framework for `core` and an initial meaningful rule/adapter fixture; keep graphics startup out of plain unit tests.
-- [ ] Add practical Java formatting/static checks and CI for shared tests, desktop compilation and Android packaging; document how iOS verification is run on a macOS host.
-- [ ] Update development instructions around the existing modules/package and the architecture boundaries in this tracker.
+- [x] Reproduce and repair the duplicate graph from `com.github.tommyettinger:jdkgdxds:2.1.8`, retaining one implementation and its required dependencies. Review a narrow exclusion or corrected publication; do not hide duplicate bytecode with packaging rules.
+- [x] Verify core, desktop, Android and iOS dependency graphs after the repair; confirm Android duplicate-class checking and debug assembly pass.
+- [x] Reduce the initial runtime to LibGDX, artemis-odb, selected SquidSquad modules and supporting libraries according to game-plan section 2. Defer overlapping SquidLib/pathfinding, physics, binary serialization, narrative and animation extras until needed.
+- [x] Keep platform native dependencies consistent with core selections; if removing Box2D, remove its lights extension and native artifacts across every launcher.
+- [x] Move `gdx-tools` to an offline tooling task/configuration and review `api` versus `implementation` exposure without breaking launcher compilation.
+- [x] Preserve required JitPack access, make local Maven overrides deliberate, and capture reviewed version pins plus dependency locking/verification for the repaired graph.
+- [x] Enforce Java 8 language/API compatibility in shared code while preserving the configured build JVM. Document Android SDK, RoboVM/Xcode and desktop build prerequisites separately.
+- [x] Add a pinned Java 8-compatible JVM test framework for `core` and an initial meaningful rule/adapter fixture; keep graphics startup out of plain unit tests.
+- [x] Add practical Java formatting/static checks and CI for shared tests, desktop compilation and Android packaging; document how iOS verification is run on a macOS host.
+- [x] Update development instructions around the existing modules/package and the architecture boundaries in this tracker.
 
 Exit criteria:
 
-- [ ] `:core:compileJava`, `:lwjgl3:compileJava`, meaningful `:core:test` tests and `:android:assembleDebug` pass through the wrapper; no duplicate-class failure remains.
-- [ ] The selected dependency graph is recorded and platform prerequisites are reproducible; successful JVM compilation is not reported as an iOS build.
-- [ ] Shared-code tests run without `Gdx.app`, OpenGL, native UI or provider SDK startup, and documented checks protect the Java/API boundary.
+- [x] `:core:compileJava`, `:lwjgl3:compileJava`, meaningful `:core:test` tests and `:android:assembleDebug` pass through the wrapper; no duplicate-class failure remains.
+- [x] The selected dependency graph is recorded and platform prerequisites are reproducible; successful JVM compilation is not reported as an iOS build.
+- [x] Shared-code tests run without `Gdx.app`, OpenGL, native UI or provider SDK startup, and documented checks protect the Java/API boundary.
 
 ## Phase 1 — Lifecycle, Assets, and Rendering Integration
 
@@ -100,17 +100,17 @@ Tasks:
 - [ ] Render a room and animated sprite through `SpriteBatch`, a texture atlas, camera and world viewport; start with 16-pixel tiles and nearest-neighbor filtering.
 - [ ] Choose the logical world resolution/scaling policy and implement a separate Scene2D `Stage`/UI viewport with a working control.
 - [ ] Align Android and iOS to the initial landscape layout, account for safe insets, and keep viewport resize guards for zero-size windows.
-- [ ] Prove a command-driven Ashley `Engine` step with explicit system priorities and a seeded `DungeonProcessor` adapter returning detached data.
+- [ ] Prove a command-driven artemis-odb `World` step with explicit system registration order and a seeded `DungeonProcessor` adapter returning detached data.
 - [ ] Route Stage input before world input with `InputMultiplexer`; verify that a consumed touch cannot trigger both UI and gameplay.
 - [ ] Implement screen hide/dispose ownership for stages, private batches, input processors and presentation tracks; release managed assets through `AssetManager`.
-- [ ] Prove worker-result handoff through `postRunnable` and rejection of stale session callbacks; keep graphics, audio and Ashley mutation on the render thread.
+- [ ] Prove worker-result handoff through `postRunnable` and rejection of stale session callbacks; keep graphics, audio and artemis-odb mutation on the render thread.
 - [ ] Verify repeated screen transitions, pause/resume and application recreation without static resource leaks or calls to disposed objects.
 - [ ] Launch the prototype on desktop, an Android emulator/device and an iOS simulator through RoboVM; record the exact targets and results.
 
 Exit criteria:
 
 - [ ] All three backends display the room, skin and working control; iOS AOT/linking succeeds for the simulator target.
-- [ ] Explicit commands advance the Ashley spike while idle render frames advance only presentation.
+- [ ] Explicit commands advance the artemis-odb spike while idle render frames advance only presentation.
 - [ ] Asset loading, resize, input consumption and repeated lifecycle transitions work without leaking or reusing disposed resources.
 
 ## Phase 2 — Validated Content and Deterministic RNG
@@ -126,11 +126,11 @@ Tasks:
 - [ ] Derive independent generation, AI, combat/dice, loot and cosmetic streams with stable identifiers; reserve a separate development-gacha stream for Phase 11.
 - [ ] Capture and restore algorithm ID, state-format version and all five AceRandom state words losslessly; reject unknown algorithms or invalid state counts.
 - [ ] Define stable floor/attempt seed derivation from run seed, floor index, generator version and attempt number.
-- [ ] Add JSON DTOs and an immutable content catalog under `data/content`, backed by `ContentRepository`; validation is explicit rather than assumed from JSON parsing.
+- [ ] Add Jackson-bound JSON DTOs and an immutable content catalog under `data/content`, backed by `ContentRepository`; validation is explicit rather than assumed from JSON parsing (unknown fields/enum values already fail the Jackson binding; keep that strictness).
 - [ ] Add a minimal `assets/data` set for tiles, generation profiles, a hero/enemy, dice, attack/defense abilities, statuses, items, encounters, loot and progression. Defer banner/pity catalogs to Phase 11.
 - [ ] Validate required fields, versions, IDs, ranges, cross-references, probability totals and progression curves with actionable file/field diagnostics.
 - [ ] Separate visual asset references from rules and validate required atlas/animation IDs before starting a run.
-- [ ] Test seeded repeatability, full-state round trips, stream independence, malformed content and broken references in ordinary JVM tests.
+- [ ] Test seeded repeatability, full-state round trips, stream independence, malformed content and broken references in ordinary JVM tests. `JacksonContentBindingTest` already pins the content JSON binding shape (item definitions with dice-notation strings, enum rarities, tag arrays).
 
 Exit criteria:
 
@@ -146,16 +146,16 @@ Exit criteria:
 
 Tasks:
 
-- [ ] Create one Ashley `Engine` plus `RunSession` per run, with stable IDs, position/player/AI/blocker/vision/health components and authoritative run/floor/counter state.
+- [ ] Create one artemis-odb `World` plus `RunSession` per run, with stable IDs, position/player/AI/blocker/vision/health components and authoritative run/floor/counter state.
 - [ ] Implement a y-up `DungeonGrid` with flattened `int[]` tile IDs and an O(1) occupancy index; keep static floor/wall tiles out of the ECS.
 - [ ] Build the `DungeonProcessor` adapter, translate `char[x][y]` into project tiles/spawns, validate reachability and constraints, and bound generation attempts with deterministic failure behavior.
-- [ ] Establish the game-plan system priorities: validation 100, enemy intent 150, movement 200, interaction 300, combat slots 400–700, cleanup 800, visibility 900 and turn finalization 1000. Export snapshots/events only after `Engine.update()` returns.
+- [ ] Establish the game-plan system pipeline in registration order: validation, enemy intent, movement, interaction, combat slots, cleanup, visibility and turn finalization (slot labels per game-plan section 6). Export snapshots/events only after `World.process()` returns.
 - [ ] Enforce cardinal steps, bounds, terrain and occupancy together. Walking/waiting spend one action; an unlocked door opens without movement for one action; invalid movement or a locked door without a key spends none.
 - [ ] Reserve hostile-contact handling for Phase 4 without allowing overlap; complete a movement-only slice before enabling dice encounters.
 - [ ] Implement `DijkstraMap` with `Measurement.MANHATTAN`, explicit blocked terrain and per-query dynamic blockers; use simple deterministic enemy pursuit/idle behavior.
 - [ ] Implement `FOV.reuseFOV` with `Radius.DIAMOND`, opacity changes, `visibleNow` and persistent explored state; hide live information about unseen enemies from presentation.
 - [ ] Implement `TurnScheduler` ordered by `(dueTick, insertionSequence, stableActorId)`, starting with 100 ticks per completed activation; persist queue, active actor and tie-break state.
-- [ ] Implement the serialized `RunController`, accepted command/event counters, automatic-actor guard and explicit `engine.update(0f)` steps. Yield only between completed actions if necessary.
+- [ ] Implement the serialized `RunController`, accepted command/event counters, automatic-actor guard and explicit `world.process()` steps. Yield only between completed actions if necessary.
 - [ ] Connect committed snapshots/events to world/HUD rendering, keyboard/D-pad/swipe controls, interpolation and input gating; no rule advances merely because a frame is drawn.
 - [ ] Add a minimal versioned JSON checkpoint for the actual map, entity DTOs, explored cells, counters, scheduler and full gameplay RNG states; create the serialized alternating-slot save foundation that Phase 6 hardens.
 - [ ] Rebuild derived indexes/caches on reload and compare a restored continuation against an uninterrupted replay using canonical state/event ordering.
@@ -226,7 +226,7 @@ Exit criteria:
 Tasks:
 
 - [ ] Complete the project-owned JSON bundle for schema/rules/content/generator versions, revisions, profile, run, generated map, entities, explored cells, scheduler, RNG streams, dice activation and pending/committed rewards.
-- [ ] Implement explicit codecs and validation with LibGDX JSON utilities; exclude Ashley internals, transient intents, caches, textures and animation clocks.
+- [ ] Implement explicit codecs and validation with LibGDX JSON utilities; exclude artemis-odb internals, transient intents, caches, textures and animation clocks.
 - [ ] Finish alternating-slot writes with increasing revision, checksum, close/verification and newest-valid-slot recovery; retain the previous good slot after a torn write.
 - [ ] Serialize saves through one application-owned writer and keep revision/callback ordering when coalescing. Never overwrite a newer save with an older queued result.
 - [ ] Add typed operational failures and recoverable loading/save UI; reject unsupported future schemas without overwriting the original file.
@@ -322,7 +322,7 @@ Exit criteria:
 
 Tasks:
 
-- [ ] Consolidate rule/adapter/controller/save coverage for system priority, structural changes, coordinate translation, occupancy, FOV, initiative, combat and canonical replay.
+- [ ] Consolidate rule/adapter/controller/save coverage for system registration order, structural changes, coordinate translation, occupancy, FOV, initiative, combat and canonical replay.
 - [ ] Run complete start-to-result, save/resume, floor-change, defeat/abandon and repeat-run checks against actual backends.
 - [ ] Use seeded simulations to measure generation validity, encounter difficulty, progression pacing and loot distributions against documented targets.
 - [ ] Set budgets for startup, dungeon entry, ordinary command latency, generation worst cases, frame time, memory, event queues and save size/latency.
@@ -447,7 +447,7 @@ These milestones match game-plan section 19. Each requires its listed phases and
 | Decision | Baseline to implement |
 | --- | --- |
 | Source compatibility | Java 8 shared code; build JVM selection remains separate |
-| Simulation authority | One Ashley `Engine` and `RunSession` per run |
+| Simulation authority | One artemis-odb `World` and `RunSession` per run |
 | Initial algorithms | SquidSquad `DungeonProcessor`, `DijkstraMap`/Manhattan movement, `FOV.reuseFOV`/diamond radius |
 | RNG | Explicit Juniper AceRandom streams; persist all state words and algorithm/version IDs |
 | Initiative | Project queue with logical ticks and stable tie-breaks; initial activation cost 100 |
@@ -463,8 +463,8 @@ Resolve these when their phase needs them. Do not reopen the settled contracts a
 
 | Decision | Needed by | Status | Resolution/evidence |
 | --- | --- | --- | --- |
-| Duplicate-artifact repair and reviewed minimal dependency graph | Phase 0 | Open | Follow the known failure and candidate repair in game-plan section 2 |
-| Test/check tooling and CI setup | Phase 0 | Open | Must respect shared Java 8 APIs and backend boundaries |
+| Duplicate-artifact repair and reviewed minimal dependency graph | Phase 0 | Resolved 2026-09-02 | Narrow exclusion of `com.github.tommyettinger.jdkgdxds:build` in root `build.gradle` (all subproject configurations); retained `:jdkgdxds` module with identical transitive deps. Runtime reduced to gdx 1.14.2, artemis-odb 2.3.0 (replacing ashley 1.7.4 same day), squidcore/grid/place/path 4.0.12, jdkgdxds 2.1.8, juniper 0.10.5. README "Dependencies"; `*/gradle.lockfile`; `gradle/verification-metadata.xml`. |
+| Test/check tooling and CI setup | Phase 0 | Resolved 2026-09-02 | JUnit 4.13.2 pinned for `:core:test` (plain JVM, no Gdx.app/OpenGL); Checkstyle 10.20.2 with `config/checkstyle/` (formatting hygiene + `ImportControl` banning `com.badlogic.gdx` under `game/`); `--release 8` guards the Java 8 API surface. `.github/workflows/ci.yml` runs shared tests/checks, desktop compile and Android packaging; iOS verification documented as manual macOS-host steps in README. |
 | Logical world resolution/scaling and initial test-device matrix | Phase 1 | Open | Landscape and 16-pixel tiles are the baseline |
 | Resource limits: map size, automatic actions and presentation queues | Phase 3 | Open | Bound before enabling untrusted/generated content sizes |
 | Exact starter dice values, ability costs and modifier/status rules | Phase 4 | Open | Implement the fixed command/activation contracts |
@@ -500,9 +500,13 @@ No phases are complete after this reset. Add a row only after all phase tasks an
 
 | Phase | Completed date | Verified by | Evidence |
 | --- | --- | --- | --- |
+| 0 — Dependency repair and build foundation | 2026-09-02 | Local Gradle wrapper 9.7.1 (daemon JDK 21), macOS arm64 host | `:android:checkDebugDuplicateClasses` FAILED before repair, PASS after; `:core:check` = 6/6 tests + Checkstyle clean; `:core:compileJava :lwjgl3:compileJava :android:assembleDebug` pass (`android/build/outputs/apk/debug/android-debug.apk`); dependency reports for core/lwjgl3/android/ios resolve with no `FAILED`; lockfiles x4 + `gradle/verification-metadata.xml` (sha256). Repaired graph and rationale in README "Dependencies"; reports cached in `.firecrawl/phase0-logs/`. |
 
 ## Work Notes
 
+- **2026-09-02 — Jackson added for content-definition JSON (user decision).** `com.fasterxml.jackson.core:jackson-databind:2.22.2` + `jackson-annotations:2.22` (annotations version line has no patch component) pinned in `gradle.properties`, declared in `core` as `implementation`. Verified Java 8 bytecode before pinning (class file major 52) and Android debug packaging after. Role split recorded in game-plan sections 2/14/15: Jackson = versioned content definitions with strict default binding (unknown fields/enum values fail the load; dice notation like `"1d6+1"` stays a string at the boundary); LibGDX JSON remains the save-bundle codec (Phase 6). `JacksonContentBindingTest` (4 tests) pins the binding shape against the `rusted_sword` item example: field/enum binding, actionable unknown-field failure, unknown-enum rejection, serialize/restore round trip. Battery re-run green (`:core:check` 10/10, compiles, `:android:checkDebugDuplicateClasses`, `:android:assembleDebug`); lockfiles and verification metadata regenerated. Deferred deliberately: R8 keep rules for content DTO packages (no such package exists yet — required at the Android release/minify gate), and RoboVM reflection behavior for DTOs is covered by the Phase 1/6 iOS gates.
+- **2026-09-02 — ECS framework swap to artemis-odb (user decision, same day as Phase 0).** Replaced `com.badlogicgames.ashley:ashley:1.7.4` with `net.onedaybeard.artemis:artemis-odb:2.3.0` (latest Maven Central release; the README's "2.4.0" is a snapshot-era claim, verified against repo1.maven.org). Documentation fetched with Firecrawl and cached under `.firecrawl/artemis-odb-*.md`; key contracts verified in the resolved source jar: no per-system priority field — the default `InvocationStrategy` runs systems in registration order and flushes entity-state updates to subscriptions before each system and after the last; the builder accepts one instance per system class; components are created reflectively and need public constructors; entity ids are `int`s, recycled after deletion. The Ashley smoke fixture was replaced by `ArtemisWorldStepTest` (registration order + aspect filtering; both framework contracts above caught by the first test run). Docs updated (every Ashley reference across game-plan sections 1–20, README, and this tracker). Lockfiles and `gradle/verification-metadata.xml` regenerated; full battery re-run green: `:core:check` 6/6, `:core:compileJava`, `:lwjgl3:compileJava`, `:android:checkDebugDuplicateClasses`, `:android:assembleDebug` (macOS arm64 host, wrapper 9.7.1, daemon JDK 21). Unmet prerequisite preserved: iOS AOT/simulator verification remains for Phase 1.
+- **2026-09-02 — Phase 0 completed (dependency repair and build foundation).** Host: macOS arm64 (Darwin 27), Gradle wrapper 9.7.1, daemon JDK 21 per `gradle/gradle-daemon-jvm.properties`, Android SDK 36 via `local.properties`. Evidence sequence: (1) reproduced the audit blocker — `./gradlew :android:checkDebugDuplicateClasses` failed on `com.github.tommyettinger.jdkgdxds:build:2.1.8` vs `:jdkgdxds:2.1.8` (533 identical classes); (2) confirmed both artifacts' POMs declare the same deps (funderby 0.1.2, digital 0.10.2), so the root-build exclusion of the `:build` module drops no code — applied in root `build.gradle` for every subproject configuration; (3) reduced `core` to gdx 1.14.2 (`api`) + ashley, juniper, jdkgdxds, squidcore/grid/place/path (`implementation`), junit 4.13.2 (test); removed Box2D + lights + all their natives, gdx-controllers backends, and every deferred library from the scaffold; (4) moved `gdx-tools` to the `gdxTools` configuration with a `:lwjgl3:gdxToolsClasspath` task (verified absent from all runtime classpaths); (5) repositories: Maven Central + JitPack kept, `mavenLocal()` opt-in via `-Prebirth.enableMavenLocal=true`, snapshot repo removed; (6) lockfiles for all four modules + `gradle/verification-metadata.xml` (sha256) committed; (7) Java 8 API surface enforced with `--release 8` (probe: `List.of` rejected at compile); (8) 6 smoke tests under `core/src/test/.../smoke/` pinned the then-Ashley stack (superseded the same day by the artemis-odb swap note above, with the battery re-verified), AceRandom seed reproduction and five-word state restore, and jdkgdxds collection behavior — no Gdx.app/OpenGL/natives; (9) Checkstyle (hygiene + `ImportControl` game/ boundary, probe-verified) and `.github/workflows/ci.yml` added; README rewritten with per-platform prerequisites and verification commands. Final battery all green: `:core:check`, `:core:compileJava`, `:lwjgl3:compileJava`, `:android:checkDebugDuplicateClasses`, `:android:assembleDebug`, `:lwjgl3:jar`. Dispositions: `vis-ui` and `gdx-controllers` intentionally removed (optional; no controller input implemented — re-add per feature); `digital`/`regexodus`/`crux`/`funderby` left transitive per game-plan section 2 guidance. iOS AOT/simulator build remains unverified by design — only the iOS dependency graph resolution was checked; iOS build evidence belongs to Phase 1.
 - **2026-09-02 — Tracker reset:** All checkboxes cleared; the active focus returned to Phase 0. Prior completion logs, test totals, device/signing claims and implementation notes were removed because they describe the previous stack. This reset edits the tracker only; it does not implement any phase.
-- **2026-09-02 — Current build blocker:** The game-plan audit recorded duplicate classes from `com.github.tommyettinger.jdkgdxds:build:2.1.8` and `com.github.tommyettinger.jdkgdxds:jdkgdxds:2.1.8`. Next action: repair/review the resolved graph, then repeat duplicate-class checking and Android assembly. Audit evidence is described in game-plan sections 2 and 20; no new build result is claimed by this tracker reset.
+- **2026-09-02 — Current build blocker:** The game-plan audit recorded duplicate classes from `com.github.tommyettinger.jdkgdxds:build:2.1.8` and `com.github.tommyettinger.jdkgdxds:jdkgdxds:2.1.8`. Next action: repair/review the resolved graph, then repeat duplicate-class checking and Android assembly. Audit evidence is described in game-plan sections 2 and 20; no new build result is claimed by this tracker reset. *(Resolved same day — see Phase 0 completion note above.)*
 - **2026-09-02 — Current source baseline:** Only the shared application/empty screen and platform launchers exist in Java. Content catalogs, gameplay systems, controllers, save codecs and phase tests must be implemented or inspected before any new completion claim.

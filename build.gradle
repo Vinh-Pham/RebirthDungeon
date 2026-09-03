@@ -2,9 +2,7 @@ buildscript {
   repositories {
     mavenCentral()
     gradlePluginPortal()
-    mavenLocal()
     google()
-    maven { url = 'https://central.sonatype.com/repository/maven-snapshots/' }
   }
   dependencies {
     classpath "com.android.tools.build:gradle:8.9.3"
@@ -29,6 +27,14 @@ configure(subprojects - project(':android')) {
   apply plugin: 'java-library'
   java.sourceCompatibility = 8
   java.targetCompatibility = 8
+
+  // Compile against the Java 8 API surface on newer build JDKs. Source/target
+  // compatibility alone would still let shared code call newer JDK APIs that do not
+  // exist on the Android/RoboVM runtimes. The build JVM itself stays a separate choice
+  // (see gradle/gradle-daemon-jvm.properties).
+  if (JavaVersion.current().isJava9Compatible()) {
+    tasks.withType(JavaCompile).configureEach { options.release.set(8) }
+  }
 
   // From https://lyze.dev/2021/04/29/libGDX-Internal-Assets-List/
   // The article can be helpful when using assets.txt in your project.
@@ -58,12 +64,33 @@ configure(subprojects - project(':android')) {
 subprojects {
   version = "$projectVersion"
   ext.appName = 'RebirthDungeon'
+
+  // Reproducible resolution: lockfiles under each module pin the exact resolved
+  // versions. Regenerate with `--write-locks` after an intentional version bump.
+  dependencyLocking {
+    lockAllConfigurations()
+  }
+
+  // Narrow repair for the jdkgdxds 2.1.8 JitPack publication: its root POM depends on
+  // BOTH com.github.tommyettinger.jdkgdxds:build:2.1.8 and
+  // com.github.tommyettinger.jdkgdxds:jdkgdxds:2.1.8, and the two JARs contain the same
+  // 533 classes, which fails Android's checkDebugDuplicateClasses. The retained
+  // :jdkgdxds module declares the same dependencies (funderby, digital), so this
+  // exclusion drops no code and no libraries. It is a dependency-graph repair, not a
+  // packaging rule; no duplicate bytecode is hidden from consumers.
+  configurations.configureEach {
+    exclude group: 'com.github.tommyettinger.jdkgdxds', module: 'build'
+  }
+
   repositories {
     mavenCentral()
-    // You may want to remove the following line if you have errors downloading dependencies.
-    mavenLocal()
-    maven { url = 'https://central.sonatype.com/repository/maven-snapshots/' }
+    // JitPack is required: jdkgdxds, juniper and the SquidSquad modules are published there.
     maven { url = 'https://jitpack.io' }
+    // Opt-in only, so local artifacts cannot silently replace published ones:
+    // run with -Prebirth.enableMavenLocal=true to enable.
+    if(providers.gradleProperty('rebirth.enableMavenLocal').getOrElse('false').toBoolean()) {
+      mavenLocal()
+    }
   }
 }
 

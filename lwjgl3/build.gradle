@@ -28,13 +28,31 @@ if (JavaVersion.current().isJava9Compatible()) {
         compileJava.options.release.set(8)
 }
 
+// Offline tooling only: gdx-tools carries headless/FreeType tooling that must not ship
+// with the game, so it lives in its own configuration instead of implementation.
+configurations { gdxTools }
+
 dependencies {
-  implementation "com.badlogicgames.gdx-controllers:gdx-controllers-desktop:$gdxControllersVersion"
   implementation "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion"
-  implementation "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-desktop"
   implementation "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
   implementation project(':core')
-  implementation("com.badlogicgames.gdx:gdx-tools:$gdxVersion"){exclude group: 'com.badlogicgames.gdx', module: 'gdx-backend-lwjgl'}
+
+  gdxTools("com.badlogicgames.gdx:gdx-tools:$gdxVersion") { exclude group: 'com.badlogicgames.gdx', module: 'gdx-backend-lwjgl' }
+
+  // Writes the resolved gdx-tools classpath to build/gdx-tools-classpath.txt for
+  // offline use, e.g.:
+  //   ./gradlew :lwjgl3:gdxToolsClasspath
+  //   java -cp "$(cat lwjgl3/build/gdx-tools-classpath.txt)" \
+  //     com.badlogic.gdx.tools.texturepacker.TexturePacker <inputDir> <packFile>
+  tasks.register('gdxToolsClasspath') {
+    group = 'build'
+    description = 'Resolves the offline gdx-tools classpath (atlas packing etc.); not part of the shipped game.'
+    def outputFile = layout.buildDirectory.file('gdx-tools-classpath.txt')
+    outputs.file(outputFile)
+    doLast {
+      outputFile.get().asFile.text = configurations.gdxTools.resolve().join(File.pathSeparator)
+    }
+  }
 
   if(enableGraalNative == 'true') {
     implementation "io.github.berstanio:gdx-svmhelper-backend-lwjgl3:$graalHelperVersion"

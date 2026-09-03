@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<!DOCTYPE import-control PUBLIC
+        "-//Checkstyle//DTD ImportControl Configuration 1.4//EN"
+        "https://checkstyle.org/dtds/import_control_1_4.dtd">
+<!-- Deterministic simulation tree: cloud.vinh.rebirthsaga.game must not import
+     LibGDX or anything else from com.badlogic.gdx. Everything outside game/ is
+     unrestricted, and imports with no matching rule are allowed. -->
+<import-control pkg="cloud.vinh.rebirthsaga" strategyOnMismatch="allowed">
+  <subpackage name="game">
+    <disallow pkg="com.badlogic.gdx"/>
+  </subpackage>
+</import-control>

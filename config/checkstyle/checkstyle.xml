@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC
+        "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+        "https://checkstyle.org/dtds/configuration_1_3.dtd">
+<!-- Shared-code checks for RebirthDungeon. Formatting lints stay light; the
+     load-bearing rule is the architecture boundary: simulation code under
+     cloud/vinh/rebirthsaga/game/ must not import LibGDX (see game-plan section 3). -->
+<module name="Checker">
+  <property name="charset" value="UTF-8"/>
+  <property name="severity" value="error"/>
+
+  <!-- Formatting hygiene -->
+  <module name="FileTabCharacter">
+    <property name="eachLine" value="true"/>
+  </module>
+  <module name="RegexpSingleline">
+    <property name="format" value="\s+$"/>
+    <property name="message" value="Line has trailing whitespace."/>
+  </module>
+  <module name="RegexpSingleline">
+    <property name="format" value="\r"/>
+    <property name="message" value="Use LF line endings."/>
+    <property name="fileExtensions" value="java"/>
+  </module>
+
+  <module name="TreeWalker">
+    <!-- Imports -->
+    <module name="AvoidStarImport"/>
+    <module name="RedundantImport"/>
+    <module name="UnusedImports"/>
+
+    <!-- Architecture boundary: game/ is the deterministic simulation tree. It must
+         stay plain Java (no Gdx, no graphics/audio/files) so it runs in JVM tests.
+         Adapters live in game/squidsquad/ and presentation code may import Gdx. -->
+    <module name="ImportControl">
+      <property name="file" value="${config_loc}/import-control.xml"/>
+    </module>
+  </module>
+</module>
