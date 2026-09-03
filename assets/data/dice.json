@@ -1,8 +1,0 @@
-{
-  "version": 1,
-  "dice": [
-    { "id": "dice_d6", "name": "D6", "sides": 6 },
-    { "id": "dice_d8", "name": "D8", "sides": 8 },
-    { "id": "dice_d12", "name": "D12", "sides": 12 }
-  ]
-}

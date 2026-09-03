@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="BackendCodeEditorMiscSettings">
-    <option name="/Default/Environment/Hierarchy/GeneratedFilesCacheKey/Timestamp/@EntryValue" value="52" type="long" />
+    <option name="/Default/Environment/Hierarchy/GeneratedFilesCacheKey/Timestamp/@EntryValue" value="4" type="long" />
   </component>
   <component name="CMakeProjectFlavorService">
     <option name="flavorId" value="CMakePlainProjectFlavor" />
@@ -15,26 +15,151 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="8589fb97-3e42-48f8-8914-55710236f3e1" name="Changes" comment="">
+    <list default="true" id="f7f07e50-b8ee-49d0-92bc-0efaf6deb9b9" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.agents/skills/firecrawl/SKILL.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.agents/skills/firecrawl/rules/install.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.agents/skills/firecrawl/rules/security.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.claude/settings.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.claude/skills/firecrawl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.github/workflows/ci.yml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/RebirthDungeon.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/editor.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/php.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/prettier.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/__tests__/application/spike-ticker.test.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/__tests__/game/rot-dungeon-generator.test.ts" beforeDir="false" afterPath="$PROJECT_DIR$/__tests__/game/rot-dungeon-generator.test.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/__tests__/game/spike-projection.test.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/__tests__/game/spike-run.test.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/__tests__/presentation/spike-hud.test.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/jest.config.js" beforeDir="false" afterPath="$PROJECT_DIR$/jest.config.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/index.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/index.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/application/spike/spike-controller.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/bootstrap/effect-runtime.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/bootstrap/effect-runtime.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/camera/camera-math.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/game/camera/camera-math.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/ecs/spike-components.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/ecs/spike-run.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/ecs/spike-systems.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/grid/dungeon-grid.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/game/grid/dungeon-grid.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/projection/spike-projection.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/rot/rot-dungeon-generator.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/game/rot/rot-dungeon-generator.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/presentation/spike/render-spike-screen.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/presentation/spike/spike-hud.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.prettierignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.prettierrc" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.vscode/extensions.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.vscode/settings.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/AGENTS.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/CLAUDE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/LICENSE" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/__tests__/application/run-controller.test.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/__tests__/core/random/random-source.test.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/__tests__/core/result.test.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/__tests__/data/bundled-content-repository.test.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/__tests__/domain/content-catalog.test.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/__tests__/domain/rng-streams.test.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/__tests__/game/camera-math.test.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/__tests__/game/frames.test.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/__tests__/game/rot-dungeon-generator.test.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/__tests__/game/rot-fov.test.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/__tests__/game/rot-pathfinder.test.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/__tests__/game/rot-random.test.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/__tests__/game/rot-turn-scheduler.test.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/__tests__/game/run-movement.test.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/__tests__/game/run-scene.test.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/__tests__/game/support/run-test-support.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/__tests__/game/tile-definitions.test.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/__tests__/presentation/asset-manifest.test.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/__tests__/presentation/input-map.test.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/android/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/android/app/src/debug/AndroidManifest.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/android/app/src/main/AndroidManifest.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/android/app/src/main/res/values/styles.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/android/gradle.properties" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/android/gradle/wrapper/gradle-wrapper.properties" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/atlases/actors.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/atlases/dungeon-tiles.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/atlases/manifest.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/data/abilities.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/data/banners.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/data/dice.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/data/dungeons.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/data/encounters.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/data/experience-curves.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/data/generation-profiles.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/data/heroes.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/data/items.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/data/loot-tables.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/data/monsters.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/data/pity-rules.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/data/rarity-tables.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/data/status-effects.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/data/tile-definitions.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/expo.icon/Assets/expo-symbol 2.svg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/expo.icon/Assets/grid.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/expo.icon/icon.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/images/android-icon-background.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/images/android-icon-foreground.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/images/android-icon-monochrome.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/images/favicon.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/images/icon.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/images/splash-icon.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/babel.config.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/eas.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/eslint.config.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ios/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/jest.config.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/project-phases.md" beforeDir="false" afterPath="$PROJECT_DIR$/project-phases.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/react-native-expo-game-plan.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/generate-spike-atlases.mjs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/skills-lock.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/_layout.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/index.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/application/ports/content-repository.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/application/run/run-controller.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/bootstrap/content.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/bootstrap/effect-runtime.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/core/errors/domain-error.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/core/random/float-backed-random-source.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/core/random/random-source.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/core/random/seeded-random-source.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/core/random/sequence-random-source.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/core/utils/assert-never.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/core/utils/deep-freeze.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/core/utils/result.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/data/content/bundled-content-repository.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/domain/content/catalog.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/domain/content/ids.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/domain/content/schemas.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/domain/shared/commands.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/domain/shared/events.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/domain/shared/rng-streams.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/game/ai/enemy-ai.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/game/camera/camera-math.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/game/config.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/game/ecs/components.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/game/ecs/run-context.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/game/ecs/run-scene.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/game/ecs/run-state.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/game/ecs/system-order.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/game/ecs/systems/cleanup-system.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/game/ecs/systems/enemy-intent-system.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/game/ecs/systems/event-export-system.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/game/ecs/systems/input-intent-system.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/game/ecs/systems/interaction-system.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/game/ecs/systems/movement-system.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/game/ecs/systems/turn-finalization-system.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/game/ecs/systems/visibility-system.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/game/events/domain-events.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/game/grid/dungeon-grid.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/game/grid/occupancy-index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/game/grid/tile-rules.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/game/projection/run-snapshot.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/game/projection/scene-snapshot.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/game/rot/rot-dungeon-generator.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/game/rot/rot-fov.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/game/rot/rot-pathfinder.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/game/rot/rot-random.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/game/rot/rot-turn-scheduler.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/game/sprites/frames.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/presentation/canvas/asset-manifest.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/presentation/canvas/bake-map-picture.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/presentation/canvas/game-canvas.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/presentation/canvas/load-game-assets.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/presentation/canvas/use-spike-presentation.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/presentation/run/input-map.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/presentation/run/run-hud.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/presentation/run/run-screen.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tsconfig.json" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -47,160 +172,394 @@
     </execution>
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="23570" />
+    <option name="cachedIndexableFilesCount" value="87" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
-  <component name="FileEditorManager">
-    <leaf>
-      <file leaf-file-name="main.dart" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/lib/main.dart">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="0">
-              <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-    </leaf>
+  <component name="ExecutionTargetManager" SELECTED_TARGET="device_and_snapshot_combo_box_target[LocalEmulator::path=/Users/vinhpham/.android/avd/Medium_Phone.avd]" />
+  <component name="ExternalProjectsData">
+    <projectState path="$PROJECT_DIR$">
+      <ProjectState />
+    </projectState>
+  </component>
+  <component name="ExternalProjectsManager">
+    <system id="GRADLE">
+      <state>
+        <task path="$PROJECT_DIR$">
+          <activation />
+        </task>
+        <projects_view>
+          <tree_state>
+            <expand>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="RebirthDungeon" type="f1a62948:ProjectNode" />
+              </path>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="RebirthDungeon" type="f1a62948:ProjectNode" />
+                <item name="core" type="2d1252cf:ModuleNode" />
+              </path>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="RebirthDungeon" type="f1a62948:ProjectNode" />
+                <item name="lwjgl3" type="2d1252cf:ModuleNode" />
+              </path>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="RebirthDungeon" type="f1a62948:ProjectNode" />
+                <item name="lwjgl3" type="2d1252cf:ModuleNode" />
+                <item name="Tasks" type="e4a08cd1:TasksNode" />
+              </path>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="RebirthDungeon" type="f1a62948:ProjectNode" />
+                <item name="lwjgl3" type="2d1252cf:ModuleNode" />
+                <item name="Tasks" type="e4a08cd1:TasksNode" />
+                <item name="application" type="c8890929:TasksNode$1" />
+              </path>
+            </expand>
+            <select />
+          </tree_state>
+        </projects_view>
+      </state>
+    </system>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="KmpPackageLockUpdaterState">{
-  &quot;jsModulesKotlinGradlePluginVersion&quot;: {},
-  &quot;wasmModulesKotlinGradlePluginVersion&quot;: {}
-}</component>
   <component name="MacroExpansionManager">
-    <option name="directoryName" value="ZW1VyegN" />
+    <option name="directoryName" value="wao7JrHD" />
   </component>
   <component name="McpProjectServerCommands">
     <commands />
     <urls />
   </component>
-  <component name="NextEditCompletionFeaturesState">
-    <decayedCancelled>
-      <entry key="MS100" value="2.0702375014904866" />
-      <entry key="MS500" value="5.138978947647468" />
-      <entry key="S2" value="7.085116202782233" />
-      <entry key="S5" value="7.613963159747345" />
-      <entry key="S10" value="7.803449193985496" />
-      <entry key="S30" value="7.933680114413584" />
-      <entry key="S60" value="7.967392740650996" />
-      <entry key="M2" value="8.055901288339332" />
-      <entry key="M5" value="9.432942983282805" />
-      <entry key="M10" value="14.109829325378488" />
-      <entry key="M15" value="19.75542416879186" />
-      <entry key="M30" value="33.10440986996554" />
-      <entry key="H1" value="46.06500559284788" />
-      <entry key="H2" value="55.26698660350449" />
-      <entry key="H4" value="60.77525453977285" />
-      <entry key="D1" value="65.90876280068396" />
-      <entry key="W1" value="66.84273592093834" />
-    </decayedCancelled>
-    <decayedSelected>
-      <entry key="MS100" value="0.0" />
-      <entry key="MS500" value="0.0" />
-      <entry key="S2" value="0.0" />
-      <entry key="S5" value="4.005276534887724E-146" />
-      <entry key="S10" value="2.00131869898018E-73" />
-      <entry key="S30" value="5.849320493778408E-25" />
-      <entry key="S60" value="7.648085050375945E-13" />
-      <entry key="M2" value="8.745333069915605E-7" />
-      <entry key="M5" value="0.003773206220737416" />
-      <entry key="M10" value="0.06142642933410193" />
-      <entry key="M15" value="0.1556814425950082" />
-      <entry key="M30" value="0.39456487754868447" />
-      <entry key="H1" value="0.6281439942789266" />
-      <entry key="H2" value="0.7925553572331253" />
-      <entry key="H4" value="0.8902557819150204" />
-      <entry key="D1" value="0.9808120672923015" />
-      <entry key="W1" value="0.9972360538440955" />
-    </decayedSelected>
-    <decayedShown>
-      <entry key="MS100" value="1.982127864382823" />
-      <entry key="MS500" value="5.089589405768638" />
-      <entry key="S2" value="7.067733550197372" />
-      <entry key="S5" value="7.606461790922459" />
-      <entry key="S10" value="7.799600228635514" />
-      <entry key="S30" value="7.932374605100836" />
-      <entry key="S60" value="7.966737080035469" />
-      <entry key="M2" value="8.055570992649473" />
-      <entry key="M5" value="9.436501569289407" />
-      <entry key="M10" value="14.170453300419341" />
-      <entry key="M15" value="19.909659762876515" />
-      <entry key="M30" value="33.496896301279634" />
-      <entry key="H1" value="46.69136225534167" />
-      <entry key="H2" value="56.05836683568068" />
-      <entry key="H4" value="61.664836156129866" />
-      <entry key="D1" value="66.88944883050058" />
-      <entry key="W1" value="67.83995361091004" />
-    </decayedShown>
-  </component>
-  <component name="PackageJsonUpdateNotifier">
-    <dismissed value="$PROJECT_DIR$/package.json" />
+  <component name="Non-shared Debug Profiles">
+    <debug-profiles>
+      <debug-profile>
+        <option name="id" value="5d7af6dc-3c01-4ac4-8b52-4563f778dd3b" />
+        <option name="type" value="gdb" />
+        <option name="name" value="GDB" />
+        <settings />
+      </debug-profile>
+    </debug-profiles>
   </component>
   <component name="PhpWorkspaceProjectConfiguration" interpreter_name="PHP 8.5.2" />
-  <component name="ProjectColorInfo">{
-  &quot;associatedIndex&quot;: 7,
-  &quot;fromUser&quot;: false
-}</component>
-  <component name="ProjectId" id="3IjlX3dmh8u7nxcTg7vezIoxiVL" />
-  <component name="ProjectView">
-    <navigator currentView="ProjectPane" proportions="" version="1" />
-    <panes>
-      <pane id="ProjectPane">
-        <option name="show-excluded-files" value="false" />
-      </pane>
-    </panes>
-  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "customColor": "",
+  "associatedIndex": 7
+}]]></component>
+  <component name="ProjectId" id="3InhDugDxfAPYSfYU0uuDu27Kk9" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ASKED_SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-    &quot;CidrDebugProfileConversion&quot;: &quot;true&quot;,
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.RadMigrateCodeStyle&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.formatter.settings.were.checked&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.readMode.enableVisualFormatting&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
-    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
-    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
-    &quot;dart.analysis.tool.window.visible&quot;: &quot;false&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;react-native&quot;,
-    &quot;javascript.preferred.runtime.type.id&quot;: &quot;node&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/Users/vinhpham/Projects/RebirthDungeon&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;ml.llm.LLMConfigurable&quot;,
-    &quot;show.migrate.to.gradle.popup&quot;: &quot;false&quot;,
-    &quot;ts.external.directory.path&quot;: &quot;/Users/vinhpham/Projects/RebirthDungeon/node_modules/typescript/lib&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Android App.android.executor": "Run",
+    "CidrDebugProfileConversion": "true",
+    "Gradle.RebirthDungeon [:lwjgl3:run].executor": "Run",
+    "Gradle.RebirthDungeon [jarMac].executor": "Run",
+    "Gradle.RebirthDungeon [run].executor": "Run",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.RadMigrateCodeStyle": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.cidr.known.project.marker": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.go.formatter.settings.were.checked": "true",
+    "RunOnceActivity.readMode.enableVisualFormatting": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "cidr.known.project.marker": "true",
+    "codeWithMe.voiceChat.enabledByDefault": "false",
+    "external.system.has.shared.sources": "true",
+    "git-widget-placeholder": "react-native",
+    "javascript.preferred.runtime.type.id": "node",
+    "kotlin-language-version-configured": "true",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "project.structure.last.edited": "SDKs",
+    "project.structure.proportion": "0.0",
+    "project.structure.side.proportion": "0.0",
+    "settings.editor.selected.configurable": "AndroidSdkUpdater"
   }
-}</component>
-  <component name="RunManager">
-    <configuration default="true" type="AppleRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" IS_LOCATION_SIMULATION_SUPPORTED="false" IS_LOCATION_SIMULATION_ALLOWED="true" APPLICATION_LANGUAGE="IDELaunchSchemeLanguageUseSystemLanguage" APPLICATION_REGION="" DEVELOPMENT_TEAM="" MAKE_ACTIVE="TRUE" SHOULD_DEBUG_EXTENSIONS="false">
-      <embedded_app_extension_list />
+}]]></component>
+  <component name="RunManager" selected="Gradle.RebirthDungeon [:lwjgl3:run]">
+    <configuration name="android" type="AndroidRunConfigurationType" factoryName="Android App" activateToolWindowBeforeRun="false">
+      <module name="RebirthDungeon.android" />
+      <option name="ANDROID_RUN_CONFIGURATION_SCHEMA_VERSION" value="1" />
+      <option name="DEPLOY" value="true" />
+      <option name="DEPLOY_APK_FROM_BUNDLE" value="false" />
+      <option name="DEPLOY_AS_INSTANT" value="false" />
+      <option name="ARTIFACT_NAME" value="" />
+      <option name="PM_INSTALL_OPTIONS" value="" />
+      <option name="ALL_USERS" value="false" />
+      <option name="ALWAYS_INSTALL_WITH_PM" value="false" />
+      <option name="ALLOW_ASSUME_VERIFIED" value="false" />
+      <option name="CLEAR_APP_STORAGE" value="false" />
+      <option name="DYNAMIC_FEATURES_DISABLED_LIST" value="" />
+      <option name="ACTIVITY_EXTRA_FLAGS" value="" />
+      <option name="MODE" value="default_activity" />
+      <option name="RESTORE_ENABLED" value="false" />
+      <option name="RESTORE_FILE" value="" />
+      <option name="RESTORE_FRESH_INSTALL_ONLY" value="false" />
+      <option name="CLEAR_LOGCAT" value="false" />
+      <option name="SHOW_LOGCAT_AUTOMATICALLY" value="false" />
+      <option name="TARGET_SELECTION_MODE" value="DEVICE_AND_SNAPSHOT_COMBO_BOX" />
+      <option name="DEBUGGER_TYPE" value="Java" />
+      <Java>
+        <option name="ATTACH_ON_WAIT_FOR_DEBUGGER" value="false" />
+        <option name="DEBUG_SANDBOX_SDK" value="false" />
+      </Java>
+      <Profilers>
+        <option name="ADVANCED_PROFILING_ENABLED" value="false" />
+        <option name="STARTUP_PROFILING_ENABLED" value="false" />
+        <option name="STARTUP_CPU_PROFILING_ENABLED" value="false" />
+        <option name="STARTUP_CPU_PROFILING_CONFIGURATION_NAME" value="Java/Kotlin Method Sample (legacy)" />
+        <option name="STARTUP_NATIVE_MEMORY_PROFILING_ENABLED" value="false" />
+        <option name="NATIVE_MEMORY_SAMPLE_RATE_BYTES" value="2048" />
+      </Profilers>
+      <option name="DEEP_LINK" value="" />
+      <option name="ACTIVITY" value="" />
+      <option name="ACTIVITY_CLASS" value="" />
+      <option name="SEARCH_ACTIVITY_IN_GLOBAL_SCOPE" value="false" />
+      <option name="SKIP_ACTIVITY_VALIDATION" value="false" />
+      <method v="2">
+        <option name="Android.Gradle.BeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
     </configuration>
-    <configuration default="true" type="Application" factoryName="Application">
+    <configuration default="true" type="DjangoTestsConfigurationType">
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="DEBUG_JUST_MY_CODE" value="false" />
+      <module name="" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="RUN_TOOL" value="" />
+      <option name="TARGET" value="" />
+      <option name="SETTINGS_FILE" value="" />
+      <option name="CUSTOM_SETTINGS" value="false" />
+      <option name="USE_OPTIONS" value="false" />
+      <option name="OPTIONS" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration default="true" type="GoApplicationRunConfiguration" factoryName="Go Application">
+      <module name="RebirthDungeon" />
+      <working_directory value="$PROJECT_DIR$" />
+      <go_parameters value="-i" />
+      <kind />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <method v="2" />
+    </configuration>
+    <configuration default="true" type="GoTestRunConfiguration" factoryName="Go Test">
+      <module name="RebirthDungeon" />
+      <working_directory value="$PROJECT_DIR$" />
+      <go_parameters value="-i" />
+      <kind />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <method v="2" />
+    </configuration>
+    <configuration name="RebirthDungeon [:lwjgl3:run]" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+      <ExternalSystemSettings>
+        <option name="executionName" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="externalSystemIdString" value="GRADLE" />
+        <option name="scriptParameters" />
+        <option name="taskDescriptions">
+          <list />
+        </option>
+        <option name="taskNames">
+          <list>
+            <option value=":lwjgl3:run" />
+          </list>
+        </option>
+        <option name="vmOptions" />
+      </ExternalSystemSettings>
+      <ExternalSystemDebugServerProcess>true</ExternalSystemDebugServerProcess>
+      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
+      <ExternalSystemDebugDisabled>false</ExternalSystemDebugDisabled>
+      <DebugAllEnabled>false</DebugAllEnabled>
+      <RunAsTest>false</RunAsTest>
+      <GradleProfilingDisabled>false</GradleProfilingDisabled>
+      <GradleCoverageDisabled>false</GradleCoverageDisabled>
+      <method v="2" />
+    </configuration>
+    <configuration name="RebirthDungeon [jarMac]" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+      <ExternalSystemSettings>
+        <option name="executionName" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="externalSystemIdString" value="GRADLE" />
+        <option name="scriptParameters" />
+        <option name="taskDescriptions">
+          <list />
+        </option>
+        <option name="taskNames">
+          <list>
+            <option value="jarMac" />
+          </list>
+        </option>
+        <option name="vmOptions" />
+      </ExternalSystemSettings>
+      <ExternalSystemDebugServerProcess>true</ExternalSystemDebugServerProcess>
+      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
+      <ExternalSystemDebugDisabled>false</ExternalSystemDebugDisabled>
+      <DebugAllEnabled>false</DebugAllEnabled>
+      <RunAsTest>false</RunAsTest>
+      <GradleProfilingDisabled>false</GradleProfilingDisabled>
+      <GradleCoverageDisabled>false</GradleCoverageDisabled>
+      <method v="2" />
+    </configuration>
+    <configuration name="RebirthDungeon [run]" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+      <ExternalSystemSettings>
+        <option name="executionName" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="externalSystemIdString" value="GRADLE" />
+        <option name="scriptParameters" />
+        <option name="taskDescriptions">
+          <list />
+        </option>
+        <option name="taskNames">
+          <list>
+            <option value="run" />
+          </list>
+        </option>
+        <option name="vmOptions" />
+      </ExternalSystemSettings>
+      <ExternalSystemDebugServerProcess>true</ExternalSystemDebugServerProcess>
+      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
+      <ExternalSystemDebugDisabled>false</ExternalSystemDebugDisabled>
+      <DebugAllEnabled>false</DebugAllEnabled>
+      <RunAsTest>false</RunAsTest>
+      <GradleProfilingDisabled>false</GradleProfilingDisabled>
+      <GradleCoverageDisabled>false</GradleCoverageDisabled>
+      <method v="2" />
+    </configuration>
+    <configuration default="true" type="JetRunConfigurationType">
+      <module name="RebirthDungeon" />
       <method v="2">
         <option name="Make" enabled="true" />
       </method>
     </configuration>
+    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
+      <option name="filePath" />
+      <method v="2" />
+    </configuration>
+    <configuration default="true" type="PythonConfigurationType" factoryName="Python">
+      <module name="RebirthDungeon" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="DEBUG_JUST_MY_CODE" value="false" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="RUN_TOOL" value="" />
+      <option name="SCRIPT_NAME" value="" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration default="true" type="Python.Celery" factoryName="Python.Celery.App">
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="DEBUG_JUST_MY_CODE" value="false" />
+      <module name="" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="RUN_TOOL" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration default="true" type="Python.Celery" factoryName="Python.Celery.Task">
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="DEBUG_JUST_MY_CODE" value="false" />
+      <module name="" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="RUN_TOOL" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration default="true" type="Python.FlaskServer">
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="DEBUG_JUST_MY_CODE" value="false" />
+      <module name="" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="RUN_TOOL" value="" />
+      <option name="launchJavascriptDebuger" value="false" />
+      <method v="2" />
+    </configuration>
+    <configuration default="true" type="Tox" factoryName="Tox">
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="DEBUG_JUST_MY_CODE" value="false" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="RUN_TOOL" value="" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Gradle.RebirthDungeon [:lwjgl3:run]" />
+        <item itemvalue="Gradle.RebirthDungeon [run]" />
+        <item itemvalue="Gradle.RebirthDungeon [jarMac]" />
+      </list>
+    </recent_temporary>
   </component>
+  <component name="SelectedDebugProfileService"><![CDATA[{
+  "profileIdByStamp": [],
+  "modificationCount": 1
+}]]></component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -210,25 +569,15 @@
   </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
-      <changelist id="8589fb97-3e42-48f8-8914-55710236f3e1" name="Changes" comment="" />
-      <created>1788285896017</created>
+      <changelist id="f7f07e50-b8ee-49d0-92bc-0efaf6deb9b9" name="Changes" comment="" />
+      <created>1788406127085</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
-      <updated>1788285896017</updated>
+      <updated>1788406127085</updated>
     </task>
     <servers />
   </component>
-  <component name="ToolWindowManager">
-    <editor active="true" />
-    <layout>
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
-    </layout>
-  </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
-  </component>
-  <component name="XSLT-Support.FileAssociations.UIState">
-    <expand />
-    <select />
   </component>
 </project>

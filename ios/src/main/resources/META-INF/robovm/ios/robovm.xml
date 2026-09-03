@@ -1,0 +1,14 @@
+<config>
+  <forceLinkClasses>
+    <pattern>com.kotcrab.vis.ui.widget.**</pattern>
+    <pattern>com.kotcrab.vis.ui.widget.spinner.**</pattern>
+    <pattern>com.kotcrab.vis.ui.widget.dialog.**</pattern>
+    <pattern>com.kotcrab.vis.ui.widget.color.**</pattern>
+    <pattern>com.kotcrab.vis.ui.widget.tabbedpane.**</pattern>
+    <pattern>com.kotcrab.vis.ui.widget.toast.**</pattern>
+    <pattern>com.kotcrab.vis.ui.util.form.**</pattern>
+    <pattern>com.kotcrab.vis.ui.Sizes</pattern>
+    <pattern>com.kotcrab.vis.ui.util.adapter.SimpleListAdapter</pattern>
+    <pattern>com.kotcrab.vis.ui.**Style</pattern>
+  </forceLinkClasses>
+</config>
