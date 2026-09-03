@@ -12,32 +12,32 @@ This plan replaces the previous Expo/React Native architecture. It describes a t
 
 The repository is a gdx-liftoff scaffold. `RebirthDungeon extends Game` opens an empty `FirstScreen`; dungeon generation, combat, saving, and tests have not been implemented in Java. Shared code uses the package `cloud.vinh.rebirthsaga`.
 
-| Module or path | Current role |
-| --- | --- |
-| `core/` | Shared Java game code; currently the application and empty screen |
-| `lwjgl3/` | Desktop launcher, executable JAR tasks, Construo packaging, optional Graal Native Image configuration |
-| `android/` | Native Android launcher, manifest, SDK configuration, native library packaging |
-| `ios/` | RoboVM launcher, MetalANGLE backend, native libraries, plist and linking configuration |
-| `assets/` | Shared resources; currently a UI skin and bitmap fonts, without dungeon content or sprite atlases |
-| `gradle.properties` | Explicit library version values |
+| Module or path      | Current role                                                                                          |
+|---------------------|-------------------------------------------------------------------------------------------------------|
+| `core/`             | Shared Java game code; currently the application and empty screen                                     |
+| `lwjgl3/`           | Desktop launcher, executable JAR tasks, Construo packaging, optional Graal Native Image configuration |
+| `android/`          | Native Android launcher, manifest, SDK configuration, native library packaging                        |
+| `ios/`              | RoboVM launcher, MetalANGLE backend, native libraries, plist and linking configuration                |
+| `assets/`           | Shared resources; currently a UI skin and bitmap fonts, without dungeon content or sprite atlases     |
+| `gradle.properties` | Explicit library version values                                                                       |
 
 There is no web backend in `settings.gradle`. Android currently forces landscape; iOS currently advertises portrait and landscape. Adopt landscape for the first slice and align the platform configuration before device acceptance.
 
 ### Toolchain baseline
 
-| Setting | Checked value | Consequence |
-| --- | --- | --- |
-| Gradle wrapper | `9.7.1` | Use the checked-in wrapper |
-| Gradle daemon criteria | Java `21` | Build JVM selection is separate from application language level |
-| Shared Java source/target | `8` | Use Java 8 syntax and compatible APIs; no records, sealed classes, or virtual threads |
-| Desktop compiler | `--release 8` on newer JDKs | Desktop compilation checks the Java 8 API surface |
-| Android Gradle Plugin | `8.9.3` | Validate Android packaging separately from JVM compilation |
-| Android SDK | min `21`, compile/target `36` | These are configured targets, not a verified device support matrix |
-| Android desugaring | `desugar_jdk_libs:2.1.5` | Does not make arbitrary modern JVM APIs portable to all targets |
-| RoboVM | `2.3.23` | iOS needs its own AOT/linking and device checks |
-| iOS plist minimum | `12.0` | Confirm against the selected Xcode/RoboVM/backend before claiming support |
-| Construo | `2.1.0`, bundled JDK downloads `21.0.10+7` | Desktop distribution runtime is distinct from source compatibility |
-| Graal Native Image | `enableGraalNative=false` | Optional later desktop experiment; not the iOS runtime |
+| Setting                   | Checked value                              | Consequence                                                                           |
+|---------------------------|--------------------------------------------|---------------------------------------------------------------------------------------|
+| Gradle wrapper            | `9.7.1`                                    | Use the checked-in wrapper                                                            |
+| Gradle daemon criteria    | Java `21`                                  | Build JVM selection is separate from application language level                       |
+| Shared Java source/target | `8`                                        | Use Java 8 syntax and compatible APIs; no records, sealed classes, or virtual threads |
+| Desktop compiler          | `--release 8` on newer JDKs                | Desktop compilation checks the Java 8 API surface                                     |
+| Android Gradle Plugin     | `8.9.3`                                    | Validate Android packaging separately from JVM compilation                            |
+| Android SDK               | min `21`, compile/target `36`              | These are configured targets, not a verified device support matrix                    |
+| Android desugaring        | `desugar_jdk_libs:2.1.5`                   | Does not make arbitrary modern JVM APIs portable to all targets                       |
+| RoboVM                    | `2.3.23`                                   | iOS needs its own AOT/linking and device checks                                       |
+| iOS plist minimum         | `12.0`                                     | Confirm against the selected Xcode/RoboVM/backend before claiming support             |
+| Construo                  | `2.1.0`, bundled JDK downloads `21.0.10+7` | Desktop distribution runtime is distinct from source compatibility                    |
+| Graal Native Image        | `enableGraalNative=false`                  | Optional later desktop experiment; not the iOS runtime                                |
 
 Add an equivalent Java 8 API check for `core` when tightening the build: source/target compatibility alone does not stop code from calling newer JDK APIs.
 
@@ -57,12 +57,12 @@ The following commands were run against the current files:
 ./gradlew :android:assembleDebug
 ```
 
-| Check | Result |
-| --- | --- |
-| Core and desktop Java compilation | Passed for the scaffold |
-| Core, Android debug, iOS, and desktop dependency reports | Resolved without `FAILED` entries |
-| Android debug packaging | **Failed at `:android:checkDebugDuplicateClasses`** |
-| iOS AOT build/device launch, desktop launch, release/minified builds | Not verified in this audit |
+| Check                                                                | Result                                              |
+|----------------------------------------------------------------------|-----------------------------------------------------|
+| Core and desktop Java compilation                                    | Passed for the scaffold                             |
+| Core, Android debug, iOS, and desktop dependency reports             | Resolved without `FAILED` entries                   |
+| Android debug packaging                                              | **Failed at `:android:checkDebugDuplicateClasses`** |
+| iOS AOT build/device launch, desktop launch, release/minified builds | Not verified in this audit                          |
 
 No Gradle dependency changes are applied by this document. The proposed cleanup and repair below are implementation work for Milestone 0.
 
@@ -87,19 +87,19 @@ The upstream jdkgdxds README now describes JitPack publication and a newer versi
 
 These are checked declarations/resolutions, not claims about the latest available releases.
 
-| Dependency | Version | Target role |
-| --- | --- | --- |
-| `com.badlogicgames.gdx:gdx` | `1.14.2` | Application lifecycle, graphics, audio, input, Scene2D, assets, files, JSON |
-| `net.onedaybeard.artemis:artemis-odb` | `2.3.0` | Authoritative run entities, components, aspects, ordered systems |
-| SquidSquad `squidcore` | `4.0.12` | Base utilities and supporting dependency graph |
-| SquidSquad `squidgrid` | `4.0.12` | Coordinates, regions, FOV and grid helpers |
-| SquidSquad `squidplace` | `4.0.12` | Dungeon generation and processing |
-| SquidSquad `squidpath` | `4.0.12` | Cardinal pathfinding with `DijkstraMap` |
-| `com.github.tommyettinger:juniper` | `0.10.5` | Explicit seeded RNG instances and state capture |
-| `com.github.tommyettinger:jdkgdxds` | `2.1.8` | Collections dependency; repair duplicate publication path first |
-| `com.fasterxml.jackson.core:jackson-databind` (+ `jackson-annotations`) | `2.22.2` / `2.22` | Versioned content definitions: `assets/data` JSON binds to plain DTOs with strict defaults (unknown fields/enum values fail the load). Java 8 bytecode; Android needs R8 keep rules for content DTOs at the release gate. Save bundles stay on LibGDX JSON (section 14). |
-| `digital`, `regexodus`, `crux`, `funderby` | `0.10.2`, `0.1.21`, `0.1.3`, `0.1.2` | Supporting dependencies; declare directly when project code imports them |
-| `com.kotcrab.vis:vis-ui` | `1.5.9` | Optional tooling/debug widgets; Scene2D UI is already in LibGDX |
+| Dependency                                                              | Version                              | Target role                                                                                                                                                                                                                                                              |
+|-------------------------------------------------------------------------|--------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `com.badlogicgames.gdx:gdx`                                             | `1.14.2`                             | Application lifecycle, graphics, audio, input, Scene2D, assets, files, JSON                                                                                                                                                                                              |
+| `net.onedaybeard.artemis:artemis-odb`                                   | `2.3.0`                              | Authoritative run entities, components, aspects, ordered systems                                                                                                                                                                                                         |
+| SquidSquad `squidcore`                                                  | `4.0.12`                             | Base utilities and supporting dependency graph                                                                                                                                                                                                                           |
+| SquidSquad `squidgrid`                                                  | `4.0.12`                             | Coordinates, regions, FOV and grid helpers                                                                                                                                                                                                                               |
+| SquidSquad `squidplace`                                                 | `4.0.12`                             | Dungeon generation and processing                                                                                                                                                                                                                                        |
+| SquidSquad `squidpath`                                                  | `4.0.12`                             | Cardinal pathfinding with `DijkstraMap`                                                                                                                                                                                                                                  |
+| `com.github.tommyettinger:juniper`                                      | `0.10.5`                             | Explicit seeded RNG instances and state capture                                                                                                                                                                                                                          |
+| `com.github.tommyettinger:jdkgdxds`                                     | `2.1.8`                              | Collections dependency; repair duplicate publication path first                                                                                                                                                                                                          |
+| `com.fasterxml.jackson.core:jackson-databind` (+ `jackson-annotations`) | `2.22.2` / `2.22`                    | Versioned content definitions: `assets/data` JSON binds to plain DTOs with strict defaults (unknown fields/enum values fail the load). Java 8 bytecode; Android needs R8 keep rules for content DTOs at the release gate. Save bundles stay on LibGDX JSON (section 14). |
+| `digital`, `regexodus`, `crux`, `funderby`                              | `0.10.2`, `0.1.21`, `0.1.3`, `0.1.2` | Supporting dependencies; declare directly when project code imports them                                                                                                                                                                                                 |
+| `com.kotcrab.vis:vis-ui`                                                | `1.5.9`                              | Optional tooling/debug widgets; Scene2D UI is already in LibGDX                                                                                                                                                                                                          |
 
 SquidSquad is modular and succeeds SquidLib. Its documentation distinguishes `squidpath` from the Gand-based `squidseek`, and currently recommends `squidpath` between those two modules. The plan selects that one pathfinding implementation. [SquidSquad module guide](https://github.com/yellowstonegames/SquidSquad).
 
@@ -107,24 +107,24 @@ SquidSquad is modular and succeeds SquidLib. Its documentation distinguishes `sq
 
 Treat these as candidates for removal from the initial runtime, not as requirements just because the generator selected them.
 
-| Current dependency group | Version(s) | Decision |
-| --- | --- | --- |
-| `squidlib`, `squidlib-util`, `squidlib-extra` | `3.0.6` | Remove from the target baseline; use SquidSquad consistently |
-| `squidseek`, `gand`, `gdcrux` | `4.0.12`, `0.3.7`, `0.1.2` | Defer unless replacing the chosen pathfinding adapter |
-| `gdx-ai` | `1.8.2` | Defer; first enemies need a small deterministic state machine |
-| `gdx-box2d`, platform Box2D natives, `box2dlights` | `1.14.2`, commit `76536bb895` | Defer; tile collision and FOV do not need a physics world |
-| `squidstorecore/grid/path/text`, `jdkgdxds_interop` | `4.0.12`, `2.1.8.0` | Optional JSON serializers for library objects; unnecessary for the initial project-owned DTO format |
-| `squidwrathcore/grid/path`, `fory-core`, `tantrum-digital/jdkgdxds/regexodus` | `4.0.12`, `1.6.1`, `1.6.1.0` | Defer the binary serialization stack; require separate Android/RoboVM compatibility evidence before adopting it |
-| `squidsmooth` | `4.0.12` | Optional interpolation helpers; start with project presentation tracks and LibGDX interpolation |
-| `squidpress` | `4.0.12` | Optional input helpers; start with one LibGDX input pipeline |
-| `squidtext` | `4.0.12` | Later procedural names/text |
-| `spine-libgdx` | `4.2.10` | Later only if art uses Spine; ordinary sprite animation is sufficient initially |
-| `blade-ink` | `1.3.2` | Later authored dialogue/narrative |
-| `typing-label` | commit `6f1198f7cc` | Later text effects; keep out of simulation timing |
-| `anim8-gdx` | `0.7.0` | Later image/animation export; not required to play sprite animations |
-| `gdx-kiwi`, `libgdx-utils` | `1.10.1.12.1`, `0.13.7` | Keep only for a concrete API need |
-| `sjInGameConsole` | `1.0.1` | Development tooling; gate debug commands out of release builds |
-| `gdx-controllers-core` and platform backends | `2.2.4` | Retain if controller input is implemented; keep backend dependencies platform-specific |
+| Current dependency group                                                      | Version(s)                    | Decision                                                                                                        |
+|-------------------------------------------------------------------------------|-------------------------------|-----------------------------------------------------------------------------------------------------------------|
+| `squidlib`, `squidlib-util`, `squidlib-extra`                                 | `3.0.6`                       | Remove from the target baseline; use SquidSquad consistently                                                    |
+| `squidseek`, `gand`, `gdcrux`                                                 | `4.0.12`, `0.3.7`, `0.1.2`    | Defer unless replacing the chosen pathfinding adapter                                                           |
+| `gdx-ai`                                                                      | `1.8.2`                       | Defer; first enemies need a small deterministic state machine                                                   |
+| `gdx-box2d`, platform Box2D natives, `box2dlights`                            | `1.14.2`, commit `76536bb895` | Defer; tile collision and FOV do not need a physics world                                                       |
+| `squidstorecore/grid/path/text`, `jdkgdxds_interop`                           | `4.0.12`, `2.1.8.0`           | Optional JSON serializers for library objects; unnecessary for the initial project-owned DTO format             |
+| `squidwrathcore/grid/path`, `fory-core`, `tantrum-digital/jdkgdxds/regexodus` | `4.0.12`, `1.6.1`, `1.6.1.0`  | Defer the binary serialization stack; require separate Android/RoboVM compatibility evidence before adopting it |
+| `squidsmooth`                                                                 | `4.0.12`                      | Optional interpolation helpers; start with project presentation tracks and LibGDX interpolation                 |
+| `squidpress`                                                                  | `4.0.12`                      | Optional input helpers; start with one LibGDX input pipeline                                                    |
+| `squidtext`                                                                   | `4.0.12`                      | Later procedural names/text                                                                                     |
+| `spine-libgdx`                                                                | `4.2.10`                      | Later only if art uses Spine; ordinary sprite animation is sufficient initially                                 |
+| `blade-ink`                                                                   | `1.3.2`                       | Later authored dialogue/narrative                                                                               |
+| `typing-label`                                                                | commit `6f1198f7cc`           | Later text effects; keep out of simulation timing                                                               |
+| `anim8-gdx`                                                                   | `0.7.0`                       | Later image/animation export; not required to play sprite animations                                            |
+| `gdx-kiwi`, `libgdx-utils`                                                    | `1.10.1.12.1`, `0.13.7`       | Keep only for a concrete API need                                                                               |
+| `sjInGameConsole`                                                             | `1.0.1`                       | Development tooling; gate debug commands out of release builds                                                  |
+| `gdx-controllers-core` and platform backends                                  | `2.2.4`                       | Retain if controller input is implemented; keep backend dependencies platform-specific                          |
 
 The serialization choices are distinct: `squidstore*` integrates LibGDX JSON; `squidwrath*` integrates Apache Fory with Tantrum. They are not both needed for saving a run. The current Fory graph also brings in Janino. Its presence is not proof of mobile incompatibility, but JVM compilation alone does not establish AOT compatibility. [SquidSquad serialization modules](https://github.com/yellowstonegames/SquidSquad).
 
@@ -172,13 +172,13 @@ Desktop / Android / iOS launchers
        +--> presentation tracks / audio / haptics
 ```
 
-| Owner | Authoritative data |
-| --- | --- |
-| artemis-odb components | Dynamic actor/object state: cells, health, dice, abilities, statuses |
-| `RunSession` | Grid, run phase, active actor, initiative queue, RNG streams, command index, run rewards |
-| Profile repository/application model | Permanent progression, inventory, settings and balances |
-| Screen/HUD view model | Selection, dialogs, focus, loading/error state, projected game data |
-| Presentation tracks | Interpolated positions, camera, particles, floating text, reveal progress |
+| Owner                                | Authoritative data                                                                       |
+|--------------------------------------|------------------------------------------------------------------------------------------|
+| artemis-odb components               | Dynamic actor/object state: cells, health, dice, abilities, statuses                     |
+| `RunSession`                         | Grid, run phase, active actor, initiative queue, RNG streams, command index, run rewards |
+| Profile repository/application model | Permanent progression, inventory, settings and balances                                  |
+| Screen/HUD view model                | Selection, dialogs, focus, loading/error state, projected game data                      |
+| Presentation tracks                  | Interpolated positions, camera, particles, floating text, reveal progress                |
 
 Components and `RunSession` together form the authoritative simulation. The occupancy index is a derived lookup maintained alongside position/blocking changes and rebuilt on load. UI snapshots are read-only copies, never a second mutable gameplay model.
 
@@ -188,12 +188,12 @@ Use constructor injection and small Java interfaces. An async framework is not n
 
 ## 4. Simulation time, presentation time, and threading
 
-| Mechanism | Responsibility |
-| --- | --- |
-| artemis-odb system registration order | Order within one logical simulation step |
-| Project `TurnScheduler` | Which actor acts next and the logical action cost |
-| Java worker/executor and platform callbacks | Saves, loads, generation jobs if needed, network work |
-| `render(delta)`, `Stage.act(delta)`, animation tracks | Visual progression only |
+| Mechanism                                             | Responsibility                                        |
+|-------------------------------------------------------|-------------------------------------------------------|
+| artemis-odb system registration order                 | Order within one logical simulation step              |
+| Project `TurnScheduler`                               | Which actor acts next and the logical action cost     |
+| Java worker/executor and platform callbacks           | Saves, loads, generation jobs if needed, network work |
+| `render(delta)`, `Stage.act(delta)`, animation tracks | Visual progression only                               |
 
 Run command resolution and artemis-odb mutation on the LibGDX render thread, serially. A frame drains available controller work, updates presentation, and draws. With no command or automatic actor pending, the simulation does not advance.
 
@@ -211,13 +211,13 @@ artemis-odb uses `Component` (with a required public constructor), `World`, `Ent
 
 Create entities for players, enemies, doors, traps, pickups, and other objects that participate in rules. Keep floors and walls in a compact grid rather than making every tile an entity.
 
-| Component group | Initial data |
-| --- | --- |
+| Component group        | Initial data                                                                              |
+|------------------------|-------------------------------------------------------------------------------------------|
 | Identity and placement | `StableId`, `GridPosition`, `Actor`, `PlayerControlled`, `BlocksMovement`, `BlocksVision` |
-| Perception and AI | `Vision`, `EnemyBrain` with content IDs and deterministic memory |
-| Combat | `Health`, `Stats`, `DicePool`, `AbilityLoadout`, `StatusSet`, `Shield` |
-| Interactions | `Door`, `Trap`, `Pickup`, `InventoryRef` |
-| Transient resolution | `MoveIntent`, `AbilityIntent`, `PendingDamage`, `PendingRemoval` |
+| Perception and AI      | `Vision`, `EnemyBrain` with content IDs and deterministic memory                          |
+| Combat                 | `Health`, `Stats`, `DicePool`, `AbilityLoadout`, `StatusSet`, `Shield`                    |
+| Interactions           | `Door`, `Trap`, `Pickup`, `InventoryRef`                                                  |
+| Transient resolution   | `MoveIntent`, `AbilityIntent`, `PendingDamage`, `PendingRemoval`                          |
 
 Minimal component shape:
 
@@ -242,19 +242,19 @@ Entity and component edits go through `EntityEdit` (`world.edit(id)`, `world.del
 
 Each command or automatic actor action resolves through an explicit context. Systems process only the active action and its effects; a system pass does not give every entity a turn.
 
-| Slot | System | Responsibility |
-| ---: | --- | --- |
-| 100 | `CommandValidationSystem` | Validate actor, phase, targets and costs; reject without partial mutation |
-| 150 | `EnemyIntentSystem` | Choose an AI action when the active actor is an enemy |
-| 200 | `MovementSystem` | Commit legal cardinal movement and occupancy changes |
-| 300 | `InteractionSystem` | Doors, traps, pickups, stairs, contact with an enemy |
-| 400 | `DiceSystem` | Roll once per activation, reroll, assign and consume dice |
-| 500 | `AbilitySystem` | Validate committed ability use and calculate effects |
-| 600 | `DamageSystem` | Apply shield, resistance, HP changes and death markers |
-| 700 | `StatusEffectSystem` | Apply statuses and process explicit turn-boundary triggers |
-| 800 | `CleanupSystem` | Remove dead actors from occupancy/initiative, clear transient intents |
-| 900 | `VisibilitySystem` | Refresh visibility after movement or opacity changes |
-| 1000 | `TurnFinalizationSystem` | Finalize action cost, select the next actor, update terminal state |
+| Slot | System                    | Responsibility                                                            |
+|-----:|---------------------------|---------------------------------------------------------------------------|
+|  100 | `CommandValidationSystem` | Validate actor, phase, targets and costs; reject without partial mutation |
+|  150 | `EnemyIntentSystem`       | Choose an AI action when the active actor is an enemy                     |
+|  200 | `MovementSystem`          | Commit legal cardinal movement and occupancy changes                      |
+|  300 | `InteractionSystem`       | Doors, traps, pickups, stairs, contact with an enemy                      |
+|  400 | `DiceSystem`              | Roll once per activation, reroll, assign and consume dice                 |
+|  500 | `AbilitySystem`           | Validate committed ability use and calculate effects                      |
+|  600 | `DamageSystem`            | Apply shield, resistance, HP changes and death markers                    |
+|  700 | `StatusEffectSystem`      | Apply statuses and process explicit turn-boundary triggers                |
+|  800 | `CleanupSystem`           | Remove dead actors from occupancy/initiative, clear transient intents     |
+|  900 | `VisibilitySystem`        | Refresh visibility after movement or opacity changes                      |
+| 1000 | `TurnFinalizationSystem`  | Finalize action cost, select the next actor, update terminal state        |
 
 Slot numbers are documentation labels for the pipeline order; execution order is fixed by the order in which the systems are registered with `WorldConfigurationBuilder` (one instance per system class).
 
@@ -270,17 +270,17 @@ Use `int` coordinates, cardinal movement, and a project-owned `DungeonGrid` with
 
 A `MOVE(dx, dy)` requires `abs(dx) + abs(dy) == 1`, map bounds, valid terrain, and no blocking occupant. On success, commit the new cell and update occupancy together. Events contain both old and new cells for interpolation.
 
-| Action/result | Initial rule |
-| --- | --- |
-| Move to an empty walkable cell | One standard action; resolve entry traps and pickups |
-| Move into a closed unlocked door | Open it, remain in place, consume one standard action |
-| Wall, out-of-bounds, locked door without a key | Reject without spending initiative |
-| Contact an adjacent hostile | Enter the dice-action flow below; never overlap cells |
-| Wait | One standard action |
-| Invalid target or insufficient ability resources | Reject without spending dice or initiative |
-| Open settings, inspect inventory, select a target | UI-only; no simulation time |
-| Consume an item or change equipment during a run | Explicit gameplay command with a defined cost; unavailable in the first combat slice |
-| Descend stairs | Explicit interaction after arrival; checkpoint before changing floor |
+| Action/result                                     | Initial rule                                                                         |
+|---------------------------------------------------|--------------------------------------------------------------------------------------|
+| Move to an empty walkable cell                    | One standard action; resolve entry traps and pickups                                 |
+| Move into a closed unlocked door                  | Open it, remain in place, consume one standard action                                |
+| Wall, out-of-bounds, locked door without a key    | Reject without spending initiative                                                   |
+| Contact an adjacent hostile                       | Enter the dice-action flow below; never overlap cells                                |
+| Wait                                              | One standard action                                                                  |
+| Invalid target or insufficient ability resources  | Reject without spending dice or initiative                                           |
+| Open settings, inspect inventory, select a target | UI-only; no simulation time                                                          |
+| Consume an item or change equipment during a run  | Explicit gameplay command with a defined cost; unavailable in the first combat slice |
+| Descend stairs                                    | Explicit interaction after arrival; checkpoint before changing floor                 |
 
 The simulation remains the final validator even when the HUD disables a control. Resolve pickups/death/rewards in a defined order and clear occupancy before a dead actor can block later actions.
 
@@ -364,13 +364,13 @@ Start with one hero, one adjacent enemy type, a small dice pool, one damage abil
 
 Choose one initial contact rule: bumping an enemy enters a **dice activation for the current player turn**, without moving or immediately dealing damage. This command selects the target; a player cannot reset the activation by closing the panel or changing targets. The same initiative queue continues to govern all actors.
 
-| Command | Contract |
-| --- | --- |
-| `ROLL_DICE` | Allowed once per dice activation; store the committed values immediately |
-| `REROLL_DIE` | Spend the specified reroll resource and replace that die's value |
-| `ASSIGN_DIE` / `UNASSIGN_DIE` | Edit legal assignments within the existing activation; no new random draw |
-| `USE_ABILITY` | Validate target/cost, consume assigned dice, apply effects, emit events |
-| `END_TURN` | Discard remaining activation resources, tick end-of-turn rules once, spend the standard action cost |
+| Command                       | Contract                                                                                            |
+|-------------------------------|-----------------------------------------------------------------------------------------------------|
+| `ROLL_DICE`                   | Allowed once per dice activation; store the committed values immediately                            |
+| `REROLL_DIE`                  | Spend the specified reroll resource and replace that die's value                                    |
+| `ASSIGN_DIE` / `UNASSIGN_DIE` | Edit legal assignments within the existing activation; no new random draw                           |
+| `USE_ABILITY`                 | Validate target/cost, consume assigned dice, apply effects, emit events                             |
+| `END_TURN`                    | Discard remaining activation resources, tick end-of-turn rules once, spend the standard action cost |
 
 Enemy activations use deterministic policy and the same effect/damage helpers, then end once. Ending the last hostile encounter returns the UI to exploration; define and test automatic player-turn completion on victory so killing the target cannot award an extra free activation. Multi-enemy joining and more elaborate encounter rules belong to the dungeon-depth milestone.
 
@@ -540,18 +540,18 @@ Replace `FirstScreen` through the first playable slice. Keep build-time atlas to
 
 Add a pinned Java 8-compatible test framework under `core` when implementing the first rules. Most simulation/adapter tests should run as ordinary JVM tests without `Gdx.app`, an OpenGL context or native platform startup. Add the LibGDX headless backend explicitly as a **test dependency** only for tests that need it; its transitive presence in desktop tooling does not provide a core test setup or validate rendering.
 
-| Area | Required evidence |
-| --- | --- |
-| Movement/occupancy | Cardinal-only steps, bounds/walls, doors, traps, no actor overlap, correct action costs |
-| Generation | Bounded attempts, reachable spawn/exit, correct x/y translation, stable seeded fixtures |
-| Path/FOV | Four-way routes, dynamic blockers, door invalidation, corner visibility, explored memory |
-| artemis-odb | Registration-order behavior, structural changes between systems, cleanup before projection, no stale IDs |
-| Turns/combat | Stable initiative ties, single turn-boundary ticks, no extra turns from dice commands, no reroll/reset exploit |
-| Determinism | Same inputs yield identical canonical state/events; save/load mid-activation preserves the continuation |
-| Persistence | Torn slot recovery, ordered writes, migrations, future-version rejection, reward deduplication |
-| Async/lifecycle | Late callbacks ignored, durable saves survive screen changes, pause/resume during animation/generation |
-| Presentation/input | Touch consumption, viewport unprojection, focus/remapping, animation skip, hidden-actor privacy |
-| Platforms | Desktop launch, Android debug/release packaging, RoboVM AOT build and actual device lifecycle checks |
+| Area               | Required evidence                                                                                              |
+|--------------------|----------------------------------------------------------------------------------------------------------------|
+| Movement/occupancy | Cardinal-only steps, bounds/walls, doors, traps, no actor overlap, correct action costs                        |
+| Generation         | Bounded attempts, reachable spawn/exit, correct x/y translation, stable seeded fixtures                        |
+| Path/FOV           | Four-way routes, dynamic blockers, door invalidation, corner visibility, explored memory                       |
+| artemis-odb        | Registration-order behavior, structural changes between systems, cleanup before projection, no stale IDs       |
+| Turns/combat       | Stable initiative ties, single turn-boundary ticks, no extra turns from dice commands, no reroll/reset exploit |
+| Determinism        | Same inputs yield identical canonical state/events; save/load mid-activation preserves the continuation        |
+| Persistence        | Torn slot recovery, ordered writes, migrations, future-version rejection, reward deduplication                 |
+| Async/lifecycle    | Late callbacks ignored, durable saves survive screen changes, pause/resume during animation/generation         |
+| Presentation/input | Touch consumption, viewport unprojection, focus/remapping, animation skip, hidden-actor privacy                |
+| Platforms          | Desktop launch, Android debug/release packaging, RoboVM AOT build and actual device lifecycle checks           |
 
 Use canonical ordering for state hashes and replay comparisons. Test a restored run against an uninterrupted run, including RNG continuation and initiative order, rather than merely comparing a saved DTO to itself.
 
@@ -617,15 +617,15 @@ Add server-authoritative gacha, verified purchases, account/secure storage integ
 
 Official documentation was retrieved with the Firecrawl skill. Exact artemis-odb `2.3.0`, SquidSquad `4.0.12` and Juniper `0.10.5` signatures were also checked in resolved Gradle source JARs, so current README examples do not silently substitute newer APIs.
 
-| Source | Use in this plan | Local Firecrawl cache |
-| --- | --- | --- |
-| [artemis-odb wiki (World, BaseSystem, InvocationStrategy)](https://github.com/junkdog/artemis-odb/wiki) | World assembly, registration order, aspect subscriptions, entity-state flush points | `.firecrawl/artemis-odb-*.md` |
-| [SquidSquad repository/module guide](https://github.com/yellowstonegames/SquidSquad) | Module selection, algorithm ownership, serialization choices | `.firecrawl/squidsquad-readme.md` |
-| [jdkgdxds publication guidance](https://github.com/tommyettinger/jdkgdxds) | JitPack publication and upgrade context | `.firecrawl/jdkgdxds-readme.md` |
-| [LibGDX threading](https://libgdx.com/wiki/app/threading) | Render-thread ownership and worker handoff | `.firecrawl/libgdx-threading.md` |
-| [Scene2D UI](https://libgdx.com/wiki/graphics/2d/scene2d/scene2d-ui) | Stage, Table, Skin and UI layout | `.firecrawl/libgdx-scene2d-ui.md` |
-| [Managing assets](https://libgdx.com/wiki/managing-your-assets) | Loading, reference counts, disposal and static-resource pitfalls | `.firecrawl/libgdx-assets.md` |
-| [Application lifecycle](https://libgdx.com/wiki/app/the-life-cycle) | Pause/resume and save boundaries | `.firecrawl/libgdx-lifecycle.md` |
-| [Reading and writing JSON](https://libgdx.com/wiki/utils/reading-and-writing-json) | Explicit JSON parsing and custom codecs | `.firecrawl/libgdx-json.md` |
+| Source                                                                                                  | Use in this plan                                                                    | Local Firecrawl cache             |
+|---------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------|-----------------------------------|
+| [artemis-odb wiki (World, BaseSystem, InvocationStrategy)](https://github.com/junkdog/artemis-odb/wiki) | World assembly, registration order, aspect subscriptions, entity-state flush points | `.firecrawl/artemis-odb-*.md`     |
+| [SquidSquad repository/module guide](https://github.com/yellowstonegames/SquidSquad)                    | Module selection, algorithm ownership, serialization choices                        | `.firecrawl/squidsquad-readme.md` |
+| [jdkgdxds publication guidance](https://github.com/tommyettinger/jdkgdxds)                              | JitPack publication and upgrade context                                             | `.firecrawl/jdkgdxds-readme.md`   |
+| [LibGDX threading](https://libgdx.com/wiki/app/threading)                                               | Render-thread ownership and worker handoff                                          | `.firecrawl/libgdx-threading.md`  |
+| [Scene2D UI](https://libgdx.com/wiki/graphics/2d/scene2d/scene2d-ui)                                    | Stage, Table, Skin and UI layout                                                    | `.firecrawl/libgdx-scene2d-ui.md` |
+| [Managing assets](https://libgdx.com/wiki/managing-your-assets)                                         | Loading, reference counts, disposal and static-resource pitfalls                    | `.firecrawl/libgdx-assets.md`     |
+| [Application lifecycle](https://libgdx.com/wiki/app/the-life-cycle)                                     | Pause/resume and save boundaries                                                    | `.firecrawl/libgdx-lifecycle.md`  |
+| [Reading and writing JSON](https://libgdx.com/wiki/utils/reading-and-writing-json)                      | Explicit JSON parsing and custom codecs                                             | `.firecrawl/libgdx-json.md`       |
 
 The cache is ignored by Git. Local build logs are saved in `.firecrawl/gradle-core-dependencies.log`, `.firecrawl/gradle-platform-verification.log`, `.firecrawl/gradle-android-assemble-debug.log`, and `.firecrawl/gradle-version.log`. These command results and the duplicate-class diagnosis are local build evidence, independent of upstream documentation. Keep this plan's checked versions and verification table updated when Milestone 0 changes the build.

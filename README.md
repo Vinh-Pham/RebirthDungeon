@@ -16,7 +16,7 @@ This project was generated with [gdx-liftoff](https://github.com/libgdx/gdx-lift
 
 ### Desktop
 
-- A JDK to run Gradle with; the build selects JDK 21 automatically via the daemon JVM criteria in `gradle/gradle-daemon-jvm.properties` (downloaded on demand through the foojay resolver). Shared code stays on the Java 8 API surface regardless of the build JDK (`options.release = 8`).
+- A JDK to run Gradle with; the build selects JDK 25 automatically via the daemon JVM criteria in `gradle/gradle-daemon-jvm.properties` (downloaded on demand through the foojay resolver). Shared code stays on the Java 8 API surface regardless of the build JDK (`options.release = 8`), which keeps the Android dexer and the RoboVM iOS compiler — neither of which consumes Java 25 bytecode — working unchanged.
 - No other setup; `./gradlew :lwjgl3:run` starts the game.
 
 ### Android
@@ -65,7 +65,7 @@ Dependency policy:
 
 ## CI
 
-`.github/workflows/ci.yml` runs on push/PR: shared tests and checks, desktop compilation, and Android duplicate-class checking plus debug packaging on an Ubuntu runner. iOS verification is run manually on a macOS host as described above and is not asserted by CI.
+`.github/workflows/ci.yml.backup` runs on push/PR: shared tests and checks, desktop compilation, and Android duplicate-class checking plus debug packaging on an Ubuntu runner. iOS verification is run manually on a macOS host as described above and is not asserted by CI.
 
 ## Gradle
 
