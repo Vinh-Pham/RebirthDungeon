@@ -25,11 +25,12 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      # Dependency verification (gradle/verification-metadata.xml) and lockfiles
-      # run automatically inside every Gradle invocation.
+      # Keep dependency verification strict in CI. New checksums must be reviewed
+      # and committed to gradle/verification-metadata.xml before this build runs.
       - name: Build and verify
         run: >
-          ./gradlew :core:check :core:compileJava :lwjgl3:compileJava
+          ./gradlew --dependency-verification strict
+          :core:check :core:compileJava :lwjgl3:compileJava
           :android:checkDebugDuplicateClasses :android:assembleDebug
 
       - name: Upload Android debug APK

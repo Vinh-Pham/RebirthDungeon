@@ -16,6 +16,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f7f07e50-b8ee-49d0-92bc-0efaf6deb9b9" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.github/workflows/ci.yml" beforeDir="false" afterPath="$PROJECT_DIR$/.github/workflows/ci.yml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/game-plan.md" beforeDir="false" afterPath="$PROJECT_DIR$/game-plan.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/gradle/verification-metadata.xml" beforeDir="false" afterPath="$PROJECT_DIR$/gradle/verification-metadata.xml" afterDir="false" />
@@ -49,7 +50,12 @@
         </task>
         <projects_view>
           <tree_state>
-            <expand />
+            <expand>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="RebirthDungeon" type="f1a62948:ProjectNode" />
+              </path>
+            </expand>
             <select />
           </tree_state>
         </projects_view>
