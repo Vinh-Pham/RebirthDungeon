@@ -31,8 +31,10 @@ This project was generated with [gdx-liftoff](https://github.com/libgdx/gdx-lift
 - The RoboVM Gradle plugin links native code; an iOS verification run is a full AOT build, distinct from any JVM compile.
 - Simulator verification (on a macOS host):
   - `xcodebuild -version` — record the Xcode version used.
-  - `xcrun simctl list devices available` — pick an iPhone simulator.
-  - `./gradlew :ios:launchIPhoneSimulator` — builds AOT and boots the app on the chosen simulator.
+  - `xcrun simctl list devices available` — pick an iPhone simulator and note its UDID (pin the UDID in the steps below whenever more than one simulator is booted; `booted` is ambiguous otherwise).
+  - `./gradlew :ios:launchIPhoneSimulator` — builds AOT, links and signs `ios/build/robovm.tmp/IOSLauncher.app`. On Xcode 27+ the plugin's final "open Simulator" step fails (`Unable to find application named 'Simulator'` — Simulator.app was replaced by DeviceHub.app); the AOT/link result before that message is the build evidence.
+  - Install and launch the built app directly: `xcrun simctl install <UDID> ios/build/robovm.tmp/IOSLauncher.app` then `xcrun simctl launch <UDID> cloud.vinh.rebirthsaga`. Open DeviceHub (`$(xcode-select -p)/Applications/DeviceHub.app`) to see and composite the simulator screen; capture frames with `xcrun simctl io <UDID> screenshot`.
+  - `ScreenUtils.getFrameBufferPixmap` (in-app framebuffer reads) returns an incomplete frame on the MetalANGLE backend — do not use it as iOS visual evidence; use the simulator composite instead.
   - Device builds use `./gradlew :ios:launchIOSDevice` with signing configured in Xcode; `createIPA` produces the archive.
 - Successful `:ios:compileJava` on any host is **not** an iOS build and must not be reported as one.
 
