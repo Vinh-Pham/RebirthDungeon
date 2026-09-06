@@ -43,8 +43,8 @@ There is no web backend in `settings.gradle`. Android currently forces landscape
 |---------------------------|--------------------------------------------|---------------------------------------------------------------------------------------|
 | Gradle wrapper            | `9.7.1`                                    | Use the checked-in wrapper                                                            |
 | Gradle daemon criteria    | Java `21`                                  | Build JVM selection is separate from application language level                       |
-| Shared Java source/target | `8`                                        | Use Java 8 syntax and compatible APIs; no records, sealed classes, or virtual threads |
-| Desktop compiler          | `--release 8` on newer JDKs                | Desktop compilation checks the Java 8 API surface                                     |
+| Shared language           | Kotlin, JVM `1.8` target                   | Kotlin sources compile to JVM 1.8 bytecode; the API surface is capped at Java 8 via `-Xjdk-release=1.8` (port: 2026-09-06) |
+| Shared compiler guard     | `jvmTarget=1.8` + `-Xjdk-release=1.8`      | Compilation rejects newer JDK APIs, keeping the Android dexer and RoboVM AOT compiler working                        |
 | Android Gradle Plugin     | `8.9.3`                                    | Validate Android packaging separately from JVM compilation                            |
 | Android SDK               | min `21`, compile/target `36`              | These are configured targets, not a verified device support matrix                    |
 | Android desugaring        | `desugar_jdk_libs:2.1.5`                   | Does not make arbitrary modern JVM APIs portable to all targets                       |
@@ -53,7 +53,7 @@ There is no web backend in `settings.gradle`. Android currently forces landscape
 | Construo                  | `2.1.0`, bundled JDK downloads `21.0.10+7` | Desktop distribution runtime is distinct from source compatibility                    |
 | Graal Native Image        | `enableGraalNative=false`                  | Optional later desktop experiment; not the iOS runtime                                |
 
-Add an equivalent Java 8 API check for `core` when tightening the build: source/target compatibility alone does not stop code from calling newer JDK APIs.
+Enforced now: the Kotlin compiler flag `-Xjdk-release=1.8` (set in the root `build.gradle.kts`) rejects newer JDK APIs in shared code; the boundary/format gate is the `checkSimulationBoundary` task wired into `:core:check`.
 
 ## 2. Gradle dependency audit
 
@@ -604,14 +604,14 @@ A reveal animates a committed result using Scene2D/sprite effects. Closing it or
 Grow this structure by feature; the paths below are proposed within the existing modules.
 
 ```text
-core/src/main/java/cloud/vinh/rebirthdungeon/
-  RebirthDungeon.java
+core/src/main/kotlin/cloud/vinh/rebirthdungeon/
+  RebirthDungeon.kt
   bootstrap/                 service and screen wiring
   application/               RunController, results, repository interfaces
   game/
     ecs/components/          artemis-odb data components
     ecs/systems/             ordered rule systems
-    RunSession.java
+    RunSession.kt
     grid/                    DungeonGrid, occupancy, movement rules
     algorithms/              generator/path/FOV/random interfaces
     squidsquad/              SquidSquad and Juniper adapters
@@ -621,7 +621,7 @@ core/src/main/java/cloud/vinh/rebirthdungeon/
     inventory/               placement, stacks, equipment, reservations, reconciliation
     enchanting/              conditions, recipes, chance and operation results
     quests/                  prerequisites, stages, evidence, claims, RP mission rules
-    commands/                plain Java command types
+    commands/                plain Kotlin command types
     events/                  immutable domain events
     projection/              observed HUD/render snapshots
     replay/                  command logs and state hashes
@@ -635,7 +635,7 @@ core/src/main/java/cloud/vinh/rebirthdungeon/
     animation/               presentation tracks and event mapping
   platform/                  shared platform service interfaces
 
-core/src/test/java/cloud/vinh/rebirthdungeon/
+core/src/test/kotlin/cloud/vinh/rebirthdungeon/
   game/                      deterministic rule/adapter tests
   data/                      content, save and migration tests
 
@@ -645,9 +645,9 @@ assets/
   audio/                     sound and music
   ui/                        existing skin and bitmap fonts
 
-lwjgl3/src/main/java/.../    desktop launcher and platform adapters
-android/src/main/java/.../  Android launcher and platform adapters
-ios/src/main/java/.../      RoboVM launcher and platform adapters
+lwjgl3/src/main/kotlin/.../   desktop launcher and platform adapters
+android/src/main/kotlin/.../  Android launcher and platform adapters
+ios/src/main/kotlin/.../      RoboVM launcher and platform adapters
 ```
 
 Replace `FirstScreen` through the first playable slice. Keep build-time atlas tooling outside the shipped game runtime. Do not create a second source root or copy platform code into `core`.

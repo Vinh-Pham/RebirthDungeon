@@ -1,12 +1,12 @@
 # RebirthDungeon
 
-A 2D pixel-art, grid-based roguelike dungeon crawler with dice combat, built in Java with [libGDX](https://libgdx.com/). See [game-plan.md](game-plan.md) for the architecture contract and [project-phases.md](project-phases.md) for the implementation tracker.
+A 2D pixel-art, grid-based roguelike dungeon crawler with dice combat, built in **Kotlin** with [libGDX](https://libgdx.com/). See [game-plan.md](game-plan.md) for the architecture contract and [project-phases.md](project-phases.md) for the implementation tracker.
 
 This project was generated with [gdx-liftoff](https://github.com/libgdx/gdx-liftoff) and reworked in Phase 0 into a reproducible build baseline.
 
 ## Platforms
 
-- `core`: Main module with the application logic shared by all platforms. Targets Java 8 language/API level.
+- `core`: Main module with the application logic shared by all platforms. Kotlin pinned to JVM 1.8 bytecode and the Java 8 API surface.
 - `lwjgl3`: Primary desktop platform using LWJGL3; the fastest development target.
 - `android`: Android mobile platform. Needs the Android SDK.
 - `ios`: iOS mobile platform using RoboVM. Needs macOS with Xcode.
@@ -16,7 +16,7 @@ This project was generated with [gdx-liftoff](https://github.com/libgdx/gdx-lift
 
 ### Desktop
 
-- A JDK to run Gradle with; the build selects JDK 25 automatically via the daemon JVM criteria in `gradle/gradle-daemon-jvm.properties` (downloaded on demand through the foojay resolver). Shared code stays on the Java 8 API surface regardless of the build JDK (`options.release = 8`), which keeps the Android dexer and the RoboVM iOS compiler — neither of which consumes Java 25 bytecode — working unchanged.
+- A JDK to run Gradle with; the build selects JDK 25 automatically via the daemon JVM criteria in `gradle/gradle-daemon-jvm.properties` (downloaded on demand through the foojay resolver). Shared Kotlin code stays on JVM 1.8 bytecode and the Java 8 API surface regardless of the build JDK (`jvmTarget = 1.8` + `-Xjdk-release=1.8`), which keeps the Android dexer and the RoboVM iOS compiler — neither of which consumes newer bytecode — working unchanged.
 - No other setup; `./gradlew :lwjgl3:run` starts the game.
 
 ### Android
@@ -36,7 +36,7 @@ This project was generated with [gdx-liftoff](https://github.com/libgdx/gdx-lift
   - Install and launch the built app directly: `xcrun simctl install <UDID> ios/build/robovm.tmp/IOSLauncher.app` then `xcrun simctl launch <UDID> cloud.vinh.rebirthdungeon`. Open DeviceHub (`$(xcode-select -p)/Applications/DeviceHub.app`) to see and composite the simulator screen; capture frames with `xcrun simctl io <UDID> screenshot`.
   - `ScreenUtils.getFrameBufferPixmap` (in-app framebuffer reads) returns an incomplete frame on the MetalANGLE backend — do not use it as iOS visual evidence; use the simulator composite instead.
   - Device builds use `./gradlew :ios:launchIOSDevice` with signing configured in Xcode; `createIPA` produces the archive.
-- Successful `:ios:compileJava` on any host is **not** an iOS build and must not be reported as one.
+- Successful `:ios:compileKotlin` on any host is **not** an iOS build and must not be reported as one.
 
 ## Dependencies
 
@@ -47,6 +47,8 @@ The first-slice runtime (pinned in `gradle.properties`, audited in game-plan sec
 - SquidSquad `squidcore`, `squidgrid`, `squidplace`, `squidpath` 4.0.12 — generation and cardinal pathfinding (implemented with jdkgdxds/juniper/digital/regexodus/crux transitively).
 - `com.github.tommyettinger:jdkgdxds` 2.1.8 and `com.github.tommyettinger:juniper` 0.10.5 — collections and seeded RNG.
 - `com.fasterxml.jackson.core:jackson-databind` 2.22.2 (+ `jackson-annotations` 2.22) — versioned content definitions in `assets/data` JSON, bound strictly to plain DTOs (unknown fields/enum values fail the load). Save bundles stay on LibGDX JSON.
+- `org.jetbrains.kotlin:kotlin-stdlib` 2.4.10 — Kotlin runtime; pinned to the Kotlin Gradle plugin version used by every module.
+- `io.github.libktx:ktx-*` 1.13.1-rc1 — Kotlin DSL utilities (`ktx-app`, `ktx-artemis`, `ktx-actors`, `ktx-assets`, `ktx-graphics`, `ktx-log`, `ktx-scene2d`) layered over libGDX/artemis-odb APIs already in use. Adoption is extension-only, one module per concrete usage site; the resolved `gdx` stays at the project pin above (KTX's published line targets 1.13.1). Modules without a usage site are deliberately not declared — dispositions in project-phases Work Notes (2026-09-06).
 - `junit:junit` 4.13.2 (tests only).
 
 Dependency policy:
@@ -60,10 +62,10 @@ Dependency policy:
 
 ## Tests and checks
 
-- `./gradlew :core:test` runs plain JVM tests under `core/src/test/java`. They must not start `Gdx.app`, OpenGL, native UI or provider SDKs; the LibGDX headless backend may be added later as an explicit test dependency only for tests that need it.
+- `./gradlew :core:test` runs plain JVM tests under `core/src/test/kotlin`. They must not start `Gdx.app`, OpenGL, native UI or provider SDKs; the LibGDX headless backend may be added later as an explicit test dependency only for tests that need it.
 - Fixtures in `cloud.vinh.rebirthdungeon.smoke` pin the selected stack: ordered artemis-odb system execution (registration order, one system per class, public component constructors), Jackson strict content binding (item definitions with dice-notation strings, enum rarities, tag arrays), Juniper `AceRandom` sequence reproduction and five-word state restore, and jdkgdxds collection behavior.
-- `./gradlew :core:check` also runs Checkstyle (`config/checkstyle/checkstyle.xml`): import/format hygiene plus the architecture boundary rule — files under `.../game/` (the deterministic simulation tree) must not import `com.badlogic.gdx`.
-- Java 8 API compliance of shared code is enforced by `options.release = 8`, not by the build JDK version.
+- `./gradlew :core:check` also runs `checkSimulationBoundary` (defined in `core/build.gradle.kts`): formatting hygiene (tabs, trailing whitespace, CR endings) plus the architecture boundary rule — Kotlin files under `.../game/` (the deterministic simulation tree) must not import `com.badlogic.gdx`.
+- Java 8 API compliance of shared code is enforced by the Kotlin compiler (`-Xjdk-release=1.8`), not by the build JDK version.
 
 ## CI
 
@@ -71,10 +73,10 @@ Dependency policy:
 
 ## Gradle
 
-The Gradle wrapper (`9.7.1`) is included; run tasks with `./gradlew`. Useful tasks:
+The Gradle wrapper (`9.5.1`) is included; run tasks with `./gradlew`. Useful tasks:
 
-- `:core:check` — shared tests + Checkstyle.
-- `:core:compileJava :lwjgl3:compileJava` — shared and desktop compilation.
+- `:core:check` — shared tests + simulation boundary/format checks.
+- `:core:compileKotlin :lwjgl3:compileKotlin` — shared and desktop compilation.
 - `:android:checkDebugDuplicateClasses :android:assembleDebug` — Android packaging gate and debug APK.
 - `:lwjgl3:run` — start the desktop game.
 - `lwjgl3:jar` — runnable fat JAR in `lwjgl3/build/libs`.

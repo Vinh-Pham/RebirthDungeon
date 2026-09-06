@@ -30,7 +30,7 @@ jobs:
       - name: Build and verify
         run: >
           ./gradlew --dependency-verification strict
-          :core:check :core:compileJava :lwjgl3:compileJava
+          :core:check :core:compileKotlin :lwjgl3:compileKotlin :ios:compileKotlin
           :android:checkDebugDuplicateClasses :android:assembleDebug
 
       - name: Upload Android debug APK
