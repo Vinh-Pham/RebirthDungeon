@@ -24,7 +24,7 @@ This plan replaces the previous Expo/React Native architecture. It describes a t
 
 ## 1. What exists today
 
-The repository is a gdx-liftoff scaffold. `RebirthDungeon extends Game` opens an empty `FirstScreen`; dungeon generation, combat, saving, and tests have not been implemented in Java. Shared code uses the package `cloud.vinh.rebirthsaga`.
+The repository is a gdx-liftoff scaffold. `RebirthDungeon extends Game` opens an empty `FirstScreen`; dungeon generation, combat, saving, and tests have not been implemented in Java. Shared code uses the package `cloud.vinh.rebirthdungeon`.
 
 | Module or path      | Current role                                                                                          |
 |---------------------|-------------------------------------------------------------------------------------------------------|
@@ -236,7 +236,7 @@ Create entities for players, enemies, doors, traps, pickups, and other objects t
 Minimal component shape:
 
 ```java
-package cloud.vinh.rebirthsaga.game.ecs.components;
+package cloud.vinh.rebirthdungeon.game.ecs.components;
 
 import com.artemis.Component;
 
@@ -604,7 +604,7 @@ A reveal animates a committed result using Scene2D/sprite effects. Closing it or
 Grow this structure by feature; the paths below are proposed within the existing modules.
 
 ```text
-core/src/main/java/cloud/vinh/rebirthsaga/
+core/src/main/java/cloud/vinh/rebirthdungeon/
   RebirthDungeon.java
   bootstrap/                 service and screen wiring
   application/               RunController, results, repository interfaces
@@ -635,7 +635,7 @@ core/src/main/java/cloud/vinh/rebirthsaga/
     animation/               presentation tracks and event mapping
   platform/                  shared platform service interfaces
 
-core/src/test/java/cloud/vinh/rebirthsaga/
+core/src/test/java/cloud/vinh/rebirthdungeon/
   game/                      deterministic rule/adapter tests
   data/                      content, save and migration tests
 

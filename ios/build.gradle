@@ -11,7 +11,7 @@ apply plugin: 'robovm'
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 
 ext {
-  mainClassName = "cloud.vinh.rebirthsaga.IOSLauncher"
+  mainClassName = "cloud.vinh.rebirthdungeon.IOSLauncher"
 }
 
 launchIPhoneSimulator.dependsOn build

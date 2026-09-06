@@ -4,7 +4,7 @@ Guidance for AI assistants working in this repository.
 
 ## What this project is
 
-**RebirthDungeon** (Java package `cloud.vinh.rebirthsaga`) is a 2D pixel-art, grid-based, turn-based roguelike dungeon crawler with **five-dice dice combat**, loot, progression, and a later gacha meta-game. It is built in Java with **libGDX** (project scaffolded with gdx-liftoff). Combat is inspired by Dicero (roll five dice, keep, reroll, commit a hand); progression, inventory, skills, enchants, quests, and titles are inspired by Mabinogi. The references are design inspiration, not literal requirements.
+**RebirthDungeon** (Java package `cloud.vinh.rebirthdungeon`) is a 2D pixel-art, grid-based, turn-based roguelike dungeon crawler with **five-dice dice combat**, loot, progression, and a later gacha meta-game. It is built in Java with **libGDX** (project scaffolded with gdx-liftoff). Combat is inspired by Dicero (roll five dice, keep, reroll, commit a hand); progression, inventory, skills, enchants, quests, and titles are inspired by Mabinogi. The references are design inspiration, not literal requirements.
 
 Two principles shape everything:
 
@@ -29,7 +29,7 @@ Gradle multi-module project (Gradle wrapper **9.7.1**; daemon JVM is Java 25 via
 
 ```
 core/                  Shared game code (all gameplay lives here)
-  src/main/java/cloud/vinh/rebirthsaga/
+  src/main/java/cloud/vinh/rebirthdungeon/
     RebirthDungeon.java        Game subclass; owns assets/services/screens
     bootstrap/                 service and screen wiring, session workers
     game/                      THE DETERMINISTIC SIMULATION (no libGDX imports)

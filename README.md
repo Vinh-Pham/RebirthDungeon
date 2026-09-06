@@ -33,7 +33,7 @@ This project was generated with [gdx-liftoff](https://github.com/libgdx/gdx-lift
   - `xcodebuild -version` — record the Xcode version used.
   - `xcrun simctl list devices available` — pick an iPhone simulator and note its UDID (pin the UDID in the steps below whenever more than one simulator is booted; `booted` is ambiguous otherwise).
   - `./gradlew :ios:launchIPhoneSimulator` — builds AOT, links and signs `ios/build/robovm.tmp/IOSLauncher.app`. On Xcode 27+ the plugin's final "open Simulator" step fails (`Unable to find application named 'Simulator'` — Simulator.app was replaced by DeviceHub.app); the AOT/link result before that message is the build evidence.
-  - Install and launch the built app directly: `xcrun simctl install <UDID> ios/build/robovm.tmp/IOSLauncher.app` then `xcrun simctl launch <UDID> cloud.vinh.rebirthsaga`. Open DeviceHub (`$(xcode-select -p)/Applications/DeviceHub.app`) to see and composite the simulator screen; capture frames with `xcrun simctl io <UDID> screenshot`.
+  - Install and launch the built app directly: `xcrun simctl install <UDID> ios/build/robovm.tmp/IOSLauncher.app` then `xcrun simctl launch <UDID> cloud.vinh.rebirthdungeon`. Open DeviceHub (`$(xcode-select -p)/Applications/DeviceHub.app`) to see and composite the simulator screen; capture frames with `xcrun simctl io <UDID> screenshot`.
   - `ScreenUtils.getFrameBufferPixmap` (in-app framebuffer reads) returns an incomplete frame on the MetalANGLE backend — do not use it as iOS visual evidence; use the simulator composite instead.
   - Device builds use `./gradlew :ios:launchIOSDevice` with signing configured in Xcode; `createIPA` produces the archive.
 - Successful `:ios:compileJava` on any host is **not** an iOS build and must not be reported as one.
@@ -61,7 +61,7 @@ Dependency policy:
 ## Tests and checks
 
 - `./gradlew :core:test` runs plain JVM tests under `core/src/test/java`. They must not start `Gdx.app`, OpenGL, native UI or provider SDKs; the LibGDX headless backend may be added later as an explicit test dependency only for tests that need it.
-- Fixtures in `cloud.vinh.rebirthsaga.smoke` pin the selected stack: ordered artemis-odb system execution (registration order, one system per class, public component constructors), Jackson strict content binding (item definitions with dice-notation strings, enum rarities, tag arrays), Juniper `AceRandom` sequence reproduction and five-word state restore, and jdkgdxds collection behavior.
+- Fixtures in `cloud.vinh.rebirthdungeon.smoke` pin the selected stack: ordered artemis-odb system execution (registration order, one system per class, public component constructors), Jackson strict content binding (item definitions with dice-notation strings, enum rarities, tag arrays), Juniper `AceRandom` sequence reproduction and five-word state restore, and jdkgdxds collection behavior.
 - `./gradlew :core:check` also runs Checkstyle (`config/checkstyle/checkstyle.xml`): import/format hygiene plus the architecture boundary rule — files under `.../game/` (the deterministic simulation tree) must not import `com.badlogic.gdx`.
 - Java 8 API compliance of shared code is enforced by `options.release = 8`, not by the build JDK version.
 

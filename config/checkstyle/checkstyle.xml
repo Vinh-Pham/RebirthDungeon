@@ -4,7 +4,7 @@
         "https://checkstyle.org/dtds/configuration_1_3.dtd">
 <!-- Shared-code checks for RebirthDungeon. Formatting lints stay light; the
      load-bearing rule is the architecture boundary: simulation code under
-     cloud/vinh/rebirthsaga/game/ must not import LibGDX (see game-plan section 3). -->
+     cloud/vinh/rebirthdungeon/game/ must not import LibGDX (see game-plan section 3). -->
 <module name="Checker">
   <property name="charset" value="UTF-8"/>
   <property name="severity" value="error"/>
