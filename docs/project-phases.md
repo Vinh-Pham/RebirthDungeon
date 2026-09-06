@@ -2,6 +2,8 @@
 
 This checklist turns [game-plan.md](game-plan.md) into an implementation tracker for the Java/LibGDX project. The game plan defines architecture and gameplay contracts; this file orders the work and records implementation evidence. All phase, task, and exit checkboxes were reset on **2026-09-02**. Completion claims and environment notes from the previous implementation have been cleared.
 
+On **2026-09-05** this tracker was re-aligned to the game plan's gameplay update — the [battle](gameplay/battle.md), [stats](gameplay/stats.md), [skills](gameplay/skills.md), [character](gameplay/character.md), [inventory](gameplay/inventory.md), [enchants](gameplay/enchants.md) and [quests](gameplay/quests.md) specifications. Phases 4–7 were re-scoped to the five-dice combat, inventory/equipment and progression contracts; new phases 8–9 cover hub quests/enchanting/rebirth and RP missions/skill extensions; the former phases 8–14 were renumbered 10–16. Phases 0–1 and their recorded evidence are unchanged. This alignment edits planning documents only.
+
 The phases expand the game plan's six milestones. Complete the earliest unfinished phase by default; if the user changes priorities, record the change and preserve any unmet prerequisite. Phase numbers below belong to this reset and do not carry over earlier completion history.
 
 ## Tracking Rules
@@ -19,7 +21,7 @@ The phases expand the game plan's six milestones. Complete the earliest unfinish
 
 - **Current phase:** Phase 2 — Validated content and deterministic RNG.
 - **Status:** Phase 1 completed and verified on 2026-09-04 (see Completion Log); Phase 2 is not started.
-- **Next objective:** Stable content/entity IDs and command/event values, the project `RandomSource` interface with the Juniper `AceRandom` adapter, and the validated immutable content catalog under `data/content`.
+- **Next objective:** Stable content/entity IDs and command/event values, the project `RandomSource` interface with the Juniper `AceRandom` adapter, and the validated immutable content catalog under `data/content` — now including the five-dice scoring/face-weight profiles and the starter skill/stat/cost/status definitions shaped by the September 5 gameplay specifications.
 - **Known blocker:** None. All three backends launched the prototype; iOS AOT/linking succeeded on this host (Xcode 27 beta) after removing stale force-link leftovers and launching through `simctl`/DeviceHub (see Work Notes).
 - **Baseline inspected:** 2026-09-02. Shared code contains `RebirthDungeon extends Game` and an empty `FirstScreen`; desktop, Android, and RoboVM launchers exist. The game-plan audit's successful core/desktop compilation is baseline evidence, not phase completion. *(Superseded 2026-09-04: `FirstScreen` is replaced by the loading/prototype screens.)*
 
@@ -32,11 +34,11 @@ The phases expand the game plan's six milestones. Complete the earliest unfinish
 | `android/`                                          | Existing Android launcher, native integrations, SDK and native-library configuration                        |
 | `ios/`                                              | Existing RoboVM launcher, MetalANGLE backend, iOS integrations and linking configuration                    |
 | `assets/`                                           | Existing UI skin and bitmap fonts; add validated content, dungeon atlases and audio as needed               |
-| artemis-odb `World` + `RunSession`                  | Planned authoritative entities, grid, logical phases, initiative, RNG streams and run rewards               |
+| artemis-odb `World` + `RunSession`                  | Planned authoritative entities, grid, dice activations, statuses, initiative, RNG streams and run rewards               |
 | SquidSquad/Juniper adapters                         | Planned generation, cardinal pathfinding, FOV and explicit seeded randomness                                |
 | `RunController`                                     | Planned serialized commands, committed snapshots/events and repository coordination                         |
 | `SpriteBatch`, Scene2D `Stage`, presentation tracks | Planned display, controls and animation of committed results                                                |
-| Versioned JSON save bundle                          | Planned project-owned profile/run DTOs and alternating-slot recovery                                        |
+| Versioned JSON save bundle                          | Planned project-owned profile/run/mission DTOs and alternating-slot recovery                                        |
 
 Shared source targets Java 8; the Gradle daemon criteria select Java 25. Follow the game plan's toolchain/dependency audit rather than equating the build JVM with supported application APIs.
 
@@ -50,17 +52,19 @@ Keep live gameplay out of UI state and animation clocks. Use explicit constructo
 - [x] Phase 1 — Lifecycle, assets, and rendering integration
 - [ ] Phase 2 — Validated content and deterministic RNG
 - [ ] Phase 3 — Grid simulation, turns, and basic checkpoints
-- [ ] Phase 4 — Deterministic dice combat
+- [ ] Phase 4 — Deterministic five-dice combat
 - [ ] Phase 5 — Playable combat and resumable activations
 - [ ] Phase 6 — Durable saves, migrations, and lifecycle recovery
 - [ ] Phase 7 — Progression, inventory, and the offline run loop
-- [ ] Phase 8 — Dungeon depth and expanded encounters
-- [ ] Phase 9 — Presentation polish, input, audio, and haptics
-- [ ] Phase 10 — Offline quality, balance, and device acceptance
-- [ ] Phase 11 — Local gacha simulator and reveal flow
-- [ ] Phase 12 — Authentication, backend, and cloud synchronization
-- [ ] Phase 13 — Verified purchases and production gacha
-- [ ] Phase 14 — Release readiness and live operations
+- [ ] Phase 8 — Quests, enchanting, and rebirth
+- [ ] Phase 9 — Role-playing missions and skill extensions
+- [ ] Phase 10 — Dungeon depth and expanded encounters
+- [ ] Phase 11 — Presentation polish, input, audio, and haptics
+- [ ] Phase 12 — Offline quality, balance, and device acceptance
+- [ ] Phase 13 — Local gacha simulator and reveal flow
+- [ ] Phase 14 — Authentication, backend, and cloud synchronization
+- [ ] Phase 15 — Verified purchases and production gacha
+- [ ] Phase 16 — Release readiness and live operations
 
 ## Phase 0 — Dependency Repair and Build Foundation
 
@@ -117,18 +121,18 @@ Exit criteria:
 
 **Goal:** Supply immutable game definitions and restorable randomness before building authoritative rules.
 
-**Plan alignment:** Begins Milestone 1; game-plan sections 8, 15 and 18.
+**Plan alignment:** Begins Milestone 1; game-plan sections 8, 15 and 18, plus the content requirements of the gameplay specifications.
 
 Tasks:
 
 - [ ] Define stable content/entity IDs, Java command/result/event values, version conventions and immutable snapshot conventions without presentation or backend types.
 - [ ] Define project `RandomSource` interfaces and a Juniper `AceRandom` adapter with explicit seeds plus sequence-backed test doubles.
-- [ ] Derive independent generation, AI, combat/dice, loot and cosmetic streams with stable identifiers; reserve a separate development-gacha stream for Phase 11.
+- [ ] Derive independent generation, AI, combat/dice, loot and cosmetic streams with stable identifiers; reserve the profile-owned hub-enchanting stream for Phase 8 and a separate development-gacha stream for Phase 13.
 - [ ] Capture and restore algorithm ID, state-format version and all five AceRandom state words losslessly; reject unknown algorithms or invalid state counts.
 - [ ] Define stable floor/attempt seed derivation from run seed, floor index, generator version and attempt number.
 - [ ] Add Jackson-bound JSON DTOs and an immutable content catalog under `data/content`, backed by `ContentRepository`; validation is explicit rather than assumed from JSON parsing (unknown fields/enum values already fail the Jackson binding; keep that strictness).
-- [ ] Add a minimal `assets/data` set for tiles, generation profiles, a hero/enemy, dice, attack/defense abilities, statuses, items, encounters, loot and progression. Defer banner/pity catalogs to Phase 11.
-- [ ] Validate required fields, versions, IDs, ranges, cross-references, probability totals and progression curves with actionable file/field diagnostics.
+- [ ] Add a minimal `assets/data` set for tiles, generation profiles, a hero/enemy, the five-dice combination/scoring table with per-skill/rank face-weight profiles, the starter sword skill at two illustrative ranks (fair and weighted), HP/MP/SP stat/cost definitions, statuses, the two starter potions, encounters, loot and progression curves. Defer the full skills, inventory/equipment, enchant and quest catalogs to their phases and banner/pity catalogs to Phase 13.
+- [ ] Validate required fields, versions, IDs, ranges, cross-references, six nonnegative face weights with a positive total per skill/rank, authored rank ordering, probability totals and progression curves with actionable file/field diagnostics.
 - [ ] Separate visual asset references from rules and validate required atlas/animation IDs before starting a run.
 - [ ] Test seeded repeatability, full-state round trips, stream independence, malformed content and broken references in ordinary JVM tests. `JacksonContentBindingTest` already pins the content JSON binding shape (item definitions with dice-notation strings, enum rarities, tag arrays).
 
@@ -149,7 +153,7 @@ Tasks:
 - [ ] Create one artemis-odb `World` plus `RunSession` per run, with stable IDs, position/player/AI/blocker/vision/health components and authoritative run/floor/counter state.
 - [ ] Implement a y-up `DungeonGrid` with flattened `int[]` tile IDs and an O(1) occupancy index; keep static floor/wall tiles out of the ECS.
 - [ ] Build the `DungeonProcessor` adapter, translate `char[x][y]` into project tiles/spawns, validate reachability and constraints, and bound generation attempts with deterministic failure behavior.
-- [ ] Establish the game-plan system pipeline in registration order: validation, enemy intent, movement, interaction, combat slots, cleanup, visibility and turn finalization (slot labels per game-plan section 6). Export snapshots/events only after `World.process()` returns.
+- [ ] Establish the game-plan system pipeline in registration order: validation (100), enemy intent (150), movement (200), interaction (300), cleanup (800), visibility (900) and turn finalization (1000); Phase 4 later fills the dice/ability/damage/status slots 400–700 (slot labels per game-plan section 6). Export snapshots/events only after `World.process()` returns.
 - [ ] Enforce cardinal steps, bounds, terrain and occupancy together. Walking/waiting spend one action; an unlocked door opens without movement for one action; invalid movement or a locked door without a key spends none.
 - [ ] Reserve hostile-contact handling for Phase 4 without allowing overlap; complete a movement-only slice before enabling dice encounters.
 - [ ] Implement `DijkstraMap` with `Measurement.MANHATTAN`, explicit blocked terrain and per-query dynamic blockers; use simple deterministic enemy pursuit/idle behavior.
@@ -167,55 +171,62 @@ Exit criteria:
 - [ ] The same starting state and commands reproduce map, turns, visible state and events, including after a basic save/reload.
 - [ ] Simulation state is frame-rate independent, snapshots cannot mutate it, and malformed/rejected commands leave it consistent.
 
-## Phase 4 — Deterministic Dice Combat
+## Phase 4 — Deterministic Five-Dice Combat
 
 **Goal:** Resolve a complete encounter within the existing run model using commands alone.
 
-**Plan alignment:** Begins Milestone 2; game-plan sections 6, 9–10 and 18.
+**Plan alignment:** Begins Milestone 2; game-plan sections 6, 9–10 and 18; [battle.md](gameplay/battle.md) and [stats.md](gameplay/stats.md).
 
 Tasks:
 
-- [ ] Add `DicePool`, `AbilityLoadout`, `Stats`, `StatusSet`, `Shield` and transient effect data alongside existing health/identity components; do not introduce a separate authoritative combat world.
-- [ ] Implement the chosen contact contract: bumping a hostile starts a dice activation for the current player turn without movement or immediate damage.
-- [ ] Fill the dice 400, ability 500, damage 600 and status 700 slots; resolve status-generated damage before cleanup through shared synchronous helpers.
-- [ ] Implement `ROLL_DICE`, `REROLL_DIE`, `ASSIGN_DIE`, `UNASSIGN_DIE`, `USE_ABILITY` and `END_TURN` with phase, target, ownership and resource validation.
-- [ ] Enforce one initial roll per activation; rerolls consume their defined resource, assignments do not roll again, and closing a panel/changing target cannot reset an activation.
-- [ ] Implement pure Java dice matching, attack/defense effects, damage, shields, critical/status rules and a defined modifier order for the starter content.
-- [ ] Tick turn durations on explicit actor activation boundaries once; intermediate dice commands must not advance initiative or repeatedly tick statuses.
-- [ ] Implement deterministic enemy decisions and shared effect resolution; remove dead actors from occupancy/initiative before selecting the next actor.
-- [ ] Define and test victory/defeat and automatic player-turn completion after the final hostile dies, without an extra free activation.
-- [ ] Emit immutable ordered combat events and expand canonical replay fixtures for resources, HP bounds, invalid input and terminal-state behavior.
+- [ ] Add `DiceHand` (five stable dice), `ResourcePools`, `Stats`, `AbilityLoadout`, `StatusSet`, `Shield` and `Cooldowns` alongside existing health/identity components; do not introduce a separate authoritative combat world.
+- [ ] Implement the chosen contact contract: bumping a hostile opens a dice activation for the current player turn without movement or immediate damage.
+- [ ] Implement pre-roll skill/target selection: validate the learned active skill, its rank snapshot, equipment legality, range/target, cooldown and combined SP/MP/HP affordability; selection, panel and target changes before the first roll are free and cannot reset anything after it.
+- [ ] Implement `ROLL_DICE`: lock skill, rank, target, effective attack/mitigation inputs, cost vector and face-weight profile, reserve every required pool cost, and sample five dice independently in stable die order from the locked profile.
+- [ ] Implement kept-die flags (no RNG, cost or initiative) and batch `REROLL_DICE`: atomically replace a chosen nonempty subset of unkept dice for one of two reroll actions under the same locked profile, keeping every replacement result; reject empty, pre-roll and exhausted-budget rerolls with no budget carry-over and no automatic attack at zero rerolls. `ASSIGN_DIE`, `UNASSIGN_DIE` and the old singular `REROLL_DIE` are removed from this mode's contract.
+- [ ] Implement `USE_ABILITY` (deduct reserved costs once before effects, consume the whole hand, resolve the locked skill and end the activation exactly once) and `END_TURN` (free pass before rolling; after rolling pay reserved costs and discard the hand; no skill-use training). Keep `USE_ITEM` gated until minimal inventory consumption exists (Phase 5).
+- [ ] Implement pure Java scoring: pip total 5–30 and exactly one of the eight combination classes with the provisional multiplier table; no overlapping bonuses, four-die straights or wildcards.
+- [ ] Implement the starter damage rule `B + A + K × P` with flat defense subtracted before the multiplier floor, clamped Protection resistance, shield absorbed last and HP clamped at zero; use exact rational/fixed-point arithmetic at the defined rounding boundaries and one shared resolver for previews and commitment.
+- [ ] Enforce resource contracts: current/max/reserved HP/MP/SP, effective cost `max(1, ceil((rankCost + flat) × max(0, 1 + pct)))` per positive pool, all pools validated together before rolling, HP payment bypassing mitigation/shield while leaving at least 1 HP, and a skill never financing its own upfront cost.
+- [ ] Resolve STR/INT/DEX/WIL/LUK and derived stats in dependency order (progression baseline → equipment/status modifiers → derived maxima/attack/defenses → direct derived modifiers) with additive flat/percent aggregation, explicit bounds/rounding and no refill when a maximum rises.
+- [ ] Implement statuses with source IDs, stacking groups/priorities (refresh/replace rules), durations in affected-actor completed activations, periodic effects before expiry, stat recomputation/clamping and authored regeneration for living actors at eligible activation ends; nothing ticks at application and dice commands never tick or expire effects.
+- [ ] Fill the dice 400, ability 500, damage 600 and status 700 pipeline slots; resolve status-generated damage before cleanup through the shared synchronous helpers.
+- [ ] Implement deterministic enemy decisions through the same effect/damage helpers; remove dead actors from occupancy/initiative before selecting the next actor; finalize the player activation once even when the last hostile dies, evaluating defeat before victory.
+- [ ] Emit immutable ordered combat events and expand canonical replay fixtures: exhaustively classify all 7,776 ordered five-die hands across the eight combination classes; pin one initial roll plus two subset rerolls, frozen inputs, held faces, weighted-probability boundaries, damage distributions, HP bounds, invalid commands and terminal states.
+- [ ] Author the starter slice content: sword attack skill at two illustrative ranks (fair and weighted profiles), one enemy response, one skill buff and one enemy stat debuff; add the authored defensive skill, a mana skill and an illustrative HP-cost case as their effects and durations are authored. Stage Smash and Combat/Sword Mastery as their values become available.
 
 Exit criteria:
 
-- [ ] One hero and one enemy can resolve an encounter to victory or defeat through plain JVM command tests.
-- [ ] Identical state, streams and commands produce identical rolls, damage, turn order and events.
-- [ ] Invalid commands, repeated rolls, target/panel changes and turn-finalization edge cases cannot create resources or extra turns.
+- [ ] One hero and one enemy can resolve an encounter to victory or defeat through plain JVM command tests using the starter sword skill with fair and weighted profiles.
+- [ ] Identical state, streams and commands produce identical rolls, kept dice, damage, turn order and events.
+- [ ] Invalid commands, extra rolls or rerolls, post-lock skill/target/panel changes and turn-finalization edge cases cannot create resources, rerolls, damage or extra turns.
 
 ## Phase 5 — Playable Combat and Resumable Activations
 
-**Goal:** Make the dice encounter playable and interruptible without changing committed outcomes.
+**Goal:** Make the five-dice encounter playable and interruptible without changing committed outcomes.
 
-**Plan alignment:** Completes Milestone 2; game-plan sections 10–14.
+**Plan alignment:** Completes Milestone 2; game-plan sections 10–14; [battle.md](gameplay/battle.md) sections 3 and 9 and [stats.md](gameplay/stats.md) sections 3 and 7.
 
 Tasks:
 
-- [ ] Build the dice tray, ability slots, target selection, HP/shield/status display, turn indicator and end-turn control using Scene2D tables/skins.
-- [ ] Connect HUD view models to `RunController` commands; UI selection and animation remain separate from authoritative dice/combat data.
-- [ ] Support tap-based die assignment and keyboard focus; provide a non-drag alternative if drag assignment is added.
+- [ ] Build the battle HUD with Scene2D tables/skins: five persistent dice slots with kept markers, a remaining-rerolls label, pip total, combination/multiplier with a compact combination reference, skill/rank selection showing costs and face probabilities, target selection, HP/MP/SP current/max/reserved, final costs, status icons with remaining affected-actor activations and the end-turn control.
+- [ ] Provide separate Roll, Reroll and Use Skill controls with clear availability; explain which pool blocks an unaffordable skill and expose the stat sources behind the damage preview.
+- [ ] Connect HUD view models to `RunController` commands; UI selection and animation remain separate from authoritative dice/combat data, and previews reuse the committed stat/damage resolvers without consuming gameplay RNG.
+- [ ] Support tap-based keep/reroll selection and keyboard focus; provide a non-drag alternative if drag gestures are added.
 - [ ] Map domain events into bounded presentation tracks for movement/attacks, floating damage, death, camera feedback, SFX and haptics through service interfaces.
 - [ ] Reconcile intermediate event animations to the final snapshot, honoring event-time visibility and preventing hidden-enemy information leaks.
 - [ ] Gate duplicate input while resolving/presenting, and make skip/reduced-motion behavior consume presentation events once without changing rules.
-- [ ] Extend checkpoint DTOs to the current dice activation, rolls, assignments, consumed resources and initiative state after each completed dice command.
-- [ ] Gate subsequent gameplay after rolls/rerolls until their checkpoint is durable or the save failure is explicitly handled; do not offer a free reroll by reloading.
-- [ ] Restore mid-activation and during presentation by rebuilding the HUD from committed state; discard or snap cosmetic tracks safely.
+- [ ] Extend checkpoint DTOs to the whole dice activation: phase, five stable die IDs/faces, kept flags, reroll budget, selected/locked skill/rank/target, locked stat inputs and profile, pools and reservations, status sources/durations, cooldowns and RNG continuation after each accepted dice command.
+- [ ] Gate subsequent gameplay after rolls/rerolls until their checkpoint is durable or the save failure is explicitly handled; reloading must never refund a cost or restore a spent reroll.
+- [ ] Restore mid-activation and during presentation by rebuilding the HUD from committed state; reopening a panel or retrying a command never rerolls, refills resources, refreshes durations or double-applies effects.
+- [ ] When minimal run-inventory consumption exists, enable `USE_ITEM` with one restorative potion and one potion carrying a temporary side effect as a pre-roll full action; otherwise record the deferral and its disposition against the inventory phase.
 - [ ] Exercise encounter start, victory, defeat, retry and return flows on desktop, Android and iOS, with command-to-HUD and restore integration checks.
 
 Exit criteria:
 
-- [ ] A player can win or lose the starter battle on each target through real controls.
-- [ ] Saving after a roll/reroll and resuming preserves dice, costs, actor activation and the future deterministic continuation.
-- [ ] Animation skip, interruption or replay cannot alter damage, grants, dice or turn order.
+- [ ] A player can win or lose the starter battle on each target through real controls, using skill selection, keep/reroll decisions and pass.
+- [ ] Saving after a roll/reroll and resuming preserves dice, kept flags, reroll budget, locked inputs, reservations, statuses and the future deterministic continuation.
+- [ ] Animation skip, interruption or replay cannot alter damage, grants, dice, statuses or turn order.
 
 ## Phase 6 — Durable Saves, Migrations, and Lifecycle Recovery
 
@@ -225,16 +236,16 @@ Exit criteria:
 
 Tasks:
 
-- [ ] Complete the project-owned JSON bundle for schema/rules/content/generator versions, revisions, profile, run, generated map, entities, explored cells, scheduler, RNG streams, dice activation and pending/committed rewards.
+- [ ] Complete the project-owned JSON bundle for schema/rules/content/generator versions and revisions; the profile (hero/life identity, level/XP/cumulative level, AP, skills/objective counts, talent, current-life growth, starting age and processed aging intervals, inventory/equipment/bags/placements/locks, page records, currencies, overflow, installed enchant values, hub pools, enchanting RNG and operation results, quests/stages/evidence/milestones, tracked quests and reward IDs); the run (generated map, entity DTOs, explored cells, counters, scheduler, full RNG states, the dice activation with locked skill/rank/target/profile, five stable dice, kept flags and reroll budget, pools/reservations, stat sources, effect timing, cooldowns, enabled skill-extension state, run inventory origins/reservations/consumption, quest snapshot/pending evidence, pending XP/training/loot and the committed result ID); and the RP-mission section (attempt ID, isolated session state, outcome status) reserved for Phase 9.
 - [ ] Implement explicit codecs and validation with LibGDX JSON utilities; exclude artemis-odb internals, transient intents, caches, textures and animation clocks.
 - [ ] Finish alternating-slot writes with increasing revision, checksum, close/verification and newest-valid-slot recovery; retain the previous good slot after a torn write.
 - [ ] Serialize saves through one application-owned writer and keep revision/callback ordering when coalescing. Never overwrite a newer save with an older queued result.
 - [ ] Add typed operational failures and recoverable loading/save UI; reject unsupported future schemas without overwriting the original file.
-- [ ] Add sequential schema migrations and fixtures for every shipped version; preserve rules/content compatibility or provide a deliberate migration/recovery policy.
+- [ ] Add sequential schema migrations and fixtures for every shipped version; preserve rules/content compatibility or provide a deliberate migration/recovery policy. Content changes that shrink storage or alter progression thresholds must migrate so every item and record is preserved rather than recalculating shipped characters or deleting items that no longer fit.
 - [ ] Implement pause checkpoints, bounded flush, resume reconstruction and stale-session callback guards; required saves continue to belong to the application across screen changes.
 - [ ] Preserve the last stable floor if generation fails/is interrupted, and checkpoint before installing a new floor.
-- [ ] Establish the combined profile/run/grant-ID transition used by Phase 7 so completion rewards cannot be independently saved twice.
-- [ ] Test corruption, torn slots, delayed/out-of-order requests, save failure/retry, migration, unsupported versions and interruption at dice/floor/reward boundaries.
+- [ ] Establish the combined profile/run/grant-ID transition used by Phase 7 so completion rewards cannot be independently saved twice; record hub operation IDs (learning, pages, AP advancement, enchanting, rebirth) with their inputs, outputs, results and RNG state atomically.
+- [ ] Test corruption, torn slots, delayed/out-of-order requests, save failure/retry, migration, unsupported versions and interruption at dice/floor/reward boundaries; verify loads rebuild effective stats from saved sources without reapplying instant effects, re-awarding growth, refreshing statuses or duplicating reservations.
 - [ ] Compare restored and uninterrupted runs on JVM, Android and RoboVM, including complete RNG continuation and initiative ties; verify actual device storage/lifecycle behavior.
 
 Exit criteria:
@@ -247,30 +258,88 @@ Exit criteria:
 
 **Goal:** Complete the durable loop around the starter dungeon before expanding its content.
 
-**Plan alignment:** Completes Milestone 3; game-plan sections 14–16.
+**Plan alignment:** Completes Milestone 3; game-plan sections 14–16; [inventory.md](gameplay/inventory.md), [skills.md](gameplay/skills.md) and [character.md](gameplay/character.md).
 
 Tasks:
 
-- [ ] Add thin title/home, dungeon selection, hero/loadout, inventory/equipment, settings and results screens through the existing screen coordinator.
-- [ ] Define and implement which items/progression survive victory, defeat and abandonment; keep run inventory separate from permanent ownership until the defined grant point.
-- [ ] Implement ownership, XP/levels, derived stats, item stacks, equipment slots, loadout validation and the starting profile needed for the offline loop.
-- [ ] Copy a validated loadout into a new run; account/menu changes cannot silently mutate an active character.
-- [ ] Implement validated currency/cost/grant operations and reject negative, duplicate, unaffordable or invalid inventory/equipment operations.
-- [ ] Commit run completion, consumed pending rewards, updated profile and grant ID in one save-bundle transition; show results only from the committed outcome.
-- [ ] Implement start, continue, abandon, defeat, complete and return flows, including loading/empty/error/save-recovery states.
-- [ ] Add repeat-completion/retry/load tests proving a result is granted once and the next run receives the intended progression/loadout.
+- [ ] Decide and record the victory/defeat/abandonment retention policy for brought gear/supplies, new loot, gold, XP, training and quest evidence in Open Decisions before inventory-backed results ship.
+- [ ] Add thin title/home, dungeon selection, hero (character/skills/inventory/equipment), settings and results screens through the existing screen coordinator, including the skill journal and character screens.
+- [ ] Implement the grid inventory: provisional 6 × 10 backpack, fixed rectangular footprints, stack keys with run provenance, one ordinary non-nesting bag, deterministic placement (saved bag-priority order, then backpack, scanned left-to-right/top-to-bottom), whole-transfer validation with explicit smaller-quantity partial pickup, gather/sort preserving counts/variants/locks/provenance with a failed sort retaining the old layout, and favorites as markers versus enforced item locks.
+- [ ] Implement equipment slots (main/off hand, head, body, hands, feet, two accessories), two-handed off-hand reservation counted once, paired swords as two legal instances, sword/shield support for shield skills, mutually exclusive body armor categories, atomic equip transactions validating every displaced item's destination, and effects only while equipped and eligible with no automatic drop or resource refill.
+- [ ] Implement the three learning routes: NPC instruction, complete-book reading (consumes one book on success; duplicates consume nothing) and page assembly (any order, no expiry, wrong/duplicate pages rejected without consumption); learning grants Rank F with 0 training and spends no AP.
+- [ ] Implement training and advancement: at least 100 current-rank points plus authored AP per rank-up, capped objectives counted once per resolved outcome and reset on advancement, excess training discarded, AP unable to buy training or auto-advance, rank 1 terminal, passives training from eligible events under their own objective IDs, and a journal distinguishing training-complete/insufficient-AP/ready/max-rank states with visible prototype caps.
+- [ ] Implement character progression: XP thresholds with multi-level crossing, 1 AP per earned level up to the content-defined cap (proposed 200) discarding overflow, cumulative level `1 + earned level-ups across all lives`, age/talent growth bundles stored with grant-time precision, initial Close Combat and Magic talents, and mastery derived for every talent from current skill ranks with no second AP payment and inactive-talent bonuses preserved.
+- [ ] Implement aging: one year per seven elapsed real days reconciled once per interval at hub/results boundaries including offline time, destination-age rewards (11–20: 5 AP plus authored growth; 21–25: 5 AP plus base growth; 26+: neither), idempotency against repeated menus and backward clock changes, a controllable test clock, and the recorded clock-trust decision.
+- [ ] Copy a validated loadout and provisions into a new run with exact origin reservations (including bag contents as one contained hierarchy); account/menu changes cannot silently mutate an active character; in-run layout commands cost no initiative and are unavailable while dice are locked.
+- [ ] Implement world pickup as one full action with quantity/fit validation; failed pickups stay on the ground without a turn or loot reroll; implement validated currency/cost/grant operations rejecting negative, duplicate, unaffordable or invalid inventory/equipment operations, with outputs placed only after simulated input consumption.
+- [ ] Implement withdraw-only saved reward overflow for grants that do not fit, accepting only authoritative grants and reconciliation returns, unusable until withdrawn, and required to be cleared before a new run or optional reward activity while preserving already-earned results.
+- [ ] Commit run completion in one save-bundle transition: reconciled brought-item consumption/returns and released reservations, retained loot/XP/training (and quest evidence once quests exist), saved overflow, updated profile and grant ID; apply retained XP with run-start age/talent, then training, then elapsed aging; show results only from the committed outcome.
+- [ ] Implement start, continue, abandon, defeat, complete and return flows, including loading/empty/error/save-recovery states, and add repeat-completion/retry/load tests proving a result is granted once and the next run receives the intended progression/loadout.
 
 Exit criteria:
 
-- [ ] The player can select a hero, explore/fight, finish or lose a run, receive the defined progression, improve a loadout and start again.
-- [ ] Restart/retry at the results boundary cannot double-grant loot, XP or currency.
+- [ ] The player can select a hero and loadout, explore/fight, finish or lose a run, receive the defined progression, learn/advance skills through all three routes, manage grid inventory/equipment and start again.
+- [ ] Restart/retry at results or hub operation boundaries cannot double-grant loot, XP, AP, training or currency, or restore consumed supplies.
 - [ ] The offline loop requires no authentication, purchase or gacha service.
 
-## Phase 8 — Dungeon Depth and Expanded Encounters
+## Phase 8 — Quests, Enchanting, and Rebirth
+
+**Goal:** Build the hub progression systems — quests, enchanting, and rebirth — on top of the durable loop.
+
+**Plan alignment:** Begins Milestone 4; game-plan sections 15–16; [quests.md](gameplay/quests.md) and [enchants.md](gameplay/enchants.md).
+
+Tasks:
+
+- [ ] Implement quest state (Locked → Available/Active → Ready to complete → Completed), Chapters/Generations with explicit prerequisites, eligibility separate from automatic versus NPC delivery, authored-order rank comparisons, one completion per hero with no expiry, non-abandonable mainstream quests and authored sidequest abandonment preserving committed delivery checkpoints.
+- [ ] Deliver the first quest slice: one short Chapter/Generation story chain, one NPC sidequest, one automatic rank-milestone Skill Quest and one NPC-offered skill-unlock quest, with journal tabs (Chapter-named storylines containing Generations, plus Sidequests and Skills with an RP badge), a tracker, and explicit Complete/final-NPC-dialogue claims.
+- [ ] Implement objectives and evidence: stable objective IDs, ordered stages, capped/deduplicated evidence from dialogue, interaction, defeats, skill outcomes, acquisition/delivery and mission success; event objectives count only after stage activation; item requirements recheck legal current inventory; hand-ins consume items and checkpoint objectives together; triggers process after the initiating transaction in stable quest-ID order with idempotent catch-up after load.
+- [ ] Implement atomic quest claims: revalidate final objectives and hand-in costs, consume items, grant XP/AP/items/Rank F skill unlocks, record the completion ID and unlock successors; route full-backpack grants into saved reward overflow without regranting XP/AP; a quest skill reward grants only an unknown Rank F and completes without refund when already known.
+- [ ] Add the instructor-taught Enchant skill using the shared training/AP progression (at least two playable ranks) plus scroll, powder and enchant-definition catalogs with slot/rank/condition tables and authored rank ordering.
+- [ ] Implement hub-only enchant application: one prefix and one suffix per eligible item, replacement only on success, the Rank 5–1 scroll gate at Enchant skill Rank 5+, conditional clauses reading progression snapshots, variable values rolled once on installation and persisted, effects feeding the equipment stat stage once with independent penalties staying active, and the basis-point chance resolver with the 90% cap under Protect Equipment (failure consumes scroll, powder and MP while preserving the item and both enchants).
+- [ ] Add the hub MP pool with an explicit authored recovery/rest loop as a prerequisite for enchant operations.
+- [ ] Implement enchant burning as a separate destructive operation: consume the item, materials and MP regardless of recovery; independent prefix-then-suffix recovery checks on the dedicated enchanting RNG; reserved output capacity for the maximum possible recovered scrolls before spending or drawing; recovered scrolls retain definitions, not old rolled values.
+- [ ] Persist enchant operations atomically — costs, equipment/output changes, training, operation ID and the dedicated enchanting RNG state — before revealing; retry returns the recorded result; previews consume no RNG.
+- [ ] Settle rebirth eligibility/cost/cooldown in Open Decisions, then implement hub rebirth: preview and atomically reset current level/XP, starting age, talent and life growth while preserving cumulative level, learned ranks/training, unspent AP, mastery, committed items/pages/enchants, quests and claimed rewards; settle run results and aging first and move newly illegal equipment into storage/overflow.
+- [ ] Record the qualifying rebirth event's life ID and talent for rebirth-gated quest delivery, and snapshot the resulting progression/loadout for the next run.
+- [ ] Test quest delivery/deduplication/catch-up, enchant chance boundaries, failure preservation, persistent rolled values, burn recovery and output capacity, rebirth preservation, and interrupted save/retry without duplicate grants, charges or rolls.
+
+Exit criteria:
+
+- [ ] Saved quests, enchant application/protected failure/burning and rebirth operate in the hub loop with exactly-once claims and operations.
+- [ ] Quest, enchant and rebirth triggers cannot double-deliver, double-grant, double-charge or reroll persisted values, including after reload, retry or interruption.
+- [ ] Rebirth preserves the defined progression and cannot bypass unfinished-run result or aging rules.
+
+## Phase 9 — Role-Playing Missions and Skill Extensions
+
+**Goal:** Add the isolated RP mission mode and stage the remaining combat skill catalog behind their authored dependencies.
+
+**Plan alignment:** Milestone 4; game-plan section 16; [quests.md](gameplay/quests.md) section 7 and the [skills.md](gameplay/skills.md) combat catalog.
+
+Tasks:
+
+- [ ] Implement the RP mission mode: a hub-started, isolated session (scenario/NPC template versions, attempt ID, fixed stats/skills/gear/supplies, map, objectives, outcome) requiring no other active run, using the normal movement and five-dice rules through the NPC's authored abilities while the hero profile remains untouched.
+- [ ] Enforce RP boundaries: no hero XP/training/loot by default, borrowed items/skills never leak to the hero, hub progression/rebirth/equipment export disabled during the mission, and only the recorded scenario outcome advances its eligible quest.
+- [ ] Implement the RP lifecycle: success saves the outcome once and returns to the hub; failure/exit leaves the quest retryable at its authored checkpoint; retry creates a fresh attempt; loading resumes the same suspended attempt (HP, supplies, dice, objectives); app closure is neither failure nor reset.
+- [ ] Add equipment defense passives (Shield Mastery, Heavy/Light Armor Mastery with mutually exclusive body categories and penalty relief at the source, no Shield absorption pool) and Final Hit as a paid temporary melee buff with its resolved magnitude/duration saved while later attacks still pay and roll normally.
+- [ ] Add Counterattack's one-charge prepared retaliation only with synchronous reaction ordering inside the attacking transaction, stance expiry at the start of the owner's next activation, and no counter/critical recursion.
+- [ ] Add Windmill with frozen Manhattan-area targets resolved by stable ID, one payment and hand, and separate full resolutions per frozen defense; add Charge with a validated straight empty lane, frozen destination, and movement plus one hit as one atomic action.
+- [ ] Add Critical Hit only with the critical-resolution extension: the learned passive supplies bonus damage, authored chance in basis points drawn once per eligible target after counter interception using combat RNG, bonus applied to `comboDamage` before Protection and shield, and no draw for countered or zero-chance hits.
+- [ ] Add dual wielding with two distinct one-handed instances whose contributions combine once; two weapons still produce one five-dice action, and Charge's shield requirement stays excluded from the paired loadout initially.
+- [ ] Stage each extension behind its authored rules, content values, reachable training and dependencies; keep unavailable skills visibly labeled in the journal without fake Use or training paths.
+- [ ] Save cooldowns, prepared reactions, area targets/paths and critical results with the run state; outcome IDs prevent retries or reloads from reapplying damage or training.
+- [ ] Test passive activation/removal, one mastery contribution with two weapons, armor exclusivity, Counterattack consumption/expiry without reaction loops, Final Hit timing, blocked Charge routes, Windmill target order and training counts, and critical RNG/multiplier order when enabled.
+
+Exit criteria:
+
+- [ ] One RP scenario completes, fails and resumes without hero-state leakage, borrowed-progression leaks or duplicate outcomes.
+- [ ] Enabled skill extensions obey their gating, and save/retry cannot reapply their effects, cooldowns or training.
+- [ ] Disabled extensions remain visible but inert, with the dependency keeping each one disabled recorded.
+
+## Phase 10 — Dungeon Depth and Expanded Encounters
 
 **Goal:** Extend the proven loop with multiple floors and richer content using the same simulation contracts.
 
-**Plan alignment:** Begins Milestone 4; game-plan sections 7–10 and 15–16.
+**Plan alignment:** Milestone 4; game-plan sections 7–10 and 15–16.
 
 Tasks:
 
@@ -280,7 +349,7 @@ Tasks:
 - [ ] Implement floor transitions with derived seeds, explicit health/status/inventory carry-over and checkpoint-before-install behavior.
 - [ ] Define and implement multi-enemy encounter participation/joining, targeting, perception/memory and richer deterministic AI using the existing initiative queue.
 - [ ] Add hero abilities, dice/status combinations and enemy policies without duplicating formulas or storing gameplay state in screens.
-- [ ] Implement in-run consumables/equipment changes only through explicit commands with content-defined costs and validation.
+- [ ] Implement in-run consumable use only through the explicit pre-roll full-action command with content-defined costs and validation; equipment changes remain hub/loadout operations.
 - [ ] Test reachable spawn/exit/key placement, bounded generation failures, multi-actor cleanup, loot legality and full multi-floor replay through completion or defeat.
 
 Exit criteria:
@@ -289,7 +358,7 @@ Exit criteria:
 - [ ] Generation cannot install an invalid floor, and interruptions preserve the prior stable state.
 - [ ] Identical versioned inputs reproduce floors, combat, loot and results without remote requests during rules.
 
-## Phase 9 — Presentation Polish, Input, Audio, and Haptics
+## Phase 11 — Presentation Polish, Input, Audio, and Haptics
 
 **Goal:** Replace prototype presentation while preserving command authority and resource budgets.
 
@@ -305,7 +374,8 @@ Tasks:
 - [ ] Implement key remapping, keyboard/controller focus, scalable text, large touch targets, non-drag alternatives, reduced motion and color-independent cues.
 - [ ] Validate viewport unprojection, modal consumption, safe insets, resizing and pixel clarity across supported screen sizes/densities.
 - [ ] Design and verify platform accessibility integration where required; Scene2D widgets alone do not establish native screen-reader support.
-- [ ] Add reward/level-up/menu reveals that animate known committed outcomes. Introduce optional Spine/text-effect/interpolation libraries only for a demonstrated art/UI need.
+- [ ] Add reward/level-up/rank-up/quest-claim/enchant-result/menu reveals that animate known committed outcomes. Introduce optional Spine/text-effect/interpolation libraries only for a demonstrated art/UI need.
+- [ ] Remove the temporary in-app frame-capture/auto-demo verification aid introduced in Phase 1 once real-device evidence covers it.
 - [ ] Profile startup, assets, presentation queues and repeated screen transitions; optimize batching/copying only for measured problems.
 
 Exit criteria:
@@ -314,7 +384,7 @@ Exit criteria:
 - [ ] Controls remain usable across the selected input methods and display sizes, with actual accessibility evidence recorded.
 - [ ] Rendering/resource lifetime stays within agreed frame-time and memory budgets on baseline devices.
 
-## Phase 10 — Offline Quality, Balance, and Device Acceptance
+## Phase 12 — Offline Quality, Balance, and Device Acceptance
 
 **Goal:** Validate the expanded offline game as a release-quality foundation for later services.
 
@@ -324,7 +394,7 @@ Tasks:
 
 - [ ] Consolidate rule/adapter/controller/save coverage for system registration order, structural changes, coordinate translation, occupancy, FOV, initiative, combat and canonical replay.
 - [ ] Run complete start-to-result, save/resume, floor-change, defeat/abandon and repeat-run checks against actual backends.
-- [ ] Use seeded simulations to measure generation validity, encounter difficulty, progression pacing and loot distributions against documented targets.
+- [ ] Use seeded simulations to measure generation validity, encounter difficulty, progression pacing, loot and five-dice distributions against documented targets.
 - [ ] Set budgets for startup, dungeon entry, ordinary command latency, generation worst cases, frame time, memory, event queues and save size/latency.
 - [ ] Profile release/minified Android builds and iOS AOT builds on representative physical devices, including a mid-range Android baseline; record device models and refresh rates.
 - [ ] Verify interruption during generation, animation, dice checkpoints, slot writes and result grants, including app recreation and unavailable/corrupt storage paths.
@@ -337,7 +407,7 @@ Exit criteria:
 - [ ] Agreed performance and balance targets are met, and no known offline release blocker remains.
 - [ ] New service work can rely on stable save/content versions, reward semantics and platform lifecycle behavior.
 
-## Phase 11 — Local Gacha Simulator and Reveal Flow
+## Phase 13 — Local Gacha Simulator and Reveal Flow
 
 **Goal:** Exercise banner and reveal behavior through a development-only repository before production integration.
 
@@ -351,7 +421,7 @@ Tasks:
 - [ ] Build banner details, rates, confirmation, result/reveal, history and collection updates in Scene2D without exposing repository implementation details to widgets.
 - [ ] Resolve and persist a result before revealing it; replay an interrupted reveal from its recorded result without rerolling or charging again.
 - [ ] Test invalid/expired banners, insufficient currency, guarantee/pity boundaries, duplicate conversion, duplicate requests and interrupted saves/reveals.
-- [ ] Gate the simulator out of production commerce paths and document how Phase 13 replaces it with a remote repository.
+- [ ] Gate the simulator out of production commerce paths and document how Phase 15 replaces it with a remote repository.
 
 Exit criteria:
 
@@ -359,7 +429,7 @@ Exit criteria:
 - [ ] Reveal timing cannot change inventory, balance, pity or the pull result.
 - [ ] Local RNG/currency cannot authorize production premium grants.
 
-## Phase 12 — Authentication, Backend, and Cloud Synchronization
+## Phase 14 — Authentication, Backend, and Cloud Synchronization
 
 **Goal:** Add production services through Java interfaces and platform adapters without changing deterministic rules.
 
@@ -382,7 +452,7 @@ Exit criteria:
 - [ ] Conflicts and stale responses have explicit behavior and cannot silently overwrite newer or another account's progress.
 - [ ] Offline dungeon play stays deterministic; secrets and production tokens are absent from game bundles/logs.
 
-## Phase 13 — Verified Purchases and Production Gacha
+## Phase 15 — Verified Purchases and Production Gacha
 
 **Goal:** Make paid grants and pulls server-authoritative, idempotent and recoverable.
 
@@ -405,7 +475,7 @@ Exit criteria:
 - [ ] A logical transaction cannot double-charge or double-grant under retries, duplicated callbacks or response loss.
 - [ ] Android/iOS purchase restore and interrupted-transaction recovery have recorded sandbox/device evidence.
 
-## Phase 14 — Release Readiness and Live Operations
+## Phase 16 — Release Readiness and Live Operations
 
 **Goal:** Package and operate compatible desktop/mobile releases with verified updates and recovery.
 
@@ -437,10 +507,10 @@ These milestones match game-plan section 19. Each requires its listed phases and
 |----------------------------------------------|-----------------|-----------------------------------------------------------------------------|
 | 0 — Repair and prove the dependency baseline | 0–1             | Repaired dependency graph and visible lifecycle-safe screen on each backend |
 | 1 — Playable dungeon movement                | 2–3             | Validated content/RNG, deterministic movement/turns/FOV and basic reload    |
-| 2 — Dice encounter and resumable activation  | 4–5             | Playable dice battle with preserved rolls/resources after interruption      |
-| 3 — Durable run and progression loop         | 6–7             | Robust recovery and repeatable offline loop with grants applied once        |
-| 4 — Dungeon depth and presentation quality   | 8–10            | Expanded content, polished input/feedback and measured device acceptance    |
-| 5 — Production services and delivery         | 11–14           | Gacha/service integration, verified commerce and releasable distributions   |
+| 2 — Five-dice encounter, resources, and resumable activation | 4–5 | Playable five-dice battle with locked inputs, reserved costs, statuses and activations preserved across interruption |
+| 3 — Durable run, inventory, and progression loop | 6–7         | Robust recovery, grid inventory/equipment and a repeatable offline loop with skills/XP/aging granted exactly once |
+| 4 — Hub systems, quests, and dungeon depth   | 8–12            | Quests, enchanting, rebirth, RP missions, staged skill extensions, expanded content and measured device acceptance |
+| 5 — Production services and delivery         | 13–16           | Gacha/service integration, verified commerce and releasable distributions   |
 
 ## Decisions Already Set by the Game Plan
 
@@ -452,6 +522,10 @@ These milestones match game-plan section 19. Each requires its listed phases and
 | RNG                  | Explicit Juniper AceRandom streams; persist all state words and algorithm/version IDs          |
 | Initiative           | Project queue with logical ticks and stable tie-breaks; initial activation cost 100            |
 | Contact combat       | Bump starts the current player's dice activation without movement or immediate damage          |
+| Dice activation      | Exactly five d6 power one selected active skill; skill/target/inputs lock at the first roll; one initial roll plus two batch rerolls; whole-hand commit or paid pass |
+| Combat resources     | HP/MP/SP tracked as current/max/reserved; positive authored costs; nonlethal HP payments; activation-boundary durations and regeneration |
+| Run inventory        | Hero-owned run snapshot with origin reservations; hub inventory mutation unavailable during a run; withdraw-only saved reward overflow |
+| In-run equipment     | Equip/unequip are hub/loadout operations in the initial battle design; in-run consumable use is a gated pre-roll full action |
 | Save format          | Project-owned versioned JSON profile/run bundle in alternating slots                           |
 | Presentation         | SpriteBatch world, Scene2D HUD/menus, animations of committed events                           |
 | Initial layout       | Landscape and 16-pixel tiles; exact logical resolution/scaling still needs validation          |
@@ -465,15 +539,19 @@ Resolve these when their phase needs them. Do not reopen the settled contracts a
 |----------------------------------------------------------------------|-----------|---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Duplicate-artifact repair and reviewed minimal dependency graph      | Phase 0   | Resolved 2026-09-02 | Narrow exclusion of `com.github.tommyettinger.jdkgdxds:build` in root `build.gradle` (all subproject configurations); retained `:jdkgdxds` module with identical transitive deps. Runtime reduced to gdx 1.14.2, artemis-odb 2.3.0 (replacing ashley 1.7.4 same day), squidcore/grid/place/path 4.0.12, jdkgdxds 2.1.8, juniper 0.10.5. README "Dependencies"; `*/gradle.lockfile`; `gradle/verification-metadata.xml`. |
 | Test/check tooling and CI setup                                      | Phase 0   | Resolved 2026-09-02 | JUnit 4.13.2 pinned for `:core:test` (plain JVM, no Gdx.app/OpenGL); Checkstyle 10.20.2 with `config/checkstyle/` (formatting hygiene + `ImportControl` banning `com.badlogic.gdx` under `game/`); `--release 8` guards the Java 8 API surface. `.github/workflows/ci.yml.backup` runs shared tests/checks, desktop compile and Android packaging; iOS verification documented as manual macOS-host steps in README.           |
-| Logical world resolution/scaling and initial test-device matrix      | Phase 1   | Resolved 2026-09-04 | World: `ExtendViewport` with 320x180 logical minimum (20x11.25 tiles at 16px, y-up camera clamped to the floor rect; 960x540 desktop window scales 3x integer). UI: separate `ScreenViewport` `Stage` (1 unit = 1 pixel), HUD padded by `Graphics.getSafeInset*`. Verified on desktop 960x540, Android `Medium_Phone` AVD (2400x1080 landscape), iPhone 16 Pro simulator (iOS 18.6). Broader physical-device matrix stays open for Phase 10. |
-| Resource limits: map size, automatic actions and presentation queues | Phase 3   | Open                | Bound before enabling untrusted/generated content sizes                                                                                                                                                                                                                                                                                                                                                                 |
-| Exact starter dice values, ability costs and modifier/status rules   | Phase 4   | Open                | Implement the fixed command/activation contracts                                                                                                                                                                                                                                                                                                                                                                        |
-| Defeat/abandon carry-over and progression/economy targets            | Phase 7   | Open                | Set before durable profile grants                                                                                                                                                                                                                                                                                                                                                                                       |
-| Multi-enemy joining and richer encounter rules                       | Phase 8   | Open                | Reuse the current initiative queue and run authority                                                                                                                                                                                                                                                                                                                                                                    |
-| Release input/accessibility scope and any native bridge              | Phase 9   | Open                | Record actual platform verification                                                                                                                                                                                                                                                                                                                                                                                     |
-| Auth provider, desktop auth support and cloud conflict policy        | Phase 12  | Open                | Validate Java/Android/RoboVM compatibility                                                                                                                                                                                                                                                                                                                                                                              |
-| Billing/entitlement integration and desktop commerce scope           | Phase 13  | Open                | Server verification and idempotency are required                                                                                                                                                                                                                                                                                                                                                                        |
-| Launch regions, device support and distribution channels             | Phase 14  | Open                | Recheck requirements at release time                                                                                                                                                                                                                                                                                                                                                                                    |
+| Logical world resolution/scaling and initial test-device matrix      | Phase 1   | Resolved 2026-09-04 | World: `ExtendViewport` with 320x180 logical minimum (20x11.25 tiles at 16px, y-up camera clamped to the floor rect; 960x540 desktop window scales 3x integer). UI: separate `ScreenViewport` `Stage` (1 unit = 1 pixel), HUD padded by `Graphics.getSafeInset*`. Verified on desktop 960x540, Android `Medium_Phone` AVD (2400x1080 landscape), iPhone 16 Pro simulator (iOS 18.6). Broader physical-device matrix stays open for Phase 12. |
+| Resource limits: map size, automatic actions and presentation queues | Phase 3   | Open                | Bound before enabling untrusted/generated content sizes                                 |
+| Starter combat balance: reroll allowance, multipliers, damage scaling, skill costs/cooldowns and rank probability tables | Phase 4 | Open | Command/activation contracts are fixed; provisional values from battle.md/stats.md ship as authored balance content, not inferred Dicero formulas |
+| Skills/AP ownership (hero vs account) and XP/AP economy targets | Phase 7 | Open | Specifications propose individual-hero ownership; settle before hub progression ships |
+| Victory/defeat/abandonment retention for gear, supplies, loot, XP, training and quest evidence | Phase 7 | Open | Decide before inventory-backed results ship (Milestone 3); align this tracker with the decision |
+| Aging clock trust and forward-clock policy | Phase 7 | Open | Explicit application-level decision required before player-facing age rewards |
+| Rebirth eligibility, cost and cooldown | Phase 8 | Open | Rebirth implementation is gated on this decision |
+| Skill-extension staging: Counterattack, Windmill, Charge, Critical Hit, dual wielding | Phase 9 | Open | Enable only when authored rules, content values, reachable training and dependencies exist |
+| Multi-enemy joining and richer encounter rules                       | Phase 10  | Open                | Reuse the current initiative queue and run authority                                    |
+| Release input/accessibility scope and any native bridge              | Phase 11  | Open                | Record actual platform verification                                                     |
+| Auth provider, desktop auth support and cloud conflict policy        | Phase 14  | Open                | Validate Java/Android/RoboVM compatibility                                              |
+| Billing/entitlement integration and desktop commerce scope           | Phase 15  | Open                | Server verification and idempotency are required                                        |
+| Launch regions, device support and distribution channels             | Phase 16  | Open                | Recheck requirements at release time                                                    |
 
 ## Verification Guide
 
@@ -496,7 +574,7 @@ A `NO-SOURCE` test task does not satisfy the test gate. A dependency report or s
 
 ## Completion Log
 
-No phases are complete after this reset. Add a row only after all phase tasks and exits are verified; include the date, target and exact evidence.
+Phases 0–1 are complete as recorded below; their numbers were not changed by the 2026-09-05 realignment. Add a row only after all phase tasks and exits are verified; include the date, target and exact evidence.
 
 | Phase                                      | Completed date | Verified by                                                  | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 |--------------------------------------------|----------------|--------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -505,6 +583,7 @@ No phases are complete after this reset. Add a row only after all phase tasks an
 
 ## Work Notes
 
+- **2026-09-05 — Gameplay alignment update (documentation only; no implementation claimed).** Re-aligned the phase checklist with the game plan's September 5 gameplay update and the seven gameplay specifications. Phase 4/5 re-scoped to the five-dice contract: skill-before-roll selection, first-roll lock of skill/rank/target/inputs/profile, kept flags, one initial roll plus two batch rerolls via `REROLL_DICE`, whole-hand `USE_ABILITY` commit, paid post-roll pass; `ASSIGN_DIE`/`UNASSIGN_DIE` and the singular `REROLL_DIE` removed; `USE_ITEM` gated on inventory consumption; scoring/damage/resource/stat/status tasks follow battle.md and stats.md. Phase 6 save-bundle contents expanded to the game-plan section 14 profile/run/mission shape. Phase 7 expanded to grid inventory/equipment, the three learning routes with the 100-point-plus-AP gate, XP/levels/cumulative level/talents/mastery, weekly aging with the provisional reward cutoffs, world pickup, and withdraw-only reward overflow. New Phase 8 (quests, enchanting, rebirth) and Phase 9 (RP missions, staged skill extensions) split the old Phase 8 scope; former phases 8–14 renumbered 10–16. Milestone map updated to the renamed game-plan milestones (M2–M4); Open Decisions updated with the retention policy, hero-vs-account AP ownership, aging clock trust, rebirth economy and extension-staging decisions, and renumbered entries. RNG stream reservations updated (hub-enchanting stream → Phase 8; development-gacha stream → Phase 13). Phases 0–1 completion evidence unchanged. Note: the Phase 1 work note below references the frame-capture aid "marked for removal in Phase 9"; after renumbering that removal belongs to Phase 11, where it is now an explicit task.
 - **2026-09-04 — Phase 1 completed (lifecycle, assets, and rendering integration).** New shared code, all paths per game-plan section 17: `game/` (Gdx-free, Checkstyle-guarded) gained the command-driven spike — `commands/` (MoveCommand, CommandResult, PendingCommand), `ecs/components/` (GridPosition, PlayerControlled), `ecs/systems/` (CommandValidationSystem slot 100 → MovementSystem slot 200 → CleanupSystem slot 800, registration order = pipeline order), `grid/` (immutable row-major y-up FloorMap + GeneratedFloor), `algorithms/DungeonGenerator` (detached-data contract), `squidsquad/SquidDungeonGenerator` (one `DungeonProcessor(width, height, new AceRandom(seed))` per call; x-first `char[x][y]` → y-up row-major translation pinned by tests against the raw library grid), and `DungeonSimulation` (one synchronous `world.process()` per command; `StepCounterSystem` proves idle frames step nothing). `bootstrap/SessionWorker` owns the worker-thread → `postRunnable` handoff with session-token stale-callback rejection and executor shutdown on hide/dispose. `presentation/` gained LoadingScreen (drains the app AssetManager; actionable failure text + quit before any gameplay screen activates) and DungeonScreen (world `ExtendViewport` 320x180 min + clamped camera, private SpriteBatch, Scene2D `ScreenViewport` Stage with skin buttons/D-pad, `InputMultiplexer` stage-first, safe-inset padding, zero-size resize guards, worker-generated floors installed only on the render thread). `RebirthDungeon` now owns the `AssetManager` (dungeon atlas, uiskin atlas + skin) and acts as screen coordinator: `navigateTo` disposes the previous screen; managed assets are never disposed by screens. `FirstScreen` deleted. Assets: `assets/atlases/dungeon.{png,atlas}` — six 16px tiles (floor/wall/door/exit/2 player walk frames), Nearest filtering declared in the atlas; generator script `tools/make_dungeon_atlas.py` (offline tooling). Two atlas-format findings recorded for future asset work: TexturePacker-format `.atlas` files must not contain blank lines (a blank line makes the parser treat the next bare name as a new page/image — this produced the first launch failure, surfaced correctly by the loading-failure UI), and `SkinLoader.SkinParameter("ui/uiskin.atlas")` loads the existing skin cleanly. Verification: desktop via LWJGL3 run; Android via emulator with real `input tap`/`keyevent`; iOS via RoboVM AOT + `simctl`. OS screen recording and Accessibility are denied for this session's automation helper and `osascript` keystrokes are denied, so desktop/iOS visuals were verified with an in-app frame-capture aid (F12 + a property/env-gated auto-demo driving the real `navigateTo`/`submitMove` paths; `Screenshots`/`AutoDemo`, marked for removal in Phase 9) plus, on iOS, the simulator composite via DeviceHub. Android interaction used real injected touches (no automation workaround needed). Code review found and fixed: a per-activation `BitmapFont` leak in LoadingScreen and duplicated HUD label adds in DungeonScreen; `NO_PENDING_COMMAND` and an unused `WorldConfiguration.register` were removed. Battery re-run green after fixes (28/28 tests, Checkstyle clean, all compiles, Android duplicate-class check + debug APK).
 - **2026-09-04 — iOS toolchain repairs and Xcode 27 launch procedure.** Two stale RoboVM force-link leftovers from the pre-reset scaffold broke `:ios:launchIPhoneSimulator` ("Root class ... not found"): `ios/src/main/resources/META-INF/robovm/ios/robovm.xml` (vis-ui patterns — file deleted; the module-level `ios/robovm.xml` already carries the real patterns) and the exact-class pattern `com.badlogic.gdx.controllers.IosControllerManager` in `ios/robovm.xml` (gdx-controllers was intentionally removed in Phase 0). After removal, RoboVM 2.3.23 AOT compile + link + signing succeeded on Xcode 27 beta (27A5194q) for the iOS 18.6 simulator runtime. RoboVM's final `open -a Simulator` step fails on Xcode 27 ("Unable to find application named 'Simulator'" — Simulator.app was replaced by DeviceHub.app); the documented workaround is `xcrun simctl install <UDID> ios/build/robovm.tmp/IOSLauncher.app` then `xcrun simctl launch <UDID> cloud.vinh.rebirthsaga` (optionally `SIMCTL_CHILD_*` env passthrough for debug flags; note `booted` is ambiguous when several simulators are up — pin the UDID). README's iOS section updated accordingly. Known presentation caveat (recorded, not a Phase 1 gate): `ScreenUtils.getFrameBufferPixmap` on the MetalANGLE backend returns an incomplete frame (early draw calls only), so in-app framebuffer captures are not reliable visual evidence on iOS — use the simulator composite (`xcrun simctl io <UDID> screenshot`) with DeviceHub running.
 

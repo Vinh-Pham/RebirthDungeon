@@ -6,6 +6,20 @@ The game is turn-based: commands advance the simulation; frames advance presenta
 
 > The artemis-odb `World` owns live dungeon entities and rules. SquidSquad supplies dungeon algorithms. The application controller coordinates commands, persistence, and platform services. LibGDX renders and receives input.
 
+Gameplay alignment updated **September 5, 2026** from the design documents below. These documents define planned rules, not completed features; numeric examples and proposed defaults remain provisional. The architecture and dependency audit retain their original verification dates.
+
+| Gameplay specification | Owns |
+| --- | --- |
+| [Battle](gameplay/battle.md) | Five-dice skill selection, keep/reroll, scoring, damage, activation commands |
+| [Stats](gameplay/stats.md) | HP/MP/SP, costs, attributes, equipment contributions, buffs/debuffs |
+| [Skills](gameplay/skills.md) | Acquisition, training plus AP, ranks, active/passive combat catalog |
+| [Character](gameplay/character.md) | XP, levels, talents, aging, proposed rebirth |
+| [Inventory](gameplay/inventory.md) | Grid storage, bags, stacks, equipment, overflow, run provisions |
+| [Enchants](gameplay/enchants.md) | Equipment prefix/suffix effects, application and burning transactions |
+| [Quests](gameplay/quests.md) | Chapters/Generations, delivery, objectives, claims, NPC role-playing missions |
+
+Use these specifications for detailed gameplay contracts and this plan for system ownership and implementation order. The skills catalog defines later reaction, area, movement, and critical extensions to the starter battle rules; enable them only when their dependencies and authored values exist. Mabinogi and Dicero reference mechanics are not automatically Rebirth Dungeon requirements.
+
 This plan replaces the previous Expo/React Native architecture. It describes a target implementation, not completed gameplay. The dependency audit below reflects the working tree checked on **September 2, 2026**.
 
 ## 1. What exists today
@@ -174,9 +188,9 @@ Desktop / Android / iOS launchers
 
 | Owner                                | Authoritative data                                                                       |
 |--------------------------------------|------------------------------------------------------------------------------------------|
-| artemis-odb components               | Dynamic actor/object state: cells, health, dice, abilities, statuses                     |
+| artemis-odb components               | Dynamic actor/object state: cells, HP/MP/SP, stats, five dice, abilities, statuses                     |
 | `RunSession`                         | Grid, run phase, active actor, initiative queue, RNG streams, command index, run rewards |
-| Profile repository/application model | Permanent progression, inventory, settings and balances                                  |
+| Profile repository/application model | Hero progression, committed inventory/overflow, quests, hub resources, enchanting RNG, settings and balances                                  |
 | Screen/HUD view model                | Selection, dialogs, focus, loading/error state, projected game data                      |
 | Presentation tracks                  | Interpolated positions, camera, particles, floating text, reveal progress                |
 
@@ -215,7 +229,7 @@ Create entities for players, enemies, doors, traps, pickups, and other objects t
 |------------------------|-------------------------------------------------------------------------------------------|
 | Identity and placement | `StableId`, `GridPosition`, `Actor`, `PlayerControlled`, `BlocksMovement`, `BlocksVision` |
 | Perception and AI      | `Vision`, `EnemyBrain` with content IDs and deterministic memory                          |
-| Combat                 | `Health`, `Stats`, `DicePool`, `AbilityLoadout`, `StatusSet`, `Shield`                    |
+| Combat                 | `ResourcePools`, `Stats`, `DiceHand`, `AbilityLoadout`, `StatusSet`, `Shield`, `Cooldowns`                    |
 | Interactions           | `Door`, `Trap`, `Pickup`, `InventoryRef`                                                  |
 | Transient resolution   | `MoveIntent`, `AbilityIntent`, `PendingDamage`, `PendingRemoval`                          |
 
@@ -236,7 +250,7 @@ Use project-generated stable IDs for saves, events, targeting, and replay. artem
 
 Entity and component edits go through `EntityEdit` (`world.edit(id)`, `world.delete(id)`, `mapper.create(id)`) and are applied immediately to the entity, while subscription membership catches up at the strategy's `updateEntityStates()` points around each system. This is not an end-of-scene command buffer. Copy event values before deleting an entity, prefer `IteratingSystem` deferred deletion during iteration, and finish cleanup before projecting or saving. [artemis-odb wiki: InvocationStrategy](https://github.com/junkdog/artemis-odb/wiki/InvocationStrategy).
 
-`RunSession` holds run/floor IDs, rules/content versions, turn and command counters, active actor, logical phase, scheduler, grid, RNG streams, visibility/exploration state, run inventory, and pending rewards. Rendering's `isAnimating` flag is not a saved gameplay phase.
+`RunSession` holds run/floor IDs, rules/content versions, turn and command counters, active actor, logical phase, scheduler, grid, RNG streams, visibility/exploration state, run inventory with origin references, quest-stage snapshots and pending evidence, and pending rewards. A dice activation also owns frozen skill/rank/target inputs, five die IDs/faces, kept flags, reroll allowance, and resource reservations. Rendering's `isAnimating` flag is not a saved gameplay phase.
 
 ## 6. Ordered rule pipeline
 
@@ -248,10 +262,10 @@ Each command or automatic actor action resolves through an explicit context. Sys
 |  150 | `EnemyIntentSystem`       | Choose an AI action when the active actor is an enemy                     |
 |  200 | `MovementSystem`          | Commit legal cardinal movement and occupancy changes                      |
 |  300 | `InteractionSystem`       | Doors, traps, pickups, stairs, contact with an enemy                      |
-|  400 | `DiceSystem`              | Roll once per activation, reroll, assign and consume dice                 |
-|  500 | `AbilitySystem`           | Validate committed ability use and calculate effects                      |
-|  600 | `DamageSystem`            | Apply shield, resistance, HP changes and death markers                    |
-|  700 | `StatusEffectSystem`      | Apply statuses and process explicit turn-boundary triggers                |
+|  400 | `DiceSystem`              | Lock five-dice hand/profile and costs, keep dice, batch reroll, consume hand                 |
+|  500 | `AbilitySystem`           | Pay reserved costs once; resolve the locked skill and authored effects                      |
+|  600 | `DamageSystem`            | Resolve defense, combo, resistance, shield, HP damage and defeat markers                    |
+|  700 | `StatusEffectSystem`      | Resolve periodic effects, expiration, stat recomputation, regeneration and cooldowns                |
 |  800 | `CleanupSystem`           | Remove dead actors from occupancy/initiative, clear transient intents     |
 |  900 | `VisibilitySystem`        | Refresh visibility after movement or opacity changes                      |
 | 1000 | `TurnFinalizationSystem`  | Finalize action cost, select the next actor, update terminal state        |
@@ -260,7 +274,7 @@ Slot numbers are documentation labels for the pipeline order; execution order is
 
 Project snapshots/export event batches in the controller **after** `World.process()` returns and artemis-odb has flushed pending entity operations. Save only at those completed command boundaries.
 
-An ability can produce several effects; resolve them in a stable order. A status tick that deals damage must use the same synchronous damage resolver before cleanup, rather than leaving pending damage for an accidental future command. Pass explicit `activationStarted`/`activationEnded` signals so rolling or assigning dice cannot tick poison repeatedly.
+An ability can produce several effects; resolve them in a stable order. A status tick that deals damage must use the same synchronous damage resolver before cleanup, rather than leaving pending damage for an accidental future command. Pass explicit `activationStarted`/`activationEnded` signals so rolling, changing kept flags, or rerolling cannot tick poison repeatedly. At an eligible activation end, resolve periodic effects, expire statuses, recompute stats and clamp pools, then regenerate only living actors. Finish these effects and cleanup before deciding the outcome: player defeat takes priority if the player is dead; otherwise no remaining hostiles means victory.
 
 Expected invalid commands return an `ActionResult` and reason. Invariant failures halt the session with seed/command diagnostics; do not continue from a half-applied action or save it as healthy state. Systems emit events for external work and never perform I/O themselves.
 
@@ -272,14 +286,17 @@ A `MOVE(dx, dy)` requires `abs(dx) + abs(dy) == 1`, map bounds, valid terrain, a
 
 | Action/result                                     | Initial rule                                                                         |
 |---------------------------------------------------|--------------------------------------------------------------------------------------|
-| Move to an empty walkable cell                    | One standard action; resolve entry traps and pickups                                 |
+| Move to an empty walkable cell                    | One standard action; resolve entry traps and reveal available pickups                                 |
 | Move into a closed unlocked door                  | Open it, remain in place, consume one standard action                                |
 | Wall, out-of-bounds, locked door without a key    | Reject without spending initiative                                                   |
 | Contact an adjacent hostile                       | Enter the dice-action flow below; never overlap cells                                |
 | Wait                                              | One standard action                                                                  |
 | Invalid target or insufficient ability resources  | Reject without spending dice or initiative                                           |
 | Open settings, inspect inventory, select a target | UI-only; no simulation time                                                          |
-| Consume an item or change equipment during a run  | Explicit gameplay command with a defined cost; unavailable in the first combat slice |
+| Use a consumable, when enabled | One full action before rolling; resolve recovery/statuses and end activation |
+| Pick up world loot, when enabled | One full action from the actor cell or an adjacent reachable pickup; reject without a turn if quantity/fit fails |
+| Rearrange/split/merge/sort carried inventory | Validated layout-only command with no initiative cost; unavailable while dice are locked |
+| Change equipment during a run | Deferred; initial equip/unequip operations occur at the hub |
 | Descend stairs                                    | Explicit interaction after arrival; checkpoint before changing floor                 |
 
 The simulation remains the final validator even when the HUD disables a control. Resolve pickups/death/rewards in a defined order and clear occupancy before a dead actor can block later actions.
@@ -328,7 +345,7 @@ Test corner occlusion and wall visibility explicitly. Preserve explored terrain,
 
 Use a project `RandomSource` adapter backed initially by Juniper `AceRandom`. In the checked `0.10.5` source it exposes an algorithm tag and five state words through `getStateCount()`, `getSelectedState(int)`, and `setSelectedState(int, long)`.
 
-Keep distinct streams for generation, AI decisions, combat/dice, loot, cosmetic presentation, and local development gacha. Explicitly seed each stream using fixed stream identifiers. Cosmetics must never consume gameplay RNG.
+Keep distinct streams for generation, AI decisions, combat/dice, loot, cosmetic presentation, hub enchanting, and local development gacha. The profile persists the enchanting stream independently of run streams; it covers application checks, variable enchant values, and burn recovery. Explicitly seed each stream using fixed stream identifiers. Cosmetics must never consume gameplay RNG.
 
 Save the RNG algorithm ID, state format version, and **all** state words, not just the original seed. Encode long words losslessly, such as hexadecimal strings. Restore only recognized algorithms/state counts. Capture state after every accepted randomness-consuming command, including rerolls.
 
@@ -352,7 +369,7 @@ Input command
   -> present the committed event sequence
 ```
 
-A logical activation can contain several dice commands. Only commands that finish it advance initiative. Roll/assign/reroll have their own resource and phase rules but cannot silently give enemies extra turns.
+A logical activation can contain several dice commands. Only commands that finish it advance initiative. Roll/keep/batch-reroll have their own resource and phase rules but cannot silently give enemies extra turns.
 
 Add an automatic-action count guard to detect an invalid scheduler loop. If a valid burst needs to be spread over render frames, yield only between complete logical actions; retain deterministic order and block additional gameplay input until the player is due.
 
@@ -360,23 +377,57 @@ Keep command sequence numbers for accepted commands and event sequence numbers f
 
 ## 10. Dice combat vertical slice
 
-Start with one hero, one adjacent enemy type, a small dice pool, one damage ability and one defensive ability. Health, shields, dice and statuses remain in artemis-odb components throughout exploration and combat.
+Follow [battle.md](gameplay/battle.md) and [stats.md](gameplay/stats.md): exactly **five six-sided dice power one selected active skill**. Begin with one hero, one enemy, and a sword skill at two illustrative ranks with fair and weighted profiles; add a defensive skill after its effect and duration are authored. This replaces per-die allocation across abilities. Health, mana, stamina, shields, dice and statuses stay in the same run simulation during exploration and combat.
 
-Choose one initial contact rule: bumping an enemy enters a **dice activation for the current player turn**, without moving or immediately dealing damage. This command selects the target; a player cannot reset the activation by closing the panel or changing targets. The same initiative queue continues to govern all actors.
+Bumping an adjacent hostile opens a dice activation for the current player turn without moving or dealing damage. Before rolling, allow a legal skill/target change; the first accepted roll locks skill, rank, target, effective attack and mitigation inputs, cost vector, and six-face probability profile. The same initiative queue governs all actors.
 
-| Command                       | Contract                                                                                            |
-|-------------------------------|-----------------------------------------------------------------------------------------------------|
-| `ROLL_DICE`                   | Allowed once per dice activation; store the committed values immediately                            |
-| `REROLL_DIE`                  | Spend the specified reroll resource and replace that die's value                                    |
-| `ASSIGN_DIE` / `UNASSIGN_DIE` | Edit legal assignments within the existing activation; no new random draw                           |
-| `USE_ABILITY`                 | Validate target/cost, consume assigned dice, apply effects, emit events                             |
-| `END_TURN`                    | Discard remaining activation resources, tick end-of-turn rules once, spend the standard action cost |
+| Command or intent | Contract |
+| --- | --- |
+| Select skill/target | Before rolling; validate learned active skill, equipment, range, target, cooldown and resource affordability |
+| `ROLL_DICE` | Once per activation: freeze inputs, reserve costs, independently roll all five dice in stable die order |
+| Set kept dice | Edit kept flags without RNG, costs or initiative advancement |
+| `REROLL_DICE` | Atomically replace a chosen nonempty subset of unkept dice using the locked profile; spend one reroll action |
+| `USE_ABILITY` | Deduct reserved costs once before effects, consume the whole hand, resolve the locked skill and end activation once |
+| `END_TURN` | Pass: before rolling, no skill cost; after rolling, pay reserved costs and discard the hand; no skill-use training |
+| `USE_ITEM`, when enabled | Before rolling, consume one eligible item, resolve effects, and end activation |
 
-Enemy activations use deterministic policy and the same effect/damage helpers, then end once. Ending the last hostile encounter returns the UI to exploration; define and test automatic player-turn completion on victory so killing the target cannot award an extra free activation. Multi-enemy joining and more elaborate encounter rules belong to the dungeon-depth milestone.
+The proposed allowance is one initial roll plus **two batch rerolls**. One subset costs one reroll whether it contains one die or all five. Keep all replacement results; no empty reroll, budget carry-over, automatic attack at zero rerolls, or panel-close reset. `ASSIGN_DIE`, `UNASSIGN_DIE`, and the old singular `REROLL_DIE` are not this mode's command contract. Enemies, consumables, equipment changes and timed effects cannot interleave a locked hand and its commit/pass.
 
-Use pure Java helpers for dice matching, damage, armor, criticals, shield absorption and status stacking. Every modifier has an explicit evaluation order. Turn-based duration means an identified actor's activation boundary, not every command, frame, or global actor turn.
+### Scoring and damage
 
-Save stable dice-command boundaries so loading after a roll or reroll restores the result and resource expenditure. The first encounter should be fully playable without a gacha service.
+Sum all five faces for pip total `P` (5–30), and classify exactly one combination, independent of display order. The provisional multipliers are five of a kind ×10, four of a kind ×5, full house ×3.5, five-face straight ×3, three of a kind ×2.5, two pairs ×2, one pair ×1.5, and no combination ×1. No overlapping bonuses, four-die straights or wildcards apply.
+
+For the starter damage rule:
+
+```text
+attackBeforeDefense = B + A + K × P
+comboDamage = floor(max(0, attackBeforeDefense - D) × M)
+damageAfterResistance = floor(comboDamage × (1 - resistance))
+shieldAbsorbed = min(currentShield, damageAfterResistance)
+hpDamage = damageAfterResistance - shieldAbsorbed
+```
+
+`B` and pip scaling `K` come from skill rank; `A` is that skill's allowed effective attack contribution, including weapons once; `M` is the hand multiplier. `D` is physical/magical Defense and resistance is the corresponding Protection, directly clamped to 0–100% and represented as a 0–1 fraction in the formula. Apply shield last and clamp HP at zero. Fully mitigated damage may be zero. Use exact rational/fixed-point arithmetic at the specified rounding boundaries, with the same pure resolver for preview and commitment. Rejected commands leave dice, pools, training, initiative and RNG unchanged.
+
+Each skill/rank has six nonnegative integer face weights with a positive total, defaulting to fair odds. Sample dice independently in stable order using the locked profile for both rolls and rerolls. Expose weighted odds; Luck, equipment and passive ranks do not silently bias them. Previews consume no RNG. Damage, reroll allowance, multipliers, rank weights and defensive/utility formulas remain balance content, not inferred Dicero formulas.
+
+### Resources, modifiers and activation boundaries
+
+Track current, maximum and reserved HP/MP/SP separately; available is current minus reserved. Every activated skill, including attacks and buffs, has a positive authored cost in at least one pool. For each positive rank cost, use the proposed `max(1, ceil((rankCost + flatModifiers) × max(0, 1 + summedPercentModifiers)))`; a zero-cost pool stays zero. Validate all pools together before rolling. HP payment bypasses mitigation/shield and must leave at least 1 HP. Rerolls never charge again; a skill's healing cannot finance its upfront payment. AP is progression currency, not a combat pool.
+
+Resolve STR/INT/DEX/WIL/LUK and derived stats in dependency order: progression baseline → primary-attribute equipment/status modifiers → derived maxima/attack/defenses → direct derived-stat modifiers. At each stage use the stats specification's additive flat/percentage aggregation and explicit bounds/rounding. Reject circular dependencies and double-counted weapon, mastery or enchant contributions. Increasing a maximum never refills a pool; decreasing it clamps current value without later restoring the lost amount.
+
+Buffs/debuffs retain source IDs, stacking groups, priorities, magnitudes and timing counters. Default to one instance per group per target across sources: equal versions refresh, higher priority replaces, lower priority does not refresh, and equal priority replaces. Separate beneficial and harmful clauses for cleanse/dispel. Durations count affected-actor completed activations; a self-applied effect skips the casting activation's end. Periodic effects run before expiry, followed by stat recomputation/clamping and authored regeneration for living actors. No newly applied effect ticks at its application boundary. Exploration actions continue these clocks; menus and dice commands do not. Temporary effects clear at run end by default and persist on suspend/resume.
+
+New buffs/debuffs affect subsequent actions, not the applying action's frozen inputs. Enemy turns use deterministic policies and the same effect/damage helpers. Finalize the player activation once even when the last enemy dies; resolve activation-end defeat before victory. Save accepted dice-command boundaries with the exact hand, kept flags, locked inputs/profile, budget, pools/reservations, statuses, cooldowns and RNG continuation.
+
+### Skill catalog extensions
+
+The [skills catalog](gameplay/skills.md#8-combat-skill-catalog) stages Smash and Combat/Sword Mastery first, then equipment defenses and Final Hit. Passives have no Use button, separate dice, per-trigger payment or extra turn; each eligible mastery contributes once, including when dual wielding. Shield Mastery does not create a Shield absorption pool, and body armor categories are mutually exclusive.
+
+Final Hit is a paid temporary melee buff whose resolved magnitude/duration are saved; later attacks still pay and roll normally. Add Counterattack's one-charge prepared retaliation only with synchronous reaction ordering and no counter/critical recursion. Add Windmill with frozen Manhattan-area targets resolved by stable ID; add Charge with a validated straight empty lane and frozen destination, combining movement and one hit into one action. These features depend on their authored rules, not animation behavior.
+
+Critical Hit is deferred from the starter slice. When enabled, the learned passive supplies bonus damage and authored equipment/content supplies chance. Check once per eligible target after counter interception, using combat RNG; no draw for countered or zero-chance hits. Apply its bonus to `comboDamage` before Protection and shield. Cooldowns start on committed skill use, skip the casting activation's end and decrement on subsequent owner activation ends. Save prepared reactions, area targets/paths and critical results as these extensions become available.
 
 ## 11. LibGDX presentation and input
 
@@ -394,7 +445,11 @@ Start with drawing visible map cells each frame; introduce chunk caches or a low
 
 ### HUD and menus
 
-Use a separate `Stage` and UI viewport for dice, ability slots, HP, inventory, dialogs, pause and progression screens. Build layouts with `Table` and `Skin`, using the existing `assets/ui` resources as prototype assets. Scene2D UI does not require adding another UI framework. [Scene2D UI guide](https://libgdx.com/wiki/graphics/2d/scene2d/scene2d-ui).
+Use a separate `Stage` and UI viewport for five persistent dice slots, active skills, HP/MP/SP, inventory, dialogs, pause and progression screens. Build layouts with `Table` and `Skin`, using the existing `assets/ui` resources as prototype assets. Scene2D UI does not require adding another UI framework. [Scene2D UI guide](https://libgdx.com/wiki/graphics/2d/scene2d/scene2d-ui).
+
+Show selected skill/rank, kept dice, remaining rerolls, pip total, combination/multiplier, face probabilities, target and effect breakdown. Separate Roll, Reroll and Use Skill controls. Show current/max/reserved resources, final costs, and status sources with remaining target activations. The journal distinguishes active skills from passives and explains inactive equipment conditions.
+
+Hub screens expose training against 100 points and AP costs, book/page collections, level/XP/cumulative level, age and talent mastery, grid inventory/equipment and saved overflow, enchant replacement/burn previews, and quest tabs/tracker. Quest tabs use Chapter names with Generations inside, plus Sidequests and Skills; mark NPC role-playing missions with an RP badge. Inspecting, filtering and tracking remain presentation-only.
 
 Call `stage.act(clampedDelta)` for UI animation and `stage.draw()` for display. Stage actions animate widgets only. Update widget content from committed view models; listeners submit commands instead of mutating components.
 
@@ -404,7 +459,7 @@ Provide remappable keys, keyboard focus, clear selection states, large touch tar
 
 ## 12. Events, assets, and resource lifetime
 
-Domain events are plain immutable Java values: `ActorMoved`, `DoorOpened`, `DiceRolled`, `AbilityUsed`, `DamageDealt`, `StatusApplied`, `ActorDefeated`, `ItemCollected`, `FloorChanged`, and `RunCompleted`.
+Domain events are plain immutable Java values: `ActorMoved`, `DoorOpened`, `DiceRolled`, `AbilityUsed`, `DamageDealt`, `StatusApplied`, `ActorDefeated`, `ItemCollected`, `FloorChanged`, and `RunCompleted`. Add stable outcome IDs and relevant skill/rank, equipment, target and mission context for training and quest evidence. Hub transactions emit learning/rank-up, equipment-change, level/age/rebirth, enchant-result and quest delivery/claim events only after their state is committed; notifications never grant progression.
 
 Include stable IDs, copied payloads, event order, and enough visibility/position information for presentation. A controller-owned presentation bridge maps these into animation, SFX and haptics. Render code does not subscribe to mutable artemis-odb entities or retain component references.
 
@@ -444,22 +499,35 @@ A save bundle contains:
 ```text
 schemaVersion, rulesVersion, contentVersion, generatorVersion
 saveRevision, profileRevision, updatedAt (metadata only)
-profile: progression, inventory, currencies, committed reward IDs
+profile: hero/life identity, level/XP/cumulative level, AP, skills/objective counts
+         talent, current-life growth, starting age and processed aging intervals
+         inventory/equipment/bags/placements/locks, page records, currencies, overflow
+         installed enchant values, hub pools, enchanting RNG and operation results
+         quests/stages/evidence/eligibility milestones, tracked quests, reward IDs
 run: ID, floor index, original seed, generated tile data, entity DTOs
      explored cells, logical phase, active actor, turn/command counters
      initiative queue and tie-break state
      each gameplay RNG algorithm + complete state
-     current dice activation, assignments, reroll resources
-     run inventory, pending rewards and completion status
+     current dice activation: five stable dice/faces, kept flags, reroll budget
+     locked skill/rank/targets/stats/profile, HP/MP/SP and reservations
+     stat sources, active effect timing, cooldowns and enabled skill-extension state
+     run inventory/origin reservations/consumption, quest snapshot/pending evidence
+     pending XP/training/loot, completion status and committed result ID
+mission, when RP is active: scenario/NPC template versions, attempt ID,
+     isolated simulation/dice/supplies/objectives and outcome status
 ```
 
 Save the actual generated map and changes; do not depend on regenerating an old floor with a future library version. Rebuild occupancy, aspect indexes, resistance/FOV caches and presentation state after load. Exclude transient intents, in-progress system effects, textures and animation clocks.
 
 For the first slice, use one logical bundle containing both profile and run, stored in two alternating local save slots. A serialized writer writes the inactive slot with an increasing revision and checksum, closes it, and verifies it before reporting durability. On load, validate both slots and select the newest complete supported revision. A torn write must leave the previous good slot usable; platform-specific flush/replace behavior still needs interruption testing.
 
-This combined bundle makes a local run-completion grant one persisted transition: updated profile, consumed pending reward, completed run and grant ID together. A load/retry cannot grant the same reward twice. Preferences may hold volume/control settings but do not replace the run-save mechanism.
+This combined bundle makes a local run-completion grant one persisted transition: reconciled brought-item consumption/returns and released reservations, retained loot/XP/training/quest evidence, saved overflow, updated profile, completed run and grant ID together. A load/retry cannot grant the same reward twice. Preferences may hold volume/control settings but do not replace the run-save mechanism.
 
-Checkpoint after accepted gameplay commands, floor transitions, completed rewards and lifecycle pause. Preserve order so an older write cannot overwrite a newer revision. If coalescing saves, keep the newest complete snapshot and retain durability callbacks; for rolls, rerolls and reward grants, gate subsequent gameplay until the checkpoint succeeds or the player explicitly handles the save failure.
+Book learning/consumption, page insertion/completion, AP/rank advancement, equipment swaps, enchanting/burning, item hand-ins, quest claims and rebirth each save all inputs, outputs and operation IDs atomically. Retrying returns the recorded result, including RNG results, instead of paying or rolling twice. Save modifier sources rather than only effective totals; rebuilding must not restore resources, refresh effects or reroll enchants. Validate inventory ownership/placement and containment before restoring the simulation.
+
+At a normal run result, apply the selected retention policy, then retained XP using run-start age/talent, retained skill training, and elapsed aging intervals in that order. Commit eligible quest evidence at this boundary; subsequent gameplay stages begin at the hub until mission-local staging is explicitly supported. Rank-ups, quest claims and rebirth occur afterward at legal hub boundaries. Replays use recorded progression outcomes; the dungeon simulation never reads the wall clock.
+
+Checkpoint after accepted gameplay commands, floor transitions, completed rewards and lifecycle pause. Preserve order so an older write cannot overwrite a newer revision. If coalescing saves, keep the newest complete snapshot and retain durability callbacks; for rolls, rerolls, reward grants and random hub operations, gate subsequent gameplay until the checkpoint succeeds or the player explicitly handles the save failure.
 
 On `pause`, request a bounded flush of the last committed snapshot. If suspension arrives during animation, the save already describes the completed rules. If it arrives while generation is pending, retain the previous stable floor. Do not rely on a background executor continuing after the OS suspends the app.
 
@@ -467,25 +535,69 @@ Schema migrations are explicit and sequential. Reject unsupported future version
 
 ## 15. Data-driven content
 
-Create validated catalogs under `assets/data/` for tiles, heroes, enemies, dice, abilities, statuses, items, loot/encounters, generation profiles, progression curves, and later banners/pity rules.
+Create validated catalogs under `assets/data/` for tiles, heroes, enemies, five-dice scoring/profiles, abilities, skills/ranks/training/acquisition, stats/costs/statuses, inventory/equipment/bags, enchants/recipes, loot/encounters, generation profiles, XP/age/talent curves, quests/Chapters/Generations and NPC scenarios, and later banners/pity rules.
 
-Use stable content IDs and explicit schema versions. Content JSON is loaded with Jackson (`jackson-databind`, pinned in `gradle.properties`) into plain Java DTOs; its strict defaults are part of the contract — an unknown field or unknown enum value fails the load with the offending name, so typo'd definitions cannot silently default. Dice notation strings such as `"1d6+1"` stay strings at the parsing boundary and are parsed by the content validator. Then validate required fields, ranges, enum values, referenced IDs, probability totals, progression monotonicity and reachable generation constraints. Parsing JSON alone does not validate game rules.
+Validate the explicit F → E → D → C → B → A → 9 → … → 1 rank order; reachable 100-point training at every supported nonterminal rank; skill-book/page mappings; six integer face weights with positive totals; stat units, bounds and acyclic derivation; effect stacking/timing; inventory footprints, stack keys and hand compatibility; enchant slot/condition/chance tables; and quest prerequisite/stage references and attainable objectives. Detect acquisition cycles and unavailable dependencies, including critical training without critical chance, multi-target objectives in single-enemy content, or rebirth/RP quests before those systems exist. Prototype caps and unavailable skills must be visible.
+
+Use stable content IDs and explicit schema versions. Content JSON is loaded with Jackson (`jackson-databind`, pinned in `gradle.properties`) into plain Java DTOs; its strict defaults are part of the contract — an unknown field or unknown enum value fails the load with the offending name, so typo'd definitions cannot silently default. Any dice notation used for other authored effects stays a string at the parsing boundary and is validated explicitly; the player battle hand is always five d6 with its skill/rank face weights, not an arbitrary notation-defined pool. Then validate required fields, ranges, enum values, referenced IDs, probability totals, progression monotonicity and reachable generation constraints. Parsing JSON alone does not validate game rules.
 
 Load an immutable catalog before starting a run. Pin a run to its rules/content version; do not refresh definitions in the middle of a command. Keep retired content or a deliberate migration policy for resumable shipped runs.
 
 Separate content from visuals: a monster definition references an animation/atlas ID rather than embedding a `TextureRegion`. A missing visual asset should fail loading with a useful diagnostic before entering the dungeon.
 
-## 16. Progression, gacha, and online services
+## 16. Progression, inventory, quests, and online services
 
-First deliver an offline loop: select a hero/loadout, descend, win dice encounters, collect loot, complete or lose the run, and commit progression. Define what survives defeat and test the reward transaction before expanding content.
+First deliver an offline loop: prepare a hero/loadout in the hub, explore and resolve five-dice encounters, collect eligible loot and training, commit the run outcome, then learn/advance skills and continue quests. A life can contain many runs; victory, defeat or starting a run does not trigger rebirth. Use hero-owned progression and inventory as the proposed default; settle account sharing and victory/defeat/abandonment retention before shipping inventory-backed runs.
 
-Permanent inventory, account balances, authentication, purchases and gacha belong to application/repository services. Starting a run copies a validated loadout into simulation state; live account changes cannot silently rewrite an active character.
+### Skills and character progression
 
-Development gacha can use a clearly separate local simulator and currency. Production pulls require a server-owned transaction and RNG, with an idempotency key, authoritative balance/pity/inventory result, and durable reconciliation after interruption. Purchase grants require verified platform transactions and server-side entitlement handling.
+Follow [skills.md](gameplay/skills.md): NPC instruction, reading a complete book, or assembling a book from distinct pages can learn a skill at **F with 0 training**. Learning spends no advancement AP; a successful read consumes one book, and duplicate learning consumes nothing. Pages may arrive in any order without expiry; insertion consumes one matching copy, wrong/duplicate pages change nothing, and completion creates the book once. Lessons, reading, assembly and rank-ups happen between runs.
 
-A reveal animates a known committed result using Scene2D/sprite effects initially. Closing the reveal, losing network connectivity or restarting the app must not duplicate or discard the grant. Native billing/auth/secure storage need Android and RoboVM integrations behind interfaces; they are not supplied by the current dependency set.
+Ranks use F → E → D → C → B → A → 9 → 8 → 7 → 6 → 5 → 4 → 3 → 2 → 1. A skill needs **at least 100 current-rank training points plus the authored AP cost** to advance one rank. Count capped objectives from resolved outcomes once per objective, reset counts on advancement, and discard excess training rather than carrying it forward. AP cannot buy training or automatically advance a skill. Rank 1 has no further Rank Up action. Run training is pending until its outcome; passives train from eligible events under their own objective IDs.
 
-Cloud save, analytics, crash reporting and live content updates are later features. Specify conflict/version rules before syncing local profiles; replacing a save file with whichever network response finishes last is not a sync policy.
+Follow [character.md](gameplay/character.md): start at level 1, process committed XP across every crossed threshold, and provisionally grant 1 AP per earned level up to a content-defined cap (proposed 200). At cap discard XP overflow. Cumulative level is `1 + earned level-ups across all lives`; rebirth itself adds nothing. Store life growth using the age/talent at each grant, preserving fractional precision. Skills outside the active talent remain usable. Derive mastery for all talents from current associated skill ranks, with no second AP payment; inactive talent mastery bonuses persist. Initial talents are Close Combat and Magic; training multipliers and Grandmaster challenges are deferred.
+
+Proposed starting/rebirth ages are 10–17. Reconcile one age year per seven elapsed real-world days at hub/results boundaries, including offline intervals, once each. Destination ages 11–20 grant 5 AP plus authored base/talent growth; 21–25 grant 5 AP and base growth; 26+ grant neither, though age and level growth can continue. Repeated menus and backward clock changes cannot re-award intervals. Clock trust and forward-clock policy remain open and need an explicit application-level decision.
+
+Rebirth remains gated on defined eligibility/cost/cooldown rules. Preview and atomically reset current level/XP, starting age/talent and life-growth stats while preserving cumulative level, learned ranks/training, unspent AP, mastery, committed items/pages/enchants, quests and claimed rewards. Settle run results and aging first; move newly illegal equipment into storage/overflow. A new run snapshots the resulting progression and loadout; live buffs/debuffs can modify effective run stats, but hub progression cannot replace that baseline.
+
+### Inventory and equipment
+
+Follow [inventory.md](gameplay/inventory.md): begin with a provisional 6 × 10 backpack, fixed rectangular item footprints, stacks, one ordinary bag and dedicated equipment slots. Items have stable IDs and exactly one authoritative location. Bags occupy backpack space, retain stable contents grids and cannot nest; nonempty bags cannot be removed into inaccessible storage. Physical books, uninserted pages, scrolls and materials take space; only authored nonphysical quest records do not.
+
+Use deterministic placement: fill compatible stacks in saved bag-priority order then backpack, then scan free rectangles left-to-right/top-to-bottom. Validate a whole requested transfer before moving anything; an explicit smaller quantity enables partial pickup. Sorting/splitting/merging preserve item counts, variants, locks and run provenance. If a proposed sorted layout fails, retain the old one. Favorites organize; item locks protect against sale, destruction and recipe/enchant consumption or replacement.
+
+Start with main/off hand, head, body, hands, feet and two accessories. A two-handed weapon reserves off hand but contributes once; paired swords require two legal instances; sword/shield supports shield skills. Validate every displaced item's destination as one equip transaction. Equipment and enchants affect stats only while eligible and equipped. No automatic drop or free resource refill completes a swap.
+
+A run reserves exact brought instances/quantities, including bag contents, and tracks origins and consumption separately from new loot. Hub mutation is unavailable while the run is active. Result reconciliation accounts for used supplies and returns/forfeits remaining gear under the authored outcome policy; it never restores consumed provisions or duplicates equipment.
+
+Failed world pickups stay on the ground without a turn or loot reroll. Durable result/quest grants place what fits and save exact remainder in withdraw-only reward overflow with no expiry. Overflow also accepts system reconciliation returns, never player deposits; its items cannot be used until withdrawn. Clear it before a new run or optional reward-producing activity, while preserving already-earned results. Purchases, assembly and recipes require legal output placement after simulated input consumption and cannot use overflow to evade capacity.
+
+### Enchanting
+
+Follow [enchants.md](gameplay/enchants.md): instructor-taught Enchant uses the same training/AP progression. Hub-only application installs a prefix or suffix on one equipment instance; its rank is distinct from Enchant skill rank. Rank 5–1 scrolls provisionally require skill Rank 5 or better, with no lower-enchant chaining. Conditional clauses read progression snapshots; variable values roll once on successful installation and persist through equip/load/rebirth. Effects feed the equipment stat stage once, including independent penalties when a benefit is inactive.
+
+Application consumes one scroll, one powder and authored positive MP on every accepted attempt. The initial Protect Equipment mode preserves gear and both old enchants on failure; success replaces only the selected slot. Use the specification's basis-point chance resolver with its provisional 90% cap and shared preview logic. Hub MP and an explicit recovery loop are prerequisites.
+
+Burning is a separate destructive operation: consume the item, materials and MP regardless of recovery, checking occupied slots independently in prefix/suffix order. Reserve capacity for maximum possible recovered scrolls after consumed inputs before spending or drawing RNG. Recovered scrolls retain definitions, not old rolled values. Preview losses, chances and all costs. Persist the dedicated enchanting RNG, operation result, costs, equipment/output changes and training together before revealing the result. Protect Scroll, durability damage and multiplayer entrusting are deferred.
+
+### Quests and NPC role-playing missions
+
+Follow [quests.md](gameplay/quests.md): mainstream storylines contain Chapters and Generations with explicit prerequisites; optional sidequests do not block them unless authored. Skill Quests may recognize committed rank milestones or introduce skills through equipment/rebirth eligibility. Rank comparisons use authored order, not labels. Equipping may deliver a lesson quest, not instantly teach mastery; receiving a book does not read it. A skill reward grants only unknown Rank F, preserving an already-known skill without an automatic refund.
+
+Separate eligibility from automatic delivery or NPC acceptance. Persist state-based unlocks and evidence for event-based triggers, including life ID/talent for rebirth; reconcile catch-up eligibility idempotently after load. Retain unlocked quests through unequipping or rebirth. Process triggers after their initiating transaction, in stable quest-ID order.
+
+Quest state is Locked → Available/Active → Ready to complete → Completed. Ordered stages use stable objective IDs and capped/deduplicated evidence from dialogue, interaction, defeats, skill outcomes, acquisition/delivery and mission success. Event objectives count only after their stage activates; item requirements recheck legal current inventory. Hand-ins consume items and checkpoint objectives together. Initial quests complete once per hero with no expiry, through explicit Complete/final NPC dialogue. Preview and atomically claim the bundle, costs, completion ID and successors; overflow withdrawal never regrants XP/AP. Mainstream quests cannot be abandoned; authored sidequest abandonment preserves committed delivery checkpoints.
+
+Accept and claim at the hub. Normal runs snapshot eligible active stages and accumulate pending evidence; result retention determines what commits, while a clear objective always requires success. Until mission-local stage progression has its own rollback rules, fresh gameplay stages start after results at the hub. Repeatable/daily quests, timers and branching replay rewards remain deferred.
+
+An RP mission temporarily controls a fixed authored NPC in an isolated session started from the hub, with no other active run. Use normal movement/dice rules with the NPC's versioned stats, skills, gear and supplies; preserve the hero profile separately. Ordinary hero XP/training/loot do not accrue by default. Only the recorded scenario outcome advances its eligible quest, whose later claim grants hero rewards. Success returns to the hub once; failure/exit leaves the quest retryable; loading resumes the same attempt rather than resetting it. Borrowed items/skills cannot leak to the hero.
+
+### Gacha and online services
+
+Permanent profile state, account balances, authentication, purchases and gacha belong to application/repository services. Development gacha can use a separate local simulator and currency. Production pulls require a server-owned transaction and RNG, an idempotency key, authoritative balance/pity/inventory results, and durable reconciliation. Purchase grants require verified platform transactions and server entitlement handling.
+
+A reveal animates a committed result using Scene2D/sprite effects. Closing it or restarting must not duplicate or discard the grant. Native billing/auth/secure storage require Android and RoboVM interfaces; the current dependencies do not supply them. Cloud save, analytics, crash reporting and live content updates are later features; define conflict/version policies before syncing profiles.
 
 ## 17. Target project structure
 
@@ -504,7 +616,11 @@ core/src/main/java/cloud/vinh/rebirthsaga/
     algorithms/              generator/path/FOV/random interfaces
     squidsquad/              SquidSquad and Juniper adapters
     turns/                   initiative and activation rules
-    combat/                  dice, abilities, damage, statuses
+    combat/                  five-dice hands, abilities, stats, damage, statuses, reactions
+    progression/             skills/training, XP, talent mastery, aging/rebirth rules
+    inventory/               placement, stacks, equipment, reservations, reconciliation
+    enchanting/              conditions, recipes, chance and operation results
+    quests/                  prerequisites, stages, evidence, claims, RP mission rules
     commands/                plain Java command types
     events/                  immutable domain events
     projection/              observed HUD/render snapshots
@@ -513,7 +629,7 @@ core/src/main/java/cloud/vinh/rebirthsaga/
     content/                 catalog loaders and validation
     save/                    DTOs, codecs, migrations, local repository
   presentation/
-    screens/                 loading, title, dungeon, progression
+    screens/                 loading, title, hub, dungeon, progression, quests, RP missions
     dungeon/                 SpriteBatch renderer and camera
     hud/                     Scene2D controls and view models
     animation/               presentation tracks and event mapping
@@ -547,13 +663,18 @@ Add a pinned Java 8-compatible test framework under `core` when implementing the
 | Path/FOV           | Four-way routes, dynamic blockers, door invalidation, corner visibility, explored memory                       |
 | artemis-odb        | Registration-order behavior, structural changes between systems, cleanup before projection, no stale IDs       |
 | Turns/combat       | Stable initiative ties, single turn-boundary ticks, no extra turns from dice commands, no reroll/reset exploit |
+| Skills/progression | Three learning routes, 100-point/AP gate, capped objective counts, duplicate outcome rejection, XP overflow, mastery, aging cutoffs and rebirth preservation |
+| Stats/resources | Mixed-pool reservation/payment, nonlethal HP costs, no refill from maxima changes, modifier/stacking order, self-buff timing, preview parity |
+| Inventory/equipment | Rectangle fit, bags/no cycles, deterministic placement, atomic swaps, locks, provenance, consumed supplies, overflow withdrawal without regrant |
+| Enchanting | Slot/rank restrictions, chance boundaries, failure preservation, persistent rolled values, burn capacity and recovery, operation/RNG retry consistency |
+| Quests/RP | Rank/equipment/rebirth delivery, catch-up without duplicates, ordered objectives/hand-ins, explicit claim/overflow, outcome retention, isolated NPC state and suspended-attempt recovery |
 | Determinism        | Same inputs yield identical canonical state/events; save/load mid-activation preserves the continuation        |
 | Persistence        | Torn slot recovery, ordered writes, migrations, future-version rejection, reward deduplication                 |
 | Async/lifecycle    | Late callbacks ignored, durable saves survive screen changes, pause/resume during animation/generation         |
 | Presentation/input | Touch consumption, viewport unprojection, focus/remapping, animation skip, hidden-actor privacy                |
 | Platforms          | Desktop launch, Android debug/release packaging, RoboVM AOT build and actual device lifecycle checks           |
 
-Use canonical ordering for state hashes and replay comparisons. Test a restored run against an uninterrupted run, including RNG continuation and initiative order, rather than merely comparing a saved DTO to itself.
+Use canonical ordering for state hashes and replay comparisons. Exhaustively classify all 7,776 ordered five-die hands, verify one initial roll/two subset rerolls, frozen inputs and held faces, and test weighted probability boundaries and full damage distributions. Stage counter ordering/no loops, critical draw order, area training counts and Charge paths with their feature gates. Test a restored run against an uninterrupted run, including RNG continuation and initiative order, rather than merely comparing a saved DTO to itself.
 
 Target 60 fps presentation on selected baseline devices. Measure ordinary turn latency and generation worst cases separately. Keep occupancy lookup O(1), FOV change-driven, pathfinding decision-driven, and all I/O outside rule resolution. Reuse rendering buffers and bound particles, floating text and event queues. Optimize snapshot copying/map batching only after measuring representative maps and enemy counts.
 
@@ -583,29 +704,37 @@ Test UI and rendering on actual desktop and mobile backends; a headless test can
 
 **Exit:** a player can explore and reach the exit; identical commands reproduce map, turns and events, including after a basic reload.
 
-### Milestone 2 — Dice encounter and resumable activation
+### Milestone 2 — Five-dice encounter, resources, and resumable activation
 
-- Add the chosen contact flow, dice pool, attack/defense abilities, enemy action, damage and statuses.
-- Implement roll/reroll/assignment/ability/end-turn contracts and input gating.
-- Add ordered SFX/haptics and skippable animation.
-- Persist dice-command checkpoints and restore mid-activation without changing rolls or resources.
+- Implement skill-before-roll selection, exactly five dice, kept flags, two batch rerolls, whole-hand commit and paid post-roll pass; remove assignment assumptions.
+- Prove a sword skill at two illustrative ranks with fair/weighted profiles, pip/combo damage and enemy response. Add Smash and Combat/Sword Mastery as their authored content becomes available.
+- Implement HP/MP/SP, frozen stat inputs and cost reservations, nonlethal HP payment, equipment contributions, one skill buff and enemy stat debuff with activation-based expiration.
+- Add the authored defensive effect, a mana skill and illustrative HP-cost case; include a restorative potion and a potion with a temporary side effect once minimal inventory consumption exists.
+- Persist every accepted dice boundary and status/cooldown state; provide matching previews, ordered SFX/haptics and skippable animation.
 
-**Exit:** one complete encounter can be won or lost, interrupted and resumed with the same outcome.
+**Exit:** an encounter can be won/lost and resumed with identical hand, costs, effects, RNG and initiative; all eight combinations and invalid-command invariants pass. Advanced counters, areas, Charge and criticals are separate extensions.
 
-### Milestone 3 — Durable run and progression loop
+### Milestone 3 — Durable run, inventory, and progression loop
 
-- Complete versioned save bundles, alternating-slot recovery, migrations and failure UI.
-- Commit profile progression and run rewards together with grant IDs.
-- Exercise lifecycle interruption, stale async results and floor-transition failure.
-- Validate saved-run replay on desktop, Android and iOS.
+- Complete versioned save bundles, alternating-slot recovery, migrations, failure UI and cross-platform saved-run replay.
+- Decide victory/defeat/abandonment retention for brought gear/supplies, new loot, XP, training and quest evidence before inventory-backed results ship; align the detailed implementation tracker with that decision.
+- Prove grid footprints, stacks, one bag, deterministic placement/sorting, item locks, legal sword/shield/body loadouts and full-inventory reward overflow. Add explicit world pickup and provision reservations/consumption reconciliation.
+- Implement NPC learning, book reading and page assembly with at least two playable ranks per demonstration skill, reachable training, AP spending and a skill journal.
+- Add XP crossing multiple levels, AP grants, cumulative level, two talents and mastery; exercise aging/cutoffs with a controllable clock and settle clock policy before player-facing rewards.
+- Commit retained result rewards/progression and inventory reconciliation together with IDs. Exercise lifecycle interruption, stale callbacks and floor-transition failure.
 
-**Exit:** a complete offline run survives interruption and cannot duplicate completion rewards through ordinary save/load/retry flows.
+**Exit:** a complete offline run and all three acquisition routes feed durable hero progression without duplicate costs/rewards, lost retained items or restored consumed supplies. Exact loss rules and prototype caps are visible.
 
-### Milestone 4 — Dungeon depth and presentation quality
+### Milestone 4 — Hub systems, quests, and dungeon depth
 
-Add more floor profiles, traps, loot, stairs, hero abilities, enemy policies, multi-enemy encounter rules, inventory and progression screens. Add tap-to-walk/controller support as needed, refine art/audio, and meet measured performance/input/accessibility targets.
+- Build a short Chapter/Generation story chain, an NPC sidequest, an automatic rank-milestone Skill Quest and an NPC skill-unlock quest, with journal/tracker, pending run evidence and explicit exactly-once claims.
+- Add equipment-triggered quest delivery and, after rebirth eligibility/economy are settled, talent-rebirth delivery. Preview rebirth resets, retained progression and equipment/condition changes.
+- Implement Enchant learning/two ranks, fixed and conditional/variable effects, prefix/suffix replacement, protected failure and zero/partial/full burn recovery; require hub MP recovery and saved RNG transactions first.
+- Add equipment defenses and Final Hit; stage dual wielding, Counterattack, Windmill, Charge and Critical Hit after their equipment/reaction/area/path/RNG dependencies and reachable training exist.
+- Add one isolated NPC RP scenario after quest and NPC ability support, including suspension, success and retry without hero-state leakage.
+- Expand floor profiles, traps, loot, stairs and enemy policies; add tap-to-walk/controller support, refine art/audio and meet measured performance/input/accessibility targets.
 
-**Exit:** the offline game loop is coherent across supported devices, with validated content and release-build smoke coverage.
+**Exit:** the offline hub/dungeon loop supports saved quests, enchant operations and an RP scenario, with validated content and release-build smoke coverage. Rebirth and advanced skills remain gated until their open rules are resolved.
 
 ### Milestone 5 — Production services and delivery
 
@@ -615,7 +744,9 @@ Add server-authoritative gacha, verified purchases, account/secure storage integ
 
 ## 20. Documentation and audit evidence
 
-Official documentation was retrieved with the Firecrawl skill. Exact artemis-odb `2.3.0`, SquidSquad `4.0.12` and Juniper `0.10.5` signatures were also checked in resolved Gradle source JARs, so current README examples do not silently substitute newer APIs.
+The gameplay links at the start of this plan are the local design sources for the September 5 update; their research notes distinguish source-game references from proposed Rebirth Dungeon rules. This update does not re-run or refresh the earlier dependency audit. The separate [project phases](project-phases.md) remains the detailed implementation tracker and needs the corresponding gameplay checklist alignment before those phases are implemented.
+
+For the original technical audit, official documentation was retrieved with the Firecrawl skill. Exact artemis-odb `2.3.0`, SquidSquad `4.0.12` and Juniper `0.10.5` signatures were also checked in resolved Gradle source JARs, so current README examples do not silently substitute newer APIs.
 
 | Source                                                                                                  | Use in this plan                                                                    | Local Firecrawl cache             |
 |---------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------|-----------------------------------|
