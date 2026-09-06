@@ -1,21 +1,25 @@
 package cloud.vinh.rebirthdungeon
 
 import cloud.vinh.rebirthdungeon.presentation.screens.LoadingScreen
-import com.badlogic.gdx.Game
-import com.badlogic.gdx.Screen
+import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.assets.AssetManager
 import com.badlogic.gdx.assets.loaders.SkinLoader
 import com.badlogic.gdx.graphics.g2d.TextureAtlas
 import com.badlogic.gdx.scenes.scene2d.ui.Skin
+import ktx.app.KtxGame
+import ktx.app.KtxScreen
 import ktx.assets.load
 
-/** [ApplicationListener][com.badlogic.gdx.ApplicationListener] shared by all platforms.
- * Owns the application-wide [AssetManager] and the screen coordinator:
- * screens are single-activation instances disposed on navigation, and every
- * managed resource is released only through the manager. Platform launchers
- * construct this class; service interfaces will be injected here as features
- * need them (game-plan section 13). */
-class RebirthDungeon : Game() {
+/** [KtxGame] shared by all platforms. Owns the application-wide
+ * [AssetManager] and the screen coordinator: screens are single-activation
+ * instances disposed on navigation, and every managed resource is released
+ * only through the manager. Platform launchers construct this class; service
+ * interfaces will be injected here as features need them (game-plan section 13).
+ *
+ * KtxGame's class-keyed screen registry is deliberately unused — navigation
+ * hands fresh screen instances to the inherited current-screen slot and keeps
+ * the dispose-on-navigate contract through [navigateTo]. */
+class RebirthDungeon : KtxGame<KtxScreen>() {
     private var assets: AssetManager? = null
 
     override fun create() {
@@ -37,21 +41,25 @@ class RebirthDungeon : Game() {
 
     fun assets(): AssetManager = requireNotNull(assets) { "assets() called before create()" }
 
-    /** Screen transitions go through here: the previous screen is disposed
-     * after the new one takes over, so repeated transitions leak neither GL
-     * resources nor input processors. Cached screens arrive with the real menu
-     * structure in Phase 7. */
-    fun navigateTo(next: Screen) {
-        val previous = screen
-        setScreen(next)
-        previous?.dispose()
+    /** Screen transitions go through here: the previous screen is hidden and
+     * disposed after the new one takes over, so repeated transitions leak
+     * neither GL resources nor input processors. Cached screens arrive with
+     * the real menu structure in Phase 7. */
+    fun navigateTo(next: KtxScreen) {
+        val previous = currentScreen
+        previous.hide()
+        currentScreen = next
+        next.show()
+        next.resize(Gdx.graphics.width, Gdx.graphics.height)
+        previous.dispose()
     }
 
     override fun dispose() {
-        // Game.dispose hides the current screen; the coordinator also owns its
-        // disposal, matching navigateTo's contract.
+        // KtxGame.dispose only covers its (unused) registry; the current screen
+        // is a single-activation instance this coordinator owns.
+        currentScreen.hide()
+        currentScreen.dispose()
         super.dispose()
-        screen?.dispose()
         assets?.let {
             it.dispose()
             assets = null

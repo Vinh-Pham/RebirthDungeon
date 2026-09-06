@@ -25,6 +25,7 @@ apply(plugin = "io.github.fourlastor.construo")
 val appName: String by project
 val projectVersion: String by project
 val gdxVersion: String by project
+val gdxControllersVersion: String by project
 val lwjgl3Version: String by project
 val enableGraalNative: String by project
 val graalHelperVersion: String by project
@@ -64,6 +65,11 @@ val gdxTools by configurations.creating
 dependencies {
     implementation("com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion")
     implementation("com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop")
+    // Desktop natives/backends for the extensions core carries (box2d, freetype,
+    // controllers); iOS gets them via gdx-platform natives-ios.
+    implementation("com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-desktop")
+    implementation("com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-desktop")
+    implementation("com.badlogicgames.gdx-controllers:gdx-controllers-desktop:$gdxControllersVersion")
     implementation(project(":core"))
 
     add("gdxTools", "com.badlogicgames.gdx:gdx-tools:$gdxVersion") {

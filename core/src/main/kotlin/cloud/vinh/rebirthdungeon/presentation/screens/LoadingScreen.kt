@@ -12,6 +12,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.TextButton
 import com.badlogic.gdx.utils.viewport.ScreenViewport
 import ktx.app.KtxScreen
 import ktx.app.clearScreen
+import ktx.assets.disposeSafely
 import ktx.assets.getAsset
 import ktx.actors.onClick
 import ktx.log.error
@@ -170,10 +171,11 @@ class LoadingScreen(private val game: RebirthDungeon) : KtxScreen {
     override fun dispose() {
         // The skin and atlases are managed by the application AssetManager and
         // are intentionally NOT disposed here; the fallback font is screen-owned.
+        // disposeSafely keeps a failing release from skipping the other one.
         detachInput()
-        stage?.dispose()
+        stage?.disposeSafely()
         stage = null
-        fallbackFont?.dispose()
+        fallbackFont?.disposeSafely()
         fallbackFont = null
     }
 

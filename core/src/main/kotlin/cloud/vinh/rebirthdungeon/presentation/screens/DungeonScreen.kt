@@ -26,6 +26,7 @@ import com.badlogic.gdx.utils.viewport.ExtendViewport
 import com.badlogic.gdx.utils.viewport.ScreenViewport
 import ktx.app.KtxScreen
 import ktx.app.clearScreen
+import ktx.assets.disposeSafely
 import ktx.assets.getAsset
 import ktx.actors.onClick
 import ktx.scene2d.*
@@ -364,9 +365,10 @@ class DungeonScreen(private val game: RebirthDungeon) : KtxScreen {
             Gdx.input.inputProcessor = null
         simulation?.dispose()
         simulation = null
-        stage?.dispose()
+        // disposeSafely keeps a failing release from skipping the other one.
+        stage?.disposeSafely()
         stage = null
-        batch?.dispose()
+        batch?.disposeSafely()
         batch = null
         // Skin and atlases are managed by the application AssetManager; the
         // screen must not dispose them.

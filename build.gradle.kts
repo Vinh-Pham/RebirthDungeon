@@ -102,6 +102,16 @@ subprojects {
     // packaging rule; no duplicate bytecode is hidden from consumers.
     configurations.configureEach {
         exclude(group = "com.github.tommyettinger.jdkgdxds", module = "build")
+        // Fory (Apache Fury) requires Android API 26+ — its bytecode carries
+        // invokedynamic instructions D8 cannot process at the reviewed minSdk 21
+        // ("Increase the minSdkVersion to 26 or above"; see
+        // https://fory.apache.org/docs/guide/java/android_support/). The SquidSquad
+        // serialization modules (squidstore*/squidwrath*) pull tantrum+fory in
+        // transitively, so both groups are excluded at graph level: their non-fory
+        // code stays usable, and the fory-backed serialization path is simply not
+        // present on mobile/desktop builds. Revisit only if minSdk is raised to 26.
+        exclude(group = "org.apache.fory", module = "fory-core")
+        exclude(group = "com.github.tommyettinger.tantrum")
     }
 
     repositories {

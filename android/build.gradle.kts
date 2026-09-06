@@ -6,6 +6,7 @@ import java.util.Properties
 
 val appName: String by project
 val gdxVersion: String by project
+val gdxControllersVersion: String by project
 
 apply(plugin = "com.android.application")
 apply(plugin = "org.jetbrains.kotlin.android")
@@ -72,12 +73,25 @@ val natives by configurations.creating
 dependencies {
     add("coreLibraryDesugaring", "com.android.tools:desugar_jdk_libs:2.1.5")
     add("implementation", "com.badlogicgames.gdx:gdx-backend-android:$gdxVersion")
+    add("implementation", "com.badlogicgames.gdx-controllers:gdx-controllers-android:$gdxControllersVersion")
     add("implementation", project(":core"))
 
     add("natives", "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-arm64-v8a")
     add("natives", "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-armeabi-v7a")
     add("natives", "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86")
     add("natives", "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86_64")
+
+    // Natives for the extensions core carries (box2d, freetype); the android
+    // natives live in the -platform artifacts, and copyAndroidNatives extracts
+    // them into libs/.
+    add("natives", "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-arm64-v8a")
+    add("natives", "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-armeabi-v7a")
+    add("natives", "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-x86")
+    add("natives", "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-x86_64")
+    add("natives", "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-arm64-v8a")
+    add("natives", "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-armeabi-v7a")
+    add("natives", "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-x86")
+    add("natives", "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-x86_64")
 }
 
 // Called every time gradle gets executed, takes the native dependencies of

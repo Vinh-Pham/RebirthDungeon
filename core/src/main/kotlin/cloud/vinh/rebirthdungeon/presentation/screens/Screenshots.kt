@@ -5,6 +5,7 @@ import com.badlogic.gdx.Input
 import com.badlogic.gdx.graphics.Pixmap
 import com.badlogic.gdx.graphics.PixmapIO
 import com.badlogic.gdx.utils.ScreenUtils
+import ktx.assets.disposeSafely
 import ktx.log.error
 import ktx.log.info
 
@@ -32,8 +33,10 @@ object Screenshots {
             val name = "screenshots/rebirth-$tag-${System.currentTimeMillis()}.png"
             PixmapIO.writePNG(Gdx.files.local(name), flipped)
             info("Screenshots") { "wrote " + Gdx.files.local(name).file().absolutePath }
-            flipped.dispose()
-            frame.dispose()
+            // disposeSafely releases both pixmaps even if the first release throws
+            // (a plain throw here would previously leak the second pixmap).
+            flipped.disposeSafely()
+            frame.disposeSafely()
         } catch (failure: RuntimeException) {
             error(failure, "Screenshots") { "capture failed" }
         }
