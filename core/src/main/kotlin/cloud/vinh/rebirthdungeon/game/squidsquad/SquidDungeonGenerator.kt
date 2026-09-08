@@ -37,7 +37,7 @@ class SquidDungeonGenerator : DungeonGenerator {
                 if (glyph == '#') {
                     tile = FloorMap.WALL
                 } else if (glyph == '+' || glyph == '/') {
-                    tile = FloorMap.DOOR
+                    tile = if (glyph == '/') FloorMap.OPEN_DOOR else FloorMap.DOOR
                 } else if (glyph == '>') {
                     tile = FloorMap.EXIT
                     exitX = x

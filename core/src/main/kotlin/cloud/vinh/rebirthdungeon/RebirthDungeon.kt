@@ -23,6 +23,8 @@ import ktx.assets.load
  * the dispose-on-navigate contract through [navigateTo]. */
 class RebirthDungeon : KtxGame<KtxScreen>() {
     private var assets: AssetManager? = null
+    private var runServices: cloud.vinh.rebirthdungeon.bootstrap.RunServices? = null
+    fun runs() = checkNotNull(runServices)
     private var contentBundle: ContentBundle? = null
 
     fun content(): ContentBundle = checkNotNull(contentBundle) { "Content not validated" }
@@ -34,6 +36,7 @@ class RebirthDungeon : KtxGame<KtxScreen>() {
         }.load()
         bundle.validateVisuals { atlas, frame -> assets().get(atlas, TextureAtlas::class.java).findRegion(frame) != null }
         contentBundle = bundle
+        runServices = cloud.vinh.rebirthdungeon.bootstrap.RunServices(bundle.catalog)
     }
 
     override fun create() {
@@ -73,6 +76,7 @@ class RebirthDungeon : KtxGame<KtxScreen>() {
         // is a single-activation instance this coordinator owns.
         currentScreen.hide()
         currentScreen.dispose()
+        runServices?.dispose()
         super.dispose()
         assets?.let {
             it.dispose()

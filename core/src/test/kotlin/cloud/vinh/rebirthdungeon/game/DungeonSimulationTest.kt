@@ -11,6 +11,10 @@ import org.junit.Test
  * not mutate authoritative state, and "idle frames" (no commands applied) step
  * nothing. Plain JVM test; no Gdx.app, no OpenGL. */
 class DungeonSimulationTest {
+    private fun create(floor: FloorMap, x: Int, y: Int): DungeonSimulation =
+        DungeonSimulation.create(floor, x, y, RunSession(1, cloud.vinh.rebirthdungeon.data.content.JacksonContentRepository {
+            java.io.File("../assets/data/$it").readText()
+        }.load().catalog))
 
     /** 5x3 room, y-up: walls on the border, one pillar blocking the middle of
      * the middle row. `#` wall, `.` floor. */
@@ -35,7 +39,7 @@ class DungeonSimulationTest {
 
     @Test
     fun acceptedCommandMovesPlayerAndStepsWorldOnce() {
-        val simulation = DungeonSimulation.create(roomWithCenterPillar(), 1, 1)
+        val simulation = create(roomWithCenterPillar(), 1, 1)
 
         val result = simulation.apply(MoveCommand(0, -1))
 
@@ -49,7 +53,7 @@ class DungeonSimulationTest {
 
     @Test
     fun wallRejectsWithoutMutation() {
-        val simulation = DungeonSimulation.create(roomWithCenterPillar(), 1, 1)
+        val simulation = create(roomWithCenterPillar(), 1, 1)
 
         val result = simulation.apply(MoveCommand(0, 1))
 
@@ -63,7 +67,7 @@ class DungeonSimulationTest {
 
     @Test
     fun pillarBlocksEntryFromBothSides() {
-        val simulation = DungeonSimulation.create(roomWithCenterPillar(), 1, 1)
+        val simulation = create(roomWithCenterPillar(), 1, 1)
 
         assertEquals(CommandResult.Reason.BLOCKED, simulation.apply(MoveCommand(1, 0)).reason)
         assertEquals(1, simulation.playerX())
@@ -83,7 +87,7 @@ class DungeonSimulationTest {
 
     @Test
     fun outOfBoundsRejectsWithoutMutation() {
-        val simulation = DungeonSimulation.create(roomWithOpenWestEdge(), 1, 0)
+        val simulation = create(roomWithOpenWestEdge(), 1, 0)
 
         // One step west lands on the open edge cell and is accepted...
         assertEquals(CommandResult.Reason.ACCEPTED, simulation.apply(MoveCommand(-1, 0)).reason)
@@ -97,7 +101,7 @@ class DungeonSimulationTest {
 
     @Test
     fun nonCardinalRejectsWithoutMutation() {
-        val simulation = DungeonSimulation.create(roomWithCenterPillar(), 1, 1)
+        val simulation = create(roomWithCenterPillar(), 1, 1)
 
         assertEquals(CommandResult.Reason.NOT_CARDINAL,
             simulation.apply(MoveCommand(1, 1)).reason)
@@ -111,7 +115,7 @@ class DungeonSimulationTest {
 
     @Test
     fun idleFramesDoNotAdvanceTheSimulation() {
-        val simulation = DungeonSimulation.create(roomWithCenterPillar(), 1, 1)
+        val simulation = create(roomWithCenterPillar(), 1, 1)
 
         // Ten idle render frames: presentation only, no commands applied. A real
         // screen would read playerX/playerY and draw; nothing else happens.
@@ -130,7 +134,7 @@ class DungeonSimulationTest {
     fun eachCommandResolvesThroughValidationThenMovement() {
         // Slot 200 answers terrain blocks; slot 100 answers malformed deltas.
         // Both must run inside one step, in registration order.
-        val simulation = DungeonSimulation.create(roomWithCenterPillar(), 1, 1)
+        val simulation = create(roomWithCenterPillar(), 1, 1)
 
         assertEquals(CommandResult.Reason.BLOCKED, simulation.apply(MoveCommand(0, 1)).reason)
         assertEquals(CommandResult.Reason.NOT_CARDINAL, simulation.apply(MoveCommand(1, 1)).reason)

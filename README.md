@@ -83,3 +83,11 @@ The Gradle wrapper (`9.5.1`) is included; run tasks with `./gradlew`. Useful tas
 - `lwjgl3:jar` — runnable fat JAR in `lwjgl3/build/libs`.
 - `clean`, `idea`, `eclipse` — housekeeping.
 - Most tasks accept a project prefix, e.g. `core:clean`.
+
+### Movement prototype and checkpoints
+
+The dungeon now supports cardinal movement, opening doors, waiting, fog and deterministic enemy pursuit. Use arrows/WASD, the on-screen buttons, adjacent taps or swipes; Space/period waits. Combat is not enabled yet. Reaching the exit marks exploration progress without granting rewards.
+
+Accepted actions are checkpointed automatically. Enter Dungeon resumes the active/saved run; Reload reconstructs the saved map and turn state. New run starts a fresh floor. A save error blocks more actions until Retry save succeeds. Desktop saves are in `~/.rebirthdungeon/saves`; mobile uses its local `saves` directory. The two alternating slots must remain together for recovery. Future-version or wholly invalid saves are preserved and reported instead of silently reset.
+
+For an isolated desktop smoke run, set `REBIRTH_CHECKPOINT_DIR` to an absolute temporary directory and `REBIRTH_AUTODEMO=1` when running `./gradlew :lwjgl3:run`. The demo exercises commands and disk reload, writes screenshots, and exits after two dungeon entries. See [Phase 3 movement/checkpoint contracts](docs/phase3-movement.md) for the format, prototype limits and validation scope.

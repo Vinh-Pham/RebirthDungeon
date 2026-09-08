@@ -130,7 +130,8 @@ class SquidDungeonGeneratorTest {
 
         private fun expectedTile(glyph: Char): Int = when (glyph) {
             '#' -> FloorMap.WALL
-            '+', '/' -> FloorMap.DOOR
+            '+' -> FloorMap.DOOR
+            '/' -> FloorMap.OPEN_DOOR
             '>' -> FloorMap.EXIT
             else -> FloorMap.FLOOR
         }

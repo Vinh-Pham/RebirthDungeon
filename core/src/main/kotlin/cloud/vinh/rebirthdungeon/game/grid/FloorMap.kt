@@ -12,9 +12,13 @@ class FloorMap(val width: Int, val height: Int, tilesRowMajorYUp: IntArray) {
     init {
         if (width < 1 || height < 1)
             throw IllegalArgumentException("FloorMap needs positive dimensions, got ${width}x$height")
+        require(width <= 256 && height <= 256) { "Floor exceeds supported dimensions" }
+        require(tiles.all { it in WALL..LOCKED_DOOR }) { "Unknown terrain code" }
         if (tilesRowMajorYUp.size != width * height)
             throw IllegalArgumentException("tiles array must hold exactly width*height entries")
     }
+
+    fun copyTiles(): IntArray = tiles.clone()
 
     fun tileAt(x: Int, y: Int): Int {
         requireInside(x, y)
@@ -25,7 +29,7 @@ class FloorMap(val width: Int, val height: Int, tilesRowMajorYUp: IntArray) {
         if (!isInside(x, y))
             return false
         val tile = tiles[index(x, y)]
-        return tile == FLOOR || tile == DOOR || tile == EXIT
+        return tile == FLOOR || tile == DOOR || tile == OPEN_DOOR || tile == EXIT
     }
 
     fun isInside(x: Int, y: Int): Boolean = x >= 0 && y >= 0 && x < width && y < height
@@ -42,5 +46,7 @@ class FloorMap(val width: Int, val height: Int, tilesRowMajorYUp: IntArray) {
         const val FLOOR = 1
         const val DOOR = 2
         const val EXIT = 3
+        const val OPEN_DOOR = 4
+        const val LOCKED_DOOR = 5
     }
 }

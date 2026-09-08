@@ -11,7 +11,7 @@ data class CommandResult private constructor(val reason: Reason) {
         /** The destination cell is outside the current floor. */
         OUT_OF_BOUNDS,
         /** The destination cell is terrain the actor cannot enter. */
-        BLOCKED
+        BLOCKED, OCCUPIED, HOSTILE_CONTACT, LOCKED_DOOR, NOT_PLAYER_TURN, STALE_SESSION, SAVE_REQUIRED
     }
 
     fun accepted(): Boolean = reason == Reason.ACCEPTED
@@ -19,6 +19,7 @@ data class CommandResult private constructor(val reason: Reason) {
     override fun toString(): String = "CommandResult($reason)"
 
     companion object {
+        fun rejected(reason: Reason) = CommandResult(reason)
         val ACCEPTED = CommandResult(Reason.ACCEPTED)
         val NOT_CARDINAL = CommandResult(Reason.NOT_CARDINAL)
         val OUT_OF_BOUNDS = CommandResult(Reason.OUT_OF_BOUNDS)

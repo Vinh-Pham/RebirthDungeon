@@ -1,24 +1,21 @@
 package cloud.vinh.rebirthdungeon.game.commands
 
-/** Per-step command context shared by the ordered systems through the world
- * configuration. It carries at most one command; the pipeline consumes the
- * intent in registration order and cleanup clears it inside the step. The
- * resolved [result] deliberately survives the step so the controller can
- * copy it out after `World.process()` returns; the controller clears it
- * before the next command. Plain mutable carrier, never saved or retained
- * across steps. */
-class PendingCommand {
-    var move: MoveCommand? = null
+import cloud.vinh.rebirthdungeon.game.events.Cell
+import cloud.vinh.rebirthdungeon.game.events.OrderedEvent
+import cloud.vinh.rebirthdungeon.game.identity.EntityId
+
+/** One transient action, consumed only within a single World.process call. */
+internal class PendingCommand {
+    var command: RunCommand? = null
     var result: CommandResult? = null
-
-    /** Clears the intent only; the result stays readable until the controller
-     * calls [resetAll] before the next command. */
-    fun clearIntent() {
-        move = null
+    var actor: EntityId? = null
+    var target: Cell? = null
+    var opensDoor = false
+    val events = ArrayList<OrderedEvent>()
+    val observedEvents = ArrayList<OrderedEvent>()
+    fun reset(command: RunCommand) {
+        this.command = command; result = null; actor = null; target = null; opensDoor = false
+        events.clear(); observedEvents.clear()
     }
-
-    fun resetAll() {
-        move = null
-        result = null
-    }
+    fun accepted() = result?.accepted() == true
 }

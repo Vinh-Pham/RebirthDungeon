@@ -2,7 +2,7 @@
 
 Recommendation dated **2026-09-07**. Keep the existing Gradle modules and use **responsibility boundaries at the top, gameplay features inside those boundaries**. Extend [game-plan.md section 17](game-plan.md#17-target-project-structure) rather than replacing it with a new architecture.
 
-This is a target layout, not an inventory of implemented systems. Create directories only when their feature arrives in [project-phases.md](project-phases.md). Phase 2 remains the next implementation phase; this proposal does not move files, add dependencies, or complete phase gates.
+This is a target layout, not an inventory of implemented systems. Create directories only when their feature arrives in [project-phases.md](project-phases.md). Phases 2–3 have since implemented the content/RNG and movement/checkpoint foundations; see the phase tracker for current verification. The remaining target tree is guidance, not a claim that later features exist.
 
 ## 1. What the documentation implies
 

@@ -10,3 +10,8 @@ data class ActorMoved(val actor: EntityId, val from: Cell, val to: Cell) : Domai
 data class OrderedEvent(val sequence: Long, val event: DomainEvent) {
     init { require(sequence > 0) }
 }
+
+data class DoorOpened(val actor: EntityId, val cell: Cell) : DomainEvent
+data class ActorWaited(val actor: EntityId) : DomainEvent
+data class ActorRemoved(val actor: EntityId, val cell: Cell) : DomainEvent
+data class ExitReached(val actor: EntityId, val cell: Cell) : DomainEvent

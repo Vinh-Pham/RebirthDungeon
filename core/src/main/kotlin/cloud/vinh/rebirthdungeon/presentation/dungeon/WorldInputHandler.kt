@@ -7,57 +7,45 @@ import ktx.app.KtxInputAdapter
 import kotlin.math.abs
 import kotlin.math.floor
 
-/** World-level input, routed AFTER the UI stage by the screen's
- * InputMultiplexer. Touches that the stage consumed (any HUD control)
- * never reach this handler; only taps that fall through onto the world do, and
- * they are unprojected through the world viewport — including extend/letterbox
- * areas — before touching gameplay. World coordinates are y-up, so "up" is
- * +1 on the y axis. */
-class WorldInputHandler(
-    private val worldViewport: Viewport,
-    private val renderer: DungeonRenderer,
-    private val sink: MoveSink
-) : KtxInputAdapter {
-    /** Callback that submits a move into the simulation for the active screen. */
-    fun interface MoveSink {
-        fun requestMove(dx: Int, dy: Int)
+/** Stage gets first refusal. Taps and swipes resolve on release, so one gesture produces one command. */
+class WorldInputHandler(private val viewport: Viewport, private val renderer: DungeonRenderer,
+    private val wait: () -> Unit, private val sink: (Int, Int) -> Unit) : KtxInputAdapter {
+    private var pointerId = -1
+    private var startX = 0
+    private var startY = 0
+    fun cancelGesture() { pointerId = -1 }
+    override fun touchCancelled(screenX: Int, screenY: Int, pointer: Int, button: Int): Boolean {
+        if (pointer != pointerId) return false
+        cancelGesture(); return true
     }
-
-    private val unproject = Vector3()
-
-    override fun keyDown(keycode: Int): Boolean = when (keycode) {
-        Input.Keys.UP, Input.Keys.W -> {
-            sink.requestMove(0, 1)
-            true
+    override fun keyDown(keycode: Int): Boolean {
+        when (keycode) {
+            Input.Keys.UP, Input.Keys.W -> sink(0, 1)
+            Input.Keys.DOWN, Input.Keys.S -> sink(0, -1)
+            Input.Keys.LEFT, Input.Keys.A -> sink(-1, 0)
+            Input.Keys.RIGHT, Input.Keys.D -> sink(1, 0)
+            Input.Keys.SPACE, Input.Keys.PERIOD -> wait()
+            else -> return false
         }
-        Input.Keys.DOWN, Input.Keys.S -> {
-            sink.requestMove(0, -1)
-            true
-        }
-        Input.Keys.LEFT, Input.Keys.A -> {
-            sink.requestMove(-1, 0)
-            true
-        }
-        Input.Keys.RIGHT, Input.Keys.D -> {
-            sink.requestMove(1, 0)
-            true
-        }
-        else -> false
+        return true
     }
-
     override fun touchDown(screenX: Int, screenY: Int, pointer: Int, button: Int): Boolean {
-        unproject.set(screenX.toFloat(), screenY.toFloat(), 0f)
-        worldViewport.unproject(unproject)
-        val cellX = floor(unproject.x / DungeonRenderer.TILE_SIZE).toInt()
-        val cellY = floor(unproject.y / DungeonRenderer.TILE_SIZE).toInt()
-        // Targeting reads the last completed cell; while the move track is
-        // animating, the screen's submit gate drops any command anyway.
-        val dx = cellX - renderer.playerCellX
-        val dy = cellY - renderer.playerCellY
-        if (abs(dx) + abs(dy) == 1) {
-            sink.requestMove(dx, dy)
-            return true
+        if (pointerId != -1 || button != Input.Buttons.LEFT) return false
+        pointerId = pointer; startX = screenX; startY = screenY
+        return true
+    }
+    override fun touchUp(screenX: Int, screenY: Int, pointer: Int, button: Int): Boolean {
+        if (pointer != pointerId) return false
+        pointerId = -1
+        val dx = screenX - startX; val dy = screenY - startY
+        if (maxOf(abs(dx), abs(dy)) >= 32) {
+            if (abs(dx) > abs(dy)) sink(if (dx > 0) 1 else -1, 0) else sink(0, if (dy < 0) 1 else -1)
+        } else {
+            val point = viewport.unproject(Vector3(screenX.toFloat(), screenY.toFloat(), 0f))
+            val x = floor(point.x / DungeonRenderer.TILE_SIZE).toInt() - renderer.playerCellX
+            val y = floor(point.y / DungeonRenderer.TILE_SIZE).toInt() - renderer.playerCellY
+            if (abs(x) + abs(y) == 1) sink(x, y)
         }
-        return false
+        return true
     }
 }

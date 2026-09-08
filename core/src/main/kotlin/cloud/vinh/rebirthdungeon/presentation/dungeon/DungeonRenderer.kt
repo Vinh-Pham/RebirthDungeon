@@ -1,129 +1,73 @@
 package cloud.vinh.rebirthdungeon.presentation.dungeon
 
-import cloud.vinh.rebirthdungeon.game.grid.FloorMap
 import cloud.vinh.rebirthdungeon.data.content.ContentBundle
+import cloud.vinh.rebirthdungeon.game.events.ActorMoved
+import cloud.vinh.rebirthdungeon.game.grid.FloorMap
 import cloud.vinh.rebirthdungeon.game.identity.ContentId
+import cloud.vinh.rebirthdungeon.game.projection.DungeonObservation
 import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.graphics.g2d.TextureAtlas
-import com.badlogic.gdx.graphics.g2d.TextureRegion
-import com.badlogic.gdx.math.MathUtils
 import ktx.graphics.use
 
-/** World-space rendering for the prototype dungeon: terrain tiles then actors,
- * through one SpriteBatch and the world camera. Also owns the move
- * presentation track: while a committed step animates, the authoritative
- * position is already the destination; the track only interpolates the sprite
- * and never changes gameplay state. Idle frames advance only this track. */
+/** Receives observed values only. Unseen actor positions and actual hidden terrain never enter here. */
 class DungeonRenderer(atlas: TextureAtlas, content: ContentBundle) {
-    private val bindings = content.visuals.associateBy { it.id }
-    private fun frames(id: String) = bindings.getValue(ContentId(id)).frames
-    private val floorTile = requireRegion(atlas, frames("tile.floor").first())
-    private val wallTile = requireRegion(atlas, frames("tile.wall").first())
-    private val doorTile = requireRegion(atlas, frames("tile.door").first())
-    private val exitTile = requireRegion(atlas, frames("tile.exit").first())
-    private val playerFrames = frames("actor.hero").map { requireRegion(atlas, it) }.toTypedArray()
-
-    var floor: FloorMap? = null
-
+    private val regions = content.visuals.associate { binding -> binding.id to binding.frames.map { checkNotNull(atlas.findRegion(it)) } }
+    private var observation: DungeonObservation? = null
     var playerCellX = 0
         private set
     var playerCellY = 0
         private set
-
-    private val moveFrom = IntArray(2)
-    private val moveTo = IntArray(2)
-    private var moving = false
-    private var moveElapsed = 0f
-    private var frameClock = 0f
-
-    /** Places the sprite on the authoritative cell and stops any animation. */
+    private var elapsed = 1f
+    private var fromX = 0
+    private var fromY = 0
+    private var toX = 0
+    private var toY = 0
+    private var lastEvent = 0L
+    private var runId: String? = null
+    val isAnimating get() = elapsed < MOVE_SECONDS
+    val spriteCenterX get() = (fromX + (toX - fromX) * progress() + 0.5f) * TILE_SIZE
+    val spriteCenterY get() = (fromY + (toY - fromY) * progress() + 0.5f) * TILE_SIZE
+    private fun progress() = (elapsed / MOVE_SECONDS).coerceIn(0f, 1f)
     fun snapPlayer(x: Int, y: Int) {
-        playerCellX = x
-        playerCellY = y
-        moving = false
-        moveElapsed = 0f
+        playerCellX = x; playerCellY = y; fromX = x; toX = x; fromY = y; toY = y; elapsed = MOVE_SECONDS
     }
-
-    /** Begins interpolating from the previous cell to the committed cell. */
-    fun beginMove(fromX: Int, fromY: Int, toX: Int, toY: Int) {
-        moveFrom[0] = fromX
-        moveFrom[1] = fromY
-        moveTo[0] = toX
-        moveTo[1] = toY
-        moving = true
-        moveElapsed = 0f
+    fun accept(value: DungeonObservation, animate: Boolean = true) {
+        if (runId != value.runId) { runId = value.runId; lastEvent = 0 }
+        observation = value
+        val movement = value.events.filter { it.sequence > lastEvent }.map { it.event }.filterIsInstance<ActorMoved>().lastOrNull { it.actor == value.player }
+        lastEvent = maxOf(lastEvent, value.events.maxOfOrNull { it.sequence } ?: 0)
+        if (animate && movement != null) {
+            fromX = movement.from.x; fromY = movement.from.y; toX = movement.to.x; toY = movement.to.y; elapsed = 0f
+        } else snapPlayer(value.playerCell.x, value.playerCell.y)
     }
-
-    val isAnimating: Boolean
-        get() = moving
-
-    /** Animated sprite centre in world pixels; the camera follows this. */
-    val spriteCenterX: Float
-        get() = (if (moving) interpolate(moveFrom[0], moveTo[0]) else playerCellX + 0.5f) * TILE_SIZE
-
-    val spriteCenterY: Float
-        get() = (if (moving) interpolate(moveFrom[1], moveTo[1]) else playerCellY + 0.5f) * TILE_SIZE
-
-    private fun interpolate(from: Int, to: Int): Float {
-        val progress = MathUtils.clamp(moveElapsed / MOVE_SECONDS, 0f, 1f)
-        return from + (to - from) * progress
-    }
-
-    private fun update(delta: Float) {
-        if (moving) {
-            moveElapsed += delta
-            frameClock += delta
-            if (moveElapsed >= MOVE_SECONDS) {
-                playerCellX = moveTo[0]
-                playerCellY = moveTo[1]
-                moving = false
-                moveElapsed = 0f
-            }
-        }
-    }
-
-    /** Draws one frame: terrain pass, then the actor pass (stable depth rule:
-     * layer first, then cell y, then stable id — one actor today). */
     fun render(batch: SpriteBatch, camera: OrthographicCamera, delta: Float) {
-        update(delta)
-        // use(camera) copies the camera's combined projection matrix and
-        // brackets the block with SpriteBatch.begin()/end().
-        batch.use(camera) {
-            val floor = this.floor
-            if (floor != null) {
-                for (x in 0 until floor.width) {
-                    for (y in 0 until floor.height) {
-                        val tile = floor.tileAt(x, y)
-                        val px = (x * TILE_SIZE).toFloat()
-                        val py = (y * TILE_SIZE).toFloat()
-                        it.draw(floorTile, px, py)
-                        if (tile == FloorMap.WALL)
-                            it.draw(wallTile, px, py)
-                        else if (tile == FloorMap.DOOR)
-                            it.draw(doorTile, px, py)
-                        else if (tile == FloorMap.EXIT)
-                            it.draw(exitTile, px, py)
-                    }
+        elapsed = minOf(MOVE_SECONDS, elapsed + delta)
+        if (!isAnimating) { playerCellX = toX; playerCellY = toY }
+        val view = observation ?: return
+        batch.use(camera) { b ->
+            for (y in 0 until view.height) for (x in 0 until view.width) {
+                val tile = view.tileAt(x, y)
+                if (tile < 0) continue
+                val brightness = if (view.visibleAt(x, y)) 1f else 0.28f
+                b.setColor(brightness, brightness, brightness, 1f)
+                val id = when (tile) {
+                    FloorMap.WALL -> "tile.wall"
+                    FloorMap.DOOR, FloorMap.LOCKED_DOOR -> "tile.door"
+                    FloorMap.EXIT -> "tile.exit"
+                    else -> "tile.floor"
                 }
+                b.draw(regions.getValue(ContentId(id)).first(), (x * TILE_SIZE).toFloat(), (y * TILE_SIZE).toFloat())
             }
-            var frame: TextureRegion = playerFrames[0]
-            if (moving)
-                frame = playerFrames[(frameClock / STEP_FRAME_SECONDS).toInt() % playerFrames.size]
-            val drawX = spriteCenterX - TILE_SIZE / 2f
-            val drawY = spriteCenterY - TILE_SIZE / 2f
-            it.draw(frame, drawX, drawY)
+            for (actor in view.actors.sortedWith(compareBy({ it.cell.y }, { it.id.value }))) {
+                val frames = regions.getValue(actor.definition)
+                if (actor.player) b.setColor(1f, 1f, 1f, 1f) else b.setColor(1f, 0.45f, 0.45f, 1f)
+                val x = if (actor.player) spriteCenterX - TILE_SIZE / 2f else (actor.cell.x * TILE_SIZE).toFloat()
+                val y = if (actor.player) spriteCenterY - TILE_SIZE / 2f else (actor.cell.y * TILE_SIZE).toFloat()
+                b.draw(frames[if (isAnimating) (elapsed / 0.06f).toInt() % frames.size else 0], x, y)
+            }
+            b.setColor(1f, 1f, 1f, 1f)
         }
     }
-
-    companion object {
-        const val TILE_SIZE = 16
-        private const val MOVE_SECONDS = 0.12f
-        private const val STEP_FRAME_SECONDS = 0.09f
-
-        private fun requireRegion(atlas: TextureAtlas, name: String): TextureRegion {
-            return atlas.findRegion(name)
-                ?: throw IllegalArgumentException("dungeon atlas is missing region '$name'")
-        }
-    }
+    companion object { const val TILE_SIZE = 16; private const val MOVE_SECONDS = 0.12f }
 }

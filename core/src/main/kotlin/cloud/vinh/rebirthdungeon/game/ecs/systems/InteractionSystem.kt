@@ -3,6 +3,6 @@ package cloud.vinh.rebirthdungeon.game.ecs.systems
 import cloud.vinh.rebirthdungeon.game.RunWorld
 import com.artemis.BaseSystem
 
-internal class CleanupSystem(private val run: RunWorld) : BaseSystem() {
-    override fun processSystem() = run.cleanup()
+internal class InteractionSystem(private val run: RunWorld) : BaseSystem() {
+    override fun processSystem() = run.interact()
 }

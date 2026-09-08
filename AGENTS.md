@@ -112,7 +112,7 @@ Keep the existing Gradle modules and one shared production source root. **Do not
 
 ## Working conventions for this repo
 
-- **Follow `docs/project-phases.md` as the work queue.** Complete the earliest unfinished phase by default (currently Phase 3 — grid simulation, turns, and basic checkpoints; phases 0–2 are done and verified). Preserve unmet prerequisites if priorities change, and record the change.
+- **Follow `docs/project-phases.md` as the work queue.** Complete the earliest unfinished phase by default (currently Phase 4 — deterministic five-dice combat; phases 0–3 are done and verified). Preserve unmet prerequisites if priorities change, and record the change.
 - Before implementing towns, reconcile the architecture/tracker with `docs/gameplay/towns.md` as described in directory.md section 7, including carried/banked gold, reward capacity, and recovery access. Record phase placement and unresolved rules; directory adoption does not settle balance or authorize skipping prerequisites.
 - **A checked box means implemented *and* verified.** Record commands, targets/devices, results, and file paths as evidence. A missing device or credential is an unmet gate, not a pass.
 - When finishing a phase, update the phase checklist, Phase Overview, Current Focus, and Completion Log **together**; keep dated blockers and next actions in Work Notes.
