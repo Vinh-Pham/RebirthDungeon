@@ -1,6 +1,8 @@
 package cloud.vinh.rebirthdungeon.presentation.dungeon
 
 import cloud.vinh.rebirthdungeon.game.grid.FloorMap
+import cloud.vinh.rebirthdungeon.data.content.ContentBundle
+import cloud.vinh.rebirthdungeon.game.identity.ContentId
 import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.graphics.g2d.TextureAtlas
@@ -13,12 +15,14 @@ import ktx.graphics.use
  * presentation track: while a committed step animates, the authoritative
  * position is already the destination; the track only interpolates the sprite
  * and never changes gameplay state. Idle frames advance only this track. */
-class DungeonRenderer(atlas: TextureAtlas) {
-    private val floorTile = requireRegion(atlas, "floor")
-    private val wallTile = requireRegion(atlas, "wall")
-    private val doorTile = requireRegion(atlas, "door")
-    private val exitTile = requireRegion(atlas, "exit")
-    private val playerFrames = arrayOf(requireRegion(atlas, "player_a"), requireRegion(atlas, "player_b"))
+class DungeonRenderer(atlas: TextureAtlas, content: ContentBundle) {
+    private val bindings = content.visuals.associateBy { it.id }
+    private fun frames(id: String) = bindings.getValue(ContentId(id)).frames
+    private val floorTile = requireRegion(atlas, frames("tile.floor").first())
+    private val wallTile = requireRegion(atlas, frames("tile.wall").first())
+    private val doorTile = requireRegion(atlas, frames("tile.door").first())
+    private val exitTile = requireRegion(atlas, frames("tile.exit").first())
+    private val playerFrames = frames("actor.hero").map { requireRegion(atlas, it) }.toTypedArray()
 
     var floor: FloorMap? = null
 
@@ -105,7 +109,7 @@ class DungeonRenderer(atlas: TextureAtlas) {
             }
             var frame: TextureRegion = playerFrames[0]
             if (moving)
-                frame = if ((frameClock / STEP_FRAME_SECONDS).toInt() % 2 == 0) playerFrames[0] else playerFrames[1]
+                frame = playerFrames[(frameClock / STEP_FRAME_SECONDS).toInt() % playerFrames.size]
             val drawX = spriteCenterX - TILE_SIZE / 2f
             val drawY = spriteCenterY - TILE_SIZE / 2f
             it.draw(frame, drawX, drawY)

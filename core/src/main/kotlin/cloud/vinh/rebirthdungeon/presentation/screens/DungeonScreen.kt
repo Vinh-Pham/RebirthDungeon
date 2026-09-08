@@ -1,5 +1,8 @@
 package cloud.vinh.rebirthdungeon.presentation.screens
 
+import cloud.vinh.rebirthdungeon.game.RunSession
+import cloud.vinh.rebirthdungeon.game.identity.ContentId
+import cloud.vinh.rebirthdungeon.game.algorithms.SeedDerivation
 import cloud.vinh.rebirthdungeon.RebirthDungeon
 import cloud.vinh.rebirthdungeon.bootstrap.SessionWorker
 import cloud.vinh.rebirthdungeon.game.DungeonSimulation
@@ -42,6 +45,8 @@ class DungeonScreen(private val game: RebirthDungeon) : KtxScreen {
      * (20x11.25 tiles at 16px), extended to fill larger windows so tiles stay
      * square and crisp at integer window scales (nearest-neighbor filtering). */
     private val generator: DungeonGenerator = SquidDungeonGenerator()
+    private val run = RunSession(BASE_SEED, game.content().catalog)
+    private val generation = run.content.generations.getValue(ContentId("generation.starter"))
 
     private var batch: SpriteBatch? = null
     private var worldCamera: OrthographicCamera? = null
@@ -75,7 +80,7 @@ class DungeonScreen(private val game: RebirthDungeon) : KtxScreen {
         this.worldCamera = worldCamera
         val worldViewport = ExtendViewport(MIN_WORLD_WIDTH, MIN_WORLD_HEIGHT, worldCamera)
         this.worldViewport = worldViewport
-        val renderer = DungeonRenderer(atlas)
+        val renderer = DungeonRenderer(atlas, game.content())
         this.renderer = renderer
 
         val stage = Stage(ScreenViewport())
@@ -162,7 +167,8 @@ class DungeonScreen(private val game: RebirthDungeon) : KtxScreen {
         val attemptNumber = attempt
         val job = Callable<GeneratedFloor> {
             // Worker thread: pure JVM code, detached output, no Gdx/graphics/ECS access.
-            generator.generate(MAP_WIDTH, MAP_HEIGHT, BASE_SEED + attemptNumber)
+            generator.generate(generation.width, generation.height,
+                SeedDerivation.floorAttempt(run.seed, 0, generation.generatorVersion, attemptNumber))
         }
         worker.submit(submittedSession, job, object : SessionWorker.ResultHandler<GeneratedFloor> {
             override fun onResult(result: GeneratedFloor) {
@@ -180,7 +186,7 @@ class DungeonScreen(private val game: RebirthDungeon) : KtxScreen {
         if (worker == null)
             return // screen already torn down; a stale callback was rejected by the session guard
         simulation?.dispose()
-        val simulation = DungeonSimulation.create(generated.floor, generated.spawnX, generated.spawnY)
+        val simulation = DungeonSimulation.create(generated.floor, generated.spawnX, generated.spawnY, run)
         this.simulation = simulation
         floor = generated.floor
         val renderer = this.renderer ?: return
@@ -382,8 +388,6 @@ class DungeonScreen(private val game: RebirthDungeon) : KtxScreen {
     companion object {
         private const val MIN_WORLD_WIDTH = 320f
         private const val MIN_WORLD_HEIGHT = 180f
-        private const val MAP_WIDTH = 48
-        private const val MAP_HEIGHT = 27
         private const val BASE_SEED = 0x5DEECE66DL
     }
 }

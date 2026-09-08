@@ -1,5 +1,7 @@
 package cloud.vinh.rebirthdungeon
 
+import cloud.vinh.rebirthdungeon.data.content.ContentBundle
+import cloud.vinh.rebirthdungeon.data.content.JacksonContentRepository
 import cloud.vinh.rebirthdungeon.presentation.screens.LoadingScreen
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.assets.AssetManager
@@ -21,6 +23,18 @@ import ktx.assets.load
  * the dispose-on-navigate contract through [navigateTo]. */
 class RebirthDungeon : KtxGame<KtxScreen>() {
     private var assets: AssetManager? = null
+    private var contentBundle: ContentBundle? = null
+
+    fun content(): ContentBundle = checkNotNull(contentBundle) { "Content not validated" }
+
+    fun loadContent() {
+        if (contentBundle != null) return
+        val bundle = JacksonContentRepository {
+            Gdx.files.internal("data/$it").readString("UTF-8")
+        }.load()
+        bundle.validateVisuals { atlas, frame -> assets().get(atlas, TextureAtlas::class.java).findRegion(frame) != null }
+        contentBundle = bundle
+    }
 
     override fun create() {
         assets = AssetManager()

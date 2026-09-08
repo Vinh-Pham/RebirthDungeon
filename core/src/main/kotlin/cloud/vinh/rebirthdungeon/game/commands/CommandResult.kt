@@ -2,7 +2,7 @@ package cloud.vinh.rebirthdungeon.game.commands
 
 /** Outcome of one resolved command. Expected rejections are values, not
  * exceptions; only invariant failures should halt a session. Immutable. */
-class CommandResult private constructor(val reason: Reason) {
+data class CommandResult private constructor(val reason: Reason) {
     enum class Reason {
         /** The command changed authoritative state. */
         ACCEPTED,

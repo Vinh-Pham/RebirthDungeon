@@ -55,7 +55,7 @@ class LoadingScreen(private val game: RebirthDungeon) : KtxScreen {
         Gdx.input.inputProcessor = stage
 
         if (game.assets().isFinished)
-            onAssetsReady()
+            pollAssets()
     }
 
     override fun render(delta: Float) {
@@ -115,6 +115,7 @@ class LoadingScreen(private val game: RebirthDungeon) : KtxScreen {
     }
 
     private fun onAssetsReady() {
+        game.loadContent()
         activated = true
         info("LoadingScreen") { "assets ready: ${game.assets().loadedAssets} loaded" }
         // Prove the managed resources are actually retrievable before wiring UI.
@@ -127,7 +128,10 @@ class LoadingScreen(private val game: RebirthDungeon) : KtxScreen {
         val enter = scene2d.textButton("Enter Dungeon", skin = skin) {
             onClick { game.navigateTo(DungeonScreen(game)) }
         }
-        root.add(enter).minWidth(220f).minHeight(52f)
+        root.add(enter).minWidth(220f).minHeight(52f).row()
+        val skill = game.content().catalog.skills.values.first()
+        root.add(Label("Prototype content v${game.content().catalog.version.content}: ${skill.name}, ranks " +
+            skill.ranks.joinToString(" / ") { it.rank } + " (cap ${skill.prototypeCap})", skin)).padTop(12f)
     }
 
     private fun showFailure() {

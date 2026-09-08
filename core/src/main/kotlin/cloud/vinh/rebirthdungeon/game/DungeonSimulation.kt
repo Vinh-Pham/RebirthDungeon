@@ -1,5 +1,10 @@
 package cloud.vinh.rebirthdungeon.game
 
+import cloud.vinh.rebirthdungeon.game.identity.EntityId
+import cloud.vinh.rebirthdungeon.game.events.OrderedEvent
+import cloud.vinh.rebirthdungeon.game.events.Cell
+import cloud.vinh.rebirthdungeon.game.events.ActorMoved
+import cloud.vinh.rebirthdungeon.game.projection.MovementSnapshot
 import cloud.vinh.rebirthdungeon.game.commands.CommandResult
 import cloud.vinh.rebirthdungeon.game.commands.MoveCommand
 import cloud.vinh.rebirthdungeon.game.commands.PendingCommand
@@ -29,23 +34,35 @@ class DungeonSimulation private constructor(
     val floor: FloorMap,
     private val pending: PendingCommand,
     private val playerEntity: Int,
-    private val stepCounter: StepCounterSystem
+    private val stepCounter: StepCounterSystem,
+    val session: RunSession?
 ) {
     private val mPosition: ComponentMapper<GridPosition> = world.mapperFor()
     private var acceptedCommands = 0
+    private val stablePlayer = EntityId(1)
+    private var lastEvents: List<OrderedEvent> = emptyList()
+
+    fun snapshot(): MovementSnapshot =
+        MovementSnapshot(acceptedCommands.toLong(), stablePlayer,
+            Cell(playerX(), playerY()), lastEvents)
 
     /** Resolves one command synchronously on the calling thread: sets the
      * pending context, runs one `world.process()`, and copies the result
      * out after the flush. Rejections leave authoritative state untouched. */
     fun apply(command: MoveCommand): CommandResult {
+        val from = Cell(playerX(), playerY())
         pending.resetAll()
         pending.move = command
         world.process()
         val result = pending.result
         pending.resetAll()
         val resolved = checkNotNull(result) { "command pipeline produced no result for $command" }
-        if (resolved.accepted())
+        if (resolved.accepted()) {
             acceptedCommands++
+            lastEvents = listOf(OrderedEvent(acceptedCommands.toLong(),
+                ActorMoved(stablePlayer, from,
+                    Cell(playerX(), playerY()))))
+        }
         return resolved
     }
 
@@ -80,7 +97,7 @@ class DungeonSimulation private constructor(
          * then cleanup, with the step counter last. The player entity is created
          * after the world exists and resolved by the systems through their aspect
          * subscription, never through a cached id (artemis recycles ids). */
-        fun create(floor: FloorMap, spawnX: Int, spawnY: Int): DungeonSimulation {
+        fun create(floor: FloorMap, spawnX: Int, spawnY: Int, session: RunSession? = null): DungeonSimulation {
             val pending = PendingCommand()
             val counter = StepCounterSystem()
 
@@ -106,7 +123,7 @@ class DungeonSimulation private constructor(
                 with<PlayerControlled>()
             }
 
-            return DungeonSimulation(world, floor, pending, player, counter)
+            return DungeonSimulation(world, floor, pending, player, counter, session)
         }
     }
 }

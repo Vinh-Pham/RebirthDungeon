@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "contentVersion": 1,
+  "rulesVersion": 1,
+  "rules": "starter.json",
+  "visuals": "visuals.json"
+}
