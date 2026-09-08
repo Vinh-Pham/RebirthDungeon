@@ -18,18 +18,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f7f07e50-b8ee-49d0-92bc-0efaf6deb9b9" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/docs/directory.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AGENTS.md" beforeDir="false" afterPath="$PROJECT_DIR$/AGENTS.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/game-plan.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/game-plan.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/gameplay/battle.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/gameplay/battle.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/gameplay/character.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/gameplay/character.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/gameplay/enchants.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/gameplay/enchants.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/gameplay/inventory.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/gameplay/inventory.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/gameplay/quests.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/gameplay/quests.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/gameplay/skills.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/gameplay/skills.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/gameplay/stats.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/gameplay/stats.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/gameplay/titles.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/gameplay/titles.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/project-phases.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/project-phases.md" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
