@@ -2,7 +2,7 @@
 
 A character grows through **leveling**, **talent development**, and **aging**. Leveling earns stats and AP, talents shape a character's specialization, and aging changes the character over time. Skills provide lasting progression across successive lives through rebirth.
 
-This document describes planned gameplay inspired by **Mabinogi, the Korean MMORPG**. It complements [skills.md](skills.md), the [game plan](game-plan.md), and the [project phases](project-phases.md). Mabinogi reference mechanics are identified separately from proposed Rebirth Dungeon rules. Values and defaults below are design proposals, not implemented features or final balance decisions.
+This document describes planned gameplay inspired by **Mabinogi, the Korean MMORPG**. It complements [skills.md](skills.md), the [game plan](../game-plan.md), and the [project phases](../project-phases.md). Mabinogi reference mechanics are identified separately from proposed Rebirth Dungeon rules. Values and defaults below are design proposals, not implemented features or final balance decisions.
 
 ## 1. Mabinogi reference
 
@@ -123,7 +123,7 @@ Proposed creation and rebirth ages are **10–17**. Age measures the current bod
 
 Mabinogi uses a shared weekly Saturday age-up schedule. Rebirth Dungeon's proposed offline-friendly adaptation is **one year per seven elapsed real-world days since creation or rebirth**, including time offline. This is a rolling interval, not Mabinogi's server reset time. [Mabinogi age schedule](https://wiki.mabinogiworld.com/view/Stats#Age).
 
-Age is reconciled in the hub or at a run's results boundary. Opening menus repeatedly does not trigger age-ups, and an age-up during a dungeon does not silently change the active run's character snapshot. Reconcile each elapsed interval once in chronological order, including intervals missed while offline.
+Age is reconciled in town or at a run's results boundary. Opening menus repeatedly does not trigger age-ups, and an age-up during a dungeon does not silently change the active run's character snapshot. Reconcile each elapsed interval once in chronological order, including intervals missed while offline.
 
 Display actual age directly, such as **Age 26**, instead of copying the wiki's legacy “years past 25” notation. Age continues increasing beyond the growth cutoff; the proposed system has no death from old age. Optional age-based appearance changes must leave grid occupancy, targeting, and input areas unchanged.
 
@@ -147,7 +147,7 @@ An age-up grants no character XP, cumulative level, or skill training. Any age t
 
 Rebirth is included here to explain why current level, cumulative level, and age are separate. It remains a proposed feature: skills.md left its exact behavior open, and cooldowns, eligibility, and costs still need a decision before implementation.
 
-At an eligible hub boundary, preview the following proposed transition before the player commits:
+At an eligible town boundary, preview the following proposed transition before the player commits:
 
 | Character state | Proposed rebirth behavior |
 | --- | --- |
@@ -171,7 +171,7 @@ Example: a level-20 character with cumulative level 20, Guard E, and 8 unspent A
 
 Follow the game plan's boundary between permanent profile progression and the active dungeon simulation. For the initial design, run-earned XP and skill training are pending rewards. Commit the eligible amounts at the outcome boundary, then apply level-ups and mastery changes. Victory, defeat, and abandonment retention remains the Phase 7 decision; this document does not assume every pending reward survives.
 
-For a run outcome, first apply retained XP using the age and talent captured at run start, then apply retained skill training, then reconcile elapsed age intervals. This is an explicit simplification for growth earned during long runs. Skill rank-ups and rebirth happen afterward in the hub. The next run uses the updated profile.
+For a run outcome, first apply retained XP using the age and talent captured at run start, then apply retained skill training, then reconcile elapsed age intervals. This is an explicit simplification for growth earned during long runs. Skill rank-ups and rebirth happen afterward in town. The next run uses the updated profile.
 
 Persist current level, remaining XP, cumulative level, AP, active talent, current-life growth totals, skill progression, life identity, starting age, processed aging intervals, and claimed reward IDs in the existing versioned profile/run bundle. Talent mastery can be rebuilt from skill ranks and the pinned content version. Content changes require deliberate migration rather than silently recalculating a shipped character under new thresholds.
 

@@ -2,7 +2,7 @@
 
 Skills are learned abilities that grow through practice and investment. Players discover them through NPCs, read skill books, or collect missing pages to assemble a skill book. Once learned, a skill must reach **at least 100 training points at its current rank**, and the player must spend the required **AP (Ability Points)** to advance it.
 
-This is a design specification for planned gameplay, modeled after **Mabinogi, the Korean MMORPG**. It complements the [game plan](game-plan.md) and [project phases](project-phases.md); it does not claim that skills are implemented. The three acquisition routes and the training-plus-AP gate are required. Additional rules below are proposed defaults for Rebirth Dungeon, with unresolved economy and persistence choices listed at the end.
+This is a design specification for planned gameplay, modeled after **Mabinogi, the Korean MMORPG**. It complements the [game plan](../game-plan.md) and [project phases](../project-phases.md); it does not claim that skills are implemented. The three acquisition routes and the training-plus-AP gate are required. Additional rules below are proposed defaults for Rebirth Dungeon, with unresolved economy and persistence choices listed at the end.
 
 ## 1. Mabinogi reference
 
@@ -143,7 +143,7 @@ Using an active combat skill follows [battle.md](battle.md)'s five-dice workflow
 
 The proposed default allows NPC lessons, reading, assembly, and rank-ups between runs. A new run receives the hero's validated skill ranks and loadout. An active run uses that snapshot; menu or profile changes cannot silently alter its abilities. Training earned during a run is recorded as pending progression until the run's defined outcome is committed.
 
-Already committed skills, ranks, AP, training, and inserted pages are persistent progression. What happens to newly earned training, AP, books, and pages on victory, defeat, or abandonment must follow the Phase 7 carry-over decision. This document does not silently settle that open rule or define a rebirth reset system.
+Already committed skills, ranks, AP, training, and inserted pages are persistent progression. What happens to newly earned training, AP, books, and pages on victory, defeat, or abandonment must follow the Phase 7 carry-over decision. This document does not silently settle that open rule. [character.md §6](character.md#6-rebirth-connects-the-systems) proposes the working rebirth behavior — reset current level/XP and life growth while preserving learned ranks, training, unspent AP, and mastery — but its eligibility, cost, and cooldown remain open decisions, and nothing here assumes rebirth exists.
 
 Future content definitions need stable skill/rank/objective IDs, acquisition prerequisites, book/page mappings, effects, training rules, and AP costs. Saved progression needs the owning hero, learned ranks, objective counts, AP balance, inventory, and inserted page IDs. Keep this within the existing versioned content catalogs and combined profile/run save bundle.
 
@@ -322,7 +322,7 @@ Before implementation, settle:
 - Exact AP rewards, advancement costs, training objectives, effects, and prerequisites.
 - Which pending skill progression and collection items survive defeat or abandonment, aligned with Phase 7.
 - Starting skills, available acquisition NPCs, book prices, page sources, and drop rates.
-- Whether rebirth later affects levels or AP earning, and what progression it preserves.
+- Whether rebirth later affects levels or AP earning, and what progression it preserves: character.md §6's reset/preserve proposal is the working draft, with eligibility, cost, and cooldown still open.
 
 Acceptance checks for the implementation should cover all three acquisition routes; duplicate learning and pages; incomplete books; rank-up rejection below 100 or with insufficient AP; successful advancement at exactly 100 and above; training reset; maximum-rank behavior; and save/retry without duplicate gains or costs. Validate that each trainable rank can actually reach 100 points and that run abilities use the intended rank snapshot.
 

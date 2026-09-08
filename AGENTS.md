@@ -21,7 +21,7 @@ Two principles shape everything:
 | `.firecrawl/` | Cached web research (artemis-odb wiki, libGDX wiki, Mabinogi wiki, Dicero) used as source material for the plan. Reference only — not project code. |
 | `README.md` | Build prerequisites per platform, dependency policy, and platform verification procedures. |
 
-When gameplay behavior is in question, the gameplay spec owns the rule and game-plan.md owns the system design and implementation order. Note: `gameplay/titles.md` exists but game-plan.md does not reference it yet; project-phases.md folds it into phases 6–9.
+When gameplay behavior is in question, the gameplay spec owns the rule and game-plan.md owns the system design and implementation order. `gameplay/titles.md` is integrated into game-plan.md (specification index, ownership, save shape, progression and validation coverage, 2026-09-07); project-phases.md folds its implementation into phases 6–9.
 
 ## Directory structure
 

@@ -5,6 +5,7 @@
   </component>
   <component name="BackendCodeEditorMiscSettings">
     <option name="/Default/Environment/Hierarchy/GeneratedFilesCacheKey/Timestamp/@EntryValue" value="4" type="long" />
+    <option name="/Default/Housekeeping/FeatureSuggestion/FeatureSuggestionManager/DisabledSuggesters/=SwitchToGoToActionSuggester/@EntryIndexedValue" value="true" type="bool" />
     <option name="/Default/Housekeeping/OptionsDialog/SelectedPageId/@EntryValue" value="CppIncludesOrderOptions" type="string" />
   </component>
   <component name="CMakeProjectFlavorService">
@@ -18,6 +19,17 @@
   <component name="ChangeListManager">
     <list default="true" id="f7f07e50-b8ee-49d0-92bc-0efaf6deb9b9" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/AGENTS.md" beforeDir="false" afterPath="$PROJECT_DIR$/AGENTS.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/game-plan.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/game-plan.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/gameplay/battle.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/gameplay/battle.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/gameplay/character.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/gameplay/character.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/gameplay/enchants.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/gameplay/enchants.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/gameplay/inventory.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/gameplay/inventory.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/gameplay/quests.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/gameplay/quests.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/gameplay/skills.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/gameplay/skills.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/gameplay/stats.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/gameplay/stats.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/gameplay/titles.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/gameplay/titles.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/project-phases.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/project-phases.md" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -144,6 +156,9 @@
   &quot;fromUser&quot;: true
 }</component>
   <component name="ProjectId" id="3InhDugDxfAPYSfYU0uuDu27Kk9" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
@@ -155,6 +170,7 @@
     &quot;Gradle.RebirthDungeon [:lwjgl3:run].executor&quot;: &quot;Run&quot;,
     &quot;Gradle.RebirthDungeon [jarMac].executor&quot;: &quot;Run&quot;,
     &quot;Gradle.RebirthDungeon [run].executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.Upgrade Gradle wrapper.executor&quot;: &quot;Run&quot;,
     &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.RadMigrateCodeStyle&quot;: &quot;true&quot;,
@@ -184,6 +200,12 @@
     &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;
   }
 }</component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/docs/gameplay" />
+      <recent name="$PROJECT_DIR$/docs" />
+    </key>
+  </component>
   <component name="RunManager" selected="Gradle.RebirthDungeon [:lwjgl3:run]">
     <configuration default="true" type="DjangoTestsConfigurationType">
       <option name="ENV_FILES" value="" />
@@ -416,9 +438,9 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Gradle.RebirthDungeon [:lwjgl3:run]" />
         <item itemvalue="Gradle.RebirthDungeon [run]" />
         <item itemvalue="Gradle.RebirthDungeon [jarMac]" />
+        <item itemvalue="Gradle.RebirthDungeon [:lwjgl3:run]" />
       </list>
     </recent_temporary>
   </component>

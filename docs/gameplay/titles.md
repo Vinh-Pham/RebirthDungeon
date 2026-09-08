@@ -36,7 +36,7 @@ First and Second are slot types. General, Story, Master, and Event are collectio
 
 Talent display reads eligible labels from [talent mastery](character.md#talent-mastery). Selecting a label neither changes the active talent nor reapplies mastery bonuses. Talent mastery, a cosmetic talent label, and a skill's Master Title are distinct concepts.
 
-For Rebirth Dungeon, equip, remove, or change titles **in the hub between runs**, with no gold/AP cost or cooldown. This deliberately adapts Mabinogi's normal-title switching to the existing run snapshot model. A newly earned title is never equipped automatically. Empty slots are valid, including both empty.
+For Rebirth Dungeon, equip, remove, or change titles **in town between runs**, with no gold/AP cost or cooldown. This deliberately adapts Mabinogi's normal-title switching to the existing run snapshot model. A newly earned title is never equipped automatically. Empty slots are valid, including both empty.
 
 Vanity is deferred from the first slice. When supported, each override replaces that slot's name/visual presentation only; the base selection still owns stats and gameplay conditions. Clearing the base also clears its override. Owning a vanity title does not make it an equipped gameplay title for NPC checks or other effects. Hiding title presentation never disables the base effects.
 
@@ -61,7 +61,7 @@ Support these proposed acquisition routes:
 | Combat or exploration achievement | Qualifying resolved events, committed under the run outcome's retention policy |
 | Story or NPC quest | The named quest reward transaction is claimed |
 | Character milestone | A committed level-up, age-up, cumulative milestone, or rebirth event, as authored |
-| Coupon | Consume a compatible title coupon and unlock its title together in the hub |
+| Coupon | Consume a compatible title coupon and unlock its title together in town |
 | Skill mastery, later | Complete the skill's authored Rank 1 mastery checklist |
 
 Conditions must specify what counts. A boss title names the boss and eligible mission; a clear title requires a successful clear, not merely entering a floor. A survival challenge records qualifying damage or failures throughout the run rather than checking only final HP. An age achievement reads character.md's actual age, not elapsed turns or account age.
@@ -95,7 +95,7 @@ Master Titles are a **later extension**, preserving skills.md's initial Rank 1 c
 
 When enabled, define a separate mastery checklist for each eligible Rank 1 skill. Perfect training means completing every authored checklist requirement, rather than crossing the ordinary 100-point advancement gate. Earlier ranks need not have been perfectly trained. Track mastery evidence separately from rank-up training; completing mastery grants the title without another rank or AP payment. A prototype-capped skill cannot offer unreachable mastery objectives.
 
-Master Titles use the First Title slot and compete with other First Titles. Their effects apply only when equipped; unlocking several does not stack their bonuses. In the proposed extension, ownership persists if a future skill-reset system lowers the skill rank, but equipping requires Rank 1. If eligibility is lost, clear the selection at a hub boundary and show the reason; restoring Rank 1 restores eligibility without repeating mastery. Ordinary rebirth preserves skills, so it does not invalidate these titles.
+Master Titles use the First Title slot and compete with other First Titles. Their effects apply only when equipped; unlocking several does not stack their bonuses. In the proposed extension, ownership persists if a future skill-reset system lowers the skill rank, but equipping requires Rank 1. If eligibility is lost, clear the selection at a town boundary and show the reason; restoring Rank 1 restores eligibility without repeating mastery. Ordinary rebirth preserves skills, so it does not invalidate these titles.
 
 Mastery checklists, skill-specific title effects, and any relationship to training consumables need their own content pass before this extension ships. Dan ranks and Grandmaster challenges remain separate later systems.
 
@@ -109,7 +109,7 @@ These are original placeholder titles and proposed values, not Mabinogi rewards.
 | the Guardian Breaker | Combat / First | Encounter the introductory guardian | Successfully clear its mission with that guardian defeated | Physical Attack +3, Max MP -5 |
 | the Seal's Witness | Story / First | Receive G1: The Broken Seal's final quest | Claim that Generation's final quest reward | Magic Attack +3, Defense -1 |
 | the Seasoned | Character / First | Reach actual age 18 | Reach actual age 20 at a committed age-up | Max SP +10 |
-| Lantern Companion | General / Second | Inspect its coupon reward in a discovered hub quest | Consume the earned coupon | Max HP +5 |
+| Lantern Companion | General / Second | Inspect its coupon reward in a discovered town quest | Consume the earned coupon | Max HP +5 |
 
 The first two entries may unlock from the same successful run; grant both once and let the player choose. Obtaining the Seasoned title remains recorded after rebirth into a younger body. Coupon quest details and the age feature can arrive after the basic achievement slice.
 
@@ -137,7 +137,7 @@ Definitions also need slot, category, display text, spoiler policy, hint/award p
 
 Expose Titles in the character screen, with First and Second slots and a separate Talent display control. The collection supports category/slot filters, search over revealed entries, favorites first, and earned/known status. Details show acquisition hints, progress, bonuses and penalties, equip restrictions, and whether the title is selected.
 
-Preview the resulting stat changes before confirming a replacement, including current-pool clamping from reduced maxima. Mark title selection unavailable during a run with “Change titles in the hub.” Show pending achievements distinctly from earned titles. Favoriting, hiding visuals, and inspecting details never change effective stats.
+Preview the resulting stat changes before confirming a replacement, including current-pool clamping from reduced maxima. Mark title selection unavailable during a run with “Change titles in town.” Show pending achievements distinctly from earned titles. Favoriting, hiding visuals, and inspecting details never change effective stats.
 
 The first slice should include two competing First Titles, one Second Title, one hinted achievement, a quest or coupon award, a penalty, a combined-slot stat preview, and saved selections. Keep Master Titles, Vanity, timed titles, job systems, event economies, and server-exclusive awards deferred. Do not reproduce Mabinogi's full title list or default Second Title stat values.
 
@@ -153,4 +153,4 @@ Before implementation, settle the actual catalog and balance, ownership across h
 
 ## Research notes
 
-The [Mabinogi Titles page](https://wiki.mabinogiworld.com/view/Titles) was retrieved with Firecrawl and inspected on **September 5, 2026**. Its local cache is `.firecrawl/mabinogi-titles.md` under the gitignored research directory. The reference summary describes that page; hub-only selection, per-hero persistence, stat evaluation, example content, and implementation boundaries are Rebirth Dungeon proposals.
+The [Mabinogi Titles page](https://wiki.mabinogiworld.com/view/Titles) was retrieved with Firecrawl and inspected on **September 5, 2026**. Its local cache is `.firecrawl/mabinogi-titles.md` under the gitignored research directory. The reference summary describes that page; town-only selection, per-hero persistence, stat evaluation, example content, and implementation boundaries are Rebirth Dungeon proposals.

@@ -2,7 +2,7 @@
 
 Inventory is a **grid of carried items with different footprints**, expanded through bags and supported by stacking, sorting, and search. Equipment occupies dedicated slots and supplies the character's active item bonuses. Capacity should create choices about what to bring into a dungeon and what loot to keep, while making ownership and item movement clear.
 
-This is a design specification for planned gameplay, based on **Mabinogi**. It complements the [game plan](game-plan.md), [project phases](project-phases.md), [stats.md](stats.md), [skills.md](skills.md), [enchants.md](enchants.md), [character.md](character.md), and [battle.md](battle.md). It does not claim inventory is implemented. The rules below are proposed Rebirth Dungeon defaults; final capacity, economy, and defeat/abandonment carry-over remain balance and progression decisions.
+This is a design specification for planned gameplay, based on **Mabinogi**. It complements the [game plan](../game-plan.md), [project phases](../project-phases.md), [stats.md](stats.md), [skills.md](skills.md), [enchants.md](enchants.md), [character.md](character.md), and [battle.md](battle.md). It does not claim inventory is implemented. The rules below are proposed Rebirth Dungeon defaults; final capacity, economy, and defeat/abandonment carry-over remain balance and progression decisions.
 
 ## 1. Mabinogi reference
 
@@ -33,7 +33,7 @@ Rebirth Dungeon adopts the grid, item sizes, bags, equipment separation, and org
 
 Use hero-owned inventory for the initial offline design, consistent with the proposed hero-owned skills and AP. An item instance has one authoritative location within its ownership context: backpack, one bag, one equipment assignment, pending reward, or a world pickup. A drag cursor and search result are views of an item, never additional locations or ownership copies.
 
-The profile owns committed inventory. The run operates on a validated snapshot with origin references and reservations for items brought from the profile; that snapshot is not another independently spendable collection. Hub inventory mutations are unavailable while a run is active in the initial design. Section 9 defines reconciliation.
+The profile owns committed inventory. The run operates on a validated snapshot with origin references and reservations for items brought from the profile; that snapshot is not another independently spendable collection. Town inventory mutations are unavailable while a run is active in the initial design. Section 9 defines reconciliation.
 
 The quest record stores progression data, not arbitrary items renamed as quest objects. Physical books, uninserted pages, enchant scrolls, potions, and crafting materials consume grid space. A quest key may instead be a nonphysical flag only when its content definition explicitly says so. The distinction must be visible before pickup.
 
@@ -59,7 +59,7 @@ Stack quantity does not enlarge its rectangle. Initial item orientation is fixed
 
 Keep inventory coordinates separate from dungeon coordinates. Use zero-based columns and rows from the inventory's top-left corner, with rows increasing downward. Item placement stores its top-left anchor; occupancy is derived from its definition's footprint. Do not save duplicate item records for every occupied cell.
 
-Capacity upgrades, if added, change authored container dimensions at a hub boundary and preserve placements. The initial design has no capacity expiration or shrink timer. Definition changes that shrink storage or enlarge item footprints require a migration that preserves every item; they must not silently delete items that no longer fit.
+Capacity upgrades, if added, change authored container dimensions at a town boundary and preserve placements. The initial design has no capacity expiration or shrink timer. Definition changes that shrink storage or enlarge item footprints require a migration that preserves every item; they must not silently delete items that no longer fit.
 
 ## 4. Bags and automatic placement
 
@@ -84,7 +84,7 @@ The player can explicitly choose a smaller pickup quantity for a partial transfe
 
 Merge only instances with the same stack key. Initially that key includes definition ID, quality/variant, binding or ownership restrictions, and gameplay-relevant state. In a run, it also includes provenance so brought supplies and newly looted supplies remain distinguishable for result reconciliation. Items with different uses remaining, enchant values, or other unique state cannot merge merely because their names match.
 
-Equipment, bags, and enchant scrolls are nonstackable in the first slice. Each equipment instance retains its inherent rolls, prefix/suffix enchants, and resolved enchant values when moved, equipped, or returned from a run. A bag retains its container ID. Currency is stored separately as a nonnegative integer balance, not as one grid item per coin; currency bounds and excess-reward handling must be validated before committing a grant.
+Equipment, bags, and enchant scrolls are nonstackable in the first slice. Each equipment instance retains its inherent rolls, prefix/suffix enchants, and resolved enchant values when moved, equipped, or returned from a run. A bag retains its container ID. Gold follows the two-place model in [towns.md](towns.md): a nonnegative integer banked balance at the Bank plus bag-capped carried gold; loose coins are never grid items, and carried capacity must be validated before committing any gold grant.
 
 Splitting requires an integer quantity from 1 through `sourceQuantity - 1` and a legal destination. Assign a new stable instance ID to the split portion and preserve its stack metadata. Merging transfers at most the destination's remaining capacity, retains any source remainder, and removes the source record only when empty. No action may create negative quantities, zero-sized stacks, quantities above a stack limit, or duplicate IDs.
 
@@ -114,13 +114,13 @@ Apply new equipment, remove old contributions, and recompute stats in one transi
 
 ## 7. Inventory actions and simulation time
 
-| Action | Hub | During a run |
+| Action | Town | During a run |
 | --- | --- | --- |
 | Inspect, search, filter, compare, open bags | No gameplay time | No simulation time |
 | Move within carried grids, split/merge, gather, sort | Validated layout transaction | No initiative cost; changes layout only; unavailable during a locked dice activation |
 | Equip, unequip, change hand configuration | Validated equipment transaction | Deferred in the first battle slice; later a full action before rolling |
 | Use a consumable | Only where its definition permits | When enabled, one full action before rolling under battle.md |
-| Pick up world loot | Not applicable to ordinary hub menus | When enabled, one full action from the actor's cell or an adjacent reachable pickup |
+| Pick up world loot | Not applicable to ordinary town menus | When enabled, one full action from the actor's cell or an adjacent reachable pickup |
 | Read/assemble skill books, enchant, burn, sell | Between-run operations with their own validation | Unavailable |
 | Destroy unwanted items | Explicit quantity/item selection and final destruction confirmation | Unavailable initially; capacity is managed through pickup choices |
 
@@ -128,7 +128,7 @@ The proposed pickup rule requires no blocking wall between the actor and an adja
 
 No inventory action may consume items, swap equipment, change a reserved stack, or alter frozen combat inputs between the first dice roll and commit/pass. Reading an item tooltip during that window remains safe. A future drop-to-ground action must define ground persistence, ownership, and its turn cost before becoming available.
 
-Quick-use buttons are references to eligible items in the current context. A run shortcut cannot consume a hub potion. Resolve a stack by a stable instance reference, or by a documented deterministic matching rule, and validate again on use. A stale shortcut to an exhausted stack does not create an item or trigger a free action.
+Quick-use buttons are references to eligible items in the current context. A run shortcut cannot consume a town potion. Resolve a stack by a stable instance reference, or by a documented deterministic matching rule, and validate again on use. A stale shortcut to an exhausted stack does not create an item or trigger a free action.
 
 ## 8. Full inventory, rewards, and crafting outputs
 
@@ -144,7 +144,7 @@ Enchanting usually changes an existing equipment instance without changing its f
 
 ## 9. Runs, results, and rebirth
 
-At run start, validate the hero's equipment and selected carried containers/supplies, then create the run snapshot and profile reservations atomically. Reserve exact source instances and quantities, including bag contents. Profile items not selected remain in the hub. Equipped item effects, mastery conditions, and enchant values become part of the run's starting state under stats.md and character.md.
+At run start, validate the hero's equipment and selected carried containers/supplies, then create the run snapshot and profile reservations atomically. Reserve exact source instances and quantities, including bag contents. Profile items not selected remain in town. Equipped item effects, mastery conditions, and enchant values become part of the run's starting state under stats.md and character.md.
 
 Keep origin references on brought item quantities and an operation ledger for consumption or other allowed changes. New dungeon items have their own stable IDs and pending ownership. Layout changes do not turn brought supplies into loot, and splitting a stack preserves its origin. Reloading a run restores its current quantities, not fresh copies of its starting provisions.
 
@@ -160,7 +160,7 @@ Present equipment and the backpack together, with bags accessible through labele
 
 Support drag-and-drop on desktop and tap-item, choose-action, tap-destination on touch. Preview the entire target rectangle with a clear valid/invalid state. An invalid drop returns the visual to its source; the item never leaves authoritative storage until the move commits. Provide a quantity selector for split, merge, pickup, and destruction, with Cancel preserving state.
 
-Search spans the backpack, accessible bags, equipment, and overflow in the current hub/run context. Results identify their container and highlight their actual placement. Filters and favorites change presentation, not legality or stack identity. Offer **Gather Stacks**, **Sort Container**, and bag pickup order separately so the player knows what will move.
+Search spans the backpack, accessible bags, equipment, and overflow in the current town/run context. Results identify their container and highlight their actual placement. Filters and favorites change presentation, not legality or stack identity. Offer **Gather Stacks**, **Sort Container**, and bag pickup order separately so the player knows what will move.
 
 Item details show category, size, stack limit, use/equip restrictions, inherent values, enchant slots and active/inactive clauses, and relevant mastery changes. Equipment comparison must simulate the entire proposed loadout, including a displaced shield or second weapon. Explain errors concretely: **Needs a 2 × 3 space**, **Bag accepts materials only**, **Off hand occupied**, **Item reserved for active run**, or **Finish this dice action first**.
 

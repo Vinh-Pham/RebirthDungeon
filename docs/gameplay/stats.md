@@ -42,7 +42,7 @@ A modifier to Max HP changes capacity, not current HP. Raising a maximum does no
 
 Potions and restorative skills explicitly restore current resources, capped by their effective maxima. Recovery never revives a defeated actor unless a later revival effect explicitly permits it. Shield is a separate temporary damage buffer, not HP and not a pool that can pay skill costs.
 
-Mabinogi uses real-time regeneration. Rebirth Dungeon instead supports authored regeneration at the affected actor's activation-end boundary; rates are balance data, with zero as the default when no recovery rule is defined. Menus, animations, rolls, and rerolls grant no regeneration. Hub rest can explicitly restore pools when that feature is authored; leveling, aging, and equipment changes do not implicitly refill them. [Mabinogi resource regeneration](https://wiki.mabinogiworld.com/view/Stats#Mana).
+Mabinogi uses real-time regeneration. Rebirth Dungeon instead supports authored regeneration at the affected actor's activation-end boundary; rates are balance data, with zero as the default when no recovery rule is defined. Menus, animations, rolls, and rerolls grant no regeneration. Town rest can explicitly restore pools when that feature is authored; leveling, aging, and equipment changes do not implicitly refill them. [Mabinogi resource regeneration](https://wiki.mabinogiworld.com/view/Stats#Mana).
 
 ## 3. Skill costs
 
@@ -109,11 +109,14 @@ Dice weighting remains skill/rank-driven. A future stat or status may affect a r
 | Learned skills and talent mastery | Persistent progression | Rank-based permanent Defense bonus |
 | Active talent | While selected, with accumulated growth tracked separately | Current talent's base bonus |
 | Equipment | While equipped and its conditions are met | Weapon attack, armor Defense, a cursed ring's penalty |
+| Equipped titles | While equipped; First/Second slots chosen in town and fixed for a run's duration per [titles.md](titles.md) | A First Title's Max HP +10 alongside its authored Max MP -5 penalty |
 | Consumables | Instant effect and/or timed status | Recover MP; gain temporary STR; suffer temporary WIL reduction |
 | Activated skills | Timed effect or explicitly conditional passive | Guard buff, protection spell, weakening curse |
 | Enemies, traps, and environment | Authored hit, area, or condition | Armor-break debuff, poison, stamina drain |
 
-Persistent growth follows [character.md](character.md). Age and level changes occur at its existing progression boundaries and do not rewrite active-run stats. Equipped items and passive bonuses are copied into the run's starting state; **live run buffs and debuffs can modify effective stats on top of that baseline**.
+Persistent growth follows [character.md](character.md). Age and level changes occur at its existing progression boundaries and do not rewrite active-run stats. Equipped items, the equipped base-title snapshot taken at run start (per titles.md), and passive bonuses are copied into the run's starting state; **live run buffs and debuffs can modify effective stats on top of that baseline**.
+
+Equipped titles are removable modifier sources identified by title ID and slot. Their flat and percent contributions enter at the equipment stage (step 2 below) and the direct derived-stat stage (step 4 below) exactly like equipment, including independent penalties. Title effects are never permanent skill growth, never alter dice probabilities or AP, and never refill pools; lowering a maximum clamps the current value without later restoration. Contributions are counted once per equipped slot — never re-applied as skill mastery or duplicated across sources.
 
 Calculate stats in an explicit dependency order:
 
@@ -173,7 +176,7 @@ Rolls, kept-die changes, rerolls, and paused menus neither tick nor expire effec
 
 Before the first roll, derive current effective stats and costs from the run baseline plus active modifiers. Freeze the selected action's attack inputs, target mitigation, costs, and roll profile with the dice activation. A skill's newly applied buff or debuff affects subsequent actions; it does not retroactively improve the roll or damage that applied it. Skills that deliberately debuff before damaging need a later explicit exception to this default.
 
-When in-battle consumables are introduced, **Use Item** is an alternative full action available before rolling. Consume one item, resolve its instant effects and statuses, then end the activation; do not also roll a skill in that activation. Invalid use consumes nothing. Equipment changes remain a hub/loadout operation in the initial battle design. This extends the older game plan's deferred item-action scope without claiming item use exists today.
+When in-battle consumables are introduced, **Use Item** is an alternative full action available before rolling. Consume one item, resolve its instant effects and statuses, then end the activation; do not also roll a skill in that activation. Invalid use consumes nothing. Equipment changes remain a town/loadout operation in the initial battle design. This extends the older game plan's deferred item-action scope without claiming item use exists today.
 
 Show HP, MP, SP, their maxima and reservations, skill costs, effective attack/defense values, and visible buff/debuff icons. Status details show the source, exact modifier, stacking behavior, and remaining target activations. Insufficient-resource messages identify the missing pool. The damage preview must use the same stat resolver as combat.
 

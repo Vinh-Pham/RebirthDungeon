@@ -12,7 +12,7 @@ Sidequests include NPC stories, talent-related content, and skill acquisition. S
 
 Role-playing quests let players control an NPC; they can also occur within the mainstream story. Mabinogi's quest journal groups quests into tabs and supports a tracker for selected objectives. [Role-Playing Quests](https://wiki.mabinogiworld.com/view/Role-Playing_Quests#Basic_Information), [Quest journal](https://wiki.mabinogiworld.com/view/Category:Quests).
 
-Rebirth Dungeon adopts these concepts with explicit turn-based objectives, hub progression boundaries, and saved reward transactions. Mabinogi's delivery delays, multiplayer assistance, individual quest prerequisites, and exact reward tables are not automatically adopted.
+Rebirth Dungeon adopts these concepts with explicit turn-based objectives, town progression boundaries, and saved reward transactions. Mabinogi's delivery delays, multiplayer assistance, individual quest prerequisites, and exact reward tables are not automatically adopted.
 
 ## 2. Quest categories and story structure
 
@@ -121,21 +121,21 @@ The initial default requires an explicit **Complete** action or final NPC dialog
 
 A role-playing quest temporarily lets the player control an **authored NPC instead of their hero**. This can show a past event, explain an NPC's motivation, or demonstrate a different combat style. An escort mission in which the player still controls their hero is a different objective type.
 
-Start an RP mission from the hub when its quest stage permits it and no ordinary run or other RP mission is active. Create an isolated mission session with a scenario ID, NPC identity, fixed stats, skill ranks, equipment, supplies, map, objectives, and success/failure conditions. The player uses the normal movement and five-dice combat rules through that NPC's authored abilities.
+Start an RP mission in town when its quest stage permits it and no ordinary run or other RP mission is active. Create an isolated mission session with a scenario ID, NPC identity, fixed stats, skill ranks, equipment, supplies, map, objectives, and success/failure conditions. The player uses the normal movement and five-dice combat rules through that NPC's authored abilities.
 
-The hero's learned skills, AP, talents, enchants, equipment, and consumables do not replace the NPC template. Conversely, borrowed NPC skills and gear never become permanent hero possessions. Keep the hero profile intact rather than overwriting its fields and trying to reconstruct them later. Disable hub progression, rebirth, trading, and equipment export during the mission.
+The hero's learned skills, AP, talents, enchants, equipment, and consumables do not replace the NPC template. Conversely, borrowed NPC skills and gear never become permanent hero possessions. Keep the hero profile intact rather than overwriting its fields and trying to reconstruct them later. Disable town progression, rebirth, trading, and equipment export during the mission.
 
 RP combat does not award the hero normal skill training, loot, or combat XP by default. Only the scenario's committed outcome progresses its eligible quest; the quest later grants its declared hero rewards. NPC supplies and temporary pickups remain in the scenario and disappear when that attempt ends. Any exception must be an explicit quest reward.
 
-On success, save the scenario outcome once, return to the hero in the hub, and advance the relevant quest stage. On failure or voluntary exit, preserve the hero's pre-mission possessions and leave the quest retryable at its authored checkpoint. Retry creates a fresh NPC attempt; loading a suspended attempt restores its current HP, supplies, dice, and objectives. App closure is not a mission failure or a free reset.
+On success, save the scenario outcome once, return to the hero in town, and advance the relevant quest stage. On failure or voluntary exit, preserve the hero's pre-mission possessions and leave the quest retryable at its authored checkpoint. Retry creates a fresh NPC attempt; loading a suspended attempt restores its current HP, supplies, dice, and objectives. App closure is not a mission failure or a free reset.
 
 ## 8. Dungeon boundaries, persistence, and rebirth
 
-Accept and claim quests in the hub in the initial design. A normal run snapshots the active quest stages eligible for that mission. Progress produced inside the dungeon is pending run progress, shown separately from committed quest progress. It cannot grant a permanent skill, AP, story completion, or a next-generation unlock during an unfinished run.
+Accept and claim quests in town in the initial design. A normal run snapshots the active quest stages eligible for that mission. Progress produced inside the dungeon is pending run progress, shown separately from committed quest progress. It cannot grant a permanent skill, AP, story completion, or a next-generation unlock during an unfinished run.
 
 At the result boundary, apply the authored victory/defeat/abandonment retention policy to quest evidence along with other run rewards. A clear-dungeon objective always requires the specified successful outcome. Whether other evidence, such as enemy defeats, survives a failed run remains a Phase 7 decision. Do not silently preserve all quest progress while discarding the loot that proves a delivery objective.
 
-An in-run chain that advances between dungeon objectives needs staged mission-local progress and a defined rollback/checkpoint policy. Until that extension exists, new quest stages requiring fresh gameplay begin after the result is committed at the hub; accepted quests must be authored so this boundary is playable. Quest rank rewards and auto-delivery never replace the active run's skill snapshot.
+An in-run chain that advances between dungeon objectives needs staged mission-local progress and a defined rollback/checkpoint policy. Until that extension exists, new quest stages requiring fresh gameplay begin after the result is committed in town; accepted quests must be authored so this boundary is playable. Quest rank rewards and auto-delivery never replace the active run's skill snapshot.
 
 Committed quests, completed stages, availability milestones, and claimed reward IDs belong to the hero profile and survive rebirth under character.md. Rebirth may trigger a new talent quest after the rebirth transaction commits; it does not reset already-completed quests or reissue their rewards. Record the qualifying rebirth event's life ID and chosen talent for reliable delivery after interruption.
 

@@ -2,7 +2,7 @@
 
 Enchanting transfers a named enchant from a consumable scroll onto equipment. Each eligible item supports **one prefix and one suffix**. Enchants add equipment modifiers, including conditional benefits and penalties, so a useful item can become part of a character's build across multiple runs and rebirths.
 
-This is a design specification for planned gameplay, based on **Mabinogi**. It complements [skills.md](skills.md), [stats.md](stats.md), [character.md](character.md), [battle.md](battle.md), the [game plan](game-plan.md), and the [project phases](project-phases.md). It does not claim enchanting is implemented. The Rebirth Dungeon rules and sample values below are proposed defaults; the first slice deliberately limits the failure economy.
+This is a design specification for planned gameplay, based on **Mabinogi**. It complements [skills.md](skills.md), [stats.md](stats.md), [character.md](character.md), [battle.md](battle.md), the [game plan](../game-plan.md), and the [project phases](../project-phases.md). It does not claim enchanting is implemented. The Rebirth Dungeon rules and sample values below are proposed defaults; the first slice deliberately limits the failure economy.
 
 ## 1. Mabinogi reference
 
@@ -23,9 +23,9 @@ The wiki identifies sequential rank prerequisites as a **former rule**. Its curr
 
 ## 2. Player loop and ownership
 
-1. Learn the Enchant skill from a hub instructor using the acquisition rules in skills.md.
+1. Learn the Enchant skill from a town instructor using the acquisition rules in skills.md.
 2. Find scrolls and enchanted equipment through authored dungeon loot, quests, or shops.
-3. At the hub, select equipment, a scroll, and powder; review eligibility, effects, costs, and success chance.
+3. In town, select equipment, a scroll, and powder; review eligibility, effects, costs, and success chance.
 4. Commit one attempt. Resolve and save its result before showing the reveal.
 5. Equip the result for a future run, or burn unwanted enchanted equipment to try to recover its enchants.
 6. Train Enchant through qualifying outcomes, reach at least 100 training points, and spend AP to advance.
@@ -83,9 +83,9 @@ Resource-maximum bonuses do not refill HP, MP, or SP; reductions clamp current p
 
 ## 5. Applying an enchant
 
-Before accepting an attempt, validate the current inventory revision, unique item references, learned skill and rank gate, target compatibility, scroll and powder quantities, and affordability of the authored MP cost. The target must be available in the hub and not reserved by another operation. Reject an invalid request without costs, training, or random draws.
+Before accepting an attempt, validate the current inventory revision, unique item references, learned skill and rank gate, target compatibility, scroll and powder quantities, and affordability of the authored MP cost. The target must be available in town and not reserved by another operation. Reject an invalid request without costs, training, or random draws.
 
-The initial recipe consumes **one scroll, one powder, and the Enchant skill rank's MP cost per accepted attempt**. A provisional cost of 6 MP matches the reference's scale; final costs use stats.md's resource-cost resolver. Hub resource state and an explicit recovery/rest action must exist before enabling this recipe. Opening the menu or returning from an animation never restores mana.
+The initial recipe consumes **one scroll, one powder, and the Enchant skill rank's MP cost per accepted attempt**. A provisional cost of 6 MP matches the reference's scale; final costs use stats.md's resource-cost resolver. Town resource state and an explicit recovery/rest action must exist before enabling this recipe. Opening the menu or returning from an animation never restores mana.
 
 Use the following deliberately simplified application formula, not Mabinogi's formula:
 
@@ -96,7 +96,7 @@ chanceBp = clamp(baseChanceBp[enchantRank]
 success = randomInteger(0, 9999) < chanceBp
 ```
 
-`Bp` means basis points: 100 basis points = 1 percentage point. INT is the nonnegative integer effective hub value after normal stat resolution, frozen before paying costs or changing the item. Enchant skill rank controls access and extraction, without a separate application-chance bonus. No calendar, Luck, or event multiplier is implied.
+`Bp` means basis points: 100 basis points = 1 percentage point. INT is the nonnegative integer effective town value after normal stat resolution, frozen before paying costs or changing the item. Enchant skill rank controls access and extraction, without a separate application-chance bonus. No calendar, Luck, or event multiplier is implied.
 
 Illustrative tuning: base chance 6,000, INT 40, cap 200, 10 basis points per INT, and powder bonus 500 produce **69%**. A roll of 6,899 succeeds; 6,900 fails. Author and validate the real rank/powder tables before implementation. The displayed percentage and the committed roll must use the same resolver.
 
@@ -112,7 +112,7 @@ This consumes the scroll on failure instead of retaining a partially damaged scr
 
 ## 6. Burning and recovery
 
-Enchant burning is a separate hub action that sacrifices unwanted enchanted equipment. Require a learned Enchant skill, an eligible item with at least one enchant, and an authored recipe. The proposed recipe uses one mana herb, one holy water, and a positive MP cost; the material names echo the reference, while the MP requirement is a Rebirth Dungeon choice consistent with active skill costs.
+Enchant burning is a separate town action that sacrifices unwanted enchanted equipment. Require a learned Enchant skill, an eligible item with at least one enchant, and an authored recipe. The proposed recipe uses one mana herb, one holy water, and a positive MP cost; the material names echo the reference, while the MP requirement is a Rebirth Dungeon choice consistent with active skill costs.
 
 On an accepted burn, consume the item, both installed enchants, recipe materials, and MP **regardless of recovery success**. Its base equipment, inherent bonuses, and invested replacement scrolls are gone. The UI must state this explicitly before commitment. A burning failure is not covered by the application action's Protect Equipment policy.
 
@@ -123,11 +123,11 @@ burnChanceBp = burnChanceBySkillRank[currentEnchantSkillRank]
 recovered = randomInteger(0, 9999) < burnChanceBp
 ```
 
-Validate each chance in 0–10,000. Higher skill ranks should improve recovery; exact values are balance data. Start with one fixed hub station and no INT, powder, calendar, or firewood modifiers. An empty slot consumes no draw. A two-enchant item can return zero, one, or two scrolls; at an illustrative 50% chance per slot, those outcomes have probabilities 25%, 50%, and 25%.
+Validate each chance in 0–10,000. Higher skill ranks should improve recovery; exact values are balance data. Start with one fixed town station and no INT, powder, calendar, or firewood modifiers. An empty slot consumes no draw. A two-enchant item can return zero, one, or two scrolls; at an illustrative 50% chance per slot, those outcomes have probabilities 25%, 50%, and 25%.
 
 Each recovered scroll refers to the original enchant definition and rank. It does **not** preserve the destroyed item's rolled effect values; successful reapplication rolls those values anew. Burning does not directly transfer an enchant or guarantee recovery. The initial recipe awards no bonus powder, gold, AP, or character XP. Grant only authored Enchant training once per burn outcome, rather than accidentally counting a two-scroll result as two uses.
 
-Validate output capacity for the maximum possible two scrolls before accepting the action, accounting for the consumed item and materials. A full inventory must not destroy the item and then discard recovered scrolls. If the item was equipped in the hub, atomically clear its equipment reference and recompute stats as part of the burn.
+Validate output capacity for the maximum possible two scrolls before accepting the action, accounting for the consumed item and materials. A full inventory must not destroy the item and then discard recovered scrolls. If the item was equipped in town, atomically clear its equipment reference and recompute stats as part of the burn.
 
 ## 7. Enchant skill progression
 
@@ -141,11 +141,11 @@ Rank benefits initially include better burn recovery and high-rank application a
 
 Installed enchants and their rolled values persist with committed equipment. Under character.md's proposed rebirth rules, retained equipment keeps its enchants while current-level, age, or talent conditions may change. A disabled clause remains installed and can become active again. Cumulative-level and retained-skill conditions use their preserved progression values.
 
-A new run snapshots the loadout, installed enchant values, and relevant progression conditions. Pending XP, elapsed hub aging, and profile edits do not change that active run. Effective combat stats still respond to live buffs and debuffs through stats.md. If in-run equipment swaps are added later, use the run's equipment instances and progression snapshot at an explicit legal command boundary; never alter the stats already frozen for a dice activation.
+A new run snapshots the loadout, installed enchant values, and relevant progression conditions. Pending XP, elapsed town aging, and profile edits do not change that active run. Effective combat stats still respond to live buffs and debuffs through stats.md. If in-run equipment swaps are added later, use the run's equipment instances and progression snapshot at an explicit legal command boundary; never alter the stats already frozen for a dice activation.
 
 Defeat and abandonment do not independently decide enchant ownership. Newly found scrolls and equipment follow the unresolved Phase 7 carry-over policy; this document does not guarantee their retention. Existing committed items continue to follow the game's eventual item-loss rules.
 
-Content definitions need stable enchant/clause IDs, rank ordering, equipment restrictions, condition types, modifier units and ranges, powder recipes, success tables, training objectives, and costs. Saved state needs equipment instance IDs, both installed slots and resolved values, scroll inventory, learned skill progression, hub resources, transaction results, and pinned content/rules versions. Effective stat totals are reconstructed from these sources.
+Content definitions need stable enchant/clause IDs, rank ordering, equipment restrictions, condition types, modifier units and ranges, powder recipes, success tables, training objectives, and costs. Saved state needs equipment instance IDs, both installed slots and resolved values, scroll inventory, learned skill progression, town resources, transaction results, and pinned content/rules versions. Effective stat totals are reconstructed from these sources.
 
 Add a dedicated persisted enchanting RNG stream for application checks, variable values, and burn recovery. Keep it separate from dungeon combat, loot, and cosmetic streams. Record its algorithm/version and all state words using the game plan's RNG contract. UI previews consume no randomness; rejected commands leave the stream unchanged.
 
@@ -157,7 +157,7 @@ The screen should show the target's inherent stats and both enchant slots, the s
 
 Burning needs a separate preview showing the entire item being destroyed, both possible recovered scrolls, individual recovery chances, and the possibility of recovering nothing. Item tooltips retain each installed enchant's name, rank, actual rolled values, and active/inactive clauses. All previews use the same eligibility and stat logic as committed operations.
 
-The first slice should demonstrate one instructor unlock, at least two Enchant skill ranks, one ordinary powder, a fixed prefix, a conditional suffix, a variable-value enchant, slot replacement, protected application failure, and burning with zero/partial/full recovery. Include a usable hub MP/recovery loop, saved transactions, and a run showing the resulting stat contributions. Prototype rank caps must be visible.
+The first slice should demonstrate one instructor unlock, at least two Enchant skill ranks, one ordinary powder, a fixed prefix, a conditional suffix, a variable-value enchant, slot replacement, protected application failure, and burning with zero/partial/full recovery. Include a usable town MP/recovery loop, saved transactions, and a run showing the resulting stat contributions. Prototype rank caps must be visible.
 
 Future implementation acceptance checks should cover:
 

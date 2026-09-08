@@ -2,7 +2,7 @@
 
 Combat uses **five six-sided dice** and Dicero-style decisions: roll, keep useful dice, reroll the others, and commit a hand whose pips and combination determine the action's strength. Rebirth Dungeon adds an explicit **skill choice before the roll**. The selected skill's rank supplies its base damage and may change the probabilities of rolling particular faces.
 
-This is a base design for planned gameplay, not implemented combat. It complements [skills.md](skills.md), [character.md](character.md), [stats.md](stats.md), the [game plan](game-plan.md), and the [project phases](project-phases.md). Five dice, skill-dependent rolls, and rank-based base damage are requirements. Reroll limits, scoring values, formulas, and other defaults below are provisional; individual skill designs will refine them later.
+This is a base design for planned gameplay, not implemented combat. It complements [skills.md](skills.md), [character.md](character.md), [stats.md](stats.md), the [game plan](../game-plan.md), and the [project phases](../project-phases.md). Five dice, skill-dependent rolls, and rank-based base damage are requirements. Reroll limits, scoring values, formulas, and other defaults below are provisional; individual skill designs will refine them later.
 
 ## 1. Dicero reference and evidence
 
@@ -169,7 +169,7 @@ Resolve the committed skill's effects in authored order, remove defeated actors 
 
 Successful outcomes may award the selected skill's authored training. A reroll or a matching hand alone is not a skill use. Apply training only from the committed effect events and their specified objectives. AP is spent between runs on skill ranks, never as the default cost of rolling or attacking. [Skill progression contract](skills.md).
 
-Current skill ranks, progression stats, talents, and starting equipment come from the active run's snapshot. Live buffs and debuffs modify effective stats on top of that baseline. Leveling, aging, and hub rank-ups cannot silently replace it during an activation. [Character progression contract](character.md), [Stat sources](stats.md#5-sources-and-calculation-order).
+Current skill ranks, progression stats, talents, and starting equipment come from the active run's snapshot. Live buffs and debuffs modify effective stats on top of that baseline. Leveling, aging, and town rank-ups cannot silently replace it during an activation. [Character progression contract](character.md), [Stat sources](stats.md#5-sources-and-calculation-order).
 
 A newly applied buff or debuff affects subsequent actions, not the frozen damage inputs or dice of the action applying it. Status durations use the affected actor's completed activations; self-buffs do not expire immediately on their casting turn. At an eligible activation end, resolve periodic effects, expire statuses, recompute stats and clamp pools, then regenerate resources for living actors. Rolls and rerolls do not advance any of these steps. [Status timing and stacking](stats.md#6-buffs-debuffs-and-item-effects).
 
@@ -187,7 +187,7 @@ This document refines game-plan section 10's general dice-ability design. For th
 | `END_TURN` | Pass under the rules in section 3; never finalize an already-ended activation again |
 | Use item, when enabled | Before rolling, resolve one consumable as a full action and end activation |
 
-The old singular `REROLL_DIE` needs a batch form for a subset; `ASSIGN_DIE` and `UNASSIGN_DIE` are not used in this mode. Update the game-plan and Phase 4 implementation checklist to this contract when implementing combat. This documentation does not claim those commands or systems have changed in code.
+The old singular `REROLL_DIE` needs a batch form for a subset; `ASSIGN_DIE` and `UNASSIGN_DIE` are not used in this mode. The game plan's dice-command table and the Phase 4 implementation checklist were aligned to this contract on September 5, 2026 (`REROLL_DICE` batch rerolls, whole-hand `USE_ABILITY`, no assignment commands); the paragraph above retains the historical rationale for the replacement. This documentation does not claim those commands or systems exist in code.
 
 Persist the activation phase, stable die IDs and faces, kept flags, reroll budget, selected skill/rank/target, locked stat inputs and profile, current resource pools and reservations, active status sources/durations, and gameplay RNG state. Save after each accepted roll/reroll and committed resolution. Loading resumes the same hand, costs, effects, and budget; reopening a panel or retrying a command never rerolls, refills resources, refreshes status durations, or applies damage twice.
 

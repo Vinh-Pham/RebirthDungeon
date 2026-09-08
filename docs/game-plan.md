@@ -1,12 +1,12 @@
-# Rebirth Dungeon: Java + LibGDX Game Plan
+# Rebirth Dungeon: Kotlin + LibGDX Game Plan
 
-Rebirth Dungeon is a **2D pixel-art, grid-based roguelike dungeon crawler with dice combat, loot, progression, and a later gacha meta game**. Build it in Java using the existing LibGDX project, with desktop as the fastest development target and Android/iOS as delivery targets.
+Rebirth Dungeon is a **2D pixel-art, grid-based roguelike dungeon crawler with dice combat, loot, progression, and a later gacha meta game**. Build it in Kotlin using the existing LibGDX project (ported from the original Java gdx-liftoff scaffold on 2026-09-06), with desktop as the fastest development target and Android/iOS as delivery targets.
 
 The game is turn-based: commands advance the simulation; frames advance presentation. The same initial state, content version, rules version, and commands must reproduce the same outcomes regardless of frame rate.
 
 > The artemis-odb `World` owns live dungeon entities and rules. SquidSquad supplies dungeon algorithms. The application controller coordinates commands, persistence, and platform services. LibGDX renders and receives input.
 
-Gameplay alignment updated **September 5, 2026** from the design documents below. These documents define planned rules, not completed features; numeric examples and proposed defaults remain provisional. The architecture and dependency audit retain their original verification dates.
+Gameplay alignment updated **September 5, 2026** from the design documents below. These documents define planned rules, not completed features; numeric examples and proposed defaults remain provisional. The architecture and dependency audit retain their original verification dates. Drift corrections dated **2026-09-07** come from the [documentation audit](audit.md): implementation status and toolchain values were re-checked against the repository, sections describing the September 2 audit are labeled historical, and the titles specification is integrated below.
 
 | Gameplay specification | Owns |
 | --- | --- |
@@ -17,45 +17,50 @@ Gameplay alignment updated **September 5, 2026** from the design documents below
 | [Inventory](gameplay/inventory.md) | Grid storage, bags, stacks, equipment, overflow, run provisions |
 | [Enchants](gameplay/enchants.md) | Equipment prefix/suffix effects, application and burning transactions |
 | [Quests](gameplay/quests.md) | Chapters/Generations, delivery, objectives, claims, NPC role-playing missions |
+| [Titles](gameplay/titles.md) | Achievement discovery/awards, First/Second title slots, equipped-title stat sources, cosmetic talent display |
 
-Use these specifications for detailed gameplay contracts and this plan for system ownership and implementation order. The skills catalog defines later reaction, area, movement, and critical extensions to the starter battle rules; enable them only when their dependencies and authored values exist. Mabinogi and Dicero reference mechanics are not automatically Rebirth Dungeon requirements.
+Use these specifications for detailed gameplay contracts and this plan for system ownership and implementation order. The skills catalog defines later reaction, area, movement, and critical extensions to the starter battle rules; enable them only when their dependencies and authored values exist. The titles specification is integrated with the profile, run snapshots, saves, stats sources, character UI, and validation coverage below; it adds no separate progression subsystem. Mabinogi and Dicero reference mechanics are not automatically Rebirth Dungeon requirements.
 
 This plan replaces the previous Expo/React Native architecture. It describes a target implementation, not completed gameplay. The dependency audit below reflects the working tree checked on **September 2, 2026**.
 
 ## 1. What exists today
 
-The repository is a gdx-liftoff scaffold. `RebirthDungeon extends Game` opens an empty `FirstScreen`; dungeon generation, combat, saving, and tests have not been implemented in Java. Shared code uses the package `cloud.vinh.rebirthdungeon`.
+Status checked against the repository on **2026-09-07**. The repository began as a Java gdx-liftoff scaffold and was ported to **Kotlin 2.4.10** with Kotlin-DSL build scripts on 2026-09-06; shared code lives under `src/main/kotlin` in the package `cloud.vinh.rebirthdungeon`. Implemented so far: the application skeleton (`RebirthDungeon` extends `KtxGame<KtxScreen>` with dispose-on-navigate screen coordination), the loading and prototype dungeon/menu screens with `AssetManager` loading, a command-driven artemis-odb movement spike inside the Gdx-free `game/` package, the seeded `DungeonProcessor` adapter, and the Phase 0 dependency/build repairs. The old empty `FirstScreen` was deleted on 2026-09-04. Dungeon gameplay, five-dice combat, saving, and the content catalog are **not** implemented; work stands at Phase 2 ([project phases](project-phases.md)). Phase 1's runtime evidence predates the Kotlin migration: desktop/Android/iOS runtime re-verification with the current sources remains an open gate, distinct from the passing compile/packaging checks.
 
 | Module or path      | Current role                                                                                          |
 |---------------------|-------------------------------------------------------------------------------------------------------|
-| `core/`             | Shared Java game code; currently the application and empty screen                                     |
+| `core/`             | Shared Kotlin game code: application and screens plus the `game/` simulation spike (commands, ECS systems, grid, generator adapter) |
 | `lwjgl3/`           | Desktop launcher, executable JAR tasks, Construo packaging, optional Graal Native Image configuration |
 | `android/`          | Native Android launcher, manifest, SDK configuration, native library packaging                        |
 | `ios/`              | RoboVM launcher, MetalANGLE backend, native libraries, plist and linking configuration                |
-| `assets/`           | Shared resources; currently a UI skin and bitmap fonts, without dungeon content or sprite atlases     |
+| `assets/`           | UI skin and bitmap fonts plus the Phase 1 dungeon/player atlas; content JSON arrives with Phase 2     |
 | `gradle.properties` | Explicit library version values                                                                       |
 
-There is no web backend in `settings.gradle`. Android currently forces landscape; iOS currently advertises portrait and landscape. Adopt landscape for the first slice and align the platform configuration before device acceptance.
+There is no web backend in `settings.gradle`. Landscape is the adopted orientation, and Android/iOS were aligned to it during Phase 1 with safe insets; device acceptance rechecks the platform configuration.
 
 ### Toolchain baseline
 
+Values re-checked against the repository on **2026-09-07**. The original September 2 audit recorded wrapper `9.7.1` and daemon JVM `21`; the 2026-09-06 work notes corrected the wrapper to **9.5.1**, and Phase 1 onward runs use daemon JVM **25** (`gradle/gradle-daemon-jvm.properties`).
+
 | Setting                   | Checked value                              | Consequence                                                                           |
 |---------------------------|--------------------------------------------|---------------------------------------------------------------------------------------|
-| Gradle wrapper            | `9.7.1`                                    | Use the checked-in wrapper                                                            |
-| Gradle daemon criteria    | Java `21`                                  | Build JVM selection is separate from application language level                       |
-| Shared language           | Kotlin, JVM `1.8` target                   | Kotlin sources compile to JVM 1.8 bytecode; the API surface is capped at Java 8 via `-Xjdk-release=1.8` (port: 2026-09-06) |
+| Gradle wrapper            | `9.5.1`                                    | Use the checked-in wrapper                                                            |
+| Gradle daemon criteria    | Java `25`                                  | Build JVM selection is separate from application language level                       |
+| Shared language           | Kotlin `2.4.10`, JVM `1.8` target          | Kotlin sources compile to JVM 1.8 bytecode; the API surface is capped at Java 8 via `-Xjdk-release=1.8` (port: 2026-09-06) |
 | Shared compiler guard     | `jvmTarget=1.8` + `-Xjdk-release=1.8`      | Compilation rejects newer JDK APIs, keeping the Android dexer and RoboVM AOT compiler working                        |
-| Android Gradle Plugin     | `8.9.3`                                    | Validate Android packaging separately from JVM compilation                            |
+| Android Gradle Plugin     | `8.13.2`                                   | Validate Android packaging separately from JVM compilation                            |
 | Android SDK               | min `21`, compile/target `36`              | These are configured targets, not a verified device support matrix                    |
 | Android desugaring        | `desugar_jdk_libs:2.1.5`                   | Does not make arbitrary modern JVM APIs portable to all targets                       |
 | RoboVM                    | `2.3.23`                                   | iOS needs its own AOT/linking and device checks                                       |
 | iOS plist minimum         | `12.0`                                     | Confirm against the selected Xcode/RoboVM/backend before claiming support             |
-| Construo                  | `2.1.0`, bundled JDK downloads `21.0.10+7` | Desktop distribution runtime is distinct from source compatibility                    |
+| Construo                  | `2.1.0`, bundled JDK downloads `25.0.4+1`  | Desktop distribution runtime is distinct from source compatibility                    |
 | Graal Native Image        | `enableGraalNative=false`                  | Optional later desktop experiment; not the iOS runtime                                |
 
 Enforced now: the Kotlin compiler flag `-Xjdk-release=1.8` (set in the root `build.gradle.kts`) rejects newer JDK APIs in shared code; the boundary/format gate is the `checkSimulationBoundary` task wired into `:core:check`.
 
 ## 2. Gradle dependency audit
+
+> **Historical record (September 2, 2026).** This section and its tables describe the working tree as checked on 2026-09-02, not a current installed-dependency inventory. Two later changes supersede parts of it (both recorded in [project phases](project-phases.md) Work Notes): the Phase 0 repair (2026-09-02, recorded at the end of this section) closed the Android duplicate-class blocker, and the user-directed 2026-09-06 adoption of the full gdx-liftoff **Kotlin + KTX dependency set** reversed the "remove/defer" disposition for most of the "already present" list — with `org.apache.fory:fory-core` and the `com.github.tommyettinger.tantrum` group excluded at graph level because Fory requires Android API 26+. Current pins live in `gradle.properties` and the per-module lockfiles.
 
 ### Verification performed
 
@@ -78,9 +83,11 @@ The following commands were run against the current files:
 | Android debug packaging                                              | **Failed at `:android:checkDebugDuplicateClasses`** |
 | iOS AOT build/device launch, desktop launch, release/minified builds | Not verified in this audit                          |
 
-No Gradle dependency changes are applied by this document. The proposed cleanup and repair below are implementation work for Milestone 0.
+No Gradle dependency changes were applied by the original audit. The proposed repair below was implemented on 2026-09-02 (see the "Phase 0 repair record"); the proposed runtime reductions were partially reversed by the 2026-09-06 user-directed dependency adoption, which is why this audit's tables no longer describe the current graph.
 
 ### Confirmed Android blocker: duplicate jdkgdxds artifacts
+
+*(Resolved 2026-09-02 — see the "Phase 0 repair record" at the end of this section. The narrative below is retained as the historical diagnosis.)*
 
 The resolved POM for `com.github.tommyettinger:jdkgdxds:2.1.8` pulls in both:
 
@@ -117,9 +124,11 @@ These are checked declarations/resolutions, not claims about the latest availabl
 
 SquidSquad is modular and succeeds SquidLib. Its documentation distinguishes `squidpath` from the Gand-based `squidseek`, and currently recommends `squidpath` between those two modules. The plan selects that one pathfinding implementation. [SquidSquad module guide](https://github.com/yellowstonegames/SquidSquad).
 
+Resolved versions moved after this table was checked: the 2026-09-06 adoption accepted transitive bumps of juniper `0.10.5` → `0.10.6`, jdkgdxds `2.1.8` → `2.1.9`, and digital `0.10.2` → `0.10.3` (pins updated to match resolution), and added the KTX modules at `io.github.quillraven.libktx` `1.14.2-rc1` plus the rest of the liftoff set. `gradle.properties` is authoritative for current pins.
+
 ### Dependencies already present but outside the first slice
 
-Treat these as candidates for removal from the initial runtime, not as requirements just because the generator selected them.
+Treat these as candidates for removal from the initial runtime, not as requirements just because the generator selected them. *(September 2 disposition. The 2026-09-06 user-directed adoption re-declared most of this list — SquidLib, the full SquidSquad set, gdx-ai, Box2D/lights, controllers, spine, blade-ink, vis-ui, typing-label, anim8, libgdx-utils, console and more — as `implementation` dependencies staged for upcoming phases; only `fory-core`/`tantrum` remain excluded. See the section note above and the 2026-09-06 work note.)*
 
 | Current dependency group                                                      | Version(s)                    | Decision                                                                                                        |
 |-------------------------------------------------------------------------------|-------------------------------|-----------------------------------------------------------------------------------------------------------------|
@@ -152,8 +161,8 @@ The serialization choices are distinct: `squidstore*` integrates LibGDX JSON; `s
 - Old transitive LibGDX requests converge on `1.14.2`; this is version selection, not proof that every optional extension works with that release.
 - The graph promotes SquidSquad's jdkgdxds `2.1.5` to `2.1.8` and older Tantrum requests to `1.6.1.0`. Review these edges during cleanup rather than copying upstream defaults into the plan.
 - Keep JitPack available for dependencies published there. Restrict repository content where practical; make `mavenLocal()` opt-in for reproducible builds and remove snapshot repositories when no selected dependency needs them.
-- All current core libraries are exposed with `api`. Keep `api` where launcher compilation requires an exposed type, such as LibGDX's `Game`; prefer `implementation` for internal libraries after checking the public surface.
-- Add dependency locking/verification after repairing and reducing the graph. Pin new test libraries deliberately; the project currently has no explicit test framework dependency.
+- All current core libraries are exposed with `api`. Keep `api` where launcher compilation requires an exposed type, such as LibGDX's `Game`; prefer `implementation` for internal libraries after checking the public surface. *(September 2 state: the rule is now "only `gdx` is `api`", plus `ktx-app` since 2026-09-06 because `KtxGame` is a public supertype.)*
+- Add dependency locking/verification after repairing and reducing the graph. Pin new test libraries deliberately; the project currently has no explicit test framework dependency. *(Done 2026-09-02: per-module lockfiles, `gradle/verification-metadata.xml`, and JUnit 4.13.2.)*
 
 ### Phase 0 repair record (2026-09-02)
 
@@ -190,7 +199,7 @@ Desktop / Android / iOS launchers
 |--------------------------------------|------------------------------------------------------------------------------------------|
 | artemis-odb components               | Dynamic actor/object state: cells, HP/MP/SP, stats, five dice, abilities, statuses                     |
 | `RunSession`                         | Grid, run phase, active actor, initiative queue, RNG streams, command index, run rewards |
-| Profile repository/application model | Hero progression, committed inventory/overflow, quests, hub resources, enchanting RNG, settings and balances                                  |
+| Profile repository/application model | Hero progression, committed inventory/overflow, quests, title collection/selections/evidence, town resources, enchanting RNG, settings and balances                  |
 | Screen/HUD view model                | Selection, dialogs, focus, loading/error state, projected game data                      |
 | Presentation tracks                  | Interpolated positions, camera, particles, floating text, reveal progress                |
 
@@ -198,7 +207,7 @@ Components and `RunSession` together form the authoritative simulation. The occu
 
 The simulation may depend on artemis-odb and project-owned algorithm interfaces. It must not reference `Gdx`, `Screen`, `Stage`, `SpriteBatch`, `AssetManager`, platform SDKs, networking, or file I/O. Backend implementations belong in their platform modules; pure repositories and adapters can live in `core`.
 
-Use constructor injection and small Java interfaces. An async framework is not necessary for this scope.
+Use constructor injection and small Kotlin interfaces. An async framework is not necessary for this scope.
 
 ## 4. Simulation time, presentation time, and threading
 
@@ -206,7 +215,7 @@ Use constructor injection and small Java interfaces. An async framework is not n
 |-------------------------------------------------------|-------------------------------------------------------|
 | artemis-odb system registration order                 | Order within one logical simulation step              |
 | Project `TurnScheduler`                               | Which actor acts next and the logical action cost     |
-| Java worker/executor and platform callbacks           | Saves, loads, generation jobs if needed, network work |
+| JVM worker/executor and platform callbacks            | Saves, loads, generation jobs if needed, network work |
 | `render(delta)`, `Stage.act(delta)`, animation tracks | Visual progression only                               |
 
 Run command resolution and artemis-odb mutation on the LibGDX render thread, serially. A frame drains available controller work, updates presentation, and draws. With no command or automatic actor pending, the simulation does not advance.
@@ -235,22 +244,20 @@ Create entities for players, enemies, doors, traps, pickups, and other objects t
 
 Minimal component shape:
 
-```java
-package cloud.vinh.rebirthdungeon.game.ecs.components;
+```kotlin
+package cloud.vinh.rebirthdungeon.game.ecs.components
 
-import com.artemis.Component;
+import com.artemis.Component
 
-public class GridPosition extends Component {
-    public int x;
-    public int y;
-}
+// Defaulted parameters generate the public no-arg constructor artemis creates reflectively.
+class GridPosition(var x: Int = 0, var y: Int = 0) : Component()
 ```
 
 Use project-generated stable IDs for saves, events, targeting, and replay. artemis entity ids are recycled after deletion, so entity id values and aspect subscription iteration order must never determine persistent identity or initiative ties.
 
 Entity and component edits go through `EntityEdit` (`world.edit(id)`, `world.delete(id)`, `mapper.create(id)`) and are applied immediately to the entity, while subscription membership catches up at the strategy's `updateEntityStates()` points around each system. This is not an end-of-scene command buffer. Copy event values before deleting an entity, prefer `IteratingSystem` deferred deletion during iteration, and finish cleanup before projecting or saving. [artemis-odb wiki: InvocationStrategy](https://github.com/junkdog/artemis-odb/wiki/InvocationStrategy).
 
-`RunSession` holds run/floor IDs, rules/content versions, turn and command counters, active actor, logical phase, scheduler, grid, RNG streams, visibility/exploration state, run inventory with origin references, quest-stage snapshots and pending evidence, and pending rewards. A dice activation also owns frozen skill/rank/target inputs, five die IDs/faces, kept flags, reroll allowance, and resource reservations. Rendering's `isAnimating` flag is not a saved gameplay phase.
+`RunSession` holds run/floor IDs, rules/content versions, turn and command counters, active actor, logical phase, scheduler, grid, RNG streams, visibility/exploration state, run inventory with origin references, quest-stage snapshots and pending evidence, the equipped base-title snapshot fixed for the run's duration, and pending rewards. A dice activation also owns frozen skill/rank/target inputs, five die IDs/faces, kept flags, reroll allowance, and resource reservations. Rendering's `isAnimating` flag is not a saved gameplay phase.
 
 ## 6. Ordered rule pipeline
 
@@ -296,7 +303,7 @@ A `MOVE(dx, dy)` requires `abs(dx) + abs(dy) == 1`, map bounds, valid terrain, a
 | Use a consumable, when enabled | One full action before rolling; resolve recovery/statuses and end activation |
 | Pick up world loot, when enabled | One full action from the actor cell or an adjacent reachable pickup; reject without a turn if quantity/fit fails |
 | Rearrange/split/merge/sort carried inventory | Validated layout-only command with no initiative cost; unavailable while dice are locked |
-| Change equipment during a run | Deferred; initial equip/unequip operations occur at the hub |
+| Change equipment during a run | Deferred; initial equip/unequip operations occur in town |
 | Descend stairs                                    | Explicit interaction after arrival; checkpoint before changing floor                 |
 
 The simulation remains the final validator even when the HUD disables a control. Resolve pickups/death/rewards in a defined order and clear occupancy before a dead actor can block later actions.
@@ -345,7 +352,7 @@ Test corner occlusion and wall visibility explicitly. Preserve explored terrain,
 
 Use a project `RandomSource` adapter backed initially by Juniper `AceRandom`. In the checked `0.10.5` source it exposes an algorithm tag and five state words through `getStateCount()`, `getSelectedState(int)`, and `setSelectedState(int, long)`.
 
-Keep distinct streams for generation, AI decisions, combat/dice, loot, cosmetic presentation, hub enchanting, and local development gacha. The profile persists the enchanting stream independently of run streams; it covers application checks, variable enchant values, and burn recovery. Explicitly seed each stream using fixed stream identifiers. Cosmetics must never consume gameplay RNG.
+Keep distinct streams for generation, AI decisions, combat/dice, loot, cosmetic presentation, town enchanting, and local development gacha. The profile persists the enchanting stream independently of run streams; it covers application checks, variable enchant values, and burn recovery. Explicitly seed each stream using fixed stream identifiers. Cosmetics must never consume gameplay RNG.
 
 Save the RNG algorithm ID, state format version, and **all** state words, not just the original seed. Encode long words losslessly, such as hexadecimal strings. Restore only recognized algorithms/state counts. Capture state after every accepted randomness-consuming command, including rerolls.
 
@@ -449,7 +456,7 @@ Use a separate `Stage` and UI viewport for five persistent dice slots, active sk
 
 Show selected skill/rank, kept dice, remaining rerolls, pip total, combination/multiplier, face probabilities, target and effect breakdown. Separate Roll, Reroll and Use Skill controls. Show current/max/reserved resources, final costs, and status sources with remaining target activations. The journal distinguishes active skills from passives and explains inactive equipment conditions.
 
-Hub screens expose training against 100 points and AP costs, book/page collections, level/XP/cumulative level, age and talent mastery, grid inventory/equipment and saved overflow, enchant replacement/burn previews, and quest tabs/tracker. Quest tabs use Chapter names with Generations inside, plus Sidequests and Skills; mark NPC role-playing missions with an RP badge. Inspecting, filtering and tracking remain presentation-only.
+Town and menu-bar screens expose training against 100 points and AP costs, book/page collections, level/XP/cumulative level, age and talent mastery, the character screen's Titles collection (First/Second slots, talent display, preview with current-pool clamping, and town-only changes per [titles.md](gameplay/titles.md)), grid inventory/equipment and saved overflow, enchant replacement/burn previews, and quest tabs/tracker. Quest tabs use Chapter names with Generations inside, plus Sidequests and Skills; mark NPC role-playing missions with an RP badge. Inspecting, filtering and tracking remain presentation-only.
 
 Call `stage.act(clampedDelta)` for UI animation and `stage.draw()` for display. Stage actions animate widgets only. Update widget content from committed view models; listeners submit commands instead of mutating components.
 
@@ -459,7 +466,7 @@ Provide remappable keys, keyboard focus, clear selection states, large touch tar
 
 ## 12. Events, assets, and resource lifetime
 
-Domain events are plain immutable Java values: `ActorMoved`, `DoorOpened`, `DiceRolled`, `AbilityUsed`, `DamageDealt`, `StatusApplied`, `ActorDefeated`, `ItemCollected`, `FloorChanged`, and `RunCompleted`. Add stable outcome IDs and relevant skill/rank, equipment, target and mission context for training and quest evidence. Hub transactions emit learning/rank-up, equipment-change, level/age/rebirth, enchant-result and quest delivery/claim events only after their state is committed; notifications never grant progression.
+Domain events are plain immutable Kotlin values: `ActorMoved`, `DoorOpened`, `DiceRolled`, `AbilityUsed`, `DamageDealt`, `StatusApplied`, `ActorDefeated`, `ItemCollected`, `FloorChanged`, and `RunCompleted`. Add stable outcome IDs and relevant skill/rank, equipment, target and mission context for training and quest evidence. Town transactions emit learning/rank-up, equipment-change, level/age/rebirth, enchant-result, title award/equip and quest delivery/claim events only after their state is committed; notifications never grant progression.
 
 Include stable IDs, copied payloads, event order, and enough visibility/position information for presentation. A controller-owned presentation bridge maps these into animation, SFX and haptics. Render code does not subscribe to mutable artemis-odb entities or retain component references.
 
@@ -484,7 +491,7 @@ PlatformServices     lifecycle/platform capabilities exposed to shared code
 
 Add authentication, cloud sync, purchase and gacha repositories when those features begin. Platform launchers inject implementations into `RebirthDungeon`; the current no-argument constructor will evolve with that wiring.
 
-Represent expected failures with explicit Java result/error types, for example `LoadFailure`, `SaveFailure`, `InvalidContent`, `GenerationFailure`, and later `NetworkFailure`. Normal rejected movement is a domain result. An impossible occupancy state is a defect with diagnostic context.
+Represent expected failures with explicit Kotlin result/error types, for example `LoadFailure`, `SaveFailure`, `InvalidContent`, `GenerationFailure`, and later `NetworkFailure`. Normal rejected movement is a domain result. An impossible occupancy state is a defect with diagnostic context.
 
 Bound retries and give each operation one retry owner. Retry only transient operations that are safe to repeat. Save failures retain the latest pending snapshot and expose a retry state; malformed content and unsupported save versions are not transient errors.
 
@@ -502,8 +509,10 @@ saveRevision, profileRevision, updatedAt (metadata only)
 profile: hero/life identity, level/XP/cumulative level, AP, skills/objective counts
          talent, current-life growth, starting age and processed aging intervals
          inventory/equipment/bags/placements/locks, page records, currencies, overflow
-         installed enchant values, hub pools, enchanting RNG and operation results
+         installed enchant values, town pools, enchanting RNG and operation results
          quests/stages/evidence/eligibility milestones, tracked quests, reward IDs
+         titles: discovered/earned IDs with acquisition source/outcome IDs,
+         evidence/counters, First/Second selections, talent display, favorites
 run: ID, floor index, original seed, generated tile data, entity DTOs
      explored cells, logical phase, active actor, turn/command counters
      initiative queue and tie-break state
@@ -511,6 +520,7 @@ run: ID, floor index, original seed, generated tile data, entity DTOs
      current dice activation: five stable dice/faces, kept flags, reroll budget
      locked skill/rank/targets/stats/profile, HP/MP/SP and reservations
      stat sources, active effect timing, cooldowns and enabled skill-extension state
+     equipped base-title snapshot and pending title discovery/award evidence
      run inventory/origin reservations/consumption, quest snapshot/pending evidence
      pending XP/training/loot, completion status and committed result ID
 mission, when RP is active: scenario/NPC template versions, attempt ID,
@@ -525,9 +535,9 @@ This combined bundle makes a local run-completion grant one persisted transition
 
 Book learning/consumption, page insertion/completion, AP/rank advancement, equipment swaps, enchanting/burning, item hand-ins, quest claims and rebirth each save all inputs, outputs and operation IDs atomically. Retrying returns the recorded result, including RNG results, instead of paying or rolling twice. Save modifier sources rather than only effective totals; rebuilding must not restore resources, refresh effects or reroll enchants. Validate inventory ownership/placement and containment before restoring the simulation.
 
-At a normal run result, apply the selected retention policy, then retained XP using run-start age/talent, retained skill training, and elapsed aging intervals in that order. Commit eligible quest evidence at this boundary; subsequent gameplay stages begin at the hub until mission-local staging is explicitly supported. Rank-ups, quest claims and rebirth occur afterward at legal hub boundaries. Replays use recorded progression outcomes; the dungeon simulation never reads the wall clock.
+At a normal run result, apply the selected retention policy, then retained XP using run-start age/talent, retained skill training, and elapsed aging intervals in that order. Commit eligible quest evidence at this boundary; subsequent gameplay stages begin in town until mission-local staging is explicitly supported. Rank-ups, quest claims and rebirth occur afterward at legal town boundaries. Replays use recorded progression outcomes; the dungeon simulation never reads the wall clock.
 
-Checkpoint after accepted gameplay commands, floor transitions, completed rewards and lifecycle pause. Preserve order so an older write cannot overwrite a newer revision. If coalescing saves, keep the newest complete snapshot and retain durability callbacks; for rolls, rerolls, reward grants and random hub operations, gate subsequent gameplay until the checkpoint succeeds or the player explicitly handles the save failure.
+Checkpoint after accepted gameplay commands, floor transitions, completed rewards and lifecycle pause. Preserve order so an older write cannot overwrite a newer revision. If coalescing saves, keep the newest complete snapshot and retain durability callbacks; for rolls, rerolls, reward grants and random town operations, gate subsequent gameplay until the checkpoint succeeds or the player explicitly handles the save failure.
 
 On `pause`, request a bounded flush of the last committed snapshot. If suspension arrives during animation, the save already describes the completed rules. If it arrives while generation is pending, retain the previous stable floor. Do not rely on a background executor continuing after the OS suspends the app.
 
@@ -535,11 +545,11 @@ Schema migrations are explicit and sequential. Reject unsupported future version
 
 ## 15. Data-driven content
 
-Create validated catalogs under `assets/data/` for tiles, heroes, enemies, five-dice scoring/profiles, abilities, skills/ranks/training/acquisition, stats/costs/statuses, inventory/equipment/bags, enchants/recipes, loot/encounters, generation profiles, XP/age/talent curves, quests/Chapters/Generations and NPC scenarios, and later banners/pity rules.
+Create validated catalogs under `assets/data/` for tiles, heroes, enemies, five-dice scoring/profiles, abilities, skills/ranks/training/acquisition, stats/costs/statuses, inventory/equipment/bags, enchants/recipes, loot/encounters, generation profiles, XP/age/talent curves, quests/Chapters/Generations and NPC scenarios, title definitions with slot types, hint/award conditions and typed effect bundles, and later banners/pity rules. The title catalog itself is deferred to its implementation phases; [project phases](project-phases.md) folds titles into phases 6–9.
 
 Validate the explicit F → E → D → C → B → A → 9 → … → 1 rank order; reachable 100-point training at every supported nonterminal rank; skill-book/page mappings; six integer face weights with positive totals; stat units, bounds and acyclic derivation; effect stacking/timing; inventory footprints, stack keys and hand compatibility; enchant slot/condition/chance tables; and quest prerequisite/stage references and attainable objectives. Detect acquisition cycles and unavailable dependencies, including critical training without critical chance, multi-target objectives in single-enemy content, or rebirth/RP quests before those systems exist. Prototype caps and unavailable skills must be visible.
 
-Use stable content IDs and explicit schema versions. Content JSON is loaded with Jackson (`jackson-databind`, pinned in `gradle.properties`) into plain Java DTOs; its strict defaults are part of the contract — an unknown field or unknown enum value fails the load with the offending name, so typo'd definitions cannot silently default. Any dice notation used for other authored effects stays a string at the parsing boundary and is validated explicitly; the player battle hand is always five d6 with its skill/rank face weights, not an arbitrary notation-defined pool. Then validate required fields, ranges, enum values, referenced IDs, probability totals, progression monotonicity and reachable generation constraints. Parsing JSON alone does not validate game rules.
+Use stable content IDs and explicit schema versions. Content JSON is loaded with Jackson (`jackson-databind`, pinned in `gradle.properties`) into plain Kotlin DTOs; its strict defaults are part of the contract — an unknown field or unknown enum value fails the load with the offending name, so typo'd definitions cannot silently default. Any dice notation used for other authored effects stays a string at the parsing boundary and is validated explicitly; the player battle hand is always five d6 with its skill/rank face weights, not an arbitrary notation-defined pool. Then validate required fields, ranges, enum values, referenced IDs, probability totals, progression monotonicity and reachable generation constraints. Parsing JSON alone does not validate game rules.
 
 Load an immutable catalog before starting a run. Pin a run to its rules/content version; do not refresh definitions in the middle of a command. Keep retired content or a deliberate migration policy for resumable shipped runs.
 
@@ -547,7 +557,7 @@ Separate content from visuals: a monster definition references an animation/atla
 
 ## 16. Progression, inventory, quests, and online services
 
-First deliver an offline loop: prepare a hero/loadout in the hub, explore and resolve five-dice encounters, collect eligible loot and training, commit the run outcome, then learn/advance skills and continue quests. A life can contain many runs; victory, defeat or starting a run does not trigger rebirth. Use hero-owned progression and inventory as the proposed default; settle account sharing and victory/defeat/abandonment retention before shipping inventory-backed runs.
+First deliver an offline loop: prepare a hero/loadout in town, explore and resolve five-dice encounters, collect eligible loot and training, commit the run outcome, then learn/advance skills and continue quests. A life can contain many runs; victory, defeat or starting a run does not trigger rebirth. Use hero-owned progression and inventory as the proposed default; settle account sharing and victory/defeat/abandonment retention before shipping inventory-backed runs.
 
 ### Skills and character progression
 
@@ -557,9 +567,9 @@ Ranks use F → E → D → C → B → A → 9 → 8 → 7 → 6 → 5 → 4 �
 
 Follow [character.md](gameplay/character.md): start at level 1, process committed XP across every crossed threshold, and provisionally grant 1 AP per earned level up to a content-defined cap (proposed 200). At cap discard XP overflow. Cumulative level is `1 + earned level-ups across all lives`; rebirth itself adds nothing. Store life growth using the age/talent at each grant, preserving fractional precision. Skills outside the active talent remain usable. Derive mastery for all talents from current associated skill ranks, with no second AP payment; inactive talent mastery bonuses persist. Initial talents are Close Combat and Magic; training multipliers and Grandmaster challenges are deferred.
 
-Proposed starting/rebirth ages are 10–17. Reconcile one age year per seven elapsed real-world days at hub/results boundaries, including offline intervals, once each. Destination ages 11–20 grant 5 AP plus authored base/talent growth; 21–25 grant 5 AP and base growth; 26+ grant neither, though age and level growth can continue. Repeated menus and backward clock changes cannot re-award intervals. Clock trust and forward-clock policy remain open and need an explicit application-level decision.
+Proposed starting/rebirth ages are 10–17. Reconcile one age year per seven elapsed real-world days at town/results boundaries, including offline intervals, once each. Destination ages 11–20 grant 5 AP plus authored base/talent growth; 21–25 grant 5 AP and base growth; 26+ grant neither, though age and level growth can continue. Repeated menus and backward clock changes cannot re-award intervals. Clock trust and forward-clock policy remain open and need an explicit application-level decision.
 
-Rebirth remains gated on defined eligibility/cost/cooldown rules. Preview and atomically reset current level/XP, starting age/talent and life-growth stats while preserving cumulative level, learned ranks/training, unspent AP, mastery, committed items/pages/enchants, quests and claimed rewards. Settle run results and aging first; move newly illegal equipment into storage/overflow. A new run snapshots the resulting progression and loadout; live buffs/debuffs can modify effective run stats, but hub progression cannot replace that baseline.
+Rebirth remains gated on defined eligibility/cost/cooldown rules. Preview and atomically reset current level/XP, starting age/talent and life-growth stats while preserving cumulative level, learned ranks/training, unspent AP, mastery, committed items/pages/enchants, quests and claimed rewards. Settle run results and aging first; move newly illegal equipment into storage/overflow. A new run snapshots the resulting progression and loadout; live buffs/debuffs can modify effective run stats, but town progression cannot replace that baseline.
 
 ### Inventory and equipment
 
@@ -569,15 +579,21 @@ Use deterministic placement: fill compatible stacks in saved bag-priority order 
 
 Start with main/off hand, head, body, hands, feet and two accessories. A two-handed weapon reserves off hand but contributes once; paired swords require two legal instances; sword/shield supports shield skills. Validate every displaced item's destination as one equip transaction. Equipment and enchants affect stats only while eligible and equipped. No automatic drop or free resource refill completes a swap.
 
-A run reserves exact brought instances/quantities, including bag contents, and tracks origins and consumption separately from new loot. Hub mutation is unavailable while the run is active. Result reconciliation accounts for used supplies and returns/forfeits remaining gear under the authored outcome policy; it never restores consumed provisions or duplicates equipment.
+A run reserves exact brought instances/quantities, including bag contents, and tracks origins and consumption separately from new loot. Town mutation is unavailable while the run is active. Result reconciliation accounts for used supplies and returns/forfeits remaining gear under the authored outcome policy; it never restores consumed provisions or duplicates equipment.
 
 Failed world pickups stay on the ground without a turn or loot reroll. Durable result/quest grants place what fits and save exact remainder in withdraw-only reward overflow with no expiry. Overflow also accepts system reconciliation returns, never player deposits; its items cannot be used until withdrawn. Clear it before a new run or optional reward-producing activity, while preserving already-earned results. Purchases, assembly and recipes require legal output placement after simulated input consumption and cannot use overflow to evade capacity.
 
+### Titles
+
+Follow [titles.md](gameplay/titles.md): one collection per hero moving through Unknown → Known → Earned, with a separate hint condition and award condition per title. First and Second are base slot types (a definition occupies exactly one), alongside a cosmetic talent display that grants no stats. Equip, remove, or change titles in town between runs at no cost or cooldown; awards never auto-equip, and empty slots are valid.
+
+Equipped base titles are removable stat-modifier sources identified by title ID and slot. They enter at the equipment and direct derived-stat stages of the [stats](gameplay/stats.md) calculation order, applying authored benefits and penalties exactly once — no pool refill, no AP/rank/dice-probability effects, no double-count against skill growth or other sources. A new run snapshots the validated base-title selections, resolved effects and content version, and selection stays fixed for that run; in-run achievements accumulate as pending evidence evaluated at the outcome boundary under the retention decision. Quest claims, character milestones, coupons and later Rank 1 mastery checklists award titles exactly once, in stable title-ID order, with duplicate awards as no-ops. Master Titles and vanity overrides are later extensions ([project phases](project-phases.md) stages them in phase 9).
+
 ### Enchanting
 
-Follow [enchants.md](gameplay/enchants.md): instructor-taught Enchant uses the same training/AP progression. Hub-only application installs a prefix or suffix on one equipment instance; its rank is distinct from Enchant skill rank. Rank 5–1 scrolls provisionally require skill Rank 5 or better, with no lower-enchant chaining. Conditional clauses read progression snapshots; variable values roll once on successful installation and persist through equip/load/rebirth. Effects feed the equipment stat stage once, including independent penalties when a benefit is inactive.
+Follow [enchants.md](gameplay/enchants.md): instructor-taught Enchant uses the same training/AP progression. Town-only application installs a prefix or suffix on one equipment instance; its rank is distinct from Enchant skill rank. Rank 5–1 scrolls provisionally require skill Rank 5 or better, with no lower-enchant chaining. Conditional clauses read progression snapshots; variable values roll once on successful installation and persist through equip/load/rebirth. Effects feed the equipment stat stage once, including independent penalties when a benefit is inactive.
 
-Application consumes one scroll, one powder and authored positive MP on every accepted attempt. The initial Protect Equipment mode preserves gear and both old enchants on failure; success replaces only the selected slot. Use the specification's basis-point chance resolver with its provisional 90% cap and shared preview logic. Hub MP and an explicit recovery loop are prerequisites.
+Application consumes one scroll, one powder and authored positive MP on every accepted attempt. The initial Protect Equipment mode preserves gear and both old enchants on failure; success replaces only the selected slot. Use the specification's basis-point chance resolver with its provisional 90% cap and shared preview logic. Town MP and an explicit recovery loop are prerequisites.
 
 Burning is a separate destructive operation: consume the item, materials and MP regardless of recovery, checking occupied slots independently in prefix/suffix order. Reserve capacity for maximum possible recovered scrolls after consumed inputs before spending or drawing RNG. Recovered scrolls retain definitions, not old rolled values. Preview losses, chances and all costs. Persist the dedicated enchanting RNG, operation result, costs, equipment/output changes and training together before revealing the result. Protect Scroll, durability damage and multiplayer entrusting are deferred.
 
@@ -589,9 +605,9 @@ Separate eligibility from automatic delivery or NPC acceptance. Persist state-ba
 
 Quest state is Locked → Available/Active → Ready to complete → Completed. Ordered stages use stable objective IDs and capped/deduplicated evidence from dialogue, interaction, defeats, skill outcomes, acquisition/delivery and mission success. Event objectives count only after their stage activates; item requirements recheck legal current inventory. Hand-ins consume items and checkpoint objectives together. Initial quests complete once per hero with no expiry, through explicit Complete/final NPC dialogue. Preview and atomically claim the bundle, costs, completion ID and successors; overflow withdrawal never regrants XP/AP. Mainstream quests cannot be abandoned; authored sidequest abandonment preserves committed delivery checkpoints.
 
-Accept and claim at the hub. Normal runs snapshot eligible active stages and accumulate pending evidence; result retention determines what commits, while a clear objective always requires success. Until mission-local stage progression has its own rollback rules, fresh gameplay stages start after results at the hub. Repeatable/daily quests, timers and branching replay rewards remain deferred.
+Accept and claim in town. Normal runs snapshot eligible active stages and accumulate pending evidence; result retention determines what commits, while a clear objective always requires success. Until mission-local stage progression has its own rollback rules, fresh gameplay stages start after results in town. Repeatable/daily quests, timers and branching replay rewards remain deferred.
 
-An RP mission temporarily controls a fixed authored NPC in an isolated session started from the hub, with no other active run. Use normal movement/dice rules with the NPC's versioned stats, skills, gear and supplies; preserve the hero profile separately. Ordinary hero XP/training/loot do not accrue by default. Only the recorded scenario outcome advances its eligible quest, whose later claim grants hero rewards. Success returns to the hub once; failure/exit leaves the quest retryable; loading resumes the same attempt rather than resetting it. Borrowed items/skills cannot leak to the hero.
+An RP mission temporarily controls a fixed authored NPC in an isolated session started from town, with no other active run. Use normal movement/dice rules with the NPC's versioned stats, skills, gear and supplies; preserve the hero profile separately. Ordinary hero XP/training/loot do not accrue by default. Only the recorded scenario outcome advances its eligible quest, whose later claim grants hero rewards. Success returns to town once; failure/exit leaves the quest retryable; loading resumes the same attempt rather than resetting it. Borrowed items/skills cannot leak to the hero.
 
 ### Gacha and online services
 
@@ -629,7 +645,7 @@ core/src/main/kotlin/cloud/vinh/rebirthdungeon/
     content/                 catalog loaders and validation
     save/                    DTOs, codecs, migrations, local repository
   presentation/
-    screens/                 loading, title, hub, dungeon, progression, quests, RP missions
+    screens/                 loading, title, town, dungeon, progression, quests, RP missions
     dungeon/                 SpriteBatch renderer and camera
     hud/                     Scene2D controls and view models
     animation/               presentation tracks and event mapping
@@ -650,11 +666,11 @@ android/src/main/kotlin/.../  Android launcher and platform adapters
 ios/src/main/kotlin/.../      RoboVM launcher and platform adapters
 ```
 
-Replace `FirstScreen` through the first playable slice. Keep build-time atlas tooling outside the shipped game runtime. Do not create a second source root or copy platform code into `core`.
+The Phase 1 loading/prototype screens replaced `FirstScreen`; grow them toward the first playable slice. Keep build-time atlas tooling outside the shipped game runtime. Do not create a second source root or copy platform code into `core`.
 
 ## 18. Validation and performance
 
-Add a pinned Java 8-compatible test framework under `core` when implementing the first rules. Most simulation/adapter tests should run as ordinary JVM tests without `Gdx.app`, an OpenGL context or native platform startup. Add the LibGDX headless backend explicitly as a **test dependency** only for tests that need it; its transitive presence in desktop tooling does not provide a core test setup or validate rendering.
+The pinned JVM test framework (JUnit 4.13.2) is in place under `core`. Most simulation/adapter tests should run as ordinary JVM tests without `Gdx.app`, an OpenGL context or native platform startup. Add the LibGDX headless backend explicitly as a **test dependency** only for tests that need it; its transitive presence in desktop tooling does not provide a core test setup or validate rendering.
 
 | Area               | Required evidence                                                                                              |
 |--------------------|----------------------------------------------------------------------------------------------------------------|
@@ -664,6 +680,7 @@ Add a pinned Java 8-compatible test framework under `core` when implementing the
 | artemis-odb        | Registration-order behavior, structural changes between systems, cleanup before projection, no stale IDs       |
 | Turns/combat       | Stable initiative ties, single turn-boundary ticks, no extra turns from dice commands, no reroll/reset exploit |
 | Skills/progression | Three learning routes, 100-point/AP gate, capped objective counts, duplicate outcome rejection, XP overflow, mastery, aging cutoffs and rebirth preservation |
+| Titles | Discovery/award exactly-once including retries, town-only equip/swap, stat-stage application without double-count or pool refill, run snapshot fixed for its duration, persistence across save/load/rebirth |
 | Stats/resources | Mixed-pool reservation/payment, nonlethal HP costs, no refill from maxima changes, modifier/stacking order, self-buff timing, preview parity |
 | Inventory/equipment | Rectangle fit, bags/no cycles, deterministic placement, atomic swaps, locks, provenance, consumed supplies, overflow withdrawal without regrant |
 | Enchanting | Slot/rank restrictions, chance boundaries, failure preservation, persistent rolled values, burn capacity and recovery, operation/RNG retry consistency |
@@ -692,7 +709,7 @@ Test UI and rendering on actual desktop and mobile backends; a headless test can
 - Add the minimal JVM test setup and Java API compatibility check.
 - Run desktop, Android, and an iOS simulator build; track device/release checks separately.
 
-**Exit:** the selected stack builds and displays a minimal screen on each target, with no duplicate classes and clear resource ownership. The audit's Android failure means this gate is currently open.
+**Exit:** the selected stack builds and displays a minimal screen on each target, with no duplicate classes and clear resource ownership. *(Closed: the duplicate-class failure was repaired on 2026-09-02, and Phases 0–1 completed on 2026-09-04 with all three backends launched — see [project phases](project-phases.md). Device/release checks remain tracked separately, and the 2026-09-06 Kotlin/dependency changes still owe a runtime re-verification.)*
 
 ### Milestone 1 — Playable dungeon movement
 
@@ -725,16 +742,16 @@ Test UI and rendering on actual desktop and mobile backends; a headless test can
 
 **Exit:** a complete offline run and all three acquisition routes feed durable hero progression without duplicate costs/rewards, lost retained items or restored consumed supplies. Exact loss rules and prototype caps are visible.
 
-### Milestone 4 — Hub systems, quests, and dungeon depth
+### Milestone 4 — Town systems, quests, and dungeon depth
 
 - Build a short Chapter/Generation story chain, an NPC sidequest, an automatic rank-milestone Skill Quest and an NPC skill-unlock quest, with journal/tracker, pending run evidence and explicit exactly-once claims.
 - Add equipment-triggered quest delivery and, after rebirth eligibility/economy are settled, talent-rebirth delivery. Preview rebirth resets, retained progression and equipment/condition changes.
-- Implement Enchant learning/two ranks, fixed and conditional/variable effects, prefix/suffix replacement, protected failure and zero/partial/full burn recovery; require hub MP recovery and saved RNG transactions first.
+- Implement Enchant learning/two ranks, fixed and conditional/variable effects, prefix/suffix replacement, protected failure and zero/partial/full burn recovery; require town MP recovery and saved RNG transactions first.
 - Add equipment defenses and Final Hit; stage dual wielding, Counterattack, Windmill, Charge and Critical Hit after their equipment/reaction/area/path/RNG dependencies and reachable training exist.
 - Add one isolated NPC RP scenario after quest and NPC ability support, including suspension, success and retry without hero-state leakage.
 - Expand floor profiles, traps, loot, stairs and enemy policies; add tap-to-walk/controller support, refine art/audio and meet measured performance/input/accessibility targets.
 
-**Exit:** the offline hub/dungeon loop supports saved quests, enchant operations and an RP scenario, with validated content and release-build smoke coverage. Rebirth and advanced skills remain gated until their open rules are resolved.
+**Exit:** the offline town/dungeon loop supports saved quests, enchant operations and an RP scenario, with validated content and release-build smoke coverage. Rebirth and advanced skills remain gated until their open rules are resolved.
 
 ### Milestone 5 — Production services and delivery
 
@@ -744,7 +761,7 @@ Add server-authoritative gacha, verified purchases, account/secure storage integ
 
 ## 20. Documentation and audit evidence
 
-The gameplay links at the start of this plan are the local design sources for the September 5 update; their research notes distinguish source-game references from proposed Rebirth Dungeon rules. This update does not re-run or refresh the earlier dependency audit. The separate [project phases](project-phases.md) remains the detailed implementation tracker and needs the corresponding gameplay checklist alignment before those phases are implemented.
+The gameplay links at the start of this plan are the local design sources for the September 5 update; their research notes distinguish source-game references from proposed Rebirth Dungeon rules. This update does not re-run or refresh the earlier dependency audit. The separate [project phases](project-phases.md) was aligned to this update on September 5, 2026 (including the titles fold-in) and remains the detailed implementation tracker. The 2026-09-07 documentation audit ([audit.md](audit.md)) found drift against this plan — stale Java/first-screen status, superseded toolchain and dependency values, the missing titles integration, and broken gameplay links — and this revision corrects it.
 
 For the original technical audit, official documentation was retrieved with the Firecrawl skill. Exact artemis-odb `2.3.0`, SquidSquad `4.0.12` and Juniper `0.10.5` signatures were also checked in resolved Gradle source JARs, so current README examples do not silently substitute newer APIs.
 

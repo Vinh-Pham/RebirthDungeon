@@ -1,14 +1,14 @@
 # Rebirth Dungeon Project Phases
 
-This checklist turns [game-plan.md](game-plan.md) into an implementation tracker for the Java/LibGDX project. The game plan defines architecture and gameplay contracts; this file orders the work and records implementation evidence. All phase, task, and exit checkboxes were reset on **2026-09-02**. Completion claims and environment notes from the previous implementation have been cleared.
+This checklist turns [game-plan.md](game-plan.md) into an implementation tracker for the Kotlin/LibGDX project (shared code was ported from the original Java scaffold on 2026-09-06). The game plan defines architecture and gameplay contracts; this file orders the work and records implementation evidence. All phase, task, and exit checkboxes were reset on **2026-09-02**. Completion claims and environment notes from the previous implementation have been cleared.
 
-On **2026-09-05** this tracker was re-aligned to the game plan's gameplay update — the [battle](gameplay/battle.md), [stats](gameplay/stats.md), [skills](gameplay/skills.md), [character](gameplay/character.md), [inventory](gameplay/inventory.md), [enchants](gameplay/enchants.md), [quests](gameplay/quests.md) and [titles](gameplay/titles.md) specifications. Phases 4–7 were re-scoped to the five-dice combat, inventory/equipment and progression contracts; new phases 8–9 cover hub quests/enchanting/rebirth and RP missions/skill extensions; the former phases 8–14 were renumbered 10–16. The [titles](gameplay/titles.md) specification is folded into phases 6–9 below; game-plan.md does not yet reference it. Phases 0–1 and their recorded evidence are unchanged. This alignment edits planning documents only.
+On **2026-09-05** this tracker was re-aligned to the game plan's gameplay update — the [battle](gameplay/battle.md), [stats](gameplay/stats.md), [skills](gameplay/skills.md), [character](gameplay/character.md), [inventory](gameplay/inventory.md), [enchants](gameplay/enchants.md), [quests](gameplay/quests.md) and [titles](gameplay/titles.md) specifications. Phases 4–7 were re-scoped to the five-dice combat, inventory/equipment and progression contracts; new phases 8–9 cover town quests/enchanting/rebirth and RP missions/skill extensions; the former phases 8–14 were renumbered 10–16. The [titles](gameplay/titles.md) specification is folded into phases 6–9 below and integrated into game-plan.md's specification index, ownership, save-shape, progression and validation coverage (2026-09-07). Phases 0–1 and their recorded evidence are unchanged. This alignment edits planning documents only.
 
 The phases expand the game plan's six milestones. Complete the earliest unfinished phase by default; if the user changes priorities, record the change and preserve any unmet prerequisite. Phase numbers below belong to this reset and do not carry over earlier completion history.
 
 ## Tracking Rules
 
-- An unchecked box means work or verification remains; a checked box means implemented and verified against the current Java architecture.
+- An unchecked box means work or verification remains; a checked box means implemented and verified against the current Kotlin architecture.
 - Keep the overview phase unchecked until its tasks and exit criteria are complete. Existing scaffold files do not automatically satisfy a phase.
 - Record the commands, target/device, result, and relevant file paths when verifying a task. Distinguish dependency resolution, compilation, packaging, simulator launch, physical-device testing, and release testing.
 - Keep dated blockers and the next action in Work Notes. A missing device or credential is an unmet gate, not a successful check.
@@ -20,10 +20,11 @@ The phases expand the game plan's six milestones. Complete the earliest unfinish
 ## Current Focus
 
 - **Current phase:** Phase 2 — Validated content and deterministic RNG.
-- **Status:** Phase 1 completed and verified on 2026-09-04 (see Completion Log); Phase 2 is not started.
+- **Status:** Phase 1 completed and verified on 2026-09-04 (see Completion Log); Phase 2 is not started. The 2026-09-06 user-directed Kotlin migration, Kotlin-DSL build scripts, and full liftoff dependency adoption changed sources and the build after that runtime evidence; their recorded evidence is compile/packaging-level only.
 - **Next objective:** Stable content/entity IDs and command/event values, the project `RandomSource` interface with the Juniper `AceRandom` adapter, and the validated immutable content catalog under `data/content` — now including the five-dice scoring/face-weight profiles and the starter skill/stat/cost/status definitions shaped by the September 5 gameplay specifications.
-- **Known blocker:** None. All three backends launched the prototype; iOS AOT/linking succeeded on this host (Xcode 27 beta) after removing stale force-link leftovers and launching through `simctl`/DeviceHub (see Work Notes).
+- **Known blocker:** None for Phase 2's JVM-only work. Open runtime-verification gap: all three backends launched the *pre-Kotlin* Phase 1 prototype; after the September 6 migration and dependency broadening, desktop launch, Android emulator interaction, and iOS AOT with the current set were **not re-executed** (see the 2026-09-06 work notes). The earlier simulator launch plus today's `compileKotlin`/packaging passes are not current runtime validation; re-run the platform batteries before relying on on-device behavior.
 - **Baseline inspected:** 2026-09-02. Shared code contains `RebirthDungeon extends Game` and an empty `FirstScreen`; desktop, Android, and RoboVM launchers exist. The game-plan audit's successful core/desktop compilation is baseline evidence, not phase completion. *(Superseded 2026-09-04: `FirstScreen` is replaced by the loading/prototype screens.)*
+- **Repository state verified 2026-09-07 (documentation audit):** shared sources are Kotlin under `src/main/kotlin` (application spike, loading/prototype screens, Gdx-free `game/` slice); `RebirthDungeon` extends `KtxGame<KtxScreen>`; wrapper 9.5.1, daemon JVM 25, Kotlin 2.4.10, ktx `io.github.quillraven.libktx` 1.14.2-rc1. No phase claims change.
 
 ## Existing Architecture and Working Boundaries
 
@@ -127,7 +128,7 @@ Tasks:
 
 - [ ] Define stable content/entity IDs, Java command/result/event values, version conventions and immutable snapshot conventions without presentation or backend types.
 - [ ] Define project `RandomSource` interfaces and a Juniper `AceRandom` adapter with explicit seeds plus sequence-backed test doubles.
-- [ ] Derive independent generation, AI, combat/dice, loot and cosmetic streams with stable identifiers; reserve the profile-owned hub-enchanting stream for Phase 8 and a separate development-gacha stream for Phase 13.
+- [ ] Derive independent generation, AI, combat/dice, loot and cosmetic streams with stable identifiers; reserve the profile-owned town-enchanting stream for Phase 8 and a separate development-gacha stream for Phase 13.
 - [ ] Capture and restore algorithm ID, state-format version and all five AceRandom state words losslessly; reject unknown algorithms or invalid state counts.
 - [ ] Define stable floor/attempt seed derivation from run seed, floor index, generator version and attempt number.
 - [ ] Add Jackson-bound JSON DTOs and an immutable content catalog under `data/content`, backed by `ContentRepository`; validation is explicit rather than assumed from JSON parsing (unknown fields/enum values already fail the Jackson binding; keep that strictness).
@@ -236,7 +237,7 @@ Exit criteria:
 
 Tasks:
 
-- [ ] Complete the project-owned JSON bundle for schema/rules/content/generator versions and revisions; the profile (hero/life identity, level/XP/cumulative level, AP, skills/objective counts, talent, current-life growth, starting age and processed aging intervals, inventory/equipment/bags/placements/locks, page records, currencies, overflow, installed enchant values, hub pools, enchanting RNG and operation results, quests/stages/evidence/milestones, tracked quests and reward IDs, discovered/earned title IDs with acquisition source/outcome IDs, title evidence/counters, First/Second title selections, talent display and favorites); the run (generated map, entity DTOs, explored cells, counters, scheduler, full RNG states, the dice activation with locked skill/rank/target/profile, five stable dice, kept flags and reroll budget, pools/reservations, stat sources, effect timing, cooldowns, enabled skill-extension state, run inventory origins/reservations/consumption, quest snapshot/pending evidence, equipped base-title snapshot and pending title discovery/award evidence, pending XP/training/loot and the committed result ID); and the RP-mission section (attempt ID, isolated session state, outcome status) reserved for Phase 9.
+- [ ] Complete the project-owned JSON bundle for schema/rules/content/generator versions and revisions; the profile (hero/life identity, level/XP/cumulative level, AP, skills/objective counts, talent, current-life growth, starting age and processed aging intervals, inventory/equipment/bags/placements/locks, page records, currencies, overflow, installed enchant values, town pools, enchanting RNG and operation results, quests/stages/evidence/milestones, tracked quests and reward IDs, discovered/earned title IDs with acquisition source/outcome IDs, title evidence/counters, First/Second title selections, talent display and favorites); the run (generated map, entity DTOs, explored cells, counters, scheduler, full RNG states, the dice activation with locked skill/rank/target/profile, five stable dice, kept flags and reroll budget, pools/reservations, stat sources, effect timing, cooldowns, enabled skill-extension state, run inventory origins/reservations/consumption, quest snapshot/pending evidence, equipped base-title snapshot and pending title discovery/award evidence, pending XP/training/loot and the committed result ID); and the RP-mission section (attempt ID, isolated session state, outcome status) reserved for Phase 9.
 - [ ] Implement explicit codecs and validation with LibGDX JSON utilities; exclude artemis-odb internals, transient intents, caches, textures and animation clocks.
 - [ ] Finish alternating-slot writes with increasing revision, checksum, close/verification and newest-valid-slot recovery; retain the previous good slot after a torn write.
 - [ ] Serialize saves through one application-owned writer and keep revision/callback ordering when coalescing. Never overwrite a newer save with an older queued result.
@@ -244,7 +245,7 @@ Tasks:
 - [ ] Add sequential schema migrations and fixtures for every shipped version; preserve rules/content compatibility or provide a deliberate migration/recovery policy. Content changes that shrink storage or alter progression thresholds must migrate so every item and record is preserved rather than recalculating shipped characters or deleting items that no longer fit.
 - [ ] Implement pause checkpoints, bounded flush, resume reconstruction and stale-session callback guards; required saves continue to belong to the application across screen changes.
 - [ ] Preserve the last stable floor if generation fails/is interrupted, and checkpoint before installing a new floor.
-- [ ] Establish the combined profile/run/grant-ID transition used by Phase 7 so completion rewards cannot be independently saved twice; record hub operation IDs (learning, pages, AP advancement, enchanting, coupon title unlocks, rebirth) with their inputs, outputs, results and RNG state atomically.
+- [ ] Establish the combined profile/run/grant-ID transition used by Phase 7 so completion rewards cannot be independently saved twice; record town operation IDs (learning, pages, AP advancement, enchanting, coupon title unlocks, rebirth) with their inputs, outputs, results and RNG state atomically.
 - [ ] Test corruption, torn slots, delayed/out-of-order requests, save failure/retry, migration, unsupported versions and interruption at dice/floor/reward boundaries; verify loads rebuild effective stats from saved sources without reapplying instant effects, re-awarding growth, refreshing statuses or duplicating reservations.
 - [ ] Compare restored and uninterrupted runs on JVM, Android and RoboVM, including complete RNG continuation and initiative ties; verify actual device storage/lifecycle behavior.
 
@@ -269,9 +270,9 @@ Tasks:
 - [ ] Implement the three learning routes: NPC instruction, complete-book reading (consumes one book on success; duplicates consume nothing) and page assembly (any order, no expiry, wrong/duplicate pages rejected without consumption); learning grants Rank F with 0 training and spends no AP.
 - [ ] Implement training and advancement: at least 100 current-rank points plus authored AP per rank-up, capped objectives counted once per resolved outcome and reset on advancement, excess training discarded, AP unable to buy training or auto-advance, rank 1 terminal, passives training from eligible events under their own objective IDs, and a journal distinguishing training-complete/insufficient-AP/ready/max-rank states with visible prototype caps.
 - [ ] Implement character progression: XP thresholds with multi-level crossing, 1 AP per earned level up to the content-defined cap (proposed 200) discarding overflow, cumulative level `1 + earned level-ups across all lives`, age/talent growth bundles stored with grant-time precision, initial Close Combat and Magic talents, and mastery derived for every talent from current skill ranks with no second AP payment and inactive-talent bonuses preserved.
-- [ ] Implement aging: one year per seven elapsed real days reconciled once per interval at hub/results boundaries including offline time, destination-age rewards (11–20: 5 AP plus authored growth; 21–25: 5 AP plus base growth; 26+: neither), idempotency against repeated menus and backward clock changes, a controllable test clock, and the recorded clock-trust decision.
-- [ ] Implement titles per [titles.md](gameplay/titles.md): one collection per hero with Unknown → Known → Earned states and separate hint/award conditions, First/Second base slots plus a cosmetic talent display, hub-only equip/swap with no cost or cooldown and no auto-equip on award, effects as removable modifier sources entering at the equipment/direct stat stages with benefits and penalties and no pool refill, and a character-screen Titles section with stat previews (including current-pool clamping), filters/favorites and a "Change titles in the hub" state during a run.
-- [ ] Award titles from run achievements, committed character milestones (level-up, age-up, cumulative, rebirth) and hub coupon consumption only; snapshot the equipped base titles into each new run as fixed for its duration; evaluate award conditions at the outcome boundary from committed facts under the retention decision; process multiple qualifying awards in stable title-ID order where duplicate awards are no-ops.
+- [ ] Implement aging: one year per seven elapsed real days reconciled once per interval at town/results boundaries including offline time, destination-age rewards (11–20: 5 AP plus authored growth; 21–25: 5 AP plus base growth; 26+: neither), idempotency against repeated menus and backward clock changes, a controllable test clock, and the recorded clock-trust decision.
+- [ ] Implement titles per [titles.md](gameplay/titles.md): one collection per hero with Unknown → Known → Earned states and separate hint/award conditions, First/Second base slots plus a cosmetic talent display, town-only equip/swap with no cost or cooldown and no auto-equip on award, effects as removable modifier sources entering at the equipment/direct stat stages with benefits and penalties and no pool refill, and a character-screen Titles section with stat previews (including current-pool clamping), filters/favorites and a "Change titles in town" state during a run.
+- [ ] Award titles from run achievements, committed character milestones (level-up, age-up, cumulative, rebirth) and town coupon consumption only; snapshot the equipped base titles into each new run as fixed for its duration; evaluate award conditions at the outcome boundary from committed facts under the retention decision; process multiple qualifying awards in stable title-ID order where duplicate awards are no-ops.
 - [ ] Copy a validated loadout and provisions into a new run with exact origin reservations (including bag contents as one contained hierarchy); account/menu changes cannot silently mutate an active character; in-run layout commands cost no initiative and are unavailable while dice are locked.
 - [ ] Implement world pickup as one full action with quantity/fit validation; failed pickups stay on the ground without a turn or loot reroll; implement validated currency/cost/grant operations rejecting negative, duplicate, unaffordable or invalid inventory/equipment operations, with outputs placed only after simulated input consumption.
 - [ ] Implement withdraw-only saved reward overflow for grants that do not fit, accepting only authoritative grants and reconciliation returns, unusable until withdrawn, and required to be cleared before a new run or optional reward activity while preserving already-earned results.
@@ -281,13 +282,13 @@ Tasks:
 Exit criteria:
 
 - [ ] The player can select a hero and loadout, explore/fight, finish or lose a run, receive the defined progression, learn/advance skills through all three routes, manage grid inventory/equipment and start again.
-- [ ] Restart/retry at results or hub operation boundaries cannot double-grant loot, XP, AP, training or currency, or restore consumed supplies.
-- [ ] Titles can be earned, equipped and previewed in the hub, survive save/load and rebirth, apply only while equipped, and never alter an active run's stats mid-run.
+- [ ] Restart/retry at results or town operation boundaries cannot double-grant loot, XP, AP, training or currency, or restore consumed supplies.
+- [ ] Titles can be earned, equipped and previewed in town, survive save/load and rebirth, apply only while equipped, and never alter an active run's stats mid-run.
 - [ ] The offline loop requires no authentication, purchase or gacha service.
 
 ## Phase 8 — Quests, Enchanting, and Rebirth
 
-**Goal:** Build the hub progression systems — quests, enchanting, and rebirth — on top of the durable loop.
+**Goal:** Build the town progression systems — quests, enchanting, and rebirth — on top of the durable loop.
 
 **Plan alignment:** Begins Milestone 4; game-plan sections 15–16; [quests.md](gameplay/quests.md) and [enchants.md](gameplay/enchants.md).
 
@@ -298,17 +299,17 @@ Tasks:
 - [ ] Implement objectives and evidence: stable objective IDs, ordered stages, capped/deduplicated evidence from dialogue, interaction, defeats, skill outcomes, acquisition/delivery and mission success; event objectives count only after stage activation; item requirements recheck legal current inventory; hand-ins consume items and checkpoint objectives together; triggers process after the initiating transaction in stable quest-ID order with idempotent catch-up after load.
 - [ ] Implement atomic quest claims: revalidate final objectives and hand-in costs, consume items, grant XP/AP/items/Rank F skill unlocks and quest-awarded titles (slot-typed definitions whose hint/award predicates resolve to authored quests, encounters, stats and coupons), record the completion ID and unlock successors; route full-backpack grants into saved reward overflow without regranting XP/AP; a quest skill reward grants only an unknown Rank F and completes without refund when already known.
 - [ ] Add the instructor-taught Enchant skill using the shared training/AP progression (at least two playable ranks) plus scroll, powder and enchant-definition catalogs with slot/rank/condition tables and authored rank ordering.
-- [ ] Implement hub-only enchant application: one prefix and one suffix per eligible item, replacement only on success, the Rank 5–1 scroll gate at Enchant skill Rank 5+, conditional clauses reading progression snapshots, variable values rolled once on installation and persisted, effects feeding the equipment stat stage once with independent penalties staying active, and the basis-point chance resolver with the 90% cap under Protect Equipment (failure consumes scroll, powder and MP while preserving the item and both enchants).
-- [ ] Add the hub MP pool with an explicit authored recovery/rest loop as a prerequisite for enchant operations.
+- [ ] Implement town-only enchant application: one prefix and one suffix per eligible item, replacement only on success, the Rank 5–1 scroll gate at Enchant skill Rank 5+, conditional clauses reading progression snapshots, variable values rolled once on installation and persisted, effects feeding the equipment stat stage once with independent penalties staying active, and the basis-point chance resolver with the 90% cap under Protect Equipment (failure consumes scroll, powder and MP while preserving the item and both enchants).
+- [ ] Add the town MP pool with an explicit authored recovery/rest loop as a prerequisite for enchant operations.
 - [ ] Implement enchant burning as a separate destructive operation: consume the item, materials and MP regardless of recovery; independent prefix-then-suffix recovery checks on the dedicated enchanting RNG; reserved output capacity for the maximum possible recovered scrolls before spending or drawing; recovered scrolls retain definitions, not old rolled values.
 - [ ] Persist enchant operations atomically — costs, equipment/output changes, training, operation ID and the dedicated enchanting RNG state — before revealing; retry returns the recorded result; previews consume no RNG.
-- [ ] Settle rebirth eligibility/cost/cooldown in Open Decisions, then implement hub rebirth: preview and atomically reset current level/XP, starting age, talent and life growth while preserving cumulative level, learned ranks/training, unspent AP, mastery, committed items/pages/enchants, quests and claimed rewards; settle run results and aging first and move newly illegal equipment into storage/overflow.
+- [ ] Settle rebirth eligibility/cost/cooldown in Open Decisions, then implement town rebirth: preview and atomically reset current level/XP, starting age, talent and life growth while preserving cumulative level, learned ranks/training, unspent AP, mastery, committed items/pages/enchants, quests and claimed rewards; settle run results and aging first and move newly illegal equipment into storage/overflow.
 - [ ] Record the qualifying rebirth event's life ID and talent for rebirth-gated quest delivery, and snapshot the resulting progression/loadout for the next run.
 - [ ] Test quest delivery/deduplication/catch-up, enchant chance boundaries, failure preservation, persistent rolled values, burn recovery and output capacity, rebirth preservation, quest-awarded title grants without duplicates or consumed coupons on retry, and interrupted save/retry without duplicate grants, charges or rolls.
 
 Exit criteria:
 
-- [ ] Saved quests, enchant application/protected failure/burning and rebirth operate in the hub loop with exactly-once claims and operations.
+- [ ] Saved quests, enchant application/protected failure/burning and rebirth operate in the town loop with exactly-once claims and operations.
 - [ ] Quest, enchant and rebirth triggers cannot double-deliver, double-grant, double-charge or reroll persisted values, including after reload, retry or interruption.
 - [ ] Rebirth preserves the defined progression and cannot bypass unfinished-run result or aging rules.
 
@@ -320,9 +321,9 @@ Exit criteria:
 
 Tasks:
 
-- [ ] Implement the RP mission mode: a hub-started, isolated session (scenario/NPC template versions, attempt ID, fixed stats/skills/gear/supplies, map, objectives, outcome) requiring no other active run, using the normal movement and five-dice rules through the NPC's authored abilities while the hero profile remains untouched.
-- [ ] Enforce RP boundaries: no hero XP/training/loot by default, borrowed items/skills never leak to the hero, hub progression/rebirth/equipment export disabled during the mission, and only the recorded scenario outcome advances its eligible quest.
-- [ ] Implement the RP lifecycle: success saves the outcome once and returns to the hub; failure/exit leaves the quest retryable at its authored checkpoint; retry creates a fresh attempt; loading resumes the same suspended attempt (HP, supplies, dice, objectives); app closure is neither failure nor reset.
+- [ ] Implement the RP mission mode: a town-started, isolated session (scenario/NPC template versions, attempt ID, fixed stats/skills/gear/supplies, map, objectives, outcome) requiring no other active run, using the normal movement and five-dice rules through the NPC's authored abilities while the hero profile remains untouched.
+- [ ] Enforce RP boundaries: no hero XP/training/loot by default, borrowed items/skills never leak to the hero, town progression/rebirth/equipment export disabled during the mission, and only the recorded scenario outcome advances its eligible quest.
+- [ ] Implement the RP lifecycle: success saves the outcome once and returns to town; failure/exit leaves the quest retryable at its authored checkpoint; retry creates a fresh attempt; loading resumes the same suspended attempt (HP, supplies, dice, objectives); app closure is neither failure nor reset.
 - [ ] Add equipment defense passives (Shield Mastery, Heavy/Light Armor Mastery with mutually exclusive body categories and penalty relief at the source, no Shield absorption pool) and Final Hit as a paid temporary melee buff with its resolved magnitude/duration saved while later attacks still pay and roll normally.
 - [ ] Add Counterattack's one-charge prepared retaliation only with synchronous reaction ordering inside the attacking transaction, stance expiry at the start of the owner's next activation, and no counter/critical recursion.
 - [ ] Add Windmill with frozen Manhattan-area targets resolved by stable ID, one payment and hand, and separate full resolutions per frozen defense; add Charge with a validated straight empty lane, frozen destination, and movement plus one hit as one atomic action.
@@ -353,7 +354,7 @@ Tasks:
 - [ ] Implement floor transitions with derived seeds, explicit health/status/inventory carry-over and checkpoint-before-install behavior.
 - [ ] Define and implement multi-enemy encounter participation/joining, targeting, perception/memory and richer deterministic AI using the existing initiative queue.
 - [ ] Add hero abilities, dice/status combinations and enemy policies without duplicating formulas or storing gameplay state in screens.
-- [ ] Implement in-run consumable use only through the explicit pre-roll full-action command with content-defined costs and validation; equipment changes remain hub/loadout operations.
+- [ ] Implement in-run consumable use only through the explicit pre-roll full-action command with content-defined costs and validation; equipment changes remain town/loadout operations.
 - [ ] Test reachable spawn/exit/key placement, bounded generation failures, multi-actor cleanup, loot legality and full multi-floor replay through completion or defeat.
 
 Exit criteria:
@@ -513,7 +514,7 @@ These milestones match game-plan section 19. Each requires its listed phases and
 | 1 — Playable dungeon movement                | 2–3             | Validated content/RNG, deterministic movement/turns/FOV and basic reload    |
 | 2 — Five-dice encounter, resources, and resumable activation | 4–5 | Playable five-dice battle with locked inputs, reserved costs, statuses and activations preserved across interruption |
 | 3 — Durable run, inventory, and progression loop | 6–7         | Robust recovery, grid inventory/equipment and a repeatable offline loop with skills/XP/aging granted exactly once |
-| 4 — Hub systems, quests, and dungeon depth   | 8–12            | Quests, enchanting, rebirth, RP missions, staged skill extensions, expanded content and measured device acceptance |
+| 4 — Town systems, quests, and dungeon depth   | 8–12            | Quests, enchanting, rebirth, RP missions, staged skill extensions, expanded content and measured device acceptance |
 | 5 — Production services and delivery         | 13–16           | Gacha/service integration, verified commerce and releasable distributions   |
 
 ## Decisions Already Set by the Game Plan
@@ -528,12 +529,12 @@ These milestones match game-plan section 19. Each requires its listed phases and
 | Contact combat       | Bump starts the current player's dice activation without movement or immediate damage          |
 | Dice activation      | Exactly five d6 power one selected active skill; skill/target/inputs lock at the first roll; one initial roll plus two batch rerolls; whole-hand commit or paid pass |
 | Combat resources     | HP/MP/SP tracked as current/max/reserved; positive authored costs; nonlethal HP payments; activation-boundary durations and regeneration |
-| Run inventory        | Hero-owned run snapshot with origin reservations; hub inventory mutation unavailable during a run; withdraw-only saved reward overflow |
-| In-run equipment     | Equip/unequip are hub/loadout operations in the initial battle design; in-run consumable use is a gated pre-roll full action |
-| Titles               | Per-hero collection; First/Second base slots equipped hub-only; effects as removable stat-modifier sources; talent display cosmetic; vanity and Master Titles deferred |
+| Run inventory        | Hero-owned run snapshot with origin reservations; town inventory mutation unavailable during a run; withdraw-only saved reward overflow |
+| In-run equipment     | Equip/unequip are town/loadout operations in the initial battle design; in-run consumable use is a gated pre-roll full action |
+| Titles               | Per-hero collection; First/Second base slots equipped town-only; effects as removable stat-modifier sources; talent display cosmetic; vanity and Master Titles deferred |
 | Save format          | Project-owned versioned JSON profile/run bundle in alternating slots                           |
 | Presentation         | SpriteBatch world, Scene2D HUD/menus, animations of committed events                           |
-| Initial layout       | Landscape and 16-pixel tiles; exact logical resolution/scaling still needs validation          |
+| Initial layout       | Landscape and 16-pixel tiles; logical resolution/scaling resolved 2026-09-04 as `ExtendViewport` 320 × 180 minimum with a separate UI viewport (see the resolved decision below). Broader physical-device coverage stays open for Phase 12 |
 | Production grants    | Server-authoritative purchases/gacha, idempotent results before reveals                        |
 
 ## Open Decisions
@@ -546,8 +547,8 @@ Resolve these when their phase needs them. Do not reopen the settled contracts a
 | Test/check tooling and CI setup                                      | Phase 0   | Resolved 2026-09-02 | JUnit 4.13.2 pinned for `:core:test` (plain JVM, no Gdx.app/OpenGL); Checkstyle 10.20.2 with `config/checkstyle/` (formatting hygiene + `ImportControl` banning `com.badlogic.gdx` under `game/`); `--release 8` guards the Java 8 API surface. `.github/workflows/ci.yml.backup` runs shared tests/checks, desktop compile and Android packaging; iOS verification documented as manual macOS-host steps in README.           |
 | Logical world resolution/scaling and initial test-device matrix      | Phase 1   | Resolved 2026-09-04 | World: `ExtendViewport` with 320x180 logical minimum (20x11.25 tiles at 16px, y-up camera clamped to the floor rect; 960x540 desktop window scales 3x integer). UI: separate `ScreenViewport` `Stage` (1 unit = 1 pixel), HUD padded by `Graphics.getSafeInset*`. Verified on desktop 960x540, Android `Medium_Phone` AVD (2400x1080 landscape), iPhone 16 Pro simulator (iOS 18.6). Broader physical-device matrix stays open for Phase 12. |
 | Resource limits: map size, automatic actions and presentation queues | Phase 3   | Open                | Bound before enabling untrusted/generated content sizes                                 |
-| Starter combat balance: reroll allowance, multipliers, damage scaling, skill costs/cooldowns and rank probability tables | Phase 4 | Open | Command/activation contracts are fixed; provisional values from battle.md/stats.md ship as authored balance content, not inferred Dicero formulas |
-| Skills/AP/title-collection ownership (hero vs account) and XP/AP economy targets | Phase 7 | Open | Specifications propose individual-hero ownership; settle before hub progression ships |
+| Starter combat balance: reroll count, multipliers, damage scaling, skill costs/cooldowns and rank probability tables | Phase 4 | Open | **Fixed command semantics; provisional numeric budget.** Activation commands and flow (one initial roll plus two batch `REROLL_DICE` subset rerolls, whole-hand commit or paid pass) are settled contracts; the numeric reroll allowance and all other values from battle.md/stats.md ship as authored balance content, not inferred Dicero formulas |
+| Skills/AP/title-collection ownership (hero vs account) and XP/AP economy targets | Phase 7 | Open | Specifications propose individual-hero ownership; settle before town progression ships |
 | Victory/defeat/abandonment retention for gear, supplies, loot, XP, training, quest and title evidence | Phase 7 | Open | Decide before inventory-backed results ship (Milestone 3); align this tracker with the decision |
 | Title catalog balance, discovery/spoiler rules and coupon sources | Phase 7 | Open | Starter slice needs two competing First Titles, one Second Title, a hinted achievement and quest or coupon awards |
 | Aging clock trust and forward-clock policy | Phase 7 | Open | Explicit application-level decision required before player-facing age rewards |
@@ -569,10 +570,11 @@ These are verification entry points, not claims that all pass today. Use the rel
 ./gradlew :lwjgl3:dependencies --configuration runtimeClasspath
 ./gradlew :android:dependencies --configuration debugRuntimeClasspath
 ./gradlew :ios:dependencies --configuration runtimeClasspath
-./gradlew :core:compileJava :lwjgl3:compileJava
+./gradlew :core:compileKotlin :lwjgl3:compileKotlin
 ./gradlew :core:test
 ./gradlew :android:checkDebugDuplicateClasses :android:assembleDebug
 ./gradlew :lwjgl3:run
+./gradlew :ios:compileKotlin   # compile-only gate; full AOT is the manual macOS step below
 ./gradlew :ios:launchIPhoneSimulator
 ```
 
