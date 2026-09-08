@@ -166,3 +166,4 @@ Thumbs.db
 
 ## Local verification artifacts (F12 / auto-demo frame captures)
 assets/screenshots/
+.idea/workspace.xml
