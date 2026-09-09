@@ -50,7 +50,7 @@ class DungeonScreen(private val game: RebirthDungeon) : KtxScreen {
         fun button(label: String, action: () -> Unit) = TextButton(label, skin).also {
             it.onClick { action() }; controls.add(it).minWidth(76f).minHeight(44f).pad(2f)
         }
-        button("Menu") { controller?.checkpoint(); game.navigateTo(LoadingScreen(game)) }
+        button("Menu") { controller?.checkpoint(); game.navigateTo(TitleScreen(game)) }
         button("New run") { startGeneration() }
         button("Reload") { reload() }
         button("Retry save") { controller?.retrySave(); refresh(false) }
@@ -66,7 +66,12 @@ class DungeonScreen(private val game: RebirthDungeon) : KtxScreen {
         try {
             controller = game.runs().resume()
             if (controller == null) startGeneration() else refresh(false)
-        } catch (failure: Exception) { status.setText("Checkpoint load failed: ${failure.message}") }
+        } catch (failure: Exception) {
+            // An unreadable checkpoint must not wedge the screen on entry:
+            // the repository keeps the files, so surface it and start fresh.
+            status.setText("Checkpoint load failed: ${failure.message} — starting a new run")
+            startGeneration()
+        }
     }
     private fun startGeneration() {
         if (generating || controller?.failure != null) return
@@ -134,7 +139,7 @@ class DungeonScreen(private val game: RebirthDungeon) : KtxScreen {
             2 -> submit(WaitCommand)
             3 -> { Screenshots.capture("phase3-before-reload"); reload() }
             4 -> Screenshots.capture("phase3-after-reload")
-            5 -> if (AutoDemo.dungeonEntries >= 2) Gdx.app.exit() else game.navigateTo(LoadingScreen(game))
+            5 -> if (AutoDemo.dungeonEntries >= 2) Gdx.app.exit() else game.navigateTo(TitleScreen(game))
         }
     }
     override fun resize(width: Int, height: Int) { if (width > 0 && height > 0) { viewport.update(width, height); stage.viewport.update(width, height, true) } }

@@ -17,13 +17,11 @@ import ktx.assets.getAsset
 import ktx.actors.onClick
 import ktx.log.error
 import ktx.log.info
-import ktx.scene2d.*
 
 /** First screen: drives the application-owned `AssetManager` to
- * completion, then offers the dungeon entry (and stays reachable as the menu
- * hub, which keeps screen transitions repeatable). A loading failure is shown
- * here with its cause and a quit action — the game screen is never activated
- * on a half-loaded asset set. */
+ * completion, then hands off to [TitleScreen], the menu hub. A loading
+ * failure is shown here with its cause and a quit action — no further screen
+ * is ever activated on a half-loaded asset set. */
 class LoadingScreen(private val game: RebirthDungeon) : KtxScreen {
     private var stage: Stage? = null
     private var statusLabel: Label? = null
@@ -33,10 +31,8 @@ class LoadingScreen(private val game: RebirthDungeon) : KtxScreen {
      * the skin's fonts only exist once loading succeeded. Disposed with the
      * screen so repeated menu round-trips leak nothing. */
     private var fallbackFont: BitmapFont? = null
-    private var activated = false
+    private var readyToNavigate = false
     private var failureMessage: String? = null
-    private var demoTimer = 0f
-    private var demoPhase = 0
 
     override fun show() {
         if (fallbackFont == null)
@@ -61,26 +57,17 @@ class LoadingScreen(private val game: RebirthDungeon) : KtxScreen {
     override fun render(delta: Float) {
         clearScreen(0.07f, 0.07f, 0.10f, 1f)
 
-        if (!activated && failureMessage == null)
+        if (!readyToNavigate && failureMessage == null)
             pollAssets()
+        if (readyToNavigate) {
+            // Navigating outside the asset-polling try block; navigateTo
+            // disposes this screen, so the handoff is this render's last act.
+            game.navigateTo(TitleScreen(game))
+            return
+        }
         stage?.act(minOf(delta, 0.1f))
         stage?.draw()
         Screenshots.captureIfRequested("loading")
-        runAutoDemo(delta)
-    }
-
-    /** Auto-demo (see [AutoDemo]): after assets are ready, capture the
-     * menu and enter the dungeon through the same navigation the button uses. */
-    private fun runAutoDemo(delta: Float) {
-        if (!AutoDemo.enabled() || !activated || demoPhase > 0)
-            return
-        demoTimer += delta
-        if (demoTimer > 1f) {
-            demoPhase = 1
-            Screenshots.capture("menu")
-            AutoDemo.dungeonEntries++
-            game.navigateTo(DungeonScreen(game))
-        }
     }
 
     private fun pollAssets() {
@@ -116,22 +103,12 @@ class LoadingScreen(private val game: RebirthDungeon) : KtxScreen {
 
     private fun onAssetsReady() {
         game.loadContent()
-        activated = true
         info("LoadingScreen") { "assets ready: ${game.assets().loadedAssets} loaded" }
-        // Prove the managed resources are actually retrievable before wiring UI.
+        // Prove the managed resources are actually retrievable before the
+        // handoff; a missing one lands in the failure UI like any load error.
         game.assets().getAsset<TextureAtlas>(RebirthDungeon.DUNGEON_ATLAS)
-        val skin = game.assets().getAsset<Skin>(RebirthDungeon.UI_SKIN)
-
-        val root = this.root ?: return
-        root.clear()
-        root.add(Label("Rebirth Dungeon", skin, "subtitle")).padBottom(24f).row()
-        val enter = scene2d.textButton("Enter Dungeon", skin = skin) {
-            onClick { game.navigateTo(DungeonScreen(game)) }
-        }
-        root.add(enter).minWidth(220f).minHeight(52f).row()
-        val skill = game.content().catalog.skills.values.first()
-        root.add(Label("Prototype content v${game.content().catalog.version.content}: ${skill.name}, ranks " +
-            skill.ranks.joinToString(" / ") { it.rank } + " (cap ${skill.prototypeCap})", skin)).padTop(12f)
+        game.assets().getAsset<Skin>(RebirthDungeon.UI_SKIN)
+        readyToNavigate = true
     }
 
     private fun showFailure() {

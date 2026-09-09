@@ -9,6 +9,7 @@ import cloud.vinh.rebirthdungeon.game.events.Cell
 import cloud.vinh.rebirthdungeon.game.grid.FloorGenerationResult
 import cloud.vinh.rebirthdungeon.game.identity.*
 import cloud.vinh.rebirthdungeon.game.projection.ActorState
+import cloud.vinh.rebirthdungeon.game.projection.RunRestore
 import com.badlogic.gdx.Application
 import com.badlogic.gdx.Gdx
 
@@ -25,19 +26,26 @@ class RunServices(private val catalog: ContentCatalog) {
         private set
     fun resume(): RunController? {
         active?.let { return it }
-        val state = repository.load() ?: return null
+        val state = restorable() ?: return null
         val controller = RunController(DungeonSimulation.restore(state, catalog), repository, ++token)
         active = controller
         controller.startOrResume()
         return controller
     }
     fun reload(): RunController? {
-        val state = repository.load() ?: return active
+        val state = restorable() ?: return active
         val replacement = RunController(DungeonSimulation.restore(state, catalog), repository, ++token)
         replacement.startOrResume()
         active?.close(); active = replacement
         return replacement
     }
+    /** Checkpoints written by another content/rules version are not
+     * restorable; the repository keeps those files untouched, so callers get
+     * "no state" and start fresh instead of wedging on entry. A later
+     * checkpoint surfaces the preserved-file conflict through the controller's
+     * retryable save-failure lane. */
+    private fun restorable(): RunRestore? =
+        try { repository.load() } catch (stale: UnsupportedCheckpoint) { null }
     fun start(seed: Long, generated: FloorGenerationResult.Success): RunController {
         val enemy = catalog.actors.getValue(ContentId("actor.enemy"))
         val actors = generated.enemy?.let { listOf(ActorState(EntityId(2), enemy.id, Cell(it.x, it.y), false, true, true, 6,
