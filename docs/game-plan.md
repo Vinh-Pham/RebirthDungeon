@@ -384,6 +384,8 @@ Keep command sequence numbers for accepted commands and event sequence numbers f
 
 ## 10. Dice combat vertical slice
 
+The [Phase 4 starter contract](phase4-combat.md) supplies content-v2 values, encounter participation, recovery/exhaustion, and the command-only checkpoint gate.
+
 Follow [battle.md](gameplay/battle.md) and [stats.md](gameplay/stats.md): exactly **five six-sided dice power one selected active skill**. Begin with one hero, one enemy, and a sword skill at two illustrative ranks with fair and weighted profiles; add a defensive skill after its effect and duration are authored. This replaces per-die allocation across abilities. Health, mana, stamina, shields, dice and statuses stay in the same run simulation during exploration and combat.
 
 Bumping an adjacent hostile opens a dice activation for the current player turn without moving or dealing damage. Before rolling, allow a legal skill/target change; the first accepted roll locks skill, rank, target, effective attack and mitigation inputs, cost vector, and six-face probability profile. The same initiative queue governs all actors.

@@ -32,9 +32,11 @@ class TurnScheduler private constructor(state: SchedulerState) {
         queue.add(TurnEntry(actor, tick + ACTION_COST, nextSequence++))
         select()
     }
-    fun remove(actor: EntityId) {
-        queue.removeAll { it.actor == actor }
-        if (active == actor) select()
+    fun remove(actor: EntityId) = removeAll(setOf(actor))
+    /** Remove every casualty before selecting, including simultaneous activation-end deaths. */
+    fun removeAll(actors: Set<EntityId>) {
+        queue.removeAll { it.actor in actors }
+        if (active in actors) select()
     }
     private fun select() {
         val next = queue.poll()

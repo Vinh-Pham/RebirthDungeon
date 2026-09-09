@@ -7,7 +7,9 @@ import cloud.vinh.rebirthdungeon.game.turns.TurnScheduler
 
 /** Authoritative non-component state; all mutation is serialized by the run controller. */
 class RunSession(val seed: Long, val content: ContentCatalog, val random: RunRandomStreams = RunRandomStreams.seeded(seed),
-    val runId: String = "run.${java.lang.Long.toHexString(seed)}") {
+    val runId: String = "run.${java.lang.Long.toHexString(seed)}",
+    val combatEnabled: Boolean = false,
+    val combatLoadout: cloud.vinh.rebirthdungeon.game.combat.abilities.CombatLoadout? = null) {
     init { require(runId.matches(Regex("[a-zA-Z0-9_.-]{1,100}"))) }
     internal fun initialized() = this::grid.isInitialized
     internal lateinit var grid: DungeonGrid
@@ -20,6 +22,9 @@ class RunSession(val seed: Long, val content: ContentCatalog, val random: RunRan
     internal var turnCount = 0L
     internal var eventCount = 0L
     internal var reachedExit = false
+    internal val encounterParticipants = sortedSetOf<Long>()
+    internal var encounterOutcome: cloud.vinh.rebirthdungeon.game.combat.abilities.EncounterOutcome? = null
+    internal var defeated = false
     internal var explored = BooleanArray(0)
     internal var remembered = IntArray(0)
     internal var visible = BooleanArray(0)

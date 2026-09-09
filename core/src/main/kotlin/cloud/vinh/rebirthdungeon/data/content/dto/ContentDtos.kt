@@ -69,6 +69,13 @@ class MultiplierDto {
 }
 
 class SkillDto {
+    var effect: SkillEffect? = null
+    var target: TargetKind? = null
+    var requiredEquipment: String? = null
+    var range: Int? = null
+    var cooldown: Int? = null
+    var status: String? = null
+    var shieldDuration: Int? = null
     var id: String? = null
     var name: String? = null
     var prototypeCap: String? = null
@@ -102,6 +109,9 @@ class TermDto {
 }
 
 class StatusDto {
+    var percent: Int? = null
+    var periodicDamage: Int? = null
+    var recovery: ResourcesDto? = null
     var id: String? = null
     var stat: String? = null
     var flat: Int? = null

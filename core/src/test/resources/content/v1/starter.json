@@ -58,7 +58,7 @@
         "mp": 40,
         "sp": 40
       },
-      "skill": "skill.enemy_strike",
+      "skill": "skill.sword",
       "rank": "F",
       "stats": {
         "stat.str": 10,
@@ -164,185 +164,7 @@
             2
           ]
         }
-      ],
-      "effect": "DAMAGE",
-      "target": "HOSTILE",
-      "requiredEquipment": "sword",
-      "range": 1,
-      "cooldown": 0,
-      "shieldDuration": 0
-    },
-    {
-      "id": "skill.fortify",
-      "name": "fortify (prototype)",
-      "prototypeCap": "F",
-      "scoring": "scoring.five_dice",
-      "attackStat": "stat.physical_attack",
-      "ranks": [
-        {
-          "rank": "F",
-          "order": 0,
-          "basePower": 2,
-          "pipScale": 1,
-          "cost": {
-            "hp": 0,
-            "mp": 0,
-            "sp": 4
-          },
-          "weights": [
-            1,
-            1,
-            1,
-            1,
-            1,
-            1
-          ]
-        }
-      ],
-      "effect": "SHIELD",
-      "target": "SELF",
-      "requiredEquipment": "none",
-      "range": 0,
-      "cooldown": 1,
-      "shieldDuration": 1
-    },
-    {
-      "id": "skill.focus",
-      "name": "focus (prototype)",
-      "prototypeCap": "F",
-      "scoring": "scoring.five_dice",
-      "attackStat": "stat.physical_attack",
-      "ranks": [
-        {
-          "rank": "F",
-          "order": 0,
-          "basePower": 0,
-          "pipScale": 0,
-          "cost": {
-            "hp": 0,
-            "mp": 3,
-            "sp": 0
-          },
-          "weights": [
-            1,
-            1,
-            1,
-            1,
-            1,
-            1
-          ]
-        }
-      ],
-      "effect": "BUFF",
-      "target": "SELF",
-      "requiredEquipment": "none",
-      "range": 0,
-      "cooldown": 0,
-      "shieldDuration": 0,
-      "status": "status.strength"
-    },
-    {
-      "id": "skill.spark",
-      "name": "spark (prototype)",
-      "prototypeCap": "F",
-      "scoring": "scoring.five_dice",
-      "attackStat": "stat.magic_attack",
-      "ranks": [
-        {
-          "rank": "F",
-          "order": 0,
-          "basePower": 2,
-          "pipScale": 1,
-          "cost": {
-            "hp": 0,
-            "mp": 5,
-            "sp": 0
-          },
-          "weights": [
-            1,
-            1,
-            1,
-            1,
-            1,
-            1
-          ]
-        }
-      ],
-      "effect": "DAMAGE",
-      "target": "HOSTILE",
-      "requiredEquipment": "none",
-      "range": 1,
-      "cooldown": 0,
-      "shieldDuration": 0
-    },
-    {
-      "id": "skill.blood",
-      "name": "blood (prototype)",
-      "prototypeCap": "F",
-      "scoring": "scoring.five_dice",
-      "attackStat": "stat.physical_attack",
-      "ranks": [
-        {
-          "rank": "F",
-          "order": 0,
-          "basePower": 2,
-          "pipScale": 1,
-          "cost": {
-            "hp": 4,
-            "mp": 2,
-            "sp": 2
-          },
-          "weights": [
-            1,
-            1,
-            1,
-            1,
-            1,
-            1
-          ]
-        }
-      ],
-      "effect": "DAMAGE",
-      "target": "HOSTILE",
-      "requiredEquipment": "none",
-      "range": 1,
-      "cooldown": 0,
-      "shieldDuration": 0
-    },
-    {
-      "id": "skill.enemy_strike",
-      "name": "enemy_strike (prototype)",
-      "prototypeCap": "F",
-      "scoring": "scoring.five_dice",
-      "attackStat": "stat.physical_attack",
-      "ranks": [
-        {
-          "rank": "F",
-          "order": 0,
-          "basePower": 4,
-          "pipScale": 0,
-          "cost": {
-            "hp": 0,
-            "mp": 0,
-            "sp": 3
-          },
-          "weights": [
-            1,
-            1,
-            1,
-            1,
-            1,
-            1
-          ]
-        }
-      ],
-      "effect": "DAMAGE",
-      "target": "HOSTILE",
-      "requiredEquipment": "none",
-      "range": 1,
-      "cooldown": 0,
-      "shieldDuration": 0,
-      "status": "status.weakened"
+      ]
     }
   ],
   "stats": [
@@ -499,30 +321,6 @@
       "minimum": 0,
       "maximum": 100,
       "terms": []
-    },
-    {
-      "id": "stat.regen_hp",
-      "stage": "DERIVED",
-      "base": 0,
-      "minimum": 0,
-      "maximum": 9999,
-      "terms": []
-    },
-    {
-      "id": "stat.regen_mp",
-      "stage": "DERIVED",
-      "base": 1,
-      "minimum": 0,
-      "maximum": 9999,
-      "terms": []
-    },
-    {
-      "id": "stat.regen_sp",
-      "stage": "DERIVED",
-      "base": 2,
-      "minimum": 0,
-      "maximum": 9999,
-      "terms": []
     }
   ],
   "statuses": [
@@ -533,14 +331,7 @@
       "duration": 3,
       "group": "group.strength",
       "priority": 1,
-      "timing": "OWNER_ACTIVATION_END",
-      "percent": 0,
-      "periodicDamage": 0,
-      "recovery": {
-        "hp": 0,
-        "mp": 0,
-        "sp": 0
-      }
+      "timing": "OWNER_ACTIVATION_END"
     },
     {
       "id": "status.weakened",
@@ -549,14 +340,7 @@
       "duration": 3,
       "group": "group.weakened",
       "priority": 1,
-      "timing": "OWNER_ACTIVATION_END",
-      "percent": 0,
-      "periodicDamage": 0,
-      "recovery": {
-        "hp": 0,
-        "mp": 0,
-        "sp": 0
-      }
+      "timing": "OWNER_ACTIVATION_END"
     },
     {
       "id": "status.elixir_penalty",
@@ -565,14 +349,7 @@
       "duration": 3,
       "group": "group.elixir_penalty",
       "priority": 1,
-      "timing": "OWNER_ACTIVATION_END",
-      "percent": 0,
-      "periodicDamage": 0,
-      "recovery": {
-        "hp": 0,
-        "mp": 0,
-        "sp": 0
-      }
+      "timing": "OWNER_ACTIVATION_END"
     }
   ],
   "potions": [

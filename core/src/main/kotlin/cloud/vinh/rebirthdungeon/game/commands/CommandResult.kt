@@ -11,7 +11,7 @@ data class CommandResult private constructor(val reason: Reason) {
         /** The destination cell is outside the current floor. */
         OUT_OF_BOUNDS,
         /** The destination cell is terrain the actor cannot enter. */
-        BLOCKED, OCCUPIED, HOSTILE_CONTACT, LOCKED_DOOR, NOT_PLAYER_TURN, STALE_SESSION, SAVE_REQUIRED
+        BLOCKED, OCCUPIED, HOSTILE_CONTACT, LOCKED_DOOR, NOT_PLAYER_TURN, STALE_SESSION, SAVE_REQUIRED, COMBAT_DISABLED, INVALID_PHASE, INVALID_DICE, INVALID_SKILL, INVALID_TARGET, EQUIPMENT_REQUIRED, COOLDOWN, INSUFFICIENT_HP, INSUFFICIENT_MP, INSUFFICIENT_SP, TERMINAL, ITEM_UNAVAILABLE
     }
 
     fun accepted(): Boolean = reason == Reason.ACCEPTED

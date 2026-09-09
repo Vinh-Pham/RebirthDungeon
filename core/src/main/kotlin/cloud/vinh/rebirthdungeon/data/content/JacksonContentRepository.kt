@@ -102,6 +102,12 @@ class JacksonContentRepository(private val source: ContentSource) : ContentRepos
             DiceScoring(unique(s.id, p), number(s.diceCount, "$p.diceCount", 5, 5), number(s.rerolls, "$p.rerolls", 2, 2), multipliers.toMap())
         }
         val skills = convert(d.skills, "skills") { s, p ->
+            // Content v1 is the movement-only catalog retained for historical replay fixtures.
+            if (version.content == 1) {
+                s.effect = s.effect ?: SkillEffect.DAMAGE; s.target = s.target ?: TargetKind.HOSTILE
+                s.requiredEquipment = s.requiredEquipment ?: "sword"; s.range = s.range ?: 1
+                s.cooldown = s.cooldown ?: 0; s.shieldDuration = s.shieldDuration ?: 0
+            }
             val ranks = rows(s.ranks, "$p.ranks").mapIndexed { i, r ->
                 val rp = "$p.ranks[$i]"
                 val weights = required(r.weights, "$rp.weights")
@@ -114,7 +120,11 @@ class JacksonContentRepository(private val source: ContentSource) : ContentRepos
             checkAt(ranks.map { it.rank }.distinct().size == ranks.size, "$p.ranks", "duplicate rank")
             val cap = text(s.prototypeCap, "$p.prototypeCap")
             checkAt(cap == ranks.last().rank, "$p.prototypeCap", "must equal last authored rank")
-            SkillDefinition(unique(s.id, p), text(s.name, "$p.name"), cap, id(s.scoring, "$p.scoring"), id(s.attackStat, "$p.attackStat"), ranks)
+            SkillDefinition(unique(s.id, p), text(s.name, "$p.name"), cap, id(s.scoring, "$p.scoring"), id(s.attackStat, "$p.attackStat"), ranks,
+                required(s.effect, "$p.effect"), required(s.target, "$p.target"), text(s.requiredEquipment, "$p.requiredEquipment").also {
+                    checkAt(it in listOf("none", "sword"), "$p.requiredEquipment", "unsupported equipment")
+                }, number(s.range, "$p.range", 0, 1), number(s.cooldown, "$p.cooldown", 0, 1000),
+                s.status?.let { id(it, "$p.status") }, number(s.shieldDuration, "$p.shieldDuration", 0, 1000))
         }
         val actors = convert(d.actors, "actors") { a, p ->
             val pools = resources(a.resources, "$p.resources")
@@ -123,9 +133,15 @@ class JacksonContentRepository(private val source: ContentSource) : ContentRepos
             ActorDefinition(unique(a.id, p), required(a.kind, "$p.kind"), pools, id(a.skill, "$p.skill"), text(a.rank, "$p.rank"), baseline)
         }
         checkAt(actors.any { it.kind == ActorKind.HERO } && actors.any { it.kind == ActorKind.ENEMY }, "$file.actors", "requires hero and enemy")
-        val statuses = convert(d.statuses, "statuses") { s, p -> StatusDefinition(unique(s.id, p), id(s.stat, "$p.stat"),
+        val statuses = convert(d.statuses, "statuses") { s, p ->
+            if (version.content == 1) {
+                s.percent = s.percent ?: 0; s.periodicDamage = s.periodicDamage ?: 0
+                s.recovery = s.recovery ?: ResourcesDto().apply { hp = 0; mp = 0; sp = 0 }
+            }
+            StatusDefinition(unique(s.id, p), id(s.stat, "$p.stat"),
             number(s.flat, "$p.flat", -1_000_000), number(s.duration, "$p.duration", 1, 1000), id(s.group, "$p.group"),
-            number(s.priority, "$p.priority"), required(s.timing, "$p.timing")) }
+            number(s.priority, "$p.priority"), required(s.timing, "$p.timing"), number(s.percent, "$p.percent", -10000, 10000),
+            number(s.periodicDamage, "$p.periodicDamage"), resources(s.recovery, "$p.recovery")) }
         val potions = convert(d.potions, "potions") { s, p ->
             val recovery = resources(s.recovery, "$p.recovery")
             checkAt(recovery.hp + recovery.mp + recovery.sp > 0 || s.status != null, p, "potion must have an effect")
@@ -172,14 +188,32 @@ class JacksonContentRepository(private val source: ContentSource) : ContentRepos
 
     private fun validateReferences(c: ContentCatalog, file: String) {
         fun ref(id: ContentId, keys: Set<ContentId>, p: String) = checkAt(id in keys, "$file.$p", "unknown reference ${id.value}")
+        if (c.version.content >= 2) {
+            listOf("str", "int", "dex", "wil", "luk", "max_hp", "max_mp", "max_sp", "physical_attack", "magic_attack",
+                "defense", "magic_defense", "protection", "magic_protection", "regen_hp", "regen_mp", "regen_sp").forEach {
+                ref(ContentId("stat.$it"), c.stats.keys, "stats.required")
+            }
+            listOf("sword", "fortify", "focus", "spark", "blood").forEach { ref(ContentId("skill.$it"), c.skills.keys, "skills.required") }
+            checkAt(c.stats.getValue(ContentId("stat.max_hp")).minimum >= 1, "$file.stats.max_hp.minimum", "HP capacity must be positive")
+        }
         c.skills.values.forEach { s ->
             ref(s.scoring, c.scoring.keys, "skills[${s.id.value}].scoring")
             ref(s.attackStat, c.stats.keys, "skills[${s.id.value}].attackStat")
+            s.status?.let { ref(it, c.statuses.keys, "skills[${s.id.value}].status") }
+            checkAt(if (s.effect == SkillEffect.DAMAGE) s.target == TargetKind.HOSTILE && s.range == 1
+                else s.target == TargetKind.SELF && s.range == 0, "$file.skills[${s.id.value}].target", "unsupported effect/target/range")
+            checkAt((s.effect == SkillEffect.SHIELD) == (s.shieldDuration > 0), "$file.skills[${s.id.value}].shieldDuration", "shield requires duration; other effects require zero")
+            checkAt(s.effect != SkillEffect.BUFF || s.status != null, "$file.skills[${s.id.value}].status", "buff requires status")
         }
         c.actors.values.forEach { a ->
             val p = "actors[${a.id.value}]"
             ref(a.skill, c.skills.keys, "$p.skill")
             checkAt(c.skills.getValue(a.skill).ranks.any { it.rank == a.rank }, "$file.$p.rank", "unknown skill rank ${a.rank}")
+            if (c.version.content >= 2 && a.kind == ActorKind.ENEMY) {
+                val skill = c.skills.getValue(a.skill)
+                checkAt(skill.effect == SkillEffect.DAMAGE && skill.requiredEquipment == "none" && skill.ranks.all { it.pipScale == 0 },
+                    "$file.$p.skill", "starter enemy requires an equipment-free damage skill without dice scaling")
+            }
             a.stats.forEach { (id, value) ->
                 ref(id, c.stats.keys, "$p.stats")
                 val stat = c.stats.getValue(id)

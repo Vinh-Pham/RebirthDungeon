@@ -3,6 +3,8 @@ package cloud.vinh.rebirthdungeon.game.content
 import cloud.vinh.rebirthdungeon.game.identity.ContentId
 
 enum class Combination { FIVE_OF_A_KIND, FOUR_OF_A_KIND, FULL_HOUSE, STRAIGHT, THREE_OF_A_KIND, TWO_PAIRS, ONE_PAIR, NONE }
+enum class SkillEffect { DAMAGE, SHIELD, BUFF }
+enum class TargetKind { HOSTILE, SELF }
 enum class Pool { HP, MP, SP }
 enum class ActorKind { HERO, ENEMY }
 enum class StatStage { PRIMARY, DERIVED }
@@ -28,10 +30,13 @@ data class StatRatio(val numerator: Int, val denominator: Int)
 class SkillRank internal constructor(val rank: String, val order: Int, val basePower: Int, val pipScale: Int, val cost: ResourceVector, weights: List<Int>) {
     val weights = frozenList(weights)
 }
-class SkillDefinition internal constructor(val id: ContentId, val name: String, val prototypeCap: String, val scoring: ContentId, val attackStat: ContentId, ranks: List<SkillRank>) {
+class SkillDefinition internal constructor(val id: ContentId, val name: String, val prototypeCap: String, val scoring: ContentId, val attackStat: ContentId, ranks: List<SkillRank>,
+    val effect: SkillEffect, val target: TargetKind, val requiredEquipment: String, val range: Int,
+    val cooldown: Int, val status: ContentId?, val shieldDuration: Int) {
     val ranks = frozenList(ranks)
 }
-data class StatusDefinition(val id: ContentId, val stat: ContentId, val flat: Int, val duration: Int, val group: ContentId, val priority: Int, val timing: StatusTiming)
+data class StatusDefinition(val id: ContentId, val stat: ContentId, val flat: Int, val duration: Int, val group: ContentId, val priority: Int, val timing: StatusTiming,
+    val percent: Int = 0, val periodicDamage: Int = 0, val recovery: ResourceVector = ResourceVector(0, 0, 0))
 data class PotionDefinition(val id: ContentId, val name: String, val recovery: ResourceVector, val status: ContentId?)
 data class EncounterDefinition(val id: ContentId, val enemy: ContentId, val loot: ContentId)
 data class LootEntry(val potion: ContentId, val probability: Int, val quantity: Int)

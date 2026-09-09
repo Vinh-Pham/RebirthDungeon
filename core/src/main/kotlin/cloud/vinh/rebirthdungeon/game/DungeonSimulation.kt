@@ -21,6 +21,7 @@ import ktx.artemis.with
 class DungeonSimulation private constructor(val session: RunSession, private val run: RunWorld) {
     private val world = World(WorldConfigurationBuilder().with(
         CommandValidationSystem(run), EnemyIntentSystem(run), MovementSystem(run), InteractionSystem(run),
+        DiceSystem(run), AbilitySystem(run), DamageSystem(run), StatusSystem(run),
         CleanupSystem(run), VisibilitySystem(run), TurnFinalizationSystem(run)
     ).build())
     private var processing = false
@@ -38,6 +39,12 @@ class DungeonSimulation private constructor(val session: RunSession, private val
         } finally { processing = false }
     }
     internal fun automatic(): CommandResult = apply(AutomaticCommand)
+    fun isDefeated(): Boolean = session.defeated
+    fun combatObservation(): CombatObservation {
+        check(!processing && !disposed)
+        return run.combat.observation()
+    }
+    fun canonicalState(): String = cloud.vinh.rebirthdungeon.game.replay.RunCanonical.state(baseExport()) + "|combat=" + run.combat.canonical()
     fun needsPlayerInput(): Boolean = session.scheduler.active?.let { run.isPlayer(it) } == true
     fun playerX() = run.cell(run.player()).x
     fun playerY() = run.cell(run.player()).y
@@ -55,6 +62,10 @@ class DungeonSimulation private constructor(val session: RunSession, private val
             session.remembered, session.visible, actors, events)
     }
     fun restoreExport(): RunRestore {
+        check(!session.combatEnabled) { "Combat checkpoint encoding is gated until Phase 5; refusing a lossy save" }
+        return baseExport()
+    }
+    private fun baseExport(): RunRestore {
         check(!processing && !disposed)
         return RunRestore(session.runId, session.seed, session.content.version, session.floorIndex, session.generatorVersion,
             session.generationAttempt, session.nextEntityId, session.commandCount, session.turnCount, session.eventCount,
@@ -78,12 +89,14 @@ class DungeonSimulation private constructor(val session: RunSession, private val
             }
             run.entities[a.id.value] = e
             session.grid.place(a.id, a.cell)
+            if (session.combatEnabled) run.combat.install(a.id)
         }
         run.refreshVisibility()
     }
     companion object {
         fun create(floor: FloorMap, spawnX: Int, spawnY: Int, session: RunSession,
             enemies: List<ActorState> = emptyList(), generationAttempt: Int = 0): DungeonSimulation {
+            require(!session.combatEnabled || session.content.version.content >= 2) { "Combat requires authored content v2" }
             check(!session.initialized()) { "RunSession already owns a World" }
             val hero = session.content.actors.getValue(ContentId("actor.hero"))
             val actors = listOf(ActorState(EntityId(1), hero.id, Cell(spawnX, spawnY), true, false, true, 8, hero.resources.hp, hero.resources.hp)) + enemies

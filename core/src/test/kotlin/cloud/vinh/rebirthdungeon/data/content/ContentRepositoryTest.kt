@@ -113,7 +113,7 @@ class ContentRepositoryTest {
     @Test fun catalogAndObservedEventsAreDetachedAndRunPinsInputs() {
         val catalog = load().catalog
         assertThrows(UnsupportedOperationException::class.java) { (catalog.skills as MutableMap).clear() }
-        val rank = catalog.skills.values.single().ranks.first()
+        val rank = catalog.skills.getValue(ContentId("skill.sword")).ranks.first()
         assertThrows(UnsupportedOperationException::class.java) { (rank.weights as MutableList)[0] = 9 }
         assertThrows(UnsupportedOperationException::class.java) { (catalog.actors.values.first().stats as MutableMap).clear() }
         val run = RunSession(42, catalog)
@@ -132,4 +132,17 @@ class ContentRepositoryTest {
             assertEquals(1L, snapshot.events.single().sequence)
         } finally { simulation.dispose() }
     }
+    @Test fun validatesAuthoredCombatFieldsAndUnsupportedEnemyEffects() {
+        invalid("effect") { it.row("skills").remove("effect") }
+        invalid("effect") { it.row("skills").put("effect", "HEAL_UNAUTHORED") }
+        invalid("requiredEquipment") { it.row("skills").put("requiredEquipment", "gun") }
+        invalid("target") { it.row("skills").put("target", "SELF") }
+        invalid("shieldDuration") { it.row("skills").put("shieldDuration", 1) }
+        invalid("cooldown") { it.row("skills").put("cooldown", -1) }
+        invalid("status") { it.row("skills").put("status", "status.missing") }
+        invalid("periodicDamage") { it.row("statuses").put("periodicDamage", -1) }
+        invalid("percent") { it.row("statuses").put("percent", 10001) }
+        invalid("skill") { (it.get("actors")[1] as ObjectNode).put("skill", "skill.sword") }
+    }
+
 }

@@ -15,6 +15,7 @@ internal class RunWorld(val session: RunSession, val pathfinder: Pathfinder, val
     lateinit var world: World
     val entities = TreeMap<Long, Int>()
     val pending = PendingCommand()
+    val combat = CombatRuntime(this)
     private var lastVisionCell: Cell? = null
     private var lastOpacity = -1L
     val grid get() = session.grid
@@ -33,6 +34,7 @@ internal class RunWorld(val session: RunSession, val pathfinder: Pathfinder, val
     }
     fun reject(reason: CommandResult.Reason) { pending.result = CommandResult.rejected(reason) }
     fun validate() {
+        if (session.defeated) return reject(CommandResult.Reason.TERMINAL)
         val active = scheduler.active ?: return reject(CommandResult.Reason.NOT_PLAYER_TURN)
         pending.actor = active
         val automatic = pending.command == AutomaticCommand
@@ -41,6 +43,9 @@ internal class RunWorld(val session: RunSession, val pathfinder: Pathfinder, val
         validateIntent(active, checkNotNull(pending.command))
     }
     private fun validateIntent(actor: EntityId, command: RunCommand) {
+        if (session.combatEnabled && isPlayer(actor) && combat.validate(actor, command)) return
+        if (!session.combatEnabled && command !is MoveCommand && command != WaitCommand)
+            return reject(CommandResult.Reason.COMBAT_DISABLED)
         if (command == WaitCommand) { pending.result = CommandResult.ACCEPTED; return }
         val move = command as? MoveCommand ?: return reject(CommandResult.Reason.NOT_PLAYER_TURN)
         if (!((move.dx == 0 && move.dy in listOf(-1, 1)) || (move.dy == 0 && move.dx in listOf(-1, 1))))
@@ -48,6 +53,9 @@ internal class RunWorld(val session: RunSession, val pathfinder: Pathfinder, val
         val from = cell(actor); val target = Cell(from.x + move.dx, from.y + move.dy)
         if (!grid.inside(target.x, target.y)) return reject(CommandResult.Reason.OUT_OF_BOUNDS)
         val occupant = grid.occupant(target.x, target.y)
+        if (occupant != null && session.combatEnabled && isPlayer(actor) && !isPlayer(occupant)) {
+            pending.hostile = occupant; pending.finishesActivation = false; pending.result = CommandResult.ACCEPTED; return
+        }
         if (occupant != null) return reject(if (isPlayer(actor) != isPlayer(occupant)) CommandResult.Reason.HOSTILE_CONTACT else CommandResult.Reason.OCCUPIED)
         val tile = grid.tile(target.x, target.y)
         if (tile == FloorMap.LOCKED_DOOR) return reject(CommandResult.Reason.LOCKED_DOOR)
@@ -64,13 +72,16 @@ internal class RunWorld(val session: RunSession, val pathfinder: Pathfinder, val
         val canSee = fov.visible(grid, from, state.vision)[grid.index(goal.x, goal.y)]
         val blockers = entities.keys.map(::EntityId).filter { it != actor && actor(it).blocks }.map(::cell)
         val next = if (canSee) pathfinder.nextStep(grid, from, goal, blockers) else null
-        // Contact is reserved for Phase 4. AI idles when adjacent or unable to pursue.
+        if (session.combatEnabled && kotlin.math.abs(from.x - goal.x) + kotlin.math.abs(from.y - goal.y) == 1) {
+            pending.hostile = player(); return
+        }
+        // Movement-only sessions preserve the Phase 3 checkpoint contract.
         if (next == null || next == goal) { pending.target = null; return }
         validateIntent(actor, MoveCommand(next.x - from.x, next.y - from.y))
         if (!pending.accepted()) { pending.result = CommandResult.ACCEPTED; pending.target = null; pending.opensDoor = false }
     }
     private fun seen(cell: Cell): Boolean = session.visible[grid.index(cell.x, cell.y)]
-    private fun emit(event: DomainEvent, observed: Boolean) {
+    fun emit(event: DomainEvent, observed: Boolean) {
         check(session.eventCount < Long.MAX_VALUE)
         val ordered = OrderedEvent(++session.eventCount, event)
         pending.events.add(ordered)
@@ -87,6 +98,7 @@ internal class RunWorld(val session: RunSession, val pathfinder: Pathfinder, val
     }
     fun interact() {
         if (!pending.accepted()) return
+        if (!pending.finishesActivation || pending.command !is MoveCommand && pending.command != WaitCommand && pending.command != AutomaticCommand) return
         val id = checkNotNull(pending.actor)
         if (pending.opensDoor) {
             val target = checkNotNull(pending.target); grid.openDoor(target)
@@ -101,14 +113,16 @@ internal class RunWorld(val session: RunSession, val pathfinder: Pathfinder, val
         if (!pending.accepted()) return
         val dead = entities.keys.map(::EntityId).filter { actor(it).hp <= 0 }
         for (id in dead) {
-            // Phase 3 has no damage system; this supports cleanup of non-player actors.
-            check(!isPlayer(id)) { "Player defeat requires Phase 4 outcome policy" }
+            if (isPlayer(id)) {
+                if (!session.defeated) { grid.remove(id, cell(id)); session.defeated = true }
+                continue // Retain identity and the final observation; HP remains owned by Health.
+            }
             val state = actor(id)
             if (state.blocks) grid.remove(id, state.cell)
-            scheduler.remove(id)
             emit(ActorRemoved(id, state.cell), seen(state.cell))
             world.delete(entity(id)); entities.remove(id.value)
         }
+        scheduler.removeAll(dead.toSet())
     }
     fun visibility() {
         if (!pending.accepted()) return
@@ -127,7 +141,13 @@ internal class RunWorld(val session: RunSession, val pathfinder: Pathfinder, val
     fun finalizeTurn() {
         if (!pending.accepted()) return
         if (pending.command != AutomaticCommand) session.commandCount++
+        if (!pending.finishesActivation) return
         session.turnCount++
+        if (session.combatEnabled) {
+            val actor = checkNotNull(pending.actor)
+            emit(ActivationEnded(actor), actor.value in entities && (isPlayer(actor) || seen(cell(actor))))
+            combat.evaluateOutcome()
+        }
         // Cleanup can remove the acting entity. Never finalize the newly selected actor in its place.
         if (scheduler.active == pending.actor) scheduler.finish()
         pending.command = null

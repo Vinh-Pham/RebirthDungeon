@@ -4,6 +4,8 @@ Combat uses **five six-sided dice** and Dicero-style decisions: roll, keep usefu
 
 This is a base design for planned gameplay, not implemented combat. It complements [skills.md](skills.md), [character.md](character.md), [stats.md](stats.md), the [game plan](../game-plan.md), and the [project phases](../project-phases.md). Five dice, skill-dependent rolls, and rank-based base damage are requirements. Reroll limits, scoring values, formulas, and other defaults below are provisional; individual skill designs will refine them later.
 
+The [Phase 4 starter contract](../phase4-combat.md) authors the initial skill values, recovery/exhaustion policy, encounter scope and integration boundary for these rules.
+
 ## 1. Dicero reference and evidence
 
 Habby's official listing describes Dicero as a roguelite where dice unleash skills and players develop builds through skills and equipment. It does not publish a complete combat formula. [Official Google Play listing](https://play.google.com/store/apps/details?id=com.bailing.lark.roll.dev&hl=en).

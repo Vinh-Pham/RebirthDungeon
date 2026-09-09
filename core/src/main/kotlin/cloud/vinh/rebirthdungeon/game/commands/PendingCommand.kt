@@ -11,10 +11,13 @@ internal class PendingCommand {
     var actor: EntityId? = null
     var target: Cell? = null
     var opensDoor = false
+    var finishesActivation = true
+    var hostile: EntityId? = null
     val events = ArrayList<OrderedEvent>()
     val observedEvents = ArrayList<OrderedEvent>()
     fun reset(command: RunCommand) {
         this.command = command; result = null; actor = null; target = null; opensDoor = false
+        finishesActivation = true; hostile = null
         events.clear(); observedEvents.clear()
     }
     fun accepted() = result?.accepted() == true

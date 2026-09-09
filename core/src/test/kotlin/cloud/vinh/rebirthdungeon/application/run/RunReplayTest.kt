@@ -119,13 +119,17 @@ class RunReplayTest {
 
     @Test fun recordedDesktopCheckpointRemainsReadableAndContinuesDeterministically() {
         val text = checkNotNull(javaClass.getResourceAsStream("/saves/movement-v1.json")).bufferedReader().use { it.readText() }
+        val legacy = cloud.vinh.rebirthdungeon.data.content.JacksonContentRepository {
+            checkNotNull(javaClass.getResourceAsStream("/content/v1/$it")).bufferedReader().use { reader -> reader.readText() }
+        }.load().catalog
+        val legacyRepository = { AlternatingCheckpointRepository(MemoryStorage()) { DungeonSimulation.validateRestore(it, legacy) } }
         val codec = CheckpointCodec(); val (revision, payload) = codec.open(text)
         assertEquals(13L, revision)
         val state = codec.decode(payload)
         assertEquals(4L, state.commandCount); assertEquals(8L, state.turnCount); assertEquals(400L, state.scheduler.tick)
-        val a = DungeonSimulation.restore(state, Phase3Fixtures.content)
-        val b = DungeonSimulation.restore(codec.decode(codec.encode(state)), Phase3Fixtures.content)
-        val ca = RunController(a, repository(MemoryStorage()), 1); val cb = RunController(b, repository(MemoryStorage()), 2)
+        val a = DungeonSimulation.restore(state, legacy)
+        val b = DungeonSimulation.restore(codec.decode(codec.encode(state)), legacy)
+        val ca = RunController(a, legacyRepository(), 1); val cb = RunController(b, legacyRepository(), 2)
         try {
             repeat(3) {
                 ca.submit(WaitCommand, 1); cb.submit(WaitCommand, 2)

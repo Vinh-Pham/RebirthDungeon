@@ -4,6 +4,8 @@ Stats describe a character's resources, attributes, attack power, and defenses. 
 
 This is a planned design inspired by [Mabinogi's Stats documentation](https://wiki.mabinogiworld.com/view/Stats). It complements [character.md](character.md), [skills.md](skills.md), and [battle.md](battle.md). The stat sources and resource costs requested above are requirements. Formulas, stacking, durations, and other defaults below are Rebirth Dungeon proposals, not implemented systems or an exact copy of Mabinogi's rules.
 
+The [Phase 4 starter contract](../phase4-combat.md) authors the initial skill values, recovery/exhaustion policy, encounter scope and integration boundary for these rules.
+
 ## 1. Mabinogi reference
 
 Mabinogi distinguishes base stats earned through progression from modifiers provided by equipment and effects. It also separates current resource pools from attributes and derived combat statistics.
