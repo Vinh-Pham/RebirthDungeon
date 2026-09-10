@@ -97,7 +97,7 @@ internal class CombatRuntime(private val run: RunWorld) {
             else -> reject(CommandResult.Reason.INVALID_PHASE)
         }
     }
-    private fun selectionFailure(id: EntityId, skill: ContentId, target: EntityId): CommandResult.Reason? {
+    fun selectionFailure(id: EntityId, skill: ContentId, target: EntityId): CommandResult.Reason? {
         val loadout = get<AbilityLoadout>(id)
         val definition = content.skills[skill] ?: return CommandResult.Reason.INVALID_SKILL
         val rankName = loadout.learned[skill] ?: return CommandResult.Reason.INVALID_SKILL
@@ -228,10 +228,7 @@ internal class CombatRuntime(private val run: RunWorld) {
             when (ability.definition.effect) {
                 SkillEffect.DAMAGE -> applyDamage(id, target, resolve(ability, if (run.isPlayer(id)) hand.faces.toList() else null))
                 SkillEffect.SHIELD -> {
-                    val score = DiceRules.score(hand.faces.toList())
-                    val multiplier = content.scoring.getValue(ability.definition.scoring).multipliers.getValue(score.combination)
-                    val amount = DamageRules.resolve(ability.inputs.copy(attack = 0, defense = 0, protection = 0), score.pips,
-                        multiplier, 0, Int.MAX_VALUE).hpDamage
+                    val amount = AbilityPreviewRules.shield(ability, hand.faces.toList(), content.scoring.getValue(ability.definition.scoring))
                     get<Shield>(id).apply { this.amount = amount; remaining = ability.definition.shieldDuration; skipBoundary = true }
                     emit(ShieldGranted(id, amount, ability.definition.shieldDuration), id)
                 }
@@ -314,9 +311,42 @@ internal class CombatRuntime(private val run: RunWorld) {
     }
     fun observation(): CombatObservation {
         check(session.combatEnabled)
-        return CombatObservation(session.encounterOutcome, session.defeated, run.entities.keys.map(::EntityId).filter {
+        // Encounter lifetime spans multiple hands. Preserve older checkpoints with a standalone open hand.
+        val inBattle = !session.defeated && (session.encounterParticipants.isNotEmpty() || get<DiceHand>(run.player()).open)
+        return CombatObservation(session.encounterOutcome, session.defeated, inBattle, run.entities.keys.map(::EntityId).filter {
             run.isPlayer(it) || session.visible[run.grid.index(run.cell(it).x, run.cell(it).y)]
         }.map(::actorObservation))
+    }
+    fun export(): CombatRestore? = if (!session.combatEnabled) null else CombatRestore(session.defeated,
+        session.encounterOutcome, session.encounterParticipants.toList(), run.entities.keys.map(::EntityId).map(::actorObservation))
+    fun restore(state: CombatRestore) {
+        require(state.actors.map { it.id }.toSet() == run.entities.keys.map(::EntityId).toSet())
+        require(state.actors.map { it.id }.distinct().size == state.actors.size)
+        session.defeated = state.defeated; session.encounterOutcome = state.outcome
+        session.encounterParticipants.addAll(state.participants)
+        state.actors.forEach { a ->
+            require(a.faces.size == 5 && a.kept.size == 5 && a.rerolls in 0..2)
+            require(a.faces.all { it in (if (a.locked == null) 0..0 else 1..6) })
+            require(a.locked == null || a.open && a.selection == a.locked.selection)
+            require(a.reserved == (a.locked?.cost ?: ResourceVector(0, 0, 0)))
+            require(a.current.hp == get<Health>(a.id).current && a.maximum.hp == get<Health>(a.id).maximum)
+            require(a.current.mp in 0..a.maximum.mp && a.current.sp in 0..a.maximum.sp)
+            require(a.statuses.all { it.definition in content.statuses && it.remaining > 0 })
+            require(a.learned.all { (id, rank) -> content.skills[id]?.ranks?.any { it.rank == rank } == true })
+            get<Stats>(a.id).apply { baseline = a.baseline; modifiers = a.modifiers; effective = a.stats }
+            get<AbilityLoadout>(a.id).apply { learned = a.learned; equipment = a.equipment }
+            get<ResourcePools>(a.id).apply {
+                mp = a.current.mp; sp = a.current.sp; maxMp = a.maximum.mp; maxSp = a.maximum.sp
+                reserved = a.reserved; costFlat = a.costFlat; costPercent = a.costPercent
+            }
+            get<DiceHand>(a.id).apply {
+                open = a.open; selection = a.selection; locked = a.locked; rerolls = a.rerolls
+                a.faces.forEachIndexed { i, face -> faces[i] = face }; a.kept.forEachIndexed { i, keep -> kept[i] = keep }
+            }
+            get<Shield>(a.id).apply { amount = a.shield; remaining = a.shieldDuration; skipBoundary = a.shieldSkipsBoundary }
+            get<StatusSet>(a.id).entries.addAll(a.statuses)
+            get<Cooldowns>(a.id).entries.putAll(a.cooldowns)
+        }
     }
     fun canonical(): String {
         if (!session.combatEnabled) return "disabled"

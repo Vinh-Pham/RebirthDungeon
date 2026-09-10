@@ -24,6 +24,7 @@ class CheckpointCodec {
     }
     fun encode(state: RunRestore): String {
         val dto = RunCheckpointDto().apply {
+            combat = CombatCheckpointCodec.encode(state.combat)
             runId = state.runId; seed = java.lang.Long.toHexString(state.seed).padStart(16, '0')
             contentVersion = state.version.content; rulesVersion = state.version.rules; contentSchema = state.version.schema
             floorIndex = state.floorIndex; generatorVersion = state.generatorVersion; generationAttempt = state.generationAttempt
@@ -52,7 +53,7 @@ class CheckpointCodec {
         val rules = root.get("rulesVersion")
         if (schema?.isLong == true && schema.asLong() != 1L || rules?.isLong == true && rules.asLong() != 1L)
             throw UnsupportedCheckpoint("Unsupported content schema/rules version")
-        fields(root, "run", "runId seed contentVersion rulesVersion contentSchema floorIndex generatorVersion generationAttempt nextEntityId commandCount turnCount eventCount reachedExit width height tiles explored remembered actors tick activeActor nextSequence queue random")
+        fields(root, "run", "runId seed contentVersion rulesVersion contentSchema floorIndex generatorVersion generationAttempt nextEntityId commandCount turnCount eventCount reachedExit width height tiles explored remembered actors tick activeActor nextSequence queue random" + if (root.has("combat")) " combat" else "")
         root.get("actors").forEach { fields(it, "actor", "id definition x y player ai blocks vision hp maxHp") }
         root.get("queue").forEach { fields(it, "turn", "actor dueTick insertionSequence") }
         root.get("random").forEach { fields(it, "random", "stream algorithm format words") }
@@ -67,7 +68,7 @@ class CheckpointCodec {
             d.floorIndex, d.generatorVersion, d.generationAttempt, long(d.nextEntityId), long(d.commandCount), long(d.turnCount), long(d.eventCount),
             d.reachedExit, FloorMap(d.width, d.height, d.tiles), actors, d.explored, d.remembered,
             SchedulerState(long(d.tick), d.activeActor.takeIf { it.isNotEmpty() }?.let { EntityId(long(it)) }, long(d.nextSequence),
-                d.queue.map { TurnEntry(EntityId(long(it.actor)), long(it.dueTick), long(it.insertionSequence)) }), random.toMap())
+                d.queue.map { TurnEntry(EntityId(long(it.actor)), long(it.dueTick), long(it.insertionSequence)) }), random.toMap(), CombatCheckpointCodec.decode(d.combat))
     }
     fun envelope(revision: Long, payload: String): String = json().toJson(CheckpointEnvelopeDto().apply {
         this.revision = revision.toString(); this.payload = payload; checksum = checksum(payload)

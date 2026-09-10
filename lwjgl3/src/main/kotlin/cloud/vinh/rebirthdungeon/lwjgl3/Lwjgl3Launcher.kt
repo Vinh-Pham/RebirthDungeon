@@ -21,6 +21,7 @@ object Lwjgl3Launcher {
         get() {
             val configuration = Lwjgl3ApplicationConfiguration()
             configuration.setTitle("RebirthDungeon")
+            configuration.setPauseWhenLostFocus(true)
             // Vsync limits the frames per second to what your hardware can display, and helps eliminate
             // screen tearing. This setting doesn't always work on Linux, so the line after is a safeguard.
             configuration.useVsync(true)

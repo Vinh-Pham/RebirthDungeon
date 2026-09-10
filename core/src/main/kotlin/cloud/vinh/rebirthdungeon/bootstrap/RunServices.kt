@@ -39,19 +39,16 @@ class RunServices(private val catalog: ContentCatalog) {
         active?.close(); active = replacement
         return replacement
     }
-    /** Checkpoints written by another content/rules version are not
-     * restorable; the repository keeps those files untouched, so callers get
-     * "no state" and start fresh instead of wedging on entry. A later
-     * checkpoint surfaces the preserved-file conflict through the controller's
-     * retryable save-failure lane. */
-    private fun restorable(): RunRestore? =
-        try { repository.load() } catch (stale: UnsupportedCheckpoint) { null }
+    private fun restorable(): RunRestore? = repository.load()
     fun start(seed: Long, generated: FloorGenerationResult.Success): RunController {
+        active?.let { require(it.failure == null && (it.combatObservation()?.defeated == true || CombatAcceptance.enabled)) {
+            "Finish the active run before starting another"
+        } }
         val enemy = catalog.actors.getValue(ContentId("actor.enemy"))
         val actors = generated.enemy?.let { listOf(ActorState(EntityId(2), enemy.id, Cell(it.x, it.y), false, true, true, 6,
             enemy.resources.hp, enemy.resources.hp)) } ?: emptyList()
         val floor = generated.floor
-        val session = RunSession(seed, catalog, runId = "run.${java.util.UUID.randomUUID()}")
+        val session = RunSession(seed, catalog, runId = "run.${java.util.UUID.randomUUID()}", combatEnabled = true)
         val simulation = DungeonSimulation.create(floor.floor, floor.spawnX, floor.spawnY, session, actors, generated.attempt)
         val controller = RunController(simulation, repository, ++token)
         controller.startOrResume()

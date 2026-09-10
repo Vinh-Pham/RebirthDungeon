@@ -33,7 +33,7 @@ This project was generated with [gdx-liftoff](https://github.com/libgdx/gdx-lift
   - `xcodebuild -version` — record the Xcode version used.
   - `xcrun simctl list devices available` — pick an iPhone simulator and note its UDID (pin the UDID in the steps below whenever more than one simulator is booted; `booted` is ambiguous otherwise).
   - `./gradlew :ios:launchIPhoneSimulator` — builds AOT, links and signs `ios/build/robovm.tmp/IOSLauncher.app`. On Xcode 27+ the plugin's final "open Simulator" step fails (`Unable to find application named 'Simulator'` — Simulator.app was replaced by DeviceHub.app); the AOT/link result before that message is the build evidence.
-  - Install and launch the built app directly: `xcrun simctl install <UDID> ios/build/robovm.tmp/IOSLauncher.app` then `xcrun simctl launch <UDID> cloud.vinh.rebirthdungeon`. Open DeviceHub (`$(xcode-select -p)/Applications/DeviceHub.app`) to see and composite the simulator screen; capture frames with `xcrun simctl io <UDID> screenshot`.
+  - Install and launch the built app directly: `xcrun simctl install <UDID> ios/build/robovm.tmp/IOSLauncher.app` then `xcrun simctl launch <UDID> cloud.vinh.rebirthdungeon`. Open DeviceHub (`$(xcode-select -p)/../Applications/DeviceHub.app`) to see and composite the simulator screen; capture frames with `xcrun simctl io <UDID> screenshot`.
   - `ScreenUtils.getFrameBufferPixmap` (in-app framebuffer reads) returns an incomplete frame on the MetalANGLE backend — do not use it as iOS visual evidence; use the simulator composite instead.
   - Device builds use `./gradlew :ios:launchIOSDevice` with signing configured in Xcode; `createIPA` produces the archive.
 - Successful `:ios:compileKotlin` on any host is **not** an iOS build and must not be reported as one.
@@ -91,3 +91,5 @@ The dungeon now supports cardinal movement, opening doors, waiting, fog and dete
 Accepted actions are checkpointed automatically. Enter Dungeon resumes the active/saved run; Reload reconstructs the saved map and turn state. New run starts a fresh floor. A save error blocks more actions until Retry save succeeds. Desktop saves are in `~/.rebirthdungeon/saves`; mobile uses its local `saves` directory. The two alternating slots must remain together for recovery. Future-version or wholly invalid saves are preserved and reported instead of silently reset.
 
 For an isolated desktop smoke run, set `REBIRTH_CHECKPOINT_DIR` to an absolute temporary directory and `REBIRTH_AUTODEMO=1` when running `./gradlew :lwjgl3:run`. The demo exercises commands and disk reload, writes screenshots, and exits after two dungeon entries. See [Phase 3 movement/checkpoint contracts](docs/phase3-movement.md) for the format, prototype limits and validation scope.
+
+Current combat implementation and verification limits are recorded in [Phase 5](docs/phase5-combat.md). In particular, a simulator PID is not gameplay acceptance: the current iOS runtime fails during Jackson initialization.

@@ -23,6 +23,7 @@ import ktx.assets.load
  * hands fresh screen instances to the inherited current-screen slot and keeps
  * the dispose-on-navigate contract through [navigateTo]. */
 class RebirthDungeon : KtxGame<KtxScreen>() {
+    val presentationSettings = cloud.vinh.rebirthdungeon.presentation.hud.PresentationSettings()
     private var assets: AssetManager? = null
     private var runServices: cloud.vinh.rebirthdungeon.bootstrap.RunServices? = null
     fun runs() = checkNotNull(runServices)
@@ -50,6 +51,7 @@ class RebirthDungeon : KtxGame<KtxScreen>() {
      * and surfaces failures before any gameplay screen is activated. */
     private fun queueCoreAssets() {
         val manager = assets()
+        manager.load<com.badlogic.gdx.audio.Sound>("audio/combat.wav")
         manager.load<TextureAtlas>(DUNGEON_ATLAS)
         manager.load<TextureAtlas>(UI_SKIN_ATLAS)
         // The skin must bind to its atlas at load time, so it needs the

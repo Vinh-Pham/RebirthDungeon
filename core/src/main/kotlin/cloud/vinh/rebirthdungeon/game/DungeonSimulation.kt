@@ -39,6 +39,7 @@ class DungeonSimulation private constructor(val session: RunSession, private val
         } finally { processing = false }
     }
     internal fun automatic(): CommandResult = apply(AutomaticCommand)
+    fun selectionFailure(skill: ContentId, target: EntityId) = run.combat.selectionFailure(run.player(), skill, target)
     fun isDefeated(): Boolean = session.defeated
     fun combatObservation(): CombatObservation {
         check(!processing && !disposed)
@@ -62,7 +63,7 @@ class DungeonSimulation private constructor(val session: RunSession, private val
             session.remembered, session.visible, actors, events)
     }
     fun restoreExport(): RunRestore {
-        check(!session.combatEnabled) { "Combat checkpoint encoding is gated until Phase 5; refusing a lossy save" }
+
         return baseExport()
     }
     private fun baseExport(): RunRestore {
@@ -70,14 +71,14 @@ class DungeonSimulation private constructor(val session: RunSession, private val
         return RunRestore(session.runId, session.seed, session.content.version, session.floorIndex, session.generatorVersion,
             session.generationAttempt, session.nextEntityId, session.commandCount, session.turnCount, session.eventCount,
             session.reachedExit, floor, run.entities.keys.map(::EntityId).map(run::actor), session.explored, session.remembered,
-            session.scheduler.capture(), session.random.capture())
+            session.scheduler.capture(), session.random.capture(), run.combat.export())
     }
     fun dispose() { if (!disposed) { world.dispose(); disposed = true } }
     private fun install(actors: List<ActorState>) {
         require(actors.count { it.player } == 1 && actors.map { it.id }.distinct().size == actors.size)
         actors.sortedBy { it.id.value }.forEach { a ->
             require(a.definition in session.content.actors && a.vision in 1..64 && a.maxHp > 0 && a.hp in 0..a.maxHp)
-            require(!a.player || a.hp > 0)
+            require(!a.player || a.hp > 0 || session.defeated)
             require(a.player != a.ai && a.blocks) { "Phase 3 actors must be blocking player or AI" }
             val e = world.entity {
                 with<StableIdentity> { value = a.id.value; definition = a.definition.value }
@@ -88,7 +89,7 @@ class DungeonSimulation private constructor(val session: RunSession, private val
                 if (a.player) with<PlayerControlled>() else with<AiControlled>()
             }
             run.entities[a.id.value] = e
-            session.grid.place(a.id, a.cell)
+            if (!a.player || !session.defeated) session.grid.place(a.id, a.cell)
             if (session.combatEnabled) run.combat.install(a.id)
         }
         run.refreshVisibility()
@@ -116,7 +117,7 @@ class DungeonSimulation private constructor(val session: RunSession, private val
         fun validateRestore(state: RunRestore, content: ContentCatalog) {
             require(state.version == content.version) { "Checkpoint content/rules version does not match" }
             require(state.floorIndex >= 0 && state.generatorVersion == 1 && state.generationAttempt >= 0)
-            require(state.commandCount >= 0 && state.turnCount >= state.commandCount && state.eventCount >= state.turnCount)
+            require(state.commandCount >= 0 && state.turnCount >= (if (state.combat == null) state.commandCount else 0) && state.eventCount >= state.turnCount)
             require(state.eventCount < Long.MAX_VALUE - 4096 && state.turnCount < Long.MAX_VALUE - 4096)
             require(state.scheduler.tick <= Long.MAX_VALUE - 200 && state.scheduler.nextSequence < Long.MAX_VALUE - 4096)
             require(state.scheduler.tick % 100 == 0L && state.scheduler.queue.all { it.dueTick % 100 == 0L })
@@ -126,29 +127,31 @@ class DungeonSimulation private constructor(val session: RunSession, private val
             val explored = state.explored()
             state.remembered().forEachIndexed { i, tile -> require(if (explored[i]) tile in FloorMap.WALL..FloorMap.LOCKED_DOOR else tile == -1) }
             val scheduled = state.scheduler.queue.map { it.actor } + listOfNotNull(state.scheduler.active)
-            require(scheduled.toSet() == state.actors.map { it.id }.toSet() && scheduled.size == state.actors.size)
-            require(state.scheduler.active != null)
+            require(scheduled.toSet() == state.actors.filter { it.hp > 0 }.map { it.id }.toSet() && scheduled.size == state.actors.count { it.hp > 0 })
+            require(state.scheduler.active != null || state.combat?.defeated == true)
             val grid = DungeonGrid(state.floor)
             require(state.actors.count { it.player } == 1)
             require(state.runId.matches(Regex("[a-zA-Z0-9_.-]{1,100}")))
             state.actors.forEach { a ->
                 require(a.definition in content.actors && a.vision in 1..64 && a.maxHp > 0 && a.hp in 0..a.maxHp)
-                require(a.player != a.ai && a.blocks && a.hp > 0)
+                require(a.player != a.ai && a.blocks && (a.hp > 0 || (a.player && state.combat?.defeated == true)))
                 grid.place(a.id, a.cell)
             }
+            state.combat?.validate(state, content)
             TurnScheduler.restore(state.scheduler)
             RunRandomStreams.restore(state.random)
         }
         fun restore(state: RunRestore, content: ContentCatalog): DungeonSimulation {
             validateRestore(state, content)
-            val session = RunSession(state.seed, content, RunRandomStreams.restore(state.random), state.runId)
+            val session = RunSession(state.seed, content, RunRandomStreams.restore(state.random), state.runId, combatEnabled = state.combat != null)
+            session.defeated = state.combat?.defeated ?: false
             session.grid = DungeonGrid(state.floor); session.scheduler = TurnScheduler.restore(state.scheduler)
             session.floorIndex = state.floorIndex; session.generatorVersion = state.generatorVersion; session.generationAttempt = state.generationAttempt
             session.nextEntityId = state.nextEntityId; session.commandCount = state.commandCount; session.turnCount = state.turnCount
             session.eventCount = state.eventCount; session.reachedExit = state.reachedExit
             session.explored = state.explored(); session.remembered = state.remembered(); session.visible = BooleanArray(state.floor.width * state.floor.height)
             val result = DungeonSimulation(session, RunWorld(session, SquidPathfinder(), SquidFieldOfView()))
-            try { result.install(state.actors) } catch (failure: Exception) { result.dispose(); throw failure }
+            try { result.install(state.actors); state.combat?.let { result.run.combat.restore(it) } } catch (failure: Exception) { result.dispose(); throw failure }
             return result
         }
     }

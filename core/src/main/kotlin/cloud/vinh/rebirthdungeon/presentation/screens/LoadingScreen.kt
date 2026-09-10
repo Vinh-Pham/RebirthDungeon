@@ -83,6 +83,13 @@ class LoadingScreen(private val game: RebirthDungeon) : KtxScreen {
             persistDiagnostics(failure)
             failureMessage = failure.message ?: failure.toString()
             showFailure()
+        } catch (failure: LinkageError) {
+            // A backend can AOT-link successfully yet lack a JDK class used by a dependency.
+            // Keep the managed error screen usable instead of entering with partial content.
+            error(failure, "LoadingScreen") { "platform runtime dependency unavailable" }
+            persistDiagnostics(failure)
+            failureMessage = "Platform runtime dependency unavailable: ${failure.message}"
+            showFailure()
         }
     }
 

@@ -7,7 +7,7 @@ import cloud.vinh.rebirthdungeon.game.content.*
 import cloud.vinh.rebirthdungeon.game.ecs.components.*
 import cloud.vinh.rebirthdungeon.game.identity.*
 
-class CombatObservation(val outcome: EncounterOutcome?, val defeated: Boolean, actors: List<CombatActorObservation>) {
+class CombatObservation(val outcome: EncounterOutcome?, val defeated: Boolean, val inBattle: Boolean, actors: List<CombatActorObservation>) {
     val actors = frozenList(actors)
 }
 class CombatActorObservation(val id: EntityId, val current: ResourceVector, val maximum: ResourceVector,

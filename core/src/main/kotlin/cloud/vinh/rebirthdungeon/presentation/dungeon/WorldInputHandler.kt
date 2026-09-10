@@ -7,8 +7,8 @@ import ktx.app.KtxInputAdapter
 import kotlin.math.abs
 import kotlin.math.floor
 
-/** Stage gets first refusal. Taps and swipes resolve on release, so one gesture produces one command. */
-class WorldInputHandler(private val viewport: Viewport, private val renderer: DungeonRenderer,
+/** Stage gets first refusal. Taps and swipes resolve on release, so swipes produce one step and clicks select a walking destination. */
+class WorldInputHandler(private val viewport: Viewport, private val destination: (Int, Int) -> Unit,
     private val wait: () -> Unit, private val sink: (Int, Int) -> Unit) : KtxInputAdapter {
     private var pointerId = -1
     private var startX = 0
@@ -42,9 +42,7 @@ class WorldInputHandler(private val viewport: Viewport, private val renderer: Du
             if (abs(dx) > abs(dy)) sink(if (dx > 0) 1 else -1, 0) else sink(0, if (dy < 0) 1 else -1)
         } else {
             val point = viewport.unproject(Vector3(screenX.toFloat(), screenY.toFloat(), 0f))
-            val x = floor(point.x / DungeonRenderer.TILE_SIZE).toInt() - renderer.playerCellX
-            val y = floor(point.y / DungeonRenderer.TILE_SIZE).toInt() - renderer.playerCellY
-            if (abs(x) + abs(y) == 1) sink(x, y)
+            destination(floor(point.x / DungeonRenderer.TILE_SIZE).toInt(), floor(point.y / DungeonRenderer.TILE_SIZE).toInt())
         }
         return true
     }

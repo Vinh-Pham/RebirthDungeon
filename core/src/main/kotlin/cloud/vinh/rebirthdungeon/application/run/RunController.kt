@@ -19,10 +19,27 @@ class RunController(private val simulation: DungeonSimulation, private val repos
     var failure: String? = null
         private set
     init { require(automaticLimit > 0) }
+    fun selectionFailure(skill: cloud.vinh.rebirthdungeon.game.identity.ContentId, target: cloud.vinh.rebirthdungeon.game.identity.EntityId) =
+        simulation.selectionFailure(skill, target)?.name
+    fun battleView(presenting: Boolean = false): BattleView? {
+        val combat = combatObservation() ?: return null
+        val view = observe()
+        val hero = combat.actors.single { it.id == view.player }
+        val blocked = failure?.let { "Save failed: $it — Retry save" } ?: when {
+            combat.defeated -> "Defeat — return to Menu"
+            closed -> "Session closed"
+            busy || saveRequired -> "Saving"
+            presenting -> "Presenting — Skip to continue"
+            else -> null
+        }
+        return BattleView.create(token, view.commandCount, hero, blocked,
+            hero.selection?.let { selectionFailure(it.skill, it.target) }, combat.inBattle)
+    }
+    fun combatObservation() = if (simulation.session.combatEnabled) simulation.combatObservation() else null
     fun observe(): DungeonObservation = simulation.observe(observedEvents)
-    fun submit(command: RunCommand, expectedToken: Long): CommandResult {
+    fun submit(command: RunCommand, expectedToken: Long, expectedRevision: Long? = null): CommandResult {
         checkOwner()
-        if (closed || expectedToken != token) return CommandResult.rejected(CommandResult.Reason.STALE_SESSION)
+        if (closed || expectedToken != token || (expectedRevision != null && expectedRevision != observe().commandCount)) return CommandResult.rejected(CommandResult.Reason.STALE_SESSION)
         if (busy || saveRequired || halted) return CommandResult.rejected(CommandResult.Reason.SAVE_REQUIRED)
         busy = true
         try {
@@ -65,7 +82,7 @@ class RunController(private val simulation: DungeonSimulation, private val repos
                 try { repository.save(simulation.restoreExport()); saveRequired = false }
                 catch (error: Exception) { failure = error.message ?: error.toString(); return false }
             }
-            if (simulation.needsPlayerInput()) { failure = null; return true }
+            if (simulation.isDefeated() || simulation.needsPlayerInput()) { failure = null; return true }
             try {
                 check(automatic++ < automaticLimit) { "Automatic actor guard exceeded $automaticLimit actions" }
                 check(simulation.automatic().accepted()) { "Automatic action rejected" }

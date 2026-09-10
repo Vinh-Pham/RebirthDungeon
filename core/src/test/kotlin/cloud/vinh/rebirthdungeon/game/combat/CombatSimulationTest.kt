@@ -44,6 +44,40 @@ class CombatSimulationTest {
         return JacksonContentRepository { if (it == "starter.json") tree.toString() else File("../assets/data/$it").readText() }.load().catalog
     }
 
+    @Test fun battlePhaseSpansHandsAndRestoresUntilVictory() {
+        val s = sim(enemies = listOf(Phase3Fixtures.enemy(2, 1).copy(hp = 60, maxHp = 60)))
+        try {
+            assertFalse(s.combatObservation().inBattle)
+            accepted(s, MoveCommand(1, 0))
+            assertTrue(s.combatObservation().inBattle)
+            accepted(s, EndTurnCommand)
+            assertFalse(view(s).open)
+            assertTrue(s.combatObservation().inBattle)
+            val restored = DungeonSimulation.restore(s.restoreExport(), Phase3Fixtures.content)
+            try { assertTrue(restored.combatObservation().inBattle) } finally { restored.dispose() }
+            advance(s)
+            var guard = 0
+            while (s.combatObservation().outcome != EncounterOutcome.VICTORY) {
+                check(guard++ < 20)
+                select(s); accepted(s, RollDiceCommand); accepted(s, UseAbilityCommand); advance(s)
+            }
+            assertFalse(s.combatObservation().inBattle)
+            assertFalse(view(s).open)
+            accepted(s, MoveCommand(1, 0))
+            assertEquals(Cell(2, 1), s.observe().playerCell)
+        } finally { s.dispose() }
+    }
+
+    @Test fun enemyInitiatedEncounterShowsBattleBeforePlayerSelectsAHand() {
+        val s = sim()
+        try {
+            assertFalse(s.combatObservation().inBattle)
+            accepted(s, WaitCommand); advance(s)
+            assertFalse(view(s).open)
+            assertTrue(s.combatObservation().inBattle)
+        } finally { s.dispose() }
+    }
+
     @Test fun contactOpensWithoutMovementDamageRngOrInitiative() {
         val s = sim()
         try {
@@ -215,6 +249,7 @@ class CombatSimulationTest {
             var guard = 0
             while (!s.isDefeated()) { check(guard++ < 30); accepted(s, EndTurnCommand); advance(s) }
             assertEquals(EncounterOutcome.DEFEAT, s.combatObservation().outcome); assertEquals(0, view(s).current.hp)
+            assertFalse(s.combatObservation().inBattle)
             rejectUnchanged(s, EndTurnCommand, CommandResult.Reason.TERMINAL)
             rejectUnchanged(s, AutomaticCommand, CommandResult.Reason.TERMINAL)
         } finally { s.dispose() }
@@ -244,9 +279,9 @@ class CombatSimulationTest {
             assertTrue(s.combatObservation().actors.any { it.id == EntityId(3) })
         } finally { s.dispose() }
     }
-    @Test fun movementOnlyCheckpointApiCannotSilentlyLoseCombatState() {
+    @Test fun combatCheckpointExportIncludesEveryActor() {
         val s = sim()
-        try { assertThrows(IllegalStateException::class.java) { s.restoreExport() } } finally { s.dispose() }
+        try { assertEquals(2, s.restoreExport().combat!!.actors.size) } finally { s.dispose() }
     }
     @Test fun seededRollAndSubsetRerollFixturePinsFacesAndCanonicalState() {
         val s = sim()

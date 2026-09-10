@@ -8,6 +8,7 @@ class CheckpointEnvelopeDto {
     var payload = ""
 }
 class RunCheckpointDto {
+    var combat = ""
     var runId = ""
     var seed = ""
     var contentVersion = 0

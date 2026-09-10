@@ -16,7 +16,7 @@ class RunRestore(val runId: String, val seed: Long, val version: ContentVersion,
     val generatorVersion: Int, val generationAttempt: Int, val nextEntityId: Long,
     val commandCount: Long, val turnCount: Long, val eventCount: Long, val reachedExit: Boolean,
     val floor: FloorMap, actors: List<ActorState>, explored: BooleanArray, remembered: IntArray,
-    val scheduler: SchedulerState, random: Map<RandomStream, RandomState>) {
+    val scheduler: SchedulerState, random: Map<RandomStream, RandomState>, val combat: CombatRestore? = null) {
     val actors = frozenList(actors.sortedBy { it.id.value })
     private val exploredCells = explored.clone()
     private val rememberedTiles = remembered.clone()
