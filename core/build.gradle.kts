@@ -5,7 +5,6 @@ val kotlinVersion: String by project
 val ktxVersion: String by project
 val gdxVersion: String by project
 val artemisVersion: String by project
-val squidSquadVersion: String by project
 val jdkgdxdsVersion: String by project
 val juniperVersion: String by project
 val jacksonVersion: String by project
@@ -32,9 +31,6 @@ val utilsVersion: String by project
 val regExodusVersion: String by project
 val inGameConsoleVersion: String by project
 val typingLabelVersion: String by project
-val squidlibVersion: String by project
-val squidlibUtilVersion: String by project
-val squidlibExtraVersion: String by project
 val visUiVersion: String by project
 val kotlinxCoroutinesVersion: String by project
 
@@ -135,13 +131,12 @@ dependencies {
     implementation("com.github.tommyettinger:sjInGameConsole:$inGameConsoleVersion")
     implementation("com.github.tommyettinger:typing-label:$typingLabelVersion")
     implementation("com.kotcrab.vis:vis-ui:$visUiVersion")
-    implementation("com.squidpony:squidlib:$squidlibVersion")
-    implementation("com.squidpony:squidlib-util:$squidlibUtilVersion")
-    implementation("com.squidpony:squidlib-extra:$squidlibExtraVersion")
 
-    // First-slice simulation stack, internal to core: artemis-odb ECS, SquidSquad
-    // algorithms, and Juniper RNG. `implementation` keeps them off launcher compile
-    // classpaths; they still reach consumer runtime classpaths for packaging.
+    // Simulation stack, internal to core: artemis-odb ECS and Juniper RNG.
+    // Exploration navigation/generation is project-owned pure Kotlin; the obsolete
+    // SquidSquad/SquidLib grid stack and its companion modules are removed.
+    // `implementation` keeps this stack off launcher compile classpaths; it still
+    // reaches consumer runtime classpaths for packaging.
     implementation("net.onedaybeard.artemis:artemis-odb:$artemisVersion")
     // Versioned content definitions (assets/data JSON -> data/content DTOs). Jackson's
     // strict default binding (unknown fields and enum values fail) backs the explicit
@@ -150,21 +145,6 @@ dependencies {
     implementation("com.fasterxml.jackson.core:jackson-annotations:$jacksonAnnotationsVersion")
     implementation("com.github.tommyettinger:juniper:$juniperVersion")
     implementation("com.github.tommyettinger:jdkgdxds:$jdkgdxdsVersion")
-    implementation("com.github.yellowstonegames.squidsquad:squidcore:$squidSquadVersion")
-    implementation("com.github.yellowstonegames.squidsquad:squidgrid:$squidSquadVersion")
-    implementation("com.github.yellowstonegames.squidsquad:squidplace:$squidSquadVersion")
-    implementation("com.github.yellowstonegames.squidsquad:squidpath:$squidSquadVersion")
-    implementation("com.github.yellowstonegames.squidsquad:squidpress:$squidSquadVersion")
-    implementation("com.github.yellowstonegames.squidsquad:squidseek:$squidSquadVersion")
-    implementation("com.github.yellowstonegames.squidsquad:squidsmooth:$squidSquadVersion")
-    implementation("com.github.yellowstonegames.squidsquad:squidstorecore:$squidSquadVersion")
-    implementation("com.github.yellowstonegames.squidsquad:squidstoregrid:$squidSquadVersion")
-    implementation("com.github.yellowstonegames.squidsquad:squidstorepath:$squidSquadVersion")
-    implementation("com.github.yellowstonegames.squidsquad:squidstoretext:$squidSquadVersion")
-    implementation("com.github.yellowstonegames.squidsquad:squidtext:$squidSquadVersion")
-    implementation("com.github.yellowstonegames.squidsquad:squidwrathcore:$squidSquadVersion")
-    implementation("com.github.yellowstonegames.squidsquad:squidwrathgrid:$squidSquadVersion")
-    implementation("com.github.yellowstonegames.squidsquad:squidwrathpath:$squidSquadVersion")
 
     // KTX Kotlin DSL modules, quillraven group — the full gdx-liftoff set. 1.14.2-rc1
     // is built against this project's exact pins (gdx 1.14.2, artemis-odb 2.3.0,

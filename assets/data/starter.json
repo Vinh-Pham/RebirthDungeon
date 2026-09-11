@@ -1,36 +1,5 @@
 {
-  "schemaVersion": 1,
-  "tiles": [
-    {
-      "id": "tile.wall",
-      "code": 0,
-      "walkable": false
-    },
-    {
-      "id": "tile.floor",
-      "code": 1,
-      "walkable": true
-    },
-    {
-      "id": "tile.door",
-      "code": 2,
-      "walkable": true
-    },
-    {
-      "id": "tile.exit",
-      "code": 3,
-      "walkable": true
-    }
-  ],
-  "generations": [
-    {
-      "id": "generation.starter",
-      "generatorVersion": 1,
-      "width": 48,
-      "height": 27,
-      "maxAttempts": 4
-    }
-  ],
+  "schemaVersion": 2,
   "actors": [
     {
       "id": "actor.hero",
@@ -168,7 +137,6 @@
       "effect": "DAMAGE",
       "target": "HOSTILE",
       "requiredEquipment": "sword",
-      "range": 1,
       "cooldown": 0,
       "shieldDuration": 0
     },
@@ -202,7 +170,6 @@
       "effect": "SHIELD",
       "target": "SELF",
       "requiredEquipment": "none",
-      "range": 0,
       "cooldown": 1,
       "shieldDuration": 1
     },
@@ -236,7 +203,6 @@
       "effect": "BUFF",
       "target": "SELF",
       "requiredEquipment": "none",
-      "range": 0,
       "cooldown": 0,
       "shieldDuration": 0,
       "status": "status.strength"
@@ -271,7 +237,6 @@
       "effect": "DAMAGE",
       "target": "HOSTILE",
       "requiredEquipment": "none",
-      "range": 1,
       "cooldown": 0,
       "shieldDuration": 0
     },
@@ -305,7 +270,6 @@
       "effect": "DAMAGE",
       "target": "HOSTILE",
       "requiredEquipment": "none",
-      "range": 1,
       "cooldown": 0,
       "shieldDuration": 0
     },
@@ -339,7 +303,6 @@
       "effect": "DAMAGE",
       "target": "HOSTILE",
       "requiredEquipment": "none",
-      "range": 1,
       "cooldown": 0,
       "shieldDuration": 0,
       "status": "status.weakened"

@@ -1,12 +1,10 @@
 package cloud.vinh.rebirthdungeon.data.content
 
-import cloud.vinh.rebirthdungeon.game.RunSession
-import cloud.vinh.rebirthdungeon.game.DungeonSimulation
+import cloud.vinh.rebirthdungeon.game.BattleSession
+import cloud.vinh.rebirthdungeon.game.BattleSimulation
 import cloud.vinh.rebirthdungeon.game.algorithms.RandomStream
-import cloud.vinh.rebirthdungeon.game.commands.MoveCommand
 import cloud.vinh.rebirthdungeon.game.content.*
 import cloud.vinh.rebirthdungeon.game.events.*
-import cloud.vinh.rebirthdungeon.game.grid.FloorMap
 import cloud.vinh.rebirthdungeon.game.identity.ContentId
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
@@ -42,21 +40,17 @@ class ContentRepositoryTest {
     }
 
     @Test fun rejectsMissingUnknownNullAndCoercedFields() {
-        invalid("width") { it.row("generations").remove("width") }
+        invalid("name") { it.row("skills").remove("name") }
         invalid("surprise") { it.put("surprise", true) }
         invalid("kind") { it.row("actors").put("kind", "ALIEN") }
         invalid("kind") { it.row("actors").put("kind", 0) }
-        invalid("width") { it.row("generations").put("width", "48") }
-        invalid("width") { it.row("generations").put("width", 48.5) }
-        invalid("width") { it.row("generations").putNull("width") }
         invalid("weights") { (it.rank().get("weights") as ArrayNode).addNull() }
-        invalid("schemaVersion") { it.put("schemaVersion", 2) }
+        invalid("schemaVersion") { it.put("schemaVersion", 1) }
     }
 
     @Test fun rejectsBadIdsRangesWeightsRanksAndProbabilityTotals() {
-        invalid("id") { it.row("tiles").put("id", "bad id") }
-        invalid("duplicate") { it.row("actors").put("id", "tile.wall") }
-        invalid("width") { it.row("generations").put("width", 0) }
+        invalid("id") { it.row("actors").put("id", "bad id") }
+        invalid("duplicate") { it.row("actors").put("id", "skill.sword") }
         invalid("weights") { it.rank().putArray("weights").add(1) }
         invalid("weights") { it.rank().putArray("weights").apply { repeat(6) { add(0) } } }
         invalid("weights") { it.rank().putArray("weights").apply { add(-1); repeat(5) { add(1) } } }
@@ -84,9 +78,9 @@ class ContentRepositoryTest {
     }
 
     @Test fun rejectsManifestVersionsPathsAndDuplicateJsonKeys() {
-        listOf(source("manifest.json").replace("\"rulesVersion\": 1", "\"rulesVersion\": 9"),
+        listOf(source("manifest.json").replace("\"rulesVersion\": 2", "\"rulesVersion\": 9"),
             source("manifest.json").replace("starter.json", "../starter.json"),
-            source("manifest.json").replace("\"schemaVersion\": 1", "\"schemaVersion\": 1, \"schemaVersion\": 1")).forEach { json ->
+            source("manifest.json").replace("\"schemaVersion\": 2", "\"schemaVersion\": 2, \"schemaVersion\": 2")).forEach { json ->
             assertThrows(ContentException::class.java) { JacksonContentRepository { if (it == "manifest.json") json else source(it) }.load() }
         }
     }
@@ -94,7 +88,7 @@ class ContentRepositoryTest {
     @Test fun validatesVisualIdsAnimationsAndManifestReadOrder() {
         val paths = mutableListOf<String>()
         JacksonContentRepository { paths.add(it); source(it) }.load()
-        assertEquals(listOf("manifest.json", "starter.json", "visuals.json"), paths)
+        assertEquals(listOf("manifest.json", "starter.json", "visuals.json", "world.json"), paths)
         listOf("id" to "missing.actor", "atlas" to "missing.atlas", "animation" to "typo").forEach { (field, value) ->
             val tree = mapper.readTree(source("visuals.json")) as ObjectNode
             (tree.get("bindings")[0] as ObjectNode).put(field, value)
@@ -116,20 +110,14 @@ class ContentRepositoryTest {
         val rank = catalog.skills.getValue(ContentId("skill.sword")).ranks.first()
         assertThrows(UnsupportedOperationException::class.java) { (rank.weights as MutableList)[0] = 9 }
         assertThrows(UnsupportedOperationException::class.java) { (catalog.actors.values.first().stats as MutableMap).clear() }
-        val run = RunSession(42, catalog)
-        val simulation = DungeonSimulation.create(FloorMap(3, 3, IntArray(9) { FloorMap.FLOOR }), 1, 1, run)
+        val run = BattleSession(42, catalog)
+        val simulation = BattleSimulation.create(run)
         try {
-            assertSame(catalog, simulation.session!!.content)
-            val before = run.random.capture()
-            assertTrue(simulation.apply(MoveCommand(1, 0)).accepted())
-            val snapshot = simulation.snapshot()
-            assertEquals(ActorMoved(snapshot.player, Cell(1, 1), Cell(2, 1)), snapshot.events.single().event)
-            assertFalse(simulation.apply(MoveCommand(1, 0)).accepted())
-            assertEquals(1L, simulation.snapshot().commandSequence)
-            simulation.apply(MoveCommand(0, 1))
-            assertEquals(Cell(2, 1), snapshot.cell)
-            assertEquals(before, run.random.capture())
-            assertEquals(1L, snapshot.events.single().sequence)
+            assertSame(catalog, simulation.session.content)
+            val snapshot = simulation.observe()
+            simulation.apply(cloud.vinh.rebirthdungeon.game.commands.EndTurnCommand)
+            assertEquals(0L, snapshot.commandCount)
+            assertTrue(snapshot.events.isEmpty())
         } finally { simulation.dispose() }
     }
     @Test fun validatesAuthoredCombatFieldsAndUnsupportedEnemyEffects() {

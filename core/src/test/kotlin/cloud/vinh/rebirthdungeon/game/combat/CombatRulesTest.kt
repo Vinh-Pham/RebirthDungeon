@@ -1,6 +1,6 @@
 package cloud.vinh.rebirthdungeon.game.combat
 
-import cloud.vinh.rebirthdungeon.game.Phase3Fixtures
+import cloud.vinh.rebirthdungeon.game.CombatFixtures
 import cloud.vinh.rebirthdungeon.game.algorithms.RandomSource
 import cloud.vinh.rebirthdungeon.game.combat.dice.*
 import cloud.vinh.rebirthdungeon.game.combat.stats.*
@@ -13,7 +13,7 @@ import org.junit.Test
 
 class CombatRulesTest {
     @Test fun all7776OrderedHandsHaveExactlyOneClassificationAndPinnedDamageDistribution() {
-        val content = Phase3Fixtures.content
+        val content = CombatFixtures.content
         val counts = Combination.entries.associateWith { 0 }.toMutableMap()
         val distribution = sortedMapOf<Int, Int>()
         val weightedDistribution = sortedMapOf<Int, Long>()
@@ -65,7 +65,7 @@ class CombatRulesTest {
         assertEquals(0, DamageRules.resolve(DamageInputs(100, 0, 0, 0, -99), 5, StatRatio(10, 1), 0, 1).remainingHp)
     }
     @Test fun statSourcesAggregateOnceBeforeDerivationAndCostsRoundUp() {
-        val stats = Phase3Fixtures.content.stats
+        val stats = CombatFixtures.content.stats
         val str = ContentId("stat.str")
         val modifiers = listOf(StatModifier("gear", str, 10, 2000), StatModifier("buff", str, 5, -1000),
             StatModifier("weapon", ContentId("stat.physical_attack"), 2))
@@ -77,7 +77,7 @@ class CombatRulesTest {
         assertThrows(IllegalArgumentException::class.java) { StatRules.resolve(stats, emptyMap(), modifiers + modifiers.first()) }
     }
     @Test fun statusesRefreshAcrossSourcesButLowerPriorityCannotRefreshOrReplace() {
-        val base = Phase3Fixtures.content.statuses.getValue(ContentId("status.strength"))
+        val base = CombatFixtures.content.statuses.getValue(ContentId("status.strength"))
         val weaker = base.copy(id = ContentId("status.weak"), priority = 0)
         val stronger = base.copy(id = ContentId("status.strong"), priority = 2, flat = 10)
         val equal = base.copy(id = ContentId("status.equal"))

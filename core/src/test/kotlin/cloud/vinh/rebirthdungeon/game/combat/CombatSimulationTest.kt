@@ -21,20 +21,19 @@ class CombatSimulationTest {
     private fun loadout(rank: String = "F", modifiers: List<StatModifier> = emptyList(), equipment: Set<String> = setOf("sword")) =
         CombatLoadout(mapOf("sword" to rank, "fortify" to "F", "focus" to "F", "spark" to "F", "blood" to "F")
             .mapKeys { ContentId("skill.${it.key}") }, equipment, modifiers)
-    private fun sim(loadout: CombatLoadout = loadout(), enemies: List<ActorState> = listOf(Phase3Fixtures.enemy(2, 1).copy(hp = 60, maxHp = 60)),
-        content: ContentCatalog = Phase3Fixtures.content): DungeonSimulation = DungeonSimulation.create(
-        Phase3Fixtures.floor("########", "#.....>#", "########"), 1, 1,
-        RunSession(71, content, combatEnabled = true, combatLoadout = loadout), enemies)
-    private fun view(s: DungeonSimulation) = s.combatObservation().actors.single { it.id == hero }
-    private fun accepted(s: DungeonSimulation, command: RunCommand) = assertEquals(CommandResult.Reason.ACCEPTED, s.apply(command).reason)
-    private fun select(s: DungeonSimulation, name: String = "sword", target: EntityId = enemy) = accepted(s, SelectAbilityCommand(ContentId("skill.$name"), target))
-    private fun rejectUnchanged(s: DungeonSimulation, command: RunCommand, reason: CommandResult.Reason? = null) {
+    private fun sim(loadout: CombatLoadout = loadout(), enemies: List<ActorState> = listOf(CombatFixtures.enemy().copy(hp = 60, maxHp = 60)),
+        content: ContentCatalog = CombatFixtures.content): BattleSimulation = BattleSimulation.create(
+        BattleSession(71, content, combatLoadout = loadout), enemies)
+    private fun view(s: BattleSimulation) = s.combatObservation().actors.single { it.id == hero }
+    private fun accepted(s: BattleSimulation, command: RunCommand) = assertEquals(CommandResult.Reason.ACCEPTED, s.apply(command).reason)
+    private fun select(s: BattleSimulation, name: String = "sword", target: EntityId = enemy) = accepted(s, SelectAbilityCommand(ContentId("skill.$name"), target))
+    private fun rejectUnchanged(s: BattleSimulation, command: RunCommand, reason: CommandResult.Reason? = null) {
         val before = s.canonicalState()
         val result = s.apply(command)
         assertFalse(result.accepted()); if (reason != null) assertEquals(reason, result.reason)
         assertEquals(before, s.canonicalState()); assertTrue(s.events().isEmpty())
     }
-    private fun advance(s: DungeonSimulation) {
+    private fun advance(s: BattleSimulation) {
         var guard = 0
         while (!s.needsPlayerInput() && !s.isDefeated()) { check(guard++ < 20); accepted(s, AutomaticCommand) }
     }
@@ -44,50 +43,15 @@ class CombatSimulationTest {
         return JacksonContentRepository { if (it == "starter.json") tree.toString() else File("../assets/data/$it").readText() }.load().catalog
     }
 
-    @Test fun battlePhaseSpansHandsAndRestoresUntilVictory() {
-        val s = sim(enemies = listOf(Phase3Fixtures.enemy(2, 1).copy(hp = 60, maxHp = 60)))
-        try {
-            assertFalse(s.combatObservation().inBattle)
-            accepted(s, MoveCommand(1, 0))
-            assertTrue(s.combatObservation().inBattle)
-            accepted(s, EndTurnCommand)
-            assertFalse(view(s).open)
-            assertTrue(s.combatObservation().inBattle)
-            val restored = DungeonSimulation.restore(s.restoreExport(), Phase3Fixtures.content)
-            try { assertTrue(restored.combatObservation().inBattle) } finally { restored.dispose() }
-            advance(s)
-            var guard = 0
-            while (s.combatObservation().outcome != EncounterOutcome.VICTORY) {
-                check(guard++ < 20)
-                select(s); accepted(s, RollDiceCommand); accepted(s, UseAbilityCommand); advance(s)
-            }
-            assertFalse(s.combatObservation().inBattle)
-            assertFalse(view(s).open)
-            accepted(s, MoveCommand(1, 0))
-            assertEquals(Cell(2, 1), s.observe().playerCell)
-        } finally { s.dispose() }
-    }
-
-    @Test fun enemyInitiatedEncounterShowsBattleBeforePlayerSelectsAHand() {
+    @Test fun encounterStartsWithoutDrawingDiceAndEndsWithoutExplorationState() {
         val s = sim()
         try {
-            assertFalse(s.combatObservation().inBattle)
-            accepted(s, WaitCommand); advance(s)
-            assertFalse(view(s).open)
             assertTrue(s.combatObservation().inBattle)
-        } finally { s.dispose() }
-    }
-
-    @Test fun contactOpensWithoutMovementDamageRngOrInitiative() {
-        val s = sim()
-        try {
+            assertFalse(view(s).open)
             val before = s.session.random.capture()
-            accepted(s, MoveCommand(1, 0))
-            assertEquals(Cell(1, 1), s.observe().playerCell); assertEquals(0L, s.observe().turnCount)
-            assertEquals(before, s.session.random.capture()); assertTrue(s.needsPlayerInput())
-            assertTrue(view(s).open); assertEquals(90, view(s).current.hp)
-            assertEquals(enemy, view(s).selection!!.target)
-            rejectUnchanged(s, MoveCommand(1, 0)); rejectUnchanged(s, WaitCommand)
+            select(s)
+            assertEquals(before, s.session.random.capture())
+            assertEquals(0L, s.observe().turnCount)
         } finally { s.dispose() }
     }
     @Test fun firstRollAndTwoAtomicSubsetsFreezeInputsAndKeepEveryReplacement() {
@@ -120,7 +84,7 @@ class CombatSimulationTest {
         } finally { s.dispose() }
     }
     @Test fun previewMatchesCommitAndPaymentOccursOnceBeforeDamage() {
-        val s = sim(enemies = listOf(Phase3Fixtures.enemy(2, 1).copy(hp = 999, maxHp = 999)))
+        val s = sim(enemies = listOf(CombatFixtures.enemy().copy(hp = 999, maxHp = 999)))
         try {
             select(s); accepted(s, RollDiceCommand); val preview = view(s).preview!!
             accepted(s, UseAbilityCommand)
@@ -144,7 +108,7 @@ class CombatSimulationTest {
             select(s, "fortify", hero); accepted(s, RollDiceCommand); assertEquals(2, view(s).rerolls)
         } finally { s.dispose() }
     }
-    @Test fun validatesOwnershipEquipmentRangeAndHpCostTogetherWithoutRng() {
+    @Test fun validatesOwnershipEquipmentAndHpCostTogetherWithoutRng() {
         val s = sim(loadout(equipment = emptySet()))
         try {
             rejectUnchanged(s, SelectAbilityCommand(ContentId("skill.sword"), enemy), CommandResult.Reason.EQUIPMENT_REQUIRED)
@@ -153,8 +117,6 @@ class CombatSimulationTest {
             rejectUnchanged(s, SelectAbilityCommand(ContentId("skill.focus"), enemy), CommandResult.Reason.INVALID_TARGET)
             rejectUnchanged(s, SelectAbilityCommand(ContentId("skill.spark"), EntityId(99)), CommandResult.Reason.INVALID_TARGET)
         } finally { s.dispose() }
-        val far = sim(enemies = listOf(Phase3Fixtures.enemy(4, 1)))
-        try { rejectUnchanged(far, SelectAbilityCommand(ContentId("skill.sword"), enemy), CommandResult.Reason.INVALID_TARGET) } finally { far.dispose() }
         for (hp in listOf(4, 5)) {
             val low = sim(loadout(modifiers = listOf(StatModifier("cap", ContentId("stat.max_hp"), hp - 90))))
             try {
@@ -234,10 +196,10 @@ class CombatSimulationTest {
                     assertEquals(a.canonicalState(), b.canonicalState())
                 }
                 assertEquals(EncounterOutcome.VICTORY, a.combatObservation().outcome)
-                assertFalse(a.observe().reachedExit); assertFalse(a.isDefeated()); assertTrue(a.needsPlayerInput())
+                assertFalse(a.isDefeated()); assertTrue(a.needsPlayerInput())
                 assertEquals(1, a.combatObservation().actors.size)
                 rejectUnchanged(a, UseAbilityCommand)
-                accepted(a, MoveCommand(1, 0)) // dead hostile no longer blocks occupancy
+                rejectUnchanged(a, EndTurnCommand, CommandResult.Reason.TERMINAL)
             } finally { a.dispose(); b.dispose() }
         }
     }
@@ -260,7 +222,7 @@ class CombatSimulationTest {
             status.put("duration", 1); status.put("periodicDamage", 10000)
             (status["recovery"] as ObjectNode).put("hp", 10000)
         }
-        val s = sim(content = content, enemies = listOf(Phase3Fixtures.enemy(2, 1, hp = 1)))
+        val s = sim(content = content, enemies = listOf(CombatFixtures.enemy(hp = 1)))
         try {
             select(s, "focus", hero); accepted(s, RollDiceCommand); accepted(s, UseAbilityCommand); advance(s)
             select(s); accepted(s, RollDiceCommand); accepted(s, UseAbilityCommand)
@@ -271,13 +233,8 @@ class CombatSimulationTest {
             assertTrue(events.indexOfFirst { it is DamageDealt && it.target == hero } < events.indexOfFirst { it is StatusExpired })
         } finally { s.dispose() }
     }
-    @Test fun encounterParticipationExcludesUncontactedHostiles() {
-        val s = sim(enemies = listOf(Phase3Fixtures.enemy(2, 1, hp = 1), Phase3Fixtures.enemy(6, 1, id = 3)))
-        try {
-            select(s); accepted(s, RollDiceCommand); accepted(s, UseAbilityCommand)
-            assertEquals(EncounterOutcome.VICTORY, s.combatObservation().outcome)
-            assertTrue(s.combatObservation().actors.any { it.id == EntityId(3) })
-        } finally { s.dispose() }
+    @Test fun multipleEnemiesRequireAnAuthoredExtension() {
+        assertThrows(IllegalArgumentException::class.java) { sim(enemies = listOf(CombatFixtures.enemy(), CombatFixtures.enemy(id = 3))) }
     }
     @Test fun combatCheckpointExportIncludesEveryActor() {
         val s = sim()

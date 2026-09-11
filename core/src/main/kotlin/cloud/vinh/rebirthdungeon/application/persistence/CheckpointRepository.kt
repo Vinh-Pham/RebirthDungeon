@@ -1,9 +1,9 @@
 package cloud.vinh.rebirthdungeon.application.persistence
 
-import cloud.vinh.rebirthdungeon.game.projection.RunRestore
+import cloud.vinh.rebirthdungeon.game.projection.BattleRestore
 
 /** Serialized whole-run checkpoint boundary; returns only after read-back verification. */
 interface CheckpointRepository {
-    fun load(): RunRestore?
-    fun save(state: RunRestore)
+    fun load(): BattleRestore?
+    fun save(state: BattleRestore)
 }

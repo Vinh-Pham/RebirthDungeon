@@ -1,8 +1,10 @@
 # Rebirth Dungeon: Battle System
 
+> **Active migration (2026-09-10):** [Free exploration and separate battles](../free-exploration.md) supersedes the grid-world, shared dungeon/battle screen, spatial combat, and legacy-save contracts below. Earlier phase evidence is retained as history.
+
 Combat uses **five six-sided dice** and Dicero-style decisions: roll, keep useful dice, reroll the others, and commit a hand whose pips and combination determine the action's strength. Rebirth Dungeon adds an explicit **skill choice before the roll**. The selected skill's rank supplies its base damage and may change the probabilities of rolling particular faces.
 
-This is a base design for planned gameplay, not implemented combat. It complements [skills.md](skills.md), [character.md](character.md), [stats.md](stats.md), the [game plan](../game-plan.md), and the [project phases](../project-phases.md). Five dice, skill-dependent rolls, and rank-based base damage are requirements. Reroll limits, scoring values, formulas, and other defaults below are provisional; individual skill designs will refine them later.
+The starter battle is implemented; later extensions below remain planned designs. It complements [skills.md](skills.md), [character.md](character.md), [stats.md](stats.md), the [game plan](../game-plan.md), and the [project phases](../project-phases.md). Five dice, skill-dependent rolls, and rank-based base damage are requirements. Reroll limits, scoring values, formulas, and other defaults below are provisional; individual skill designs will refine them later.
 
 The [Phase 4 starter contract](../phase4-combat.md) authors the initial skill values, recovery/exhaustion policy, encounter scope and integration boundary for these rules.
 
@@ -163,7 +165,7 @@ Rank-based base damage, pip scaling, and odds must be independently configurable
 
 ## 7. Enemies, effects, and progression
 
-The first encounter has one hero, one enemy, one damage skill, and one defensive skill. Show enemy HP, defenses relevant to the preview, and the next intended action when known. Range and line-of-sight requirements come from the selected skill and the existing grid rules.
+The first encounter has one hero, one enemy, one damage skill, and one defensive skill. Show enemy HP, defenses relevant to the preview, and the next intended action when known. Battle targeting uses living encounter membership and allegiance; it has no spatial range or line-of-sight rules.
 
 Enemy turns use deterministic authored decisions and the same damage/shield resolver. They do not need a player-style five-dice interface in the first slice. Multi-enemy targeting, area damage, counters, and more complex enemy dice mechanics are later content decisions.
 

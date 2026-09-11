@@ -1,6 +1,8 @@
 # Rebirth Dungeon: Kotlin + LibGDX Game Plan
 
-Rebirth Dungeon is a **2D pixel-art, grid-based roguelike dungeon crawler with dice combat, loot, progression, and a later gacha meta game**. Build it in Kotlin using the existing LibGDX project (ported from the original Java gdx-liftoff scaffold on 2026-09-06), with desktop as the fastest development target and Android/iOS as delivery targets.
+> **Active migration (2026-09-10):** [Free exploration and separate battles](free-exploration.md) supersedes the grid-world, shared dungeon/battle screen, spatial combat, and legacy-save contracts below. Earlier phase evidence is retained as history.
+
+Rebirth Dungeon is a **2D pixel-art roguelike with free exploration and separate dice battles, loot, progression, and a later gacha meta game**. Build it in Kotlin using the existing LibGDX project (ported from the original Java gdx-liftoff scaffold on 2026-09-06), with desktop as the fastest development target and Android/iOS as delivery targets.
 
 The game is turn-based: commands advance the simulation; frames advance presentation. The same initial state, content version, rules version, and commands must reproduce the same outcomes regardless of frame rate.
 
@@ -25,18 +27,7 @@ This plan replaces the previous Expo/React Native architecture. It describes a t
 
 ## 1. What exists today
 
-Status checked against the repository on **2026-09-07**. The repository began as a Java gdx-liftoff scaffold and was ported to **Kotlin 2.4.10** with Kotlin-DSL build scripts on 2026-09-06; shared code lives under `src/main/kotlin` in the package `cloud.vinh.rebirthdungeon`. Implemented so far: the application skeleton (`RebirthDungeon` extends `KtxGame<KtxScreen>` with dispose-on-navigate screen coordination), the loading and prototype dungeon/menu screens with `AssetManager` loading, a command-driven artemis-odb movement spike inside the Gdx-free `game/` package, the seeded `DungeonProcessor` adapter, and the Phase 0 dependency/build repairs. The old empty `FirstScreen` was deleted on 2026-09-04. Dungeon gameplay, five-dice combat, saving, and the content catalog are **not** implemented; work stands at Phase 2 ([project phases](project-phases.md)). Phase 1's runtime evidence predates the Kotlin migration: desktop/Android/iOS runtime re-verification with the current sources remains an open gate, distinct from the passing compile/packaging checks.
-
-| Module or path      | Current role                                                                                          |
-|---------------------|-------------------------------------------------------------------------------------------------------|
-| `core/`             | Shared Kotlin game code: application and screens plus the `game/` simulation spike (commands, ECS systems, grid, generator adapter) |
-| `lwjgl3/`           | Desktop launcher, executable JAR tasks, Construo packaging, optional Graal Native Image configuration |
-| `android/`          | Native Android launcher, manifest, SDK configuration, native library packaging                        |
-| `ios/`              | RoboVM launcher, MetalANGLE backend, native libraries, plist and linking configuration                |
-| `assets/`           | UI skin and bitmap fonts plus the Phase 1 dungeon/player atlas; content JSON arrives with Phase 2     |
-| `gradle.properties` | Explicit library version values                                                                       |
-
-There is no web backend in `settings.gradle`. Landscape is the adopted orientation, and Android/iOS were aligned to it during Phase 1 with safe insets; device acceptance rechecks the platform configuration.
+Current architecture: `SessionCoordinator` owns the town/expedition and durable save bundle. `ExplorationSimulation` advances fixed-point positions through polygon navigation at explicit 60 Hz ticks. `BattleSimulation` owns one artemis World for one encounter. `ExplorationScreen` and `BattleScreen` consume detached observations. See [free-exploration.md](free-exploration.md) for migration status and verification; earlier phase documents preserve historical evidence.
 
 ### Toolchain baseline
 
@@ -170,217 +161,43 @@ The duplicate blocker was reproduced and repaired. The JitPack root POM for `com
 
 ## 3. Architecture and ownership
 
-```text
-Desktop / Android / iOS launchers
-                |
-       RebirthDungeon (Game)
-       assets + service wiring + screens
-                |
-   Scene2D controls / keyboard / gestures
-                |
-       RunController command queue
-       |                  |
-       |                  +--> repositories / platform services
-       v
-   RunSession: artemis-odb World + run state + grid + scheduler
-       |
-       +--> ordered rule systems
-       +--> SquidSquad adapters + explicit Juniper RNG streams
-       |
-       v
-   immutable snapshots + ordered domain events
-       |
-       +--> DungeonRenderer (SpriteBatch)
-       +--> HUD/menu presentation (Stage)
-       +--> presentation tracks / audio / haptics
-```
+Bootstrap wires content and the session repository. `application/session` exclusively coordinates exploration, battle, supplies, gold and outcome commits. `application/run/BattleController` serializes combat commands and saves each player/automatic action. The application survives screen transitions.
 
-| Owner                                | Authoritative data                                                                       |
-|--------------------------------------|------------------------------------------------------------------------------------------|
-| artemis-odb components               | Dynamic actor/object state: cells, HP/MP/SP, stats, five dice, abilities, statuses                     |
-| `RunSession`                         | Grid, run phase, active actor, initiative queue, RNG streams, command index, run rewards |
-| Profile repository/application model | Hero progression, committed inventory/overflow, quests, title collection/selections/evidence, town resources, enchanting RNG, settings and balances                  |
-| Screen/HUD view model                | Selection, dialogs, focus, loading/error state, projected game data                      |
-| Presentation tracks                  | Interpolated positions, camera, particles, floating text, reveal progress                |
-
-Components and `RunSession` together form the authoritative simulation. The occupancy index is a derived lookup maintained alongside position/blocking changes and rebuilt on load. UI snapshots are read-only copies, never a second mutable gameplay model.
-
-The simulation may depend on artemis-odb and project-owned algorithm interfaces. It must not reference `Gdx`, `Screen`, `Stage`, `SpriteBatch`, `AssetManager`, platform SDKs, networking, or file I/O. Backend implementations belong in their platform modules; pure repositories and adapters can live in `core`.
-
-Use constructor injection and small Kotlin interfaces. An async framework is not necessary for this scope.
+`game/exploration` owns navigation, generation, collision, discovery and encounter triggers. `BattleSession` plus ECS components own active battle state. Outside battle, one detached hero record belongs to the session coordinator; during battle it is absent and only the World owns mutable resources. Presentation receives immutable observations, never full restore exports.
 
 ## 4. Simulation time, presentation time, and threading
 
-| Mechanism                                             | Responsibility                                        |
-|-------------------------------------------------------|-------------------------------------------------------|
-| artemis-odb system registration order                 | Order within one logical simulation step              |
-| Project `TurnScheduler`                               | Which actor acts next and the logical action cost     |
-| JVM worker/executor and platform callbacks            | Saves, loads, generation jobs if needed, network work |
-| `render(delta)`, `Stage.act(delta)`, animation tracks | Visual progression only                               |
+Exploration uses explicit 60 Hz steps and tick/sequence-indexed commands. Fixed-point positions and exact geometric predicates are independent of rendering; frames interpolate adjacent observations. Catch-up is bounded to eight steps per frame without dropping queued ticks; pause/resume discards suspended wall time. Battle advances only through explicit commands and automatic scheduled actions.
 
-Run command resolution and artemis-odb mutation on the LibGDX render thread, serially. A frame drains available controller work, updates presentation, and draws. With no command or automatic actor pending, the simulation does not advance.
-
-Call `world.process()` only for an explicit rule step. Ordinary turn systems must ignore elapsed seconds; do not use artemis-odb `IntervalSystem` to drive turn cooldowns. Never recursively call `World.process()`.
-
-LibGDX lifecycle callbacks run on the render thread. Worker results return through `Gdx.app.postRunnable(...)`; workers must not operate on artemis-odb entities, Scene2D actors, graphics, or audio. Give each screen/run a generation token so stale callbacks cannot affect a replaced session. [LibGDX threading](https://libgdx.com/wiki/app/threading).
-
-Use a bounded executor for I/O and one serialized writer for saves. Capture detached immutable data before submitting work. Cancellation is cooperative: cancel owned jobs when appropriate, and still reject late results by session ID. Required durable writes belong to the application, so changing screens does not silently discard them.
+Mutations remain serial on the render thread. Game code imports no Gdx, clock, I/O or platform APIs. No recursive World processing. Future worker results must return through postRunnable with session identity checks. Screens never own save jobs or gameplay lifetimes.
 
 ## 5. artemis-odb world model
 
-Use one artemis-odb `World` per active run, built through `WorldConfigurationBuilder` so system registration order is explicit. Keep the compile-time weaver off; use plain `Component` subclasses first and introduce `PooledComponent` only if measured allocation pressure justifies it. Pooled components then need complete reset behavior, and presentation must never retain pooled object references.
+One World per active battle, built with WorldConfigurationBuilder. Plain no-arg mutable components hold health, pools, stats, dice, statuses, cooldowns, abilities and stable identity. Grid position, blocker and vision components have been removed. Entity IDs are recycled framework handles; project IDs identify battle participants and saves.
 
-artemis-odb uses `Component` (with a required public constructor), `World`, `EntityEdit`, `ComponentMapper`, `Aspect`, and `BaseEntitySystem`/`IteratingSystem`. There is no per-system priority field: the default `InvocationStrategy` processes systems in registration order and flushes entity-state changes to aspect subscriptions before each system and after the last. The builder accepts at most one system instance per class, so each pipeline slot is its own class. Entities are `int` ids from `world.create()` and ids are recycled after deletion. No component decorators or automatic game-save schema are part of this design. [artemis-odb wiki](https://github.com/junkdog/artemis-odb/wiki).
+Exploration is a separate pure simulation, not another combat engine or a second mutable hero model.
 
-Create entities for players, enemies, doors, traps, pickups, and other objects that participate in rules. Keep floors and walls in a compact grid rather than making every tile an entity.
+## 6. Ordered battle rule pipeline
 
-| Component group        | Initial data                                                                              |
-|------------------------|-------------------------------------------------------------------------------------------|
-| Identity and placement | `StableId`, `GridPosition`, `Actor`, `PlayerControlled`, `BlocksMovement`, `BlocksVision` |
-| Perception and AI      | `Vision`, `EnemyBrain` with content IDs and deterministic memory                          |
-| Combat                 | `ResourcePools`, `Stats`, `DiceHand`, `AbilityLoadout`, `StatusSet`, `Shield`, `Cooldowns`                    |
-| Interactions           | `Door`, `Trap`, `Pickup`, `InventoryRef`                                                  |
-| Transient resolution   | `MoveIntent`, `AbilityIntent`, `PendingDamage`, `PendingRemoval`                          |
+Validation → enemy intent → dice → ability → damage → status → cleanup → turn finalization. Existing costs, frozen inputs, activation timing, defeat precedence and event ordering remain. Snapshots and checkpoints are exported after World.process completes. There are no movement, interaction, occupancy or visibility systems in battle.
 
-Minimal component shape:
+## 7. Free movement and interaction
 
-```kotlin
-package cloud.vinh.rebirthdungeon.game.ecs.components
+Positions have 256 subpixels per world pixel. Convex navigation polygons already describe center clearance from obstacles. Project-owned A* searches stable polygon IDs with deterministic cost/tie ordering; portal funneling produces continuous waypoints. Exact rational segment clipping prevents tunneling. Near-edge clicks project only onto a reachable visible boundary; blocked destinations reject.
 
-import com.artemis.Component
+Mouse/touch destinations and normalized keyboard directions share collision rules. Replacing a route cancels its prior interaction. NPC clicks approach authored service points. Modal surfaces, menus, suspension and battle entry stop movement. NPCs/enemies are stationary in the slice. Towns are safe; dungeon detection uses distance, observation eligibility and unobstructed geometry.
 
-// Defaulted parameters generate the public no-arg constructor artemis creates reflectively.
-class GridPosition(var x: Int = 0, var y: Int = 0) : Component()
-```
+## 8. World generation, discovery and RNG
 
-Use project-generated stable IDs for saves, events, targeting, and replay. artemis entity ids are recycled after deletion, so entity id values and aspect subscription iteration order must never determine persistent identity or initiative ties.
+Strict `world.json` content supplies town geometry, NPC services, potion offers and room templates with entry/exit connectors. Seeded bounded assembly joins compatible room connectors, rejects overlaps and verifies required reachability. No cell-based generation or hidden movement grid remains. Current content uses four rooms, narrow connecting approaches and three required encounters.
 
-Entity and component edits go through `EntityEdit` (`world.edit(id)`, `world.delete(id)`, `mapper.create(id)`) and are applied immediately to the entity, while subscription membership catches up at the strategy's `updateEntityStates()` points around each system. This is not an end-of-scene command buffer. Copy event values before deleting an entity, prefer `IteratingSystem` deferred deletion during iteration, and finish cleanup before projecting or saving. [artemis-odb wiki: InvocationStrategy](https://github.com/junkdog/artemis-odb/wiki/InvocationStrategy).
+Rooms become discovered at their doorway; discovered geometry persists, while live actors are projected only from the current observable room. Gold frontier markers expose only entrances adjacent to discovered rooms. Hidden navigation topology is never sent to presentation.
 
-`RunSession` holds run/floor IDs, rules/content versions, turn and command counters, active actor, logical phase, scheduler, grid, RNG streams, visibility/exploration state, run inventory with origin references, quest-stage snapshots and pending evidence, the equipped base-title snapshot fixed for the run's duration, and pending rewards. A dice activation also owns frozen skill/rank/target inputs, five die IDs/faces, kept flags, reroll allowance, and resource reservations. Rendering's `isAnimating` flag is not a saved gameplay phase.
-
-## 6. Ordered rule pipeline
-
-Each command or automatic actor action resolves through an explicit context. Systems process only the active action and its effects; a system pass does not give every entity a turn.
-
-| Slot | System                    | Responsibility                                                            |
-|-----:|---------------------------|---------------------------------------------------------------------------|
-|  100 | `CommandValidationSystem` | Validate actor, phase, targets and costs; reject without partial mutation |
-|  150 | `EnemyIntentSystem`       | Choose an AI action when the active actor is an enemy                     |
-|  200 | `MovementSystem`          | Commit legal cardinal movement and occupancy changes                      |
-|  300 | `InteractionSystem`       | Doors, traps, pickups, stairs, contact with an enemy                      |
-|  400 | `DiceSystem`              | Lock five-dice hand/profile and costs, keep dice, batch reroll, consume hand                 |
-|  500 | `AbilitySystem`           | Pay reserved costs once; resolve the locked skill and authored effects                      |
-|  600 | `DamageSystem`            | Resolve defense, combo, resistance, shield, HP damage and defeat markers                    |
-|  700 | `StatusEffectSystem`      | Resolve periodic effects, expiration, stat recomputation, regeneration and cooldowns                |
-|  800 | `CleanupSystem`           | Remove dead actors from occupancy/initiative, clear transient intents     |
-|  900 | `VisibilitySystem`        | Refresh visibility after movement or opacity changes                      |
-| 1000 | `TurnFinalizationSystem`  | Finalize action cost, select the next actor, update terminal state        |
-
-Slot numbers are documentation labels for the pipeline order; execution order is fixed by the order in which the systems are registered with `WorldConfigurationBuilder` (one instance per system class).
-
-Project snapshots/export event batches in the controller **after** `World.process()` returns and artemis-odb has flushed pending entity operations. Save only at those completed command boundaries.
-
-An ability can produce several effects; resolve them in a stable order. A status tick that deals damage must use the same synchronous damage resolver before cleanup, rather than leaving pending damage for an accidental future command. Pass explicit `activationStarted`/`activationEnded` signals so rolling, changing kept flags, or rerolling cannot tick poison repeatedly. At an eligible activation end, resolve periodic effects, expire statuses, recompute stats and clamp pools, then regenerate only living actors. Finish these effects and cleanup before deciding the outcome: player defeat takes priority if the player is dead; otherwise no remaining hostiles means victory.
-
-Expected invalid commands return an `ActionResult` and reason. Invariant failures halt the session with seed/command diagnostics; do not continue from a half-applied action or save it as healthy state. Systems emit events for external work and never perform I/O themselves.
-
-## 7. Grid movement and interaction contract
-
-Use `int` coordinates, cardinal movement, and a project-owned `DungeonGrid` with flattened `int[]` tile IDs indexed by `x + y * width`. Choose a y-up world convention and translate input/asset orientation at the edges.
-
-A `MOVE(dx, dy)` requires `abs(dx) + abs(dy) == 1`, map bounds, valid terrain, and no blocking occupant. On success, commit the new cell and update occupancy together. Events contain both old and new cells for interpolation.
-
-| Action/result                                     | Initial rule                                                                         |
-|---------------------------------------------------|--------------------------------------------------------------------------------------|
-| Move to an empty walkable cell                    | One standard action; resolve entry traps and reveal available pickups                                 |
-| Move into a closed unlocked door                  | Open it, remain in place, consume one standard action                                |
-| Wall, out-of-bounds, locked door without a key    | Reject without spending initiative                                                   |
-| Contact an adjacent hostile                       | Enter the dice-action flow below; never overlap cells                                |
-| Wait                                              | One standard action                                                                  |
-| Invalid target or insufficient ability resources  | Reject without spending dice or initiative                                           |
-| Open settings, inspect inventory, select a target | UI-only; no simulation time                                                          |
-| Use a consumable, when enabled | One full action before rolling; resolve recovery/statuses and end activation |
-| Pick up world loot, when enabled | One full action from the actor cell or an adjacent reachable pickup; reject without a turn if quantity/fit fails |
-| Rearrange/split/merge/sort carried inventory | Validated layout-only command with no initiative cost; unavailable while dice are locked |
-| Change equipment during a run | Deferred; initial equip/unequip operations occur in town |
-| Descend stairs                                    | Explicit interaction after arrival; checkpoint before changing floor                 |
-
-The simulation remains the final validator even when the HUD disables a control. Resolve pickups/death/rewards in a defined order and clear occupancy before a dead actor can block later actions.
-
-Input adapters all submit the same commands: keyboard arrows/WASD, on-screen D-pad, and swipe; add controller mapping and tap-to-walk after the first slice. Tap-to-walk submits one step per completed action, revalidates each step, and stops on danger, interaction, or manual input.
-
-## 8. SquidSquad adapters and deterministic RNG
-
-Keep library-specific grids, `Coord`, `Region`, path objects, and RNG implementations behind adapters. Components, content definitions, and saves use project-owned values.
-
-### Dungeon generation
-
-Start with `com.github.yellowstonegames.place.DungeonProcessor`, constructed with explicit dimensions and an `EnhancedRandom` instance. Version `4.0.12` exposes `DungeonProcessor(int, int, EnhancedRandom)`, `generate()`, and stair coordinates. These signatures were checked in the resolved source JAR.
-
-Generation pipeline:
-
-1. Derive a floor seed from the run seed, floor index, generator version, and attempt number using a documented stable mixing function.
-2. Give that attempt its own seeded Juniper generator; never use an unseeded default constructor.
-3. Generate a `char[x][y]` map and translate symbols into tile IDs, terrain properties, and door/entity spawn definitions.
-4. Copy optional room/corridor metadata into project values only when a feature needs it.
-5. Choose and validate spawn/exit, room constraints, walkable area and content placements.
-6. Confirm spawn-to-exit reachability using the same movement/door rules as the game, including key availability where applicable.
-7. Retry invalid output with a derived attempt seed up to a fixed limit; return `GenerationFailure` if exhausted.
-
-SquidSquad arrays are x-first, while the game's flattened storage is row-major by y. Adapter tests must catch transposition, boundary, and coordinate-origin errors. Keep an existing floor intact until replacement generation succeeds.
-
-Later add authored room templates, cave profiles, environmental decorations and biome rules behind the same generator interface. A worker may generate detached data; integrating it into the live run happens on the render thread.
-
-### Pathfinding
-
-Use `com.github.yellowstonegames.path.DijkstraMap` with `Measurement.MANHATTAN` for four-way movement. Start with one-step enemy pursuit and simple finite-state decisions: idle, investigate, pursue, attack.
-
-Construct/reinitialize its terrain map from project walkability, representing blocked terrain as walls. Supply dynamic blockers for each query. Treat a hostile target cell as a goal when appropriate, but let the movement/interaction system prevent occupation of that cell. Closed doors must not become accidentally walkable merely because a character other than `#` was passed to the library.
-
-Version `4.0.12` uses deterministic internal tie-breaking for path requests; do not assume the old SquidLib constructor taking an external RNG exists. Explicit AI randomness uses the AI stream, and adapter fixtures pin chosen paths for the selected library version. Treat mutable scans/caches as reconstructible data, not save state.
-
-### Field of view
-
-Use `com.github.yellowstonegames.grid.FOV.reuseFOV(...)` with reusable `float[x][y]` resistance and light arrays. Choose `Radius.DIAMOND` for the initial Manhattan-radius vision boundary; movement topology and vision radius are separate settings.
-
-Build resistance from terrain plus dynamic opacity, including doors. Recompute on relevant changes, and maintain `visibleNow` plus persistent `explored` bits. Rendering fog consumes these values; decorative light never changes what the actor can see.
-
-Test corner occlusion and wall visibility explicitly. Preserve explored terrain, but do not render currently hidden enemies from an unrestricted snapshot. Future last-seen markers must represent remembered observations rather than live hidden positions.
-
-### RNG streams
-
-Use a project `RandomSource` adapter backed initially by Juniper `AceRandom`. In the checked `0.10.5` source it exposes an algorithm tag and five state words through `getStateCount()`, `getSelectedState(int)`, and `setSelectedState(int, long)`.
-
-Keep distinct streams for generation, AI decisions, combat/dice, loot, cosmetic presentation, town enchanting, and local development gacha. The profile persists the enchanting stream independently of run streams; it covers application checks, variable enchant values, and burn recovery. Explicitly seed each stream using fixed stream identifiers. Cosmetics must never consume gameplay RNG.
-
-Save the RNG algorithm ID, state format version, and **all** state words, not just the original seed. Encode long words losslessly, such as hexadecimal strings. Restore only recognized algorithms/state counts. Capture state after every accepted randomness-consuming command, including rerolls.
-
-Never use `Math.random()`, `MathUtils.random`, system time, unordered hash iteration, or artemis entity id order for authoritative decisions. Cross-platform replay fixtures must survive JVM, Android, and RoboVM execution before deterministic portability is claimed.
+Retain independent generation, AI, combat and loot AceRandom streams and explicit captures. Navigation uses no randomness. Exploration does not consume battle RNG or tick statuses.
 
 ## 9. Turn scheduler and command runner
 
-Implement a small project-owned `TurnScheduler`; the selected libraries do not supply the previous plan's rot.js scheduler contract.
-
-Use an initiative queue ordered by `(dueTick, insertionSequence, stableActorId)`. Store `long` logical ticks and persist tie-break values. For the first slice every completed activation costs `100` ticks; introduce integer-based speed/action-cost rules later without using wall time or floating-point timestamps.
-
-Snapshot the queue, current tick, active actor, next insertion sequence, and any in-progress player activation. Remove dead actors before selecting the next actor. An active actor is not also queued as waiting for a duplicate turn.
-
-```text
-Input command
-  -> validate expected session and current actor
-  -> resolve one synchronous artemis-odb command step
-  -> commit snapshot/events and request a checkpoint
-  -> if activation ended, run scheduled automatic actors in order
-  -> stop when player input is needed or the run ends
-  -> present the committed event sequence
-```
-
-A logical activation can contain several dice commands. Only commands that finish it advance initiative. Roll/keep/batch-reroll have their own resource and phase rules but cannot silently give enemies extra turns.
-
-Add an automatic-action count guard to detect an invalid scheduler loop. If a valid burst needs to be spread over render frames, yield only between complete logical actions; retain deterministic order and block additional gameplay input until the player is due.
-
-Keep command sequence numbers for accepted commands and event sequence numbers for exported events. Include run/session identity on callbacks and animation acknowledgements. A replay identifies initial state or seed, generator/rules/content versions, and ordered accepted commands; a seed alone is insufficient after rules or content changes.
+TurnScheduler is battle-only. Rolls, keeps and rerolls do not finish an activation; commit, Pass and pre-roll potion use do. The battle controller checkpoints each accepted action before automatic enemies advance. Expected rejections change no state or RNG. Invariant failure halts the controller. Required save failure blocks further actions; Retry saves the same state.
 
 ## 10. Dice combat vertical slice
 
@@ -392,7 +209,7 @@ Bumping an adjacent hostile opens a dice activation for the current player turn 
 
 | Command or intent | Contract |
 | --- | --- |
-| Select skill/target | Before rolling; validate learned active skill, equipment, range, target, cooldown and resource affordability |
+| Select skill/target | Before rolling; validate learned active skill, equipment, encounter membership, target, cooldown and resource affordability |
 | `ROLL_DICE` | Once per activation: freeze inputs, reserve costs, independently roll all five dice in stable die order |
 | Set kept dice | Edit kept flags without RNG, costs or initiative advancement |
 | `REROLL_DICE` | Atomically replace a chosen nonempty subset of unkept dice using the locked profile; spend one reroll action |
@@ -440,31 +257,9 @@ Critical Hit is deferred from the starter slice. When enabled, the learned passi
 
 ## 11. LibGDX presentation and input
 
-### Dungeon rendering
+ExplorationScreen composes town/dungeon rendering, world viewport, camera, feet-anchored sprites, depth sorting and service dialogs. Input unprojects through that viewport; UI gestures never become world clicks. BattleScreen stages combatants cosmetically and composes BattleHud, modal potion selection, feedback tracks and keyboard/touch ownership. No combat distance is inferred from sprite placement.
 
-Use `SpriteBatch`, `TextureAtlas`, `TextureRegion`, `OrthographicCamera`, and a world viewport. Begin with 16-pixel tiles and nearest-neighbor filtering; choose a small logical world resolution and test integer scaling/letterboxing across target screens.
-
-Draw terrain, remembered terrain/fog, visible props, visible actors, and effects in an explicit order. Batch sprites sharing atlas textures. Use a stable depth rule such as layer, cell y, stable ID; never depend on entity creation order to resolve draw ties.
-
-`ACTOR_MOVED` provides a copied source and destination cell. A presentation track interpolates the sprite while the authoritative actor is already at its destination. Animation completion can release input gating but cannot grant damage, loot, currency or a turn. Skipping animations snaps to the committed state and consumes each event only once.
-
-After a command burst, movement/events may describe intermediate positions while the snapshot is the final state. Animate from the event sequence and reconcile at the end, rather than teleporting to the final snapshot before playing the sequence. Use observed visibility at event time to avoid revealing hidden actions.
-
-Start with drawing visible map cells each frame; introduce chunk caches or a low-resolution framebuffer only if measurements justify them. Sprite animations use LibGDX animation utilities; Spine is optional future art tooling.
-
-### HUD and menus
-
-Use a separate `Stage` and UI viewport for five persistent dice slots, active skills, HP/MP/SP, inventory, dialogs, pause and progression screens. Build layouts with `Table` and `Skin`, using the existing `assets/ui` resources as prototype assets. Scene2D UI does not require adding another UI framework. [Scene2D UI guide](https://libgdx.com/wiki/graphics/2d/scene2d/scene2d-ui).
-
-Show selected skill/rank, kept dice, remaining rerolls, pip total, combination/multiplier, face probabilities, target and effect breakdown. Separate Roll, Reroll and Use Skill controls. Show current/max/reserved resources, final costs, and status sources with remaining target activations. The journal distinguishes active skills from passives and explains inactive equipment conditions.
-
-Town and menu-bar screens expose training against 100 points and AP costs, book/page collections, level/XP/cumulative level, age and talent mastery, the character screen's Titles collection (First/Second slots, talent display, preview with current-pool clamping, and town-only changes per [titles.md](gameplay/titles.md)), grid inventory/equipment and saved overflow, enchant replacement/burn previews, and quest tabs/tracker. Quest tabs use Chapter names with Generations inside, plus Sidequests and Skills; mark NPC role-playing missions with an RP badge. Inspecting, filtering and tracking remain presentation-only.
-
-Call `stage.act(clampedDelta)` for UI animation and `stage.draw()` for display. Stage actions animate widgets only. Update widget content from committed view models; listeners submit commands instead of mutating components.
-
-An `InputMultiplexer` routes input to modal/UI controls first and world controls second. Ensure a consumed touch cannot both press an ability and move the hero. Convert touches using the relevant viewport's unprojection, including letterboxing and HUD exclusion areas. In `resize`, update both viewports and preserve the existing zero-size guard.
-
-Provide remappable keys, keyboard focus, clear selection states, large touch targets, scalable text, reduced motion and color-independent dice/status cues. Scene2D widgets are rendered game UI; screen-reader support must be separately designed and verified on Android/iOS, not assumed from the old native-widget plan.
+AssetManager owns shared skins, atlases, fonts and sounds. Screens own their batches, Stages and shapes and dispose them on navigation. Session state survives fresh screen instances. Inspect/skip/animation completion never issues gameplay commands.
 
 ## 12. Events, assets, and resource lifetime
 
@@ -493,69 +288,23 @@ PlatformServices     lifecycle/platform capabilities exposed to shared code
 
 Add authentication, cloud sync, purchase and gacha repositories when those features begin. Platform launchers inject implementations into `RebirthDungeon`; the current no-argument constructor will evolve with that wiring.
 
-Represent expected failures with explicit Kotlin result/error types, for example `LoadFailure`, `SaveFailure`, `InvalidContent`, `GenerationFailure`, and later `NetworkFailure`. Normal rejected movement is a domain result. An impossible occupancy state is a defect with diagnostic context.
+Represent expected failures with explicit Kotlin result/error types, for example `LoadFailure`, `SaveFailure`, `InvalidContent`, `GenerationFailure`, and later `NetworkFailure`. Normal rejected movement is a domain result. An invalid navigation state is a defect with diagnostic context.
 
 Bound retries and give each operation one retry owner. Retry only transient operations that are safe to repeat. Save failures retain the latest pending snapshot and expose a retry state; malformed content and unsupported save versions are not transient errors.
 
-## 14. Persistence, recovery, and reward consistency
+## 14. Persistence, recovery and reward consistency
 
-Use **project-owned, versioned JSON DTOs** for the first offline implementation. LibGDX already includes `JsonReader`, `JsonValue`, `JsonWriter`, and custom serialization support; SQLite and a Java database abstraction are not present in the current dependencies. [LibGDX JSON guide](https://libgdx.com/wiki/utils/reading-and-writing-json). This save bundle intentionally uses LibGDX JSON, while versioned content definitions use Jackson (section 15); the two stacks have different jobs and must not drift into each other.
+SessionCodec stores only new version-3 primitive session records in alternating version-2 checksummed envelopes. Content schema/rules are version 2 and the catalog is version 3. No old movement codec, compatibility engine or migration remains. The bundle includes mode, expedition/operation IDs, placed room templates and offsets, fixed-tick position/path/remainder, discoveries, defeated encounters, hero or full battle restore, RNG, supplies, gold and pending rewards.
 
-Decode explicit fields and validate them before building a run. Prefer explicit codecs/custom serializers over serializing artemis-odb internals, reflection-driven class names, scheduler internals or arbitrary library graphs. This keeps schema changes deliberate and reduces reflection/linker dependence on Android and RoboVM.
+Validate both slots before selecting the newest; never overwrite the latest valid slot. Read back writes and check checksum/payload. Required saves cover battle entry/actions/outcome, services and exits. Movement saves every 120 simulation ticks and at lifecycle/menu boundaries. Screens cannot discard the application writer. Transaction operation and battle revision checks reject stale repeats.
 
-A save bundle contains:
-
-```text
-schemaVersion, rulesVersion, contentVersion, generatorVersion
-saveRevision, profileRevision, updatedAt (metadata only)
-profile: hero/life identity, level/XP/cumulative level, AP, skills/objective counts
-         talent, current-life growth, starting age and processed aging intervals
-         inventory/equipment/bags/placements/locks, page records, currencies, overflow
-         installed enchant values, town pools, enchanting RNG and operation results
-         quests/stages/evidence/eligibility milestones, tracked quests, reward IDs
-         titles: discovered/earned IDs with acquisition source/outcome IDs,
-         evidence/counters, First/Second selections, talent display, favorites
-run: ID, floor index, original seed, generated tile data, entity DTOs
-     explored cells, logical phase, active actor, turn/command counters
-     initiative queue and tie-break state
-     each gameplay RNG algorithm + complete state
-     current dice activation: five stable dice/faces, kept flags, reroll budget
-     locked skill/rank/targets/stats/profile, HP/MP/SP and reservations
-     stat sources, active effect timing, cooldowns and enabled skill-extension state
-     equipped base-title snapshot and pending title discovery/award evidence
-     run inventory/origin reservations/consumption, quest snapshot/pending evidence
-     pending XP/training/loot, completion status and committed result ID
-mission, when RP is active: scenario/NPC template versions, attempt ID,
-     isolated simulation/dice/supplies/objectives and outcome status
-```
-
-Save the actual generated map and changes; do not depend on regenerating an old floor with a future library version. Rebuild occupancy, aspect indexes, resistance/FOV caches and presentation state after load. Exclude transient intents, in-progress system effects, textures and animation clocks.
-
-For the first slice, use one logical bundle containing both profile and run, stored in two alternating local save slots. A serialized writer writes the inactive slot with an increasing revision and checksum, closes it, and verifies it before reporting durability. On load, validate both slots and select the newest complete supported revision. A torn write must leave the previous good slot usable; platform-specific flush/replace behavior still needs interruption testing.
-
-This combined bundle makes a local run-completion grant one persisted transition: reconciled brought-item consumption/returns and released reservations, retained loot/XP/training/quest evidence, saved overflow, updated profile, completed run and grant ID together. A load/retry cannot grant the same reward twice. Preferences may hold volume/control settings but do not replace the run-save mechanism.
-
-Book learning/consumption, page insertion/completion, AP/rank advancement, equipment swaps, enchanting/burning, item hand-ins, quest claims and rebirth each save all inputs, outputs and operation IDs atomically. Retrying returns the recorded result, including RNG results, instead of paying or rolling twice. Save modifier sources rather than only effective totals; rebuilding must not restore resources, refresh effects or reroll enchants. Validate inventory ownership/placement and containment before restoring the simulation.
-
-At a normal run result, apply the selected retention policy, then retained XP using run-start age/talent, retained skill training, and elapsed aging intervals in that order. Commit eligible quest evidence at this boundary; subsequent gameplay stages begin in town until mission-local staging is explicitly supported. Rank-ups, quest claims and rebirth occur afterward at legal town boundaries. Replays use recorded progression outcomes; the dungeon simulation never reads the wall clock.
-
-Checkpoint after accepted gameplay commands, floor transitions, completed rewards and lifecycle pause. Preserve order so an older write cannot overwrite a newer revision. If coalescing saves, keep the newest complete snapshot and retain durability callbacks; for rolls, rerolls, reward grants and random town operations, gate subsequent gameplay until the checkpoint succeeds or the player explicitly handles the save failure.
-
-On `pause`, request a bounded flush of the last committed snapshot. If suspension arrives during animation, the save already describes the completed rules. If it arrives while generation is pending, retain the previous stable floor. Do not rely on a background executor continuing after the OS suspends the app.
-
-Schema migrations are explicit and sequential. Reject unsupported future versions without overwriting them; preserve a recoverable copy and offer a clear load error. Keep migration/replay fixtures for every shipped schema/content/rules combination. Consider SQLite later only when query or transaction needs justify a vetted cross-platform implementation.
+Victory resolves the encounter once, stores pending loot/gold, and clears walking intent. The authored required encounters unlock the exit; exit commits rewards once. Defeat discards pending rewards and preserves remaining brought supplies. Recovery is explicit and free for this slice. Insufficient potion capacity blocks exit reward claim until supplies are used; no silent loss or partial grant.
 
 ## 15. Data-driven content
 
-Create validated catalogs under `assets/data/` for tiles, heroes, enemies, five-dice scoring/profiles, abilities, skills/ranks/training/acquisition, stats/costs/statuses, inventory/equipment/bags, enchants/recipes, loot/encounters, generation profiles, XP/age/talent curves, quests/Chapters/Generations and NPC scenarios, title definitions with slot types, hint/award conditions and typed effect bundles, and later banners/pity rules. The title catalog itself is deferred to its implementation phases; [project phases](project-phases.md) folds titles into phases 6–9.
+Jackson strictly binds nullable content DTOs with unknown field/enum/coercion/duplicate detection. Load order is manifest, starter combat catalog, actor visuals, then world geometry. Immutable validated values cross into game code; Gdx JSON is used only for save records. IDs remain independent of filenames. The first slice deliberately authors world.json as the fixed world catalog entry.
 
-Validate the explicit F → E → D → C → B → A → 9 → … → 1 rank order; reachable 100-point training at every supported nonterminal rank; skill-book/page mappings; six integer face weights with positive totals; stat units, bounds and acyclic derivation; effect stacking/timing; inventory footprints, stack keys and hand compatibility; enchant slot/condition/chance tables; and quest prerequisite/stage references and attainable objectives. Detect acquisition cycles and unavailable dependencies, including critical training without critical chance, multi-target objectives in single-enemy content, or rebirth/RP quests before those systems exist. Prototype caps and unavailable skills must be visible.
-
-Use stable content IDs and explicit schema versions. Content JSON is loaded with Jackson (`jackson-databind`, pinned in `gradle.properties`) into plain Kotlin DTOs; its strict defaults are part of the contract — an unknown field or unknown enum value fails the load with the offending name, so typo'd definitions cannot silently default. Any dice notation used for other authored effects stays a string at the parsing boundary and is validated explicitly; the player battle hand is always five d6 with its skill/rank face weights, not an arbitrary notation-defined pool. Then validate required fields, ranges, enum values, referenced IDs, probability totals, progression monotonicity and reachable generation constraints. Parsing JSON alone does not validate game rules.
-
-Load an immutable catalog before starting a run. Pin a run to its rules/content version; do not refresh definitions in the middle of a command. Keep retired content or a deliberate migration policy for resumable shipped runs.
-
-Separate content from visuals: a monster definition references an animation/atlas ID rather than embedding a `TextureRegion`. A missing visual asset should fail loading with a useful diagnostic before entering the dungeon.
+The slice replaces tile/generation catalog fields and skill range with polygon templates, service objects, shop offers and encounter membership. Spatial skill extensions remain disabled. Future equipment/progression/banking catalogs retain their own validation requirements when delivered.
 
 ## 16. Progression, inventory, quests, and online services
 
@@ -630,8 +379,8 @@ core/src/main/kotlin/cloud/vinh/rebirthdungeon/
     ecs/components/          artemis-odb data components
     ecs/systems/             ordered rule systems
     RunSession.kt
-    grid/                    DungeonGrid, occupancy, movement rules
-    algorithms/              generator/path/FOV/random interfaces
+    exploration/             Fixed-point navigation, movement, discovery, room assembly
+    algorithms/              random interfaces
     squidsquad/              SquidSquad and Juniper adapters
     turns/                   initiative and activation rules
     combat/                  five-dice hands, abilities, stats, damage, statuses, reactions
@@ -676,9 +425,9 @@ The pinned JVM test framework (JUnit 4.13.2) is in place under `core`. Most simu
 
 | Area               | Required evidence                                                                                              |
 |--------------------|----------------------------------------------------------------------------------------------------------------|
-| Movement/occupancy | Cardinal-only steps, bounds/walls, doors, traps, no actor overlap, correct action costs                        |
-| Generation         | Bounded attempts, reachable spawn/exit, correct x/y translation, stable seeded fixtures                        |
-| Path/FOV           | Four-way routes, dynamic blockers, door invalidation, corner visibility, explored memory                       |
+| Exploration | Continuous collision-safe paths, corners, narrow portals, tick-indexed input and replacement destinations                        |
+| Generation         | Bounded attempts, reachable spawn/exit, connector alignment, stable seeded fixtures                        |
+| Navigation/discovery | Deterministic A*/funnel, unreachable projection, discovery memory, hidden actor/route privacy                       |
 | artemis-odb        | Registration-order behavior, structural changes between systems, cleanup before projection, no stale IDs       |
 | Turns/combat       | Stable initiative ties, single turn-boundary ticks, no extra turns from dice commands, no reroll/reset exploit |
 | Skills/progression | Three learning routes, 100-point/AP gate, capped objective counts, duplicate outcome rejection, XP overflow, mastery, aging cutoffs and rebirth preservation |
@@ -695,7 +444,7 @@ The pinned JVM test framework (JUnit 4.13.2) is in place under `core`. Most simu
 
 Use canonical ordering for state hashes and replay comparisons. Exhaustively classify all 7,776 ordered five-die hands, verify one initial roll/two subset rerolls, frozen inputs and held faces, and test weighted probability boundaries and full damage distributions. Stage counter ordering/no loops, critical draw order, area training counts and Charge paths with their feature gates. Test a restored run against an uninterrupted run, including RNG continuation and initiative order, rather than merely comparing a saved DTO to itself.
 
-Target 60 fps presentation on selected baseline devices. Measure ordinary turn latency and generation worst cases separately. Keep occupancy lookup O(1), FOV change-driven, pathfinding decision-driven, and all I/O outside rule resolution. Reuse rendering buffers and bound particles, floating text and event queues. Optimize snapshot copying/map batching only after measuring representative maps and enemy counts.
+Target 60 fps presentation on selected baseline devices. Measure ordinary turn latency and generation worst cases separately. Keep discovery change-driven, pathfinding decision-driven, and fixed-tick catch-up bounded without skipping authoritative ticks, and all I/O outside rule resolution. Reuse rendering buffers and bound particles, floating text and event queues. Optimize snapshot copying/map batching only after measuring representative maps and enemy counts.
 
 Test UI and rendering on actual desktop and mobile backends; a headless test cannot validate texture filtering, audio, touch behavior or native accessibility. Run Android minified builds and iOS linking checks before expanding optional reflection-heavy libraries.
 
@@ -716,8 +465,8 @@ Test UI and rendering on actual desktop and mobile backends; a headless test can
 ### Milestone 1 — Playable dungeon movement
 
 - Generate one seeded floor with player, enemy, spawn and exit.
-- Implement cardinal movement, occupancy, wait, doors and action costs.
-- Add `DijkstraMap` pursuit, FOV/explored state and deterministic initiative.
+- Implement fixed-point movement, polygon collision, destination commands and room discovery.
+- Add seeded connector assembly, deterministic encounter triggers and separate battle initiative.
 - Render a pixel-art atlas, HUD, keyboard/D-pad input and movement interpolation.
 - Capture replay fixtures and a minimal save/checkpoint path before introducing scarce random rewards.
 

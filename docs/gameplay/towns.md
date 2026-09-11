@@ -1,6 +1,8 @@
 # Rebirth Dungeon: Towns
 
-Towns are **walkable, safe grid settlements between dungeon runs**, home to service NPCs, instructors, commerce, banking, and recovery. The former abstract "hub" is dissolved: self-service progression lives in a **persistent game UI menu bar**, while town buildings own the NPC-bound half of preparation — learning skills, accepting quests, shopping, banking, healing, resting, and ceremonies.
+> **Active migration (2026-09-10):** [Free exploration and separate battles](../free-exploration.md) supersedes the grid-world, shared dungeon/battle screen, spatial combat, and legacy-save contracts below. Earlier phase evidence is retained as history.
+
+Towns are **walkable, safe freely walkable settlements between dungeon runs**, home to service NPCs, instructors, commerce, banking, and recovery. The former abstract "hub" is dissolved: self-service progression lives in a **persistent game UI menu bar**, while town buildings own the NPC-bound half of preparation — learning skills, accepting quests, shopping, banking, healing, resting, and ceremonies.
 
 This is a design specification for planned gameplay, modeled after **Mabinogi**. It complements [skills.md](skills.md), [character.md](character.md), [inventory.md](inventory.md), [battle.md](battle.md), [enchants.md](enchants.md), [quests.md](quests.md), [titles.md](titles.md), [stats.md](stats.md), the [game plan](../game-plan.md), and the [project phases](../project-phases.md). The concepts below are requirements; prices, percentages, footprints, and names are proposed Rebirth Dungeon defaults. This document does not claim towns are implemented.
 
@@ -38,8 +40,8 @@ A persistent status readout shows current HP/MP/SP, level and XP, and carried go
 
 ## 3. Town traversal and layout
 
-- A town is one walkable **grid map** using the same 16-pixel tiles and cardinal movement as dungeons, fully visible: **no fog of war, no enemies, no turn consumption**. Towns are safe.
-- NPCs stand at their buildings or stations. The player walks to an adjacent cell and interacts.
+- A town uses the same continuous polygon navigation as dungeon exploration, fully visible: **no fog of war, no enemies, no turn consumption**. Towns are safe.
+- NPCs stand at their buildings or stations. The player runs to an authored nearby interaction point and interacts.
 - **Dungeon entrances sit on the town's edges.** A run begins by physically walking to an entrance, preserving the prepare → walk out → delve rhythm.
 - Landmarks — stream, graveyard, farmlands, pastures, and an old ruin — double as gathering spots (section 9) and story anchors, not combat zones.
 - A town is **authored content**: a map, an NPC list with service panels, gathering spot definitions, and entrance links. A second town later is additive data, not new systems. The first town is a Tir Chonaill-inspired starting village; all names in this document are illustrative placeholders.

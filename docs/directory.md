@@ -1,5 +1,7 @@
 # Recommended Game Directory Structure
 
+> **Active migration (2026-09-10):** [Free exploration and separate battles](free-exploration.md) supersedes the grid-world, shared dungeon/battle screen, spatial combat, and legacy-save contracts below. Earlier phase evidence is retained as history.
+
 Recommendation dated **2026-09-07**. Keep the existing Gradle modules and use **responsibility boundaries at the top, gameplay features inside those boundaries**. Extend [game-plan.md section 17](game-plan.md#17-target-project-structure) rather than replacing it with a new architecture.
 
 This is a target layout, not an inventory of implemented systems. Create directories only when their feature arrives in [project-phases.md](project-phases.md). Phases 2–3 have since implemented the content/RNG and movement/checkpoint foundations; see the phase tracker for current verification. The remaining target tree is guidance, not a claim that later features exist.
@@ -8,7 +10,7 @@ This is a target layout, not an inventory of implemented systems. Create directo
 
 | Documentation | Structural consequence |
 | --- | --- |
-| [Game plan](game-plan.md), [phase tracker](project-phases.md) | Preserve the Gdx-free `game/` boundary, one authoritative run World, ordered systems, immutable exports, and application-owned persistence. |
+| [Game plan](game-plan.md), [phase tracker](project-phases.md) | Preserve the Gdx-free `game/` boundary, one authoritative battle World, ordered systems, immutable exports, and application-owned persistence. |
 | [Battle](gameplay/battle.md), [stats](gameplay/stats.md) | Keep dice, activation, resource costs, damage, and statuses together in `game/combat/`; expose one shared stat calculation to both town previews and run rules. |
 | [Skills](gameplay/skills.md), [character](gameplay/character.md), [titles](gameplay/titles.md) | Group persistent mastery, current-life growth, and titles under progression. Skill execution belongs to combat; learning, training, and rank advancement belong to progression. Titles are part of progression, not another profile subsystem. |
 | [Inventory](gameplay/inventory.md), [enchants](gameplay/enchants.md) | Give item identity, placement, equipment, and reservations one owner. Enchant rules use those items and shared stat effects; they do not own another inventory. |
@@ -17,7 +19,7 @@ This is a target layout, not an inventory of implemented systems. Create directo
 | [Overview](overview.md) | Distinguish an activation, encounter, floor, run, and life. Their state and completion decisions must not collapse into one screen or one generic game manager. |
 | [Audit](audit.md), [reference research](references.md) | Preserve unresolved rules and historical evidence. Reference-game mechanics and provisional balance do not justify additional systems or directories. |
 
-The existing source layout already has `bootstrap/`, `game/`, and `presentation/`, including `DungeonSimulation`, grid values, movement systems, and a SquidSquad adapter. Build on that working slice. Avoid a wholesale rename to `domain/`, `engine/`, or `features/` that would obscure the established boundary and its build check.
+The existing source layout already has `bootstrap/`, `game/`, and `presentation/`, including `BattleSimulation`, fixed-point exploration/navigation, application sessions, and a Juniper RNG adapter. Build on that working slice. Avoid a wholesale rename to `domain/`, `engine/`, or `features/` that would obscure the established boundary and its build check.
 
 ## 2. Repository layout
 
@@ -48,13 +50,14 @@ RebirthDungeon.kt                 Lifecycle entry point; delegates wiring/naviga
 bootstrap/                       Construct services, workers, controllers, screens
 
 application/                     Coordinate use cases and durable state transitions
-  run/                           RunController, start/continue/abandon, floor/results flow
+  run/                           BattleController, serialized combat requests
+  session/                       SessionCoordinator, exploration/expedition/profile bundle
   profile/                       Profile ownership, town operations, aging reconciliation
   persistence/                   SaveRepository contract, checkpoint/write coordination
 
 game/                            Deterministic values and rules; no Gdx or I/O
-  DungeonSimulation.kt           Existing run World facade; evolve with the run slice
-  RunSession.kt                  Authoritative non-component run state
+  BattleSimulation.kt           Battle-only World facade
+  BattleSession.kt                  Authoritative non-component battle state
   identity/                      Typed content/instance/run/operation IDs as needed
   content/                       Immutable project-owned definitions/catalog values
   commands/                      Explicit run command values and results
@@ -66,8 +69,8 @@ game/                            Deterministic values and rules; no Gdx or I/O
     components/                  Mutable no-arg artemis Component classes
     systems/                     Explicitly ordered systems; delegate feature calculations
 
-  grid/                          Cells, terrain, occupancy, movement legality
-  algorithms/                    Generator, path, FOV, RandomSource interfaces
+  exploration/                   Fixed-point movement, navigation, discovery, room assembly
+  algorithms/                    RandomSource interface
   squidsquad/                    SquidSquad and Juniper implementations
   turns/                         Initiative, actor activation boundaries
   combat/
@@ -99,8 +102,8 @@ data/                            External representations and concrete storage
     migration/                   Sequential schema migrations
 
 presentation/                    Input and display; never authoritative rules
-  screens/                       Loading, title, town, dungeon, results composition
-  dungeon/                       Existing dungeon renderer, camera, fog
+  screens/                       Loading, title, exploration, battle composition
+  dungeon/                       Future extracted exploration rendering helpers
   town/                          Town rendering and NPC interaction presentation
   hud/                           Persistent status/menu bar, dice panel, quest tracker
   windows/                       Reusable Scene2D windows across town and dungeon
@@ -133,7 +136,7 @@ These are package conventions within `core`, not separate compiler-enforced modu
 
 ### Run state and persistent profile
 
-Keep dynamic run entities in the artemis World and non-component run state in `RunSession`, as the architecture contract requires. `DungeonSimulation` encapsulates World assembly and processing; `application/run` coordinates it and exports state only after processing returns. Do not introduce another mutable combat model for the dice window or a second World for an encounter.
+Keep active battle entities in the artemis World and non-component battle state in `BattleSession`. `application/session` owns expedition state outside that World, as the architecture contract requires. `BattleSimulation` encapsulates World assembly and processing; `application/run` coordinates it and exports state only after processing returns. Do not introduce another mutable combat model for the dice window or a second World for an encounter.
 
 The application owns the committed profile aggregate. Its values use the corresponding pure progression, inventory, quest, and town types; the on-disk schema belongs to `data/save/dto`. Pure rules can calculate a proposed transition, but only the application coordinates committing the full bundle and publishing successful results. A cached UI view is never a writable profile.
 
@@ -141,7 +144,7 @@ At run start, copy the permitted progression/loadout/title values and reserve br
 
 ### Towns share rules without using dungeon initiative
 
-Town movement is a validated, zero-turn operation. Reuse cell/terrain primitives where useful, but keep town traversal separate from hostile contact, fog, combat ticks, and the dungeon scheduler. A town does not require another persistent ECS World just because it has a grid.
+Town and dungeon traversal share the pure polygon navigation and fixed-tick exploration rules. Town traversal never advances combat initiative and requires no ECS World.
 
 Place stat and recovery calculations in the shared combat/stat rules, inventory capacity in inventory rules, quest offers in quests, and learning in progression. `game/town` owns service location/adjacency and town-specific rules; `application/profile` coordinates the saved operation across those owners. NPC panels display the outcome.
 
@@ -165,7 +168,7 @@ Character, Skills, Quests, and Inventory are reusable windows, not full-screen l
 
 Keep observed snapshots separate from full restore exports within `game/projection`: rendering must not receive live hidden-enemy positions through a save snapshot. Detached collection contents must also be immutable; Kotlin `val` alone does not make an exported mutable list safe.
 
-An RP mission uses the dungeon presentation and simulation with its scenario context; put mission-specific briefings or overlays beside quest presentation when needed. A separate battle screen, RP engine, or formula set is unnecessary.
+An RP mission uses the dungeon presentation and simulation with its scenario context; put mission-specific briefings or overlays beside quest presentation when needed. A separate BattleScreen presents the shared battle engine; RP missions must reuse that engine rather than fork its formulas.
 
 ## 5. Content, resources, and tooling
 
@@ -175,7 +178,7 @@ Suggested growth under `assets/`; each category is introduced with its feature:
 assets/
   data/
     manifest.json               Content version and explicit catalog references
-    world/                      Tiles, dungeon profiles, encounters, loot tables
+    world.json                  Polygon town, room templates, encounters, potion offers
     actors/                     Hero/enemy definitions and NPC scenario templates
     combat/                     Dice scoring/weights, abilities, stats, costs, statuses
     progression/                Skills/ranks/acquisition, XP/age/talents, titles

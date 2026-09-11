@@ -10,7 +10,7 @@ interface ContentRepository { fun load(): ContentBundle }
 class VisualBinding(val id: ContentId, val atlas: String, val animation: String, frames: List<String>) {
     val frames = frozenList(frames)
 }
-class ContentBundle(val catalog: ContentCatalog, visuals: List<VisualBinding>) {
+class ContentBundle(val catalog: ContentCatalog, visuals: List<VisualBinding>, val world: cloud.vinh.rebirthdungeon.game.exploration.WorldContent) {
     val visuals = frozenList(visuals)
     fun validateVisuals(hasRegion: (String, String) -> Boolean) {
         visuals.forEach { binding -> binding.frames.forEach { frame ->

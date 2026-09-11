@@ -2,7 +2,7 @@ package cloud.vinh.rebirthdungeon.data.save
 
 import cloud.vinh.rebirthdungeon.application.persistence.CheckpointRepository
 import cloud.vinh.rebirthdungeon.data.save.codec.*
-import cloud.vinh.rebirthdungeon.game.projection.RunRestore
+import cloud.vinh.rebirthdungeon.game.projection.BattleRestore
 
 interface CheckpointStorage {
     fun read(slot: String): String?
@@ -11,9 +11,9 @@ interface CheckpointStorage {
 }
 
 /** One application-owned synchronous writer. Never overwrites the newest valid slot. */
-class AlternatingCheckpointRepository(private val storage: CheckpointStorage, private val validate: (RunRestore) -> Unit) : CheckpointRepository {
+class AlternatingCheckpointRepository(private val storage: CheckpointStorage, private val validate: (BattleRestore) -> Unit) : CheckpointRepository {
     private val codec = CheckpointCodec()
-    private data class ValidSlot(val name: String, val revision: Long, val state: RunRestore)
+    private data class ValidSlot(val name: String, val revision: Long, val state: BattleRestore)
     private fun newest(): ValidSlot? {
         var present = false
         val valid = listOf("run-a.json", "run-b.json").mapNotNull { name ->
@@ -29,8 +29,8 @@ class AlternatingCheckpointRepository(private val storage: CheckpointStorage, pr
         check(!present || valid.isNotEmpty()) { "Both checkpoint slots are invalid; existing files preserved" }
         return valid.maxByOrNull { it.revision }
     }
-    @Synchronized override fun load(): RunRestore? = newest()?.state
-    @Synchronized override fun save(state: RunRestore) {
+    @Synchronized override fun load(): BattleRestore? = newest()?.state
+    @Synchronized override fun save(state: BattleRestore) {
         validate(state)
         val previous = newest()
         val revision = Math.addExact(previous?.revision ?: 0L, 1L)

@@ -15,7 +15,7 @@ import ktx.actors.onClick
 class BattleHud(val stage: Stage, private val skin: Skin, private val content: ContentCatalog,
     private val send: (RunCommand, Long, Long) -> Unit, private val menu: () -> Unit,
     private val retry: () -> Unit, private val skip: () -> Unit, private val newRun: () -> Unit,
-    private val settings: PresentationSettings, private val settingsChanged: () -> Unit, private val developmentControls: Boolean = false) {
+    private val settings: PresentationSettings, private val settingsChanged: () -> Unit, private val developmentControls: Boolean = false, private val supplyCount: (ContentId) -> Int = { 0 }) {
     val hudLayer = Table()
     val windowLayer = Group()
     val modalLayer = Group()
@@ -37,11 +37,12 @@ class BattleHud(val stage: Stage, private val skin: Skin, private val content: C
     private val roll = button("Roll") { request(RollDiceCommand) }
     private val reroll = button("Reroll unkept") { model?.let { request(RerollDiceCommand(it.unkept)) } }
     private val use = button("Use Skill") { request(UseAbilityCommand) }
+    private val potion = button("Potions") { potions() }
     private val pass = button("Pass") { confirmPass() }
     private val restart = button("New run", newRun)
     private var model: BattleView? = null
-    private var observation: DungeonObservation? = null
-    private var controller: RunController? = null
+    private var observation: BattleObservation? = null
+    private var controller: BattleController? = null
     private var dialog: Dialog? = null
     private var opener: Actor? = null
     private var compact = false
@@ -88,10 +89,7 @@ class BattleHud(val stage: Stage, private val skin: Skin, private val content: C
         navigation.add(button("Skip", skip)).minSize(56f, 48f).pad(4f)
         navigation.add(restart).minSize(72f, 48f).pad(4f); restart.isVisible = false
         dice.forEach { diceRow.add(it).minSize(64f, 48f).pad(4f).growX() }
-        listOf(roll, reroll, use, pass).forEach { actionsRow.add(it).minSize(72f, 48f).pad(4f).growX() }
-        listOf("<" to MoveCommand(-1, 0), "^" to MoveCommand(0, 1), "v" to MoveCommand(0, -1), ">" to MoveCommand(1, 0), "Wait" to WaitCommand).forEach { (name, command) ->
-            movement.add(button(name) { request(command) }).minSize(48f, 48f).pad(4f)
-        }
+        listOf(roll, reroll, use, pass, potion).forEach { actionsRow.add(it).minSize(72f, 48f).pad(4f).growX() }
         bottom.add(summary).growX().row(); bottom.add(costs).growX().row()
         bottom.add(diceRow).growX().row(); bottom.add(actionsRow).growX().row(); bottom.add(availability).growX().row()
         bottom.add(movement).right().row()
@@ -115,7 +113,7 @@ class BattleHud(val stage: Stage, private val skin: Skin, private val content: C
     }
     private fun request(command: RunCommand) {
         val m = model ?: return
-        if (!m.inBattle && command !is MoveCommand && command != WaitCommand) return
+        if (!m.inBattle) return
         send(command, inputToken ?: m.token, inputRevision ?: m.revision)
     }
     fun resize(width: Float, height: Float, left: Float, right: Float, topInset: Float, bottomInset: Float) {
@@ -131,11 +129,11 @@ class BattleHud(val stage: Stage, private val skin: Skin, private val content: C
         modalLayer.children.firstOrNull()?.takeIf { it is Image }?.setSize(width, height)
         dialog?.let { sizeDialog(it) }
     }
-    fun bind(c: RunController, presenting: Boolean) {
+    fun bind(c: BattleController, presenting: Boolean) {
         controller = c; val view = c.observe(); observation = view
         val m = c.battleView(presenting); model = m
         restart.setText(if (developmentControls) "Dev new run" else "Try again")
-        restart.isVisible = (c.combatObservation()?.defeated == true || developmentControls) && c.failure == null
+        restart.isVisible = false
         if (logRun != view.runId) { log.clear(); lastLogEvent = 0; logRun = view.runId }
         view.events.filter { it.sequence > lastLogEvent }.forEach { e ->
             appendLog(e.event.javaClass.simpleName !in setOf("ActorMoved", "ActivationEnded", "TileExplored"), e.event.toString())
@@ -143,7 +141,7 @@ class BattleHud(val stage: Stage, private val skin: Skin, private val content: C
         }
         if (c.failure != lastFailure) { c.failure?.let { appendLog(false, "Save failure: $it") }; lastFailure = c.failure }
         if (m == null) {
-            title.setText("Movement checkpoint — continue exploring. Combat is available in new runs.")
+            title.setText("Battle unavailable")
             dock.bind(null); displayPhase(false, true); bottom.isVisible = true; return
         }
         bottom.isVisible = true
@@ -153,10 +151,10 @@ class BattleHud(val stage: Stage, private val skin: Skin, private val content: C
         val selection = h.locked?.selection ?: h.selection
         val skill = selection?.let { content.skills.getValue(it.skill) }
         val stateMessage = if (c.failure != null) "Save failed — Options > Retry save" else
-            (c.combatObservation()?.outcome?.let { "$it — " } ?: "") + (if (view.reachedExit) "Floor exit reached. " else "") + m.message
-        title.setText("${if (m.inBattle) "Battle" else "Exploration"}  /  Floor 1  /  ${view.playerCell.x}, ${view.playerCell.y}   |   $stateMessage")
+            (c.combatObservation()?.outcome?.let { "$it — " } ?: "") + m.message
+        title.setText("Battle   |   $stateMessage")
         val target = view.actors.firstOrNull { it.id == selection?.target }
-        summary.setText((skill?.name ?: "Choose Skills or approach a hostile") + (selection?.let { " ${it.rank} / ${if (target?.player == true) "Self" else "Enemy"} ${target?.hp ?: "?"}/${target?.maxHp ?: "?"}" } ?: "") +
+        summary.setText((skill?.name ?: "Choose a skill") + (selection?.let { " ${it.rank} / ${if (target?.player == true) "Self" else "Enemy"} ${target?.hp ?: "?"}/${target?.maxHp ?: "?"}" } ?: "") +
             if (h.locked != null) " [LOCKED]" else "")
         costs.setText("Reserved HP ${h.reserved.hp}, MP ${h.reserved.mp}, SP ${h.reserved.sp}" +
             (m.score?.let { " | ${it.pips} pips / ${it.combination.name.replace('_', ' ')} " + h.locked!!.let { l -> content.scoring.getValue(l.definition.scoring).multipliers.getValue(it.combination).let { r -> "${r.numerator}/${r.denominator}x" } } } ?: ""))
@@ -166,7 +164,7 @@ class BattleHud(val stage: Stage, private val skin: Skin, private val content: C
             b.isChecked = h.kept[i]
         }
         roll.isDisabled = !m.roll.enabled; reroll.isDisabled = !m.reroll.enabled
-        use.isDisabled = !m.use.enabled; pass.isDisabled = !m.pass.enabled
+        use.isDisabled = !m.use.enabled; pass.isDisabled = !m.pass.enabled; potion.isDisabled = !m.pass.enabled || h.locked != null
         reroll.setText("Reroll unkept (${m.unkept.size})\n${h.rerolls} remaining")
         pass.setText(if (h.locked == null) "Pass" else "Pass (paid)")
         availability.setText(if (presenting) m.message else when {
@@ -178,7 +176,7 @@ class BattleHud(val stage: Stage, private val skin: Skin, private val content: C
         bottom.invalidateHierarchy()
     }
     private fun displayPhase(inBattle: Boolean, canMove: Boolean) {
-        movement.isVisible = !inBattle && canMove
+        movement.isVisible = false
         bottom.getCell(movement).height(if (movement.isVisible) 56f else 0f)
         listOf(summary, costs, diceRow, actionsRow, availability).forEach {
             it.isVisible = inBattle && (it != availability || !compact)
@@ -194,10 +192,25 @@ class BattleHud(val stage: Stage, private val skin: Skin, private val content: C
     }
     fun saving() {
         title.setText("Saving — commands are paused until the checkpoint is durable")
-        (dice + listOf(roll, reroll, use, pass)).forEach { it.isDisabled = true }
+        (dice + listOf(roll, reroll, use, pass, potion)).forEach { it.isDisabled = true }
         movement.isVisible = false
     }
     fun systemMessage(text: String) { appendLog(false, text); availability.setText(text); if (model?.inBattle != true) title.setText(text) }
+    private fun potions() {
+        val m = model ?: return
+        show("Potion supplies", "A potion is a full action before rolling. It cannot be used after a hand is locked.") { d ->
+            val choices = Table()
+            content.potions.values.forEach { definition ->
+                val count = supplyCount(definition.id)
+                val b = button("${definition.name} ($count)") {
+                    close(); send(DrinkPotionCommand(definition.id), m.token, m.revision)
+                }
+                b.isDisabled = count <= 0 || m.hero.locked != null || !m.pass.enabled
+                choices.add(b).growX().minHeight(48f).pad(4f).row()
+            }
+            d.contentTable.row(); d.contentTable.add(choices).growX()
+        }
+    }
     private fun confirmPass() {
         val m = model ?: return
         if (m.hero.locked == null) { request(EndTurnCommand); return }
@@ -276,7 +289,7 @@ class BattleHud(val stage: Stage, private val skin: Skin, private val content: C
         val definition = selection?.let { content.skills.getValue(it.skill) }
         val rank = h.locked?.rank ?: selection?.let { s -> definition?.ranks?.single { it.rank == s.rank } }
         val text = buildString {
-            observation?.let { append("Floor 1 (${it.playerCell.x}, ${it.playerCell.y})\n") }
+            append("Encounter battle\n")
             append("${m.roll.reason}\nReroll: ${m.reroll.reason}\nUse Skill: ${m.use.reason}\nPass: ${m.pass.reason}\n\n")
             rank?.let { r ->
                 val total = r.weights.sum().toDouble()

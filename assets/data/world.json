@@ -1,0 +1,311 @@
+{
+  "version": 1,
+  "town": {
+    "id": "town.home",
+    "polygons": [
+      [
+        [
+          8,
+          8
+        ],
+        [
+          312,
+          8
+        ],
+        [
+          312,
+          56
+        ],
+        [
+          8,
+          56
+        ]
+      ],
+      [
+        [
+          8,
+          56
+        ],
+        [
+          112,
+          56
+        ],
+        [
+          112,
+          136
+        ],
+        [
+          8,
+          136
+        ]
+      ],
+      [
+        [
+          208,
+          56
+        ],
+        [
+          312,
+          56
+        ],
+        [
+          312,
+          136
+        ],
+        [
+          208,
+          136
+        ]
+      ],
+      [
+        [
+          8,
+          136
+        ],
+        [
+          312,
+          136
+        ],
+        [
+          312,
+          184
+        ],
+        [
+          8,
+          184
+        ]
+      ]
+    ],
+    "entry": [
+      8,
+      32
+    ],
+    "exit": [
+      312,
+      32
+    ],
+    "spawn": [
+      48,
+      32
+    ]
+  },
+  "templates": [
+    {
+      "id": "room.hall",
+      "polygons": [
+        [
+          [
+            0,
+            38
+          ],
+          [
+            16,
+            38
+          ],
+          [
+            16,
+            58
+          ],
+          [
+            0,
+            58
+          ]
+        ],
+        [
+          [
+            16,
+            0
+          ],
+          [
+            176,
+            0
+          ],
+          [
+            176,
+            96
+          ],
+          [
+            16,
+            96
+          ]
+        ],
+        [
+          [
+            176,
+            38
+          ],
+          [
+            192,
+            38
+          ],
+          [
+            192,
+            58
+          ],
+          [
+            176,
+            58
+          ]
+        ]
+      ],
+      "entry": [
+        0,
+        48
+      ],
+      "exit": [
+        192,
+        48
+      ],
+      "spawn": [
+        112,
+        48
+      ]
+    },
+    {
+      "id": "room.bend",
+      "polygons": [
+        [
+          [
+            0,
+            38
+          ],
+          [
+            16,
+            38
+          ],
+          [
+            16,
+            58
+          ],
+          [
+            0,
+            58
+          ]
+        ],
+        [
+          [
+            16,
+            0
+          ],
+          [
+            176,
+            32
+          ],
+          [
+            176,
+            128
+          ],
+          [
+            16,
+            96
+          ]
+        ],
+        [
+          [
+            176,
+            70
+          ],
+          [
+            192,
+            70
+          ],
+          [
+            192,
+            90
+          ],
+          [
+            176,
+            90
+          ]
+        ]
+      ],
+      "entry": [
+        0,
+        48
+      ],
+      "exit": [
+        192,
+        80
+      ],
+      "spawn": [
+        112,
+        64
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "guide",
+      "name": "Liora - Guide",
+      "position": [
+        48,
+        152
+      ],
+      "approach": [
+        48,
+        144
+      ],
+      "service": "TALK",
+      "text": "Click the ground to run. Doorways reveal the next room. Sentinels start dice battles. Defeat them and leave through the exit to keep your rewards."
+    },
+    {
+      "id": "vendor",
+      "name": "Mira - Potions",
+      "position": [
+        256,
+        152
+      ],
+      "approach": [
+        256,
+        144
+      ],
+      "service": "SHOP",
+      "text": "Stock up before entering the dungeon. Potions take a full action in battle and cannot be used after rolling."
+    },
+    {
+      "id": "healer",
+      "name": "Healing spring",
+      "position": [
+        256,
+        32
+      ],
+      "approach": [
+        244,
+        32
+      ],
+      "service": "RECOVER",
+      "text": "Rest here to restore your health, mana and stamina, and remove lingering effects. Recovery is free."
+    },
+    {
+      "id": "gate",
+      "name": "Dungeon entrance",
+      "position": [
+        80,
+        32
+      ],
+      "approach": [
+        80,
+        32
+      ],
+      "service": "DUNGEON",
+      "text": "Enter a new expedition. Rewards are secured only after you clear the sentinels and reach the exit."
+    }
+  ],
+  "offers": [
+    {
+      "potion": "potion.health",
+      "price": 5,
+      "capacity": 9
+    },
+    {
+      "potion": "potion.unstable",
+      "price": 7,
+      "capacity": 9
+    }
+  ],
+  "rooms": 4,
+  "attempts": 12,
+  "reward": 10,
+  "startingGold": 20,
+  "encounter": "encounter.starter"
+}

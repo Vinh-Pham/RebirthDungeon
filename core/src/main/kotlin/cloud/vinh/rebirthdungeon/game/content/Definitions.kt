@@ -11,10 +11,8 @@ enum class StatStage { PRIMARY, DERIVED }
 enum class StatusTiming { OWNER_ACTIVATION_END }
 
 data class ContentVersion(val schema: Int, val content: Int, val rules: Int) {
-    init { require(schema == 1 && content > 0 && rules == 1) }
+    init { require(schema == 2 && content >= 3 && rules == 2) }
 }
-data class TileDefinition(val id: ContentId, val code: Int, val walkable: Boolean)
-data class GenerationProfile(val id: ContentId, val generatorVersion: Int, val width: Int, val height: Int, val maxAttempts: Int)
 data class ResourceVector(val hp: Int, val mp: Int, val sp: Int)
 data class StatTerm(val stat: ContentId, val numerator: Int, val denominator: Int)
 class StatDefinition internal constructor(val id: ContentId, val stage: StatStage, val base: Int, val minimum: Int, val maximum: Int, terms: List<StatTerm>) {
@@ -31,7 +29,7 @@ class SkillRank internal constructor(val rank: String, val order: Int, val baseP
     val weights = frozenList(weights)
 }
 class SkillDefinition internal constructor(val id: ContentId, val name: String, val prototypeCap: String, val scoring: ContentId, val attackStat: ContentId, ranks: List<SkillRank>,
-    val effect: SkillEffect, val target: TargetKind, val requiredEquipment: String, val range: Int,
+    val effect: SkillEffect, val target: TargetKind, val requiredEquipment: String,
     val cooldown: Int, val status: ContentId?, val shieldDuration: Int) {
     val ranks = frozenList(ranks)
 }
@@ -46,13 +44,11 @@ class ProgressionCurve internal constructor(val id: ContentId, thresholds: List<
 /** Validated, detached catalog pinned for an entire run. No asset names or DTOs. */
 class ContentCatalog internal constructor(
     val version: ContentVersion,
-    tiles: List<TileDefinition>, generations: List<GenerationProfile>, actors: List<ActorDefinition>,
+    actors: List<ActorDefinition>,
     scoring: List<DiceScoring>, skills: List<SkillDefinition>, stats: List<StatDefinition>,
     statuses: List<StatusDefinition>, potions: List<PotionDefinition>, encounters: List<EncounterDefinition>,
     loot: List<LootDefinition>, progression: List<ProgressionCurve>
 ) {
-    val tiles = frozenMap(tiles.associateBy { it.id })
-    val generations = frozenMap(generations.associateBy { it.id })
     val actors = frozenMap(actors.associateBy { it.id })
     val scoring = frozenMap(scoring.associateBy { it.id })
     val skills = frozenMap(skills.associateBy { it.id })

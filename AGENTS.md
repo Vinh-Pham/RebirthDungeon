@@ -2,9 +2,13 @@
 
 Guidance for AI assistants working in this repository.
 
+## Active architecture migration
+
+Implement `docs/free-exploration.md`: continuous polygon navigation, fixed 60 Hz exploration, and a separate command-driven battle World per active encounter. This supersedes grid movement and one-World-per-run guidance below. Preserve the Gdx-free game boundary and historical unmet native gates. New saves only; no compatibility engine.
+
 ## What this project is
 
-**RebirthDungeon** (JVM package `cloud.vinh.rebirthdungeon`) is a 2D pixel-art, grid-based, turn-based roguelike dungeon crawler with **five-dice dice combat**, loot, progression, and a later gacha meta-game. It is built in **Kotlin** with **libGDX** (project scaffolded with gdx-liftoff in Java, fully ported to Kotlin after Phase 1). Combat is inspired by Dicero (roll five dice, keep, reroll, commit a hand); progression, inventory, skills, enchants, quests, and titles are inspired by Mabinogi. The references are design inspiration, not literal requirements.
+**RebirthDungeon** (JVM package `cloud.vinh.rebirthdungeon`) is a 2D pixel-art roguelike with continuous exploration and turn-based encounter battles with **five-dice dice combat**, loot, progression, and a later gacha meta-game. It is built in **Kotlin** with **libGDX** (project scaffolded with gdx-liftoff in Java, fully ported to Kotlin after Phase 1). Combat is inspired by Dicero (roll five dice, keep, reroll, commit a hand); progression, inventory, skills, enchants, quests, and titles are inspired by Mabinogi. The references are design inspiration, not literal requirements.
 
 Two principles shape everything:
 
@@ -15,7 +19,7 @@ Two principles shape everything:
 
 | Document                               | Role                                                                                                                                                                                                                                  |
 |----------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `docs/game-plan.md`                    | **The architecture contract.** Dependency audit, system ownership, threading model, artemis-odb world model, ordered rule pipeline, grid/dice/combat contracts, persistence, target package structure, validation matrix, milestones. |
+| `docs/game-plan.md`                    | **The architecture contract.** Dependency audit, system ownership, threading model, artemis-odb world model, ordered rule pipeline, exploration/dice/combat contracts, persistence, target package structure, validation matrix, milestones. |
 | [docs/directory.md](docs/directory.md) | **The directory and package placement guide.** Follow its responsibility boundaries, feature ownership, dependency direction, asset/test layout, and incremental adoption guidance when adding or moving files.                       |
 | `docs/project-phases.md`               | **The implementation tracker.** 17 phases (0–16) with task/exit checkboxes, tracking rules, Current Focus, Completion Log, and Work Notes.                                                                                            |
 | `docs/gameplay/*.md`                   | Nine gameplay specs: `battle`, `stats`, `skills`, `character`, `inventory`, `enchants`, `quests`, `titles`, `towns`. These are **planned designs, not implemented features**; numeric defaults are provisional.                       |
@@ -35,18 +39,19 @@ core/src/main/kotlin/cloud/vinh/rebirthdungeon/
   RebirthDungeon.kt            Lifecycle entry point; delegates wiring/navigation
   bootstrap/                   Composition root: services, workers, controllers, screens
   application/
-    run/                       Run orchestration, floor transitions, results
+    run/                       Battle command orchestration
+    session/                   Exploration/expedition ownership, atomic mode transitions
     profile/                   Committed profile, town transactions, aging reconciliation
     persistence/               Repository contracts, checkpoints, write coordination
   game/                        Deterministic values and rules; no Gdx or I/O
-    DungeonSimulation.kt       Existing World facade
-    RunSession.kt              Target non-component authoritative run state
+    BattleSimulation.kt        Battle-only World facade
+    BattleSession.kt           Encounter state; application/session owns expedition state
     identity/, content/        Stable IDs and immutable validated definition values
     commands/, events/         Run commands/results and immutable ordered outcomes
     projection/, replay/       Observations/restore exports, logs, canonical hashes
     ecs/components/            Mutable no-arg Component classes; never data classes
     ecs/systems/               Explicitly ordered systems delegating feature calculations
-    grid/, algorithms/         Terrain/occupancy and generator/path/FOV/RNG interfaces
+    exploration/, algorithms/  Fixed-point navigation, room discovery/generation, RNG interfaces
     squidsquad/, turns/        Library adapters and initiative/activation rules
     combat/                    dice/, abilities/, stats/, statuses/
     progression/               character/, skills/, talents/, titles/
@@ -84,16 +89,16 @@ Keep the existing Gradle modules and one shared production source root. **Do not
 - `game` must not import `application`, `data`, `presentation`, or platform services, and must not read the system clock. Jackson DTOs stay in `data/content/dto`; immutable validated definitions cross into `game/content`. Save representations stay in `data/save/dto`. Package conventions require review; Kotlin `internal` is module-wide, not package isolation.
 - The application owns the committed profile and atomic save-bundle transitions. Pure feature rules calculate transitions; individual features must not independently save fragments of one result or town transaction.
 - Keep ECS systems together for visible pipeline order, with calculations delegated to feature rules. Combat owns skill execution; progression owns learning/ranks/training, character growth, talents, and titles. Inventory owns item identity and installed enchant values. Share stat/resource calculations across town previews and dungeon actions.
-- Town movement consumes no dungeon turns. `game/town` owns adjacency/service eligibility and town-specific rules; `application/profile` coordinates saved operations using inventory, progression, quest, and stat rules. Do not force town transactions through the dungeon World or scheduler.
+- Town and dungeon exploration movement consume no battle turns. `game/town` owns adjacency/service eligibility and town-specific rules; `application/profile` coordinates saved operations using inventory, progression, quest, and stat rules. Do not force town transactions through the dungeon World or scheduler.
 - Character, Skills, Quests, and Inventory are reusable `presentation/windows` composed by town/dungeon screens. Controllers enforce unavailable-during-run actions. RP missions reuse the run simulation with isolated state and outcome policy, not a separate combat engine.
 - Native implementations belong in launcher modules and implement shared `platform` interfaces. Shared LibGDX audio belongs in `presentation/audio`.
 
 ## Architecture rules that must not be broken
 
-- **ECS:** one artemis-odb `World` per active run, assembled with `WorldConfigurationBuilder`; execution order is registration order (one system instance per class — the builder rejects duplicates). Components are plain Kotlin classes extending `Component` with a public no-arg constructor (give every primary-constructor parameter a default and Kotlin generates it); never `data class` (artemis components are mutable state). Entity ids are recycled — never use them as persistent identity (use project stable IDs).
+- **ECS:** one artemis-odb `World` per active battle, assembled with `WorldConfigurationBuilder`; execution order is registration order (one system instance per class — the builder rejects duplicates). Components are plain Kotlin classes extending `Component` with a public no-arg constructor (give every primary-constructor parameter a default and Kotlin generates it); never `data class` (artemis components are mutable state). Entity ids are recycled — never use them as persistent identity (use project stable IDs).
 - **Threading:** command resolution and artemis-odb mutation happen serially on the LibGDX render thread. Worker results return only via `Gdx.app.postRunnable(...)` and are validated against a session generation token. Never call `World.process()` recursively; no `IntervalSystem`-driven turn cooldowns.
 - **Snapshots/events:** presentation and saves consume immutable snapshots and ordered domain events exported *after* `World.process()` completes — never a second mutable gameplay model. Keep observed render/HUD exports separate from full restore exports so hidden entities cannot leak through save data; detach collection contents as well as their containers. Town events publish only after their profile transaction commits.
-- **Dependencies:** only `gdx` is exposed as `api`; everything else is `implementation`. The jdkgdxds `build` artifact duplicate is excluded in the root build, as are `org.apache.fory:fory-core` and the `com.github.tommyettinger.tantrum` group (Fory requires Android API 26+; the SquidSquad serialization modules pull them in transitively) — both are graph repairs, not packaging rules; do not hide duplicate bytecode with packaging rules. Dependency locking and checksum verification are on; regenerate locks/metadata after intentional bumps (note: `--write-verification-metadata` drops comments in `verification-metadata.xml`; the trusted-artifacts trust rules survive). The full gdx-liftoff KTX module set (`io.github.quillraven.libktx`, `1.14.2-rc1`, matching the gdx/artemis/kotlin pins) and third-party liftoff libraries are available to all core code. `RebirthDungeon` extends `KtxGame` (hence ktx-app is `api`: a public supertype must be on consumers' compile classpaths); the class-keyed screen registry stays unused — navigation hands fresh single-activation instances to the inherited current-screen slot via the dispose-on-navigate coordinator (`RebirthDungeon.navigateTo`).
+- **Dependencies:** only `gdx` is exposed as `api`; everything else is `implementation`. The jdkgdxds `build` artifact duplicate is excluded in the root build, as are `org.apache.fory:fory-core` and the `com.github.tommyettinger.tantrum` group (Fory requires Android API 26+; the removed SquidSquad serialization modules originally pulled them in transitively; retain the exclusions as a platform guard) — both are graph repairs, not packaging rules; do not hide duplicate bytecode with packaging rules. Dependency locking and checksum verification are on; regenerate locks/metadata after intentional bumps (note: `--write-verification-metadata` drops comments in `verification-metadata.xml`; the trusted-artifacts trust rules survive). The full gdx-liftoff KTX module set (`io.github.quillraven.libktx`, `1.14.2-rc1`, matching the gdx/artemis/kotlin pins) and retained third-party liftoff libraries are available to all core code. SquidSquad and SquidLib were removed with grid traversal; do not reintroduce their modules for exploration. `RebirthDungeon` extends `KtxGame` (hence ktx-app is `api`: a public supertype must be on consumers' compile classpaths); the class-keyed screen registry stays unused — navigation hands fresh single-activation instances to the inherited current-screen slot via the dispose-on-navigate coordinator (`RebirthDungeon.navigateTo`).
 - **Content vs saves:** versioned content JSON in `assets/data` binds strictly through Jackson DTOs (unknown fields/enum values fail the load). Save bundles use LibGDX JSON.
 - **Platform launches:** landscape is the adopted orientation; align platform configuration before device acceptance.
 
@@ -112,7 +117,7 @@ Keep the existing Gradle modules and one shared production source root. **Do not
 
 ## Working conventions for this repo
 
-- **Follow `docs/project-phases.md` as the work queue.** Complete the earliest unfinished phase by default (currently Phase 5 — playable combat and resumable activations; phases 0–4 are done and verified). Preserve unmet prerequisites if priorities change, and record the change.
+- **Follow `docs/project-phases.md` as the work queue.** Complete the earliest unfinished phase by default (currently the user-directed free-exploration migration; Phase 5 native gates remain open). Preserve unmet prerequisites if priorities change, and record the change.
 - Before implementing towns, reconcile the architecture/tracker with `docs/gameplay/towns.md` as described in directory.md section 7, including carried/banked gold, reward capacity, and recovery access. Record phase placement and unresolved rules; directory adoption does not settle balance or authorize skipping prerequisites.
 - **A checked box means implemented *and* verified.** Record commands, targets/devices, results, and file paths as evidence. A missing device or credential is an unmet gate, not a pass.
 - When finishing a phase, update the phase checklist, Phase Overview, Current Focus, and Completion Log **together**; keep dated blockers and next actions in Work Notes.

@@ -4,19 +4,18 @@ import cloud.vinh.rebirthdungeon.game.*
 import cloud.vinh.rebirthdungeon.game.commands.*
 import cloud.vinh.rebirthdungeon.game.identity.*
 import cloud.vinh.rebirthdungeon.data.save.codec.CheckpointCodec
-import cloud.vinh.rebirthdungeon.application.run.RunController
+import cloud.vinh.rebirthdungeon.application.run.BattleController
 import cloud.vinh.rebirthdungeon.application.persistence.CheckpointRepository
-import cloud.vinh.rebirthdungeon.game.projection.RunRestore
+import cloud.vinh.rebirthdungeon.game.projection.BattleRestore
 import org.junit.Assert.*
 import org.junit.Test
 
 class CombatCheckpointTest {
-    private fun sim() = DungeonSimulation.create(Phase3Fixtures.floor("########", "#.....>#", "########"), 1, 1,
-        RunSession(71, Phase3Fixtures.content, combatEnabled = true), listOf(Phase3Fixtures.enemy(2, 1).copy(hp = 999, maxHp = 999)))
-    private fun restore(s: DungeonSimulation): DungeonSimulation {
+    private fun sim() = BattleSimulation.create(BattleSession(71, CombatFixtures.content), listOf(CombatFixtures.enemy().copy(hp = 999, maxHp = 999)))
+    private fun restore(s: BattleSimulation): BattleSimulation {
         val codec = CheckpointCodec()
         val state = codec.decode(codec.encode(s.restoreExport()))
-        return DungeonSimulation.restore(state, Phase3Fixtures.content).also { assertEquals(s.canonicalState(), it.canonicalState()) }
+        return BattleSimulation.restore(state, CombatFixtures.content).also { assertEquals(s.canonicalState(), it.canonicalState()) }
     }
     @Test fun everyDiceBoundaryRestoresSameFutureIncludingStatusShieldAndDefeat() {
         val original = sim()
@@ -43,12 +42,12 @@ class CombatCheckpointTest {
     }
     @Test fun failedRollSaveBlocksFurtherRngAndRetryDoesNotRepeatRoll() {
         var fail = false
-        var saved: RunRestore? = null
+        var saved: BattleRestore? = null
         val repository = object : CheckpointRepository {
             override fun load() = saved
-            override fun save(state: RunRestore) { if (fail) error("Disk full"); saved = state }
+            override fun save(state: BattleRestore) { if (fail) error("Disk full"); saved = state }
         }
-        val s = sim(); val c = RunController(s, repository, 9)
+        val s = sim(); val c = BattleController(s, repository, 9)
         try {
             assertTrue(c.startOrResume())
             assertTrue(c.submit(SelectAbilityCommand(ContentId("skill.sword"), EntityId(2)), 9).accepted())
@@ -70,11 +69,11 @@ class CombatCheckpointTest {
             val codec = CheckpointCodec()
             val mapper = com.fasterxml.jackson.databind.ObjectMapper()
             fun corrupt(change: (com.fasterxml.jackson.databind.JsonNode) -> Unit) {
-                val root = mapper.readTree(codec.encode(s.restoreExport())) as com.fasterxml.jackson.databind.node.ObjectNode
-                val combat = mapper.readTree(root["combat"].asText())
-                change(combat); root.put("combat", combat.toString())
+                val root = mapper.readTree(codec.encode(s.restoreExport())) as com.fasterxml.jackson.databind.node.ArrayNode
+                val combat = mapper.readTree(root[11].asText())
+                change(combat); root.set(11, mapper.nodeFactory.textNode(combat.toString()))
                 assertThrows(IllegalArgumentException::class.java) {
-                    DungeonSimulation.validateRestore(codec.decode(root.toString()), Phase3Fixtures.content)
+                    BattleSimulation.validateRestore(codec.decode(root.toString()), CombatFixtures.content)
                 }
             }
             corrupt { (it[4][0][3] as com.fasterxml.jackson.databind.node.ArrayNode).set(2, mapper.nodeFactory.numberNode(0)) }
@@ -95,9 +94,9 @@ class CombatCheckpointTest {
     }
 
     @Test fun closedControllerRejectsLegacyAndRevisionedRequestsWithoutReadingDisposedWorld() {
-        val c = RunController(sim(), object : CheckpointRepository {
-            override fun load(): RunRestore? = null
-            override fun save(state: RunRestore) {}
+        val c = BattleController(sim(), object : CheckpointRepository {
+            override fun load(): BattleRestore? = null
+            override fun save(state: BattleRestore) {}
         }, 1)
         c.close()
         assertEquals(CommandResult.Reason.STALE_SESSION, c.submit(RollDiceCommand, 1).reason)

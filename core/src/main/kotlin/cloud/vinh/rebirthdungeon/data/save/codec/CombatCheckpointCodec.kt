@@ -24,7 +24,7 @@ internal object CombatCheckpointCodec {
                 a.stats.map { listOf(it.key.value, it.value) }, a.learned.map { listOf(it.key.value, it.value) }, a.equipment,
                 a.open, selection(a.selection), a.locked?.let { l -> listOf(selection(l.selection), rank(l.rank),
                     l.definition.let { d -> listOf(d.id.value, d.name, d.prototypeCap, d.scoring.value, d.attackStat.value,
-                        d.ranks.map(::rank), d.effect.name, d.target.name, d.requiredEquipment, d.range, d.cooldown, d.status?.value, d.shieldDuration) },
+                        d.ranks.map(::rank), d.effect.name, d.target.name, d.requiredEquipment, d.cooldown, d.status?.value, d.shieldDuration) },
                     listOf(l.inputs.base, l.inputs.attack, l.inputs.pipScale, l.inputs.defense, l.inputs.protection), vector(l.cost)) },
                 a.faces, a.kept, a.rerolls, a.statuses.map { listOf(it.definition.value, it.source.value.toString(), it.remaining, it.skipBoundary) },
                 a.cooldowns.map { listOf(it.key, it.value.remaining, it.value.skipBoundary) })
@@ -53,10 +53,10 @@ internal object CombatCheckpointCodec {
     private fun selection(v: JsonValue): Selection? = if (v.isNull) null else v.record(3).let { Selection(ContentId(it[0].string()), it[1].string(), EntityId(it[2].id())) }
     private fun rank(v: JsonValue): SkillRank { v.record(6); return SkillRank(v[0].string(), v[1].integer(), v[2].integer(), v[3].integer(), vector(v[4]), array(v[5]).map { it.integer() }) }
     private fun definition(v: JsonValue): SkillDefinition {
-        v.record(13)
+        v.record(12)
         return SkillDefinition(ContentId(v[0].string()), v[1].string(), v[2].string(), ContentId(v[3].string()), ContentId(v[4].string()),
-            array(v[5]).map(::rank), SkillEffect.valueOf(v[6].string()), TargetKind.valueOf(v[7].string()), v[8].string(), v[9].integer(), v[10].integer(),
-            if (v[11].isNull) null else ContentId(v[11].string()), v[12].integer())
+            array(v[5]).map(::rank), SkillEffect.valueOf(v[6].string()), TargetKind.valueOf(v[7].string()), v[8].string(), v[9].integer(),
+            if (v[10].isNull) null else ContentId(v[10].string()), v[11].integer())
     }
     private fun stats(v: JsonValue): Map<ContentId, Int> {
         val pairs = array(v).map { it.record(2); ContentId(it[0].string()) to it[1].integer() }

@@ -59,13 +59,13 @@ class JacksonContentRepository(private val source: ContentSource) : ContentRepos
     override fun load(): ContentBundle {
         val manifest = read("manifest.json", ManifestDto::class.java)
         val version = ContentVersion(
-            number(manifest.schemaVersion, "manifest.json.schemaVersion", 1, 1),
+            number(manifest.schemaVersion, "manifest.json.schemaVersion", 2, 2),
             number(manifest.contentVersion, "manifest.json.contentVersion", 1),
-            number(manifest.rulesVersion, "manifest.json.rulesVersion", 1, 1)
+            number(manifest.rulesVersion, "manifest.json.rulesVersion", 2, 2)
         )
         val file = path(manifest.rules, "manifest.json.rules")
         val d = read(file, CatalogDto::class.java)
-        number(d.schemaVersion, "$file.schemaVersion", 1, 1)
+        number(d.schemaVersion, "$file.schemaVersion", 2, 2)
         // Global uniqueness prevents references from accidentally changing category.
         val seen = HashSet<ContentId>()
         fun unique(raw: String?, p: String): ContentId = id(raw, "$p.id").also {
@@ -73,19 +73,6 @@ class JacksonContentRepository(private val source: ContentSource) : ContentRepos
         }
         fun <T : Any, R> convert(values: List<T>?, category: String, build: (T, String) -> R): List<R> =
             rows(values, "$file.$category").mapIndexed { i, row -> build(row, "$file.$category[$i]") }
-        val tiles = convert(d.tiles, "tiles") { t, p ->
-            TileDefinition(unique(t.id, p), number(t.code, "$p.code", 0, 3), required(t.walkable, "$p.walkable"))
-        }
-        checkAt(tiles.map { it.code }.toSet() == setOf(0, 1, 2, 3) && tiles.size == 4, "$file.tiles", "prototype requires unique floor/wall/door/exit codes 0..3")
-        listOf("wall", "floor", "door", "exit").forEachIndexed { code, name ->
-            val tile = tiles.single { it.code == code }
-            checkAt(tile.id == ContentId("tile.$name") && tile.walkable == (code != 0), "$file.tiles[${tile.id.value}]",
-                "prototype terrain codes and walkability must match wall=0, floor=1, door=2, exit=3")
-        }
-        val generations = convert(d.generations, "generations") { g, p -> GenerationProfile(
-            unique(g.id, p), number(g.generatorVersion, "$p.generatorVersion", 1, 1),
-            number(g.width, "$p.width", 8, 256), number(g.height, "$p.height", 8, 256), number(g.maxAttempts, "$p.maxAttempts", 1, 100)
-        ) }
         val stats = convert(d.stats, "stats") { s, p ->
             val min = number(s.minimum, "$p.minimum")
             val max = number(s.maximum, "$p.maximum", min)
@@ -102,12 +89,6 @@ class JacksonContentRepository(private val source: ContentSource) : ContentRepos
             DiceScoring(unique(s.id, p), number(s.diceCount, "$p.diceCount", 5, 5), number(s.rerolls, "$p.rerolls", 2, 2), multipliers.toMap())
         }
         val skills = convert(d.skills, "skills") { s, p ->
-            // Content v1 is the movement-only catalog retained for historical replay fixtures.
-            if (version.content == 1) {
-                s.effect = s.effect ?: SkillEffect.DAMAGE; s.target = s.target ?: TargetKind.HOSTILE
-                s.requiredEquipment = s.requiredEquipment ?: "sword"; s.range = s.range ?: 1
-                s.cooldown = s.cooldown ?: 0; s.shieldDuration = s.shieldDuration ?: 0
-            }
             val ranks = rows(s.ranks, "$p.ranks").mapIndexed { i, r ->
                 val rp = "$p.ranks[$i]"
                 val weights = required(r.weights, "$rp.weights")
@@ -123,7 +104,7 @@ class JacksonContentRepository(private val source: ContentSource) : ContentRepos
             SkillDefinition(unique(s.id, p), text(s.name, "$p.name"), cap, id(s.scoring, "$p.scoring"), id(s.attackStat, "$p.attackStat"), ranks,
                 required(s.effect, "$p.effect"), required(s.target, "$p.target"), text(s.requiredEquipment, "$p.requiredEquipment").also {
                     checkAt(it in listOf("none", "sword"), "$p.requiredEquipment", "unsupported equipment")
-                }, number(s.range, "$p.range", 0, 1), number(s.cooldown, "$p.cooldown", 0, 1000),
+                }, number(s.cooldown, "$p.cooldown", 0, 1000),
                 s.status?.let { id(it, "$p.status") }, number(s.shieldDuration, "$p.shieldDuration", 0, 1000))
         }
         val actors = convert(d.actors, "actors") { a, p ->
@@ -134,10 +115,6 @@ class JacksonContentRepository(private val source: ContentSource) : ContentRepos
         }
         checkAt(actors.any { it.kind == ActorKind.HERO } && actors.any { it.kind == ActorKind.ENEMY }, "$file.actors", "requires hero and enemy")
         val statuses = convert(d.statuses, "statuses") { s, p ->
-            if (version.content == 1) {
-                s.percent = s.percent ?: 0; s.periodicDamage = s.periodicDamage ?: 0
-                s.recovery = s.recovery ?: ResourcesDto().apply { hp = 0; mp = 0; sp = 0 }
-            }
             StatusDefinition(unique(s.id, p), id(s.stat, "$p.stat"),
             number(s.flat, "$p.flat", -1_000_000), number(s.duration, "$p.duration", 1, 1000), id(s.group, "$p.group"),
             number(s.priority, "$p.priority"), required(s.timing, "$p.timing"), number(s.percent, "$p.percent", -10000, 10000),
@@ -160,9 +137,8 @@ class JacksonContentRepository(private val source: ContentSource) : ContentRepos
                 thresholds.zipWithNext().all { (a, b) -> a < b }, "$p.thresholds", "cumulative XP must start at zero and strictly increase (at least two levels)")
             ProgressionCurve(unique(c.id, p), thresholds)
         }
-        val catalog = ContentCatalog(version, tiles, generations, actors, scoring, skills, stats, statuses, potions, encounters, loot, progression)
+        val catalog = ContentCatalog(version, actors, scoring, skills, stats, statuses, potions, encounters, loot, progression)
         validateReferences(catalog, file)
-        checkAt(ContentId("generation.starter") in catalog.generations, "$file.generations", "missing prototype entry profile generation.starter")
         checkAt(catalog.actors[ContentId("actor.hero")]?.kind == ActorKind.HERO, "$file.actors", "missing prototype hero actor.hero")
         val visualFile = path(manifest.visuals, "manifest.json.visuals")
         val visual = read(visualFile, VisualsDto::class.java)
@@ -176,14 +152,13 @@ class JacksonContentRepository(private val source: ContentSource) : ContentRepos
             checkAt(atlas == "atlases/dungeon.atlas", "$p.atlas", "atlas is not queued by the prototype bootstrap")
             val frames = rows(v.frames, "$p.frames").mapIndexed { n, frame -> text(frame, "$p.frames[$n]") }
             val animation = text(v.animation, "$p.animation")
-            val expected = if (key in catalog.tiles) "static" else "idle"
+            val expected = "idle"
             checkAt(animation == expected, "$p.animation", "expected supported animation $expected")
-            if (key in catalog.tiles) checkAt(frames.size == 1, "$p.frames", "static terrain requires exactly one frame")
             VisualBinding(key, atlas, animation, frames)
         }
-        val requiredVisuals = tiles.map { it.id } + actors.map { it.id }
+        val requiredVisuals = actors.map { it.id }
         checkAt(visualIds.containsAll(requiredVisuals), "$visualFile.bindings", "missing tile/actor bindings: ${requiredVisuals.filterNot { it in visualIds }}")
-        return ContentBundle(catalog, visuals)
+        return ContentBundle(catalog, visuals, WorldContentLoader().load(source.read("world.json"), catalog))
     }
 
     private fun validateReferences(c: ContentCatalog, file: String) {
@@ -200,8 +175,8 @@ class JacksonContentRepository(private val source: ContentSource) : ContentRepos
             ref(s.scoring, c.scoring.keys, "skills[${s.id.value}].scoring")
             ref(s.attackStat, c.stats.keys, "skills[${s.id.value}].attackStat")
             s.status?.let { ref(it, c.statuses.keys, "skills[${s.id.value}].status") }
-            checkAt(if (s.effect == SkillEffect.DAMAGE) s.target == TargetKind.HOSTILE && s.range == 1
-                else s.target == TargetKind.SELF && s.range == 0, "$file.skills[${s.id.value}].target", "unsupported effect/target/range")
+            checkAt(if (s.effect == SkillEffect.DAMAGE) s.target == TargetKind.HOSTILE
+                else s.target == TargetKind.SELF, "$file.skills[${s.id.value}].target", "unsupported effect/target")
             checkAt((s.effect == SkillEffect.SHIELD) == (s.shieldDuration > 0), "$file.skills[${s.id.value}].shieldDuration", "shield requires duration; other effects require zero")
             checkAt(s.effect != SkillEffect.BUFF || s.status != null, "$file.skills[${s.id.value}].status", "buff requires status")
         }

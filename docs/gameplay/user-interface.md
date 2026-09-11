@@ -1,5 +1,7 @@
 # User Interface Plan
 
+> **Active migration (2026-09-10):** [Free exploration and separate battles](../free-exploration.md) supersedes the grid-world, shared dungeon/battle screen, spatial combat, and legacy-save contracts below. Earlier phase evidence is retained as history.
+
 Planning date: **2026-09-08**. Status: **proposed implementation plan; no UI implementation or platform acceptance claimed**.
 
 Build a landscape, pixel-art dungeon interface with **libGDX Scene2D UI, KTX Scene2D builders and KTX actor listeners**. Adapt Mabinogi's persistent status/menu bar and reusable information windows around Rebirth Dungeon's five-dice combat. Keep the dungeon readable and make every action's cost, availability and consequence explicit.

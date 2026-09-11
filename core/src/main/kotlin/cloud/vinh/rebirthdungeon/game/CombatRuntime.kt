@@ -14,13 +14,13 @@ import cloud.vinh.rebirthdungeon.game.projection.*
 import com.artemis.Component
 
 /** ECS orchestration only: scoring, costs, stat derivation and damage use shared pure rules. */
-internal class CombatRuntime(private val run: RunWorld) {
+internal class CombatRuntime(private val run: BattleWorld) {
     private val session get() = run.session
     private val content get() = session.content
     private val pending get() = run.pending
     private fun <T : Component> component(id: EntityId, type: Class<T>): T = run.world.getMapper(type).get(run.entity(id))
     private inline fun <reified T : Component> get(id: EntityId): T = component(id, T::class.java)
-    private fun emit(event: DomainEvent, actor: EntityId) = run.emit(event, run.isPlayer(actor) || session.visible[run.grid.index(run.cell(actor).x, run.cell(actor).y)])
+    private fun emit(event: DomainEvent, actor: EntityId) = run.emit(event, true)
     private fun value(id: EntityId, stat: String) = get<Stats>(id).effective.getValue(ContentId("stat.$stat"))
     private fun live(id: EntityId) = id.value in run.entities && get<Health>(id).current > 0
     private var queued: LockedAbility? = null
@@ -71,11 +71,11 @@ internal class CombatRuntime(private val run: RunWorld) {
         fun accept(finish: Boolean = false): Boolean {
             pending.result = CommandResult.ACCEPTED; pending.finishesActivation = finish; return true
         }
-        if (command == UseItemCommand) return reject(CommandResult.Reason.ITEM_UNAVAILABLE)
-        if (command is MoveCommand || command == WaitCommand) {
-            if (hand.open) return reject(CommandResult.Reason.INVALID_PHASE)
-            return false
+        if (command is DrinkPotionCommand) {
+            if (hand.locked != null) return reject(CommandResult.Reason.INVALID_PHASE)
+            return if (command.potion !in content.potions) reject(CommandResult.Reason.ITEM_UNAVAILABLE) else accept(true)
         }
+        if (command == UseItemCommand) return reject(CommandResult.Reason.ITEM_UNAVAILABLE)
         if (command == EndTurnCommand) return accept(true)
         if (command is SelectAbilityCommand) {
             if (hand.locked != null) return reject(CommandResult.Reason.INVALID_PHASE)
@@ -108,8 +108,7 @@ internal class CombatRuntime(private val run: RunWorld) {
             if (target != id) return CommandResult.Reason.INVALID_TARGET
         } else {
             if (run.isPlayer(target) == run.isPlayer(id)) return CommandResult.Reason.INVALID_TARGET
-            val a = run.cell(id); val b = run.cell(target)
-            if (kotlin.math.abs(a.x - b.x) + kotlin.math.abs(a.y - b.y) > definition.range) return CommandResult.Reason.INVALID_TARGET
+
         }
         if ((get<Cooldowns>(id).entries[skill.value]?.remaining ?: 0) > 0) return CommandResult.Reason.COOLDOWN
         return affordability(id, costs(id, rank.cost))
@@ -202,6 +201,7 @@ internal class CombatRuntime(private val run: RunWorld) {
         } else if (pending.command == UseAbilityCommand) {
             queued = checkNotNull(hand.locked); pay(id)
         } else if (pending.command == EndTurnCommand && hand.locked != null) pay(id)
+        if (pending.command is DrinkPotionCommand) potion(id, (pending.command as DrinkPotionCommand).potion)
         queued?.let { ability ->
             emit(AbilityUsed(id, ability.selection.skill, ability.selection.target), id)
             if (ability.definition.cooldown > 0)
@@ -313,9 +313,7 @@ internal class CombatRuntime(private val run: RunWorld) {
         check(session.combatEnabled)
         // Encounter lifetime spans multiple hands. Preserve older checkpoints with a standalone open hand.
         val inBattle = !session.defeated && (session.encounterParticipants.isNotEmpty() || get<DiceHand>(run.player()).open)
-        return CombatObservation(session.encounterOutcome, session.defeated, inBattle, run.entities.keys.map(::EntityId).filter {
-            run.isPlayer(it) || session.visible[run.grid.index(run.cell(it).x, run.cell(it).y)]
-        }.map(::actorObservation))
+        return CombatObservation(session.encounterOutcome, session.defeated, inBattle, run.entities.keys.map(::EntityId).map(::actorObservation))
     }
     fun export(): CombatRestore? = if (!session.combatEnabled) null else CombatRestore(session.defeated,
         session.encounterOutcome, session.encounterParticipants.toList(), run.entities.keys.map(::EntityId).map(::actorObservation))
@@ -329,7 +327,7 @@ internal class CombatRuntime(private val run: RunWorld) {
             require(a.faces.all { it in (if (a.locked == null) 0..0 else 1..6) })
             require(a.locked == null || a.open && a.selection == a.locked.selection)
             require(a.reserved == (a.locked?.cost ?: ResourceVector(0, 0, 0)))
-            require(a.current.hp == get<Health>(a.id).current && a.maximum.hp == get<Health>(a.id).maximum)
+            get<Health>(a.id).apply { current = a.current.hp; maximum = a.maximum.hp }
             require(a.current.mp in 0..a.maximum.mp && a.current.sp in 0..a.maximum.sp)
             require(a.statuses.all { it.definition in content.statuses && it.remaining > 0 })
             require(a.learned.all { (id, rank) -> content.skills[id]?.ranks?.any { it.rank == rank } == true })
@@ -344,9 +342,23 @@ internal class CombatRuntime(private val run: RunWorld) {
                 a.faces.forEachIndexed { i, face -> faces[i] = face }; a.kept.forEachIndexed { i, keep -> kept[i] = keep }
             }
             get<Shield>(a.id).apply { amount = a.shield; remaining = a.shieldDuration; skipBoundary = a.shieldSkipsBoundary }
-            get<StatusSet>(a.id).entries.addAll(a.statuses)
-            get<Cooldowns>(a.id).entries.putAll(a.cooldowns)
+            get<StatusSet>(a.id).entries.apply { clear(); addAll(a.statuses) }
+            get<Cooldowns>(a.id).entries.apply { clear(); putAll(a.cooldowns) }
         }
+    }
+    fun potion(id: EntityId, potion: ContentId) {
+        val definition = content.potions.getValue(potion)
+        recover(id, definition.recovery)
+        definition.status?.let { applyStatus(id, id, it) }
+    }
+    fun recoverHero() {
+        session.defeated = false; session.encounterOutcome = null
+        val id = run.player()
+        get<StatusSet>(id).entries.clear(); get<Cooldowns>(id).entries.clear()
+        get<Shield>(id).apply { amount = 0; remaining = 0; skipBoundary = false }
+        recompute(id)
+        get<Health>(id).current = get<Health>(id).maximum
+        get<ResourcePools>(id).apply { mp = maxMp; sp = maxSp }
     }
     fun canonical(): String {
         if (!session.combatEnabled) return "disabled"

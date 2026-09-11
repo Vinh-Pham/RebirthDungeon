@@ -1,0 +1,25 @@
+Verification excerpts; 2026-09-10 free exploration migration.
+
+rebirth-core-final.log
+BUILD SUCCESSFUL in 11s
+
+rebirth-final-check.log
+BUILD SUCCESSFUL in 16s
+
+rebirth-ios-check.log
+Unable to find application named 'Simulator'
+BUILD SUCCESSFUL in 45s
+
+cloud.vinh.rebirthdungeon.application.session.SessionIntegrationTest: tests=7, failures=0, errors=0, skipped=0
+cloud.vinh.rebirthdungeon.bootstrap.SessionWorkerTest: tests=5, failures=0, errors=0, skipped=0
+cloud.vinh.rebirthdungeon.data.content.ContentRepositoryTest: tests=8, failures=0, errors=0, skipped=0
+cloud.vinh.rebirthdungeon.game.RandomSourceTest: tests=4, failures=0, errors=0, skipped=0
+cloud.vinh.rebirthdungeon.game.combat.CombatCheckpointTest: tests=5, failures=0, errors=0, skipped=0
+cloud.vinh.rebirthdungeon.game.combat.CombatRulesTest: tests=5, failures=0, errors=0, skipped=0
+cloud.vinh.rebirthdungeon.game.combat.CombatSimulationTest: tests=18, failures=0, errors=0, skipped=0
+cloud.vinh.rebirthdungeon.game.exploration.NavigationTest: tests=7, failures=0, errors=0, skipped=0
+cloud.vinh.rebirthdungeon.presentation.BattlePresentationTest: tests=3, failures=0, errors=0, skipped=0
+cloud.vinh.rebirthdungeon.smoke.AceRandomStateTest: tests=2, failures=0, errors=0, skipped=0
+cloud.vinh.rebirthdungeon.smoke.ArtemisWorldStepTest: tests=2, failures=0, errors=0, skipped=0
+cloud.vinh.rebirthdungeon.smoke.JacksonContentBindingTest: tests=4, failures=0, errors=0, skipped=0
+cloud.vinh.rebirthdungeon.smoke.JdkgdxdsCollectionsTest: tests=2, failures=0, errors=0, skipped=0

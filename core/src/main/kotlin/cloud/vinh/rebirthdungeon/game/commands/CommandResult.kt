@@ -6,12 +6,7 @@ data class CommandResult private constructor(val reason: Reason) {
     enum class Reason {
         /** The command changed authoritative state. */
         ACCEPTED,
-        /** The move delta was not a single cardinal step. */
-        NOT_CARDINAL,
-        /** The destination cell is outside the current floor. */
-        OUT_OF_BOUNDS,
-        /** The destination cell is terrain the actor cannot enter. */
-        BLOCKED, OCCUPIED, HOSTILE_CONTACT, LOCKED_DOOR, NOT_PLAYER_TURN, STALE_SESSION, SAVE_REQUIRED, COMBAT_DISABLED, INVALID_PHASE, INVALID_DICE, INVALID_SKILL, INVALID_TARGET, EQUIPMENT_REQUIRED, COOLDOWN, INSUFFICIENT_HP, INSUFFICIENT_MP, INSUFFICIENT_SP, TERMINAL, ITEM_UNAVAILABLE
+        NOT_PLAYER_TURN, STALE_SESSION, SAVE_REQUIRED, INVALID_PHASE, INVALID_DICE, INVALID_SKILL, INVALID_TARGET, EQUIPMENT_REQUIRED, COOLDOWN, INSUFFICIENT_HP, INSUFFICIENT_MP, INSUFFICIENT_SP, TERMINAL, ITEM_UNAVAILABLE
     }
 
     fun accepted(): Boolean = reason == Reason.ACCEPTED
@@ -21,8 +16,5 @@ data class CommandResult private constructor(val reason: Reason) {
     companion object {
         fun rejected(reason: Reason) = CommandResult(reason)
         val ACCEPTED = CommandResult(Reason.ACCEPTED)
-        val NOT_CARDINAL = CommandResult(Reason.NOT_CARDINAL)
-        val OUT_OF_BOUNDS = CommandResult(Reason.OUT_OF_BOUNDS)
-        val BLOCKED = CommandResult(Reason.BLOCKED)
     }
 }

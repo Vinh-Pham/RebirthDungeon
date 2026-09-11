@@ -1,5 +1,7 @@
 # Rebirth Dungeon
 
+> **Active migration (2026-09-10):** [Free exploration and separate battles](free-exploration.md) supersedes the grid-world, shared dungeon/battle screen, spatial combat, and legacy-save contracts below. Earlier phase evidence is retained as history.
+
 > **Explore dungeons, turn five dice into a chosen skill, and build mastery that lasts across lives.**
 
 Rebirth Dungeon is a **2D pixel-art, turn-based dungeon-crawling RPG** combining **Mabinogi-inspired character development** with **Dicero-inspired dice battles**. Players prepare a hero in town, explore grid-based dungeons, collect equipment and skill books, train abilities through use, and spend Ability Points to advance them. Rebirth starts a new life without erasing the hero’s accumulated mastery.

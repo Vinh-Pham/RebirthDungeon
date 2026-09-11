@@ -2,14 +2,14 @@ package cloud.vinh.rebirthdungeon.presentation.animation
 
 import cloud.vinh.rebirthdungeon.game.events.*
 import cloud.vinh.rebirthdungeon.game.identity.EntityId
-import cloud.vinh.rebirthdungeon.game.projection.DungeonObservation
+import cloud.vinh.rebirthdungeon.game.projection.BattleObservation
 
 interface CombatFeedback {
     fun attack()
     fun damage()
     object Silent : CombatFeedback { override fun attack() {} ; override fun damage() {} }
 }
-data class CombatTrack(val actor: EntityId, val cell: Cell, val kind: String, val amount: Int = 0, val from: Cell? = null)
+data class CombatTrack(val actor: EntityId, val kind: String, val amount: Int = 0)
 
 /** Consumes observed events once. Cosmetic time, skipping and restoration never submit commands. */
 class CombatTracks(private val feedback: CombatFeedback = CombatFeedback.Silent) {
@@ -21,23 +21,18 @@ class CombatTracks(private val feedback: CombatFeedback = CombatFeedback.Silent)
     val playing get() = remaining > 0
     val progress get() = (1f - remaining / 0.35f).coerceIn(0f, 1f)
     val tracks: List<CombatTrack> get() = active.toList()
-    fun accept(view: DungeonObservation, animate: Boolean) {
+    fun accept(view: BattleObservation, animate: Boolean) {
         if (view.runId != runId) { runId = view.runId; consumed = 0; skip() }
         val visible = view.actors.associateBy { it.id }
         val fresh = view.events.filter { it.sequence > consumed }
         consumed = maxOf(consumed, fresh.maxOfOrNull { it.sequence } ?: 0)
         if (!animate) { skip(); return }
-        val observedCells = visible.mapValues { it.value.cell } + fresh.map { it.event }.filterIsInstance<ActorRemoved>().associate { it.actor to it.cell }
         fresh.forEach { ordered ->
             val event = ordered.event
             val track = when (event) {
-                is ActorMoved -> visible[event.actor]?.takeIf { view.visibleAt(event.from.x, event.from.y) }?.let {
-                    CombatTrack(it.id, event.to, "move", from = event.from)
-                }
-                is AbilityUsed -> visible[event.actor]?.let { CombatTrack(it.id, it.cell, "attack") }
-                is DamageDealt -> observedCells[event.target]?.let { CombatTrack(event.target, it, "damage", event.hpDamage) }
-                // The removal cell itself was exported only when visible at event time.
-                is ActorRemoved -> CombatTrack(event.actor, event.cell, "death")
+                is AbilityUsed -> CombatTrack(event.actor, "attack")
+                is DamageDealt -> CombatTrack(event.target, "damage", event.hpDamage)
+                is ActorRemoved -> CombatTrack(event.actor, "death")
                 else -> null
             }
             if (track != null) {

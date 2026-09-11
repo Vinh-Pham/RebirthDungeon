@@ -23,7 +23,7 @@ import kotlin.math.sqrt
 /** Title screen mirroring the Penpot board "Title Screen" (1280x720): navy
  * gradient, edge vignette, torch glow, the gold Press Start 2P title with a
  * hard pixel shadow, the five-dice divider, and the bottom-center Start Game
- * button that enters [DungeonScreen]. This is the menu hub the dungeon's Menu
+ * button that enters [ExplorationScreen]. This is the menu hub the dungeon's Menu
  * action returns to.
  *
  * The FitViewport pins the design space, so every actor sits at the board's
@@ -33,7 +33,6 @@ import kotlin.math.sqrt
 class TitleScreen(private val game: RebirthDungeon) : KtxScreen {
     private var stage: Stage? = null
     private var ownedTextures: MutableCollection<Texture> = ArrayList()
-    private var demoTimer = 0f
 
     override fun show() {
         val stage = Stage(FitViewport(DESIGN_WIDTH, DESIGN_HEIGHT))
@@ -68,7 +67,7 @@ class TitleScreen(private val game: RebirthDungeon) : KtxScreen {
         }
         val start = TextButton("Start Game", style)
         start.setBounds(490f, topToGl(580f, 68f), 300f, 68f)
-        start.onClick { game.navigateTo(DungeonScreen(game)) }
+        start.onClick { game.navigateTo(ExplorationScreen(game)) }
         stage.addActor(start)
 
         Gdx.input.inputProcessor = stage
@@ -79,21 +78,6 @@ class TitleScreen(private val game: RebirthDungeon) : KtxScreen {
         stage?.act(minOf(delta, 0.1f))
         stage?.draw()
         Screenshots.captureIfRequested("title")
-        runAutoDemo(delta)
-    }
-
-    /** Auto-demo (see [AutoDemo]): after the title settles, capture the menu
-     * and enter the dungeon through the same navigation the button uses. */
-    private fun runAutoDemo(delta: Float) {
-        if (!AutoDemo.enabled())
-            return
-        demoTimer += delta
-        if (demoTimer < 1f)
-            return
-        demoTimer = Float.MAX_VALUE // never re-fire, even if a frame sneaks in before disposal
-        Screenshots.capture("menu")
-        AutoDemo.dungeonEntries++
-        game.navigateTo(DungeonScreen(game))
     }
 
     override fun resize(width: Int, height: Int) {

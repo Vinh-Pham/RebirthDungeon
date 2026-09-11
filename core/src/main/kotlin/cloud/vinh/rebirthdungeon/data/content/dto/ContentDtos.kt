@@ -13,8 +13,6 @@ class ManifestDto {
 
 class CatalogDto {
     var schemaVersion: Int? = null
-    var tiles: List<TileDto>? = null
-    var generations: List<GenerationDto>? = null
     var actors: List<ActorDto>? = null
     var scoring: List<ScoringDto>? = null
     var skills: List<SkillDto>? = null
@@ -24,20 +22,6 @@ class CatalogDto {
     var encounters: List<EncounterDto>? = null
     var loot: List<LootDto>? = null
     var progression: List<ProgressionDto>? = null
-}
-
-class TileDto {
-    var id: String? = null
-    var code: Int? = null
-    var walkable: Boolean? = null
-}
-
-class GenerationDto {
-    var id: String? = null
-    var generatorVersion: Int? = null
-    var width: Int? = null
-    var height: Int? = null
-    var maxAttempts: Int? = null
 }
 
 class ResourcesDto {
@@ -72,7 +56,6 @@ class SkillDto {
     var effect: SkillEffect? = null
     var target: TargetKind? = null
     var requiredEquipment: String? = null
-    var range: Int? = null
     var cooldown: Int? = null
     var status: String? = null
     var shieldDuration: Int? = null

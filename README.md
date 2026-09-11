@@ -1,6 +1,6 @@
 # RebirthDungeon
 
-A 2D pixel-art, grid-based roguelike dungeon crawler with dice combat, built in **Kotlin** with [libGDX](https://libgdx.com/). See [game-plan.md](game-plan.md) for the architecture contract and [project-phases.md](project-phases.md) for the implementation tracker.
+A 2D pixel-art roguelike with free exploration and separate dice battles, built in **Kotlin** with [libGDX](https://libgdx.com/). See [game-plan.md](docs/game-plan.md) for the architecture contract and [project-phases.md](docs/project-phases.md) for the implementation tracker.
 
 This project was generated with [gdx-liftoff](https://github.com/libgdx/gdx-liftoff) and reworked in Phase 0 into a reproducible build baseline.
 
@@ -44,7 +44,7 @@ The first-slice runtime (pinned in `gradle.properties`, audited in game-plan sec
 
 - `com.badlogicgames.gdx:gdx` 1.14.2 — lifecycle, graphics, audio, input, Scene2D, assets, JSON. Exposed as `api` because launchers compile against `Game`.
 - `net.onedaybeard.artemis:artemis-odb` 2.3.0 — authoritative ECS (systems run in registration order; components need public constructors).
-- SquidSquad `squidcore`, `squidgrid`, `squidplace`, `squidpath` 4.0.12 — generation and cardinal pathfinding (implemented with jdkgdxds/juniper/digital/regexodus/crux transitively).
+- Exploration uses project-owned polygon navigation and room assembly. Unused SquidSquad/SquidLib dependencies were removed after the grid migration.
 - `com.github.tommyettinger:jdkgdxds` 2.1.8 and `com.github.tommyettinger:juniper` 0.10.5 — collections and seeded RNG.
 - `com.fasterxml.jackson.core:jackson-databind` 2.22.2 (+ `jackson-annotations` 2.22) — versioned content definitions in `assets/data` JSON, bound strictly to plain DTOs (unknown fields/enum values fail the load). Save bundles stay on LibGDX JSON.
 - `org.jetbrains.kotlin:kotlin-stdlib` 2.4.10 — Kotlin runtime; pinned to the Kotlin Gradle plugin version used by every module.
@@ -54,8 +54,8 @@ The first-slice runtime (pinned in `gradle.properties`, audited in game-plan sec
 Dependency policy:
 
 - **Duplicate-artifact repair.** The jdkgdxds `2.1.8` JitPack publication depends on both `com.github.tommyettinger.jdkgdxds:build` and `com.github.tommyettinger.jdkgdxds:jdkgdxds`, which contain identical classes and fail Android's `checkDebugDuplicateClasses`. The root build excludes exactly `com.github.tommyettinger.jdkgdxds:build` from every configuration; the retained `:jdkgdxds` module declares the same dependencies, so nothing else is dropped. This is a graph repair — no packaging rule hides duplicate bytecode.
-- **Full gdx-liftoff Kotlin + KTX third-party set (user-directed, 2026-09-06).** The remaining liftoff libraries are all included: gdx-ai, gdx-box2d, gdx-freetype, gdx-controllers (core + desktop/android/ios backends with matching natives per launcher), box2dlights, blade-ink, spine-libgdx, vis-ui, anim8-gdx, typing-label, libgdx-utils, sjInGameConsole, squidlib 3.x (+ extra), the full SquidSquad module set (core/grid/place/path/press/seek/smooth/store*/text/wrath*), digital, crux, funderby, gand, gdcrux, regexodus, jdkgdxds_interop, kotlinx-coroutines, and every KTX module under the `io.github.quillraven.libktx` group at `1.14.2-rc1` (built against this project's exact gdx/artemis/kotlin pins). Version pins in `gradle.properties`.
-- **Fory/Tantrum exclusion.** `org.apache.fory:fory-core` and the `com.github.tommyettinger.tantrum:*` modules built on it are excluded at graph level: Fory requires Android API 26+ (invokedynamic bytecode D8 cannot process at the reviewed minSdk 21 — verified against fory 1.7.1/1.6.1/1.5.0 and the official Fory Android docs), and the SquidSquad serialization modules pull them in transitively, so the root build excludes both groups the same way it repairs the jdkgdxds `:build` duplicate. Restore only if minSdk is raised to 26. `gdx-kiwi` also remains excluded (nothing references it).
+- **Full gdx-liftoff Kotlin + KTX third-party set (user-directed, 2026-09-06).** The retained liftoff libraries are included, with SquidSquad/SquidLib removed after the grid migration: gdx-ai, gdx-box2d, gdx-freetype, gdx-controllers (core + desktop/android/ios backends with matching natives per launcher), box2dlights, blade-ink, spine-libgdx, vis-ui, anim8-gdx, typing-label, libgdx-utils, sjInGameConsole, digital, crux, funderby, gand, gdcrux, regexodus, jdkgdxds_interop, kotlinx-coroutines, and every KTX module under the `io.github.quillraven.libktx` group at `1.14.2-rc1` (built against this project's exact gdx/artemis/kotlin pins). Version pins in `gradle.properties`.
+- **Fory/Tantrum exclusion.** `org.apache.fory:fory-core` and the `com.github.tommyettinger.tantrum:*` modules built on it are excluded at graph level: Fory requires Android API 26+ (invokedynamic bytecode D8 cannot process at the reviewed minSdk 21 — verified against fory 1.7.1/1.6.1/1.5.0 and the official Fory Android docs), and the former SquidSquad serialization modules pulled them in transitively. The root build retains both exclusions as a platform guard the same way it repairs the jdkgdxds `:build` duplicate. Restore only if minSdk is raised to 26. `gdx-kiwi` also remains excluded (nothing references it).
 - **`api` vs `implementation`.** Only `gdx` is `api`; internal libraries are `implementation` so launchers do not leak their types.
 - **Repositories.** Maven Central + JitPack (required by tommyettinger/yellowstonegames artifacts). `mavenLocal()` is opt-in via `-Prebirth.enableMavenLocal=true`; snapshot repositories were removed.
 - **Reproducibility.** Dependency locking is on for all configurations (`gradle.lockfile` per module; regenerate with `--write-locks` after an intentional bump) and checksum verification is committed in `gradle/verification-metadata.xml` (regenerate with `--write-verification-metadata sha256` when the graph changes).
@@ -84,12 +84,14 @@ The Gradle wrapper (`9.5.1`) is included; run tasks with `./gradlew`. Useful tas
 - `clean`, `idea`, `eclipse` — housekeeping.
 - Most tasks accept a project prefix, e.g. `core:clean`.
 
-### Movement prototype and checkpoints
+### Exploration and battle
 
-The dungeon now supports cardinal movement, opening doors, waiting, fog and deterministic enemy pursuit. Use arrows/WASD, the on-screen buttons, adjacent taps or swipes; Space/period waits. Combat is not enabled yet. Reaching the exit marks exploration progress without granting rewards.
+Click or tap the ground to run; WASD/arrows provide direct movement. Click NPCs to approach and talk, shop or recover. The town camera shows its services. In dungeons, gold doorway markers reveal adjoining rooms; visible sentinels start separate dice battles when approached.
 
-Accepted actions are checkpointed automatically. Enter Dungeon resumes the active/saved run; Reload reconstructs the saved map and turn state. New run starts a fresh floor. A save error blocks more actions until Retry save succeeds. Desktop saves are in `~/.rebirthdungeon/saves`; mobile uses its local `saves` directory. The two alternating slots must remain together for recovery. Future-version or wholly invalid saves are preserved and reported instead of silently reset.
+In battle, choose Skills, select a skill/target, Roll, keep dice with 1–5, reroll up to twice, then Use Skill or Pass. Potions are a full pre-roll action. After victory return to exploration with resources preserved. Clear all sentinels and use the exit to secure pending rewards. Defeat loses pending rewards; town recovery is free.
 
-For an isolated desktop smoke run, set `REBIRTH_CHECKPOINT_DIR` to an absolute temporary directory and `REBIRTH_AUTODEMO=1` when running `./gradlew :lwjgl3:run`. The demo exercises commands and disk reload, writes screenshots, and exits after two dungeon entries. See [Phase 3 movement/checkpoint contracts](docs/phase3-movement.md) for the format, prototype limits and validation scope.
+The provisional slice uses one gold balance and bounded potion supplies. Banking, full inventory and broader progression remain later phases. Runtime saves use `session-a.json` and `session-b.json` in `~/.rebirthdungeon/saves` on desktop and local `saves` on mobile. Movement saves every two simulation seconds; transactions and battle commands save before further actions. Save failure blocks dependent actions until Retry save succeeds. Keep both slots together. Only the new format is supported.
 
-Current combat implementation and verification limits are recorded in [Phase 5](docs/phase5-combat.md). In particular, a simulator PID is not gameplay acceptance: the current iOS runtime fails during Jackson initialization.
+For isolated verification: `REBIRTH_CHECKPOINT_DIR=/tmp/rebirth-exploration-check ./gradlew :lwjgl3:run`. F12 captures exploration/battle screenshots. The obsolete movement auto-demo has been removed.
+
+See [free exploration](docs/free-exploration.md) for the active contract and verification evidence. The earlier [Phase 5](docs/phase5-combat.md) Android/iOS runtime gates remain open, including the documented Jackson/RoboVM loading issue.

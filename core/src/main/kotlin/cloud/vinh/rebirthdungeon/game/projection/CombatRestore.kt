@@ -11,16 +11,16 @@ class CombatRestore(val defeated: Boolean, val outcome: EncounterOutcome?, parti
 }
 
 /** Reject incoherent records before a repository considers a slot recoverable. */
-internal fun CombatRestore.validate(state: RunRestore, content: cloud.vinh.rebirthdungeon.game.content.ContentCatalog) {
+internal fun CombatRestore.validate(state: BattleRestore, content: cloud.vinh.rebirthdungeon.game.content.ContentCatalog) {
     require(content.version.content >= 2)
     require(actors.map { it.id }.distinct().size == actors.size && actors.map { it.id }.toSet() == state.actors.map { it.id }.toSet())
-    require(participants.distinct().size == participants.size && participants.all { it > 0 && it < state.nextEntityId })
+    require(participants.distinct().size == participants.size && participants.all { id -> state.actors.any { it.id.value == id && !it.player } })
     require(defeated == (state.actors.single { it.player }.hp == 0))
     require(!defeated || outcome == EncounterOutcome.DEFEAT)
     require(outcome == null || participants.isEmpty())
     fun rankKey(r: cloud.vinh.rebirthdungeon.game.content.SkillRank) = listOf(r.rank, r.order, r.basePower, r.pipScale, r.cost, r.weights)
     fun definitionKey(d: cloud.vinh.rebirthdungeon.game.content.SkillDefinition) = listOf(d.id, d.name, d.prototypeCap, d.scoring, d.attackStat,
-        d.ranks.map(::rankKey), d.effect, d.target, d.requiredEquipment, d.range, d.cooldown, d.status, d.shieldDuration)
+        d.ranks.map(::rankKey), d.effect, d.target, d.requiredEquipment, d.cooldown, d.status, d.shieldDuration)
     actors.forEach { a ->
         val actor = state.actors.single { it.id == a.id }
         require(a.current.hp == actor.hp && a.maximum.hp == actor.maxHp)

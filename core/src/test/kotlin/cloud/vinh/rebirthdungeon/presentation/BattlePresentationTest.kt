@@ -2,12 +2,12 @@ package cloud.vinh.rebirthdungeon.presentation
 
 import cloud.vinh.rebirthdungeon.presentation.input.InputOwnership
 import cloud.vinh.rebirthdungeon.presentation.animation.*
-import cloud.vinh.rebirthdungeon.application.run.RunController
+import cloud.vinh.rebirthdungeon.application.run.BattleController
 import cloud.vinh.rebirthdungeon.application.persistence.CheckpointRepository
 import cloud.vinh.rebirthdungeon.game.*
 import cloud.vinh.rebirthdungeon.game.commands.*
 import cloud.vinh.rebirthdungeon.game.identity.*
-import cloud.vinh.rebirthdungeon.game.projection.RunRestore
+import cloud.vinh.rebirthdungeon.game.projection.BattleRestore
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -20,10 +20,9 @@ class BattlePresentationTest {
         assertTrue(p.keyDown(5)); assertFalse(p.keyDown(5)); p.keyUp(5); assertTrue(p.keyDown(5))
     }
     @Test fun availabilityAndSkippedPresentationNeverChangeTheCommittedHand() {
-        val sim = DungeonSimulation.create(Phase3Fixtures.floor("#####", "#..>#", "#####"), 1, 1,
-            RunSession(71, Phase3Fixtures.content, combatEnabled = true), listOf(Phase3Fixtures.enemy(2, 1)))
-        val repo = object : CheckpointRepository { override fun load(): RunRestore? = null; override fun save(state: RunRestore) {} }
-        val c = RunController(sim, repo, 1)
+        val sim = BattleSimulation.create(BattleSession(71, CombatFixtures.content), listOf(CombatFixtures.enemy()))
+        val repo = object : CheckpointRepository { override fun load(): BattleRestore? = null; override fun save(state: BattleRestore) {} }
+        val c = BattleController(sim, repo, 1)
         try {
             c.startOrResume(); assertFalse(c.battleView()!!.roll.enabled)
             c.submit(SelectAbilityCommand(ContentId("skill.sword"), EntityId(2)), 1)
@@ -42,8 +41,7 @@ class BattlePresentationTest {
         } finally { c.close() }
     }
     @Test fun committedAttackFeedbackIsConsumedOnceAcrossSkipAndReplay() {
-        val sim = DungeonSimulation.create(Phase3Fixtures.floor("#####", "#..>#", "#####"), 1, 1,
-            RunSession(71, Phase3Fixtures.content, combatEnabled = true), listOf(Phase3Fixtures.enemy(2, 1)))
+        val sim = BattleSimulation.create(BattleSession(71, CombatFixtures.content), listOf(CombatFixtures.enemy()))
         var attacks = 0; var damage = 0
         val tracks = CombatTracks(object : CombatFeedback {
             override fun attack() { attacks++ }

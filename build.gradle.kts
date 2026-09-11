@@ -105,18 +105,17 @@ subprojects {
         // Fory (Apache Fury) requires Android API 26+ — its bytecode carries
         // invokedynamic instructions D8 cannot process at the reviewed minSdk 21
         // ("Increase the minSdkVersion to 26 or above"; see
-        // https://fory.apache.org/docs/guide/java/android_support/). The SquidSquad
-        // serialization modules (squidstore*/squidwrath*) pull tantrum+fory in
-        // transitively, so both groups are excluded at graph level: their non-fory
-        // code stays usable, and the fory-backed serialization path is simply not
-        // present on mobile/desktop builds. Revisit only if minSdk is raised to 26.
+        // https://fory.apache.org/docs/guide/java/android_support/). Retain this
+        // platform guard after removing the SquidSquad serialization modules
+        // that originally introduced these dependencies. Revisit only if minSdk
+        // is raised to 26.
         exclude(group = "org.apache.fory", module = "fory-core")
         exclude(group = "com.github.tommyettinger.tantrum")
     }
 
     repositories {
         mavenCentral()
-        // JitPack is required: jdkgdxds, juniper and the SquidSquad modules are published there.
+        // JitPack is required: jdkgdxds and juniper are published there.
         maven { url = uri("https://jitpack.io") }
         // Opt-in only, so local artifacts cannot silently replace published ones:
         // run with -Prebirth.enableMavenLocal=true to enable.

@@ -1,5 +1,17 @@
 # Rebirth Dungeon Project Phases
 
+## Active priority — Free exploration migration (2026-09-10)
+
+User-directed priority change: implement [the replacement contract](free-exploration.md) before resuming later phases. Phases 0–4 retain historical evidence; replaced grid behavior is superseded, not newly verified. Phase 5 mobile gates remain open.
+
+- [x] Polygon navigation, fixed ticks, discovery and seeded room assembly.
+- [x] Battle-only simulation and dedicated screen without grid dependencies.
+- [x] Atomic mode transitions, new saves, town dialogue/shop/recovery.
+- [x] Grid removal and JVM/desktop/Android verification.
+- [ ] Native runtime acceptance, including the existing iOS loading blocker.
+
+
+
 This is the implementation queue for the Kotlin/LibGDX game described by [overview.md](overview.md). [game-plan.md](game-plan.md) owns architecture, [directory.md](directory.md) owns package placement, the rule-focused [gameplay specifications](gameplay/) own gameplay behavior, and [user-interface.md](gameplay/user-interface.md) owns presentation and interaction requirements. This tracker orders their delivery and records implementation evidence. Reference-game mechanics and illustrative numbers are not automatically shipping requirements.
 
 **Re-aligned 2026-09-09:** distribute the user-interface plan across the phases that own functional HUDs, shared windows, recovery, services, input, presentation polish and device acceptance. Preserve all phase numbers, completed Phases 0–4 and their historical evidence. Phase 5 remains the earliest unfinished phase. This revision changes planning only; it does not implement UI, close a checkbox or add platform acceptance evidence.
@@ -23,12 +35,12 @@ The [documentation audit](audit.md) supplies validation priorities, and [referen
 
 ## Current Focus
 
-- **Current phase:** Phase 5 — Playable combat and resumable activations.
-- **Status:** Phase 5 implementation is available: production combat, adaptive battle HUD, explicit input ownership, event presentation and complete combat checkpoints. On 2026-09-10, 90 JVM tests, boundary/source checks, desktop compilation and Android debug packaging pass; desktop win/lose, save failure/retry and fresh-process hand restoration were exercised.
-- **Next objective:** Resolve the iOS Jackson/RoboVM runtime failure and complete the Android/iOS real-control and cross-platform continuation matrix. See [Phase 5 implementation and evidence](phase5-combat.md).
-- **Planning gates:** Starter recovery/exhaustion and encounter-versus-run completion are authored in Phase 4. Town architecture, gold reward capacity, outcome retention and recovery access remain prerequisites before Phase 7.
-- **Known blockers/unmet gates:** iPhone SE (3rd generation), iOS 18.2 reaches the loading error screen with `NoClassDefFoundError: java/lang/BootstrapMethodError` during Jackson initialization. AOT/link/sign succeeds but does not establish playable iOS runtime. Android packaging passes; mobile touch, safe-area, haptics and combat replay acceptance remain open. Phase 5 is not complete.
-- **Repository state:** Shared Kotlin sources and existing modules remain unchanged in layout; no dependencies added. Content v2 supplies starter combat values; the original v1 catalog is retained only as a historical test fixture. No automatic content/save migration is claimed.
+- **Current work:** Free exploration and separate battle migration, per the user-directed priority change above.
+- **Delivered slice:** Polygon navigation, fixed ticks, connector generation, discovery, separate dice battle, town dialogue/potions/recovery, and atomic session bundles. Combat balance remains unchanged; the canonical fixture changed because grid state and content/rules versions changed.
+- **Verification:** Migration evidence and native limits are recorded in [free-exploration.md](free-exploration.md). Historical Phase 5 evidence is not a claim about these replacement screens.
+- **Next gate:** Complete native touch/compact/interruption acceptance and resolve the existing Jackson/RoboVM loading blocker. Phase 5 remains open.
+- **Scope disposition:** The temporary wallet/potion list and free recovery implement the accepted provisional loop. Banking, full inventory, progression and broader services remain later phases; this does not close Phase 7.
+- **Compatibility:** New saves only. Old movement implementation and fixtures removed. Dependency pins and platform native sets unchanged.
 
 ## Existing Architecture and Working Boundaries
 
@@ -37,7 +49,7 @@ The [documentation audit](audit.md) supplies validation priorities, and [referen
 | `core/src/main/kotlin/cloud/vinh/rebirthdungeon/` | Existing shared Kotlin root; adopt nested packages as features arrive |
 | `RebirthDungeon.kt`, `bootstrap/` | Lifecycle, composition, workers, fresh screen instances and navigation |
 | `application/run`, `application/profile`, `application/persistence` | Serialized run requests, committed profile/town transactions, repository contracts and one save writer |
-| `game/` | Pure deterministic rules; one artemis-odb `World` per run plus non-component `RunSession`; `game/town` does not use dungeon initiative |
+| `game/` | Pure deterministic rules; one artemis-odb `World` per battle plus non-component `BattleSession`; `game/town` does not use dungeon initiative |
 | `data/content`, `data/save` | Strict Jackson content DTOs/loaders constructing immutable game definitions; LibGDX JSON save codecs/repository |
 | `presentation/screens`, `presentation/dungeon`, `presentation/town` | Screen composition, Stage/viewports and rendering of immutable permitted observations |
 | `presentation/hud`, `presentation/windows`, `presentation/input` | Shared status/menu/dice surfaces, reusable feature/service windows, modal/focus policy, shortcuts, pointer ownership and world exclusion regions |
@@ -54,10 +66,12 @@ Keep live gameplay out of UI state and animation clocks. Use explicit constructo
 
 ## Phase Overview
 
+- [ ] Free exploration migration — implementation and automated gates complete; native mobile acceptance remains open.
+
 - [x] Phase 0 — Dependency repair and build foundation
 - [x] Phase 1 — Lifecycle, assets, and rendering integration
 - [x] Phase 2 — Validated content and deterministic RNG
-- [x] Phase 3 — Grid simulation, turns, and basic checkpoints
+- [x] Phase 3 — Grid simulation, turns, and basic checkpoints (historically verified; replaced by free exploration)
 - [x] Phase 4 — Deterministic five-dice combat
 - [ ] Phase 5 — Playable combat and resumable activations
 - [ ] Phase 6 — Durable saves, migrations, and lifecycle recovery
@@ -310,7 +324,7 @@ Tasks:
 
 - [ ] Decide and record the victory/defeat/abandonment retention policy for brought gear/supplies, new loot, gold, XP, training, quest evidence and title evidence in Open Decisions before inventory-backed results ship.
 - [ ] Close the town architecture/reward-capacity/recovery-access gate recorded above before implementing town transactions; settle starting gold/bag access, defeat arrival pools and retained-item policy alongside the outcome matrix.
-- [ ] Build one authored, fully visible 16-pixel cardinal town map with no enemies, fog or dungeon turns. Validate map bounds, walkability, adjacent NPC service access and edge entrance links; start a run by interacting at its entrance. Keep town traversal rules in `game/town`, profile operations in `application/profile`, and presentation in `presentation/town`.
+- [ ] Build one authored, fully visible polygon-navigation town map with no enemies, fog or dungeon turns. Validate map bounds, walkability, authored NPC interaction-point access and edge entrance links; start a run by interacting at its entrance. Keep town traversal rules in `game/town`, profile operations in `application/profile`, and presentation in `presentation/town`.
 - [ ] Compose title/loading, town, dungeon and committed-results screens through the existing coordinator. Add the persistent anchored status/menu bar: labeled HP/MP/SP current/max with reservations distinguished, level/XP, carried gold/capacity, floor/location or town landmark, contextual adjacent action/cost/eligibility, and Character (C), Skills (Z), Quests (Q), Inventory (I) and Menu controls. Menu exposes implemented settings, input help, save state, credits and valid return/continue actions; Abandon is separate and confirms the authored loss preview. Keep Quests explicitly unavailable until Phase 8 and add no placeholders for unsupported MMO/social/store features.
 - [ ] Implement the shared `presentation/windows` host in town and dungeon with feature views composed inside the current screen rather than navigation. Wide mode may show two ordinary windows when space permits; compact mode shows one list → detail → back sheet. Preserve selection/scroll state, clamp and reflow within safe bounds, restore focus to openers, and keep inspection available while controllers reject run-unavailable mutations outside as well as inside the UI.
 - [ ] Add Healer, Grocery, Blacksmith, General Store, Bank, Inn and the School's melee/magic instructor pair through an adjacent-only shared dialogue shell with Talk and implemented services, short skippable greetings and one authored Talk topic each. Revalidate location/session at confirmation, close stale service views when context changes, validate service/item/skill references and do not sell unusable placeholder goods as completed functionality.
@@ -666,6 +680,8 @@ A `NO-SOURCE` test task does not satisfy the test gate. A dependency report or s
 
 ## Completion Log
 
+- **2026-09-10 — Free exploration implementation delivered; mobile acceptance open.** Replaced world grids with deterministic polygon navigation and generated rooms, separated the battle World/screen, and added town services plus checksummed session transactions. All 72 JVM tests pass; shared/desktop compilation, desktop packaging, Android duplicate-class check and APK assembly pass. Real desktop input verified shop, routing, discovery, battle/potion actions, fresh-process mid-hand restore and victory return. Full exit/defeat/recovery and failed-save retry invariants are covered by JVM integration tests. Android emulator launch reached loaded assets; touch/lifecycle acceptance remains unverified. iOS full AOT/link succeeded, but manual simulator launch reproduces the Jackson/RoboVM `BootstrapMethodError` loading blocker. See [commands, screenshots and scoped evidence](free-exploration.md#verification-record-2026-09-10). No Phase 5–7 completion claimed.
+
 Phase 5 has partial implementation/verification evidence in [phase5-combat.md](phase5-combat.md); it has no completion row because native acceptance remains open.
 
 Phases 0–4 are complete as recorded below; their numbers were not changed by the 2026-09-05 realignment. Add a row only after all phase tasks and exits are verified; include the date, target and exact evidence.
@@ -679,6 +695,10 @@ Phases 0–4 are complete as recorded below; their numbers were not changed by t
 | 4 — Deterministic five-dice combat | 2026-09-08 | Gradle wrapper 9.5.1, daemon JVM 25, macOS arm64; ordinary JVM tests; Android debug packaging | `:core:check :lwjgl3:compileKotlin :android:checkDebugDuplicateClasses :android:assembleDebug` PASS, 82/82 tests, boundary/format clean. Tests: `core/src/test/kotlin/cloud/vinh/rebirthdungeon/game/combat/`; golden fixtures: `core/src/test/resources/replay/`; authored rules: `docs/phase4-combat.md`, `assets/data/starter.json` (content v2). Test report: `core/build/reports/tests/test/index.html`; APK: `android/build/outputs/apk/debug/android-debug.apk`; full log: `.firecrawl/phase4-verification.log`. No new dependency or native combat-runtime claim. Production combat and lossless activation checkpoints remain gated for Phase 5. |
 
 ## Work Notes
+
+- **2026-09-10 — Remove unused grid-library dependencies.** Removed all 15 SquidSquad modules and three SquidLib modules from `core/build.gradle.kts`, their unused version pins, and checksum records. Refreshed all four module lockfiles through Gradle; neither family remains transitively. Juniper RNG, jdkgdxds and the other general-purpose liftoff libraries remain. Verification: `:core:check` (72 tests, zero failures), shared/desktop Kotlin compilation, `:android:checkDebugDuplicateClasses` and `:android:assembleDebug` pass; `:ios:dependencies` resolves. Final log: `/tmp/rebirth-grid-dependency-final.log`. This dependency change does not close native runtime acceptance gates.
+
+- **2026-09-10 — Free exploration implementation delivered; mobile acceptance open.** Replaced world grids with deterministic polygon navigation and generated rooms, separated the battle World/screen, and added town services plus checksummed session transactions. All 72 JVM tests pass; shared/desktop compilation, desktop packaging, Android duplicate-class check and APK assembly pass. Real desktop input verified shop, routing, discovery, battle/potion actions, fresh-process mid-hand restore and victory return. Full exit/defeat/recovery and failed-save retry invariants are covered by JVM integration tests. Android emulator launch reached loaded assets; touch/lifecycle acceptance remains unverified. iOS full AOT/link succeeded, but manual simulator launch reproduces the Jackson/RoboVM `BootstrapMethodError` loading blocker. See [commands, screenshots and scoped evidence](free-exploration.md#verification-record-2026-09-10). No Phase 5–7 completion claimed. Next: native mobile touch, compact landscape and lifecycle acceptance; resolve iOS loading before gameplay acceptance.
 
 - **2026-09-10 — Exploration click-to-walk (user-directed).** World clicks/taps now choose a tile destination using the world viewport's unprojection. `presentation/input/ExplorationWalk.kt` finds cardinal routes over remembered traversable terrain, avoids observed actors except a clicked encounter target, and replans after every committed step (including door opening). `DungeonScreen` feeds individual movement commands through the existing save/animation gate with a minimum presentation cadence; this adds no simulation clock, teleport or authoritative path state. Retargeting replaces the route; manual commands, modal windows, lifecycle cancellation, rejected commands, save failure, exit and battle/defeat stop it. Clicking the current tile cancels walking. Unknown/unreachable tiles cannot reveal hidden routes. Verification: `:core:check` (97 JVM tests), desktop compilation, and temporary developer-demo clicks through `DungeonInput` and world viewport unprojection: two-tile arrival followed by an enemy encounter that cancels walking. Captures: `docs/evidence/clickwalk/`. Temporary demo/arena modifications were removed. Regression tests cover detours, doors, unknown/locked/unreachable terrain, cardinal moves, retarget/cancel and battle/defeat. Mobile real-touch acceptance remains open.
 

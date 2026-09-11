@@ -38,7 +38,7 @@ class RebirthDungeon : KtxGame<KtxScreen>() {
         }.load()
         bundle.validateVisuals { atlas, frame -> assets().get(atlas, TextureAtlas::class.java).findRegion(frame) != null }
         contentBundle = bundle
-        runServices = cloud.vinh.rebirthdungeon.bootstrap.RunServices(bundle.catalog)
+        runServices = cloud.vinh.rebirthdungeon.bootstrap.RunServices(bundle)
     }
 
     override fun create() {
