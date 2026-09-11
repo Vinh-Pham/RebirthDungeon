@@ -10,10 +10,10 @@ Mabinogi separates learning a skill, training its current rank, and spending AP 
 
 The acquisition routes have concrete examples:
 
-| Route | Mabinogi example | Rebirth Dungeon adaptation |
-| --- | --- | --- |
-| NPC instruction | Icebolt can be learned through Lassar's sorcery lessons. | An NPC teaches a skill after dialogue, a lesson, or a quest. |
-| Skill book | Icebolt can also be learned by reading *Icebolt Spell: Origin and Training*. | A complete book grants its associated skill when read. |
+| Route           | Mabinogi example                                                                                  | Rebirth Dungeon adaptation                                                           |
+|-----------------|---------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
+| NPC instruction | Icebolt can be learned through Lassar's sorcery lessons.                                          | An NPC teaches a skill after dialogue, a lesson, or a quest.                         |
+| Skill book      | Icebolt can also be learned by reading *Icebolt Spell: Origin and Training*.                      | A complete book grants its associated skill when read.                               |
 | Collected pages | Fireball's collection quest asks the player to assemble ten pages and return the book to Stewart. | Collect a skill's required pages, complete its book, and read it to learn the skill. |
 
 Sources: [Icebolt acquisition](https://wiki.mabinogiworld.com/view/Icebolt#Obtaining_the_Skill), [Fireball acquisition](https://wiki.mabinogiworld.com/view/Fireball#Obtaining_the_Skill). Fireball also has another acquisition route; the page quest is an example, not its only unlock method. Its completed collection book is handed in rather than read. Reading the assembled book is our adaptation.
@@ -97,12 +97,12 @@ The player may rank up at **100 points or more**; completing every objective is 
 
 Illustrative Rank F training for Guard:
 
-| Objective | Points per completion | Maximum completions | Available points |
-| --- | --- | --- | --- |
-| Use Guard successfully in an eligible encounter | 2 | 20 | 40 |
-| Absorb enemy damage with Guard | 5 | 10 | 50 |
-| Finish an encounter in which Guard absorbed damage | 10 | 3 | 30 |
-| **Total available** | | | **120** |
+| Objective                                          | Points per completion | Maximum completions | Available points |
+|----------------------------------------------------|-----------------------|---------------------|------------------|
+| Use Guard successfully in an eligible encounter    | 2                     | 20                  | 40               |
+| Absorb enemy damage with Guard                     | 5                     | 10                  | 50               |
+| Finish an encounter in which Guard absorbed damage | 10                    | 3                   | 30               |
+| **Total available**                                |                       |                     | **120**          |
 
 Completing the first two rows and one encounter objective earns `40 + 50 + 10 = 100` points and meets the training gate.
 
@@ -126,12 +126,12 @@ On success, deduct the AP cost once, advance exactly one rank, apply the new ran
 
 For example, suppose Guard F → E costs **3 AP** (illustrative):
 
-| Training | Available AP | Result |
-| --- | --- | --- |
-| 99 | 10 | Blocked: more training required |
-| 100 | 2 | Blocked: 1 more AP required |
-| 100 | 3 | Advance to E; 0 AP remains; E training starts at 0 |
-| 120 | 5 | Advance to E; 2 AP remains; E training starts at 0 |
+| Training | Available AP | Result                                             |
+|----------|--------------|----------------------------------------------------|
+| 99       | 10           | Blocked: more training required                    |
+| 100      | 2            | Blocked: 1 more AP required                        |
+| 100      | 3            | Advance to E; 0 AP remains; E training starts at 0 |
+| 120      | 5            | Advance to E; 2 AP remains; E training starts at 0 |
 
 AP costs are authored per transition, not inferred from the rank label. Costs and reward pacing should make investment choices meaningful while letting players advance an early skill without excessive repetition.
 
@@ -155,20 +155,20 @@ The following twelve skills take their identities from Mabinogi. Each **Referenc
 
 ### Active and passive distinction
 
-| Skill | Type | Player interaction and role |
-| --- | --- | --- |
-| Smash | Active attack | Select and roll for a powerful single-target melee strike |
-| Counterattack | Active stance | Select and roll to prepare one automatic retaliation against an eligible attack |
-| Final Hit | Active buff | Select and roll to enter a temporary melee damage state |
-| Windmill | Active area attack | Select and roll to strike nearby enemies around the user |
-| Charge | Active movement attack | Select a distant enemy and roll to close the gap and strike |
-| Combat Mastery | Passive | Learned rank supplies general survivability and melee attack benefits |
-| Critical Hit | Passive, triggered | Increases damage when an eligible attack scores a critical; no separate attack button |
-| Sword Mastery | Passive, equipment-dependent | Improves attacks made with a sword |
-| Shield Mastery | Passive, equipment-dependent | Improves defenses while a shield is equipped |
-| Heavy Armor Mastery | Passive, equipment-dependent | Improves heavy-armor defenses and reduces its authored DEX penalty |
-| Light Armor Mastery | Passive, equipment-dependent | Improves defenses while light armor is equipped |
-| Dual Wield Mastery | Passive, equipment-dependent | Improves melee offense while wielding a legal pair of weapons |
+| Skill               | Type                         | Player interaction and role                                                           |
+|---------------------|------------------------------|---------------------------------------------------------------------------------------|
+| Smash               | Active attack                | Select and roll for a powerful single-target melee strike                             |
+| Counterattack       | Active stance                | Select and roll to prepare one automatic retaliation against an eligible attack       |
+| Final Hit           | Active buff                  | Select and roll to enter a temporary melee damage state                               |
+| Windmill            | Active area attack           | Select and roll to strike nearby enemies around the user                              |
+| Charge              | Active movement attack       | Select a distant enemy and roll to close the gap and strike                           |
+| Combat Mastery      | Passive                      | Learned rank supplies general survivability and melee attack benefits                 |
+| Critical Hit        | Passive, triggered           | Increases damage when an eligible attack scores a critical; no separate attack button |
+| Sword Mastery       | Passive, equipment-dependent | Improves attacks made with a sword                                                    |
+| Shield Mastery      | Passive, equipment-dependent | Improves defenses while a shield is equipped                                          |
+| Heavy Armor Mastery | Passive, equipment-dependent | Improves heavy-armor defenses and reduces its authored DEX penalty                    |
+| Light Armor Mastery | Passive, equipment-dependent | Improves defenses while light armor is equipped                                       |
+| Dual Wield Mastery  | Passive, equipment-dependent | Improves melee offense while wielding a legal pair of weapons                         |
 
 **Active skills** occupy the combat action selector, require a positive authored SP cost for this catalog, and use one five-dice activation. Counterattack's reaction and Final Hit's ongoing bonus are consequences of a paid active use; they do not make those skills passive. Passing after rolling still spends the reserved cost without creating the attack, stance, or buff.
 
@@ -336,22 +336,22 @@ Save cooldown counters, Counterattack's prepared inputs/charge/window, Final Hit
 
 Mabinogi Wiki pages were retrieved with Firecrawl and inspected on **September 5, 2026**. The linked wiki mechanics are reference material; proposed Rebirth Dungeon rules and illustrative numbers are identified above. Local research caches are kept under the gitignored `.firecrawl/` directory:
 
-| Reference | Local cache |
-| --- | --- |
-| [Skills overview, ranks, training, and AP training](https://wiki.mabinogiworld.com/view/Category:Skills) | `.firecrawl/mabinogi-skills.md` |
-| [Ability Points](https://wiki.mabinogiworld.com/view/Stats#Ability_Points) (`Ability_Points` redirects to Stats) | `.firecrawl/mabinogi-ability-points.md` |
-| [In-game book catalog](https://wiki.mabinogiworld.com/view/Category:In-game_Books) (`Books` redirects here) | `.firecrawl/mabinogi-books.md` |
-| [Icebolt acquisition](https://wiki.mabinogiworld.com/view/Icebolt#Obtaining_the_Skill) | `.firecrawl/mabinogi-icebolt.md` |
-| [Fireball acquisition and page collection](https://wiki.mabinogiworld.com/view/Fireball#Obtaining_the_Skill) | `.firecrawl/mabinogi-fireball.md` |
-| [Smash](https://wiki.mabinogiworld.com/view/Smash) | `.firecrawl/mabinogi-Smash.md` |
-| [Counterattack](https://wiki.mabinogiworld.com/view/Counterattack) | `.firecrawl/mabinogi-Counterattack.md` |
-| [Combat Mastery](https://wiki.mabinogiworld.com/view/Combat_Mastery) | `.firecrawl/mabinogi-Combat_Mastery.md` |
-| [Critical Hit](https://wiki.mabinogiworld.com/view/Critical_Hit) | `.firecrawl/mabinogi-Critical_Hit.md` |
-| [Final Hit](https://wiki.mabinogiworld.com/view/Final_Hit) | `.firecrawl/mabinogi-Final_Hit.md` |
-| [Windmill](https://wiki.mabinogiworld.com/view/Windmill) | `.firecrawl/mabinogi-Windmill.md` |
-| [Sword Mastery](https://wiki.mabinogiworld.com/view/Sword_Mastery) | `.firecrawl/mabinogi-Sword_Mastery.md` |
-| [Shield Mastery](https://wiki.mabinogiworld.com/view/Shield_Mastery) | `.firecrawl/mabinogi-Shield_Mastery.md` |
-| [Heavy Armor Mastery](https://wiki.mabinogiworld.com/view/Heavy_Armor_Mastery) | `.firecrawl/mabinogi-Heavy_Armor_Mastery.md` |
-| [Light Armor Mastery](https://wiki.mabinogiworld.com/view/Light_Armor_Mastery) | `.firecrawl/mabinogi-Light_Armor_Mastery.md` |
-| [Dual Wield Mastery](https://wiki.mabinogiworld.com/view/Dual_Wield_Mastery) | `.firecrawl/mabinogi-Dual_Wield_Mastery.md` |
-| [Charge](https://wiki.mabinogiworld.com/view/Charge) | `.firecrawl/mabinogi-Charge.md` |
+| Reference                                                                                                        | Local cache                                  |
+|------------------------------------------------------------------------------------------------------------------|----------------------------------------------|
+| [Skills overview, ranks, training, and AP training](https://wiki.mabinogiworld.com/view/Category:Skills)         | `.firecrawl/mabinogi-skills.md`              |
+| [Ability Points](https://wiki.mabinogiworld.com/view/Stats#Ability_Points) (`Ability_Points` redirects to Stats) | `.firecrawl/mabinogi-ability-points.md`      |
+| [In-game book catalog](https://wiki.mabinogiworld.com/view/Category:In-game_Books) (`Books` redirects here)      | `.firecrawl/mabinogi-books.md`               |
+| [Icebolt acquisition](https://wiki.mabinogiworld.com/view/Icebolt#Obtaining_the_Skill)                           | `.firecrawl/mabinogi-icebolt.md`             |
+| [Fireball acquisition and page collection](https://wiki.mabinogiworld.com/view/Fireball#Obtaining_the_Skill)     | `.firecrawl/mabinogi-fireball.md`            |
+| [Smash](https://wiki.mabinogiworld.com/view/Smash)                                                               | `.firecrawl/mabinogi-Smash.md`               |
+| [Counterattack](https://wiki.mabinogiworld.com/view/Counterattack)                                               | `.firecrawl/mabinogi-Counterattack.md`       |
+| [Combat Mastery](https://wiki.mabinogiworld.com/view/Combat_Mastery)                                             | `.firecrawl/mabinogi-Combat_Mastery.md`      |
+| [Critical Hit](https://wiki.mabinogiworld.com/view/Critical_Hit)                                                 | `.firecrawl/mabinogi-Critical_Hit.md`        |
+| [Final Hit](https://wiki.mabinogiworld.com/view/Final_Hit)                                                       | `.firecrawl/mabinogi-Final_Hit.md`           |
+| [Windmill](https://wiki.mabinogiworld.com/view/Windmill)                                                         | `.firecrawl/mabinogi-Windmill.md`            |
+| [Sword Mastery](https://wiki.mabinogiworld.com/view/Sword_Mastery)                                               | `.firecrawl/mabinogi-Sword_Mastery.md`       |
+| [Shield Mastery](https://wiki.mabinogiworld.com/view/Shield_Mastery)                                             | `.firecrawl/mabinogi-Shield_Mastery.md`      |
+| [Heavy Armor Mastery](https://wiki.mabinogiworld.com/view/Heavy_Armor_Mastery)                                   | `.firecrawl/mabinogi-Heavy_Armor_Mastery.md` |
+| [Light Armor Mastery](https://wiki.mabinogiworld.com/view/Light_Armor_Mastery)                                   | `.firecrawl/mabinogi-Light_Armor_Mastery.md` |
+| [Dual Wield Mastery](https://wiki.mabinogiworld.com/view/Dual_Wield_Mastery)                                     | `.firecrawl/mabinogi-Dual_Wield_Mastery.md`  |
+| [Charge](https://wiki.mabinogiworld.com/view/Charge)                                                             | `.firecrawl/mabinogi-Charge.md`              |

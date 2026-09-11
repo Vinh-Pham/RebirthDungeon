@@ -23,18 +23,18 @@ We adopt the central **pip score + combination + keep/reroll** loop. We start wi
 
 ## 2. Core battle rules
 
-| Element | Proposed rule |
-| --- | --- |
-| Dice | Exactly five dice, each showing a face from 1 through 6 |
-| Skill | Select one learned, usable active skill before rolling |
-| Skill cost | Each activation consumes stamina, mana, HP, or an authored combination; see stats.md |
-| Rank | Use the skill rank captured in the active run's character snapshot |
-| Initial roll | Roll all five dice once using that skill/rank's probability profile |
-| Rerolls | Up to two reroll actions; each rerolls any chosen nonempty subset |
-| Kept dice | Retain their current values; keeping does not improve them automatically |
-| Final hand | Score all five final dice and classify one combination |
-| Resolution | Use the selected skill once, consuming the whole hand |
-| Turn end | Resolve effects and end the activation once, then continue initiative |
+| Element      | Proposed rule                                                                        |
+|--------------|--------------------------------------------------------------------------------------|
+| Dice         | Exactly five dice, each showing a face from 1 through 6                              |
+| Skill        | Select one learned, usable active skill before rolling                               |
+| Skill cost   | Each activation consumes stamina, mana, HP, or an authored combination; see stats.md |
+| Rank         | Use the skill rank captured in the active run's character snapshot                   |
+| Initial roll | Roll all five dice once using that skill/rank's probability profile                  |
+| Rerolls      | Up to two reroll actions; each rerolls any chosen nonempty subset                    |
+| Kept dice    | Retain their current values; keeping does not improve them automatically             |
+| Final hand   | Score all five final dice and classify one combination                               |
+| Resolution   | Use the selected skill once, consuming the whole hand                                |
+| Turn end     | Resolve effects and end the activation once, then continue initiative                |
 
 A **pip** is a dot on a die; the **face value** is the number of pips showing. Dice remain six-sided when weighted: weighting changes the chance of each face, not the maximum face or the number of dice.
 
@@ -82,16 +82,16 @@ When consumables are enabled, using a potion is an alternative full action befor
 
 All five dice contribute to **pip total**, from 5 through 30. Independently classify the final hand using this provisional table, ordered strongest first:
 
-| Combination | Definition | Example | Multiplier |
-| --- | --- | --- | --- |
-| Five of a kind | All five faces match | `6,6,6,6,6` | ×10 |
-| Four of a kind | Exactly four faces match | `5,5,5,5,2` | ×5 |
-| Full house | Three matching faces and a different matching pair | `4,4,4,2,2` | ×3.5 |
-| Straight | Five distinct consecutive faces | `1,2,3,4,5` or `2,3,4,5,6` | ×3 |
-| Three of a kind | Exactly three match; the other two differ | `3,3,3,2,6` | ×2.5 |
-| Two pairs | Two distinct matching pairs and a fifth face | `2,2,5,5,6` | ×2 |
-| One pair | Exactly one pair; the other three faces differ | `4,4,1,3,6` | ×1.5 |
-| No combination | None of the above; baseline hand | `1,2,3,4,6` | ×1 |
+| Combination     | Definition                                         | Example                    | Multiplier |
+|-----------------|----------------------------------------------------|----------------------------|------------|
+| Five of a kind  | All five faces match                               | `6,6,6,6,6`                | ×10        |
+| Four of a kind  | Exactly four faces match                           | `5,5,5,5,2`                | ×5         |
+| Full house      | Three matching faces and a different matching pair | `4,4,4,2,2`                | ×3.5       |
+| Straight        | Five distinct consecutive faces                    | `1,2,3,4,5` or `2,3,4,5,6` | ×3         |
+| Three of a kind | Exactly three match; the other two differ          | `3,3,3,2,6`                | ×2.5       |
+| Two pairs       | Two distinct matching pairs and a fifth face       | `2,2,5,5,6`                | ×2         |
+| One pair        | Exactly one pair; the other three faces differ     | `4,4,1,3,6`                | ×1.5       |
+| No combination  | None of the above; baseline hand                   | `1,2,3,4,6`                | ×1         |
 
 Multiplier values are adopted provisionally from the [July Dicero review](https://nygamecritics.com/2026/07/23/the-insight-dicero-is-so-much-fun-except-for-one-thing/). The classification details above are explicit Rebirth Dungeon rules. There is no four-die straight, wraparound straight, wildcard, or face above 6 in the initial model.
 
@@ -145,15 +145,15 @@ At least one weight must be positive. A zero weight makes a face impossible and 
 
 Example profiles, not assigned to any final skill rank:
 
-| Face | Fair weight | High-pip-biased weight |
-| --- | --- | --- |
-| 1 | 10 | 5 |
-| 2 | 10 | 7 |
-| 3 | 10 | 9 |
-| 4 | 10 | 11 |
-| 5 | 10 | 13 |
-| 6 | 10 | 15 |
-| **Total** | **60** | **60** |
+| Face      | Fair weight | High-pip-biased weight |
+|-----------|-------------|------------------------|
+| 1         | 10          | 5                      |
+| 2         | 10          | 7                      |
+| 3         | 10          | 9                      |
+| 4         | 10          | 11                     |
+| 5         | 10          | 13                     |
+| 6         | 10          | 15                     |
+| **Total** | **60**      | **60**                 |
 
 The biased profile raises the chance of a 6 from about **16.67% to 25%**, and the chance of 5 or 6 from about **33.33% to 46.67%**. Expected pips per die increase from **3.5 to about 4.08** before keep/reroll decisions.
 
@@ -179,15 +179,15 @@ A newly applied buff or debuff affects subsequent actions, not the frozen damage
 
 This document refines game-plan section 10's general dice-ability design. For this battle mode, **all five dice belong to the selected skill**; per-die assignment across multiple abilities is replaced by keep/reroll selection. The gameplay-specific rules here supersede the older draft's allocation and multi-use assumptions; retain its synchronous commands, save boundaries, and initiative contract.
 
-| Command or intent | Battle-mode contract |
-| --- | --- |
-| Select skill/target | Allowed before the first roll; validates ownership and prerequisites |
-| `ROLL_DICE` | Lock skill/rank/target/stats/profile, reserve SP/MP/HP costs, and commit five results once |
-| Set kept dice | Change the kept flags without consuming RNG or a turn |
-| Reroll selected dice | Replace a chosen nonempty subset atomically and spend one reroll action |
-| `USE_ABILITY` | Consume the whole hand and reserved cost; resolve the locked skill and end activation |
-| `END_TURN` | Pass under the rules in section 3; never finalize an already-ended activation again |
-| Use item, when enabled | Before rolling, resolve one consumable as a full action and end activation |
+| Command or intent      | Battle-mode contract                                                                       |
+|------------------------|--------------------------------------------------------------------------------------------|
+| Select skill/target    | Allowed before the first roll; validates ownership and prerequisites                       |
+| `ROLL_DICE`            | Lock skill/rank/target/stats/profile, reserve SP/MP/HP costs, and commit five results once |
+| Set kept dice          | Change the kept flags without consuming RNG or a turn                                      |
+| Reroll selected dice   | Replace a chosen nonempty subset atomically and spend one reroll action                    |
+| `USE_ABILITY`          | Consume the whole hand and reserved cost; resolve the locked skill and end activation      |
+| `END_TURN`             | Pass under the rules in section 3; never finalize an already-ended activation again        |
+| Use item, when enabled | Before rolling, resolve one consumable as a full action and end activation                 |
 
 The old singular `REROLL_DIE` needs a batch form for a subset; `ASSIGN_DIE` and `UNASSIGN_DIE` are not used in this mode. The game plan's dice-command table and the Phase 4 implementation checklist were aligned to this contract on September 5, 2026 (`REROLL_DICE` batch rerolls, whole-hand `USE_ABILITY`, no assignment commands); the paragraph above retains the historical rationale for the replacement. This documentation does not claim those commands or systems exist in code.
 
@@ -226,12 +226,12 @@ Still open: final reroll allowance, combination multipliers, damage scaling, def
 
 Sources were retrieved through Firecrawl and inspected on **September 5, 2026**. Official store material establishes the game premise; official-support regional FAQs clarify selected rules; gameplay coverage and community references supply the detailed hand/reroll observations. No current game client was directly tested. Local caches are gitignored research artifacts.
 
-| Reference | Local cache |
-| --- | --- |
-| [Habby Google Play listing](https://play.google.com/store/apps/details?id=com.bailing.lark.roll.dev&hl=en) | `.firecrawl/dicero-google-play.md` |
-| [March gameplay walkthrough](https://www.youtube.com/watch?v=pn13iUFfrdY) | `.firecrawl/search-dicero-combat.json` |
+| Reference                                                                                                                   | Local cache                            |
+|-----------------------------------------------------------------------------------------------------------------------------|----------------------------------------|
+| [Habby Google Play listing](https://play.google.com/store/apps/details?id=com.bailing.lark.roll.dev&hl=en)                  | `.firecrawl/dicero-google-play.md`     |
+| [March gameplay walkthrough](https://www.youtube.com/watch?v=pn13iUFfrdY)                                                   | `.firecrawl/search-dicero-combat.json` |
 | [July review and combo table](https://nygamecritics.com/2026/07/23/the-insight-dicero-is-so-much-fun-except-for-one-thing/) | `.firecrawl/search-dicero-combat.json` |
-| [Community dice mechanics guide](https://dicero.app/en/guides/dicero-dice-mechanics-guide) | `.firecrawl/search-dicero-combat.json` |
-| [Community damage calculator](https://dicero.app/en/calculator) | `.firecrawl/dicero-calculator.md` |
-| [Official-support FAQ 1](https://www.taptap.cn/moment/793123157429979198) | `.firecrawl/dicero-official-faq.md` |
-| [Official-support FAQ 2](https://www.taptap.cn/moment/793123347423561363) | `.firecrawl/dicero-official-faq-2.md` |
+| [Community dice mechanics guide](https://dicero.app/en/guides/dicero-dice-mechanics-guide)                                  | `.firecrawl/search-dicero-combat.json` |
+| [Community damage calculator](https://dicero.app/en/calculator)                                                             | `.firecrawl/dicero-calculator.md`      |
+| [Official-support FAQ 1](https://www.taptap.cn/moment/793123157429979198)                                                   | `.firecrawl/dicero-official-faq.md`    |
+| [Official-support FAQ 2](https://www.taptap.cn/moment/793123347423561363)                                                   | `.firecrawl/dicero-official-faq-2.md`  |

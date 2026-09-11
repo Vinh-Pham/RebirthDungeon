@@ -13,14 +13,14 @@ Two principles shape everything:
 
 ## Documentation map (read before designing anything)
 
-| Document | Role |
-|---|---|
-| `docs/game-plan.md` | **The architecture contract.** Dependency audit, system ownership, threading model, artemis-odb world model, ordered rule pipeline, grid/dice/combat contracts, persistence, target package structure, validation matrix, milestones. |
-| [docs/directory.md](docs/directory.md) | **The directory and package placement guide.** Follow its responsibility boundaries, feature ownership, dependency direction, asset/test layout, and incremental adoption guidance when adding or moving files. |
-| `docs/project-phases.md` | **The implementation tracker.** 17 phases (0–16) with task/exit checkboxes, tracking rules, Current Focus, Completion Log, and Work Notes. |
-| `docs/gameplay/*.md` | Nine gameplay specs: `battle`, `stats`, `skills`, `character`, `inventory`, `enchants`, `quests`, `titles`, `towns`. These are **planned designs, not implemented features**; numeric defaults are provisional. |
-| `.firecrawl/` | Cached web research (artemis-odb wiki, libGDX wiki, Mabinogi wiki, Dicero) used as source material for the plan. Reference only — not project code. |
-| `README.md` | Build prerequisites per platform, dependency policy, and platform verification procedures. |
+| Document                               | Role                                                                                                                                                                                                                                  |
+|----------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `docs/game-plan.md`                    | **The architecture contract.** Dependency audit, system ownership, threading model, artemis-odb world model, ordered rule pipeline, grid/dice/combat contracts, persistence, target package structure, validation matrix, milestones. |
+| [docs/directory.md](docs/directory.md) | **The directory and package placement guide.** Follow its responsibility boundaries, feature ownership, dependency direction, asset/test layout, and incremental adoption guidance when adding or moving files.                       |
+| `docs/project-phases.md`               | **The implementation tracker.** 17 phases (0–16) with task/exit checkboxes, tracking rules, Current Focus, Completion Log, and Work Notes.                                                                                            |
+| `docs/gameplay/*.md`                   | Nine gameplay specs: `battle`, `stats`, `skills`, `character`, `inventory`, `enchants`, `quests`, `titles`, `towns`. These are **planned designs, not implemented features**; numeric defaults are provisional.                       |
+| `.firecrawl/`                          | Cached web research (artemis-odb wiki, libGDX wiki, Mabinogi wiki, Dicero) used as source material for the plan. Reference only — not project code.                                                                                   |
+| `README.md`                            | Build prerequisites per platform, dependency policy, and platform verification procedures.                                                                                                                                            |
 
 When gameplay behavior is in question, the gameplay spec owns the rule, `game-plan.md` owns system design, `docs/directory.md` owns directory/package placement, and `project-phases.md` owns implementation order. The directory guide extends game-plan.md section 17; its target paths are not claims of implementation. `gameplay/titles.md` is integrated into game-plan.md (specification index, ownership, save shape, progression and validation coverage, 2026-09-07); project-phases.md folds its implementation into phases 6–9.
 
