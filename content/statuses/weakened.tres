@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="StatusDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/definitions/status_definition.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/art/dungeon_mark.svg" id="icon"]
+
+[resource]
+script = ExtResource("1")
+id = "status.weakened"
+display_name = "Weakened"
+icon = ExtResource("icon")
+effect = "stat_modifier"
+stat_id = "stat.strength"
+magnitude = -3
+duration = 3

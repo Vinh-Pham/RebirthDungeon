@@ -1,10 +1,10 @@
 # Rebirth Dungeon: Godot Game Plan
 
-Reset: **2026-09-10**. Target: **Godot 4.7, typed GDScript, 2D**, desktop first, Android and iOS next. This is the implementation plan; **Phase 0 is complete**, and later delivery phases are not started. [Overview](overview.md) owns the vision, [gameplay specifications](directory.md#gameplay-specifications) own mechanics, and [Project Phases](project-phases.md) owns status.
+Reset: **2026-09-10**. Target: **Godot 4.7, typed GDScript, 2D**, desktop first, Android and iOS next. This is the implementation plan; [Project Phases](project-phases.md) owns current completion status. [Overview](overview.md) owns the vision, [gameplay specifications](directory.md#gameplay-specifications) own mechanics, and [Project Phases](project-phases.md) owns status.
 
 ## Current repository baseline
 
-Phase 0 now provides a minimal main scene, headless runner, verification wrapper and desktop/Android/iOS presets. The editor is pinned to Godot 4.7.2 (`ed1daf0bf`), using Compatibility with `canvas_items`/`expand`. The existing Beckett MCP addon supplies editor integration. No gameplay content or application session exists yet. Matching export templates are pinned but not installed; platform prerequisites and actual verification limits are recorded in [Phase 0 baseline](phase0-baseline.md).
+Phase 0 now provides a minimal main scene, headless runner, verification wrapper and desktop/Android/iOS presets. The editor is pinned to Godot 4.7.2 (`ed1daf0bf`), using Compatibility with `canvas_items`/`expand`. The existing Beckett MCP addon supplies editor integration. The application now has a persistent session shell, validated foundation catalog, independent runtime state/RNG and command contracts; see [Phase 2 implementation](phase2-implementation.md). Combat, exploration and durable saves remain later work. Matching export templates are pinned but not installed; platform prerequisites and actual verification limits are recorded in [Phase 0 baseline](phase0-baseline.md).
 
 The former Kotlin/LibGDX, KTX, ECS, dungeon-library and mobile-launcher architecture is replaced. Old saves and prior build evidence do not certify this Godot project. This documentation change does not implement gameplay or alter engine settings.
 

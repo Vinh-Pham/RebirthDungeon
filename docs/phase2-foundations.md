@@ -1,6 +1,6 @@
 # Phase 2: Godot content and deterministic rule foundations
 
-Status: **not started**. Reset **2026-09-10**. This design replaces the former content-loader and RNG implementation report. [Project Phases](project-phases.md) owns completion.
+Reset **2026-09-10**. [Project Phases](project-phases.md) owns completion. The implemented APIs, version/number contracts, fixture scope and addon boundary are documented in [Phase 2 implementation](phase2-implementation.md), with [retained verification](evidence/phase-2/README.md).
 
 ## Definitions and validation
 

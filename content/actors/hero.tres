@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="ActorDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/definitions/actor_definition.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/art/dungeon_mark.svg" id="icon"]
+
+[resource]
+script = ExtResource("1")
+id = "actor.hero"
+display_name = "Foundation Hero"
+icon = ExtResource("icon")
+max_hp = 30
+max_mp = 10
+max_sp = 20
+base_stats = Dictionary[String, int]({"stat.strength": 3, "stat.defense": 1})
+skill_ids = PackedStringArray("skill.sword", "skill.fortify")
+weapon = "sword"

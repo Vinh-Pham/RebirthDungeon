@@ -1,0 +1,805 @@
+$ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /private/var/folders/k9/gvzsj_xs4g7c0v5wfksy502r0000gn/T/rebirth-phase2-f2mr1o_c/project --editor --import
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[   0% ] first_scan_filesystem | Started Project initialization (5 steps)
+[  16% ] first_scan_filesystem | Loading global class names...
+[  33% ] first_scan_filesystem | Verifying GDExtensions...
+[  50% ] first_scan_filesystem | Creating autoload scripts...
+[  66% ] first_scan_filesystem | Initializing plugins...
+[  83% ] first_scan_filesystem | Starting file scan...
+[ DONE ] first_scan_filesystem
+
+[   0% ] update_scripts_classes | Started Registering global classes... (279 steps)
+[   0% ] update_scripts_classes | 
+[   0% ] update_scripts_classes | BeckettCaptures
+[   0% ] update_scripts_classes | BeckettClientConfig
+[   1% ] update_scripts_classes | BeckettEffort
+[   1% ] update_scripts_classes | 
+[   1% ] update_scripts_classes | BeckettHttpServer
+[   2% ] update_scripts_classes | BeckettJobs
+[   2% ] update_scripts_classes | BeckettJsonRpc
+[   2% ] update_scripts_classes | 
+[   3% ] update_scripts_classes | BeckettReflect
+[   3% ] update_scripts_classes | BeckettRuntimeBridge
+[   3% ] update_scripts_classes | BeckettToolRegistry
+[   4% ] update_scripts_classes | 
+[   4% ] update_scripts_classes | 
+[   5% ] update_scripts_classes | BeckettPrompts
+[   5% ] update_scripts_classes | BeckettResources
+[   5% ] update_scripts_classes | 
+[   6% ] update_scripts_classes | 
+[   6% ] update_scripts_classes | 
+[   6% ] update_scripts_classes | 
+[   7% ] update_scripts_classes | BeckettTestCase
+[   7% ] update_scripts_classes | 
+[   7% ] update_scripts_classes | 
+[   8% ] update_scripts_classes | 
+[   8% ] update_scripts_classes | 
+[   8% ] update_scripts_classes | 
+[   9% ] update_scripts_classes | 
+[   9% ] update_scripts_classes | 
+[  10% ] update_scripts_classes | 
+[  10% ] update_scripts_classes | BeckettAnalysisProTools
+[  10% ] update_scripts_classes | BeckettAnalysisTools
+[  11% ] update_scripts_classes | BeckettAnimationTools
+[  11% ] update_scripts_classes | BeckettAssetLibTools
+[  11% ] update_scripts_classes | BeckettBatchTools
+[  12% ] update_scripts_classes | BeckettCSharpTools
+[  12% ] update_scripts_classes | BeckettExportTools
+[  12% ] update_scripts_classes | BeckettHelpTools
+[  13% ] update_scripts_classes | BeckettPlaytestTools
+[  13% ] update_scripts_classes | BeckettProjectTools
+[  13% ] update_scripts_classes | BeckettQaTools
+[  14% ] update_scripts_classes | BeckettReflectionTools
+[  14% ] update_scripts_classes | BeckettResourceTools
+[  15% ] update_scripts_classes | BeckettRuntimeObserveTools
+[  15% ] update_scripts_classes | BeckettRuntimeTools
+[  15% ] update_scripts_classes | BeckettRunTools
+[  16% ] update_scripts_classes | BeckettScatterTools
+[  16% ] update_scripts_classes | BeckettSceneTools
+[  16% ] update_scripts_classes | BeckettScriptTools
+[  17% ] update_scripts_classes | BeckettSignalTools
+[  17% ] update_scripts_classes | BeckettSkillTools
+[  17% ] update_scripts_classes | BeckettTemplateTools
+[  18% ] update_scripts_classes | BeckettTestTools
+[  18% ] update_scripts_classes | 
+[  18% ] update_scripts_classes | DMCompilation
+[  19% ] update_scripts_classes | DMCompiledLine
+[  19% ] update_scripts_classes | DMCompiler
+[  20% ] update_scripts_classes | DMCompilerRegEx
+[  20% ] update_scripts_classes | DMCompilerResult
+[  20% ] update_scripts_classes | DMExpressionParser
+[  21% ] update_scripts_classes | DMResolvedGotoData
+[  21% ] update_scripts_classes | DMResolvedLineData
+[  21% ] update_scripts_classes | DMResolvedTagData
+[  22% ] update_scripts_classes | DMTreeLine
+[  22% ] update_scripts_classes | DMCueEditorProperty
+[  22% ] update_scripts_classes | 
+[  23% ] update_scripts_classes | DMDialogueEditorProperty
+[  23% ] update_scripts_classes | 
+[  23% ] update_scripts_classes | 
+[  24% ] update_scripts_classes | 
+[  24% ] update_scripts_classes | DMCodeEdit
+[  25% ] update_scripts_classes | DMSyntaxHighlighter
+[  25% ] update_scripts_classes | 
+[  25% ] update_scripts_classes | 
+[  26% ] update_scripts_classes | 
+[  26% ] update_scripts_classes | 
+[  26% ] update_scripts_classes | 
+[  27% ] update_scripts_classes | DMPreviewGenerator
+[  27% ] update_scripts_classes | 
+[  27% ] update_scripts_classes | 
+[  28% ] update_scripts_classes | DialogueManagerExampleBalloon
+[  28% ] update_scripts_classes | DialogueActionable2D
+[  28% ] update_scripts_classes | DialogueActionable3D
+[  29% ] update_scripts_classes | DialogueStateContext
+[  29% ] update_scripts_classes | DialogueLabel
+[  30% ] update_scripts_classes | DialogueMarker2D
+[  30% ] update_scripts_classes | DialogueMarker3D
+[  30% ] update_scripts_classes | DialogueResponsesMenu
+[  31% ] update_scripts_classes | DMBuiltins
+[  31% ] update_scripts_classes | DMCache
+[  31% ] update_scripts_classes | DMError
+[  32% ] update_scripts_classes | DMThemeValues
+[  32% ] update_scripts_classes | DMTranslationUtilities
+[  32% ] update_scripts_classes | DMWaiter
+[  33% ] update_scripts_classes | DMDebuggerView
+[  33% ] update_scripts_classes | 
+[  33% ] update_scripts_classes | 
+[  34% ] update_scripts_classes | DMConstants
+[  34% ] update_scripts_classes | DMDebuggerPlugin
+[  35% ] update_scripts_classes | DialogueLine
+[  35% ] update_scripts_classes | 
+[  35% ] update_scripts_classes | DMDialogueProcessor
+[  36% ] update_scripts_classes | DialogueResource
+[  36% ] update_scripts_classes | DialogueResponse
+[  36% ] update_scripts_classes | DMTranslationParserPlugin
+[  37% ] update_scripts_classes | DMExportPlugin
+[  37% ] update_scripts_classes | DMImportPlugin
+[  37% ] update_scripts_classes | DMInspectorPlugin
+[  38% ] update_scripts_classes | DMPlugin
+[  38% ] update_scripts_classes | DMSettings
+[  38% ] update_scripts_classes | BaseDialogueTestScene
+[  39% ] update_scripts_classes | 
+[  39% ] update_scripts_classes | 
+[  40% ] update_scripts_classes | 
+[  40% ] update_scripts_classes | 
+[  40% ] update_scripts_classes | 
+[  41% ] update_scripts_classes | 
+[  41% ] update_scripts_classes | 
+[  41% ] update_scripts_classes | 
+[  42% ] update_scripts_classes | 
+[  42% ] update_scripts_classes | 
+[  42% ] update_scripts_classes | 
+[  43% ] update_scripts_classes | 
+[  43% ] update_scripts_classes | 
+[  43% ] update_scripts_classes | 
+[  44% ] update_scripts_classes | AllOfGuard
+[  44% ] update_scripts_classes | AnimationPlayerState
+[  45% ] update_scripts_classes | AnimationTreeState
+[  45% ] update_scripts_classes | AnyOfGuard
+[  45% ] update_scripts_classes | AtomicState
+[  46% ] update_scripts_classes | CompoundState
+[  46% ] update_scripts_classes | 
+[  46% ] update_scripts_classes | ExpressionGuard
+[  47% ] update_scripts_classes | 
+[  47% ] update_scripts_classes | 
+[  47% ] update_scripts_classes | Guard
+[  48% ] update_scripts_classes | HistoryState
+[  48% ] update_scripts_classes | NotGuard
+[  48% ] update_scripts_classes | ParallelState
+[  49% ] update_scripts_classes | SavedState
+[  49% ] update_scripts_classes | SerializedStateChart
+[  50% ] update_scripts_classes | SerializedStateChartState
+[  50% ] update_scripts_classes | StateChart
+[  50% ] update_scripts_classes | StateChartSerializer
+[  51% ] update_scripts_classes | StateChartState
+[  51% ] update_scripts_classes | StateIsActiveGuard
+[  51% ] update_scripts_classes | Transition
+[  52% ] update_scripts_classes | 
+[  52% ] update_scripts_classes | 
+[  52% ] update_scripts_classes | 
+[  53% ] update_scripts_classes | 
+[  53% ] update_scripts_classes | 
+[  53% ] update_scripts_classes | 
+[  54% ] update_scripts_classes | 
+[  54% ] update_scripts_classes | 
+[  55% ] update_scripts_classes | 
+[  55% ] update_scripts_classes | 
+[  55% ] update_scripts_classes | 
+[  56% ] update_scripts_classes | 
+[  56% ] update_scripts_classes | 
+[  56% ] update_scripts_classes | 
+[  57% ] update_scripts_classes | 
+[  57% ] update_scripts_classes | 
+[  57% ] update_scripts_classes | 
+[  58% ] update_scripts_classes | 
+[  58% ] update_scripts_classes | 
+[  58% ] update_scripts_classes | 
+[  59% ] update_scripts_classes | 
+[  59% ] update_scripts_classes | PhantomCamera2D
+[  60% ] update_scripts_classes | PhantomCamera3D
+[  60% ] update_scripts_classes | 
+[  60% ] update_scripts_classes | PhantomCameraNoiseEmitter2D
+[  61% ] update_scripts_classes | PhantomCameraNoiseEmitter3D
+[  61% ] update_scripts_classes | PhantomCameraTweenDirector
+[  61% ] update_scripts_classes | PhantomCameraHost
+[  62% ] update_scripts_classes | Camera3DResource
+[  62% ] update_scripts_classes | PhantomCameraNoise2D
+[  62% ] update_scripts_classes | PhantomCameraNoise3D
+[  63% ] update_scripts_classes | TweenDirectorResource
+[  63% ] update_scripts_classes | PhantomCameraTween
+[  63% ] update_scripts_classes | 
+[  64% ] update_scripts_classes | 
+[  64% ] update_scripts_classes | AbstractQuestManagerAPI
+[  65% ] update_scripts_classes | ActiveQuestPool
+[  65% ] update_scripts_classes | AvailableQuestPool
+[  65% ] update_scripts_classes | BaseQuestPool
+[  66% ] update_scripts_classes | CompletedQuestPool
+[  66% ] update_scripts_classes | 
+[  66% ] update_scripts_classes | QuestSystemManagerAPI
+[  67% ] update_scripts_classes | Quest
+[  67% ] update_scripts_classes | QuestSystemSettings
+[  67% ] update_scripts_classes | 
+[  68% ] update_scripts_classes | 
+[  68% ] update_scripts_classes | 
+[  68% ] update_scripts_classes | 
+[  69% ] update_scripts_classes | 
+[  69% ] update_scripts_classes | 
+[  70% ] update_scripts_classes | 
+[  70% ] update_scripts_classes | 
+[  70% ] update_scripts_classes | 
+[  71% ] update_scripts_classes | Health
+[  71% ] update_scripts_classes | Hitbox
+[  71% ] update_scripts_classes | Hurtbox
+[  72% ] update_scripts_classes | 
+[  72% ] update_scripts_classes | 
+[  72% ] update_scripts_classes | 
+[  73% ] update_scripts_classes | 
+[  73% ] update_scripts_classes | 
+[  73% ] update_scripts_classes | 
+[  74% ] update_scripts_classes | 
+[  74% ] update_scripts_classes | 
+[  75% ] update_scripts_classes | 
+[  75% ] update_scripts_classes | 
+[  75% ] update_scripts_classes | 
+[  76% ] update_scripts_classes | 
+[  76% ] update_scripts_classes | 
+[  76% ] update_scripts_classes | 
+[  77% ] update_scripts_classes | 
+[  77% ] update_scripts_classes | 
+[  77% ] update_scripts_classes | 
+[  78% ] update_scripts_classes | Marker
+[  78% ] update_scripts_classes | 
+[  78% ] update_scripts_classes | 
+[  79% ] update_scripts_classes | 
+[  79% ] update_scripts_classes | 
+[  80% ] update_scripts_classes | 
+[  80% ] update_scripts_classes | 
+[  80% ] update_scripts_classes | 
+[  81% ] update_scripts_classes | 
+[  81% ] update_scripts_classes | 
+[  81% ] update_scripts_classes | 
+[  82% ] update_scripts_classes | 
+[  82% ] update_scripts_classes | 
+[  82% ] update_scripts_classes | ColorBox
+[  83% ] update_scripts_classes | SerializedColorBox
+[  83% ] update_scripts_classes | 
+[  83% ] update_scripts_classes | SaveResource
+[  84% ] update_scripts_classes | 
+[  84% ] update_scripts_classes | ShellAddonLifecycle
+[  85% ] update_scripts_classes | DungeonApplication
+[  85% ] update_scripts_classes | ShellInputMap
+[  85% ] update_scripts_classes | ActorDefinition
+[  86% ] update_scripts_classes | CatalogManifest
+[  86% ] update_scripts_classes | CombinationDefinition
+[  86% ] update_scripts_classes | ContentDefinition
+[  87% ] update_scripts_classes | EncounterDefinition
+[  87% ] update_scripts_classes | ItemDefinition
+[  87% ] update_scripts_classes | RoomDefinition
+[  88% ] update_scripts_classes | SkillDefinition
+[  88% ] update_scripts_classes | SkillRank
+[  88% ] update_scripts_classes | StatusDefinition
+[  89% ] update_scripts_classes | StatDefinition
+[  89% ] update_scripts_classes | CatalogValidator
+[  90% ] update_scripts_classes | ContentCatalog
+[  90% ] update_scripts_classes | CommandResolver
+[  90% ] update_scripts_classes | CommandResult
+[  91% ] update_scripts_classes | DomainCommand
+[  91% ] update_scripts_classes | RngStream
+[  91% ] update_scripts_classes | RngStreams
+[  92% ] update_scripts_classes | RuleLimits
+[  92% ] update_scripts_classes | WeightedDice
+[  92% ] update_scripts_classes | ActorState
+[  93% ] update_scripts_classes | BattleState
+[  93% ] update_scripts_classes | HeroState
+[  93% ] update_scripts_classes | ItemState
+[  94% ] update_scripts_classes | SessionShell
+[  94% ] update_scripts_classes | StatusState
+[  95% ] update_scripts_classes | ShellModeView
+[  95% ] update_scripts_classes | 
+[  95% ] update_scripts_classes | 
+[  96% ] update_scripts_classes | 
+[  96% ] update_scripts_classes | 
+[  96% ] update_scripts_classes | 
+[  97% ] update_scripts_classes | 
+[  97% ] update_scripts_classes | 
+[  97% ] update_scripts_classes | 
+[  98% ] update_scripts_classes | 
+[  98% ] update_scripts_classes | 
+[  98% ] update_scripts_classes | 
+[  99% ] update_scripts_classes | 
+[ DONE ] update_scripts_classes
+
+[   0% ] _update_scan_actions | Started Scanning actions... (194 steps)
+[   0% ] _update_scan_actions | cue.svg
+[   0% ] _update_scan_actions | icon.svg
+[   1% ] _update_scan_actions | logo.svg
+[   1% ] _update_scan_actions | region.svg
+[   2% ] _update_scan_actions | resource.svg
+[   2% ] _update_scan_actions | update.svg
+[   3% ] _update_scan_actions | dialogue_actionable_2d.svg
+[   3% ] _update_scan_actions | dialogue_actionable_3d.svg
+[   4% ] _update_scan_actions | dialogue_state_context.svg
+[   4% ] _update_scan_actions | dialogue_label.svg
+[   5% ] _update_scan_actions | dialogue_marker_2d.svg
+[   5% ] _update_scan_actions | dialogue_marker_3d.svg
+[   6% ] _update_scan_actions | dialogue_responses_menu.svg
+[   6% ] _update_scan_actions | state_chart_debugger.svg
+[   7% ] _update_scan_actions | all_of_guard.svg
+[   7% ] _update_scan_actions | animation_player_state.svg
+[   8% ] _update_scan_actions | animation_tree_state.svg
+[   8% ] _update_scan_actions | any_of_guard.svg
+[   9% ] _update_scan_actions | atomic_state.svg
+[   9% ] _update_scan_actions | compound_state.svg
+[  10% ] _update_scan_actions | expression_guard.svg
+[  10% ] _update_scan_actions | guard.svg
+[  11% ] _update_scan_actions | history_state.svg
+[  11% ] _update_scan_actions | not_guard.svg
+[  12% ] _update_scan_actions | parallel_state.svg
+[  12% ] _update_scan_actions | state_chart.svg
+[  13% ] _update_scan_actions | state_is_active_guard.svg
+[  13% ] _update_scan_actions | toggle_sidebar.svg
+[  14% ] _update_scan_actions | transition.svg
+[  14% ] _update_scan_actions | BehaviorTree.svg
+[  15% ] _update_scan_actions | BehaviorTreeView.svg
+[  15% ] _update_scan_actions | BlackboardPlan.svg
+[  16% ] _update_scan_actions | BTAction.svg
+[  16% ] _update_scan_actions | BTAlwaysFail.svg
+[  17% ] _update_scan_actions | BTAlwaysSucceed.svg
+[  17% ] _update_scan_actions | BTAwaitAnimation.svg
+[  18% ] _update_scan_actions | BTCallMethod.svg
+[  18% ] _update_scan_actions | BTCheckAgentProperty.svg
+[  19% ] _update_scan_actions | BTCheckTrigger.svg
+[  20% ] _update_scan_actions | BTCheckVar.svg
+[  20% ] _update_scan_actions | BTComment.svg
+[  21% ] _update_scan_actions | BTCondition.svg
+[  21% ] _update_scan_actions | BTConsolePrint.svg
+[  22% ] _update_scan_actions | BTCooldown.svg
+[  22% ] _update_scan_actions | BTDecorator.svg
+[  23% ] _update_scan_actions | BTDelay.svg
+[  23% ] _update_scan_actions | BTDynamicSelector.svg
+[  24% ] _update_scan_actions | BTDynamicSequence.svg
+[  24% ] _update_scan_actions | BTEvaluateExpression.svg
+[  25% ] _update_scan_actions | BTFail.svg
+[  25% ] _update_scan_actions | BTForEach.svg
+[  26% ] _update_scan_actions | BTInvert.svg
+[  26% ] _update_scan_actions | BTNewScope.svg
+[  27% ] _update_scan_actions | BTParallel.svg
+[  27% ] _update_scan_actions | BTPauseAnimation.svg
+[  28% ] _update_scan_actions | BTPlayAnimation.svg
+[  28% ] _update_scan_actions | BTPlayer.svg
+[  29% ] _update_scan_actions | BTProbability.svg
+[  29% ] _update_scan_actions | BTProbabilitySelector.svg
+[  30% ] _update_scan_actions | BTRandomSelector.svg
+[  30% ] _update_scan_actions | BTRandomSequence.svg
+[  31% ] _update_scan_actions | BTRandomWait.svg
+[  31% ] _update_scan_actions | BTRepeat.svg
+[  32% ] _update_scan_actions | BTRepeatUntilFailure.svg
+[  32% ] _update_scan_actions | BTRepeatUntilSuccess.svg
+[  33% ] _update_scan_actions | BTRunLimit.svg
+[  33% ] _update_scan_actions | BTSelector.svg
+[  34% ] _update_scan_actions | BTSequence.svg
+[  34% ] _update_scan_actions | BTSetAgentProperty.svg
+[  35% ] _update_scan_actions | BTSetVar.svg
+[  35% ] _update_scan_actions | BTState.svg
+[  36% ] _update_scan_actions | BTStopAnimation.svg
+[  36% ] _update_scan_actions | BTSubtree.svg
+[  37% ] _update_scan_actions | BTTimeLimit.svg
+[  37% ] _update_scan_actions | BTWait.svg
+[  38% ] _update_scan_actions | BTWaitTicks.svg
+[  38% ] _update_scan_actions | LimboAI.svg
+[  39% ] _update_scan_actions | LimboDeselectAll.svg
+[  40% ] _update_scan_actions | LimboEditBlackboard.svg
+[  40% ] _update_scan_actions | LimboExtraBlackboard.svg
+[  41% ] _update_scan_actions | LimboExtraClock.svg
+[  41% ] _update_scan_actions | LimboExtractSubtree.svg
+[  42% ] _update_scan_actions | LimboExtraVariable.svg
+[  42% ] _update_scan_actions | LimboHSM.svg
+[  43% ] _update_scan_actions | LimboPercent.svg
+[  43% ] _update_scan_actions | LimboSelectAll.svg
+[  44% ] _update_scan_actions | LimboState.svg
+[  44% ] _update_scan_actions | LimboVarAdd.svg
+[  45% ] _update_scan_actions | LimboVarEmpty.svg
+[  45% ] _update_scan_actions | LimboVarError.svg
+[  46% ] _update_scan_actions | LimboVarExists.svg
+[  46% ] _update_scan_actions | LimboVarNotFound.svg
+[  47% ] _update_scan_actions | LimboVarPrivate.svg
+[  47% ] _update_scan_actions | PhantomCameraBtnPrimaryDefault.png
+[  48% ] _update_scan_actions | PhantomCameraBtnPrimaryHover.png
+[  48% ] _update_scan_actions | inventory_container.png
+[  49% ] _update_scan_actions | level_spritesheet.png
+[  49% ] _update_scan_actions | phantom_camera_2d_sprite.png
+[  50% ] _update_scan_actions | player_sprite.svg
+[  50% ] _update_scan_actions | sign_prompt.png
+[  51% ] _update_scan_actions | checker_pattern_dark.png
+[  51% ] _update_scan_actions | target.png
+[  52% ] _update_scan_actions | Nunito-Black.ttf
+[  52% ] _update_scan_actions | Nunito-Regular.ttf
+[  53% ] _update_scan_actions | PriorityOverride.svg
+[  53% ] _update_scan_actions | Camera2DIcon.svg
+[  54% ] _update_scan_actions | Camera3DIcon.svg
+[  54% ] _update_scan_actions | SceneTypesIcon.svg
+[  55% ] _update_scan_actions | Select.svg
+[  55% ] _update_scan_actions | phantom_camera_2d.svg
+[  56% ] _update_scan_actions | phantom_camera_3d.svg
+[  56% ] _update_scan_actions | phantom_camera_camera_3d_resource.svg
+[  57% ] _update_scan_actions | phantom_camera_gizmo.svg
+[  57% ] _update_scan_actions | phantom_camera_glow_logo.png
+[  58% ] _update_scan_actions | phantom_camera_host.svg
+[  58% ] _update_scan_actions | phantom_camera_logo.png
+[  59% ] _update_scan_actions | phantom_camera_noise_emitter_2d.svg
+[  60% ] _update_scan_actions | phantom_camera_noise_emitter_3d.svg
+[  60% ] _update_scan_actions | phantom_camera_noise_emitter_gizmo.svg
+[  61% ] _update_scan_actions | phantom_camera_noise_resource.svg
+[  61% ] _update_scan_actions | phantom_camera_tween.svg
+[  62% ] _update_scan_actions | phantom_camera_tween_director.svg
+[  62% ] _update_scan_actions | phantom_camera_tween_director_resource.svg
+[  63% ] _update_scan_actions | phantom_camera_updater_panel_icon.svg
+[  63% ] _update_scan_actions | warning.svg
+[  64% ] _update_scan_actions | quest_resource.svg
+[  64% ] _update_scan_actions | update.svg
+[  65% ] _update_scan_actions | dungeon_mark.svg
+[  65% ] _update_scan_actions | junction_bold.otf
+[  66% ] _update_scan_actions | knewave_regular.ttf
+[  66% ] _update_scan_actions | agent_bobby.png
+[  67% ] _update_scan_actions | agent_charger.png
+[  67% ] _update_scan_actions | agent_combo.png
+[  68% ] _update_scan_actions | agent_demon.png
+[  68% ] _update_scan_actions | agent_imp.png
+[  69% ] _update_scan_actions | agent_junior_pieces.png
+[  69% ] _update_scan_actions | agent_melee_nuanced.png
+[  70% ] _update_scan_actions | agent_melee_simple.png
+[  70% ] _update_scan_actions | agent_ranged.png
+[  71% ] _update_scan_actions | agent_skirmisher.png
+[  71% ] _update_scan_actions | agent_summoner.png
+[  72% ] _update_scan_actions | arrow_left.png
+[  72% ] _update_scan_actions | arrow_right.png
+[  73% ] _update_scan_actions | dummy.png
+[  73% ] _update_scan_actions | env_clouds.png
+[  74% ] _update_scan_actions | env_gong.png
+[  74% ] _update_scan_actions | env_ground.png
+[  75% ] _update_scan_actions | env_plants.png
+[  75% ] _update_scan_actions | env_rocks.png
+[  76% ] _update_scan_actions | fireball.png
+[  76% ] _update_scan_actions | fx.png
+[  77% ] _update_scan_actions | hp_bar.png
+[  77% ] _update_scan_actions | hp_over.png
+[  78% ] _update_scan_actions | hp_under.png
+[  78% ] _update_scan_actions | icon.svg
+[  79% ] _update_scan_actions | logo.png
+[  80% ] _update_scan_actions | shadow.png
+[  80% ] _update_scan_actions | smoke.png
+[  81% ] _update_scan_actions | weapon_ninja_star.png
+[  81% ] _update_scan_actions | battle-after-restart.png
+[  82% ] _update_scan_actions | battle-before-restart.png
+[  82% ] _update_scan_actions | ios-loading-blocker.png
+[  83% ] _update_scan_actions | shop-purchase.png
+[  83% ] _update_scan_actions | town.png
+[  84% ] _update_scan_actions | victory-return.png
+[  84% ] _update_scan_actions | main.png
+[  85% ] _update_scan_actions | dungeon-compact.png
+[  85% ] _update_scan_actions | dungeon-wide.png
+[  86% ] _update_scan_actions | loading-failure.png
+[  86% ] _update_scan_actions | menu.png
+[  87% ] _update_scan_actions | invalid-content-loading.png
+[  87% ] _update_scan_actions | invalid-content-menu.png
+[  88% ] _update_scan_actions | valid-content-town.png
+[  88% ] _update_scan_actions | walk.png
+[  89% ] _update_scan_actions | banana.svg
+[  89% ] _update_scan_actions | circle_white.svg
+[  90% ] _update_scan_actions | nest.svg
+[  90% ] _update_scan_actions | cooldown_overlay.png
+[  91% ] _update_scan_actions | enchant-red-3.png
+[  91% ] _update_scan_actions | fireball-eerie-2.png
+[  92% ] _update_scan_actions | heal-jade-2.png
+[  92% ] _update_scan_actions | white_rectangle.svg
+[  93% ] _update_scan_actions | break.png
+[  93% ] _update_scan_actions | hit.png
+[  94% ] _update_scan_actions | idle.png
+[  94% ] _update_scan_actions | checkpoint_flag_out.png
+[  95% ] _update_scan_actions | checkpoint_idle.png
+[  95% ] _update_scan_actions | checkpoint_no_flag.png
+[  96% ] _update_scan_actions | box.png
+[  96% ] _update_scan_actions | full.png
+[  97% ] _update_scan_actions | green.png
+[  97% ] _update_scan_actions | terrain_tiles.png
+[  98% ] _update_scan_actions | smoke.dialogue
+[  98% ] _update_scan_actions | icon.svg
+[ DONE ] _update_scan_actions
+
+[   0% ] reimport | Started (Re)Importing Assets (149 steps)
+[   0% ] reimport | Preparing files to reimport...
+[   0% ] reimport | Preparing files to reimport...
+[   1% ] reimport | Preparing files to reimport...
+[   2% ] reimport | Preparing files to reimport...
+[   2% ] reimport | Preparing files to reimport...
+[   3% ] reimport | Preparing files to reimport...
+[   4% ] reimport | Preparing files to reimport...
+[   4% ] reimport | Preparing files to reimport...
+[   5% ] reimport | Preparing files to reimport...
+[   6% ] reimport | Preparing files to reimport...
+[   6% ] reimport | Preparing files to reimport...
+[   7% ] reimport | Preparing files to reimport...
+[   8% ] reimport | Preparing files to reimport...
+[   8% ] reimport | Preparing files to reimport...
+[   9% ] reimport | Preparing files to reimport...
+[  10% ] reimport | Preparing files to reimport...
+[  10% ] reimport | Preparing files to reimport...
+[  11% ] reimport | Preparing files to reimport...
+[  12% ] reimport | Preparing files to reimport...
+[  12% ] reimport | Preparing files to reimport...
+[  13% ] reimport | Preparing files to reimport...
+[  14% ] reimport | Preparing files to reimport...
+[  14% ] reimport | Preparing files to reimport...
+[  15% ] reimport | Preparing files to reimport...
+[  16% ] reimport | Preparing files to reimport...
+[  16% ] reimport | Preparing files to reimport...
+[  17% ] reimport | Preparing files to reimport...
+[  18% ] reimport | Preparing files to reimport...
+[  18% ] reimport | Preparing files to reimport...
+[  19% ] reimport | Preparing files to reimport...
+[  20% ] reimport | Preparing files to reimport...
+[  20% ] reimport | Preparing files to reimport...
+[  21% ] reimport | Preparing files to reimport...
+[  22% ] reimport | Preparing files to reimport...
+[  22% ] reimport | Preparing files to reimport...
+[  23% ] reimport | Preparing files to reimport...
+[  24% ] reimport | Preparing files to reimport...
+[  24% ] reimport | Preparing files to reimport...
+[  25% ] reimport | Preparing files to reimport...
+[  26% ] reimport | Preparing files to reimport...
+[  26% ] reimport | Preparing files to reimport...
+[  27% ] reimport | Preparing files to reimport...
+[  28% ] reimport | Preparing files to reimport...
+[  28% ] reimport | Preparing files to reimport...
+[  29% ] reimport | Preparing files to reimport...
+[  30% ] reimport | Preparing files to reimport...
+[  30% ] reimport | Preparing files to reimport...
+[  31% ] reimport | Preparing files to reimport...
+[  32% ] reimport | Preparing files to reimport...
+[  32% ] reimport | Preparing files to reimport...
+[  33% ] reimport | Preparing files to reimport...
+[  34% ] reimport | Preparing files to reimport...
+[  34% ] reimport | Preparing files to reimport...
+[  35% ] reimport | Preparing files to reimport...
+[  36% ] reimport | Preparing files to reimport...
+[  36% ] reimport | Preparing files to reimport...
+[  37% ] reimport | Preparing files to reimport...
+[  38% ] reimport | Preparing files to reimport...
+[  38% ] reimport | Preparing files to reimport...
+[  39% ] reimport | Preparing files to reimport...
+[  40% ] reimport | Preparing files to reimport...
+[  40% ] reimport | Preparing files to reimport...
+[  41% ] reimport | Preparing files to reimport...
+[  42% ] reimport | Preparing files to reimport...
+[  42% ] reimport | Preparing files to reimport...
+[  43% ] reimport | Preparing files to reimport...
+[  44% ] reimport | Preparing files to reimport...
+[  44% ] reimport | Preparing files to reimport...
+[  45% ] reimport | Preparing files to reimport...
+[  46% ] reimport | Preparing files to reimport...
+[  46% ] reimport | Preparing files to reimport...
+[  47% ] reimport | Preparing files to reimport...
+[  48% ] reimport | Preparing files to reimport...
+[  48% ] reimport | Preparing files to reimport...
+[  49% ] reimport | Preparing files to reimport...
+[  50% ] reimport | Preparing files to reimport...
+[  50% ] reimport | Preparing files to reimport...
+[  51% ] reimport | Preparing files to reimport...
+[  52% ] reimport | Preparing files to reimport...
+[  52% ] reimport | Preparing files to reimport...
+[  53% ] reimport | Preparing files to reimport...
+[  54% ] reimport | Preparing files to reimport...
+[  54% ] reimport | Preparing files to reimport...
+[  55% ] reimport | Preparing files to reimport...
+[  56% ] reimport | Preparing files to reimport...
+[  56% ] reimport | Preparing files to reimport...
+[  57% ] reimport | Preparing files to reimport...
+[  58% ] reimport | Preparing files to reimport...
+[  58% ] reimport | Preparing files to reimport...
+[  59% ] reimport | Preparing files to reimport...
+[  60% ] reimport | Preparing files to reimport...
+[  60% ] reimport | Preparing files to reimport...
+[  61% ] reimport | Preparing files to reimport...
+[  62% ] reimport | Preparing files to reimport...
+[  62% ] reimport | Preparing files to reimport...
+[  63% ] reimport | Preparing files to reimport...
+[  64% ] reimport | Preparing files to reimport...
+[  64% ] reimport | Preparing files to reimport...
+[  65% ] reimport | Preparing files to reimport...
+[  66% ] reimport | Preparing files to reimport...
+[  66% ] reimport | Preparing files to reimport...
+[  67% ] reimport | Preparing files to reimport...
+[  68% ] reimport | Preparing files to reimport...
+[  68% ] reimport | Preparing files to reimport...
+[  69% ] reimport | Preparing files to reimport...
+[  70% ] reimport | Preparing files to reimport...
+[  70% ] reimport | Preparing files to reimport...
+[  71% ] reimport | Preparing files to reimport...
+[  72% ] reimport | Preparing files to reimport...
+[  72% ] reimport | Preparing files to reimport...
+[  73% ] reimport | Preparing files to reimport...
+[  74% ] reimport | Preparing files to reimport...
+[  74% ] reimport | Preparing files to reimport...
+[  75% ] reimport | Preparing files to reimport...
+[  76% ] reimport | Preparing files to reimport...
+[  76% ] reimport | Preparing files to reimport...
+[  77% ] reimport | Preparing files to reimport...
+[  78% ] reimport | Preparing files to reimport...
+[  78% ] reimport | Preparing files to reimport...
+[  79% ] reimport | Preparing files to reimport...
+[  80% ] reimport | Preparing files to reimport...
+[  80% ] reimport | Preparing files to reimport...
+[  81% ] reimport | Preparing files to reimport...
+[  82% ] reimport | Preparing files to reimport...
+[  82% ] reimport | Preparing files to reimport...
+[  83% ] reimport | Preparing files to reimport...
+[  84% ] reimport | Preparing files to reimport...
+[  84% ] reimport | Preparing files to reimport...
+[  85% ] reimport | Preparing files to reimport...
+[  86% ] reimport | Preparing files to reimport...
+[  86% ] reimport | Preparing files to reimport...
+[  87% ] reimport | Preparing files to reimport...
+[  88% ] reimport | Preparing files to reimport...
+[  88% ] reimport | Preparing files to reimport...
+[  89% ] reimport | Preparing files to reimport...
+[  90% ] reimport | Preparing files to reimport...
+[  90% ] reimport | Preparing files to reimport...
+[  91% ] reimport | Preparing files to reimport...
+[  92% ] reimport | Preparing files to reimport...
+[  92% ] reimport | Preparing files to reimport...
+[  93% ] reimport | Preparing files to reimport...
+[  94% ] reimport | Preparing files to reimport...
+[  94% ] reimport | Preparing files to reimport...
+[  95% ] reimport | Preparing files to reimport...
+[  96% ] reimport | Preparing files to reimport...
+[  96% ] reimport | Preparing files to reimport...
+[  97% ] reimport | Preparing files to reimport...
+[  98% ] reimport | Preparing files to reimport...
+[  98% ] reimport | Preparing files to reimport...
+[   0% ] reimport | Executing pre-reimport operations...
+[   0% ] reimport | smoke.dialogue
+[   0% ] reimport | smoke.dialogue
+[   1% ] reimport | junction_bold.otf
+[   2% ] reimport | smoke.dialogue
+[   2% ] reimport | junction_bold.otf
+[   3% ] reimport | knewave_regular.ttf
+[   4% ] reimport | agent_skirmisher.png
+[   4% ] reimport | agent_summoner.png
+[   5% ] reimport | arrow_left.png
+[   6% ] reimport | arrow_right.png
+[   6% ] reimport | dummy.png
+[   7% ] reimport | env_clouds.png
+[   8% ] reimport | env_gong.png
+[   8% ] reimport | env_ground.png
+[   9% ] reimport | env_plants.png
+[  10% ] reimport | env_rocks.png
+[  10% ] reimport | fireball.png
+[  11% ] reimport | fx.png
+[  12% ] reimport | hp_bar.png
+[  12% ] reimport | hp_over.png
+[  13% ] reimport | hp_under.png
+[  14% ] reimport | icon.svg
+[  14% ] reimport | logo.png
+[  15% ] reimport | phantom_camera_camera_3d_resource.svg
+[  16% ] reimport | phantom_camera_glow_logo.png
+[  16% ] reimport | phantom_camera_noise_resource.svg
+[  17% ] reimport | phantom_camera_tween.svg
+[  18% ] reimport | phantom_camera_tween_director_resource.svg
+[  18% ] reimport | quest_resource.svg
+[  19% ] reimport | update.svg
+[  20% ] reimport | dungeon_mark.svg
+[  20% ] reimport | agent_bobby.png
+[  21% ] reimport | agent_charger.png
+[  22% ] reimport | agent_combo.png
+[  22% ] reimport | agent_demon.png
+[  23% ] reimport | agent_imp.png
+[  24% ] reimport | agent_junior_pieces.png
+[  24% ] reimport | agent_melee_nuanced.png
+[  25% ] reimport | agent_melee_simple.png
+[  26% ] reimport | agent_ranged.png
+[  26% ] reimport | circle_white.svg
+[  27% ] reimport | nest.svg
+[  28% ] reimport | cooldown_overlay.png
+[  28% ] reimport | enchant-red-3.png
+[  29% ] reimport | fireball-eerie-2.png
+[  30% ] reimport | heal-jade-2.png
+[  30% ] reimport | white_rectangle.svg
+[  31% ] reimport | break.png
+[  32% ] reimport | hit.png
+[  32% ] reimport | idle.png
+[  33% ] reimport | checkpoint_flag_out.png
+[  34% ] reimport | checkpoint_idle.png
+[  34% ] reimport | checkpoint_no_flag.png
+[  35% ] reimport | box.png
+[  36% ] reimport | full.png
+[  36% ] reimport | green.png
+[  37% ] reimport | terrain_tiles.png
+[  38% ] reimport | icon.svg
+[  38% ] reimport | shadow.png
+[  39% ] reimport | smoke.png
+[  40% ] reimport | weapon_ninja_star.png
+[  40% ] reimport | battle-after-restart.png
+[  41% ] reimport | battle-before-restart.png
+[  42% ] reimport | ios-loading-blocker.png
+[  42% ] reimport | shop-purchase.png
+[  43% ] reimport | town.png
+[  44% ] reimport | victory-return.png
+[  44% ] reimport | main.png
+[  45% ] reimport | dungeon-compact.png
+[  46% ] reimport | dungeon-wide.png
+[  46% ] reimport | loading-failure.png
+[  47% ] reimport | menu.png
+[  48% ] reimport | invalid-content-loading.png
+[  48% ] reimport | invalid-content-menu.png
+[  49% ] reimport | valid-content-town.png
+[  50% ] reimport | walk.png
+[  50% ] reimport | banana.svg
+[  51% ] reimport | BTCheckTrigger.svg
+[  52% ] reimport | BTCheckVar.svg
+[  52% ] reimport | BTComment.svg
+[  53% ] reimport | BTCondition.svg
+[  54% ] reimport | BTConsolePrint.svg
+[  54% ] reimport | BTCooldown.svg
+[  55% ] reimport | BTDecorator.svg
+[  56% ] reimport | BTDelay.svg
+[  56% ] reimport | BTDynamicSelector.svg
+[  57% ] reimport | BTDynamicSequence.svg
+[  58% ] reimport | BTEvaluateExpression.svg
+[  58% ] reimport | BTFail.svg
+[  59% ] reimport | BTForEach.svg
+[  60% ] reimport | BTInvert.svg
+[  60% ] reimport | BTNewScope.svg
+[  61% ] reimport | BTParallel.svg
+[  62% ] reimport | BTPauseAnimation.svg
+[  62% ] reimport | BTPlayAnimation.svg
+[  63% ] reimport | dialogue_actionable_2d.svg
+[  64% ] reimport | dialogue_actionable_3d.svg
+[  64% ] reimport | dialogue_label.svg
+[  65% ] reimport | dialogue_marker_2d.svg
+[  66% ] reimport | dialogue_marker_3d.svg
+[  66% ] reimport | dialogue_responses_menu.svg
+[  67% ] reimport | state_chart_debugger.svg
+[  68% ] reimport | all_of_guard.svg
+[  68% ] reimport | any_of_guard.svg
+[  69% ] reimport | expression_guard.svg
+[  70% ] reimport | guard.svg
+[  70% ] reimport | not_guard.svg
+[  71% ] reimport | state_is_active_guard.svg
+[  72% ] reimport | BehaviorTreeView.svg
+[  72% ] reimport | BlackboardPlan.svg
+[  73% ] reimport | BTAction.svg
+[  74% ] reimport | BTAwaitAnimation.svg
+[  74% ] reimport | BTCallMethod.svg
+[  75% ] reimport | BTCheckAgentProperty.svg
+[  76% ] reimport | BTWaitTicks.svg
+[  76% ] reimport | LimboEditBlackboard.svg
+[  77% ] reimport | LimboExtraBlackboard.svg
+[  78% ] reimport | LimboExtraVariable.svg
+[  78% ] reimport | LimboHSM.svg
+[  79% ] reimport | LimboState.svg
+[  80% ] reimport | LimboVarAdd.svg
+[  80% ] reimport | LimboVarEmpty.svg
+[  81% ] reimport | LimboVarError.svg
+[  82% ] reimport | LimboVarExists.svg
+[  82% ] reimport | LimboVarNotFound.svg
+[  83% ] reimport | LimboVarPrivate.svg
+[  84% ] reimport | inventory_container.png
+[  84% ] reimport | level_spritesheet.png
+[  85% ] reimport | phantom_camera_2d_sprite.png
+[  86% ] reimport | player_sprite.svg
+[  86% ] reimport | sign_prompt.png
+[  87% ] reimport | checker_pattern_dark.png
+[  88% ] reimport | target.png
+[  88% ] reimport | BTPlayer.svg
+[  89% ] reimport | BTProbability.svg
+[  90% ] reimport | BTProbabilitySelector.svg
+[  90% ] reimport | BTRandomSelector.svg
+[  91% ] reimport | BTRandomSequence.svg
+[  92% ] reimport | BTRandomWait.svg
+[  92% ] reimport | BTRepeat.svg
+[  93% ] reimport | BTRepeatUntilFailure.svg
+[  94% ] reimport | BTRepeatUntilSuccess.svg
+[  94% ] reimport | BTRunLimit.svg
+[  95% ] reimport | BTSelector.svg
+[  96% ] reimport | BTSequence.svg
+[  96% ] reimport | BTSetAgentProperty.svg
+[  97% ] reimport | BTSetVar.svg
+[  98% ] reimport | BTState.svg
+[  98% ] reimport | BTState.svg
+[  98% ] reimport | BTStopAnimation.svg
+[  99% ] reimport | Finalizing Asset Import...
+[ DONE ] reimport
+
+[   0% ] reimport | Started (Re)Importing Assets (149 steps)
+[   0% ] reimport | Executing post-reimport operations...
+[ DONE ] reimport
+
+[   0% ] loading_editor_layout | Started Loading editor (5 steps)
+[   0% ] loading_editor_layout | Loading editor layout...
+[  16% ] loading_editor_layout | Loading docks...
+[ DONE ] loading_editor_layout
+
+
+EXIT_CODE: 0

@@ -1,8 +1,8 @@
 # Rebirth Dungeon: Project Phases
 
-**Replanned: 2026-09-11 — Godot 4.7 / typed GDScript with the selected addons.** Phases 0 and 1 were implemented and verified after the 2026-09-10 reset; later phases remain unstarted. **Completed: 2 of 17. Current focus: Phase 2.** Pre-Godot implementation, tests and platform acceptance do not carry forward.
+**Replanned: 2026-09-11 — Godot 4.7 / typed GDScript with the selected addons.** Phases 0–2 were implemented and verified after the 2026-09-10 reset; later phases remain unstarted. **Completed: 3 of 17. Current focus: Phase 3.** Pre-Godot implementation, tests and platform acceptance do not carry forward.
 
-The repository contains the persistent State Charts application shell, isolated addon qualification fixtures, verification runner and export presets. Feature destinations remain development fixtures; gameplay remains unimplemented. This roadmap incorporates the currently configured addons without treating installation as feature completion. [Game Plan](game-plan.md) defines architecture, [Directory](directory.md) defines file placement, gameplay specs define rules, and [AGENTS.md](../AGENTS.md) defines addon usage and integration boundaries. Phase numbers remain stable so existing specification links retain their meaning.
+The repository contains the persistent State Charts application shell, validated content catalog, independent domain state/RNG/command foundations, isolated addon qualification fixtures, verification runner and export presets. Feature destinations remain development fixtures; gameplay remains unimplemented. This roadmap incorporates the currently configured addons without treating installation as feature completion. [Game Plan](game-plan.md) defines architecture, [Directory](directory.md) defines file placement, gameplay specs define rules, and [AGENTS.md](../AGENTS.md) defines addon usage and integration boundaries. Phase numbers remain stable so existing specification links retain their meaning.
 
 ## Status and completion policy
 
@@ -37,7 +37,7 @@ Build only lightweight mode/command contracts in Phase 1, domain types in Phase 
 | --- | --- | --- |
 | 0 | Godot baseline and verification tools | Complete |
 | 1 | Addon qualification and State Charts application shell | Complete |
-| 2 | Validated Resources and deterministic rule foundations | Not started |
+| 2 | Validated Resources and deterministic rule foundations | Complete |
 | 3 | Continuous exploration, authored rooms and Phantom Camera | Not started |
 | 4 | Five-dice combat rules and LimboAI decisions | Not started |
 | 5 | Battle HUD, state flow and camera staging | Not started |
@@ -88,16 +88,18 @@ Verified on 2026-09-11 with the pinned macOS editor: strict import/runtime/fixtu
 
 ## Phase 2: Validated Resources and deterministic rule foundations
 
-**Status: Not started. Dependencies: 1.**
+**Status: Complete. Dependencies: 1.**
 
-- [ ] Implement typed definition Resources, an explicit catalog manifest and stable namespaced content IDs.
-- [ ] Validate references, supported effects, rank order, scoring, dice weights, numeric bounds and schema/content/rules versions.
-- [ ] Separate read-only authored Resources from mutable hero, item, status and battle state.
-- [ ] Implement independently seeded generation/combat/AI/loot RNG streams and versioned seed derivation with restore fixtures.
-- [ ] Create command/revision/result types and fixtures proving invalid commands leave state and RNG unchanged.
-- [ ] Define the application-to-addon boundary: copied observations and accepted-result events outward, validated intents inward. Keep authoritative state independent of charts, blackboards, quest pools and dialogue nodes; extend the contracts only when their consumers arrive.
+- [x] Implement typed definition Resources, an explicit catalog manifest and stable namespaced content IDs.
+- [x] Validate references, supported effects, rank order, scoring, dice weights, numeric bounds and schema/content/rules versions.
+- [x] Separate read-only authored Resources from mutable hero, item, status and battle state.
+- [x] Implement independently seeded generation/combat/AI/loot RNG streams and versioned seed derivation with restore fixtures.
+- [x] Create command/revision/result types and fixtures proving invalid commands leave state and RNG unchanged.
+- [x] Define the application-to-addon boundary: copied observations and accepted-result events outward, validated intents inward. Keep authoritative state independent of charts, blackboards, quest pools and dialogue nodes; extend the contracts only when their consumers arrive.
 
 **Exit criterion:** Valid catalogs publish atomically; invalid catalogs report precise errors; resource isolation and same-version RNG continuation pass. See [Phase 2](phase2-foundations.md).
+
+Verified 2026-09-11 with the pinned macOS editor: 494 domain checks plus content-loading, shell/addon/layout integration; positive/intentional-negative runs; all five resource packs; a fresh-copy import/run; and Beckett rendered valid/invalid content paths. No new art was required. This closes in-memory foundations, not battle gameplay or disk/mobile acceptance. [Implementation contracts](phase2-implementation.md) and [retained evidence](evidence/phase-2/README.md).
 
 ## Phase 3: Continuous exploration, authored rooms and Phantom Camera
 
@@ -323,3 +325,5 @@ Verified on 2026-09-11 with the pinned macOS editor: strict import/runtime/fixtu
 2026-09-11: Documentation-only replanning against `project.godot`, local addon version files and [AGENTS.md](../AGENTS.md). Enabled plugin/autoload configuration was inspected; no new runtime, export or feature acceptance is claimed. All new checklist items remain unchecked. Phase 1 owns fresh qualification of the configured stack.
 
 2026-09-10: Phase 0 verified with the pinned Godot editor: import, runtime launch through Godot MCP, headless fixture pass and intentional failure, and resource-pack exclusions for all five presets. Full exports fail on absent templates; SDK/signing prerequisites are recorded per target. [Retained commands, results and screenshot](evidence/phase-0/README.md). This does not claim executable export or mobile acceptance.
+
+2026-09-11: Phase 2 validated Resources, domain ownership, RNG and command boundary verified. [Evidence](evidence/phase-2/README.md).

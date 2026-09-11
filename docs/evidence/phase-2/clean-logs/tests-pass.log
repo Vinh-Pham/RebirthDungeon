@@ -1,0 +1,15 @@
+$ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /private/var/folders/k9/gvzsj_xs4g7c0v5wfksy502r0000gn/T/rebirth-phase2-f2mr1o_c/project --script res://tests/run_tests.gd
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+CATALOG_FIXTURE: PASS (105 checks)
+RNG_FIXTURE: PASS (333 checks)
+COMMAND_FIXTURE: PASS (56 checks)
+AUTOLOAD: DialogueManager -> res://addons/dialogue_manager/dialogue_manager.gd
+AUTOLOAD: PhantomCameraManager -> res://addons/phantom_camera/scripts/managers/phantom_camera_manager.gd
+AUTOLOAD: QuestSystem -> res://addons/quest_system/quest_manager.gd
+ADDON_SMOKE: PASS
+SHELL_FIXTURE: PASS
+CONTENT_LOADING_FIXTURE: PASS
+TEST_RESULT: PASS
+
+EXIT_CODE: 0

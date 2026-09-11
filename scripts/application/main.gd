@@ -1,10 +1,20 @@
 class_name DungeonApplication
 extends Node
 ## Persistent composition root. State Charts owns navigation; only validated
-## requests authorize chart events. Phase 2 will extend the session contract.
+## requests authorize chart events; the session owns the domain state.
 
 signal observation_changed(observation: Dictionary)
 signal mode_detached
+signal accepted_result(event: Dictionary)
+
+const Catalog = preload("res://scripts/data/content_catalog.gd")
+const Manifest = preload("res://scripts/data/definitions/catalog_manifest.gd")
+const Hero = preload("res://scripts/domain/state/hero_state.gd")
+const ActorDefinitionType = preload("res://scripts/data/definitions/actor_definition.gd")
+const Resolver = preload("res://scripts/domain/commands/command_resolver.gd")
+var _catalog := Catalog.new()
+## Authored fixture override for validation UI tests; never save data.
+var catalog_path: String = "res://content/catalog.tres"
 
 const Mode = SessionShell.Mode
 const MODE_VIEW = preload("res://scenes/ui/mode_view.tscn")
@@ -25,6 +35,7 @@ var _session := SessionShell.new()
 var _chart: StateChart
 var _view: ShellModeView
 var _pending: int = -1
+var _publishing_result: bool = false
 var _alive: bool = true
 var _focused: bool = true
 var _resources: Dictionary = {}
@@ -44,6 +55,22 @@ func _ready() -> void:
 
 func observation() -> Dictionary:
 	return _session.observation()
+
+func submit_intent(intent: Dictionary) -> Dictionary:
+	if not _alive or not _focused or _pending != -1 or _publishing_result or not loading_error.is_empty():
+		return {"accepted": false, "code": "application_unavailable", "events": []}
+	var command := Resolver.parse_intent(intent)
+	var result := Resolver.resolve(_session, command, _catalog)
+	if result.accepted:
+		# Phase 6 inserts the durable checkpoint before this publication.
+		_publishing_result = true
+		_session = result.candidate
+		_replace_view()
+		observation_changed.emit(observation())
+		for event: Dictionary in result.events:
+			accepted_result.emit(event.duplicate(true))
+		_publishing_result = false
+	return result.observation()
 
 func _build_chart() -> void:
 	_chart = StateChart.new()
@@ -72,7 +99,7 @@ func _build_chart() -> void:
 	add_child(_chart)
 
 func request_mode(target: int, id: int, revision: int) -> bool:
-	if not _alive or not _focused or not is_instance_valid(_view) or _pending != -1:
+	if not _alive or not _focused or not is_instance_valid(_view) or _pending != -1 or _publishing_result:
 		return false
 	if not _session.matches(id, revision) or not EDGES[_session.mode].has(target):
 		return false
@@ -127,7 +154,7 @@ func _replace_view() -> void:
 			if development_enabled:
 				choices[Mode.LOADING] = "Open development fixtures"
 		Mode.LOADING:
-			description = "Loading required presentation resources…"
+			description = "Loading required resources and validating content…"
 			if not loading_error.is_empty():
 				description = loading_error
 			choices[Mode.MENU] = "Back to menu"
@@ -146,7 +173,7 @@ func _replace_view() -> void:
 	_view.configure(observation(), heading, description, choices)
 	_view.intent_requested.connect(_on_intent.bind(weakref(_view)))
 	_view.set_input_enabled(_focused)
-	_status.text = "Phase 1 · session %d · revision %d · %s" % [_session.session_id, _session.revision, heading]
+	_status.text = "Phase 2 · session %d · revision %d · %s" % [_session.session_id, _session.revision, heading]
 
 func _load_required(id: int, revision: int, advance: bool = true) -> void:
 	if not _alive or not _session.matches(id, revision):
@@ -169,9 +196,33 @@ func _load_required(id: int, revision: int, advance: bool = true) -> void:
 	if not loading_error.is_empty():
 		_replace_view()
 		return
+	var manifest: Manifest
+	if ResourceLoader.exists(catalog_path):
+		manifest = load(catalog_path) as Manifest
+	var next_catalog := Catalog.new()
+	var errors := next_catalog.publish(manifest)
+	if not errors.is_empty():
+		loading_error = "Required content invalid: %s\n%s\nRepair the catalog, then return to menu and retry." % [catalog_path, "\n".join(errors)]
+		_replace_view()
+		return
+	if _session.hero != null and _session.content_versions != next_catalog.versions():
+		loading_error = "Content version changed during this session. Restart the application to load the new catalog."
+		_replace_view()
+		return
+	if _session.hero == null:
+		var definition := next_catalog.definition("actor.hero") as ActorDefinitionType
+		if definition == null:
+			loading_error = "Required content missing: actor.hero in %s" % catalog_path
+			_replace_view()
+			return
+		_session.hero = Hero.new()
+		_session.hero.configure(definition, "hero")
+		_session.content_versions = next_catalog.versions()
+	_catalog = next_catalog
 	_resources = candidate
 	_ui.theme = candidate["res://scenes/ui/shell_theme.tres"]
 	$UI/UIHost/Layout/Mark.texture = candidate["res://assets/art/dungeon_mark.svg"]
+	observation_changed.emit(observation())
 	if advance and _focused:
 		request_mode(Mode.TOWN, id, revision)
 

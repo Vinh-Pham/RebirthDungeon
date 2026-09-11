@@ -10,8 +10,12 @@ func _run() -> void:
 	var negative := OS.get_cmdline_user_args().has("--prove-failure")
 	var failures: PackedStringArray = await BaselineFixture.new().run(self, negative)
 	if not negative:
+		failures.append_array(load("res://tests/unit/catalog_fixture.gd").new().run())
+		failures.append_array(load("res://tests/unit/rng_fixture.gd").new().run())
+		failures.append_array(load("res://tests/unit/command_fixture.gd").new().run())
 		failures.append_array(await load("res://tests/integration/addon_fixture.gd").new().run(self))
 		failures.append_array(await load("res://tests/integration/shell_fixture.gd").new().run(self))
+		failures.append_array(await load("res://tests/integration/content_loading_fixture.gd").new().run(self))
 	for failure: String in failures:
 		print("FAIL: " + failure)
 	if failures.is_empty():

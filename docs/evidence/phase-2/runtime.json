@@ -1,0 +1,287 @@
+{
+  "engine": "4.7.2.stable.official.ed1daf0bf",
+  "schema": 1,
+  "content": 1,
+  "rules": 1,
+  "generator": 1,
+  "rng": 1,
+  "valid_ui": {
+    "control_count": 12,
+    "controls": [
+      {
+        "class": "Control",
+        "path": "UI/UIHost",
+        "rect": [
+          0,
+          0,
+          1466,
+          720
+        ]
+      },
+      {
+        "class": "ColorRect",
+        "mouse_ignore": true,
+        "path": "UI/UIHost/Background",
+        "rect": [
+          0,
+          0,
+          1466,
+          720
+        ]
+      },
+      {
+        "class": "VBoxContainer",
+        "path": "UI/UIHost/Layout",
+        "rect": [
+          32,
+          24,
+          1402,
+          672
+        ]
+      },
+      {
+        "class": "TextureRect",
+        "path": "UI/UIHost/Layout/Mark",
+        "rect": [
+          709,
+          24,
+          48,
+          48
+        ]
+      },
+      {
+        "class": "CenterContainer",
+        "path": "UI/UIHost/Layout/ModeHost",
+        "rect": [
+          32,
+          84,
+          1402,
+          572
+        ]
+      },
+      {
+        "class": "VBoxContainer",
+        "path": "UI/UIHost/Layout/ModeHost/ModeView",
+        "rect": [
+          453,
+          250,
+          560,
+          239
+        ],
+        "script": "ShellModeView"
+      },
+      {
+        "class": "Label",
+        "mouse_ignore": true,
+        "path": "UI/UIHost/Layout/ModeHost/ModeView/Heading",
+        "rect": [
+          453,
+          250,
+          560,
+          42
+        ],
+        "text": "Town"
+      },
+      {
+        "class": "Label",
+        "mouse_ignore": true,
+        "path": "UI/UIHost/Layout/ModeHost/ModeView/Description",
+        "rect": [
+          453,
+          308,
+          560,
+          59
+        ],
+        "text": "Development fixture · navigation only.\nGameplay and saving are not implemented."
+      },
+      {
+        "class": "VBoxContainer",
+        "path": "UI/UIHost/Layout/ModeHost/ModeView/Actions",
+        "rect": [
+          593,
+          383,
+          280,
+          106
+        ]
+      },
+      {
+        "class": "Button",
+        "focused": true,
+        "path": "UI/UIHost/Layout/ModeHost/ModeView/Actions/@Button@4",
+        "rect": [
+          593,
+          383,
+          280,
+          48
+        ],
+        "text": "Open dungeon fixture"
+      },
+      {
+        "class": "Button",
+        "path": "UI/UIHost/Layout/ModeHost/ModeView/Actions/@Button@5",
+        "rect": [
+          593,
+          441,
+          280,
+          48
+        ],
+        "text": "Back to menu"
+      },
+      {
+        "class": "Label",
+        "mouse_ignore": true,
+        "path": "UI/UIHost/Layout/Status",
+        "rect": [
+          32,
+          668,
+          1402,
+          28
+        ],
+        "text": "Phase 2 · session 1 · revision 2 · Town"
+      }
+    ],
+    "focus": "UI/UIHost/Layout/ModeHost/ModeView/Actions/@Button@4",
+    "hash": "e612c6667ca752bcd133f00ae2f02267",
+    "scene": "Main",
+    "viewport": [
+      1466,
+      720
+    ],
+    "windows": []
+  },
+  "invalid_ui": {
+    "control_count": 11,
+    "controls": [
+      {
+        "class": "Control",
+        "path": "Main/UI/UIHost",
+        "rect": [
+          0,
+          0,
+          1466,
+          720
+        ]
+      },
+      {
+        "class": "ColorRect",
+        "mouse_ignore": true,
+        "path": "Main/UI/UIHost/Background",
+        "rect": [
+          0,
+          0,
+          1466,
+          720
+        ]
+      },
+      {
+        "class": "VBoxContainer",
+        "path": "Main/UI/UIHost/Layout",
+        "rect": [
+          32,
+          24,
+          1402,
+          672
+        ]
+      },
+      {
+        "class": "TextureRect",
+        "path": "Main/UI/UIHost/Layout/Mark",
+        "rect": [
+          709,
+          24,
+          48,
+          48
+        ]
+      },
+      {
+        "class": "CenterContainer",
+        "path": "Main/UI/UIHost/Layout/ModeHost",
+        "rect": [
+          32,
+          84,
+          1402,
+          577
+        ]
+      },
+      {
+        "class": "VBoxContainer",
+        "path": "Main/UI/UIHost/Layout/ModeHost/ModeView",
+        "rect": [
+          453,
+          261,
+          560,
+          223
+        ],
+        "script": "ShellModeView"
+      },
+      {
+        "class": "Label",
+        "mouse_ignore": true,
+        "path": "Main/UI/UIHost/Layout/ModeHost/ModeView/Heading",
+        "rect": [
+          453,
+          261,
+          560,
+          42
+        ],
+        "text": "Loading"
+      },
+      {
+        "class": "Label",
+        "mouse_ignore": true,
+        "path": "Main/UI/UIHost/Layout/ModeHost/ModeView/Description",
+        "rect": [
+          453,
+          319,
+          560,
+          101
+        ],
+        "text": "Required content invalid: res://tests/fixtures/invalid_catalog.tres\nres://tests/fixtures/invalid_catalog.tres [manifest].schema_version: unsupported version; ex",
+        "text_truncated": true
+      },
+      {
+        "class": "VBoxContainer",
+        "path": "Main/UI/UIHost/Layout/ModeHost/ModeView/Actions",
+        "rect": [
+          593,
+          436,
+          280,
+          48
+        ]
+      },
+      {
+        "class": "Button",
+        "focused": true,
+        "path": "Main/UI/UIHost/Layout/ModeHost/ModeView/Actions/@Button@5",
+        "rect": [
+          593,
+          436,
+          280,
+          48
+        ],
+        "text": "Back to menu"
+      },
+      {
+        "class": "Label",
+        "mouse_ignore": true,
+        "path": "Main/UI/UIHost/Layout/Status",
+        "rect": [
+          32,
+          673,
+          1402,
+          23
+        ],
+        "text": "Phase 2 · session 1 · revision 1 · Loading"
+      }
+    ],
+    "focus": "Main/UI/UIHost/Layout/ModeHost/ModeView/Actions/@Button@5",
+    "hash": "54ac461d6cc1ff0cf5df05865b6f1d7a",
+    "scene": "InvalidContentPreview",
+    "viewport": [
+      1466,
+      720
+    ],
+    "windows": []
+  },
+  "invalid_game_logs": "No game log entries after ui_accept navigation."
+}

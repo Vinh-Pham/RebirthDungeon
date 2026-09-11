@@ -62,6 +62,10 @@ def main():
             raise RuntimeError(f"{preset} missing main scene")
         if "assets/licenses/third_party_notices.txt" not in names:
             raise RuntimeError(f"{preset} missing third-party license notices")
+        for resource in (ROOT / "content").rglob("*.tres"):
+            relative = resource.relative_to(ROOT).as_posix()
+            if relative not in names and relative + ".remap" not in names:
+                raise RuntimeError(f"{preset} missing authored content: {relative}")
         if "project.binary" not in names:
             raise RuntimeError(f"{preset} missing project configuration")
         print(f"PASS {preset} asset exclusions ({len(names)} files)")
