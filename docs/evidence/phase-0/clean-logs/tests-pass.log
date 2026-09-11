@@ -1,0 +1,6 @@
+$ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /private/var/folders/k9/gvzsj_xs4g7c0v5wfksy502r0000gn/T/rebirth-baseline-b3cl07cr/project --script res://tests/run_tests.gd
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+TEST_RESULT: PASS
+
+EXIT_CODE: 0

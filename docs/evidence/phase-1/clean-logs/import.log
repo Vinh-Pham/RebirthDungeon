@@ -1,0 +1,762 @@
+$ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/vinhpham/Projects/rebirth-dungeon/build/phase1-clean-copy --editor --import
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[   0% ] [90m[1mfirst_scan_filesystem[22m | Started Project initialization (5 steps)[39m[0m
+[  16% ] [90m[1mfirst_scan_filesystem[22m | Loading global class names...[39m[0m
+[  33% ] [90m[1mfirst_scan_filesystem[22m | Verifying GDExtensions...[39m[0m
+[  50% ] [90m[1mfirst_scan_filesystem[22m | Creating autoload scripts...[39m[0m
+[  66% ] [90m[1mfirst_scan_filesystem[22m | Initializing plugins...[39m[0m
+[  83% ] [90m[1mfirst_scan_filesystem[22m | Starting file scan...[39m[0m
+[92m[ DONE ][39m [1mfirst_scan_filesystem[22m
+[0m
+[   0% ] [90m[1mupdate_scripts_classes[22m | Started Registering global classes... (248 steps)[39m[0m
+[   0% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[   0% ] [90m[1mupdate_scripts_classes[22m | BeckettCaptures[39m[0m
+[   0% ] [90m[1mupdate_scripts_classes[22m | BeckettClientConfig[39m[0m
+[   1% ] [90m[1mupdate_scripts_classes[22m | BeckettEffort[39m[0m
+[   1% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[   2% ] [90m[1mupdate_scripts_classes[22m | BeckettHttpServer[39m[0m
+[   2% ] [90m[1mupdate_scripts_classes[22m | BeckettJobs[39m[0m
+[   2% ] [90m[1mupdate_scripts_classes[22m | BeckettJsonRpc[39m[0m
+[   3% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[   3% ] [90m[1mupdate_scripts_classes[22m | BeckettReflect[39m[0m
+[   4% ] [90m[1mupdate_scripts_classes[22m | BeckettRuntimeBridge[39m[0m
+[   4% ] [90m[1mupdate_scripts_classes[22m | BeckettToolRegistry[39m[0m
+[   4% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[   5% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[   5% ] [90m[1mupdate_scripts_classes[22m | BeckettPrompts[39m[0m
+[   6% ] [90m[1mupdate_scripts_classes[22m | BeckettResources[39m[0m
+[   6% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[   6% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[   7% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[   7% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[   8% ] [90m[1mupdate_scripts_classes[22m | BeckettTestCase[39m[0m
+[   8% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[   8% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[   9% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[   9% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  10% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  10% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  10% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  11% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  11% ] [90m[1mupdate_scripts_classes[22m | BeckettAnalysisProTools[39m[0m
+[  12% ] [90m[1mupdate_scripts_classes[22m | BeckettAnalysisTools[39m[0m
+[  12% ] [90m[1mupdate_scripts_classes[22m | BeckettAnimationTools[39m[0m
+[  12% ] [90m[1mupdate_scripts_classes[22m | BeckettAssetLibTools[39m[0m
+[  13% ] [90m[1mupdate_scripts_classes[22m | BeckettBatchTools[39m[0m
+[  13% ] [90m[1mupdate_scripts_classes[22m | BeckettCSharpTools[39m[0m
+[  14% ] [90m[1mupdate_scripts_classes[22m | BeckettExportTools[39m[0m
+[  14% ] [90m[1mupdate_scripts_classes[22m | BeckettHelpTools[39m[0m
+[  14% ] [90m[1mupdate_scripts_classes[22m | BeckettPlaytestTools[39m[0m
+[  15% ] [90m[1mupdate_scripts_classes[22m | BeckettProjectTools[39m[0m
+[  15% ] [90m[1mupdate_scripts_classes[22m | BeckettQaTools[39m[0m
+[  16% ] [90m[1mupdate_scripts_classes[22m | BeckettReflectionTools[39m[0m
+[  16% ] [90m[1mupdate_scripts_classes[22m | BeckettResourceTools[39m[0m
+[  16% ] [90m[1mupdate_scripts_classes[22m | BeckettRuntimeObserveTools[39m[0m
+[  17% ] [90m[1mupdate_scripts_classes[22m | BeckettRuntimeTools[39m[0m
+[  17% ] [90m[1mupdate_scripts_classes[22m | BeckettRunTools[39m[0m
+[  18% ] [90m[1mupdate_scripts_classes[22m | BeckettScatterTools[39m[0m
+[  18% ] [90m[1mupdate_scripts_classes[22m | BeckettSceneTools[39m[0m
+[  18% ] [90m[1mupdate_scripts_classes[22m | BeckettScriptTools[39m[0m
+[  19% ] [90m[1mupdate_scripts_classes[22m | BeckettSignalTools[39m[0m
+[  19% ] [90m[1mupdate_scripts_classes[22m | BeckettSkillTools[39m[0m
+[  20% ] [90m[1mupdate_scripts_classes[22m | BeckettTemplateTools[39m[0m
+[  20% ] [90m[1mupdate_scripts_classes[22m | BeckettTestTools[39m[0m
+[  20% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  21% ] [90m[1mupdate_scripts_classes[22m | DMCompilation[39m[0m
+[  21% ] [90m[1mupdate_scripts_classes[22m | DMCompiledLine[39m[0m
+[  22% ] [90m[1mupdate_scripts_classes[22m | DMCompiler[39m[0m
+[  22% ] [90m[1mupdate_scripts_classes[22m | DMCompilerRegEx[39m[0m
+[  22% ] [90m[1mupdate_scripts_classes[22m | DMCompilerResult[39m[0m
+[  23% ] [90m[1mupdate_scripts_classes[22m | DMExpressionParser[39m[0m
+[  23% ] [90m[1mupdate_scripts_classes[22m | DMResolvedGotoData[39m[0m
+[  24% ] [90m[1mupdate_scripts_classes[22m | DMResolvedLineData[39m[0m
+[  24% ] [90m[1mupdate_scripts_classes[22m | DMResolvedTagData[39m[0m
+[  24% ] [90m[1mupdate_scripts_classes[22m | DMTreeLine[39m[0m
+[  25% ] [90m[1mupdate_scripts_classes[22m | DMCueEditorProperty[39m[0m
+[  25% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  26% ] [90m[1mupdate_scripts_classes[22m | DMDialogueEditorProperty[39m[0m
+[  26% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  26% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  27% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  27% ] [90m[1mupdate_scripts_classes[22m | DMCodeEdit[39m[0m
+[  28% ] [90m[1mupdate_scripts_classes[22m | DMSyntaxHighlighter[39m[0m
+[  28% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  28% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  29% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  29% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  30% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  30% ] [90m[1mupdate_scripts_classes[22m | DMPreviewGenerator[39m[0m
+[  30% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  31% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  31% ] [90m[1mupdate_scripts_classes[22m | DialogueManagerExampleBalloon[39m[0m
+[  32% ] [90m[1mupdate_scripts_classes[22m | DialogueActionable2D[39m[0m
+[  32% ] [90m[1mupdate_scripts_classes[22m | DialogueActionable3D[39m[0m
+[  32% ] [90m[1mupdate_scripts_classes[22m | DialogueStateContext[39m[0m
+[  33% ] [90m[1mupdate_scripts_classes[22m | DialogueLabel[39m[0m
+[  33% ] [90m[1mupdate_scripts_classes[22m | DialogueMarker2D[39m[0m
+[  34% ] [90m[1mupdate_scripts_classes[22m | DialogueMarker3D[39m[0m
+[  34% ] [90m[1mupdate_scripts_classes[22m | DialogueResponsesMenu[39m[0m
+[  34% ] [90m[1mupdate_scripts_classes[22m | DMBuiltins[39m[0m
+[  35% ] [90m[1mupdate_scripts_classes[22m | DMCache[39m[0m
+[  35% ] [90m[1mupdate_scripts_classes[22m | DMError[39m[0m
+[  36% ] [90m[1mupdate_scripts_classes[22m | DMThemeValues[39m[0m
+[  36% ] [90m[1mupdate_scripts_classes[22m | DMTranslationUtilities[39m[0m
+[  36% ] [90m[1mupdate_scripts_classes[22m | DMWaiter[39m[0m
+[  37% ] [90m[1mupdate_scripts_classes[22m | DMDebuggerView[39m[0m
+[  37% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  38% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  38% ] [90m[1mupdate_scripts_classes[22m | DMConstants[39m[0m
+[  38% ] [90m[1mupdate_scripts_classes[22m | DMDebuggerPlugin[39m[0m
+[  39% ] [90m[1mupdate_scripts_classes[22m | DialogueLine[39m[0m
+[  39% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  40% ] [90m[1mupdate_scripts_classes[22m | DMDialogueProcessor[39m[0m
+[  40% ] [90m[1mupdate_scripts_classes[22m | DialogueResource[39m[0m
+[  40% ] [90m[1mupdate_scripts_classes[22m | DialogueResponse[39m[0m
+[  41% ] [90m[1mupdate_scripts_classes[22m | DMTranslationParserPlugin[39m[0m
+[  41% ] [90m[1mupdate_scripts_classes[22m | DMExportPlugin[39m[0m
+[  42% ] [90m[1mupdate_scripts_classes[22m | DMImportPlugin[39m[0m
+[  42% ] [90m[1mupdate_scripts_classes[22m | DMInspectorPlugin[39m[0m
+[  42% ] [90m[1mupdate_scripts_classes[22m | DMPlugin[39m[0m
+[  43% ] [90m[1mupdate_scripts_classes[22m | DMSettings[39m[0m
+[  43% ] [90m[1mupdate_scripts_classes[22m | BaseDialogueTestScene[39m[0m
+[  44% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  44% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  44% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  45% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  45% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  46% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  46% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  46% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  47% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  47% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  48% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  48% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  48% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  49% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  49% ] [90m[1mupdate_scripts_classes[22m | AllOfGuard[39m[0m
+[  50% ] [90m[1mupdate_scripts_classes[22m | AnimationPlayerState[39m[0m
+[  50% ] [90m[1mupdate_scripts_classes[22m | AnimationTreeState[39m[0m
+[  51% ] [90m[1mupdate_scripts_classes[22m | AnyOfGuard[39m[0m
+[  51% ] [90m[1mupdate_scripts_classes[22m | AtomicState[39m[0m
+[  51% ] [90m[1mupdate_scripts_classes[22m | CompoundState[39m[0m
+[  52% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  52% ] [90m[1mupdate_scripts_classes[22m | ExpressionGuard[39m[0m
+[  53% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  53% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  53% ] [90m[1mupdate_scripts_classes[22m | Guard[39m[0m
+[  54% ] [90m[1mupdate_scripts_classes[22m | HistoryState[39m[0m
+[  54% ] [90m[1mupdate_scripts_classes[22m | NotGuard[39m[0m
+[  55% ] [90m[1mupdate_scripts_classes[22m | ParallelState[39m[0m
+[  55% ] [90m[1mupdate_scripts_classes[22m | SavedState[39m[0m
+[  55% ] [90m[1mupdate_scripts_classes[22m | SerializedStateChart[39m[0m
+[  56% ] [90m[1mupdate_scripts_classes[22m | SerializedStateChartState[39m[0m
+[  56% ] [90m[1mupdate_scripts_classes[22m | StateChart[39m[0m
+[  57% ] [90m[1mupdate_scripts_classes[22m | StateChartSerializer[39m[0m
+[  57% ] [90m[1mupdate_scripts_classes[22m | StateChartState[39m[0m
+[  57% ] [90m[1mupdate_scripts_classes[22m | StateIsActiveGuard[39m[0m
+[  58% ] [90m[1mupdate_scripts_classes[22m | Transition[39m[0m
+[  58% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  59% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  59% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  59% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  60% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  60% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  61% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  61% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  61% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  62% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  62% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  63% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  63% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  63% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  64% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  64% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  65% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  65% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  65% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  66% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  66% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  67% ] [90m[1mupdate_scripts_classes[22m | PhantomCamera2D[39m[0m
+[  67% ] [90m[1mupdate_scripts_classes[22m | PhantomCamera3D[39m[0m
+[  67% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  68% ] [90m[1mupdate_scripts_classes[22m | PhantomCameraNoiseEmitter2D[39m[0m
+[  68% ] [90m[1mupdate_scripts_classes[22m | PhantomCameraNoiseEmitter3D[39m[0m
+[  69% ] [90m[1mupdate_scripts_classes[22m | PhantomCameraTweenDirector[39m[0m
+[  69% ] [90m[1mupdate_scripts_classes[22m | PhantomCameraHost[39m[0m
+[  69% ] [90m[1mupdate_scripts_classes[22m | Camera3DResource[39m[0m
+[  70% ] [90m[1mupdate_scripts_classes[22m | PhantomCameraNoise2D[39m[0m
+[  70% ] [90m[1mupdate_scripts_classes[22m | PhantomCameraNoise3D[39m[0m
+[  71% ] [90m[1mupdate_scripts_classes[22m | TweenDirectorResource[39m[0m
+[  71% ] [90m[1mupdate_scripts_classes[22m | PhantomCameraTween[39m[0m
+[  71% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  72% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  72% ] [90m[1mupdate_scripts_classes[22m | AbstractQuestManagerAPI[39m[0m
+[  73% ] [90m[1mupdate_scripts_classes[22m | ActiveQuestPool[39m[0m
+[  73% ] [90m[1mupdate_scripts_classes[22m | AvailableQuestPool[39m[0m
+[  73% ] [90m[1mupdate_scripts_classes[22m | BaseQuestPool[39m[0m
+[  74% ] [90m[1mupdate_scripts_classes[22m | CompletedQuestPool[39m[0m
+[  74% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  75% ] [90m[1mupdate_scripts_classes[22m | QuestSystemManagerAPI[39m[0m
+[  75% ] [90m[1mupdate_scripts_classes[22m | Quest[39m[0m
+[  75% ] [90m[1mupdate_scripts_classes[22m | QuestSystemSettings[39m[0m
+[  76% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  76% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  77% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  77% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  77% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  78% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  78% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  79% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  79% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  79% ] [90m[1mupdate_scripts_classes[22m | Health[39m[0m
+[  80% ] [90m[1mupdate_scripts_classes[22m | Hitbox[39m[0m
+[  80% ] [90m[1mupdate_scripts_classes[22m | Hurtbox[39m[0m
+[  81% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  81% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  81% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  82% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  82% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  83% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  83% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  83% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  84% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  84% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  85% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  85% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  85% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  86% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  86% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  87% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  87% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  87% ] [90m[1mupdate_scripts_classes[22m | Marker[39m[0m
+[  88% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  88% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  89% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  89% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  89% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  90% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  90% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  91% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  91% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  91% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  92% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  92% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  93% ] [90m[1mupdate_scripts_classes[22m | ColorBox[39m[0m
+[  93% ] [90m[1mupdate_scripts_classes[22m | SerializedColorBox[39m[0m
+[  93% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  94% ] [90m[1mupdate_scripts_classes[22m | SaveResource[39m[0m
+[  94% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  95% ] [90m[1mupdate_scripts_classes[22m | ShellAddonLifecycle[39m[0m
+[  95% ] [90m[1mupdate_scripts_classes[22m | DungeonApplication[39m[0m
+[  95% ] [90m[1mupdate_scripts_classes[22m | ShellInputMap[39m[0m
+[  96% ] [90m[1mupdate_scripts_classes[22m | SessionShell[39m[0m
+[  96% ] [90m[1mupdate_scripts_classes[22m | ShellModeView[39m[0m
+[  97% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  97% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  97% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  98% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  98% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  99% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[92m[ DONE ][39m [1mupdate_scripts_classes[22m
+[0m
+[   0% ] [90m[1m_update_scan_actions[22m | Started Scanning actions... (190 steps)[39m[0m
+[   0% ] [90m[1m_update_scan_actions[22m | cue.svg[39m[0m
+[   0% ] [90m[1m_update_scan_actions[22m | icon.svg[39m[0m
+[   1% ] [90m[1m_update_scan_actions[22m | logo.svg[39m[0m
+[   1% ] [90m[1m_update_scan_actions[22m | region.svg[39m[0m
+[   2% ] [90m[1m_update_scan_actions[22m | resource.svg[39m[0m
+[   2% ] [90m[1m_update_scan_actions[22m | update.svg[39m[0m
+[   3% ] [90m[1m_update_scan_actions[22m | dialogue_actionable_2d.svg[39m[0m
+[   3% ] [90m[1m_update_scan_actions[22m | dialogue_actionable_3d.svg[39m[0m
+[   4% ] [90m[1m_update_scan_actions[22m | dialogue_state_context.svg[39m[0m
+[   4% ] [90m[1m_update_scan_actions[22m | dialogue_label.svg[39m[0m
+[   5% ] [90m[1m_update_scan_actions[22m | dialogue_marker_2d.svg[39m[0m
+[   5% ] [90m[1m_update_scan_actions[22m | dialogue_marker_3d.svg[39m[0m
+[   6% ] [90m[1m_update_scan_actions[22m | dialogue_responses_menu.svg[39m[0m
+[   6% ] [90m[1m_update_scan_actions[22m | state_chart_debugger.svg[39m[0m
+[   7% ] [90m[1m_update_scan_actions[22m | all_of_guard.svg[39m[0m
+[   7% ] [90m[1m_update_scan_actions[22m | animation_player_state.svg[39m[0m
+[   8% ] [90m[1m_update_scan_actions[22m | animation_tree_state.svg[39m[0m
+[   8% ] [90m[1m_update_scan_actions[22m | any_of_guard.svg[39m[0m
+[   9% ] [90m[1m_update_scan_actions[22m | atomic_state.svg[39m[0m
+[   9% ] [90m[1m_update_scan_actions[22m | compound_state.svg[39m[0m
+[  10% ] [90m[1m_update_scan_actions[22m | expression_guard.svg[39m[0m
+[  10% ] [90m[1m_update_scan_actions[22m | guard.svg[39m[0m
+[  11% ] [90m[1m_update_scan_actions[22m | history_state.svg[39m[0m
+[  12% ] [90m[1m_update_scan_actions[22m | not_guard.svg[39m[0m
+[  12% ] [90m[1m_update_scan_actions[22m | parallel_state.svg[39m[0m
+[  13% ] [90m[1m_update_scan_actions[22m | state_chart.svg[39m[0m
+[  13% ] [90m[1m_update_scan_actions[22m | state_is_active_guard.svg[39m[0m
+[  14% ] [90m[1m_update_scan_actions[22m | toggle_sidebar.svg[39m[0m
+[  14% ] [90m[1m_update_scan_actions[22m | transition.svg[39m[0m
+[  15% ] [90m[1m_update_scan_actions[22m | BehaviorTree.svg[39m[0m
+[  15% ] [90m[1m_update_scan_actions[22m | BehaviorTreeView.svg[39m[0m
+[  16% ] [90m[1m_update_scan_actions[22m | BlackboardPlan.svg[39m[0m
+[  16% ] [90m[1m_update_scan_actions[22m | BTAction.svg[39m[0m
+[  17% ] [90m[1m_update_scan_actions[22m | BTAlwaysFail.svg[39m[0m
+[  17% ] [90m[1m_update_scan_actions[22m | BTAlwaysSucceed.svg[39m[0m
+[  18% ] [90m[1m_update_scan_actions[22m | BTAwaitAnimation.svg[39m[0m
+[  18% ] [90m[1m_update_scan_actions[22m | BTCallMethod.svg[39m[0m
+[  19% ] [90m[1m_update_scan_actions[22m | BTCheckAgentProperty.svg[39m[0m
+[  19% ] [90m[1m_update_scan_actions[22m | BTCheckTrigger.svg[39m[0m
+[  20% ] [90m[1m_update_scan_actions[22m | BTCheckVar.svg[39m[0m
+[  20% ] [90m[1m_update_scan_actions[22m | BTComment.svg[39m[0m
+[  21% ] [90m[1m_update_scan_actions[22m | BTCondition.svg[39m[0m
+[  21% ] [90m[1m_update_scan_actions[22m | BTConsolePrint.svg[39m[0m
+[  22% ] [90m[1m_update_scan_actions[22m | BTCooldown.svg[39m[0m
+[  23% ] [90m[1m_update_scan_actions[22m | BTDecorator.svg[39m[0m
+[  23% ] [90m[1m_update_scan_actions[22m | BTDelay.svg[39m[0m
+[  24% ] [90m[1m_update_scan_actions[22m | BTDynamicSelector.svg[39m[0m
+[  24% ] [90m[1m_update_scan_actions[22m | BTDynamicSequence.svg[39m[0m
+[  25% ] [90m[1m_update_scan_actions[22m | BTEvaluateExpression.svg[39m[0m
+[  25% ] [90m[1m_update_scan_actions[22m | BTFail.svg[39m[0m
+[  26% ] [90m[1m_update_scan_actions[22m | BTForEach.svg[39m[0m
+[  26% ] [90m[1m_update_scan_actions[22m | BTInvert.svg[39m[0m
+[  27% ] [90m[1m_update_scan_actions[22m | BTNewScope.svg[39m[0m
+[  27% ] [90m[1m_update_scan_actions[22m | BTParallel.svg[39m[0m
+[  28% ] [90m[1m_update_scan_actions[22m | BTPauseAnimation.svg[39m[0m
+[  28% ] [90m[1m_update_scan_actions[22m | BTPlayAnimation.svg[39m[0m
+[  29% ] [90m[1m_update_scan_actions[22m | BTPlayer.svg[39m[0m
+[  29% ] [90m[1m_update_scan_actions[22m | BTProbability.svg[39m[0m
+[  30% ] [90m[1m_update_scan_actions[22m | BTProbabilitySelector.svg[39m[0m
+[  30% ] [90m[1m_update_scan_actions[22m | BTRandomSelector.svg[39m[0m
+[  31% ] [90m[1m_update_scan_actions[22m | BTRandomSequence.svg[39m[0m
+[  31% ] [90m[1m_update_scan_actions[22m | BTRandomWait.svg[39m[0m
+[  32% ] [90m[1m_update_scan_actions[22m | BTRepeat.svg[39m[0m
+[  32% ] [90m[1m_update_scan_actions[22m | BTRepeatUntilFailure.svg[39m[0m
+[  33% ] [90m[1m_update_scan_actions[22m | BTRepeatUntilSuccess.svg[39m[0m
+[  34% ] [90m[1m_update_scan_actions[22m | BTRunLimit.svg[39m[0m
+[  34% ] [90m[1m_update_scan_actions[22m | BTSelector.svg[39m[0m
+[  35% ] [90m[1m_update_scan_actions[22m | BTSequence.svg[39m[0m
+[  35% ] [90m[1m_update_scan_actions[22m | BTSetAgentProperty.svg[39m[0m
+[  36% ] [90m[1m_update_scan_actions[22m | BTSetVar.svg[39m[0m
+[  36% ] [90m[1m_update_scan_actions[22m | BTState.svg[39m[0m
+[  37% ] [90m[1m_update_scan_actions[22m | BTStopAnimation.svg[39m[0m
+[  37% ] [90m[1m_update_scan_actions[22m | BTSubtree.svg[39m[0m
+[  38% ] [90m[1m_update_scan_actions[22m | BTTimeLimit.svg[39m[0m
+[  38% ] [90m[1m_update_scan_actions[22m | BTWait.svg[39m[0m
+[  39% ] [90m[1m_update_scan_actions[22m | BTWaitTicks.svg[39m[0m
+[  39% ] [90m[1m_update_scan_actions[22m | LimboAI.svg[39m[0m
+[  40% ] [90m[1m_update_scan_actions[22m | LimboDeselectAll.svg[39m[0m
+[  40% ] [90m[1m_update_scan_actions[22m | LimboEditBlackboard.svg[39m[0m
+[  41% ] [90m[1m_update_scan_actions[22m | LimboExtraBlackboard.svg[39m[0m
+[  41% ] [90m[1m_update_scan_actions[22m | LimboExtraClock.svg[39m[0m
+[  42% ] [90m[1m_update_scan_actions[22m | LimboExtractSubtree.svg[39m[0m
+[  42% ] [90m[1m_update_scan_actions[22m | LimboExtraVariable.svg[39m[0m
+[  43% ] [90m[1m_update_scan_actions[22m | LimboHSM.svg[39m[0m
+[  43% ] [90m[1m_update_scan_actions[22m | LimboPercent.svg[39m[0m
+[  44% ] [90m[1m_update_scan_actions[22m | LimboSelectAll.svg[39m[0m
+[  45% ] [90m[1m_update_scan_actions[22m | LimboState.svg[39m[0m
+[  45% ] [90m[1m_update_scan_actions[22m | LimboVarAdd.svg[39m[0m
+[  46% ] [90m[1m_update_scan_actions[22m | LimboVarEmpty.svg[39m[0m
+[  46% ] [90m[1m_update_scan_actions[22m | LimboVarError.svg[39m[0m
+[  47% ] [90m[1m_update_scan_actions[22m | LimboVarExists.svg[39m[0m
+[  47% ] [90m[1m_update_scan_actions[22m | LimboVarNotFound.svg[39m[0m
+[  48% ] [90m[1m_update_scan_actions[22m | LimboVarPrivate.svg[39m[0m
+[  48% ] [90m[1m_update_scan_actions[22m | PhantomCameraBtnPrimaryDefault.png[39m[0m
+[  49% ] [90m[1m_update_scan_actions[22m | PhantomCameraBtnPrimaryHover.png[39m[0m
+[  49% ] [90m[1m_update_scan_actions[22m | inventory_container.png[39m[0m
+[  50% ] [90m[1m_update_scan_actions[22m | level_spritesheet.png[39m[0m
+[  50% ] [90m[1m_update_scan_actions[22m | phantom_camera_2d_sprite.png[39m[0m
+[  51% ] [90m[1m_update_scan_actions[22m | player_sprite.svg[39m[0m
+[  51% ] [90m[1m_update_scan_actions[22m | sign_prompt.png[39m[0m
+[  52% ] [90m[1m_update_scan_actions[22m | checker_pattern_dark.png[39m[0m
+[  52% ] [90m[1m_update_scan_actions[22m | target.png[39m[0m
+[  53% ] [90m[1m_update_scan_actions[22m | Nunito-Black.ttf[39m[0m
+[  53% ] [90m[1m_update_scan_actions[22m | Nunito-Regular.ttf[39m[0m
+[  54% ] [90m[1m_update_scan_actions[22m | PriorityOverride.svg[39m[0m
+[  54% ] [90m[1m_update_scan_actions[22m | Camera2DIcon.svg[39m[0m
+[  55% ] [90m[1m_update_scan_actions[22m | Camera3DIcon.svg[39m[0m
+[  56% ] [90m[1m_update_scan_actions[22m | SceneTypesIcon.svg[39m[0m
+[  56% ] [90m[1m_update_scan_actions[22m | Select.svg[39m[0m
+[  57% ] [90m[1m_update_scan_actions[22m | phantom_camera_2d.svg[39m[0m
+[  57% ] [90m[1m_update_scan_actions[22m | phantom_camera_3d.svg[39m[0m
+[  58% ] [90m[1m_update_scan_actions[22m | phantom_camera_camera_3d_resource.svg[39m[0m
+[  58% ] [90m[1m_update_scan_actions[22m | phantom_camera_gizmo.svg[39m[0m
+[  59% ] [90m[1m_update_scan_actions[22m | phantom_camera_glow_logo.png[39m[0m
+[  59% ] [90m[1m_update_scan_actions[22m | phantom_camera_host.svg[39m[0m
+[  60% ] [90m[1m_update_scan_actions[22m | phantom_camera_logo.png[39m[0m
+[  60% ] [90m[1m_update_scan_actions[22m | phantom_camera_noise_emitter_2d.svg[39m[0m
+[  61% ] [90m[1m_update_scan_actions[22m | phantom_camera_noise_emitter_3d.svg[39m[0m
+[  61% ] [90m[1m_update_scan_actions[22m | phantom_camera_noise_emitter_gizmo.svg[39m[0m
+[  62% ] [90m[1m_update_scan_actions[22m | phantom_camera_noise_resource.svg[39m[0m
+[  62% ] [90m[1m_update_scan_actions[22m | phantom_camera_tween.svg[39m[0m
+[  63% ] [90m[1m_update_scan_actions[22m | phantom_camera_tween_director.svg[39m[0m
+[  63% ] [90m[1m_update_scan_actions[22m | phantom_camera_tween_director_resource.svg[39m[0m
+[  64% ] [90m[1m_update_scan_actions[22m | phantom_camera_updater_panel_icon.svg[39m[0m
+[  64% ] [90m[1m_update_scan_actions[22m | warning.svg[39m[0m
+[  65% ] [90m[1m_update_scan_actions[22m | quest_resource.svg[39m[0m
+[  65% ] [90m[1m_update_scan_actions[22m | update.svg[39m[0m
+[  66% ] [90m[1m_update_scan_actions[22m | dungeon_mark.svg[39m[0m
+[  67% ] [90m[1m_update_scan_actions[22m | junction_bold.otf[39m[0m
+[  67% ] [90m[1m_update_scan_actions[22m | knewave_regular.ttf[39m[0m
+[  68% ] [90m[1m_update_scan_actions[22m | agent_bobby.png[39m[0m
+[  68% ] [90m[1m_update_scan_actions[22m | agent_charger.png[39m[0m
+[  69% ] [90m[1m_update_scan_actions[22m | agent_combo.png[39m[0m
+[  69% ] [90m[1m_update_scan_actions[22m | agent_demon.png[39m[0m
+[  70% ] [90m[1m_update_scan_actions[22m | agent_imp.png[39m[0m
+[  70% ] [90m[1m_update_scan_actions[22m | agent_junior_pieces.png[39m[0m
+[  71% ] [90m[1m_update_scan_actions[22m | agent_melee_nuanced.png[39m[0m
+[  71% ] [90m[1m_update_scan_actions[22m | agent_melee_simple.png[39m[0m
+[  72% ] [90m[1m_update_scan_actions[22m | agent_ranged.png[39m[0m
+[  72% ] [90m[1m_update_scan_actions[22m | agent_skirmisher.png[39m[0m
+[  73% ] [90m[1m_update_scan_actions[22m | agent_summoner.png[39m[0m
+[  73% ] [90m[1m_update_scan_actions[22m | arrow_left.png[39m[0m
+[  74% ] [90m[1m_update_scan_actions[22m | arrow_right.png[39m[0m
+[  74% ] [90m[1m_update_scan_actions[22m | dummy.png[39m[0m
+[  75% ] [90m[1m_update_scan_actions[22m | env_clouds.png[39m[0m
+[  75% ] [90m[1m_update_scan_actions[22m | env_gong.png[39m[0m
+[  76% ] [90m[1m_update_scan_actions[22m | env_ground.png[39m[0m
+[  76% ] [90m[1m_update_scan_actions[22m | env_plants.png[39m[0m
+[  77% ] [90m[1m_update_scan_actions[22m | env_rocks.png[39m[0m
+[  78% ] [90m[1m_update_scan_actions[22m | fireball.png[39m[0m
+[  78% ] [90m[1m_update_scan_actions[22m | fx.png[39m[0m
+[  79% ] [90m[1m_update_scan_actions[22m | hp_bar.png[39m[0m
+[  79% ] [90m[1m_update_scan_actions[22m | hp_over.png[39m[0m
+[  80% ] [90m[1m_update_scan_actions[22m | hp_under.png[39m[0m
+[  80% ] [90m[1m_update_scan_actions[22m | icon.svg[39m[0m
+[  81% ] [90m[1m_update_scan_actions[22m | logo.png[39m[0m
+[  81% ] [90m[1m_update_scan_actions[22m | shadow.png[39m[0m
+[  82% ] [90m[1m_update_scan_actions[22m | smoke.png[39m[0m
+[  82% ] [90m[1m_update_scan_actions[22m | weapon_ninja_star.png[39m[0m
+[  83% ] [90m[1m_update_scan_actions[22m | battle-after-restart.png[39m[0m
+[  83% ] [90m[1m_update_scan_actions[22m | battle-before-restart.png[39m[0m
+[  84% ] [90m[1m_update_scan_actions[22m | ios-loading-blocker.png[39m[0m
+[  84% ] [90m[1m_update_scan_actions[22m | shop-purchase.png[39m[0m
+[  85% ] [90m[1m_update_scan_actions[22m | town.png[39m[0m
+[  85% ] [90m[1m_update_scan_actions[22m | victory-return.png[39m[0m
+[  86% ] [90m[1m_update_scan_actions[22m | main.png[39m[0m
+[  86% ] [90m[1m_update_scan_actions[22m | dungeon-compact.png[39m[0m
+[  87% ] [90m[1m_update_scan_actions[22m | dungeon-wide.png[39m[0m
+[  87% ] [90m[1m_update_scan_actions[22m | loading-failure.png[39m[0m
+[  88% ] [90m[1m_update_scan_actions[22m | walk.png[39m[0m
+[  89% ] [90m[1m_update_scan_actions[22m | banana.svg[39m[0m
+[  89% ] [90m[1m_update_scan_actions[22m | circle_white.svg[39m[0m
+[  90% ] [90m[1m_update_scan_actions[22m | nest.svg[39m[0m
+[  90% ] [90m[1m_update_scan_actions[22m | cooldown_overlay.png[39m[0m
+[  91% ] [90m[1m_update_scan_actions[22m | enchant-red-3.png[39m[0m
+[  91% ] [90m[1m_update_scan_actions[22m | fireball-eerie-2.png[39m[0m
+[  92% ] [90m[1m_update_scan_actions[22m | heal-jade-2.png[39m[0m
+[  92% ] [90m[1m_update_scan_actions[22m | white_rectangle.svg[39m[0m
+[  93% ] [90m[1m_update_scan_actions[22m | break.png[39m[0m
+[  93% ] [90m[1m_update_scan_actions[22m | hit.png[39m[0m
+[  94% ] [90m[1m_update_scan_actions[22m | idle.png[39m[0m
+[  94% ] [90m[1m_update_scan_actions[22m | checkpoint_flag_out.png[39m[0m
+[  95% ] [90m[1m_update_scan_actions[22m | checkpoint_idle.png[39m[0m
+[  95% ] [90m[1m_update_scan_actions[22m | checkpoint_no_flag.png[39m[0m
+[  96% ] [90m[1m_update_scan_actions[22m | box.png[39m[0m
+[  96% ] [90m[1m_update_scan_actions[22m | full.png[39m[0m
+[  97% ] [90m[1m_update_scan_actions[22m | green.png[39m[0m
+[  97% ] [90m[1m_update_scan_actions[22m | terrain_tiles.png[39m[0m
+[  98% ] [90m[1m_update_scan_actions[22m | smoke.dialogue[39m[0m
+[  98% ] [90m[1m_update_scan_actions[22m | icon.svg[39m[0m
+[92m[ DONE ][39m [1m_update_scan_actions[22m
+[0m
+[   0% ] [90m[1mreimport[22m | Started (Re)Importing Assets (145 steps)[39m[0m
+[   0% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[   0% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[   1% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[   2% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[   2% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[   3% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[   4% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[   4% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[   5% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[   6% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[   6% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[   7% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[   8% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[   8% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[   9% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  10% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  10% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  11% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  12% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  13% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  13% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  14% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  15% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  15% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  16% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  17% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  17% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  18% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  19% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  19% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  20% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  21% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  21% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  22% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  23% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  23% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  24% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  25% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  26% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  26% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  27% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  28% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  28% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  29% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  30% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  30% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  31% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  32% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  32% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  33% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  34% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  34% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  35% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  36% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  36% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  37% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  38% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  39% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  39% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  40% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  41% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  41% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  42% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  43% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  43% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  44% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  45% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  45% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  46% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  47% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  47% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  48% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  49% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  50% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  50% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  51% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  52% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  52% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  53% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  54% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  54% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  55% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  56% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  56% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  57% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  58% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  58% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  59% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  60% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  60% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  61% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  62% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  63% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  63% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  64% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  65% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  65% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  66% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  67% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  67% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  68% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  69% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  69% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  70% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  71% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  71% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  72% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  73% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  73% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  74% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  75% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  76% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  76% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  77% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  78% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  78% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  79% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  80% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  80% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  81% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  82% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  82% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  83% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  84% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  84% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  85% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  86% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  86% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  87% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  88% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  89% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  89% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  90% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  91% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  91% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  92% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  93% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  93% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  94% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  95% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  95% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  96% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  97% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  97% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  98% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[   0% ] [90m[1mreimport[22m | Executing pre-reimport operations...[39m[0m
+[   0% ] [90m[1mreimport[22m | smoke.dialogue[39m[0m
+[   0% ] [90m[1mreimport[22m | smoke.dialogue[39m[0m
+[   1% ] [90m[1mreimport[22m | knewave_regular.ttf[39m[0m
+[   2% ] [90m[1mreimport[22m | smoke.dialogue[39m[0m
+[   2% ] [90m[1mreimport[22m | knewave_regular.ttf[39m[0m
+[   3% ] [90m[1mreimport[22m | junction_bold.otf[39m[0m
+[   4% ] [90m[1mreimport[22m | agent_melee_simple.png[39m[0m
+[   4% ] [90m[1mreimport[22m | agent_ranged.png[39m[0m
+[   5% ] [90m[1mreimport[22m | agent_skirmisher.png[39m[0m
+[   6% ] [90m[1mreimport[22m | agent_summoner.png[39m[0m
+[   6% ] [90m[1mreimport[22m | arrow_left.png[39m[0m
+[   7% ] [90m[1mreimport[22m | arrow_right.png[39m[0m
+[   8% ] [90m[1mreimport[22m | dummy.png[39m[0m
+[   8% ] [90m[1mreimport[22m | env_clouds.png[39m[0m
+[   9% ] [90m[1mreimport[22m | env_gong.png[39m[0m
+[  10% ] [90m[1mreimport[22m | env_ground.png[39m[0m
+[  10% ] [90m[1mreimport[22m | env_plants.png[39m[0m
+[  11% ] [90m[1mreimport[22m | env_rocks.png[39m[0m
+[  12% ] [90m[1mreimport[22m | fireball.png[39m[0m
+[  13% ] [90m[1mreimport[22m | fx.png[39m[0m
+[  13% ] [90m[1mreimport[22m | hp_bar.png[39m[0m
+[  14% ] [90m[1mreimport[22m | hp_over.png[39m[0m
+[  15% ] [90m[1mreimport[22m | checker_pattern_dark.png[39m[0m
+[  15% ] [90m[1mreimport[22m | target.png[39m[0m
+[  16% ] [90m[1mreimport[22m | phantom_camera_camera_3d_resource.svg[39m[0m
+[  17% ] [90m[1mreimport[22m | phantom_camera_glow_logo.png[39m[0m
+[  17% ] [90m[1mreimport[22m | phantom_camera_noise_resource.svg[39m[0m
+[  18% ] [90m[1mreimport[22m | phantom_camera_tween.svg[39m[0m
+[  19% ] [90m[1mreimport[22m | phantom_camera_tween_director_resource.svg[39m[0m
+[  19% ] [90m[1mreimport[22m | quest_resource.svg[39m[0m
+[  20% ] [90m[1mreimport[22m | update.svg[39m[0m
+[  21% ] [90m[1mreimport[22m | dungeon_mark.svg[39m[0m
+[  21% ] [90m[1mreimport[22m | agent_bobby.png[39m[0m
+[  22% ] [90m[1mreimport[22m | agent_charger.png[39m[0m
+[  23% ] [90m[1mreimport[22m | agent_combo.png[39m[0m
+[  23% ] [90m[1mreimport[22m | agent_demon.png[39m[0m
+[  24% ] [90m[1mreimport[22m | agent_imp.png[39m[0m
+[  25% ] [90m[1mreimport[22m | agent_junior_pieces.png[39m[0m
+[  26% ] [90m[1mreimport[22m | agent_melee_nuanced.png[39m[0m
+[  26% ] [90m[1mreimport[22m | circle_white.svg[39m[0m
+[  27% ] [90m[1mreimport[22m | nest.svg[39m[0m
+[  28% ] [90m[1mreimport[22m | cooldown_overlay.png[39m[0m
+[  28% ] [90m[1mreimport[22m | enchant-red-3.png[39m[0m
+[  29% ] [90m[1mreimport[22m | fireball-eerie-2.png[39m[0m
+[  30% ] [90m[1mreimport[22m | heal-jade-2.png[39m[0m
+[  30% ] [90m[1mreimport[22m | white_rectangle.svg[39m[0m
+[  31% ] [90m[1mreimport[22m | break.png[39m[0m
+[  32% ] [90m[1mreimport[22m | hit.png[39m[0m
+[  32% ] [90m[1mreimport[22m | idle.png[39m[0m
+[  33% ] [90m[1mreimport[22m | checkpoint_flag_out.png[39m[0m
+[  34% ] [90m[1mreimport[22m | checkpoint_idle.png[39m[0m
+[  34% ] [90m[1mreimport[22m | checkpoint_no_flag.png[39m[0m
+[  35% ] [90m[1mreimport[22m | box.png[39m[0m
+[  36% ] [90m[1mreimport[22m | full.png[39m[0m
+[  36% ] [90m[1mreimport[22m | green.png[39m[0m
+[  37% ] [90m[1mreimport[22m | terrain_tiles.png[39m[0m
+[  38% ] [90m[1mreimport[22m | icon.svg[39m[0m
+[  39% ] [90m[1mreimport[22m | hp_under.png[39m[0m
+[  39% ] [90m[1mreimport[22m | icon.svg[39m[0m
+[  40% ] [90m[1mreimport[22m | logo.png[39m[0m
+[  41% ] [90m[1mreimport[22m | shadow.png[39m[0m
+[  41% ] [90m[1mreimport[22m | smoke.png[39m[0m
+[  42% ] [90m[1mreimport[22m | weapon_ninja_star.png[39m[0m
+[  43% ] [90m[1mreimport[22m | battle-after-restart.png[39m[0m
+[  43% ] [90m[1mreimport[22m | battle-before-restart.png[39m[0m
+[  44% ] [90m[1mreimport[22m | ios-loading-blocker.png[39m[0m
+[  45% ] [90m[1mreimport[22m | shop-purchase.png[39m[0m
+[  45% ] [90m[1mreimport[22m | town.png[39m[0m
+[  46% ] [90m[1mreimport[22m | victory-return.png[39m[0m
+[  47% ] [90m[1mreimport[22m | main.png[39m[0m
+[  47% ] [90m[1mreimport[22m | dungeon-compact.png[39m[0m
+[  48% ] [90m[1mreimport[22m | dungeon-wide.png[39m[0m
+[  49% ] [90m[1mreimport[22m | loading-failure.png[39m[0m
+[  50% ] [90m[1mreimport[22m | walk.png[39m[0m
+[  50% ] [90m[1mreimport[22m | banana.svg[39m[0m
+[  51% ] [90m[1mreimport[22m | BTCheckAgentProperty.svg[39m[0m
+[  52% ] [90m[1mreimport[22m | BTCheckTrigger.svg[39m[0m
+[  52% ] [90m[1mreimport[22m | BTCheckVar.svg[39m[0m
+[  53% ] [90m[1mreimport[22m | BTComment.svg[39m[0m
+[  54% ] [90m[1mreimport[22m | BTCondition.svg[39m[0m
+[  54% ] [90m[1mreimport[22m | BTConsolePrint.svg[39m[0m
+[  55% ] [90m[1mreimport[22m | BTCooldown.svg[39m[0m
+[  56% ] [90m[1mreimport[22m | BTDecorator.svg[39m[0m
+[  56% ] [90m[1mreimport[22m | BTDelay.svg[39m[0m
+[  57% ] [90m[1mreimport[22m | BTDynamicSelector.svg[39m[0m
+[  58% ] [90m[1mreimport[22m | BTDynamicSequence.svg[39m[0m
+[  58% ] [90m[1mreimport[22m | BTEvaluateExpression.svg[39m[0m
+[  59% ] [90m[1mreimport[22m | BTFail.svg[39m[0m
+[  60% ] [90m[1mreimport[22m | BTForEach.svg[39m[0m
+[  60% ] [90m[1mreimport[22m | BTInvert.svg[39m[0m
+[  61% ] [90m[1mreimport[22m | BTNewScope.svg[39m[0m
+[  62% ] [90m[1mreimport[22m | BTParallel.svg[39m[0m
+[  63% ] [90m[1mreimport[22m | BTPauseAnimation.svg[39m[0m
+[  63% ] [90m[1mreimport[22m | dialogue_actionable_2d.svg[39m[0m
+[  64% ] [90m[1mreimport[22m | dialogue_actionable_3d.svg[39m[0m
+[  65% ] [90m[1mreimport[22m | dialogue_label.svg[39m[0m
+[  65% ] [90m[1mreimport[22m | dialogue_marker_2d.svg[39m[0m
+[  66% ] [90m[1mreimport[22m | dialogue_marker_3d.svg[39m[0m
+[  67% ] [90m[1mreimport[22m | dialogue_responses_menu.svg[39m[0m
+[  67% ] [90m[1mreimport[22m | state_chart_debugger.svg[39m[0m
+[  68% ] [90m[1mreimport[22m | all_of_guard.svg[39m[0m
+[  69% ] [90m[1mreimport[22m | any_of_guard.svg[39m[0m
+[  69% ] [90m[1mreimport[22m | expression_guard.svg[39m[0m
+[  70% ] [90m[1mreimport[22m | guard.svg[39m[0m
+[  71% ] [90m[1mreimport[22m | not_guard.svg[39m[0m
+[  71% ] [90m[1mreimport[22m | state_is_active_guard.svg[39m[0m
+[  72% ] [90m[1mreimport[22m | BehaviorTreeView.svg[39m[0m
+[  73% ] [90m[1mreimport[22m | BlackboardPlan.svg[39m[0m
+[  73% ] [90m[1mreimport[22m | BTAction.svg[39m[0m
+[  74% ] [90m[1mreimport[22m | BTAwaitAnimation.svg[39m[0m
+[  75% ] [90m[1mreimport[22m | BTCallMethod.svg[39m[0m
+[  76% ] [90m[1mreimport[22m | BTWait.svg[39m[0m
+[  76% ] [90m[1mreimport[22m | BTWaitTicks.svg[39m[0m
+[  77% ] [90m[1mreimport[22m | LimboEditBlackboard.svg[39m[0m
+[  78% ] [90m[1mreimport[22m | LimboExtraBlackboard.svg[39m[0m
+[  78% ] [90m[1mreimport[22m | LimboExtraVariable.svg[39m[0m
+[  79% ] [90m[1mreimport[22m | LimboHSM.svg[39m[0m
+[  80% ] [90m[1mreimport[22m | LimboState.svg[39m[0m
+[  80% ] [90m[1mreimport[22m | LimboVarAdd.svg[39m[0m
+[  81% ] [90m[1mreimport[22m | LimboVarEmpty.svg[39m[0m
+[  82% ] [90m[1mreimport[22m | LimboVarError.svg[39m[0m
+[  82% ] [90m[1mreimport[22m | LimboVarExists.svg[39m[0m
+[  83% ] [90m[1mreimport[22m | LimboVarNotFound.svg[39m[0m
+[  84% ] [90m[1mreimport[22m | LimboVarPrivate.svg[39m[0m
+[  84% ] [90m[1mreimport[22m | inventory_container.png[39m[0m
+[  85% ] [90m[1mreimport[22m | level_spritesheet.png[39m[0m
+[  86% ] [90m[1mreimport[22m | phantom_camera_2d_sprite.png[39m[0m
+[  86% ] [90m[1mreimport[22m | player_sprite.svg[39m[0m
+[  87% ] [90m[1mreimport[22m | sign_prompt.png[39m[0m
+[  88% ] [90m[1mreimport[22m | BTPlayAnimation.svg[39m[0m
+[  89% ] [90m[1mreimport[22m | BTPlayer.svg[39m[0m
+[  89% ] [90m[1mreimport[22m | BTProbability.svg[39m[0m
+[  90% ] [90m[1mreimport[22m | BTProbabilitySelector.svg[39m[0m
+[  91% ] [90m[1mreimport[22m | BTRandomSelector.svg[39m[0m
+[  91% ] [90m[1mreimport[22m | BTRandomSequence.svg[39m[0m
+[  92% ] [90m[1mreimport[22m | BTRandomWait.svg[39m[0m
+[  93% ] [90m[1mreimport[22m | BTRepeat.svg[39m[0m
+[  93% ] [90m[1mreimport[22m | BTRepeatUntilFailure.svg[39m[0m
+[  94% ] [90m[1mreimport[22m | BTRepeatUntilSuccess.svg[39m[0m
+[  95% ] [90m[1mreimport[22m | BTRunLimit.svg[39m[0m
+[  95% ] [90m[1mreimport[22m | BTSelector.svg[39m[0m
+[  96% ] [90m[1mreimport[22m | BTSequence.svg[39m[0m
+[  97% ] [90m[1mreimport[22m | BTSetAgentProperty.svg[39m[0m
+[  97% ] [90m[1mreimport[22m | BTSetVar.svg[39m[0m
+[  97% ] [90m[1mreimport[22m | BTSetVar.svg[39m[0m
+[  98% ] [90m[1mreimport[22m | BTState.svg[39m[0m
+[  99% ] [90m[1mreimport[22m | Finalizing Asset Import...[39m[0m
+[92m[ DONE ][39m [1mreimport[22m
+[0m
+[   0% ] [90m[1mreimport[22m | Started (Re)Importing Assets (145 steps)[39m[0m
+[   0% ] [90m[1mreimport[22m | Executing post-reimport operations...[39m[0m
+[92m[ DONE ][39m [1mreimport[22m
+[0m
+[   0% ] [90m[1mloading_editor_layout[22m | Started Loading editor (5 steps)[39m[0m
+[   0% ] [90m[1mloading_editor_layout[22m | Loading editor layout...[39m[0m
+[  16% ] [90m[1mloading_editor_layout[22m | Loading docks...[39m[0m
+[92m[ DONE ][39m [1mloading_editor_layout[22m
+[0m
+
+EXIT_CODE: 0

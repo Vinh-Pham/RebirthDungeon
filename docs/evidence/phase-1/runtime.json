@@ -1,0 +1,182 @@
+{
+  "compact": {
+    "checked": {
+      "interactive": 3,
+      "text_controls": 6
+    },
+    "counts": {},
+    "focus": {
+      "entry": "UI/UIHost/Layout/ModeHost/ModeView/Actions/@Button@6",
+      "focusable": 3,
+      "reachable": 3
+    },
+    "issues": [],
+    "truncated": false,
+    "viewport": [
+      960,
+      540
+    ]
+  },
+  "expanded": {
+    "checked": {
+      "interactive": 3,
+      "text_controls": 6
+    },
+    "counts": {},
+    "focus": {
+      "entry": "UI/UIHost/Layout/ModeHost/ModeView/Actions/@Button@6",
+      "focusable": 3,
+      "reachable": 3
+    },
+    "issues": [],
+    "truncated": false,
+    "viewport": [
+      1560,
+      877
+    ]
+  },
+  "controller_focus": {
+    "control_count": 2,
+    "controls": [
+      {
+        "class": "Button",
+        "path": "UI/UIHost/Layout/ModeHost/ModeView/Actions/@Button@4",
+        "rect": [
+          500,
+          383,
+          280,
+          48
+        ],
+        "text": "Open dungeon fixture"
+      },
+      {
+        "class": "Button",
+        "focused": true,
+        "path": "UI/UIHost/Layout/ModeHost/ModeView/Actions/@Button@5",
+        "rect": [
+          500,
+          441,
+          280,
+          48
+        ],
+        "text": "Back to menu"
+      }
+    ],
+    "focus": "UI/UIHost/Layout/ModeHost/ModeView/Actions/@Button@5",
+    "hash": "bf20fa87bb717431ed44dc2f2cd93b46",
+    "scene": "Main",
+    "viewport": [
+      1280,
+      720
+    ],
+    "windows": []
+  },
+  "navigation": {
+    "asserts": [
+      {
+        "detail": "observation().mode == 0 and observation().revision == 8 and observation().session_id == 1 -> true",
+        "status": "pass",
+        "type": "expr"
+      },
+      {
+        "detail": "found 'Rebirth Dungeon' on screen",
+        "status": "pass",
+        "type": "screen_text"
+      }
+    ],
+    "failed": 0,
+    "mode": "steps",
+    "name": "phase1-shell-navigation",
+    "note": "steps suite (semantic, not frame-exact): no perf capture; game left FROZEN — time_control op=unfreeze to resume",
+    "ok": true,
+    "passed": 2,
+    "report": {
+      "beckett": "1.15.0",
+      "engine": "4.7.2-stable (official)",
+      "failures": [],
+      "repro": {
+        "mode": "steps",
+        "rerun": "play_scene scene=\"res://scenes/main.tscn\" -> wait_until condition=game_connected -> playtest op=run name=\"phase1-shell-navigation\"",
+        "scene": "res://scenes/main.tscn",
+        "steps_completed": 7,
+        "steps_total": 7,
+        "suite_file": "res://tests/playtests/phase1-shell-navigation.json"
+      },
+      "suite": "phase1-shell-navigation",
+      "totals": {
+        "failed": 0,
+        "passed": 2,
+        "skipped": 0
+      },
+      "verdict": "pass",
+      "when": "2026-09-11 07:47:57",
+      "written_to": "res://tests/playtests/phase1-shell-navigation.report.json"
+    },
+    "skipped": 0,
+    "step_results": [
+      {
+        "detail": "dispatched 2 event(s)",
+        "ok": true,
+        "op": "input",
+        "step": 0
+      },
+      {
+        "detail": "clicked UI/UIHost/Layout/ModeHost/ModeView/Actions/@Button@4",
+        "ok": true,
+        "op": "click",
+        "step": 1
+      },
+      {
+        "detail": "clicked UI/UIHost/Layout/ModeHost/ModeView/Actions/@Button@6",
+        "ok": true,
+        "op": "click",
+        "step": 2
+      },
+      {
+        "detail": "clicked UI/UIHost/Layout/ModeHost/ModeView/Actions/@Button@9",
+        "ok": true,
+        "op": "click",
+        "step": 3
+      },
+      {
+        "detail": "clicked UI/UIHost/Layout/ModeHost/ModeView/Actions/@Button@13",
+        "ok": true,
+        "op": "click",
+        "step": 4
+      },
+      {
+        "detail": "clicked UI/UIHost/Layout/ModeHost/ModeView/Actions/@Button@15",
+        "ok": true,
+        "op": "click",
+        "step": 5
+      },
+      {
+        "detail": "clicked UI/UIHost/Layout/ModeHost/ModeView/Actions/@Button@18",
+        "ok": true,
+        "op": "click",
+        "step": 6
+      }
+    ],
+    "steps_completed": 7,
+    "steps_failed": false,
+    "steps_total": 7
+  },
+  "final_logs": {
+    "content": [
+      {
+        "type": "text",
+        "text": "no log entries at level=error (buffer=0, dropped=0)"
+      }
+    ],
+    "isError": false
+  },
+  "manual_steps": [
+    "Enter activated menu and reached town; pointer click reached dungeon.",
+    "Synthetic screen touch at the menu button reached town.",
+    "Controller A activated battle; Escape returned to menu.",
+    "Controller D-pad down moved focus from dungeon button to Back to menu.",
+    "set_application_focused(false) disabled controls and blocked intents; true restored focus.",
+    "Injected missing mark path blocked loading visibly with repair/retry guidance.",
+    "Embedded logical viewport resize: 960x540 and 1560x877 (expand aspect), no audit issues."
+  ]
+}

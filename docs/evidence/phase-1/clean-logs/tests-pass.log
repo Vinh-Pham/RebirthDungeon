@@ -1,0 +1,11 @@
+$ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/vinhpham/Projects/rebirth-dungeon/build/phase1-clean-copy --script res://tests/run_tests.gd
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+AUTOLOAD: DialogueManager -> res://addons/dialogue_manager/dialogue_manager.gd
+AUTOLOAD: PhantomCameraManager -> res://addons/phantom_camera/scripts/managers/phantom_camera_manager.gd
+AUTOLOAD: QuestSystem -> res://addons/quest_system/quest_manager.gd
+ADDON_SMOKE: PASS
+SHELL_FIXTURE: PASS
+TEST_RESULT: PASS
+
+EXIT_CODE: 0

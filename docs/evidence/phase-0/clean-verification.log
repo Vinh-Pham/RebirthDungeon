@@ -1,0 +1,19 @@
+Fresh project copy excluding .godot and local caches.
+PASS version (exit 0)
+PASS import (exit 0)
+PASS tests-pass (exit 0)
+PASS tests-failure (exit 1)
+PASS runtime-smoke (exit 0)
+PASS pack-0 (exit 0)
+PASS macOS asset exclusions (10 files)
+PASS pack-1 (exit 0)
+PASS Windows Desktop asset exclusions (10 files)
+PASS pack-2 (exit 0)
+PASS Linux asset exclusions (10 files)
+PASS pack-3 (exit 0)
+PASS Android asset exclusions (10 files)
+PASS pack-4 (exit 0)
+PASS iOS asset exclusions (10 files)
+BASELINE_VERIFICATION: PASS
+
+EXIT_CODE: 0

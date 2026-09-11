@@ -1,0 +1,10 @@
+.godot/exported/133200997/export-3ad5c15c4f3250da0cc7c1af1770d85f-main.scn
+.godot/global_script_class_cache.cfg
+.godot/imported/icon.svg-218a8f2b3041327d8a5756f3a245f83b.ctex
+.godot/uid_cache.bin
+addons/beckett/runtime/beckett_autoload.gd.remap
+addons/beckett/runtime/beckett_autoload.gdc
+icon.svg
+icon.svg.import
+project.binary
+scenes/main.tscn.remap

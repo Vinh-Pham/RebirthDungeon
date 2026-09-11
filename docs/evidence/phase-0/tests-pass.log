@@ -1,0 +1,6 @@
+$ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/vinhpham/Projects/rebirth-dungeon --script res://tests/run_tests.gd
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+TEST_RESULT: PASS
+
+EXIT_CODE: 0

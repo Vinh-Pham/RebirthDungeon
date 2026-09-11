@@ -1,0 +1,56 @@
+[gd_scene format=3 uid="uid://dd01vrpwi426p"]
+
+[ext_resource type="Script" uid="uid://idl57ox48w4f" path="res://scripts/application/main.gd" id="1"]
+
+[node name="Main" type="Node" unique_id=999568167]
+script = ExtResource("1")
+
+[node name="UI" type="CanvasLayer" parent="." unique_id=502378997]
+
+[node name="UIHost" type="Control" parent="UI" unique_id=756128139]
+texture_filter = 1
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Background" type="ColorRect" parent="UI/UIHost" unique_id=955669352]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.055, 0.075, 0.11, 1)
+
+[node name="Layout" type="VBoxContainer" parent="UI/UIHost" unique_id=1319623752]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 32.0
+offset_top = 24.0
+offset_right = -32.0
+offset_bottom = -24.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="Mark" type="TextureRect" parent="UI/UIHost/Layout" unique_id=1617580848]
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
+size_flags_horizontal = 4
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ModeHost" type="CenterContainer" parent="UI/UIHost/Layout" unique_id=935242511]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Status" type="Label" parent="UI/UIHost/Layout" unique_id=1608337381]
+layout_mode = 2
+text = "Starting application shell…"
+horizontal_alignment = 1

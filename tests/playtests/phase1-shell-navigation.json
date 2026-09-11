@@ -1,0 +1,54 @@
+{
+	"asserts": [
+		{
+			"condition": "observation().mode == 0 and observation().revision == 8 and observation().session_id == 1",
+			"type": "expr"
+		},
+		{
+			"text": "Rebirth Dungeon",
+			"type": "screen_text"
+		}
+	],
+	"beckett": "1.15.0",
+	"created": "2026-09-11 07:47:20",
+	"engine": "4.7.2-stable (official)",
+	"name": "phase1-shell-navigation",
+	"scene": "res://scenes/main.tscn",
+	"schema_version": 1,
+	"steps": [
+		{
+			"input": {
+				"events": [
+					{
+						"keycode": "Enter",
+						"pressed": true,
+						"type": "key"
+					},
+					{
+						"keycode": "Enter",
+						"pressed": false,
+						"type": "key"
+					}
+				]
+			}
+		},
+		{
+			"click": "Open dungeon fixture"
+		},
+		{
+			"click": "Open battle fixture"
+		},
+		{
+			"click": "Return to dungeon fixture"
+		},
+		{
+			"click": "Open results fixture"
+		},
+		{
+			"click": "Return to town fixture"
+		},
+		{
+			"click": "Back to menu"
+		}
+	]
+}

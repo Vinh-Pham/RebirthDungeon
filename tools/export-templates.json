@@ -1,0 +1,27 @@
+{
+  "editor_version": "4.7.2.stable.official.ed1daf0bf",
+  "editor_commit": "ed1daf0bf001b61586d9930840f2f1394092c079",
+  "template_version": "4.7.2.stable",
+  "archive": "Godot_v4.7.2-stable_export_templates.tpz",
+  "installation": "Godot user data directory/export_templates/4.7.2.stable",
+  "required_files": {
+    "macOS": [
+      "macos.zip"
+    ],
+    "Windows Desktop": [
+      "windows_debug_x86_64.exe",
+      "windows_release_x86_64.exe"
+    ],
+    "Linux": [
+      "linux_debug.x86_64",
+      "linux_release.x86_64"
+    ],
+    "Android": [
+      "android_debug.apk",
+      "android_release.apk"
+    ],
+    "iOS": [
+      "ios.zip"
+    ]
+  }
+}

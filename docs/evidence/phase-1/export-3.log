@@ -1,0 +1,23 @@
+$ /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --export-debug Android build/android/phase1.apk
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[   0% ] [90m[1mfirst_scan_filesystem[22m | Started Project initialization (5 steps)[39m[0m
+[   0% ] [90m[1mfirst_scan_filesystem[22m | Scanning file structure...[39m[0m
+[  16% ] [90m[1mfirst_scan_filesystem[22m | Loading global class names...[39m[0m
+[  33% ] [90m[1mfirst_scan_filesystem[22m | Verifying GDExtensions...[39m[0m
+[  50% ] [90m[1mfirst_scan_filesystem[22m | Creating autoload scripts...[39m[0m
+[  66% ] [90m[1mfirst_scan_filesystem[22m | Initializing plugins...[39m[0m
+[  83% ] [90m[1mfirst_scan_filesystem[22m | Starting file scan...[39m[0m
+[92m[ DONE ][39m [1mfirst_scan_filesystem[22m
+[0m
+ERROR: Cannot export project with preset "Android" due to configuration errors:
+No export template found at the expected path:
+/Users/vinhpham/Library/Application Support/Godot/export_templates/4.7.2.stable/android_debug.apk
+No export template found at the expected path:
+/Users/vinhpham/Library/Application Support/Godot/export_templates/4.7.2.stable/android_release.apk
+
+   at: _fs_changed (editor/editor_node.cpp:1401)
+ERROR: Project export for preset "Android" failed.
+   at: _fs_changed (editor/editor_node.cpp:1417)
+
+EXIT_CODE: 1

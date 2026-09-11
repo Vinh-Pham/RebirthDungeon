@@ -1,0 +1,358 @@
+{
+  "engine": {
+    "exit_code": 0,
+    "output": "4.7.2.stable.official.ed1daf0bf"
+  },
+  "host": {
+    "system": "Darwin",
+    "machine": "arm64",
+    "release": "27.0.0",
+    "macos": "27.0"
+  },
+  "addons": {
+    "beckett": {
+      "version": "1.15.0"
+    },
+    "godot_state_charts": {
+      "version": "0.22.5"
+    },
+    "dialogue_manager": {
+      "version": "4.1.0"
+    },
+    "phantom_camera": {
+      "version": "0.11.0.3"
+    },
+    "quest_system": {
+      "version": "2.0.2"
+    },
+    "limboai": {
+      "version": "v1.8.1"
+    }
+  },
+  "native_libraries": {
+    "macos.debug": {
+      "exists": true,
+      "files": [
+        {
+          "path": "addons/limboai/bin/liblimboai.macos.editor.framework/liblimboai.macos.editor",
+          "bytes": 7406856,
+          "sha256": "bb440496a738242d0ca6e3b306da192510dcbdcc125077cd4289d1e4e80a4159",
+          "format": "Mach-O universal binary with 2 architectures: [x86_64:Mach-O 64-bit dynamically linked shared library x86_64] [arm64]\n/Users/vinhpham/Projects/rebirth-dungeon/addons/limboai/bin/liblimboai.macos.editor.framework/liblimboai.macos.editor (for architecture x86_64):\tMach-O 64-bit dynamically linked shared library x86_64\n/Users/vinhpham/Projects/rebirth-dungeon/addons/limboai/bin/liblimboai.macos.editor.framework/liblimboai.macos.editor (for architecture arm64):\tMach-O 64-bit dynamically linked shared library arm64"
+        }
+      ]
+    },
+    "macos.release": {
+      "exists": true,
+      "files": [
+        {
+          "path": "addons/limboai/bin/liblimboai.macos.template_release.framework/liblimboai.macos.template_release",
+          "bytes": 4050368,
+          "sha256": "c4c8b03f0fdababe06a541918a7f9c0b02d3f5f5e6959a0bb3a222cc5bec8c9e",
+          "format": "Mach-O universal binary with 2 architectures: [x86_64:Mach-O 64-bit dynamically linked shared library x86_64] [arm64]\n/Users/vinhpham/Projects/rebirth-dungeon/addons/limboai/bin/liblimboai.macos.template_release.framework/liblimboai.macos.template_release (for architecture x86_64):\tMach-O 64-bit dynamically linked shared library x86_64\n/Users/vinhpham/Projects/rebirth-dungeon/addons/limboai/bin/liblimboai.macos.template_release.framework/liblimboai.macos.template_release (for architecture arm64):\tMach-O 64-bit dynamically linked shared library arm64"
+        }
+      ]
+    },
+    "windows.debug.x86_32": {
+      "exists": false,
+      "files": []
+    },
+    "windows.release.x86_32": {
+      "exists": false,
+      "files": []
+    },
+    "windows.debug.x86_64": {
+      "exists": true,
+      "files": [
+        {
+          "path": "addons/limboai/bin/liblimboai.windows.editor.x86_64.dll",
+          "bytes": 5430784,
+          "sha256": "f9e758ebf088da12e71dbe330572fb55f186619bda8b144b4d8e822569161b97",
+          "format": "PE32+ executable (DLL) (console) x86-64 (stripped to external PDB), for MS Windows"
+        }
+      ]
+    },
+    "windows.release.x86_64": {
+      "exists": true,
+      "files": [
+        {
+          "path": "addons/limboai/bin/liblimboai.windows.template_release.x86_64.dll",
+          "bytes": 3500544,
+          "sha256": "5095e3e3daff5f441f58afb3b482de839c2b6d00b30668c59b3003848234f4c2",
+          "format": "PE32+ executable (DLL) (console) x86-64 (stripped to external PDB), for MS Windows"
+        }
+      ]
+    },
+    "linux.debug.x86_64": {
+      "exists": true,
+      "files": [
+        {
+          "path": "addons/limboai/bin/liblimboai.linux.editor.x86_64.so",
+          "bytes": 6050136,
+          "sha256": "48bf57a5b1c05288ea07e7809bfafd8fe77534ccd432b38167829235b1c3585c",
+          "format": "ELF 64-bit LSB shared object, x86-64, version 1 (SYSV), dynamically linked, stripped"
+        }
+      ]
+    },
+    "linux.release.x86_64": {
+      "exists": true,
+      "files": [
+        {
+          "path": "addons/limboai/bin/liblimboai.linux.template_release.x86_64.so",
+          "bytes": 4059544,
+          "sha256": "693c244c66d41c2d5c073a557b67ed2b267013fd0b3728c01754cf9c1f74b405",
+          "format": "ELF 64-bit LSB shared object, x86-64, version 1 (SYSV), dynamically linked, stripped"
+        }
+      ]
+    },
+    "linux.debug.arm64": {
+      "exists": true,
+      "files": [
+        {
+          "path": "addons/limboai/bin/liblimboai.linux.editor.arm64.so",
+          "bytes": 5960088,
+          "sha256": "926866f927036a0d9f734694005595be7d4235447e43b4b3f8c1a33008f3353c",
+          "format": "ELF 64-bit LSB shared object, ARM aarch64, version 1 (SYSV), dynamically linked, stripped"
+        }
+      ]
+    },
+    "linux.release.arm64": {
+      "exists": true,
+      "files": [
+        {
+          "path": "addons/limboai/bin/liblimboai.linux.template_release.arm64.so",
+          "bytes": 4006352,
+          "sha256": "87d37f1279c8096468ba38d7bf3f883dcc0469627fd21548133eacc7fdd430fe",
+          "format": "ELF 64-bit LSB shared object, ARM aarch64, version 1 (SYSV), dynamically linked, stripped"
+        }
+      ]
+    },
+    "linux.debug.rv64": {
+      "exists": false,
+      "files": []
+    },
+    "linux.release.rv64": {
+      "exists": false,
+      "files": []
+    },
+    "android.debug.arm64": {
+      "exists": true,
+      "files": [
+        {
+          "path": "addons/limboai/bin/liblimboai.android.editor.arm64.so",
+          "bytes": 3877648,
+          "sha256": "948a2ba1121c877147845f9bea35aa36ebb4d71b9553cef1311a46d9cd2e6448",
+          "format": "ELF 64-bit LSB shared object, ARM aarch64, version 1 (SYSV), dynamically linked, stripped"
+        }
+      ]
+    },
+    "android.release.arm64": {
+      "exists": true,
+      "files": [
+        {
+          "path": "addons/limboai/bin/liblimboai.android.template_release.arm64.so",
+          "bytes": 2247768,
+          "sha256": "d54ee93d965e125a79b01446e2d9a86bfed7d8234f56e8f605206d8aba354e2f",
+          "format": "ELF 64-bit LSB shared object, ARM aarch64, version 1 (SYSV), dynamically linked, stripped"
+        }
+      ]
+    },
+    "android.debug.arm32": {
+      "exists": true,
+      "files": [
+        {
+          "path": "addons/limboai/bin/liblimboai.android.editor.arm32.so",
+          "bytes": 3770624,
+          "sha256": "62ce86e60785ed3d99750c37202cd9f2a2ec5c6d26cbadc7467fbf6fbae68d2c",
+          "format": "ELF 32-bit LSB shared object, ARM, EABI5 version 1 (SYSV), dynamically linked, stripped"
+        }
+      ]
+    },
+    "android.release.arm32": {
+      "exists": true,
+      "files": [
+        {
+          "path": "addons/limboai/bin/liblimboai.android.template_release.arm32.so",
+          "bytes": 1962764,
+          "sha256": "994ac88dda9e50ef4a5b3dbb2c64c5cc7f3f4d91719595dd1c1bc96d03e0fca8",
+          "format": "ELF 32-bit LSB shared object, ARM, EABI5 version 1 (SYSV), dynamically linked, stripped"
+        }
+      ]
+    },
+    "android.debug.x86_64": {
+      "exists": true,
+      "files": [
+        {
+          "path": "addons/limboai/bin/liblimboai.android.editor.x86_64.so",
+          "bytes": 3810272,
+          "sha256": "25aaece70ee23771ef9065b0f06dc3a9b25c2e83eaf79482e519bdba87ff0d98",
+          "format": "ELF 64-bit LSB shared object, x86-64, version 1 (SYSV), dynamically linked, stripped"
+        }
+      ]
+    },
+    "android.release.x86_64": {
+      "exists": true,
+      "files": [
+        {
+          "path": "addons/limboai/bin/liblimboai.android.template_release.x86_64.so",
+          "bytes": 2179400,
+          "sha256": "af1b290929e54d1f5d30b1d85f9c59d7ecef5b089ec32373309312628e2b911e",
+          "format": "ELF 64-bit LSB shared object, x86-64, version 1 (SYSV), dynamically linked, stripped"
+        }
+      ]
+    },
+    "android.debug.x86_32": {
+      "exists": true,
+      "files": [
+        {
+          "path": "addons/limboai/bin/liblimboai.android.editor.x86_32.so",
+          "bytes": 4052028,
+          "sha256": "df130e1afd99b979b9dc79cebb6e8db76f3d9ef2d9bc166cf95359b54f6de2d6",
+          "format": "ELF 32-bit LSB shared object, Intel 80386, version 1 (SYSV), dynamically linked, stripped"
+        }
+      ]
+    },
+    "android.release.x86_32": {
+      "exists": true,
+      "files": [
+        {
+          "path": "addons/limboai/bin/liblimboai.android.template_release.x86_32.so",
+          "bytes": 2393592,
+          "sha256": "314eae1c0cb78f946497610c42c6cda9f300952b02fac4352771b2e1558c8c0e",
+          "format": "ELF 32-bit LSB shared object, Intel 80386, version 1 (SYSV), dynamically linked, stripped"
+        }
+      ]
+    },
+    "ios.debug.arm64": {
+      "exists": true,
+      "files": [
+        {
+          "path": "addons/limboai/bin/liblimboai.ios.editor.arm64.dylib",
+          "bytes": 3466880,
+          "sha256": "64816361ccb8a63aaedabc3ba48acfd8f87a51ca4f3ddbb5dc9f5770c1dba452",
+          "format": "Mach-O 64-bit dynamically linked shared library arm64"
+        }
+      ]
+    },
+    "ios.release.arm64": {
+      "exists": true,
+      "files": [
+        {
+          "path": "addons/limboai/bin/liblimboai.ios.template_release.arm64.dylib",
+          "bytes": 1907440,
+          "sha256": "8469e715c2424bd0956db96c9b1bb16d3a86e594947262b89507b4e7a4d6bf62",
+          "format": "Mach-O 64-bit dynamically linked shared library arm64"
+        }
+      ]
+    },
+    "ios.debug.simulator": {
+      "exists": false,
+      "files": []
+    },
+    "ios.release.simulator": {
+      "exists": false,
+      "files": []
+    },
+    "web.debug.wasm32": {
+      "exists": true,
+      "files": [
+        {
+          "path": "addons/limboai/bin/liblimboai.web.editor.wasm32.nothreads.wasm",
+          "bytes": 2706111,
+          "sha256": "b09c7a6dfff073febce95a14a79c30f5a0ad59c7d742a168cc11e65f9d9a76a7",
+          "format": "WebAssembly (wasm) binary module version 0x1 (MVP)"
+        }
+      ]
+    },
+    "web.release.wasm32": {
+      "exists": true,
+      "files": [
+        {
+          "path": "addons/limboai/bin/liblimboai.web.template_release.wasm32.nothreads.wasm",
+          "bytes": 1986024,
+          "sha256": "4c99344e9bf154a2d6239777c93dcd50cb6f7939ee2456ce57871b2933aa1a9f",
+          "format": "WebAssembly (wasm) binary module version 0x1 (MVP)"
+        }
+      ]
+    },
+    "web.debug.threads.wasm32": {
+      "exists": true,
+      "files": [
+        {
+          "path": "addons/limboai/bin/liblimboai.web.editor.wasm32.wasm",
+          "bytes": 2785943,
+          "sha256": "50f80a36fe51429357b76adfd8f332fc79e8c2cd83a14313d0a0b9d5f7d023e5",
+          "format": "WebAssembly (wasm) binary module version 0x1 (MVP)"
+        }
+      ]
+    },
+    "web.release.threads.wasm32": {
+      "exists": true,
+      "files": [
+        {
+          "path": "addons/limboai/bin/liblimboai.web.template_release.wasm32.wasm",
+          "bytes": 2055115,
+          "sha256": "0774b34f28a872a68a5cd5f1dfabdf354244bb05dc0d5eea2ecbe316b1d6f04e",
+          "format": "WebAssembly (wasm) binary module version 0x1 (MVP)"
+        }
+      ]
+    }
+  },
+  "templates": {
+    "macOS": {
+      "macos.zip": false
+    },
+    "Windows Desktop": {
+      "windows_debug_x86_64.exe": false,
+      "windows_release_x86_64.exe": false
+    },
+    "Linux": {
+      "linux_debug.x86_64": false,
+      "linux_release.x86_64": false
+    },
+    "Android": {
+      "android_debug.apk": false,
+      "android_release.apk": false
+    },
+    "iOS": {
+      "ios.zip": false
+    }
+  },
+  "prerequisites": {
+    "template_directory": "/Users/vinhpham/Library/Application Support/Godot/export_templates/4.7.2.stable",
+    "android_sdk_present": true,
+    "java": {
+      "exit_code": 0,
+      "output": "openjdk version \"25.0.4\" 2026-07-21 LTS\nOpenJDK Runtime Environment Temurin-25.0.4+7 (build 25.0.4+7-LTS)\nOpenJDK 64-Bit Server VM Temurin-25.0.4+7 (build 25.0.4+7-LTS, mixed mode, sharing)"
+    },
+    "xcode_selection": {
+      "exit_code": 0,
+      "output": "/Applications/Xcode-beta.app/Contents/Developer"
+    },
+    "iphoneos_sdk": {
+      "exit_code": 0,
+      "output": "/Applications/Xcode-beta.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS27.0.sdk"
+    },
+    "device_acceptance": "Not performed; library presence is not export or device proof."
+  },
+  "host_mapped_limboai": [
+    "Godot    5043 vinhpham  txt       REG               1,17   7406856           741778484 /Users/vinhpham/Projects/rebirth-dungeon/addons/limboai/bin/liblimboai.macos.editor.framework/liblimboai.macos.editor",
+    "Godot   90126 vinhpham  txt       REG               1,17   7406856           741778484 /Users/vinhpham/Projects/rebirth-dungeon/addons/limboai/bin/liblimboai.macos.editor.framework/liblimboai.macos.editor"
+  ],
+  "source_fingerprints": [
+    {
+      "path": "project.godot",
+      "bytes": 1633,
+      "sha256": "9a604bd7a831b823351733365c6f3e29b33c6c9ea5376fc497056414d44f53be"
+    },
+    {
+      "path": "addons/godot_state_charts/serialized_state_chart_state.gd",
+      "bytes": 1384,
+      "sha256": "37fa11e8c77be2644e0e2f0719bc0c91c635ee03d6983d8106f296589f11efc5"
+    },
+    {
+      "path": "assets/licenses/third_party_notices.txt",
+      "bytes": 7443,
+      "sha256": "616c6f73ac53ef5f0e68d3d00550f4a74be8e2163d030a77483e3065f14f578a"
+    }
+  ]
+}

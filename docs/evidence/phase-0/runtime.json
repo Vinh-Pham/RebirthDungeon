@@ -1,0 +1,82 @@
+{
+  "engine": "4.7.2.stable.official.ed1daf0bf",
+  "host": "macOS 27.0 arm64 Apple M2 Max",
+  "content_version": null,
+  "rules_version": null,
+  "ui": {
+    "control_count": 5,
+    "controls": [
+      {
+        "class": "Control",
+        "path": "Baseline",
+        "rect": [
+          0,
+          0,
+          1280,
+          720
+        ]
+      },
+      {
+        "class": "CenterContainer",
+        "path": "Baseline/Center",
+        "rect": [
+          0,
+          0,
+          1280,
+          720
+        ]
+      },
+      {
+        "class": "VBoxContainer",
+        "path": "Baseline/Center/Message",
+        "rect": [
+          475,
+          316,
+          329,
+          87
+        ]
+      },
+      {
+        "class": "Label",
+        "mouse_ignore": true,
+        "path": "Baseline/Center/Message/Title",
+        "rect": [
+          475,
+          316,
+          329,
+          55
+        ],
+        "text": "Rebirth Dungeon"
+      },
+      {
+        "class": "Label",
+        "mouse_ignore": true,
+        "path": "Baseline/Center/Message/Status",
+        "rect": [
+          475,
+          375,
+          329,
+          28
+        ],
+        "text": "Phase 0 · Godot baseline"
+      }
+    ],
+    "focus": "",
+    "hash": "216b49411853460867e6c1e8dea7b056",
+    "scene": "Main",
+    "viewport": [
+      1280,
+      720
+    ],
+    "windows": []
+  },
+  "logs": {
+    "content": [
+      {
+        "type": "text",
+        "text": "no log entries at level=all (buffer=0, dropped=0)"
+      }
+    ],
+    "isError": false
+  }
+}

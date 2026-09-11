@@ -1,0 +1,29 @@
+$ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/vinhpham/Projects/rebirth-dungeon --export-pack Android /Users/vinhpham/Projects/rebirth-dungeon/build/verification/assets-3.zip
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[   0% ] first_scan_filesystem | Started Project initialization (5 steps)
+[   0% ] first_scan_filesystem | Scanning file structure...
+[  16% ] first_scan_filesystem | Loading global class names...
+[  33% ] first_scan_filesystem | Verifying GDExtensions...
+[  50% ] first_scan_filesystem | Creating autoload scripts...
+[  66% ] first_scan_filesystem | Initializing plugins...
+[  83% ] first_scan_filesystem | Starting file scan...
+[ DONE ] first_scan_filesystem
+
+[   0% ] savezip | Started Packing (102 steps)
+[  33% ] savezip | Storing File: res://addons/beckett/runtime/beckett_autoload.gdc
+[  94% ] savezip | Storing File: res://.godot/imported/icon.svg-218a8f2b3041327d8a5756f3a245f83b.ctex
+[  94% ] savezip | Storing File: res://icon.svg.import
+[  96% ] savezip | Storing File: res://.godot/exported/133200997/export-3ad5c15c4f3250da0cc7c1af1770d85f-main.scn
+[  96% ] savezip | Storing File: res://addons/beckett/runtime/beckett_autoload.gd.remap
+[  96% ] savezip | Storing File: res://scenes/main.tscn.remap
+[  96% ] savezip | Storing File: res://.godot/global_script_class_cache.cfg
+[  96% ] savezip | Storing File: res://icon.svg
+[  96% ] savezip | Storing File: res://.godot/uid_cache.bin
+[  96% ] savezip | Storing File: res://project.binary
+[ DONE ] savezip
+
+[beckett] kept 42 editor-only file(s) (488.1 KiB) out of the export; only the inert runtime autoload ships
+cannot connect to daemon at tcp:5037: Connection refused
+
+EXIT_CODE: 0

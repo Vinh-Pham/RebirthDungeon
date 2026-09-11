@@ -1,0 +1,12 @@
+$ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/vinhpham/Projects/rebirth-dungeon --script res://tests/run_tests.gd -- --prove-failure
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+FAIL: Shell must fill viewport (1280, 720); got (0.0, 720.0)
+FAIL: Shell heading must be visible at (1280, 720)
+FAIL: Shell must fill viewport (960, 540); got (0.0, 540.0)
+FAIL: Shell heading must be visible at (960, 540)
+FAIL: Shell must fill viewport (1560, 720); got (0.0, 720.0)
+FAIL: Shell heading must be visible at (1560, 720)
+TEST_RESULT: FAIL (6 checks)
+
+EXIT_CODE: 1

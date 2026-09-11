@@ -1,0 +1,16 @@
+[remap]
+
+importer="dialogue_manager"
+importer_version=18
+type="Resource"
+uid="uid://djx1mop01fckf"
+path="res://.godot/imported/smoke.dialogue-c297fe2b1f1b25829d469c7cf1a642c0.tres"
+
+[deps]
+
+source_file="res://tests/fixtures/addons/smoke.dialogue"
+dest_files=["res://.godot/imported/smoke.dialogue-c297fe2b1f1b25829d469c7cf1a642c0.tres"]
+
+[params]
+
+defaults=true

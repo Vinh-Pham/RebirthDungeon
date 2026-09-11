@@ -1,0 +1,39 @@
+Godot MCP — End User License Agreement (EULA)
+
+Copyright © 2026 godot-mcp. All rights reserved.
+
+This software (the "Addon" — the contents of `addons/beckett/` and the
+accompanying documentation) is a commercial product, licensed, not sold.
+
+1. GRANT OF LICENSE
+   Upon purchase, you (the "Purchaser") are granted a perpetual, non-exclusive,
+   non-transferable license to use the Addon in your own commercial and
+   non-commercial Godot projects, by yourself and within your own organization.
+   Your purchase includes all future updates to the Addon at no extra charge
+   ("lifetime updates").
+
+2. RESTRICTIONS
+   You may NOT:
+   - Redistribute, resell, sublicense, rent, lease, or publish the Addon's
+     source files or documentation, in whole or in part, whether modified or not.
+   - Share your copy with anyone outside your organization, or make it publicly
+     available (including in a public repository or asset store).
+   You MAY ship games and applications that include the Addon's runtime behavior,
+   provided the Addon's source is not distributed as a standalone product.
+
+3. OWNERSHIP
+   The Addon is and remains the intellectual property of the copyright holder.
+   This license conveys no title or ownership.
+
+4. NO WARRANTY
+   THE ADDON IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT.
+
+5. LIMITATION OF LIABILITY
+   IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES, OR
+   OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING
+   FROM, OUT OF, OR IN CONNECTION WITH THE ADDON OR THE USE OR OTHER DEALINGS IN
+   THE ADDON.
+
+By installing or using the Addon, you agree to the terms of this EULA.
