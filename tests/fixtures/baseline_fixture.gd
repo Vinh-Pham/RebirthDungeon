@@ -10,6 +10,7 @@ func run(tree: SceneTree, break_layout: bool = false) -> PackedStringArray:
 	viewport.size = Vector2i(1280, 720)
 	tree.root.add_child(viewport)
 	var main := packed.instantiate() as DungeonApplication
+	main.persistence_enabled = false
 	viewport.add_child(main)
 	for frame: int in 3:
 		await tree.process_frame

@@ -16,6 +16,7 @@ func _ready() -> void:
 	display.texture = viewport.get_texture()
 	add_child(display)
 	main = load("res://scenes/main.tscn").instantiate()
+	main.persistence_enabled = false
 	viewport.add_child(main)
 	for i: int in 6:
 		await get_tree().process_frame

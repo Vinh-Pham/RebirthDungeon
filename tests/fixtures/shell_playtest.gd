@@ -7,3 +7,6 @@ func resize_fixture(width: int, height: int) -> void:
 
 func inject_loading_failure() -> void:
 	required_resource_overrides = {"res://assets/art/dungeon_mark.svg": "res://assets/art/missing_fixture.svg"}
+
+func _init() -> void:
+	persistence_enabled = false

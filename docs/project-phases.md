@@ -1,8 +1,8 @@
 # Rebirth Dungeon: Project Phases
 
-**Replanned: 2026-09-11 — Godot 4.7 / typed GDScript with the selected addons.** Phases 0–5 were implemented and verified after the 2026-09-10 reset; later phases remain unstarted. **Completed: 6 of 17. Current focus: Phase 6.** Pre-Godot implementation, tests and platform acceptance do not carry forward.
+**Replanned: 2026-09-11 — Godot 4.7 / typed GDScript with the selected addons.** Phases 0–6 were implemented and verified after the 2026-09-10 reset; later phases remain unstarted. **Completed: 7 of 17. Current focus: Phase 7.** Pre-Godot implementation, tests and platform acceptance do not carry forward.
 
-The repository contains the persistent State Charts application shell, validated content catalog, independent domain state/RNG/command foundations, isolated addon qualification fixtures, verification runner and export presets. Town and dungeon exploration now include continuous movement, discovery, guarded encounter fixtures and Phantom Camera follow. Deterministic combat and the adaptive battle HUD now include guarded State Charts presentation, separate Phantom Camera staging and simulated save-failure/retry behavior. Progression and durable saves remain unimplemented. This roadmap incorporates the currently configured addons without treating installation as feature completion. [Game Plan](game-plan.md) defines architecture, [Directory](directory.md) defines file placement, gameplay specs define rules, and [AGENTS.md](../AGENTS.md) defines addon usage and integration boundaries. Phase numbers remain stable so existing specification links retain their meaning.
+The repository contains the persistent State Charts application shell, validated content catalog, independent domain state/RNG/command foundations, isolated addon qualification fixtures, verification runner and export presets. Town and dungeon exploration now include continuous movement, discovery, guarded encounter fixtures and Phantom Camera follow. Deterministic combat and the adaptive battle HUD now include guarded State Charts presentation, separate Phantom Camera staging and simulated save-failure/retry behavior. Durable two-slot saves now restore the full session, with validated recovery and exact candidate retries. Progression remains unimplemented. This roadmap incorporates the currently configured addons without treating installation as feature completion. [Game Plan](game-plan.md) defines architecture, [Directory](directory.md) defines file placement, gameplay specs define rules, and [AGENTS.md](../AGENTS.md) defines addon usage and integration boundaries. Phase numbers remain stable so existing specification links retain their meaning.
 
 ## Status and completion policy
 
@@ -41,7 +41,7 @@ Build only lightweight mode/command contracts in Phase 1, domain types in Phase 
 | 3 | Continuous exploration, authored rooms and Phantom Camera | Complete |
 | 4 | Five-dice combat rules and LimboAI decisions | Complete |
 | 5 | Battle HUD, state flow and camera staging | Complete |
-| 6 | Durable saves and interrupted-session recovery | Not started |
+| 6 | Durable saves and interrupted-session recovery | Complete |
 | 7 | Dialogue Manager town services and durable dungeon loop | Not started |
 | 8 | Inventory, skills and lasting progression | Not started |
 | 9 | QuestSystem progression, enchanting and rebirth | Not started |
@@ -154,17 +154,19 @@ Verified on 2026-09-11 (2026-09-12 UTC) with Godot 4.7.2 (`ed1daf0bf`), content 
 
 ## Phase 6: Durable saves and interrupted-session recovery
 
-**Status: Not started. Dependencies: 2, 4, 5.**
+**Status: Complete. Dependencies: 2, 4, 5.**
 
-- [ ] Define a versioned explicit profile/run/battle schema with exact 64-bit transport, finite coordinates and strict validation.
-- [ ] Implement FileAccess checkpoints under user:// with two slots, checksums, sequence selection and read-back verification.
-- [ ] Persist entry, roll/reroll/keep changes, actions and outcomes before enabling dependent mutation.
-- [ ] Keep one candidate on failure; Retry saves the same state/RNG and does not execute the command again.
-- [ ] Restore exploration layout/position/discovery and the exact active hand/reservations/statuses after a fresh process.
-- [ ] Test truncated/corrupt slots, unsupported versions, interrupted writes, duplicate transactions and focus/suspension behavior.
-- [ ] Reconstruct charts and camera targets from validated mode/battle state after load. Recreate AI blackboards from saved decision inputs; persist any accepted intent needed for continuation so resume neither redraws AI RNG nor submits an activation twice. Do not serialize live addon nodes or rely on chart history as the session save.
+- [x] Define a versioned explicit profile/run/battle schema with exact 64-bit transport, finite coordinates and strict validation.
+- [x] Implement FileAccess checkpoints under user:// with two slots, checksums, sequence selection and read-back verification.
+- [x] Persist entry, roll/reroll/keep changes, actions and outcomes before enabling dependent mutation.
+- [x] Keep one candidate on failure; Retry saves the same state/RNG and does not execute the command again.
+- [x] Restore exploration layout/position/discovery and the exact active hand/reservations/statuses after a fresh process.
+- [x] Test truncated/corrupt slots, unsupported versions, interrupted writes, duplicate transactions and focus/suspension behavior.
+- [x] Reconstruct charts and camera targets from validated mode/battle state after load. Recreate AI blackboards from saved decision inputs; persist any accepted intent needed for continuation so resume neither redraws AI RNG nor submits an activation twice. Do not serialize live addon nodes or rely on chart history as the session save.
 
 **Exit criterion:** Fresh-process continuation and injected save failures pass; corrupt/unsupported saves remain recoverable without silent reset. Persistence guarantees are measured, not inferred from FileAccess.
+
+**Verification:** [Phase 6 implementation](phase6-implementation.md) and [dated evidence](evidence/phase6/README.md): 96 persistence checks, twelve separate Godot process invocations for continuation/interruption scenarios, all existing domain/UI/exploration fixtures, rendered Continue/retry/corrupt/incompatible/fallback paths, and all five resource-pack checks. Host file behavior is verified; mobile device and power-loss guarantees remain separate acceptance work.
 
 ## Phase 7: Dialogue Manager town services and durable dungeon loop
 

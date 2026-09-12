@@ -14,6 +14,7 @@ const BATTLE_FIELDS := ["encounter_id", "phase", "active_actor_id", "selected_sk
 static func capture(session: Session) -> Dictionary:
 	var result := session.observation()
 	result["checkpoint_version"] = 1
+	result["town_position"] = {"x":session.town_position_x,"y":session.town_position_y}
 	result["rng"] = session.rng.capture()
 	result["accepted_operations"] = session.accepted_operations.duplicate()
 	result["exploration"] = session.exploration.capture() if session.exploration != null else {}
@@ -27,6 +28,8 @@ static func restore(data: Dictionary, catalog: RefCounted) -> Session:
 		if not data.get(field) is Dictionary: return null
 	var result := Session.new()
 	if not result.rng.restore(data.rng): return null
+	result.town_position_x = data.get("town_position",{}).get("x",96.0)
+	result.town_position_y = data.get("town_position",{}).get("y",160.0)
 	result.session_id = data.session_id
 	result.revision = data.revision
 	result.mode = data.mode

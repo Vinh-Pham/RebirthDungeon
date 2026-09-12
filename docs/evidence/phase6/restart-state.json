@@ -1,0 +1,25 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"resolved\":\".\",\"result\":{\"gate\":\"idle\",\"hand\":[3.0,2.0,5.0,1.0,2.0],\"revision\":4.0,\"sequence\":2.0,\"status\":\"ok\"}}"
+    }
+  ],
+  "structuredContent": {
+    "resolved": ".",
+    "result": {
+      "gate": "idle",
+      "hand": [
+        3,
+        2,
+        5,
+        1,
+        2
+      ],
+      "revision": 4,
+      "sequence": 2,
+      "status": "ok"
+    }
+  },
+  "isError": false
+}

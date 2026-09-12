@@ -12,6 +12,8 @@ var mode: Mode = Mode.MENU
 var hero: Hero
 var battle: Battle
 var exploration: RefCounted
+var town_position_x: float = 96.0
+var town_position_y: float = 160.0
 var rng := Streams.new(0)
 var content_versions: Dictionary = {}
 var accepted_operations: Dictionary[String, int] = {}
@@ -31,6 +33,8 @@ func copy() -> RefCounted:
 	result.hero = hero.copy() if hero != null else null
 	result.battle = battle.copy() if battle != null else null
 	result.exploration = exploration.copy() if exploration != null else null
+	result.town_position_x = town_position_x
+	result.town_position_y = town_position_y
 	result.rng.restore(rng.capture())
 	result.content_versions = content_versions.duplicate(true)
 	result.accepted_operations = accepted_operations.duplicate()
@@ -46,6 +50,8 @@ func invalidate() -> void:
 	hero = null
 	battle = null
 	exploration = null
+	town_position_x = 96.0
+	town_position_y = 160.0
 	content_versions.clear()
 	accepted_operations.clear()
 	rng = Streams.new(0)

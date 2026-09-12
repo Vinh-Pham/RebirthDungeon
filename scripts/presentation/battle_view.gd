@@ -5,6 +5,7 @@ signal continue_requested(session_id: int, revision: int)
 signal retry_requested
 const Flow = preload("res://scripts/presentation/battle_flow.gd")
 const Limits = preload("res://scripts/domain/rules/rule_limits.gd")
+var durable_saves: bool = false
 var flow: Node
 var stage: Node2D
 var snapshot: Dictionary = {}
@@ -262,8 +263,8 @@ func _render() -> void:
 	actions["continue"].visible = not battle.outcome.is_empty() and _save_state == "idle"
 	actions["continue"].text = "Return to dungeon" if battle.outcome == "victory" else "View results"
 	_notice.text = _reason
-	if _save_state == "pending": _notice.text = "Simulated save pending · actions locked"
-	elif _save_state == "failed": _notice.text = "Simulated save failed · Retry keeps the same result"
+	if _save_state == "pending": _notice.text = ("Saving · actions locked" if durable_saves else "Simulated save pending · actions locked")
+	elif _save_state == "failed": _notice.text = ("Save failed · Retry keeps the same result" if durable_saves else "Simulated save failed · Retry keeps the same result")
 	elif not battle.outcome.is_empty(): _notice.text = "Victory · %d pending gold" % battle.pending_gold if battle.outcome == "victory" else "Defeat · expedition rewards lost"
 	_feedback.visible = _save_state != "idle" or not battle.outcome.is_empty()
 	if not _reason.is_empty(): _header.text = _reason
@@ -410,6 +411,7 @@ func _inspection_text() -> String:
 	return text
 
 func _phase_label() -> String:
+	if durable_saves and flow.current in ["Saving","SaveFailed"]: return "Saving" if flow.current == "Saving" else "Save failed"
 	return {"Selection":"Choose","Locked":"Locked hand","Resolved":"Action resolved","Enemy":"Sentinel","Outcome":"Outcome","Saving":"Saving test","SaveFailed":"Save failed test"}.get(flow.current,"Battle")
 
 func set_text_scale(value: float) -> void:

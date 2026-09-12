@@ -15,6 +15,19 @@ const Resolver = preload("res://scripts/domain/commands/command_resolver.gd")
 const ExplorationState = preload("res://scripts/domain/state/exploration_state.gd")
 const Combat = preload("res://scripts/domain/rules/battle_rules.gd")
 const EnemyScheduler = preload("res://scripts/ai/enemy_scheduler.gd")
+var persistence_enabled: bool = true
+var save_directory: String = "user://profile"
+var repository: RefCounted
+var _storage_checked: bool = false
+var _resume_candidate: SessionShell
+var _recovery: bool = false
+var _save_overlay: CanvasLayer
+var _navigation_candidate: SessionShell
+var _mode_published: bool = false
+var _movement_checkpoint: bool = false
+var _movement_elapsed: float = 0.0
+var _movement_dirty: bool = false
+var _pause_requested: bool = false
 var checkpoint := preload("res://scripts/application/checkpoint_test_adapter.gd").new()
 var _scheduler: Node
 var _battle_view: Control
@@ -85,7 +98,7 @@ func observation() -> Dictionary:
 	return result
 
 func submit_intent(intent: Dictionary) -> Dictionary:
-	if not _alive or not _focused or _pending != -1 or _publishing_result or checkpoint.busy() or not loading_error.is_empty():
+	if not _alive or not _focused or _pending != -1 or _publishing_result or checkpoint.busy() or _save_overlay != null or not loading_error.is_empty():
 		return {"accepted": false, "code": "application_unavailable", "events": []}
 	var command := Resolver.parse_intent(intent)
 	var result := Resolver.resolve(_session, command, _catalog)
@@ -102,26 +115,45 @@ func submit_intent(intent: Dictionary) -> Dictionary:
 func _publish_checkpoint() -> void:
 	var result: RefCounted = checkpoint.take()
 	if result == null or not _alive: return
-	if result.candidate.session_id != _session.session_id or result.candidate.revision != _session.revision + 1: return
+	if result.candidate.session_id != _session.session_id or result.candidate.revision != _session.revision + (0 if _movement_checkpoint else 1): return
+	var changing_mode: bool = result.candidate.mode != _session.mode
+	var movement_only := _movement_checkpoint
+	_movement_checkpoint = false
 	_publishing_result = true
 	_session = result.candidate
-	if is_instance_valid(_battle_view) and _session.mode == Mode.BATTLE:
+	_hide_save_panel()
+	if changing_mode:
+		_pending = _session.mode
+		_mode_published = true
+		_chart.set_expression_property(&"authorized_target", _session.mode)
+		_chart.send_event(StringName("to_%d" % _session.mode))
+	elif is_instance_valid(_battle_view) and _session.mode == Mode.BATTLE:
 		_refresh_battle(result.events)
+	elif movement_only and is_instance_valid(_world):
+		if _world.transition_locked:
+			_world.transition_locked = false
+			_world.set_focused(_focused)
 	else:
 		_replace_view()
 	observation_changed.emit(observation())
 	for event: Dictionary in result.events:
 		accepted_result.emit(event.duplicate(true))
 	_publishing_result = false
-	_schedule_enemy.call_deferred()
+	if _pause_requested:
+		_pause_requested = false
+		_show_save_panel("Session saved","Your progress is saved. Continue when ready.","Continue",_resume_current)
+	else:
+		_schedule_enemy.call_deferred()
 
 func _refresh_battle(events: Array = [], save_state: String = "idle") -> void:
-	if not is_instance_valid(_battle_view): return
+	if not is_instance_valid(_battle_view):
+		if persistence_enabled and save_state == "failed": _show_write_failure()
+		return
 	_battle_view.present(observation(), events, save_state)
 	_battle_view.set_input_enabled(_focused and _pending == -1)
 
 func set_next_checkpoint_test(behavior: String) -> bool:
-	if not development_enabled or checkpoint.busy() or behavior not in ["immediate", "pending", "failure"]: return false
+	if persistence_enabled or not development_enabled or checkpoint.busy() or behavior not in ["immediate", "pending", "failure"]: return false
 	checkpoint.next_behavior = behavior
 	return true
 
@@ -132,8 +164,9 @@ func complete_checkpoint_test(id: int, revision: int, success: bool) -> bool:
 	return true
 
 func retry_checkpoint() -> void:
-	if not _alive or not _focused or not checkpoint.retry(): return
-	_publish_checkpoint()
+	if not _alive or not _focused: return
+	if checkpoint.retry(): _publish_checkpoint()
+	elif persistence_enabled and checkpoint.busy(): _refresh_battle([],checkpoint.state)
 
 func _battle_intent(intent: Dictionary, source_ref: WeakRef) -> void:
 	var source: Variant = source_ref.get_ref()
@@ -158,7 +191,7 @@ func _build_chart() -> void:
 		state.name = Mode.keys()[mode].capitalize()
 		root.add_child(state)
 		state.state_entered.connect(_on_mode_entered.bind(mode))
-	root.initial_state = NodePath("Menu")
+	root.initial_state = NodePath(Mode.keys()[_session.mode].capitalize())
 	for mode: int in EDGES:
 		var state := root.get_child(mode) as AtomicState
 		for target: int in EDGES[mode]:
@@ -187,6 +220,24 @@ func request_mode(target: int, id: int, revision: int) -> bool:
 		return false
 	if _session.mode == Mode.BATTLE and target in [Mode.DUNGEON, Mode.RESULTS] and not _return_authorized:
 		return false
+	if persistence_enabled and repository != null:
+		if _save_overlay != null or _recovery: return false
+		if target == Mode.MENU and _session.mode >= Mode.TOWN:
+			_pause_requested = true
+			checkpoint_now()
+			return true
+		if target >= Mode.TOWN:
+			var candidate: SessionShell = _navigation_candidate if _navigation_candidate != null else _session.copy()
+			_navigation_candidate = null
+			if _session.mode == Mode.RESULTS and target == Mode.TOWN:
+				candidate.exploration = null
+				candidate.battle = null
+				candidate.town_position_x = 96.0
+				candidate.town_position_y = 160.0
+			if target == Mode.DUNGEON and candidate.exploration == null: candidate.exploration = ExplorationState.new()
+			candidate.mode = target as SessionShell.Mode
+			candidate.revision += 1
+			return _stage_transition(candidate)
 	if is_instance_valid(_world):
 		_world.freeze()
 	_pending = target
@@ -208,10 +259,12 @@ func _on_mode_entered(mode: int) -> void:
 		return
 	if _pending != -1:
 		assert(_pending == mode)
-		if _session.mode == Mode.RESULTS and mode == Mode.TOWN:
-			_session.exploration = null
-		_session.mode = mode as SessionShell.Mode
-		_session.revision += 1
+		if not _mode_published:
+			if _session.mode == Mode.RESULTS and mode == Mode.TOWN:
+				_session.exploration = null
+			_session.mode = mode as SessionShell.Mode
+			_session.revision += 1
+		_mode_published = false
 		_pending = -1
 	_chart.set_expression_property(&"authorized_target", -1)
 	_replace_view()
@@ -274,12 +327,13 @@ func _replace_view() -> void:
 	_view.configure(observation(), heading, description, choices)
 	_view.intent_requested.connect(_on_intent.bind(weakref(_view)))
 	_view.set_input_enabled(_focused)
-	_status.text = "Phase 5 · session %d · revision %d · %s" % [_session.session_id, _session.revision, heading]
+	_status.text = "Phase 6 · session %d · revision %d · %s" % [_session.session_id, _session.revision, heading]
 
 	if _session.mode == Mode.BATTLE and _session.battle != null:
 		_view.hide()
 		_battle_view = load("res://scenes/battle/battle.tscn").instantiate()
 		add_child(_battle_view)
+		_battle_view.durable_saves = persistence_enabled
 		_battle_view.present(observation(), [], checkpoint.state)
 		_battle_view.set_text_scale(_battle_text_scale)
 		_battle_view.set_reduced_motion(_battle_reduced_motion)
@@ -303,7 +357,7 @@ func _install_world() -> void:
 		_session.exploration = ExplorationState.new()
 	var scene: PackedScene = load("res://scenes/exploration/town.tscn" if town else "res://scenes/exploration/dungeon.tscn")
 	_world = scene.instantiate()
-	var continuation: Dictionary = {} if town else _session.exploration.capture()
+	var continuation: Dictionary = ({"position":{"x":_session.town_position_x,"y":_session.town_position_y}} if persistence_enabled else {}) if town else _session.exploration.capture()
 	_world.configure(_session.session_id, _session.revision, continuation, _world_session_valid)
 	_world.continuation_changed.connect(_capture_continuation.bind(_session.session_id, _session.revision))
 	_world.interaction_requested.connect(_world_interaction.bind(_session.session_id, _session.revision), CONNECT_DEFERRED)
@@ -312,11 +366,17 @@ func _install_world() -> void:
 	_world.set_focused(_focused)
 
 func _world_session_valid(id: int, revision: int) -> bool:
-	return _alive and _focused and development_enabled and loading_error.is_empty() and _pending == -1 and not _publishing_result and _session.matches(id, revision) and _session.mode in [Mode.TOWN, Mode.DUNGEON]
+	return _alive and _focused and development_enabled and loading_error.is_empty() and _pending == -1 and not _publishing_result and not checkpoint.busy() and _save_overlay == null and _session.matches(id, revision) and _session.mode in [Mode.TOWN, Mode.DUNGEON]
 
 func _capture_continuation(position: Vector2, discovered: Array[String], id: int, revision: int) -> void:
-	if not _world_session_valid(id, revision) or _session.mode != Mode.DUNGEON or not position.is_finite():
+	if not _world_session_valid(id, revision) or not position.is_finite():
 		return
+	if _session.mode == Mode.TOWN:
+		_movement_dirty = _movement_dirty or _session.town_position_x != position.x or _session.town_position_y != position.y
+		_session.town_position_x = position.x
+		_session.town_position_y = position.y
+		return
+	_movement_dirty = _movement_dirty or _session.exploration.position_x != position.x or _session.exploration.position_y != position.y or _session.exploration.discovered != discovered
 	_session.exploration.position_x = position.x
 	_session.exploration.position_y = position.y
 	_session.exploration.discovered = discovered.duplicate()
@@ -329,9 +389,11 @@ func _world_interaction(stable_id: String, kind: String, id: int, revision: int)
 	elif kind == "encounter" and _session.mode == Mode.DUNGEON:
 		if _catalog.definition(stable_id) == null or _session.exploration.active_encounter != "" or _session.exploration.resolved.has(stable_id):
 			return
-		if not Combat.begin(_session, stable_id, _catalog):
+		var encounter_session: SessionShell = _session.copy() if persistence_enabled else _session
+		if not Combat.begin(encounter_session, stable_id, _catalog):
 			return
-		_session.exploration.active_encounter = stable_id
+		encounter_session.exploration.active_encounter = stable_id
+		if persistence_enabled: _navigation_candidate = encounter_session
 		_encounter_authorized = true
 		request_mode(Mode.BATTLE, id, revision)
 		_encounter_authorized = false
@@ -340,11 +402,13 @@ func _world_interaction(stable_id: String, kind: String, id: int, revision: int)
 		if _session.exploration.resolved.size() < 2:
 			_world.show_panel("The arch is sealed", "Defeat both sentinels before returning.")
 		else:
-			_session.hero.committed_gold = mini(1000000, _session.hero.committed_gold + _session.exploration.pending_gold)
-			_session.exploration.pending_gold = 0
-			_session.hero.statuses.clear()
-			_session.hero.cooldowns.clear()
-			_session.hero.shield = 0
+			var exit_session: SessionShell = _session.copy() if persistence_enabled else _session
+			exit_session.hero.committed_gold = mini(1000000, exit_session.hero.committed_gold + exit_session.exploration.pending_gold)
+			exit_session.exploration.pending_gold = 0
+			exit_session.hero.statuses.clear()
+			exit_session.hero.cooldowns.clear()
+			exit_session.hero.shield = 0
+			if persistence_enabled: _navigation_candidate = exit_session
 			request_mode(Mode.RESULTS, id, revision)
 
 func complete_battle(id: int, revision: int) -> bool:
@@ -352,11 +416,13 @@ func complete_battle(id: int, revision: int) -> bool:
 		return false
 	if _session.battle == null or _session.battle.phase != _session.battle.Phase.FINISHED:
 		return false
-	_session.exploration.active_encounter = ""
-	if _session.battle.outcome == "defeat":
-		_session.hero.statuses.clear()
-		_session.hero.cooldowns.clear()
-		_session.hero.shield = 0
+	var returned: SessionShell = _session.copy() if persistence_enabled else _session
+	returned.exploration.active_encounter = ""
+	if returned.battle.outcome == "defeat":
+		returned.hero.statuses.clear()
+		returned.hero.cooldowns.clear()
+		returned.hero.shield = 0
+	if persistence_enabled: _navigation_candidate = returned
 	_return_authorized = true
 	var accepted := request_mode(Mode.DUNGEON if _session.battle.outcome == "victory" else Mode.RESULTS, id, revision)
 	_return_authorized = false
@@ -410,16 +476,24 @@ func _load_required(id: int, revision: int, advance: bool = true) -> void:
 	_ui.theme = candidate["res://scenes/ui/shell_theme.tres"]
 	$UI/UIHost/Layout/Mark.texture = candidate["res://assets/art/dungeon_mark.svg"]
 	observation_changed.emit(observation())
+	if persistence_enabled and not _storage_checked:
+		_open_storage()
+		if _save_overlay != null: return
 	if advance and _focused:
 		request_mode(Mode.TOWN, id, revision)
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
 		set_application_focused(false)
+	elif what == NOTIFICATION_APPLICATION_PAUSED:
+		set_application_focused(false)
+	elif what == NOTIFICATION_APPLICATION_RESUMED:
+		set_application_focused(true)
 	elif what == NOTIFICATION_APPLICATION_FOCUS_IN:
 		set_application_focused(true)
 
 func set_application_focused(focused: bool) -> void:
+	if not focused and _focused and persistence_enabled: checkpoint_now()
 	_focused = focused
 	if is_instance_valid(_battle_view): _battle_view.set_input_enabled(focused and _pending == -1)
 	if focused: _schedule_enemy.call_deferred()
@@ -450,7 +524,120 @@ func _exit_tree() -> void:
 	## Camera registrations are owned by camera nodes and removed on tree exit.
 
 func _schedule_enemy() -> void:
-	if not _alive or not _focused or _pending != -1 or _publishing_result or checkpoint.busy() or _session.mode != Mode.BATTLE:
+	if not _alive or not _focused or _pending != -1 or _publishing_result or checkpoint.busy() or _save_overlay != null or _session.mode != Mode.BATTLE:
 		return
 	var intent: Dictionary = _scheduler.propose(_session, _catalog)
 	if not intent.is_empty(): submit_intent(intent)
+
+func _open_storage() -> void:
+	_storage_checked = true
+	repository = preload("res://scripts/data/save_repository.gd").new()
+	repository.configure(save_directory,_catalog)
+	var disk := preload("res://scripts/application/durable_checkpoint.gd").new()
+	disk.repository = repository
+	checkpoint = disk
+	reload_checkpoint()
+
+func reload_checkpoint() -> void:
+	var loaded: Dictionary = repository.load_checkpoint()
+	_recovery = loaded.status in ["corrupt","recovery"]
+	_resume_candidate = loaded.get("session")
+	if loaded.status == "empty":
+		_hide_save_panel()
+		return
+	if loaded.status == "ok":
+		_show_save_panel("Continue your journey","A verified session is ready to resume.","Continue",resume_checkpoint)
+	elif loaded.status == "recovery":
+		_show_save_panel("Checkpoint recovery",loaded.error+"\nA previous verified checkpoint is available. Original files will be preserved.","Use verified checkpoint",resume_checkpoint)
+	else:
+		_show_save_panel("Cannot load this session",loaded.error+"\nYour files are unchanged. Restore a compatible checkpoint in "+save_directory+" and retry.","Retry loading",reload_checkpoint)
+
+func resume_checkpoint() -> void:
+	if _resume_candidate == null: return
+	if _recovery and not repository.allow_recovery():
+		_show_save_panel("Recovery could not finish","Cannot preserve the original files. Free storage or restore file access and retry.","Retry recovery",resume_checkpoint)
+		return
+	_recovery = false
+	_session = _resume_candidate
+	_resume_candidate = null
+	_scheduler._last_token = ""
+	_hide_save_panel()
+	remove_child(_chart)
+	_chart.queue_free()
+	_pending = -1
+	_mode_published = false
+	_build_chart()
+
+func _stage_transition(candidate: SessionShell) -> bool:
+	if is_instance_valid(_world) and not _movement_checkpoint: _world.freeze()
+	var result := preload("res://scripts/domain/commands/command_result.gd").new()
+	result.accepted = true
+	result.candidate = candidate
+	if checkpoint.stage(result): _publish_checkpoint()
+	else: _refresh_battle([],checkpoint.state)
+	return true
+
+func checkpoint_now() -> void:
+	if not persistence_enabled or repository == null or _recovery or _save_overlay != null or checkpoint.busy() or _publishing_result or _pending != -1 or _session.mode < Mode.TOWN: return
+	_movement_checkpoint = true
+	_movement_dirty = false
+	_stage_transition(_session.copy())
+
+func _process(delta: float) -> void:
+	if not persistence_enabled: return
+	_movement_elapsed += delta
+	if _movement_elapsed >= 2.0:
+		_movement_elapsed = 0.0
+		if _movement_dirty and _focused: checkpoint_now()
+
+func _show_write_failure() -> void:
+	_show_save_panel("Progress could not be saved",repository.last_error+"\nThe action is waiting. Retry writes the same result.","Retry same action",retry_checkpoint)
+
+func _resume_current() -> void:
+	_hide_save_panel()
+	if is_instance_valid(_world):
+		_world.transition_locked = false
+		_world.set_focused(_focused)
+	_schedule_enemy.call_deferred()
+
+func _hide_save_panel() -> void:
+	if is_instance_valid(_save_overlay):
+		remove_child(_save_overlay)
+		_save_overlay.queue_free()
+	_save_overlay = null
+
+func _show_save_panel(title: String, message: String, action: String, callback: Callable) -> void:
+	_hide_save_panel()
+	if is_instance_valid(_world): _world.freeze()
+	if is_instance_valid(_battle_view): _battle_view.set_input_enabled(false)
+	_save_overlay = CanvasLayer.new()
+	_save_overlay.name = "SaveRecovery"
+	_save_overlay.layer = 20
+	add_child(_save_overlay)
+	var background := ColorRect.new()
+	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	background.color = Color("#101b20")
+	_save_overlay.add_child(background)
+	var margin := MarginContainer.new()
+	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	for side: String in ["left","right","top","bottom"]: margin.add_theme_constant_override("margin_"+side,32)
+	background.add_child(margin)
+	var body := VBoxContainer.new()
+	body.alignment = BoxContainer.ALIGNMENT_CENTER
+	body.theme = load("res://scenes/battle/battle_theme.tres")
+	margin.add_child(body)
+	var heading := Label.new()
+	heading.text = title
+	heading.add_theme_font_size_override("font_size",28)
+	body.add_child(heading)
+	var description := Label.new()
+	description.text = message
+	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.add_child(description)
+	var button := Button.new()
+	button.name = "RecoveryAction"
+	button.text = action
+	button.custom_minimum_size.y = 56
+	button.pressed.connect(callback,CONNECT_DEFERRED)
+	body.add_child(button)
+	button.grab_focus()

@@ -32,10 +32,11 @@ func configure(id: int, expected_revision: int, continuation: Dictionary, valida
 	session_id = id
 	revision = expected_revision
 	session_valid = validator
-	if not town and not continuation.is_empty():
+	if not continuation.is_empty():
 		initial_position = Vector2(continuation.position.x, continuation.position.y)
-		discovered.assign(continuation.discovered)
-		resolved.assign(continuation.resolved)
+		if not town:
+			discovered.assign(continuation.discovered)
+			resolved.assign(continuation.resolved)
 
 func _draw() -> void:
 	draw_rect(Rect2(-10000,-10000,20000,20000), Color("#0e1b21"))
@@ -241,8 +242,7 @@ func _physics_process(_delta: float) -> void:
 						continuation_changed.emit(player.global_position, discovered.duplicate())
 						interaction_requested.emit(marker.stable_id, marker.kind)
 					return
-	if not town:
-		continuation_changed.emit(player.global_position, discovered.duplicate())
+	continuation_changed.emit(player.global_position, discovered.duplicate())
 
 func interaction_is_valid(id: String, allow_transition: bool = false) -> bool:
 	if not valid_session() or not navigation_ready or not focused or panel_open or (not allow_transition and not can_move()):
@@ -303,7 +303,7 @@ func _build_hud() -> void:
 	help.text = "Field notes"
 	help.custom_minimum_size = Vector2(120,48)
 	help.focus_entered.connect(suspend_input)
-	help.pressed.connect(show_panel.bind("Field notes", "Move with WASD or arrow keys. Click or tap a revealed floor to walk there.\n\nClick the keeper to approach and talk. Approach a sentinel to open the encounter fixture.\n\nProgress is in memory only in this phase."))
+	help.pressed.connect(show_panel.bind("Field notes", "Move with WASD or arrow keys. Click or tap a revealed floor to walk there.\n\nClick the keeper to approach and talk. Approach a sentinel to open the encounter fixture.\n\nUse Menu to pause your journey."))
 	top.add_child(help)
 	var menu := Button.new()
 	menu.text = "Menu"
