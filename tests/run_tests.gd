@@ -16,6 +16,7 @@ func _run() -> void:
 		failures.append_array(await load("res://tests/integration/addon_fixture.gd").new().run(self))
 		failures.append_array(await load("res://tests/integration/shell_fixture.gd").new().run(self))
 		failures.append_array(await load("res://tests/integration/content_loading_fixture.gd").new().run(self))
+		failures.append_array(await load("res://tests/integration/exploration_fixture.gd").new().run(self))
 	for failure: String in failures:
 		print("FAIL: " + failure)
 	if failures.is_empty():

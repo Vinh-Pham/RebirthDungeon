@@ -93,7 +93,7 @@ func run() -> PackedStringArray:
 		{"code": "not_active_hero", "change": func(s: Session, c: Command): c.actor_id = "enemy.0"},
 		{"code": "not_active_hero", "change": func(s: Session, c: Command): s.hero.current[0] = 0},
 		{"code": "not_active_hero", "change": func(s: Session, c: Command): s.battle.active_actor_id = "enemy.0"},
-		{"code": "content_version_mismatch", "change": func(s: Session, c: Command): s.battle.content_versions.content = 2},
+		{"code": "content_version_mismatch", "change": func(s: Session, c: Command): s.battle.content_versions.content += 1},
 		{"code": "unlearned_skill", "change": func(s: Session, c: Command): c.skill_id = "skill.missing"},
 		{"code": "unlearned_skill", "change": func(s: Session, c: Command): c.skill_id = "skill.enemy_strike"},
 		{"code": "unsupported_rank", "change": func(s: Session, c: Command): s.hero.skill_ranks["skill.sword"] = "1"},

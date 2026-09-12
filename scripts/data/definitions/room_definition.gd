@@ -1,4 +1,4 @@
 class_name RoomDefinition
 extends "res://scripts/data/definitions/content_definition.gd"
-## Metadata only; authored geometry/navigation arrives in Phase 3.
+## Stable room identity and encounter membership; geometry lives in authored scenes.
 @export var encounter_ids: PackedStringArray = []

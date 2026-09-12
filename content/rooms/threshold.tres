@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="RoomDefinition" load_steps=3 format=3]
+[ext_resource type="Script" path="res://scripts/data/definitions/room_definition.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/art/exploration/floor.png" id="icon"]
+[resource]
+script = ExtResource("1")
+id = "room.threshold"
+display_name = "The threshold"
+icon = ExtResource("icon")
+encounter_ids = PackedStringArray()

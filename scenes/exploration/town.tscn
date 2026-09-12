@@ -1,0 +1,36 @@
+[gd_scene load_steps=6 format=3]
+[ext_resource type="Script" path="res://scripts/exploration/world.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/exploration/room.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/exploration/interaction_marker.tscn" id="3"]
+[ext_resource type="Script" path="res://scripts/exploration/exploration_camera.gd" id="4"]
+[ext_resource type="Script" path="res://addons/phantom_camera/scripts/phantom_camera_host/phantom_camera_host.gd" id="5"]
+
+[node name="Exploration" type="Node2D"]
+script = ExtResource("1")
+town = true
+[node name="Rooms" type="Node2D" parent="."]
+[node name="Haven" parent="Rooms" instance=ExtResource("2")]
+room_id = "room.haven"
+title = "Haven"
+town = true
+[node name="Keeper" parent="Rooms/Haven" instance=ExtResource("3")]
+position = Vector2(208,112)
+stable_id = "npc.keeper"
+kind = "npc"
+label = "The keeper"
+[node name="DungeonEntrance" parent="Rooms/Haven" instance=ExtResource("3")]
+position = Vector2(416,160)
+stable_id = "entrance.undercrypt"
+kind = "entrance"
+label = "Undercrypt"
+
+[node name="Camera2D" type="Camera2D" parent="."]
+[node name="PhantomCameraHost" type="Node" parent="Camera2D"]
+script = ExtResource("5")
+[node name="ExplorationCamera" type="Node2D" parent="."]
+script = ExtResource("4")
+follow_mode = 2
+follow_damping = true
+follow_damping_value = 0.12
+priority = 20
+tween_on_load = false

@@ -1,6 +1,6 @@
 # Phase 3: Godot exploration and encounter triggers
 
-Status: **not started**. Reset **2026-09-10**. [Free exploration](free-exploration.md) owns behavior; this document specifies engine integration.
+Specification reset **2026-09-10**. Completion is tracked in [Project phases](project-phases.md); see [implementation and verification](phase3-implementation.md). [Free exploration](free-exploration.md) owns behavior; this document specifies engine integration.
 
 ## Scene composition
 
@@ -18,13 +18,13 @@ An encounter trigger requests a guarded transition, stops exploration and captur
 
 ## Acceptance
 
-- [ ] Authored town and dungeon load; player can traverse rooms with keyboard and click/tap intent.
-- [ ] Collision and navigation agree through the narrowest supported connector.
-- [ ] Unreachable and out-of-map targets stop safely; no wall crossing or teleporting.
-- [ ] Discovery hides unknown rooms/actors and forbids paths through unrevealed space.
-- [ ] NPC interaction revalidates proximity; encounter overlap emits one request.
-- [ ] Panels, focus loss and transitions stop held movement and cancel gestures.
-- [ ] Position/discovery continuation exports without scene references and restores after navigation synchronization.
-- [ ] Runtime checks cover varied frame rates and resizing; no cross-device bit-exact movement claim.
+- [x] Authored town and dungeon load; player can traverse rooms with keyboard and click/tap intent.
+- [x] Collision and navigation agree through the narrowest supported connector.
+- [x] Unreachable and out-of-map targets stop safely; no wall crossing or teleporting.
+- [x] Discovery hides unknown rooms/actors and forbids paths through unrevealed space.
+- [x] NPC interaction revalidates proximity; encounter overlap emits one request.
+- [x] Panels, focus loss and transitions stop held movement and cancel gestures.
+- [x] Position/discovery continuation exports without scene references and restores after navigation synchronization.
+- [x] Runtime checks cover varied frame rates and resizing; no cross-device bit-exact movement claim.
 
 Exact deterministic fixtures apply to semantic outcomes and battle rules, not Godot floating-point physics trajectories.

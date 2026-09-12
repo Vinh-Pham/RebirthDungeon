@@ -53,7 +53,7 @@ def main():
             names = sorted(package.namelist())
         (OUT / f"assets-{index}.txt").write_text("\n".join(names) + "\n")
         forbidden = ("addons/phantom_camera/examples/", "addons/phantom_camera/panel/",
-                     "addons/phantom_camera/themes/", "addons/phantom_camera/fonts/", "demo/", "godot_state_charts_examples/", "docs/", "tests/", "tools/", "build/", ".firecrawl/", ".beckett/")
+                     "addons/phantom_camera/themes/", "addons/phantom_camera/fonts/", "demo/", "godot_state_charts_examples/", "docs/", "tests/", "tools/", "build/", ".agents/", ".claude/", ".junie/", ".pi/", ".zcode/", ".firecrawl/", ".beckett/")
         leaked = [name for name in names if name.startswith(forbidden) or name.endswith((".md", ".cs"))
                   or name.endswith(("/ExampleBalloon.tscn", "/SmallExampleBalloon.tscn", "/DialogueLabel.tscn"))]
         if leaked:

@@ -4,7 +4,7 @@
 
 Rebirth Dungeon is a single-player, offline-first **2D pixel-art RPG built with Godot 4.7 and GDScript**. Explore freely, enter a separate turn-based battle scene, and invest earned progress in a hero whose skills survive rebirth. Desktop is the first development target; landscape Android and iOS releases follow verified exports and device testing.
 
-Documentation reset: **2026-09-10**. The current repository is a Godot scaffold with no gameplay scenes or scripts. All [project phases](project-phases.md) are reset to **not started**, beginning with Phase 0. Features and balance values below describe the intended game, not completed work.
+Documentation reset: **2026-09-10**. The repository now contains the application foundations and authored continuous exploration. See [project phases](project-phases.md) for current completion and remaining combat, progression and persistence work. Features and balance values below describe the intended game, not completed work.
 
 ## Design pillars
 

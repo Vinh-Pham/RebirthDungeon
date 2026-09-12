@@ -62,7 +62,7 @@ func run(tree: SceneTree) -> PackedStringArray:
 			failures.append("Stale revision accepted")
 		if main.request_mode(Mode.DUNGEON, after.session_id + 1, after.revision):
 			failures.append("Wrong session accepted")
-		for target: int in [Mode.DUNGEON, Mode.BATTLE, Mode.DUNGEON, Mode.RESULTS, Mode.TOWN, Mode.MENU]:
+		for target: int in [Mode.DUNGEON, Mode.RESULTS, Mode.TOWN, Mode.MENU]:
 			before = main.observation()
 			if not main.request_mode(target, before.session_id, before.revision):
 				failures.append("Legal fixture navigation rejected: %d" % target)

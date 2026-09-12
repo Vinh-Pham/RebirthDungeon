@@ -1,0 +1,17 @@
+{
+  "assets/art/exploration/hero.png": {
+    "asset_id": "010a8dd3-fa34-41f6-9ee2-16b710844c7c",
+    "label": "hero",
+    "sha12": "0165a235f05f"
+  },
+  "assets/art/exploration/floor.png": {
+    "asset_id": "0225ae7f-3b18-40ac-984d-b39830cad2e7",
+    "label": "floor",
+    "sha12": "01da489b75b2"
+  },
+  "assets/art/exploration/sentinel.png": {
+    "asset_id": "6cd2197b-ad13-49be-bb6e-017742c82bdb",
+    "label": "sentinel",
+    "sha12": "9134e9385676"
+  }
+}

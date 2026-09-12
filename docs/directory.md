@@ -1,6 +1,6 @@
 # Documentation and Godot project directory
 
-Updated **2026-09-10**. Paths in the proposed tree are relative to the project root (`res://` in Godot). They are planned placements, not files claimed to exist. Phase 0 now implements `scenes/main.tscn`, `tests/run_tests.gd`, `tests/fixtures/baseline_fixture.gd`, `tools/` verification/pins and `export_presets.cfg`; Phase 1 adds the application shell and Phase 2 adds `content/`, `scripts/data/`, domain state/rules/commands and focused fixtures. Other feature folders remain planned. See [baseline commands](phase0-baseline.md) and [Phase 2 contracts](phase2-implementation.md).
+Updated **2026-09-10**. Paths in the proposed tree are relative to the project root (`res://` in Godot). They are planned placements, not files claimed to exist. Phase 0 now implements `scenes/main.tscn`, `tests/run_tests.gd`, `tests/fixtures/baseline_fixture.gd`, `tools/` verification/pins and `export_presets.cfg`; Phase 1 adds the application shell and Phase 2 adds `content/`, `scripts/data/`, domain state/rules/commands and focused fixtures. Phase 3 adds `scenes/exploration/`, `scripts/exploration/`, exploration continuation state, room/encounter definitions and generated pixel art. See [Phase 3 implementation](phase3-implementation.md). Other feature folders remain planned. See [baseline commands](phase0-baseline.md) and [Phase 2 contracts](phase2-implementation.md).
 
 ## Reading order and ownership
 

@@ -1,8 +1,8 @@
 # Rebirth Dungeon: Project Phases
 
-**Replanned: 2026-09-11 — Godot 4.7 / typed GDScript with the selected addons.** Phases 0–2 were implemented and verified after the 2026-09-10 reset; later phases remain unstarted. **Completed: 3 of 17. Current focus: Phase 3.** Pre-Godot implementation, tests and platform acceptance do not carry forward.
+**Replanned: 2026-09-11 — Godot 4.7 / typed GDScript with the selected addons.** Phases 0–3 were implemented and verified after the 2026-09-10 reset; later phases remain unstarted. **Completed: 4 of 17. Current focus: Phase 4.** Pre-Godot implementation, tests and platform acceptance do not carry forward.
 
-The repository contains the persistent State Charts application shell, validated content catalog, independent domain state/RNG/command foundations, isolated addon qualification fixtures, verification runner and export presets. Feature destinations remain development fixtures; gameplay remains unimplemented. This roadmap incorporates the currently configured addons without treating installation as feature completion. [Game Plan](game-plan.md) defines architecture, [Directory](directory.md) defines file placement, gameplay specs define rules, and [AGENTS.md](../AGENTS.md) defines addon usage and integration boundaries. Phase numbers remain stable so existing specification links retain their meaning.
+The repository contains the persistent State Charts application shell, validated content catalog, independent domain state/RNG/command foundations, isolated addon qualification fixtures, verification runner and export presets. Town and dungeon exploration now include continuous movement, discovery, guarded encounter fixtures and Phantom Camera follow. Combat, progression and durable saves remain unimplemented. This roadmap incorporates the currently configured addons without treating installation as feature completion. [Game Plan](game-plan.md) defines architecture, [Directory](directory.md) defines file placement, gameplay specs define rules, and [AGENTS.md](../AGENTS.md) defines addon usage and integration boundaries. Phase numbers remain stable so existing specification links retain their meaning.
 
 ## Status and completion policy
 
@@ -38,7 +38,7 @@ Build only lightweight mode/command contracts in Phase 1, domain types in Phase 
 | 0 | Godot baseline and verification tools | Complete |
 | 1 | Addon qualification and State Charts application shell | Complete |
 | 2 | Validated Resources and deterministic rule foundations | Complete |
-| 3 | Continuous exploration, authored rooms and Phantom Camera | Not started |
+| 3 | Continuous exploration, authored rooms and Phantom Camera | Complete |
 | 4 | Five-dice combat rules and LimboAI decisions | Not started |
 | 5 | Battle HUD, state flow and camera staging | Not started |
 | 6 | Durable saves and interrupted-session recovery | Not started |
@@ -103,17 +103,20 @@ Verified 2026-09-11 with the pinned macOS editor: 494 domain checks plus content
 
 ## Phase 3: Continuous exploration, authored rooms and Phantom Camera
 
-**Status: Not started. Dependencies: 2.**
+**Status: Complete. Dependencies: 2.**
 
-- [ ] Build player movement with CharacterBody2D, collision and NavigationAgent2D; support direct and click/tap input.
-- [ ] Author one town and connected dungeon rooms with navigation polygons, connectors and stable encounter/interaction markers.
-- [ ] Wait for navigation synchronization; validate clearance, unreachable destinations and world-coordinate input.
-- [ ] Implement room discovery and observations that hide undiscovered actors/content and gate navigation.
-- [ ] Guard encounter requests, freeze movement at transitions and export exploration continuation without scene references.
-- [ ] Integrate Camera2D → PhantomCameraHost and an exploration PhantomCamera2D with authored follow mode, bounds, zoom and unambiguous priority. Let the host own the actual camera transform.
-- [ ] Rebind follow targets on mode replacement; verify coordinate picking, compact/wide framing, room-edge transitions and discovery masking. Camera movement must not expose hidden rooms or determine encounter legality.
+- [x] Build player movement with CharacterBody2D, collision and NavigationAgent2D; support direct and click/tap input.
+- [x] Author one town and connected dungeon rooms with navigation polygons, connectors and stable encounter/interaction markers.
+- [x] Wait for navigation synchronization; validate clearance, unreachable destinations and world-coordinate input.
+- [x] Implement room discovery and observations that hide undiscovered actors/content and gate navigation.
+- [x] Guard encounter requests, freeze movement at transitions and export exploration continuation without scene references.
+- [x] Integrate Camera2D → PhantomCameraHost and an exploration PhantomCamera2D with authored follow mode, bounds, zoom and unambiguous priority. Let the host own the actual camera transform.
+- [x] Rebind follow targets on mode replacement; verify coordinate picking, compact/wide framing, room-edge transitions and discovery masking. Camera movement must not expose hidden rooms or determine encounter legality.
 
 **Exit criterion:** The authored world is traversable, collision/discovery/input gates work and each encounter triggers once. Phantom Camera follows and rebinds correctly without revealing hidden content or moving UI. See [Phase 3](phase3-movement.md).
+
+
+Verified on 2026-09-11 (2026-09-12 UTC) with Godot 4.7.2 (`ed1daf0bf`), content revision 2 and Phantom Camera 0.11.0.3. Sixty exploration integration checks pass, alongside all earlier fixtures, strict import/runtime checks, the intentional negative test and all five resource packs. Beckett rendered checks cover keyboard traversal, encounter entry/return, compact/wide framing, input panels and discovery masking. A game-owned camera subclass corrects viewport-specific limit clamping without vendor edits. No combat, disk durability or mobile executable/device acceptance is claimed. [Implementation](phase3-implementation.md) · [Evidence](evidence/phase3/README.md).
 
 ## Phase 4: Five-dice combat rules and LimboAI decisions
 

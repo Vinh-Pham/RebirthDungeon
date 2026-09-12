@@ -11,6 +11,7 @@ var revision: int = 0
 var mode: Mode = Mode.MENU
 var hero: Hero
 var battle: Battle
+var exploration: RefCounted
 var rng := Streams.new(0)
 var content_versions: Dictionary = {}
 var accepted_operations: Dictionary[String, int] = {}
@@ -29,6 +30,7 @@ func copy() -> RefCounted:
 	result.mode = mode
 	result.hero = hero.copy() if hero != null else null
 	result.battle = battle.copy() if battle != null else null
+	result.exploration = exploration.copy() if exploration != null else null
 	result.rng.restore(rng.capture())
 	result.content_versions = content_versions.duplicate(true)
 	result.accepted_operations = accepted_operations.duplicate()
@@ -43,6 +45,7 @@ func invalidate() -> void:
 	mode = Mode.MENU
 	hero = null
 	battle = null
+	exploration = null
 	content_versions.clear()
 	accepted_operations.clear()
 	rng = Streams.new(0)

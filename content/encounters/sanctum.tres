@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="EncounterDefinition" load_steps=3 format=3]
+[ext_resource type="Script" path="res://scripts/data/definitions/encounter_definition.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/art/exploration/sentinel.png" id="icon"]
+[resource]
+script = ExtResource("1")
+id = "encounter.sanctum"
+display_name = "Crypt sentinel"
+icon = ExtResource("icon")
+actor_ids = PackedStringArray("actor.training_enemy")

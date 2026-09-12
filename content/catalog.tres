@@ -22,6 +22,13 @@
 [ext_resource type="Script" path="res://scripts/data/definitions/room_definition.gd" id="rooms_type"]
 [ext_resource type="Resource" path="res://content/rooms/training.tres" id="rooms_training"]
 
+[ext_resource type="Resource" path="res://content/rooms/haven.tres" id="rooms_haven"]
+[ext_resource type="Resource" path="res://content/rooms/threshold.tres" id="rooms_threshold"]
+[ext_resource type="Resource" path="res://content/rooms/gallery.tres" id="rooms_gallery"]
+[ext_resource type="Resource" path="res://content/rooms/sanctum.tres" id="rooms_sanctum"]
+[ext_resource type="Resource" path="res://content/encounters/gallery.tres" id="encounters_gallery"]
+[ext_resource type="Resource" path="res://content/encounters/sanctum.tres" id="encounters_sanctum"]
+
 [sub_resource type="Resource" id="combo0"]
 script = ExtResource("combo")
 key = "none"
@@ -72,11 +79,12 @@ denominator = 1
 
 [resource]
 script = ExtResource("script")
+content_version = 2
 combinations = Array[ExtResource("combo")]([SubResource("combo0"), SubResource("combo1"), SubResource("combo2"), SubResource("combo3"), SubResource("combo4"), SubResource("combo5"), SubResource("combo6"), SubResource("combo7")])
 actors = Array[ExtResource("actors_type")]([ExtResource("actors_hero"), ExtResource("actors_training_enemy")])
 skills = Array[ExtResource("skills_type")]([ExtResource("skills_sword"), ExtResource("skills_fortify"), ExtResource("skills_enemy_strike")])
 stats = Array[ExtResource("stats_type")]([ExtResource("stats_strength"), ExtResource("stats_defense")])
 statuses = Array[ExtResource("statuses_type")]([ExtResource("statuses_fortified"), ExtResource("statuses_weakened")])
 items = Array[ExtResource("items_type")]([ExtResource("items_training_sword")])
-encounters = Array[ExtResource("encounters_type")]([ExtResource("encounters_training")])
-rooms = Array[ExtResource("rooms_type")]([ExtResource("rooms_training")])
+encounters = Array[ExtResource("encounters_type")]([ExtResource("encounters_training"), ExtResource("encounters_gallery"), ExtResource("encounters_sanctum")])
+rooms = Array[ExtResource("rooms_type")]([ExtResource("rooms_training"), ExtResource("rooms_haven"), ExtResource("rooms_threshold"), ExtResource("rooms_gallery"), ExtResource("rooms_sanctum")])

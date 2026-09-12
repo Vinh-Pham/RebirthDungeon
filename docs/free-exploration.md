@@ -1,6 +1,6 @@
 # Free exploration and separate dice battles
 
-Godot revision: **2026-09-10**. Status: **planned; not implemented**. This is the active exploration and first-loop contract. It replaces the old grid traversal, spatial combat, fixed-point geometry and shared-world implementation requirements. [Game Plan](game-plan.md) owns engine architecture.
+Godot revision: **2026-09-10**. Implementation status belongs to [Project phases](project-phases.md). Phase 3 supplies in-memory exploration and encounter fixtures; combat, services and persistence follow later. This is the active exploration and first-loop contract. It replaces the old grid traversal, spatial combat, fixed-point geometry and shared-world implementation requirements. [Game Plan](game-plan.md) owns engine architecture.
 
 ## Ownership and time
 

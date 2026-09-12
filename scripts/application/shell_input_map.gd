@@ -18,6 +18,13 @@ static func configure() -> void:
 		var direction := InputEventJoypadButton.new()
 		direction.button_index = binding[1]
 		_add(binding[0], direction)
+	for binding: Array in [[&"move_left", KEY_A, KEY_LEFT], [&"move_right", KEY_D, KEY_RIGHT], [&"move_up", KEY_W, KEY_UP], [&"move_down", KEY_S, KEY_DOWN]]:
+		if not InputMap.has_action(binding[0]):
+			InputMap.add_action(binding[0])
+		for key: int in [binding[1], binding[2]]:
+			var event := InputEventKey.new()
+			event.physical_keycode = key
+			_add(binding[0], event)
 	Input.emulate_mouse_from_touch = true
 
 static func _add(action: StringName, event: InputEvent) -> void:

@@ -32,6 +32,8 @@ func _request(target: int) -> void:
 func set_input_enabled(enabled: bool) -> void:
 	for button: Button in _buttons:
 		button.disabled = not enabled
+		if not enabled and button.is_inside_tree():
+			button.release_focus()
 	if enabled and not _buttons.is_empty():
 		_buttons[0].grab_focus()
 

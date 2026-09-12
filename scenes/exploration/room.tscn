@@ -1,0 +1,11 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/exploration/room.gd" id="1"]
+[node name="Room" type="Node2D"]
+texture_filter = 1
+script = ExtResource("1")
+[node name="NavigationRegion2D" type="NavigationRegion2D" parent="."]
+enabled = false
+[node name="WestConnector" type="Marker2D" parent="."]
+position = Vector2(0,160)
+[node name="EastConnector" type="Marker2D" parent="."]
+position = Vector2(480,160)
