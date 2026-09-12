@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="ItemDefinition" format=3]
+[ext_resource type="Script" path="res://scripts/data/definitions/item_definition.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/art/dungeon_mark.svg" id="2"]
+[resource]
+script = ExtResource("1")
+icon = ExtResource("2")
+id = "item.armor"
+display_name = "Travel armor"
+width = 2
+height = 3
+max_stack = 1
+category = "equipment"
+slot = "body"
+price = 20
+modifiers = Dictionary[String, int]({"max_hp":5,"stat.defense":1})

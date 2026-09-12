@@ -10,3 +10,5 @@ display_name = "Training Sword"
 icon = ExtResource("icon")
 weapon = "sword"
 height = 3
+
+slot = "main_hand"

@@ -7,17 +7,20 @@ const Session = preload("res://scripts/domain/state/session_shell.gd")
 const Catalog = preload("res://scripts/data/content_catalog.gd")
 const Rules = preload("res://scripts/domain/rules/battle_rules.gd")
 const Dice = preload("res://scripts/domain/rules/dice_rules.gd")
+const Progression = preload("res://scripts/domain/rules/progression_rules.gd")
+const Inventory = preload("res://scripts/domain/rules/inventory_rules.gd")
 const KINDS := ["select_skill", "roll", "keep", "reroll", "commit", "pass", "enemy_action", "buy_potion", "recover", "enter_dungeon", "abandon", "use_potion"]
 
 static func parse_intent(intent: Dictionary) -> Command:
 	var expected := {"session_id": TYPE_INT, "expected_revision": TYPE_INT, "operation_id": TYPE_STRING,
 		"kind": TYPE_STRING, "actor_id": TYPE_STRING, "skill_id": TYPE_STRING, "target_id": TYPE_STRING}
 	if intent.get("kind") in ["keep", "reroll"]: expected["indices"] = TYPE_ARRAY
+	if intent.get("kind") in Progression.KINDS: expected["data"] = TYPE_DICTIONARY
 	if intent.size() != expected.size(): return null
 	for key: String in expected:
 		if typeof(intent.get(key)) != expected[key]: return null
 	var command := Command.new()
-	for key: String in expected: command.set(key, intent[key].duplicate() if key == "indices" else intent[key])
+	for key: String in expected: command.set(key, intent[key].duplicate(true) if key in ["indices","data"] else intent[key])
 	return command
 
 static func resolve(session: Session, command: Command, catalog: Catalog) -> Result:
@@ -26,6 +29,7 @@ static func resolve(session: Session, command: Command, catalog: Catalog) -> Res
 	if command.operation_id.strip_edges().is_empty() or command.operation_id.length() > 128: return _reject("invalid_operation_id", command)
 	if session.accepted_operations.has(command.operation_id): return _reject("duplicate_operation", command)
 	if session.revision >= 9223372036854775807: return _reject("revision_exhausted", command)
+	if command.kind in Progression.KINDS: return _progression(session,command,catalog)
 	if command.kind not in KINDS: return _reject("unsupported_command", command)
 	if command.kind in ["buy_potion","recover","enter_dungeon","abandon"]:
 		return _service(session,command,catalog)
@@ -88,7 +92,8 @@ static func resolve(session: Session, command: Command, catalog: Catalog) -> Res
 			next.rerolls_remaining -= 1
 			events.append({"type": "rerolled", "hand": next.hand.duplicate()})
 		"use_potion":
-			candidate.hero.potions -= 1
+			if candidate.hero.growth.is_empty(): candidate.hero.potions -= 1
+			elif not Inventory.use_potion(candidate.hero): return _reject("No unlocked carried potion.",command)
 			candidate.hero.current[0] = mini(candidate.hero.maximum[0], candidate.hero.current[0] + 15)
 			events.append({"type":"potion_used","healing":15})
 			Rules.finish(candidate,catalog,false,events)
@@ -126,6 +131,15 @@ static func _service(session: Session, command: Command, catalog: Catalog) -> Re
 	else:
 		if session.mode != Session.Mode.TOWN: return _reject("not_in_town",command)
 		if command.target_id != ("entrance.undercrypt" if command.kind == "enter_dungeon" else "npc.keeper"): return _reject("invalid_target",command)
+	if command.kind == "buy_potion" and not session.hero.growth.is_empty():
+		command.kind = "buy_item"
+		command.data = {"item":"item.potion","destination":"","column":0,"row":0,"quantity":1}
+		return _progression(session,command,catalog)
+	if command.kind == "enter_dungeon" and not session.hero.growth.is_empty():
+		if Inventory.capacity(session.hero,catalog)-session.hero.committed_gold < 25:
+			return _reject("Bank gold to reserve 25 capacity for expedition rewards.",command)
+		for item: RefCounted in session.hero.items:
+			if item.container == "overflow": return _reject("Withdraw all reward overflow before entering.",command)
 	if command.kind == "buy_potion":
 		if session.hero.committed_gold < 5: return _reject("insufficient_gold",command)
 		if session.hero.potions >= 5: return _reject("supplies_full",command)
@@ -145,13 +159,32 @@ static func _service(session: Session, command: Command, catalog: Catalog) -> Re
 			candidate.exploration = preload("res://scripts/domain/state/exploration_state.gd").new()
 			candidate.battle = null
 			candidate.mode = Session.Mode.DUNGEON
+			Progression.begin(candidate)
 		"abandon":
+			var outcome_error := Progression.finish(candidate,false,catalog)
+			if not outcome_error.is_empty(): return _reject(outcome_error,command)
 			candidate.exploration.pending_gold = 0
 			candidate.battle = null
 			candidate.hero.statuses.clear()
 			candidate.hero.cooldowns.clear()
 			candidate.hero.shield = 0
 			candidate.mode = Session.Mode.RESULTS
+	candidate.revision += 1
+	candidate.accepted_operations[command.operation_id] = candidate.revision
+	var result := Result.new()
+	result.accepted = true
+	result.code = "accepted"
+	result.operation_id = command.operation_id
+	result.candidate = candidate
+	result.events.append({"type":command.kind,"session_id":candidate.session_id,"revision":candidate.revision,"operation_id":command.operation_id})
+	return result
+
+static func _progression(session: Session, command: Command, catalog: Catalog) -> Result:
+	if session.hero == null or command.actor_id != "hero" or not command.skill_id.is_empty() or session.content_versions != catalog.versions(): return _reject("invalid_progression_command",command)
+	if command.kind in ["buy_item","sell_item","bank_deposit","bank_withdraw","learn_lesson"] and command.target_id != "npc.keeper": return _reject("invalid_service_target",command)
+	var candidate: Session = session.copy()
+	var error := Progression.action(candidate,command.kind,command.data,command.operation_id,catalog)
+	if not error.is_empty(): return _reject(error,command)
 	candidate.revision += 1
 	candidate.accepted_operations[command.operation_id] = candidate.revision
 	var result := Result.new()

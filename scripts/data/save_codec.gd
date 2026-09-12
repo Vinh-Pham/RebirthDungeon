@@ -9,7 +9,8 @@ const Battle = preload("res://scripts/domain/state/battle_state.gd")
 const Status = preload("res://scripts/domain/state/status_state.gd")
 const Item = preload("res://scripts/domain/state/item_state.gd")
 const Exploration = preload("res://scripts/domain/state/exploration_state.gd")
-const FORMAT = "rebirth.session.v2"
+const FORMAT = "rebirth.session.v3"
+const ProgressionCodec = preload("res://scripts/data/progression_codec.gd")
 const MAX_BYTES = 4194304
 var error: String = ""
 
@@ -25,7 +26,7 @@ func decode(text: String, catalog: RefCounted) -> Dictionary:
 	if parser.parse(text) != OK: return _fail("Checkpoint JSON is damaged.")
 	var envelope: Variant = parser.data
 	if not envelope is Dictionary or not keys(envelope,["format","sequence","payload","checksum"]): return _fail("Invalid checkpoint envelope.")
-	if envelope.format not in [FORMAT,"rebirth.session.v1"]: return _fail("Unsupported save format.", "incompatible")
+	if envelope.format not in [FORMAT,"rebirth.session.v1","rebirth.session.v2"]: return _fail("Unsupported save format.", "incompatible")
 	if not Limits.valid_decimal(envelope.sequence) or envelope.sequence.to_int() < 1: return _fail("Invalid sequence.")
 	if not envelope.payload is String or not envelope.checksum is String: return _fail("Invalid payload.")
 	if (envelope.format+"\n"+envelope.sequence+"\n"+envelope.payload).sha256_text() != envelope.checksum: return _fail("Checkpoint checksum mismatch.")
@@ -36,6 +37,14 @@ func decode(text: String, catalog: RefCounted) -> Dictionary:
 	if envelope.format == "rebirth.session.v1":
 		if not data.get("hero") is Dictionary or data.hero.has("potions"): return _fail("Invalid legacy hero.")
 		data.hero["potions"] = 0 # Phase 6 had no supplies; migrate without granting any.
+	if envelope.format != FORMAT:
+		if not data.get("hero") is Dictionary or data.hero.has("growth"): return _fail("Invalid legacy progression.")
+		data.hero["growth"] = {}
+		if not data.hero.get("items") is Array: return _fail("Invalid legacy items.")
+		for item: Variant in data.hero.items:
+			if not keys(item,["instance_id","definition_id","quantity","rolled_modifiers"]): return _fail("Invalid legacy item.")
+			item.merge({"origin_id":"","container":"overflow","column":0,"row":0,"locked":false,"pages":[]})
+		if data.get("exploration") is Dictionary and not data.exploration.is_empty(): data.exploration["progression"] = {}
 	var session := restore(data,catalog)
 	if session == null: return _fail("Invalid saved state: "+error)
 	return {"status":"ok","session":session,"sequence":envelope.sequence.to_int()}
@@ -120,13 +129,15 @@ func restore(data: Dictionary, catalog: RefCounted) -> SessionShell:
 	if not data.exploration is Dictionary: return null
 	if not data.exploration.is_empty():
 		var ex: Dictionary = data.exploration
-		if not keys(ex,["layout_id","layout","world_id","position","discovered","resolved","active_encounter","pending_gold"]): return null
+		if not keys(ex,["layout_id","layout","world_id","position","discovered","resolved","active_encounter","pending_gold","progression"]): return null
 		if ex.layout_id != "undercrypt.v1" or ex.layout != Exploration.LAYOUT: return null
 		if ex.world_id != "dungeon.undercrypt" or not integer(ex.pending_gold): return null
 		if not position(ex.position): return null
 		if not ids(ex.discovered,catalog,"room.") or not ids(ex.resolved,catalog,"encounter."): return null
 		if not ex.active_encounter is String or (not ex.active_encounter.is_empty() and catalog.definition(ex.active_encounter) == null): return null
+		if not ex.progression is Dictionary: return null
 		session.exploration = Exploration.new()
+		session.exploration.progression = ex.progression.duplicate(true)
 		session.exploration.world_id = ex.world_id
 		session.exploration.position_x = ex.position.x
 		session.exploration.position_y = ex.position.y
@@ -196,6 +207,8 @@ func restore(data: Dictionary, catalog: RefCounted) -> SessionShell:
 		if session.battle.outcome.is_empty() and session.exploration.resolved.has(session.battle.encounter_id): return null
 	elif session.exploration != null and not session.exploration.active_encounter.is_empty(): return null
 	if session.battle == null and hero.reserved != PackedInt64Array([0,0,0]): return null
+	error = "progression or inventory"
+	if not ProgressionCodec.validate(session,catalog): return null
 	error = ""
 	return session
 
@@ -210,7 +223,7 @@ func ids(value: Variant, catalog: RefCounted, prefix: String) -> bool:
 func actor(target: Actor, value: Variant, catalog: RefCounted, is_hero: bool) -> bool:
 	if not value is Dictionary: return false
 	var data: Dictionary = value
-	if not keys(data,Capture.ACTOR_FIELDS+["statuses"]+(["items","committed_gold","potions"] if is_hero else [])): return false
+	if not keys(data,Capture.ACTOR_FIELDS+["statuses"]+(["items","committed_gold","potions","growth"] if is_hero else [])): return false
 	if not data.instance_id is String or not data.definition_id is String or not data.definition_id.begins_with("actor.") or catalog.definition(data.definition_id) == null: return false
 	for field: String in ["current","maximum","reserved","regeneration"]:
 		if not vector(data[field],3): return false
@@ -257,23 +270,27 @@ func actor(target: Actor, value: Variant, catalog: RefCounted, is_hero: bool) ->
 		else: target.set(field,data[field])
 	if is_hero:
 		if not integer(data.committed_gold) or not data.items is Array or data.items.size() > 1000: return false
-		if not integer(data.potions,0,5): return false
+		if not integer(data.potions,0,1000000) or not data.growth is Dictionary: return false
+		target.set("growth",data.growth.duplicate(true))
 		target.set("potions",data.potions)
 		target.set("committed_gold",data.committed_gold)
 		var instance_ids := {}
 		for record: Variant in data.items:
-			if not record is Dictionary or not keys(record,["instance_id","definition_id","quantity","rolled_modifiers"]): return false
+			if not record is Dictionary or not keys(record,ProgressionCodec.ITEM_FIELDS): return false
 			if not record.instance_id is String or record.instance_id.is_empty() or instance_ids.has(record.instance_id): return false
 			if not record.definition_id is String or not record.definition_id.begins_with("item.") or catalog.definition(record.definition_id) == null or not integer(record.quantity,1): return false
 			if not record.rolled_modifiers is Dictionary: return false
 			for key: Variant in record.rolled_modifiers:
-				if not key is String or catalog.definition(key) == null or not integer(record.rolled_modifiers[key],-1000000): return false
+				if not key is String or not key.begins_with("stat.") or catalog.definition(key) == null or not integer(record.rolled_modifiers[key],-1000000): return false
 			instance_ids[record.instance_id] = true
 			var item := Item.new()
 			item.instance_id = record.instance_id
 			item.definition_id = record.definition_id
 			item.quantity = record.quantity
 			item.rolled_modifiers.assign(record.rolled_modifiers)
+			if not ProgressionCodec.item_fields(record): return false
+			for field: String in ["origin_id","container","column","row","locked"]: item.set(field,record[field])
+			item.pages.assign(record.pages)
 			target.get("items").append(item)
 	return true
 

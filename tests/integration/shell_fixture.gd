@@ -9,6 +9,7 @@ func _settle(tree: SceneTree) -> void:
 func run(tree: SceneTree) -> PackedStringArray:
 	var failures := PackedStringArray()
 	var main := load("res://scenes/main.tscn").instantiate() as DungeonApplication
+	main.progression_enabled = false # Preserve the pre-progression contract fixture.
 	main.persistence_enabled = false
 	tree.root.add_child(main)
 	await _settle(tree)

@@ -5,6 +5,7 @@ signal closed
 signal confirmed(kind: String)
 var can_buy: bool = false
 var can_enter: bool = false
+var has_progression: bool = false
 var snapshot: Dictionary = {}
 var validator: Callable
 var _epoch: int = 0
@@ -16,7 +17,8 @@ var _live: bool = true
 func start(observation: Dictionary, cue: String, valid: Callable) -> void:
 	snapshot = observation.duplicate(true)
 	validator = valid
-	can_buy = snapshot.hero.committed_gold >= 5 and snapshot.hero.potions < 5
+	has_progression = not snapshot.hero.growth.is_empty()
+	can_buy = snapshot.hero.committed_gold >= 5 and (has_progression or snapshot.hero.potions < 5)
 	can_enter = snapshot.hero.current[0] > 0
 	layer = 10
 	name = "TownDialogue"
@@ -55,14 +57,17 @@ func advance(cue: String) -> void:
 		_body.remove_child(child)
 		child.queue_free()
 	var heading := Label.new()
-	heading.text = line.character + "  /  %d gold · %d / 5 potions\nHP %d / %d · MP %d / %d · SP %d / %d" % [snapshot.hero.committed_gold,snapshot.hero.potions,snapshot.hero.current[0],snapshot.hero.maximum[0],snapshot.hero.current[1],snapshot.hero.maximum[1],snapshot.hero.current[2],snapshot.hero.maximum[2]]
+	heading.text = line.character + "  /  %d gold · %d potions\nHP %d / %d · MP %d / %d · SP %d / %d" % [snapshot.hero.committed_gold,snapshot.hero.potions,snapshot.hero.current[0],snapshot.hero.maximum[0],snapshot.hero.current[1],snapshot.hero.maximum[1],snapshot.hero.current[2],snapshot.hero.maximum[2]]
 	heading.add_theme_font_size_override("font_size",24)
 	heading.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_body.add_child(heading)
 	var text := Label.new()
 	text.text = line.text
 	if line.get_tag_value("service") == "abandon":
+		if has_progression: text.text = "Abandon this expedition? Pending gold, XP, training, items and title evidence are discarded. Lose 30% of carried gold (rounded down). Banked gold and unspent brought items are retained."
 		text.text += "\nPending gold to lose: %d" % snapshot.exploration.get("pending_gold",0)
+	if has_progression and line.get_tag_value("service") == "buy_potion":
+		text.text = "Buy one healing potion for 5 carried gold? Restores up to 15 HP and spends a full activation before rolling. Requires inventory room."
 	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_body.add_child(text)
 	if line.has_tag("service"):

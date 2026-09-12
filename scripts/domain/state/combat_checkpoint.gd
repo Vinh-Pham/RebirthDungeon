@@ -39,12 +39,15 @@ static func restore(data: Dictionary, catalog: RefCounted) -> Session:
 	if not _actor(result.hero, data.hero): return null
 	result.hero.committed_gold = data.hero.get("committed_gold", 0)
 	result.hero.potions = data.hero.get("potions", 0)
+	result.hero.growth = data.hero.get("growth",{}).duplicate(true)
 	for record: Dictionary in data.hero.get("items", []):
 		var item := Item.new()
 		item.instance_id = record.instance_id
 		item.definition_id = record.definition_id
 		item.quantity = record.quantity
 		item.rolled_modifiers.assign(record.rolled_modifiers)
+		for field: String in ["origin_id","container","column","row","locked"]: item.set(field,record.get(field,item.get(field)))
+		item.pages.assign(record.get("pages",[]))
 		result.hero.items.append(item)
 	result.battle = Battle.new()
 	for field: String in BATTLE_FIELDS:
@@ -57,6 +60,7 @@ static func restore(data: Dictionary, catalog: RefCounted) -> Session:
 	if result.battle.enemies.size() != 1: return null
 	if not data.exploration.is_empty():
 		result.exploration = Exploration.new()
+		result.exploration.progression = data.exploration.get("progression",{}).duplicate(true)
 		for field: String in ["world_id", "discovered", "resolved", "active_encounter", "pending_gold"]:
 			result.exploration.set(field, _detached(data.exploration[field]))
 		result.exploration.position_x = data.exploration.position.x

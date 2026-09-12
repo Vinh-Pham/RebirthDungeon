@@ -1,6 +1,7 @@
 extends DungeonApplication
 ## Beckett-only fault/restart harness; never touches the normal profile.
 func _init() -> void:
+	progression_enabled = false
 	save_directory = "user://phase6-rendered"
 func seed_fixture(kind: String = "locked") -> void:
 	var helper := preload("res://tests/integration/save_fixture.gd").new()

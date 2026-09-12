@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="ItemDefinition" format=3]
+[ext_resource type="Script" path="res://scripts/data/definitions/item_definition.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/art/dungeon_mark.svg" id="2"]
+[resource]
+script = ExtResource("1")
+icon = ExtResource("2")
+id = "item.focus_page_two"
+display_name = "Focus page two"
+width = 1
+height = 1
+max_stack = 10
+category = "page"
+slot = ""
+price = 5
+book_id = "item.focus_notes"
+page_id = "page.focus.two"

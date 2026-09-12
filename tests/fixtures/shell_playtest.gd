@@ -9,4 +9,5 @@ func inject_loading_failure() -> void:
 	required_resource_overrides = {"res://assets/art/dungeon_mark.svg": "res://assets/art/missing_fixture.svg"}
 
 func _init() -> void:
+	progression_enabled = false
 	persistence_enabled = false

@@ -150,6 +150,30 @@ func validate(manifest: Manifest) -> PackedStringArray:
 		_bound(item, "max_stack", item.max_stack, 1)
 		if item.weapon not in ["", "sword"]:
 			_error(item, "weapon", "unsupported weapon")
+		if item.category not in ["equipment","potion","bag","gold_bag","book","page","coupon"]: _error(item,"category","unsupported")
+		_bound(item,"price",item.price)
+		_bound(item,"gold_capacity",item.gold_capacity)
+		if item.category == "bag" and (item.bag_width < 1 or item.bag_width > 6 or item.bag_height < 1 or item.bag_height > 10 or item.max_stack != 1): _error(item,"bag_width","invalid bag")
+		if item.category in ["equipment","bag","gold_bag","book","coupon"] and item.max_stack != 1: _error(item,"max_stack","unique item must not stack")
+		for key: String in item.modifiers:
+			if key not in ["max_hp","max_mp","max_sp"]: _reference(item,"modifiers",key,"stat")
+			if absi(item.modifiers[key]) > 1000000: _error(item,"modifiers","outside limits")
+		if not item.skill_id.is_empty(): _reference(item,"skill_id",item.skill_id,"skill")
+		if not item.book_id.is_empty(): _reference(item,"book_id",item.book_id,"item")
+		if not item.complete_book.is_empty(): _reference(item,"complete_book",item.complete_book,"item")
+		if item.category == "equipment" and item.slot not in ["main_hand","off_hand","head","body","hands","feet","accessory"]: _error(item,"slot","invalid equipment slot")
+		if item.two_handed and item.slot != "main_hand": _error(item,"two_handed","requires main hand")
+		if item.category == "page":
+			var book: Resource = _index.get(item.book_id)
+			if not book is Manifest.ITEMS or book.category != "book" or not book.required_pages.has(item.page_id): _error(item,"book_id","page must match a required book page")
+		if not item.required_pages.is_empty():
+			var completed: Resource = _index.get(item.complete_book)
+			if not completed is Manifest.ITEMS or completed.category != "book" or completed.skill_id.is_empty() or completed.id == item.id: _error(item,"complete_book","requires a distinct complete skill book")
+			var seen_pages := {}
+			for page: String in item.required_pages:
+				if seen_pages.has(page) or page.is_empty(): _error(item,"required_pages","invalid or duplicate page")
+				seen_pages[page] = true
+		if item.category == "coupon" and not load("res://content/progression/starter.tres").titles.has(item.title_id): _error(item,"title_id","unknown title")
 	for encounter: Manifest.ENCOUNTERS in manifest.encounters:
 		if encounter == null: continue
 		if encounter.actor_ids.size() != 1:
@@ -161,6 +185,7 @@ func validate(manifest: Manifest) -> PackedStringArray:
 	for room: Manifest.ROOMS in manifest.rooms:
 		if room != null:
 			_references(room, "encounter_ids", room.encounter_ids, "encounter")
+	_validate_progression(load("res://content/progression/starter.tres"))
 	return _errors.duplicate()
 
 func _error(resource: Resource, property: String, reason: String) -> void:
@@ -196,3 +221,25 @@ func _weights(resource: Resource, field: String, weights: PackedInt64Array) -> v
 		total += weight
 	if total == 0:
 		_error(resource, field, "weight sum must be positive")
+
+func _validate_progression(config: Resource) -> void:
+	if config.version != 1: _error(config,"version","unsupported progression version")
+	for field: String in ["ap_per_level","rank_ap_cost","training_per_use","encounter_xp","lesson_price"]:
+		_bound(config,field,config.get(field),1,1000)
+	if config.xp_to_next.is_empty(): _error(config,"xp_to_next","empty level table")
+	for threshold: int in config.xp_to_next: _bound(config,"xp_to_next",threshold,1)
+	_reference(config,"lesson_skill",config.lesson_skill,"skill")
+	for id: String in config.talents:
+		var talent: Dictionary = config.talents[id]
+		if not id.begins_with("talent.") or talent.name.is_empty(): _error(config,"talents","invalid ID or name")
+		_reference(config,"mastery_stat",talent.mastery_stat,"stat")
+		_references(config,"skills",PackedStringArray(talent.skills),"skill")
+		for stat: String in talent.growth:
+			if stat not in ["max_hp","max_mp","max_sp"]: _reference(config,"growth",stat,"stat")
+			_bound(config,"growth",talent.growth[stat])
+	for id: String in config.titles:
+		var title: Dictionary = config.titles[id]
+		if not id.begins_with("title.") or title.name.is_empty() or title.slot not in ["first","second"]: _error(config,"titles","invalid title")
+		for stat: String in title.effects:
+			if stat not in ["max_hp","max_mp","max_sp"]: _reference(config,"effects",stat,"stat")
+			_bound(config,"effects",title.effects[stat],-1000000)

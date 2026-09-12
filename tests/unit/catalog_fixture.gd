@@ -17,7 +17,7 @@ func run() -> PackedStringArray:
 	_check(errors.is_empty(), "Valid authored catalog rejected: " + str(errors))
 	if not errors.is_empty(): return _failures
 	var ids := catalog.ids()
-	_check(ids.size() == 26 and ids.has("skill.sword"), "Explicit catalog membership")
+	_check(ids.size() == 39 and ids.has("skill.sword"), "Explicit catalog membership")
 	_check(catalog.versions().content == 3, "Catalog content version")
 	var mutations: Array[Dictionary] = [
 		{"field": "cost", "change": func(m: Manifest): m.skills[0].ranks[0].sp_cost = 0},

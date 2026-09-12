@@ -88,6 +88,7 @@ static func finish(session: Session, catalog: RefCounted, discard: bool, events:
 					int(locked.duration) if int(locked.duration) > 0 else status.duration, source.instance_id)
 			if int(locked.cooldown) > 0:
 				source.cooldowns[battle.selected_skill] = source.completed_activations + int(locked.cooldown) + 1
+			if source == session.hero: preload("res://scripts/domain/rules/progression_rules.gd").activation(session,battle.selected_skill)
 			events.append({"type": "effect", "actor_id": source.instance_id, "target_id": target.instance_id, "skill_id": battle.selected_skill, "preview": effect})
 	events.append({"type": "activation_completed", "actor_id": source.instance_id, "passed": discard})
 	Math.end_activation(source)
@@ -99,6 +100,7 @@ static func finish(session: Session, catalog: RefCounted, discard: bool, events:
 		battle.phase = Battle.Phase.FINISHED
 		if session.exploration != null:
 			if battle.outcome == "victory" and not session.exploration.resolved.has(battle.encounter_id):
+				preload("res://scripts/domain/rules/progression_rules.gd").encounter(session)
 				session.exploration.resolved.append(battle.encounter_id)
 				session.exploration.pending_gold = mini(Math.CAP, session.exploration.pending_gold + battle.pending_gold)
 			elif battle.outcome == "defeat":

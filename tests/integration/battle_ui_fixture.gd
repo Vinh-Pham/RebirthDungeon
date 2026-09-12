@@ -14,6 +14,7 @@ func setup(tree: SceneTree, dimensions: Vector2i) -> Dictionary:
 	viewport.world_2d = World2D.new()
 	tree.root.add_child(viewport)
 	var main := load("res://scenes/main.tscn").instantiate() as DungeonApplication
+	main.progression_enabled = false # Preserve the pre-progression contract fixture.
 	main.persistence_enabled = false
 	viewport.add_child(main)
 	await frames(tree,6)

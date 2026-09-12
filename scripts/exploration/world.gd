@@ -4,6 +4,7 @@ signal continuation_changed(position: Vector2, discovered: Array[String])
 signal interaction_requested(stable_id: String, kind: String)
 signal menu_requested
 signal abandon_requested
+signal progression_requested(tab: String)
 var conversation_camera: PhantomCamera2D
 const PlayerScene = preload("res://scenes/exploration/player.tscn")
 const InteractionMarkerScript = preload("res://scripts/exploration/interaction_marker.gd")
@@ -77,6 +78,7 @@ func _ready() -> void:
 	_sync_navigation(true)
 
 func _resize_camera() -> void:
+	if not is_inside_tree() or not is_instance_valid(phantom) or not phantom.is_inside_tree(): return
 	# The host alone applies transforms. A capped view span gives consistent
 	# room readability across compact and ultrawide landscape viewports.
 	var extent := get_viewport_rect().size
@@ -289,7 +291,7 @@ func _build_hud() -> void:
 	var stack := VBoxContainer.new()
 	stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	margin.add_child(stack)
-	var top := HBoxContainer.new()
+	var top := HFlowContainer.new()
 	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stack.add_child(top)
 	var heading := Label.new()
@@ -298,11 +300,17 @@ func _build_hud() -> void:
 	heading.add_theme_font_size_override("font_size", 20)
 	heading.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	top.add_child(heading)
+	for tab: String in ["Inventory","Skills","Character","Titles"]:
+		var feature := Button.new()
+		feature.text = tab
+		feature.custom_minimum_size.y = 48
+		feature.pressed.connect(func() -> void: progression_requested.emit(tab))
+		top.add_child(feature)
 	var help := Button.new()
 	help.text = "Field notes"
 	help.custom_minimum_size = Vector2(120,48)
 	help.focus_entered.connect(suspend_input)
-	help.pressed.connect(show_panel.bind("Field notes", "Move with WASD or arrow keys. Click or tap a revealed floor to walk there.\n\nClick the keeper to approach and talk. Approach a sentinel to open the encounter fixture.\n\nUse Menu to pause your journey."))
+	help.pressed.connect(show_panel.bind("Field notes", "Move with WASD or arrow keys. Click or tap a revealed floor to walk there.\n\nClick the keeper to approach and talk. Approach a sentinel to open the encounter fixture.\n\nSuccess retains pending gold, XP, training, items and title evidence. Defeat or abandonment discards them and loses 30% of carried gold; banked gold and unspent brought items are safe. Consumed items never return. Overflow must be withdrawn before entry.\n\nUse Menu to pause your journey."))
 	top.add_child(help)
 	if not town:
 		var abandon := Button.new()

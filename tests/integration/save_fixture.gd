@@ -130,6 +130,7 @@ func run(tree: SceneTree) -> PackedStringArray:
 	check(not before_bad.is_empty(),"Retained prior bytes")
 	# A real Main restores charts/camera and gates a failed candidate before publishing.
 	var main := load("res://scenes/main.tscn").instantiate() as DungeonApplication
+	main.progression_enabled = false # Preserve the pre-progression contract fixture.
 	main.save_directory = path
 	tree.root.add_child(main)
 	await frames(tree,10)
@@ -167,6 +168,7 @@ func run(tree: SceneTree) -> PackedStringArray:
 	await frames(tree)
 	# Real navigation checkpoints do not publish mode changes on failure.
 	var navigation := load("res://scenes/main.tscn").instantiate() as DungeonApplication
+	navigation.progression_enabled = false # Preserve the pre-progression contract fixture.
 	navigation.save_directory = path+"/navigation"
 	tree.root.add_child(navigation)
 	await frames(tree,10)

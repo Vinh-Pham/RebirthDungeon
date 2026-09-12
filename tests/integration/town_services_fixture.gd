@@ -106,12 +106,17 @@ func run(tree: SceneTree) -> PackedStringArray:
 	check(Codec.new().decode(h.rewrap(data),c).status == "corrupt","Save rejects excessive supplies")
 	data = Capture.capture(s)
 	data.hero.erase("potions")
+	data.hero.erase("growth")
+	if not data.exploration.is_empty(): data.exploration.erase("progression")
+	for item: Dictionary in data.hero.items:
+		for field: String in ["origin_id","container","column","row","locked","pages"]: item.erase(field)
 	var payload := JSON.stringify(Codec.wire(data),"",true,true)
 	var legacy := JSON.stringify({"format":"rebirth.session.v1","sequence":"1","payload":payload,"checksum":("rebirth.session.v1\n1\n"+payload).sha256_text()})
 	var migrated := Codec.new().decode(legacy,c)
 	check(migrated.status == "ok" and migrated.session.hero.potions == 0 and migrated.session.hero.committed_gold == 20,"Phase 6 migration preserves gold and grants no supplies")
 	# Actual application, Dialogue Manager, camera, and durable checkpoint boundary.
 	var main := load("res://scenes/main.tscn").instantiate() as DungeonApplication
+	main.progression_enabled = false # Preserve the pre-progression contract fixture.
 	main.save_directory = "user://phase7-test-"+str(Time.get_ticks_usec())
 	tree.root.add_child(main)
 	await frames(tree)

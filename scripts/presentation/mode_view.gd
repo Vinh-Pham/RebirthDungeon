@@ -15,7 +15,7 @@ func configure(observation: Dictionary, heading: String, description: String, ch
 		var button := Button.new()
 		button.text = choices[target]
 		button.custom_minimum_size = Vector2(280, 48)
-		button.pressed.connect(_request.bind(target))
+		button.pressed.connect(_request.bind(target),CONNECT_DEFERRED)
 		$Actions.add_child(button)
 		_buttons.append(button)
 	for index: int in _buttons.size():

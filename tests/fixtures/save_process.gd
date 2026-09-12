@@ -61,6 +61,7 @@ func _run() -> void:
 		quit(0)
 		return
 	var main := load("res://scenes/main.tscn").instantiate() as DungeonApplication
+	main.progression_enabled = false # Preserve the pre-progression contract fixture.
 	main.save_directory = directory
 	root.add_child(main)
 	await helper.frames(self,12)

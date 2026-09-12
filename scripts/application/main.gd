@@ -15,6 +15,7 @@ const Resolver = preload("res://scripts/domain/commands/command_resolver.gd")
 const ExplorationState = preload("res://scripts/domain/state/exploration_state.gd")
 const Combat = preload("res://scripts/domain/rules/battle_rules.gd")
 const EnemyScheduler = preload("res://scripts/ai/enemy_scheduler.gd")
+var progression_enabled: bool = true
 var persistence_enabled: bool = true
 var save_directory: String = "user://profile"
 var repository: RefCounted
@@ -33,6 +34,9 @@ var _scheduler: Node
 var _battle_view: Control
 var _battle_text_scale: float = 1.0
 var _battle_reduced_motion: bool = false
+var _progression_view: CanvasLayer
+var _progression_target: String = ""
+var _progression_serial: int = 0
 var _world: Node2D
 var _dialogue: CanvasLayer
 var _dialogue_target: String = ""
@@ -47,6 +51,7 @@ var catalog_path: String = "res://content/catalog.tres"
 const Mode = SessionShell.Mode
 const MODE_VIEW = preload("res://scenes/ui/mode_view.tscn")
 const REQUIRED := {
+	"res://content/progression/starter.tres": "Resource",
 	"res://content/dialogue/haven.dialogue": "Resource",
 	"res://scenes/battle/battle.tscn": "PackedScene",
 	"res://scenes/battle/stage.tscn": "PackedScene",
@@ -101,12 +106,15 @@ func observation() -> Dictionary:
 		if _session.exploration != null: result["exploration"]["pending_gold"] = _session.exploration.pending_gold
 	elif _session.exploration != null:
 		result["exploration"] = _session.exploration.capture()
+	if _session.hero != null and not _session.hero.growth.is_empty():
+		result["stat_sources"] = preload("res://scripts/domain/rules/progression_rules.gd").sources(_session.hero,_catalog)
+		result["mastery"] = preload("res://scripts/domain/rules/progression_rules.gd").mastery(_session.hero)
 	return result
 
 func submit_intent(intent: Dictionary) -> Dictionary:
 	if not _alive or not _focused or _pending != -1 or _publishing_result or checkpoint.busy() or _save_overlay != null or not loading_error.is_empty():
 		return {"accepted": false, "code": "application_unavailable", "events": []}
-	if intent.get("kind") in ["buy_potion","recover","enter_dungeon","abandon"] and not _service_authorized:
+	if intent.get("kind") in ["buy_potion","recover","enter_dungeon","abandon","buy_item","sell_item","bank_deposit","bank_withdraw","learn_lesson"] and not _service_authorized:
 		return {"accepted":false,"code":"conversation_required","events":[]}
 	var command := Resolver.parse_intent(intent)
 	var result := Resolver.resolve(_session, command, _catalog)
@@ -243,6 +251,7 @@ func request_mode(target: int, id: int, revision: int) -> bool:
 				candidate.town_position_x = 96.0
 				candidate.town_position_y = 160.0
 			if target == Mode.DUNGEON and candidate.exploration == null: candidate.exploration = ExplorationState.new()
+			if target == Mode.TOWN and progression_enabled: preload("res://scripts/domain/rules/progression_rules.gd").initialize(candidate.hero,_catalog)
 			candidate.mode = target as SessionShell.Mode
 			candidate.revision += 1
 			return _stage_transition(candidate)
@@ -279,10 +288,13 @@ func _on_mode_entered(mode: int) -> void:
 	observation_changed.emit(observation())
 	if mode == Mode.LOADING:
 		_load_required.call_deferred(_session.session_id, _session.revision)
+	elif mode == Mode.TOWN and progression_enabled and _session.hero.growth.is_empty():
+		_upgrade_legacy_town.call_deferred()
 	elif mode == Mode.MENU and _resources.is_empty() and loading_error.is_empty():
 		_load_required.call_deferred(_session.session_id, _session.revision, false)
 
 func _replace_view() -> void:
+	_close_progression()
 	_close_dialogue()
 	if is_instance_valid(_battle_view):
 		_battle_text_scale = _battle_view.text_scale
@@ -332,13 +344,17 @@ func _replace_view() -> void:
 				description = "Defeated · pending expedition rewards lost.\nReturn to Haven and ask the keeper for free recovery."
 			if _session.battle == null:
 				description = "Expedition abandoned · pending gold lost.\nCommitted gold and unused potions retained."
+			if not _session.hero.growth.is_empty():
+				if _session.battle == null or _session.battle.outcome == "defeat":
+					description = "Expedition ended · pending rewards discarded.\n30% of carried gold lost; bank and unspent items retained."
+				description += "\nLevel %d · XP %d · AP %d\nCarried gold %d · Bank %d" % [_session.hero.growth.level,_session.hero.growth.xp,_session.hero.growth.ap,_session.hero.committed_gold,_session.hero.growth.banked]
 			choices[Mode.TOWN] = "Return to Haven"
 	if _session.mode not in [Mode.MENU, Mode.LOADING, Mode.BATTLE]:
 		choices[Mode.MENU] = "Back to menu"
 	_view.configure(observation(), heading, description, choices)
 	_view.intent_requested.connect(_on_intent.bind(weakref(_view)))
 	_view.set_input_enabled(_focused)
-	_status.text = "Phase 7 · session %d · revision %d · %s" % [_session.session_id, _session.revision, heading]
+	_status.text = "Phase 8 · session %d · revision %d · %s" % [_session.session_id, _session.revision, heading]
 
 	if _session.mode == Mode.BATTLE and _session.battle != null:
 		_view.hide()
@@ -372,6 +388,7 @@ func _install_world() -> void:
 	_world.configure(_session.session_id, _session.revision, continuation, _world_session_valid)
 	_world.continuation_changed.connect(_capture_continuation.bind(_session.session_id, _session.revision))
 	_world.interaction_requested.connect(_world_interaction.bind(_session.session_id, _session.revision), CONNECT_DEFERRED)
+	_world.progression_requested.connect(_open_progression)
 	_world.abandon_requested.connect(_open_abandon)
 	_world.menu_requested.connect(request_mode.bind(Mode.MENU, _session.session_id, _session.revision))
 	add_child(_world)
@@ -415,6 +432,10 @@ func _world_interaction(stable_id: String, kind: String, id: int, revision: int)
 			_world.show_panel("The arch is sealed", "Defeat both sentinels before returning.")
 		else:
 			var exit_session: SessionShell = _session.copy() if persistence_enabled else _session
+			var progression_error := preload("res://scripts/domain/rules/progression_rules.gd").finish(exit_session,true,_catalog)
+			if not progression_error.is_empty():
+				_world.show_panel("Cannot finish yet",progression_error)
+				return
 			exit_session.hero.committed_gold = mini(1000000, exit_session.hero.committed_gold + exit_session.exploration.pending_gold)
 			exit_session.exploration.pending_gold = 0
 			exit_session.hero.statuses.clear()
@@ -431,6 +452,7 @@ func complete_battle(id: int, revision: int) -> bool:
 	var returned: SessionShell = _session.copy() if persistence_enabled else _session
 	returned.exploration.active_encounter = ""
 	if returned.battle.outcome == "defeat":
+		preload("res://scripts/domain/rules/progression_rules.gd").finish(returned,false,_catalog)
 		returned.hero.statuses.clear()
 		returned.hero.cooldowns.clear()
 		returned.hero.shield = 0
@@ -482,6 +504,7 @@ func _load_required(id: int, revision: int, advance: bool = true) -> void:
 			return
 		_session.hero = Hero.new()
 		_session.hero.configure(definition, "hero")
+		if progression_enabled: preload("res://scripts/domain/rules/progression_rules.gd").initialize(_session.hero,next_catalog)
 		_session.content_versions = next_catalog.versions()
 	_catalog = next_catalog
 	_resources = candidate
@@ -505,7 +528,9 @@ func _notification(what: int) -> void:
 		set_application_focused(true)
 
 func set_application_focused(focused: bool) -> void:
-	if not focused: _close_dialogue()
+	if not focused:
+		_close_progression()
+		_close_dialogue()
 	if not focused and _focused and persistence_enabled: checkpoint_now()
 	_focused = focused
 	if is_instance_valid(_battle_view): _battle_view.set_input_enabled(focused and _pending == -1)
@@ -528,6 +553,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 func _exit_tree() -> void:
+	_close_progression()
 	_close_dialogue()
 	_alive = false
 	_session.invalidate()
@@ -592,7 +618,7 @@ func _stage_transition(candidate: SessionShell) -> bool:
 	return true
 
 func checkpoint_now() -> void:
-	if is_instance_valid(_dialogue): return
+	if is_instance_valid(_dialogue) or is_instance_valid(_progression_view): return
 	if not persistence_enabled or repository == null or _recovery or _save_overlay != null or checkpoint.busy() or _publishing_result or _pending != -1 or _session.mode < Mode.TOWN: return
 	_movement_checkpoint = true
 	_movement_dirty = false
@@ -684,6 +710,10 @@ func _confirm_service(kind: String, id: int, revision: int, serial: int) -> Dict
 	if (kind == "abandon" and (target != "dungeon.undercrypt" or _session.mode != Mode.DUNGEON)) or (kind != "abandon" and not _world.interaction_is_valid(target,true)):
 		_close_dialogue()
 		return {"accepted":false,"code":"out_of_reach"}
+	if kind == "open_services":
+		_close_dialogue()
+		_open_progression("Shop","npc.keeper")
+		return {"accepted":true,"code":"opened"}
 	var intent := {"session_id":id,"expected_revision":revision,"operation_id":"service:%d:%d:%d" % [id,revision,serial],
 		"kind":kind,"actor_id":"hero","skill_id":"","target_id":target}
 	_close_dialogue()
@@ -709,3 +739,62 @@ func _close_dialogue() -> void:
 
 static func _default_dialogue_scene() -> Node:
 	return (Engine.get_main_loop() as SceneTree).current_scene
+
+func _open_progression(tab: String, target: String = "") -> void:
+	if not _world_session_valid(_session.session_id,_session.revision) or not is_instance_valid(_world) or is_instance_valid(_progression_view) or is_instance_valid(_dialogue): return
+	if _session.hero.growth.is_empty():
+		_world.show_panel("Legacy expedition","Finish this expedition and return to town to enable inventory and progression.")
+		return
+	_progression_serial += 1
+	var serial := _progression_serial
+	var id := _session.session_id
+	var revision := _session.revision
+	_progression_target = target
+	_world.freeze()
+	_progression_view = preload("res://scripts/presentation/progression_panel.gd").new()
+	add_child(_progression_view)
+	_progression_view.closed.connect(_close_progression)
+	_progression_view.command_requested.connect(_progression_intent.bind(id,revision,serial))
+	_progression_view.start(observation(),_catalog,tab,not target.is_empty(),_preview_progression)
+
+func _preview_progression(kind: String, data: Dictionary) -> Dictionary:
+	var candidate: RefCounted = _session.copy()
+	var error := preload("res://scripts/domain/rules/progression_rules.gd").action(candidate,kind,data,"preview:"+str(_session.revision),_catalog)
+	if not error.is_empty(): return {"accepted":false,"code":error}
+	return {"accepted":true,"code":"preview","stats_before":_session.hero.stats.duplicate(),"stats_after":candidate.hero.stats.duplicate(),"summary":"Carried gold %d → %d; bank %d → %d; AP %d → %d.\nHP/MP/SP %s → %s; maxima %s → %s." % [
+		_session.hero.committed_gold,candidate.hero.committed_gold,_session.hero.growth.banked,candidate.hero.growth.banked,_session.hero.growth.ap,candidate.hero.growth.ap,
+		str(_session.hero.current),str(candidate.hero.current),str(_session.hero.maximum),str(candidate.hero.maximum)]}
+
+func _progression_intent(kind: String, data: Dictionary, id: int, revision: int, serial: int) -> Dictionary:
+	if not is_instance_valid(_progression_view) or serial != _progression_serial or not _world_session_valid(id,revision): return {"accepted":false,"code":"stale_panel"}
+	var service := kind in ["buy_item","sell_item","bank_deposit","bank_withdraw","learn_lesson"]
+	if service and (_progression_target != "npc.keeper" or not _world.interaction_is_valid("npc.keeper",true)):
+		_close_progression()
+		return {"accepted":false,"code":"out_of_reach"}
+	var intent := {"session_id":id,"expected_revision":revision,"operation_id":"progress:%d:%d:%d" % [id,revision,serial],
+		"kind":kind,"actor_id":"hero","skill_id":"","target_id":_progression_target,"data":data}
+	_close_progression()
+	_service_authorized = service
+	var result := submit_intent(intent)
+	_service_authorized = false
+	if not result.accepted and is_instance_valid(_world): _world.show_panel("Action unavailable",result.code)
+	return result
+
+func _close_progression() -> void:
+	_progression_serial += 1
+	if not is_instance_valid(_progression_view): return
+	var focus := get_viewport().gui_get_focus_owner()
+	if focus != null: focus.release_focus()
+	var old := _progression_view
+	_progression_view = null
+	remove_child(old)
+	old.queue_free()
+	if is_instance_valid(_world): _world.end_conversation("")
+	_progression_target = ""
+
+func _upgrade_legacy_town() -> void:
+	if not _alive or _session.mode != Mode.TOWN or not _session.hero.growth.is_empty() or checkpoint.busy(): return
+	var candidate: SessionShell = _session.copy()
+	preload("res://scripts/domain/rules/progression_rules.gd").initialize(candidate.hero,_catalog)
+	candidate.revision += 1
+	_stage_transition(candidate)

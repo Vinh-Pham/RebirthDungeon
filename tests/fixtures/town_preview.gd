@@ -2,6 +2,7 @@ extends DungeonApplication
 ## Isolated rendered acceptance harness. Methods travel via actual navigation
 ## and issue normal commands; only seed_fixture creates a known starting profile.
 func _init() -> void:
+	progression_enabled = false
 	save_directory = "user://phase7-rendered"
 func seed_fixture() -> void:
 	var h := preload("res://tests/integration/save_fixture.gd").new()

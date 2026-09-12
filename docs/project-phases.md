@@ -188,18 +188,20 @@ Verified on 2026-09-11 (2026-09-12 UTC) with Godot 4.7.2 (`ed1daf0bf`), content 
 
 ## Phase 8: Inventory, skills and lasting progression
 
-**Status: Not started. Dependencies: 7.**
+**Status: Complete for host acceptance (2026-09-12). Dependencies: 7.**
 
-- [ ] Author a complete per-outcome retention table for items, gold, XP, training, quest/title evidence and reservations before enabling inventory-backed runs.
-- [ ] Replace temporary supplies with inventory instances, rectangular placement, stacks, non-nesting bags, equipment and saved overflow.
-- [ ] Implement carried/banked gold and gold-bag capacity; define transition from temporary balances without losing saved value.
-- [ ] Implement NPC/book/page skill acquisition, rank training to 100, explicit AP rank-up and prototype rank caps.
-- [ ] Implement character XP/current and cumulative levels, talent mastery, stat-source recomputation and no-refill rules.
-- [ ] Implement First/Second title collection and selection, run snapshots and outcome-based evidence; introduce corresponding feature panels.
-- [ ] Test duplicate reward/rank/title grants, inventory atomicity, pending retention and fresh-process continuation.
-- [ ] Extend Dialogue Manager service commands for NPC lessons and progression views; learning grants Rank F, while rank-up remains a separate validated town action. Persist deduplicated milestone evidence for later quest eligibility without implementing QuestSystem rewards yet.
+- [x] Author a complete per-outcome retention table for items, gold, XP, training, quest/title evidence and reservations before enabling inventory-backed runs.
+- [x] Replace temporary supplies with inventory instances, rectangular placement, stacks, non-nesting bags, equipment and saved overflow.
+- [x] Implement carried/banked gold and gold-bag capacity; define transition from temporary balances without losing saved value.
+- [x] Implement NPC/book/page skill acquisition, rank training to 100, explicit AP rank-up and prototype rank caps.
+- [x] Implement character XP/current and cumulative levels, talent mastery, stat-source recomputation and no-refill rules.
+- [x] Implement First/Second title collection and selection, run snapshots and outcome-based evidence; introduce corresponding feature panels.
+- [x] Test duplicate reward/rank/title grants, inventory atomicity, pending retention and fresh-process continuation.
+- [x] Extend Dialogue Manager service commands for NPC lessons and progression views; learning grants Rank F, while rank-up remains a separate validated town action. Persist deduplicated milestone evidence for later quest eligibility without implementing QuestSystem rewards yet.
 
 **Exit criterion:** A retained run reward can improve the next run through equipment or trained/AP-funded skills; all ownership, loss and overflow rules are explicit and saved.
+
+**Verification:** [Implementation](phase8-implementation.md), [outcome/migration contract](phase8-retention.md) and [retained evidence](evidence/phase8/README.md). All regressions, 99 progression checks, 13 application checks, three fresh-process scenarios, positive/intentional-failure/runtime checks and five resource packs pass. Beckett verified keeper banking/purchase, two encounters, XP/AP commit, explicit F → E rank-up, restart and title effects without healing. Executable/mobile-device acceptance remains a platform gap.
 
 ## Phase 9: QuestSystem progression, enchanting and rebirth
 

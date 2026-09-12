@@ -34,6 +34,7 @@ func walk(tree: SceneTree, world: Node2D, point: Vector2, max_frames: int = 400)
 
 func run(tree: SceneTree) -> PackedStringArray:
 	var main := load("res://scenes/main.tscn").instantiate() as DungeonApplication
+	main.progression_enabled = false # Preserve the pre-progression contract fixture.
 	main.persistence_enabled = false
 	tree.root.add_child(main)
 	await frames(tree)

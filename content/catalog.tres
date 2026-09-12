@@ -45,6 +45,20 @@
 
 [ext_resource type="Resource" path="res://content/stats/magic_protection.tres" id="stats_magic_protection"]
 
+[ext_resource type="Resource" path="res://content/items/potion.tres" id="items_potion"]
+[ext_resource type="Resource" path="res://content/items/field_bag.tres" id="items_field_bag"]
+[ext_resource type="Resource" path="res://content/items/gold_bag.tres" id="items_gold_bag"]
+[ext_resource type="Resource" path="res://content/items/iron_sword.tres" id="items_iron_sword"]
+[ext_resource type="Resource" path="res://content/items/great_sword.tres" id="items_great_sword"]
+[ext_resource type="Resource" path="res://content/items/shield.tres" id="items_shield"]
+[ext_resource type="Resource" path="res://content/items/armor.tres" id="items_armor"]
+[ext_resource type="Resource" path="res://content/items/spark_book.tres" id="items_spark_book"]
+[ext_resource type="Resource" path="res://content/items/focus_notes.tres" id="items_focus_notes"]
+[ext_resource type="Resource" path="res://content/items/focus_page_one.tres" id="items_focus_page_one"]
+[ext_resource type="Resource" path="res://content/items/focus_page_two.tres" id="items_focus_page_two"]
+[ext_resource type="Resource" path="res://content/items/focus_book.tres" id="items_focus_book"]
+[ext_resource type="Resource" path="res://content/items/lantern_coupon.tres" id="items_lantern_coupon"]
+
 [sub_resource type="Resource" id="combo0"]
 script = ExtResource("combo")
 key = "none"
@@ -101,6 +115,6 @@ actors = Array[ExtResource("actors_type")]([ExtResource("actors_hero"), ExtResou
 skills = Array[ExtResource("skills_type")]([ExtResource("skills_sword"), ExtResource("skills_fortify"), ExtResource("skills_enemy_strike"), ExtResource("skills_focus"), ExtResource("skills_spark"), ExtResource("skills_blood")])
 stats = Array[ExtResource("stats_type")]([ExtResource("stats_strength"), ExtResource("stats_defense"), ExtResource("stats_magic_attack"), ExtResource("stats_magic_defense"), ExtResource("stats_protection"), ExtResource("stats_magic_protection")])
 statuses = Array[ExtResource("statuses_type")]([ExtResource("statuses_fortified"), ExtResource("statuses_weakened"), ExtResource("statuses_focused")])
-items = Array[ExtResource("items_type")]([ExtResource("items_training_sword")])
+items = Array[ExtResource("items_type")]([ExtResource("items_training_sword"), ExtResource("items_potion"), ExtResource("items_field_bag"), ExtResource("items_gold_bag"), ExtResource("items_iron_sword"), ExtResource("items_great_sword"), ExtResource("items_shield"), ExtResource("items_armor"), ExtResource("items_spark_book"), ExtResource("items_focus_notes"), ExtResource("items_focus_page_one"), ExtResource("items_focus_page_two"), ExtResource("items_focus_book"), ExtResource("items_lantern_coupon")])
 encounters = Array[ExtResource("encounters_type")]([ExtResource("encounters_training"), ExtResource("encounters_gallery"), ExtResource("encounters_sanctum")])
 rooms = Array[ExtResource("rooms_type")]([ExtResource("rooms_training"), ExtResource("rooms_haven"), ExtResource("rooms_threshold"), ExtResource("rooms_gallery"), ExtResource("rooms_sanctum")])

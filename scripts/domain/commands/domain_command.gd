@@ -10,3 +10,5 @@ var skill_id: String = ""
 var target_id: String = ""
 
 var indices: Array = []
+
+var data: Dictionary = {}
