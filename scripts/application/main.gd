@@ -15,8 +15,11 @@ const Resolver = preload("res://scripts/domain/commands/command_resolver.gd")
 const ExplorationState = preload("res://scripts/domain/state/exploration_state.gd")
 const Combat = preload("res://scripts/domain/rules/battle_rules.gd")
 const EnemyScheduler = preload("res://scripts/ai/enemy_scheduler.gd")
+var checkpoint := preload("res://scripts/application/checkpoint_test_adapter.gd").new()
 var _scheduler: Node
 var _battle_view: Control
+var _battle_text_scale: float = 1.0
+var _battle_reduced_motion: bool = false
 var _world: Node2D
 var _encounter_authorized: bool = false
 var _return_authorized: bool = false
@@ -27,6 +30,9 @@ var catalog_path: String = "res://content/catalog.tres"
 const Mode = SessionShell.Mode
 const MODE_VIEW = preload("res://scenes/ui/mode_view.tscn")
 const REQUIRED := {
+	"res://scenes/battle/battle.tscn": "PackedScene",
+	"res://scenes/battle/stage.tscn": "PackedScene",
+	"res://scenes/battle/battle_theme.tres": "Theme",
 	"res://assets/art/exploration/hero.png": "Texture2D",
 	"res://assets/art/exploration/floor.png": "Texture2D",
 	"res://assets/art/exploration/sentinel.png": "Texture2D",
@@ -71,17 +77,7 @@ func _ready() -> void:
 func observation() -> Dictionary:
 	var result := _session.observation()
 	if _session.battle != null and _catalog.is_ready():
-		var options := {}
-		for id: String in _session.hero.skill_ranks:
-			var skill: Resource = _catalog.definition(id)
-			if skill == null: continue
-			for rank: Resource in skill.ranks:
-				if rank.rank == _session.hero.skill_ranks[id]:
-					var costs := preload("res://scripts/domain/rules/combat_math.gd").costs(_session.hero, rank)
-					var target: String = "hero" if skill.target == "self" else _session.battle.enemies[0].instance_id
-					var choice := Combat.selection(_session, "hero", id, target, _catalog)
-					options[id] = {"costs": costs, "unavailable": choice.get("error", "")}
-		result.battle["options"] = options
+		preload("res://scripts/application/battle_observation.gd").decorate(result, _session, _catalog)
 	if is_instance_valid(_world) and _world.is_inside_tree():
 		result["exploration"] = _world.observation()
 	elif _session.exploration != null:
@@ -89,23 +85,66 @@ func observation() -> Dictionary:
 	return result
 
 func submit_intent(intent: Dictionary) -> Dictionary:
-	if not _alive or not _focused or _pending != -1 or _publishing_result or not loading_error.is_empty():
+	if not _alive or not _focused or _pending != -1 or _publishing_result or checkpoint.busy() or not loading_error.is_empty():
 		return {"accepted": false, "code": "application_unavailable", "events": []}
 	var command := Resolver.parse_intent(intent)
 	var result := Resolver.resolve(_session, command, _catalog)
 	if result.accepted:
-		# Phase 6 inserts the durable checkpoint before this publication.
-		_publishing_result = true
-		_session = result.candidate
-		_replace_view()
-		observation_changed.emit(observation())
-		for event: Dictionary in result.events:
-			accepted_result.emit(event.duplicate(true))
-		_publishing_result = false
-		_schedule_enemy.call_deferred()
+		if checkpoint.stage(result):
+			_publish_checkpoint()
+		else:
+			_refresh_battle([], checkpoint.state)
+			return {"accepted": true, "code": "simulated_save_" + checkpoint.state, "operation_id": result.operation_id, "events": []}
 	elif is_instance_valid(_battle_view):
 		_battle_view.show_rejection(result.code)
 	return result.observation()
+
+func _publish_checkpoint() -> void:
+	var result: RefCounted = checkpoint.take()
+	if result == null or not _alive: return
+	if result.candidate.session_id != _session.session_id or result.candidate.revision != _session.revision + 1: return
+	_publishing_result = true
+	_session = result.candidate
+	if is_instance_valid(_battle_view) and _session.mode == Mode.BATTLE:
+		_refresh_battle(result.events)
+	else:
+		_replace_view()
+	observation_changed.emit(observation())
+	for event: Dictionary in result.events:
+		accepted_result.emit(event.duplicate(true))
+	_publishing_result = false
+	_schedule_enemy.call_deferred()
+
+func _refresh_battle(events: Array = [], save_state: String = "idle") -> void:
+	if not is_instance_valid(_battle_view): return
+	_battle_view.present(observation(), events, save_state)
+	_battle_view.set_input_enabled(_focused and _pending == -1)
+
+func set_next_checkpoint_test(behavior: String) -> bool:
+	if not development_enabled or checkpoint.busy() or behavior not in ["immediate", "pending", "failure"]: return false
+	checkpoint.next_behavior = behavior
+	return true
+
+func complete_checkpoint_test(id: int, revision: int, success: bool) -> bool:
+	if not _alive or not _session.matches(id, revision) or not checkpoint.complete(success): return false
+	if success: _publish_checkpoint()
+	else: _refresh_battle([], checkpoint.state)
+	return true
+
+func retry_checkpoint() -> void:
+	if not _alive or not _focused or not checkpoint.retry(): return
+	_publish_checkpoint()
+
+func _battle_intent(intent: Dictionary, source_ref: WeakRef) -> void:
+	var source: Variant = source_ref.get_ref()
+	if is_instance_valid(source) and source == _battle_view and source.is_inside_tree():
+		var result := submit_intent(intent)
+		if not result.accepted and is_instance_valid(source): source.show_rejection(result.code)
+
+func _battle_continue(id: int, revision: int, source_ref: WeakRef) -> void:
+	var source: Variant = source_ref.get_ref()
+	if is_instance_valid(source) and source == _battle_view and source.is_inside_tree():
+		if not complete_battle(id, revision): source.show_rejection("application_unavailable")
 
 func _build_chart() -> void:
 	_chart = StateChart.new()
@@ -134,7 +173,7 @@ func _build_chart() -> void:
 	add_child(_chart)
 
 func request_mode(target: int, id: int, revision: int) -> bool:
-	if not _alive or not _focused or not is_instance_valid(_view) or _pending != -1 or _publishing_result:
+	if not _alive or not _focused or not is_instance_valid(_view) or _pending != -1 or _publishing_result or checkpoint.busy():
 		return false
 	if not _session.matches(id, revision) or not EDGES[_session.mode].has(target):
 		return false
@@ -184,8 +223,10 @@ func _on_mode_entered(mode: int) -> void:
 
 func _replace_view() -> void:
 	if is_instance_valid(_battle_view):
+		_battle_text_scale = _battle_view.text_scale
+		_battle_reduced_motion = _battle_view.reduced_motion
 		_battle_view.set_input_enabled(false)
-		_host.remove_child(_battle_view)
+		_battle_view.get_parent().remove_child(_battle_view)
 		_battle_view.queue_free()
 		_battle_view = null
 	if is_instance_valid(_world):
@@ -233,21 +274,25 @@ func _replace_view() -> void:
 	_view.configure(observation(), heading, description, choices)
 	_view.intent_requested.connect(_on_intent.bind(weakref(_view)))
 	_view.set_input_enabled(_focused)
-	_status.text = "Phase 4 · session %d · revision %d · %s" % [_session.session_id, _session.revision, heading]
+	_status.text = "Phase 5 · session %d · revision %d · %s" % [_session.session_id, _session.revision, heading]
 
 	if _session.mode == Mode.BATTLE and _session.battle != null:
 		_view.hide()
 		_battle_view = load("res://scenes/battle/battle.tscn").instantiate()
-		_host.add_child(_battle_view)
-		_battle_view.configure(observation(), _catalog)
-		_battle_view.command_requested.connect(submit_intent, CONNECT_DEFERRED)
-		_battle_view.continue_requested.connect(complete_battle, CONNECT_DEFERRED)
+		add_child(_battle_view)
+		_battle_view.present(observation(), [], checkpoint.state)
+		_battle_view.set_text_scale(_battle_text_scale)
+		_battle_view.set_reduced_motion(_battle_reduced_motion)
+		_battle_view.command_requested.connect(_battle_intent.bind(weakref(_battle_view)), CONNECT_DEFERRED)
+		_battle_view.continue_requested.connect(_battle_continue.bind(weakref(_battle_view)), CONNECT_DEFERRED)
+		_battle_view.retry_requested.connect(retry_checkpoint, CONNECT_DEFERRED)
 		_battle_view.set_input_enabled(_focused)
 		_schedule_enemy.call_deferred()
 	var exploring := _session.mode in [Mode.TOWN, Mode.DUNGEON]
-	$UI/UIHost/Background.visible = not exploring
-	$UI/UIHost/Layout.visible = not exploring
-	_ui.mouse_filter = Control.MOUSE_FILTER_IGNORE if exploring else Control.MOUSE_FILTER_STOP
+	var battle_visible := _session.mode == Mode.BATTLE
+	$UI/UIHost/Background.visible = not exploring and not battle_visible
+	$UI/UIHost/Layout.visible = not exploring and not battle_visible
+	_ui.mouse_filter = Control.MOUSE_FILTER_IGNORE if exploring or battle_visible else Control.MOUSE_FILTER_STOP
 	if exploring:
 		_view.set_input_enabled(false)
 		_install_world()
@@ -303,7 +348,7 @@ func _world_interaction(stable_id: String, kind: String, id: int, revision: int)
 			request_mode(Mode.RESULTS, id, revision)
 
 func complete_battle(id: int, revision: int) -> bool:
-	if not _alive or not _focused or _publishing_result or not is_instance_valid(_view) or _pending != -1 or not development_enabled or not _session.matches(id, revision) or _session.mode != Mode.BATTLE or _session.exploration == null or _session.exploration.active_encounter.is_empty():
+	if not _alive or not _focused or _publishing_result or checkpoint.busy() or not is_instance_valid(_view) or _pending != -1 or not development_enabled or not _session.matches(id, revision) or _session.mode != Mode.BATTLE or _session.exploration == null or _session.exploration.active_encounter.is_empty():
 		return false
 	if _session.battle == null or _session.battle.phase != _session.battle.Phase.FINISHED:
 		return false
@@ -405,7 +450,7 @@ func _exit_tree() -> void:
 	## Camera registrations are owned by camera nodes and removed on tree exit.
 
 func _schedule_enemy() -> void:
-	if not _alive or not _focused or _pending != -1 or _publishing_result or _session.mode != Mode.BATTLE:
+	if not _alive or not _focused or _pending != -1 or _publishing_result or checkpoint.busy() or _session.mode != Mode.BATTLE:
 		return
 	var intent: Dictionary = _scheduler.propose(_session, _catalog)
 	if not intent.is_empty(): submit_intent(intent)

@@ -1,0 +1,87 @@
+{
+  "checked": {
+    "interactive": 16,
+    "text_controls": 20
+  },
+  "counts": {
+    "focus_unreachable": 3,
+    "no_initial_focus": 1,
+    "small_target": 4
+  },
+  "focus": {
+    "entry": "/root/BattleMatrix/Main/Battle/CanvasLayer/HUD/@MarginContainer@85/@VBoxContainer@86/@HBoxContainer@87/Inspect",
+    "focusable": 12,
+    "reachable": 9
+  },
+  "issues": [
+    {
+      "detail": "interactive target below 48 px (touch guideline)",
+      "path": "/root/BattleMatrix/Main/Battle/CanvasLayer/HUD/@MarginContainer@85/@VBoxContainer@86/@HBoxContainer@89/@PanelContainer@90/@VBoxContainer@91/@HBoxContainer@92/@VBoxContainer@93/@ProgressBar@95",
+      "rect": [
+        28,
+        109,
+        238,
+        5
+      ],
+      "type": "small_target"
+    },
+    {
+      "detail": "interactive target below 48 px (touch guideline)",
+      "path": "/root/BattleMatrix/Main/Battle/CanvasLayer/HUD/@MarginContainer@85/@VBoxContainer@86/@HBoxContainer@89/@PanelContainer@90/@VBoxContainer@91/@HBoxContainer@92/@VBoxContainer@96/@ProgressBar@98",
+      "rect": [
+        274,
+        109,
+        238,
+        5
+      ],
+      "type": "small_target"
+    },
+    {
+      "detail": "interactive target below 48 px (touch guideline)",
+      "path": "/root/BattleMatrix/Main/Battle/CanvasLayer/HUD/@MarginContainer@85/@VBoxContainer@86/@HBoxContainer@89/@PanelContainer@90/@VBoxContainer@91/@HBoxContainer@92/@VBoxContainer@99/@ProgressBar@101",
+      "rect": [
+        520,
+        109,
+        239,
+        5
+      ],
+      "type": "small_target"
+    },
+    {
+      "detail": "interactive target below 48 px (touch guideline)",
+      "path": "/root/BattleMatrix/Main/Battle/CanvasLayer/HUD/@MarginContainer@85/@VBoxContainer@86/@HBoxContainer@89/@PanelContainer@102/@VBoxContainer@103/@HBoxContainer@104/@VBoxContainer@105/@ProgressBar@107",
+      "rect": [
+        799,
+        109,
+        731,
+        5
+      ],
+      "type": "small_target"
+    },
+    {
+      "detail": "focusable controls exist but nothing HAS focus - a gamepad/keyboard user cannot start navigating; grab_focus() one control when the menu opens",
+      "path": "/root/BattleMatrix/Main/Battle/CanvasLayer/HUD/@MarginContainer@85/@VBoxContainer@86/@HBoxContainer@87/Inspect",
+      "type": "no_initial_focus"
+    },
+    {
+      "detail": "focusable, but no chain of Tab/arrow moves from '/root/BattleMatrix/Main/Battle/CanvasLayer/HUD/@MarginContainer@85/@VBoxContainer@86/@HBoxContainer@87/Inspect' reaches it - unreachable on gamepad/keyboard",
+      "path": "/root/BattleMatrix/Main/Battle/CanvasLayer/HUD/@MarginContainer@85/@VBoxContainer@86/@HBoxContainer@111/@PanelContainer@112/@VBoxContainer@113/@HBoxContainer@114/Skills",
+      "type": "focus_unreachable"
+    },
+    {
+      "detail": "focusable, but no chain of Tab/arrow moves from '/root/BattleMatrix/Main/Battle/CanvasLayer/HUD/@MarginContainer@85/@VBoxContainer@86/@HBoxContainer@87/Inspect' reaches it - unreachable on gamepad/keyboard",
+      "path": "/root/BattleMatrix/Main/Battle/CanvasLayer/HUD/@MarginContainer@85/@VBoxContainer@86/@HBoxContainer@111/@PanelContainer@112/@VBoxContainer@113/@HBoxContainer@119/Action_roll",
+      "type": "focus_unreachable"
+    },
+    {
+      "detail": "focusable, but no chain of Tab/arrow moves from '/root/BattleMatrix/Main/Battle/CanvasLayer/HUD/@MarginContainer@85/@VBoxContainer@86/@HBoxContainer@87/Inspect' reaches it - unreachable on gamepad/keyboard",
+      "path": "/root/BattleMatrix/Main/Battle/CanvasLayer/HUD/@MarginContainer@85/@VBoxContainer@86/@HBoxContainer@111/@PanelContainer@122/@ScrollContainer@125/@RichTextLabel@128",
+      "type": "focus_unreachable"
+    }
+  ],
+  "truncated": false,
+  "viewport": [
+    1558,
+    720
+  ]
+}

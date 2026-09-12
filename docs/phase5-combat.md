@@ -1,6 +1,6 @@
 # Phase 5: Godot battle UI and input
 
-Status: **not started**. Reset **2026-09-10**. [UI plan](gameplay/user-interface.md) owns layout and accessibility; [Phase 4](phase4-combat.md) owns rules.
+Implementation and verification: [Phase 5 implementation](phase5-implementation.md), [dated evidence](evidence/phase5/README.md). The [phase tracker](project-phases.md) owns completion status. [UI plan](gameplay/user-interface.md) owns layout and accessibility; [Phase 4](phase4-combat.md) owns rules.
 
 ## Composition and state binding
 
@@ -16,13 +16,13 @@ Support wide and compact landscape compositions. Keep the selected/locked skill 
 
 ## Acceptance
 
-- [ ] Only legal state-machine actions are enabled, with accessible rejection reasons.
-- [ ] Keep toggles preserve die identity; reroll cannot submit an empty subset.
-- [ ] Pre-roll and paid post-roll pass are visibly distinct.
-- [ ] Repeated clicks, multi-touch and stale view callbacks do not duplicate actions.
-- [ ] Panels, disabled controls and drag gestures cannot click through to exploration.
-- [ ] Wide/compact landscape, text scaling and keyboard-only navigation are exercised.
-- [ ] Reduced/skipped animation changes neither outcomes nor turn timing.
-- [ ] Simulated save-pending/failure states gate mutation and expose retry without a new roll.
+- [x] Only legal state-machine actions are enabled, with accessible rejection reasons.
+- [x] Keep toggles preserve die identity; reroll cannot submit an empty subset.
+- [x] Pre-roll and paid post-roll pass are visibly distinct.
+- [x] Repeated clicks, multi-touch and stale view callbacks do not duplicate actions.
+- [x] Panels, disabled controls and drag gestures cannot click through to exploration.
+- [x] Wide/compact landscape, text scaling and keyboard-only navigation are exercised.
+- [x] Reduced/skipped animation changes neither outcomes nor turn timing.
+- [x] Simulated save-pending/failure states gate mutation and expose retry without a new roll.
 
 Phase 6 replaces the simulated persistence boundary with real writes and fresh-process continuation tests. Android/iOS acceptance needs Godot exports and actual interaction; an editor or headless pass does not close those gates.

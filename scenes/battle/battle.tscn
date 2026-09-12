@@ -1,4 +1,23 @@
 [gd_scene format=3]
 [ext_resource type="Script" path="res://scripts/presentation/battle_view.gd" id="view"]
-[node name="Battle" type="PanelContainer"]
+[node name="Battle" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 script = ExtResource("view")
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+layer = 2
+[node name="HUD" type="Control" parent="CanvasLayer"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+texture_filter = 1
+[node name="Background" type="ColorRect" parent="CanvasLayer/HUD"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0.025,0.04,0.05,1)

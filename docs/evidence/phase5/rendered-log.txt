@@ -1,0 +1,9 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "no log entries at level=error (buffer=0, dropped=0)"
+    }
+  ],
+  "isError": false
+}

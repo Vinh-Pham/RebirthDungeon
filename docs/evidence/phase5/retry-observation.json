@@ -1,0 +1,247 @@
+{
+  "resolved": ".",
+  "result": {
+    "battle": {
+      "activation": 0,
+      "active_actor_id": "hero",
+      "availability": {
+        "commit": "",
+        "keep": "",
+        "pass": "",
+        "reroll": "",
+        "roll": "The first roll locks skill and target.",
+        "select_skill": "The first roll locks skill and target."
+      },
+      "content_versions": {
+        "content": 3,
+        "engine": "4.7.2.stable.official.ed1daf0bf",
+        "generator": 1,
+        "rng": 1,
+        "rules": 1,
+        "schema": 1
+      },
+      "encounter_id": "encounter.training",
+      "enemies": [
+        {
+          "completed_activations": 0,
+          "cooldowns": {},
+          "current": [
+            48,
+            0,
+            10
+          ],
+          "definition_id": "actor.training_enemy",
+          "flat_modifiers": {},
+          "instance_id": "enemy.0",
+          "maximum": [
+            48,
+            0,
+            10
+          ],
+          "percent_modifiers": {},
+          "regeneration": [
+            0,
+            1,
+            2
+          ],
+          "reserved": [
+            0,
+            0,
+            0
+          ],
+          "shield": 0,
+          "skill_ranks": {
+            "skill.enemy_strike": "F"
+          },
+          "stats": {
+            "stat.defense": 0,
+            "stat.magic_attack": 0,
+            "stat.magic_defense": 0,
+            "stat.magic_protection": 0,
+            "stat.protection": 0,
+            "stat.strength": 2
+          },
+          "statuses": [],
+          "training": {
+            "skill.enemy_strike": 0
+          },
+          "weapon": ""
+        }
+      ],
+      "hand": [
+        2,
+        5,
+        1,
+        2,
+        2
+      ],
+      "kept": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "locked_inputs": {
+        "attack": 3,
+        "base": 2,
+        "cooldown": 0,
+        "costs": [
+          0,
+          0,
+          5
+        ],
+        "defense": 0,
+        "duration": 0,
+        "effect": "physical_damage",
+        "pip_scale": 1,
+        "protection": 0,
+        "rank": "F",
+        "shield": 0,
+        "skill_id": "skill.sword",
+        "status_id": "",
+        "target_id": "enemy.0",
+        "uses_dice": true,
+        "weights": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "multiplier": "2.5",
+      "options": {
+        "skill.fortify": {
+          "costs": [
+            0,
+            0,
+            4
+          ],
+          "name": "Fortify",
+          "odds": "1: 16.7% · 2: 16.7% · 3: 16.7% · 4: 16.7% · 5: 16.7% · 6: 16.7%",
+          "rank": "F",
+          "target_id": "hero",
+          "target_name": "Hero",
+          "unavailable": "",
+          "weights": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        },
+        "skill.sword": {
+          "costs": [
+            0,
+            0,
+            5
+          ],
+          "name": "Sword",
+          "odds": "1: 16.7% · 2: 16.7% · 3: 16.7% · 4: 16.7% · 5: 16.7% · 6: 16.7%",
+          "rank": "F",
+          "target_id": "enemy.0",
+          "target_name": "Sentinel",
+          "unavailable": "",
+          "weights": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "outcome": "",
+      "pending_gold": 5,
+      "phase": 1,
+      "preview": {
+        "absorbed": 0,
+        "amount": 42,
+        "combination": 3,
+        "pips": 12
+      },
+      "rerolls_remaining": 1,
+      "selected_rank": "F",
+      "selected_skill": "skill.sword",
+      "target_id": "enemy.0"
+    },
+    "content_versions": {
+      "content": 3,
+      "engine": "4.7.2.stable.official.ed1daf0bf",
+      "generator": 1,
+      "rng": 1,
+      "rules": 1,
+      "schema": 1
+    },
+    "exploration": {
+      "active_encounter": "encounter.training",
+      "discovered": [
+        "room.threshold"
+      ],
+      "pending_gold": 0,
+      "position": {
+        "x": 96,
+        "y": 160
+      },
+      "resolved": [],
+      "world_id": "dungeon.undercrypt"
+    },
+    "hero": {
+      "committed_gold": 0,
+      "completed_activations": 0,
+      "cooldowns": {},
+      "current": [
+        30,
+        10,
+        20
+      ],
+      "definition_id": "actor.hero",
+      "flat_modifiers": {},
+      "instance_id": "hero",
+      "items": [],
+      "maximum": [
+        30,
+        10,
+        20
+      ],
+      "percent_modifiers": {},
+      "regeneration": [
+        0,
+        1,
+        2
+      ],
+      "reserved": [
+        0,
+        0,
+        5
+      ],
+      "shield": 0,
+      "skill_ranks": {
+        "skill.fortify": "F",
+        "skill.sword": "F"
+      },
+      "stats": {
+        "stat.defense": 1,
+        "stat.magic_attack": 3,
+        "stat.magic_defense": 1,
+        "stat.magic_protection": 0,
+        "stat.protection": 0,
+        "stat.strength": 3
+      },
+      "statuses": [],
+      "training": {
+        "skill.fortify": 0,
+        "skill.sword": 0
+      },
+      "weapon": "sword"
+    },
+    "mode": 4,
+    "revision": 7,
+    "session_id": 1
+  }
+}

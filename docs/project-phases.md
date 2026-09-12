@@ -1,8 +1,8 @@
 # Rebirth Dungeon: Project Phases
 
-**Replanned: 2026-09-11 — Godot 4.7 / typed GDScript with the selected addons.** Phases 0–4 were implemented and verified after the 2026-09-10 reset; later phases remain unstarted. **Completed: 5 of 17. Current focus: Phase 5.** Pre-Godot implementation, tests and platform acceptance do not carry forward.
+**Replanned: 2026-09-11 — Godot 4.7 / typed GDScript with the selected addons.** Phases 0–5 were implemented and verified after the 2026-09-10 reset; later phases remain unstarted. **Completed: 6 of 17. Current focus: Phase 6.** Pre-Godot implementation, tests and platform acceptance do not carry forward.
 
-The repository contains the persistent State Charts application shell, validated content catalog, independent domain state/RNG/command foundations, isolated addon qualification fixtures, verification runner and export presets. Town and dungeon exploration now include continuous movement, discovery, guarded encounter fixtures and Phantom Camera follow. Combat, progression and durable saves remain unimplemented. This roadmap incorporates the currently configured addons without treating installation as feature completion. [Game Plan](game-plan.md) defines architecture, [Directory](directory.md) defines file placement, gameplay specs define rules, and [AGENTS.md](../AGENTS.md) defines addon usage and integration boundaries. Phase numbers remain stable so existing specification links retain their meaning.
+The repository contains the persistent State Charts application shell, validated content catalog, independent domain state/RNG/command foundations, isolated addon qualification fixtures, verification runner and export presets. Town and dungeon exploration now include continuous movement, discovery, guarded encounter fixtures and Phantom Camera follow. Deterministic combat and the adaptive battle HUD now include guarded State Charts presentation, separate Phantom Camera staging and simulated save-failure/retry behavior. Progression and durable saves remain unimplemented. This roadmap incorporates the currently configured addons without treating installation as feature completion. [Game Plan](game-plan.md) defines architecture, [Directory](directory.md) defines file placement, gameplay specs define rules, and [AGENTS.md](../AGENTS.md) defines addon usage and integration boundaries. Phase numbers remain stable so existing specification links retain their meaning.
 
 ## Status and completion policy
 
@@ -40,7 +40,7 @@ Build only lightweight mode/command contracts in Phase 1, domain types in Phase 
 | 2 | Validated Resources and deterministic rule foundations | Complete |
 | 3 | Continuous exploration, authored rooms and Phantom Camera | Complete |
 | 4 | Five-dice combat rules and LimboAI decisions | Complete |
-| 5 | Battle HUD, state flow and camera staging | Not started |
+| 5 | Battle HUD, state flow and camera staging | Complete |
 | 6 | Durable saves and interrupted-session recovery | Not started |
 | 7 | Dialogue Manager town services and durable dungeon loop | Not started |
 | 8 | Inventory, skills and lasting progression | Not started |
@@ -138,17 +138,19 @@ Verified on 2026-09-11 (2026-09-12 UTC) with Godot 4.7.2 (`ed1daf0bf`), content 
 
 ## Phase 5: Battle HUD, state flow and camera staging
 
-**Status: Not started. Dependencies: 1, 4.**
+**Status: Complete. Dependencies: 1, 4.**
 
-- [ ] Build CanvasLayer/Control/Container scenes, shared Theme and five stable die controls.
-- [ ] Expose skill/rank/target, costs, reservations, odds, result breakdown, kept dice and reroll budget.
-- [ ] Create modal/focus and pointer-ownership policy; prevent panel click-through and held world movement.
-- [ ] Validate wide/compact landscape, readable scaling, focus navigation and reduced animation.
-- [ ] Display save-pending/failure through a test adapter and prove duplicate/stale input cannot repeat an action.
-- [ ] Bind a battle State Charts adapter to accepted domain phases: pre-roll selection, locked hand, resolved activation and next actor/outcome. Guards reflect available commands; the domain revalidates every request. Re-entry/animation callbacks cannot reroll, commit or tick AI.
-- [ ] Author Phantom Camera battle framing separate from exploration, with explicit priority handoff and cleanup. Skipping a tween or replacing a scene changes presentation only; combat targets remain encounter members.
+- [x] Build CanvasLayer/Control/Container scenes, shared Theme and five stable die controls.
+- [x] Expose skill/rank/target, costs, reservations, odds, result breakdown, kept dice and reroll budget.
+- [x] Create modal/focus and pointer-ownership policy; prevent panel click-through and held world movement.
+- [x] Validate wide/compact landscape, readable scaling, focus navigation and reduced animation.
+- [x] Display save-pending/failure through a test adapter and prove duplicate/stale input cannot repeat an action.
+- [x] Bind a battle State Charts adapter to accepted domain phases: pre-roll selection, locked hand, resolved activation and next actor/outcome. Guards reflect available commands; the domain revalidates every request. Re-entry/animation callbacks cannot reroll, commit or tick AI.
+- [x] Author Phantom Camera battle framing separate from exploration, with explicit priority handoff and cleanup. Skipping a tween or replacing a scene changes presentation only; combat targets remain encounter members.
 
 **Exit criterion:** The [Phase 5 UI matrix](phase5-combat.md#acceptance) passes with State Charts and Phantom Camera in Godot runtime, including repeated entry, skipped motion and stale input. Simulated saves are clearly separated from Phase 6 disk acceptance.
+
+**Verification:** [Phase 5 implementation](phase5-implementation.md) and [dated evidence](evidence/phase5/README.md): 148 battle UI checks, all existing combat/AI/exploration fixtures, 960×540 and 1920×1080 at 100–140% text, simulated safe areas, keyboard/controller/touch input, exact candidate retry, scene/camera lifecycle, rendered victory/return and all five resource packs. Real disk durability, saved preferences and mobile device acceptance remain outstanding.
 
 ## Phase 6: Durable saves and interrupted-session recovery
 

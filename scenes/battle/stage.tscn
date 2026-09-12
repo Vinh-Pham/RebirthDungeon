@@ -1,0 +1,35 @@
+[gd_scene format=3]
+[ext_resource type="Script" path="res://scripts/presentation/battle_stage.gd" id="stage"]
+[ext_resource type="Script" path="res://scripts/presentation/battle_camera_host.gd" id="host"]
+[ext_resource type="Script" path="res://addons/phantom_camera/scripts/phantom_camera/phantom_camera_2d.gd" id="phantom"]
+[ext_resource type="Texture2D" path="res://assets/art/exploration/hero.png" id="hero"]
+[ext_resource type="Texture2D" path="res://assets/art/exploration/sentinel.png" id="enemy"]
+[ext_resource type="Script" path="res://addons/phantom_camera/scripts/resources/tween_resource.gd" id="tween"]
+[sub_resource type="Resource" id="wide_tween"]
+resource_local_to_scene = true
+script = ExtResource("tween")
+duration = 0.2
+[sub_resource type="Resource" id="detail_tween"]
+resource_local_to_scene = true
+script = ExtResource("tween")
+duration = 0.2
+[node name="Stage" type="Node2D"]
+texture_filter = 1
+script = ExtResource("stage")
+[node name="Hero" type="Sprite2D" parent="."]
+position = Vector2(-170, 0)
+texture = ExtResource("hero")
+[node name="Enemy" type="Sprite2D" parent="."]
+position = Vector2(170, 0)
+texture = ExtResource("enemy")
+[node name="Camera2D" type="Camera2D" parent="."]
+[node name="PhantomCameraHost" type="Node" parent="Camera2D"]
+script = ExtResource("host")
+[node name="Wide" type="Node2D" parent="."]
+script = ExtResource("phantom")
+priority = 20
+tween_resource = SubResource("wide_tween")
+[node name="Detail" type="Node2D" parent="."]
+script = ExtResource("phantom")
+priority = 10
+tween_resource = SubResource("detail_tween")

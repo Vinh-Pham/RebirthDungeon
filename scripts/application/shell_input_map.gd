@@ -25,6 +25,12 @@ static func configure() -> void:
 			var event := InputEventKey.new()
 			event.physical_keycode = key
 			_add(binding[0], event)
+	for i: int in 5:
+		var action := StringName("battle_keep_%d" % i)
+		if not InputMap.has_action(action): InputMap.add_action(action)
+		var key := InputEventKey.new()
+		key.physical_keycode = KEY_1 + i
+		_add(action, key)
 	Input.emulate_mouse_from_touch = true
 
 static func _add(action: StringName, event: InputEvent) -> void:

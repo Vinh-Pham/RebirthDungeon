@@ -1,0 +1,19 @@
+$ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/vinhpham/Projects/RebirthDungeon --script res://tests/run_tests.gd
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+CATALOG_FIXTURE: PASS (117 checks)
+RNG_FIXTURE: PASS (333 checks)
+COMMAND_FIXTURE: PASS (56 checks)
+COMBAT_FIXTURE: PASS (7883 checks)
+COMBAT_AI_FIXTURE: PASS
+BATTLE_UI_FIXTURE: PASS (148 checks)
+AUTOLOAD: DialogueManager -> res://addons/dialogue_manager/dialogue_manager.gd
+AUTOLOAD: PhantomCameraManager -> res://addons/phantom_camera/scripts/managers/phantom_camera_manager.gd
+AUTOLOAD: QuestSystem -> res://addons/quest_system/quest_manager.gd
+ADDON_SMOKE: PASS
+SHELL_FIXTURE: PASS
+CONTENT_LOADING_FIXTURE: PASS
+EXPLORATION_FIXTURE: PASS (77 checks)
+TEST_RESULT: PASS
+
+EXIT_CODE: 0

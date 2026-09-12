@@ -1,0 +1,56 @@
+[gd_resource type="Theme" format=3]
+[ext_resource type="Font" path="res://assets/fonts/shell_font.tres" id="font"]
+[sub_resource type="StyleBoxFlat" id="panel"]
+bg_color = Color(0.055, 0.075, 0.085, 0.98)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.26, 0.30, 0.28, 1)
+content_margin_left = 16.0
+content_margin_right = 16.0
+content_margin_top = 10.0
+content_margin_bottom = 10.0
+[sub_resource type="StyleBoxFlat" id="normal"]
+bg_color = Color(0.11, 0.15, 0.17, 1)
+border_width_bottom = 2
+border_color = Color(0.34, 0.44, 0.42, 1)
+content_margin_left = 12.0
+content_margin_right = 12.0
+content_margin_top = 6.0
+content_margin_bottom = 6.0
+[sub_resource type="StyleBoxFlat" id="hover"]
+bg_color = Color(0.22, 0.29, 0.29, 1)
+content_margin_left = 12.0
+content_margin_right = 12.0
+content_margin_top = 6.0
+content_margin_bottom = 6.0
+[sub_resource type="StyleBoxFlat" id="focus"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.92, 0.76, 0.44, 1)
+[sub_resource type="StyleBoxFlat" id="bar"]
+bg_color = Color(0.10, 0.13, 0.15, 1)
+[sub_resource type="StyleBoxFlat" id="fill"]
+bg_color = Color(0.54, 0.69, 0.61, 1)
+[resource]
+default_font = ExtResource("font")
+default_font_size = 18
+Label/colors/font_color = Color(0.9, 0.92, 0.86, 1)
+Button/colors/font_color = Color(0.92, 0.93, 0.88, 1)
+Button/colors/font_disabled_color = Color(0.52, 0.57, 0.55, 1)
+Button/styles/normal = SubResource("normal")
+Button/styles/hover = SubResource("hover")
+Button/styles/pressed = SubResource("hover")
+Button/styles/focus = SubResource("focus")
+Button/styles/disabled = SubResource("bar")
+PanelContainer/styles/panel = SubResource("panel")
+ProgressBar/styles/background = SubResource("bar")
+ProgressBar/styles/fill = SubResource("fill")
+VBoxContainer/constants/separation = 8
+HBoxContainer/constants/separation = 8
+GridContainer/constants/h_separation = 8
+GridContainer/constants/v_separation = 8
