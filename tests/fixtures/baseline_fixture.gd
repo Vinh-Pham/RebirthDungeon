@@ -24,9 +24,12 @@ func run(tree: SceneTree, break_layout: bool = false) -> PackedStringArray:
 			await tree.process_frame
 		if not ui.size.is_equal_approx(Vector2(dimensions)):
 			failures.append("Shell must fill viewport %s; got %s" % [dimensions, ui.size])
-		var heading := ui.get_node("Layout/ModeHost/ModeView/Heading") as Label
-		if heading.text.is_empty() or not Rect2(Vector2.ZERO, Vector2(dimensions)).encloses(heading.get_global_rect()):
-			failures.append("Shell heading must be visible at %s" % dimensions)
+		var title := ui.get_node("TitleScreen") as Control
+		var start := title.get_node("Controls/StartGame") as Button
+		if not title.size.is_equal_approx(Vector2(dimensions)) or not start.is_visible_in_tree() or not Rect2(Vector2.ZERO, Vector2(dimensions)).encloses(start.get_global_rect()):
+			failures.append("Title and Start Game must fit viewport %s" % dimensions)
+		if start.size.y < 44 or start.text != "Start Game":
+			failures.append("Start Game needs a named, touch-sized target")
 	viewport.queue_free()
 	await tree.process_frame
 	return failures

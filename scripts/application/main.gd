@@ -49,6 +49,7 @@ var _catalog := Catalog.new()
 var catalog_path: String = "res://content/catalog.tres"
 
 const Mode = SessionShell.Mode
+const TITLE_VIEW = preload("res://scenes/menus/title_screen.tscn")
 const MODE_VIEW = preload("res://scenes/ui/mode_view.tscn")
 const REQUIRED := {
 	"res://content/progression/starter.tres": "Resource",
@@ -310,11 +311,14 @@ func _replace_view() -> void:
 		_world = null
 	if is_instance_valid(_view):
 		_view.detach()
-		_host.remove_child(_view)
+		_view.get_parent().remove_child(_view)
 		_view.queue_free()
 		mode_detached.emit()
-	_view = MODE_VIEW.instantiate() as ShellModeView
-	_host.add_child(_view)
+	_view = (TITLE_VIEW if _session.mode == Mode.MENU else MODE_VIEW).instantiate() as ShellModeView
+	if _session.mode == Mode.MENU:
+		_ui.add_child(_view)
+	else:
+		_host.add_child(_view)
 	var heading: String = Mode.keys()[_session.mode].capitalize()
 	var description := "Development fixture · navigation only.\nGameplay and saving are not implemented."
 	var choices: Dictionary = {}
@@ -325,7 +329,7 @@ func _replace_view() -> void:
 			if not loading_error.is_empty():
 				description = loading_error
 			if development_enabled:
-				choices[Mode.LOADING] = "Explore Haven"
+				choices[Mode.LOADING] = "Start Game"
 		Mode.LOADING:
 			description = "Loading required resources and validating content…"
 			if not loading_error.is_empty():
@@ -372,7 +376,7 @@ func _replace_view() -> void:
 	var exploring := _session.mode in [Mode.TOWN, Mode.DUNGEON]
 	var battle_visible := _session.mode == Mode.BATTLE
 	$UI/UIHost/Background.visible = not exploring and not battle_visible
-	$UI/UIHost/Layout.visible = not exploring and not battle_visible
+	$UI/UIHost/Layout.visible = not exploring and not battle_visible and _session.mode != Mode.MENU
 	_ui.mouse_filter = Control.MOUSE_FILTER_IGNORE if exploring or battle_visible else Control.MOUSE_FILTER_STOP
 	if exploring:
 		_view.set_input_enabled(false)
@@ -511,7 +515,7 @@ func _load_required(id: int, revision: int, advance: bool = true) -> void:
 	_ui.theme = candidate["res://scenes/ui/shell_theme.tres"]
 	$UI/UIHost/Layout/Mark.texture = candidate["res://assets/art/dungeon_mark.svg"]
 	observation_changed.emit(observation())
-	if persistence_enabled and not _storage_checked:
+	if persistence_enabled and not _storage_checked and advance:
 		_open_storage()
 		if _save_overlay != null: return
 	if advance and _focused:

@@ -48,7 +48,7 @@ func run(tree: SceneTree) -> PackedStringArray:
 	main.required_resource_overrides.clear()
 	for cycle: int in 3:
 		var before := main.observation()
-		var old_view := main.get_node("UI/UIHost/Layout/ModeHost/ModeView") as ShellModeView
+		var old_view := main._view
 		var stale_callback: Callable = main._on_intent.bind(Mode.LOADING, before.session_id, before.revision, weakref(old_view))
 		if not main.request_mode(Mode.LOADING, before.session_id, before.revision):
 			failures.append("Valid loading request rejected")
@@ -72,7 +72,8 @@ func run(tree: SceneTree) -> PackedStringArray:
 			after = main.observation()
 			if after.mode != target or after.revision != before.revision + 1:
 				failures.append("Mode transition must publish exactly once")
-			if main.get_node("UI/UIHost/Layout/ModeHost").get_child_count() != 1:
+			if (main.get_node("UI/UIHost/Layout/ModeHost").get_child_count() != (0 if target == Mode.MENU else 1)
+				or main.get_node("UI/UIHost").find_children("TitleScreen", "", false, false).size() != (1 if target == Mode.MENU else 0)):
 				failures.append("Old mode view survived replacement")
 	main.development_enabled = false
 	var before := main.observation()

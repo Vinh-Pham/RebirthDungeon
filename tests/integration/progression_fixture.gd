@@ -29,6 +29,9 @@ func run(tree: SceneTree) -> PackedStringArray:
 	main.save_directory = directory
 	tree.root.add_child(main)
 	await H.new().frames(tree,10)
+	var title_observation := main.observation()
+	main.request_mode(SessionShell.Mode.LOADING,title_observation.session_id,title_observation.revision)
+	for title_frame: int in 10: await tree.process_frame
 	main.resume_checkpoint()
 	await H.new().frames(tree,15)
 	main.set_application_focused(true)

@@ -65,6 +65,9 @@ func _run() -> void:
 	main.save_directory = directory
 	root.add_child(main)
 	await helper.frames(self,12)
+	var title_observation := main.observation()
+	main.request_mode(SessionShell.Mode.LOADING,title_observation.session_id,title_observation.revision)
+	for title_frame: int in 10: await self.process_frame
 	main.resume_checkpoint()
 	await helper.frames(self,12)
 	if args[1] in ["resume-world","resume-town"]:

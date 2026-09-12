@@ -1,5 +1,5 @@
 class_name ShellModeView
-extends VBoxContainer
+extends Control
 ## A copied observation plus local intents; never holds the session.
 
 signal intent_requested(target: int, session_id: int, revision: int)

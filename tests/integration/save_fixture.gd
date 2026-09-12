@@ -134,7 +134,11 @@ func run(tree: SceneTree) -> PackedStringArray:
 	main.save_directory = path
 	tree.root.add_child(main)
 	await frames(tree,10)
-	check(main._save_overlay != null and main._resume_candidate != null,"Startup offers Continue")
+	check(main._save_overlay == null and main._resume_candidate == null,"Title precedes saved-session prompt")
+	var title_observation := main.observation()
+	main.request_mode(SessionShell.Mode.LOADING,title_observation.session_id,title_observation.revision)
+	await frames(tree,10)
+	check(main._save_overlay != null and main._resume_candidate != null,"Start Game offers Continue")
 	main.resume_checkpoint()
 	await frames(tree,10)
 	check(main._battle_view.flow.current == "Locked","Chart restored from locked disk observation")
@@ -172,6 +176,7 @@ func run(tree: SceneTree) -> PackedStringArray:
 	navigation.save_directory = path+"/navigation"
 	tree.root.add_child(navigation)
 	await frames(tree,10)
+	navigation._open_storage() # Prepare empty storage before injecting the first write failure.
 	navigation.repository.fault = "open"
 	navigation.request_mode(SessionShell.Mode.LOADING,1,navigation._session.revision)
 	await frames(tree,10)

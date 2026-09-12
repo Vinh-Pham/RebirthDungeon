@@ -341,3 +341,5 @@ Verified on 2026-09-11 (2026-09-12 UTC) with Godot 4.7.2 (`ed1daf0bf`), content 
 2026-09-10: Phase 0 verified with the pinned Godot editor: import, runtime launch through Godot MCP, headless fixture pass and intentional failure, and resource-pack exclusions for all five presets. Full exports fail on absent templates; SDK/signing prerequisites are recorded per target. [Retained commands, results and screenshot](evidence/phase-0/README.md). This does not claim executable export or mobile acceptance.
 
 2026-09-11: Phase 2 validated Resources, domain ownership, RNG and command boundary verified. [Evidence](evidence/phase-2/README.md).
+
+2026-09-12: Penpot title-screen presentation integrated with existing guarded loading and saved-session continuation. [Title-screen evidence](evidence/title-screen/README.md). No phase completion status changed.
