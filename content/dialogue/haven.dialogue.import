@@ -1,0 +1,16 @@
+[remap]
+
+importer="dialogue_manager"
+importer_version=18
+type="Resource"
+uid="uid://dho5opp4noyep"
+path="res://.godot/imported/haven.dialogue-7e0abc4a816bb288fbbeafb86115f367.tres"
+
+[deps]
+
+source_file="res://content/dialogue/haven.dialogue"
+dest_files=["res://.godot/imported/haven.dialogue-7e0abc4a816bb288fbbeafb86115f367.tres"]
+
+[params]
+
+defaults=true

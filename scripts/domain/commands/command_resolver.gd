@@ -7,7 +7,7 @@ const Session = preload("res://scripts/domain/state/session_shell.gd")
 const Catalog = preload("res://scripts/data/content_catalog.gd")
 const Rules = preload("res://scripts/domain/rules/battle_rules.gd")
 const Dice = preload("res://scripts/domain/rules/dice_rules.gd")
-const KINDS := ["select_skill", "roll", "keep", "reroll", "commit", "pass", "enemy_action"]
+const KINDS := ["select_skill", "roll", "keep", "reroll", "commit", "pass", "enemy_action", "buy_potion", "recover", "enter_dungeon", "abandon", "use_potion"]
 
 static func parse_intent(intent: Dictionary) -> Command:
 	var expected := {"session_id": TYPE_INT, "expected_revision": TYPE_INT, "operation_id": TYPE_STRING,
@@ -27,6 +27,8 @@ static func resolve(session: Session, command: Command, catalog: Catalog) -> Res
 	if session.accepted_operations.has(command.operation_id): return _reject("duplicate_operation", command)
 	if session.revision >= 9223372036854775807: return _reject("revision_exhausted", command)
 	if command.kind not in KINDS: return _reject("unsupported_command", command)
+	if command.kind in ["buy_potion","recover","enter_dungeon","abandon"]:
+		return _service(session,command,catalog)
 	if session.mode != Session.Mode.BATTLE or session.battle == null or session.hero == null: return _reject("no_battle", command)
 	var battle := session.battle
 	if battle.phase == battle.Phase.FINISHED: return _reject("battle_finished", command)
@@ -48,6 +50,10 @@ static func resolve(session: Session, command: Command, catalog: Catalog) -> Res
 				inputs = Rules.selection(session, command.actor_id, skill_id, target_id, catalog)
 				if inputs.has("error"): return _reject(inputs.error, command)
 				if command.kind == "enemy_action" and inputs.uses_dice: return _reject("enemy_dice_unsupported", command)
+		"use_potion":
+			if battle.phase != battle.Phase.PRE_ROLL: return _reject("selection_locked", command)
+			if session.hero.potions <= 0: return _reject("no_potions", command)
+			if session.hero.current[0] >= session.hero.maximum[0]: return _reject("health_full", command)
 		"keep":
 			if battle.phase != battle.Phase.LOCKED or battle.hand.size() != 5: return _reject("not_locked", command)
 			if command.indices.size() != 1 or typeof(command.indices[0]) != TYPE_INT or command.indices[0] < 0 or command.indices[0] > 4:
@@ -81,6 +87,11 @@ static func resolve(session: Session, command: Command, catalog: Catalog) -> Res
 				next.hand[index] = Dice.sample(next.locked_inputs.weights, candidate.rng.stream("combat"))
 			next.rerolls_remaining -= 1
 			events.append({"type": "rerolled", "hand": next.hand.duplicate()})
+		"use_potion":
+			candidate.hero.potions -= 1
+			candidate.hero.current[0] = mini(candidate.hero.maximum[0], candidate.hero.current[0] + 15)
+			events.append({"type":"potion_used","healing":15})
+			Rules.finish(candidate,catalog,false,events)
 		"commit", "pass":
 			Rules.finish(candidate, catalog, command.kind == "pass", events)
 		"enemy_action":
@@ -102,4 +113,51 @@ static func _reject(code: String, command: Command = null) -> Result:
 	var result := Result.new()
 	result.code = code
 	if command != null: result.operation_id = command.operation_id
+	return result
+
+## Temporary first-loop service values: one potion per purchase, 5 gold, cap 5.
+## Spatial/session ownership is revalidated by Main before this pure resolver.
+static func _service(session: Session, command: Command, catalog: Catalog) -> Result:
+	if session.hero == null or session.content_versions != catalog.versions(): return _reject("invalid_service",command)
+	if command.actor_id != "hero" or not command.skill_id.is_empty(): return _reject("invalid_service",command)
+	if command.kind == "abandon":
+		if session.mode != Session.Mode.DUNGEON or session.exploration == null or not session.exploration.active_encounter.is_empty(): return _reject("not_exploring",command)
+		if command.target_id != "dungeon.undercrypt": return _reject("invalid_target",command)
+	else:
+		if session.mode != Session.Mode.TOWN: return _reject("not_in_town",command)
+		if command.target_id != ("entrance.undercrypt" if command.kind == "enter_dungeon" else "npc.keeper"): return _reject("invalid_target",command)
+	if command.kind == "buy_potion":
+		if session.hero.committed_gold < 5: return _reject("insufficient_gold",command)
+		if session.hero.potions >= 5: return _reject("supplies_full",command)
+	if command.kind == "enter_dungeon" and session.hero.current[0] <= 0: return _reject("recovery_required",command)
+	var candidate: Session = session.copy()
+	match command.kind:
+		"buy_potion":
+			candidate.hero.committed_gold -= 5
+			candidate.hero.potions += 1
+		"recover":
+			candidate.hero.current = candidate.hero.maximum.duplicate()
+			candidate.hero.reserved.fill(0)
+			candidate.hero.statuses.clear()
+			candidate.hero.cooldowns.clear()
+			candidate.hero.shield = 0
+		"enter_dungeon":
+			candidate.exploration = preload("res://scripts/domain/state/exploration_state.gd").new()
+			candidate.battle = null
+			candidate.mode = Session.Mode.DUNGEON
+		"abandon":
+			candidate.exploration.pending_gold = 0
+			candidate.battle = null
+			candidate.hero.statuses.clear()
+			candidate.hero.cooldowns.clear()
+			candidate.hero.shield = 0
+			candidate.mode = Session.Mode.RESULTS
+	candidate.revision += 1
+	candidate.accepted_operations[command.operation_id] = candidate.revision
+	var result := Result.new()
+	result.accepted = true
+	result.code = "accepted"
+	result.operation_id = command.operation_id
+	result.candidate = candidate
+	result.events.append({"type":command.kind,"session_id":candidate.session_id,"revision":candidate.revision,"operation_id":command.operation_id})
 	return result

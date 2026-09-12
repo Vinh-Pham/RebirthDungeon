@@ -56,8 +56,9 @@ func run(tree: SceneTree) -> PackedStringArray:
 	await frames(tree,2)
 	check(not world.interaction_is_valid("npc.keeper"), "Distant NPC interaction accepted")
 	await walk(tree, world, Vector2(208,112))
-	check(world.panel_open, "NPC approach did not open proximity fixture")
-	world.close_panel()
+	await frames(tree)
+	check(is_instance_valid(main._dialogue), "NPC approach did not open dialogue")
+	main._close_dialogue()
 	await frames(tree)
 	var before: Vector2 = world.player.global_position
 	world.show_panel("Test panel", "Blocking input fixture")
@@ -76,6 +77,8 @@ func run(tree: SceneTree) -> PackedStringArray:
 	Input.action_release("move_right")
 	await frames(tree)
 	await walk(tree, world, Vector2(416,160))
+	await frames(tree)
+	main._confirm_service("enter_dungeon",1,main._session.revision,main._dialogue_serial)
 	await settle_world(tree, main)
 	check(main.observation().mode == Mode.DUNGEON, "Town entrance did not enter dungeon")
 	world = main._world

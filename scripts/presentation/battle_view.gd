@@ -130,6 +130,7 @@ func _build() -> void:
 	_selection.max_lines_visible = 2
 	_selection.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	actions["select_skill"] = _button(choice,"Choose skill",open_skills,"Skills")
+	actions["use_potion"] = _button(choice,"Potion",func(): send_action("use_potion"),"Potion")
 	var dice_row := HBoxContainer.new()
 	controls.add_child(dice_row)
 	for i: int in 5:
@@ -258,6 +259,7 @@ func _render() -> void:
 		_selection.text = "Encounter complete"
 		_summary.text = "All activations resolved"
 		_cost.text = "Rewards remain pending until the dungeon exit." if battle.outcome == "victory" else "Return to review the expedition outcome."
+	actions["use_potion"].text = "Potion ×%d" % snapshot.hero.potions
 	actions["pass"].text = "Paid Pass" if battle.phase == 1 else "Free Pass"
 	actions["retry"].visible = _save_state == "failed"
 	actions["continue"].visible = not battle.outcome.is_empty() and _save_state == "idle"
@@ -278,7 +280,7 @@ func _refresh_controls() -> void:
 	if snapshot.is_empty(): return
 	var battle: Dictionary = snapshot.battle
 	var available: Dictionary = battle.availability
-	for kind: String in ["select_skill","roll","reroll","commit","pass"]:
+	for kind: String in ["select_skill","roll","reroll","commit","pass","use_potion"]:
 		actions[kind].disabled = not _can(kind) or not String(available.get(kind,"")).is_empty()
 		actions[kind].tooltip_text = available.get(kind,"")
 	for die: Button in dice:

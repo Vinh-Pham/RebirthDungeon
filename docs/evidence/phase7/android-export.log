@@ -1,0 +1,15 @@
+{
+  "artifact_exists": false,
+  "exit_code": 1,
+  "found": true,
+  "job_id": "export-1",
+  "kind": "export",
+  "meta": {
+    "command": "/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/vinhpham/Projects/RebirthDungeon/ --export-debug Android /Users/vinhpham/Projects/RebirthDungeon/build/phase7/rebirth.apk",
+    "output_path": "/Users/vinhpham/Projects/RebirthDungeon/build/phase7/rebirth.apk",
+    "preset": "Android"
+  },
+  "output_tail": "Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org\n\n[   0% ] first_scan_filesystem | Started Project initialization (5 steps)\n[   0% ] first_scan_filesystem | Scanning file structure...\n[  16% ] first_scan_filesystem | Loading global class names...\n[  33% ] first_scan_filesystem | Verifying GDExtensions...\n[  50% ] first_scan_filesystem | Creating autoload scripts...\n[  66% ] first_scan_filesystem | Initializing plugins...\n[  83% ] first_scan_filesystem | Starting file scan...\n[ DONE ] first_scan_filesystem\n\n[   0% ] update_scripts_classes | Started Registering global classes... (3 steps)\n[   0% ] update_scripts_classes | \n[  25% ] update_scripts_classes | \n[  50% ] update_scripts_classes | \n[ DONE ] update_scripts_classes\n\nERROR: Cannot export project with preset \"Android\" due to configuration errors:\nNo export template found at the expected path:\n/Users/vinhpham/Library/Application Support/Godot/export_templates/4.7.2.stable/android_debug.apk\nNo export template found at the expected path:\n/Users/vinhpham/Library/Application Support/Godot/export_templates/4.7.2.stable/android_release.apk\n\n   at: _fs_changed (editor/editor_node.cpp:1401)\nERROR: Project export for preset \"Android\" failed.\n   at: _fs_changed (editor/editor_node.cpp:1417)\n",
+  "running": false,
+  "started": "2026-09-12T00:13:48"
+}

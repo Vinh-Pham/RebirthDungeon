@@ -70,4 +70,4 @@ func _entered(phase: String) -> void:
 	phase_changed.emit(phase)
 
 func permits(kind: String) -> bool:
-	return (current == "Selection" and kind in ["select_skill", "roll", "pass"]) or (current == "Locked" and kind in ["keep", "reroll", "commit", "pass"])
+	return (current == "Selection" and kind in ["select_skill", "roll", "pass", "use_potion"]) or (current == "Locked" and kind in ["keep", "reroll", "commit", "pass"])

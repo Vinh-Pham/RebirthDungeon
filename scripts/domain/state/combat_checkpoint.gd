@@ -38,6 +38,7 @@ static func restore(data: Dictionary, catalog: RefCounted) -> Session:
 	result.hero = Hero.new()
 	if not _actor(result.hero, data.hero): return null
 	result.hero.committed_gold = data.hero.get("committed_gold", 0)
+	result.hero.potions = data.hero.get("potions", 0)
 	for record: Dictionary in data.hero.get("items", []):
 		var item := Item.new()
 		item.instance_id = record.instance_id

@@ -1,0 +1,31 @@
+~ keeper
+Keeper: Welcome to Haven. I can restore your strength or supply healing potions.
+- Buy one potion — 5 gold [if can_buy /] => buy
+- Recover fully — free => recovery
+- About the Undercrypt => advice
+- Goodbye => END
+
+~ advice
+Keeper: Defeat both sentinels to unlock the exit. Rewards remain pending until you leave through it. Defeat or abandonment loses pending gold, but keeps your committed gold and unused potions.
+=> keeper
+
+~ buy
+Keeper: Buy one healing potion for 5 gold? It restores up to 15 HP and spends your full activation before rolling. Carry at most five. [#service=buy_potion]
+=> END
+
+~ recovery
+Keeper: Restore all HP, MP and SP and clear temporary combat effects, at no cost? [#service=recover]
+=> END
+
+~ entrance
+Undercrypt: Enter the dungeon with your current resources and potions? Recover with the keeper first if you need to.
+- Enter the Undercrypt [if can_enter /] => enter
+- Stay in Haven => END
+
+~ enter
+Undercrypt: Begin this expedition? [#service=enter_dungeon]
+=> END
+
+~ abandon
+Expedition: Abandon this expedition? All pending gold will be lost. Committed gold and unused potions are retained. [#service=abandon]
+=> END

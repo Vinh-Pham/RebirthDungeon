@@ -1,0 +1,16 @@
+Beckett rendered acceptance — 2026-09-12 UTC
+Isolated profile: user://phase7-rendered
+
+Purchase failure: mode 2, revision 0, gold 25, potions 0, HP/MP/SP 12/10/20, gate failed.
+Retry: mode 2, revision 1, gold 20, potions 1, gate idle.
+Two sentinels resolved through normal combat commands and manual AI.
+Second encounter potion: revision 13 -> 15, potions 1 -> 0.
+HP 25 -> capped healing 30 -> enemy response 25, SP 14 -> 16.
+Exit: mode 5, revision 20, gold 45, potions 0, HP/MP/SP 25/10/13.
+Fresh rendered process Continue resumed Results; Return to Haven revision 21.
+Escape from dialogue: camera 20, dialogue false, gate idle, revision unchanged.
+Navigation after Escape returned true.
+Recovery after run: revision 22, gold 45, potions 0, HP/MP/SP 30/10/20.
+New expedition entry and abandonment preview displayed; Escape cancelled without granting.
+Final game_logs level=error: no log entries (buffer=0, dropped=0).
+Play session stopped after verification.

@@ -17,6 +17,7 @@ func _run() -> void:
 		failures.append_array(await load("res://tests/integration/combat_ai_fixture.gd").new().run(self))
 		failures.append_array(await load("res://tests/integration/battle_ui_fixture.gd").new().run(self))
 		failures.append_array(await load("res://tests/integration/save_fixture.gd").new().run(self))
+		failures.append_array(await load("res://tests/integration/town_services_fixture.gd").new().run(self))
 		failures.append_array(await load("res://tests/integration/addon_fixture.gd").new().run(self))
 		failures.append_array(await load("res://tests/integration/shell_fixture.gd").new().run(self))
 		failures.append_array(await load("res://tests/integration/content_loading_fixture.gd").new().run(self))

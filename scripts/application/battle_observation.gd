@@ -25,10 +25,14 @@ static func decorate(result: Dictionary, session: RefCounted, catalog: RefCounte
 		var ratio: Vector2i = catalog.combination(battle.preview.combination)
 		battle.multiplier = str(float(ratio.x)/float(ratio.y))
 	var availability := {}
-	for kind: String in ["select_skill","roll","keep","reroll","commit","pass"]:
+	for kind: String in ["select_skill","roll","keep","reroll","commit","pass","use_potion"]:
 		var reason: String = ""
 		if not battle.outcome.is_empty(): reason = "This encounter has ended."
 		elif battle.active_actor_id != "hero": reason = "Wait for the sentinel's activation."
+		elif kind == "use_potion":
+			if battle.phase != 0: reason = "Potions are full actions before rolling."
+			elif session.hero.potions <= 0: reason = "Buy potions from the keeper in Haven."
+			elif session.hero.current[0] >= session.hero.maximum[0]: reason = "HP is already full."
 		elif kind in ["select_skill","roll"] and battle.phase != 0: reason = "The first roll locks skill and target."
 		elif kind in ["keep","reroll","commit"] and battle.phase != 1: reason = "Roll five dice first."
 		elif kind == "roll" and battle.selected_skill.is_empty(): reason = "Choose a skill and target first."

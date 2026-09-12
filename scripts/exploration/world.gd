@@ -3,6 +3,8 @@ extends Node2D
 signal continuation_changed(position: Vector2, discovered: Array[String])
 signal interaction_requested(stable_id: String, kind: String)
 signal menu_requested
+signal abandon_requested
+var conversation_camera: PhantomCamera2D
 const PlayerScene = preload("res://scenes/exploration/player.tscn")
 const InteractionMarkerScript = preload("res://scripts/exploration/interaction_marker.gd")
 @export var town: bool = false
@@ -235,12 +237,9 @@ func _physics_process(_delta: float) -> void:
 					continue
 				if interaction_is_valid(marker.stable_id):
 					_approach_id = ""
-					if marker.kind == "npc":
-						show_panel("The keeper", "The eastern arch leads below. Approach each doorway to reveal the next chamber.\n\nTown services arrive in a later phase.")
-					else:
-						freeze()
-						continuation_changed.emit(player.global_position, discovered.duplicate())
-						interaction_requested.emit(marker.stable_id, marker.kind)
+					freeze()
+					continuation_changed.emit(player.global_position, discovered.duplicate())
+					interaction_requested.emit(marker.stable_id, marker.kind)
 					return
 	continuation_changed.emit(player.global_position, discovered.duplicate())
 
@@ -305,6 +304,12 @@ func _build_hud() -> void:
 	help.focus_entered.connect(suspend_input)
 	help.pressed.connect(show_panel.bind("Field notes", "Move with WASD or arrow keys. Click or tap a revealed floor to walk there.\n\nClick the keeper to approach and talk. Approach a sentinel to open the encounter fixture.\n\nUse Menu to pause your journey."))
 	top.add_child(help)
+	if not town:
+		var abandon := Button.new()
+		abandon.text = "Abandon"
+		abandon.custom_minimum_size = Vector2(100,48)
+		abandon.pressed.connect(func() -> void: abandon_requested.emit())
+		top.add_child(abandon)
 	var menu := Button.new()
 	menu.text = "Menu"
 	menu.custom_minimum_size = Vector2(80,48)
@@ -373,3 +378,26 @@ func _exit_tree() -> void:
 	if is_instance_valid(phantom):
 		phantom.set_priority(0)
 		phantom.set_follow_target(null)
+
+func begin_conversation(id: String) -> void:
+	freeze()
+	conversation_camera = PhantomCamera2D.new()
+	conversation_camera.name = "ConversationCamera"
+	conversation_camera.zoom = phantom.zoom
+	conversation_camera.tween_on_load = false
+	conversation_camera.position = player.position
+	for marker: Node2D in visible_markers():
+		if marker.stable_id == id:
+			conversation_camera.position = (marker.position + player.position) * 0.5
+	add_child(conversation_camera)
+	conversation_camera.set_priority(30)
+
+func end_conversation(id: String) -> void:
+	if is_instance_valid(conversation_camera):
+		conversation_camera.set_priority(0)
+		remove_child(conversation_camera)
+		conversation_camera.queue_free()
+	conversation_camera = null
+	_overlaps.erase(id)
+	transition_locked = false
+	suspend_input()

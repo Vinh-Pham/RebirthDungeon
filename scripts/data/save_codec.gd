@@ -9,7 +9,7 @@ const Battle = preload("res://scripts/domain/state/battle_state.gd")
 const Status = preload("res://scripts/domain/state/status_state.gd")
 const Item = preload("res://scripts/domain/state/item_state.gd")
 const Exploration = preload("res://scripts/domain/state/exploration_state.gd")
-const FORMAT = "rebirth.session.v1"
+const FORMAT = "rebirth.session.v2"
 const MAX_BYTES = 4194304
 var error: String = ""
 
@@ -25,14 +25,17 @@ func decode(text: String, catalog: RefCounted) -> Dictionary:
 	if parser.parse(text) != OK: return _fail("Checkpoint JSON is damaged.")
 	var envelope: Variant = parser.data
 	if not envelope is Dictionary or not keys(envelope,["format","sequence","payload","checksum"]): return _fail("Invalid checkpoint envelope.")
-	if envelope.format != FORMAT: return _fail("Unsupported save format.", "incompatible")
+	if envelope.format not in [FORMAT,"rebirth.session.v1"]: return _fail("Unsupported save format.", "incompatible")
 	if not Limits.valid_decimal(envelope.sequence) or envelope.sequence.to_int() < 1: return _fail("Invalid sequence.")
 	if not envelope.payload is String or not envelope.checksum is String: return _fail("Invalid payload.")
-	if (FORMAT+"\n"+envelope.sequence+"\n"+envelope.payload).sha256_text() != envelope.checksum: return _fail("Checkpoint checksum mismatch.")
+	if (envelope.format+"\n"+envelope.sequence+"\n"+envelope.payload).sha256_text() != envelope.checksum: return _fail("Checkpoint checksum mismatch.")
 	if parser.parse(envelope.payload) != OK: return _fail("Invalid payload JSON.")
 	var data: Variant = unwire(parser.data)
 	if not error.is_empty() or not data is Dictionary: return _fail("Invalid exact-value encoding.")
 	if data.get("content_versions") != catalog.versions(): return _fail("This checkpoint needs another content or engine version.", "incompatible")
+	if envelope.format == "rebirth.session.v1":
+		if not data.get("hero") is Dictionary or data.hero.has("potions"): return _fail("Invalid legacy hero.")
+		data.hero["potions"] = 0 # Phase 6 had no supplies; migrate without granting any.
 	var session := restore(data,catalog)
 	if session == null: return _fail("Invalid saved state: "+error)
 	return {"status":"ok","session":session,"sequence":envelope.sequence.to_int()}
@@ -184,7 +187,7 @@ func restore(data: Dictionary, catalog: RefCounted) -> SessionShell:
 			if b.outcome != expected_outcome or (b.outcome == "victory" and enemy.current[0] != 0): return null
 		elif b.outcome != "" or hero.current[0] == 0 or enemy.current[0] == 0: return null
 	if session.mode == 2 and (session.exploration != null or session.battle != null): return null
-	if session.mode == 5 and (session.exploration == null or session.battle == null): return null
+	if session.mode == 5 and (session.exploration == null or session.exploration.pending_gold != 0): return null
 	if session.mode != 4 and session.battle != null and session.battle.phase != 3: return null
 	if session.mode == 4:
 		if session.battle == null or session.exploration.active_encounter != session.battle.encounter_id: return null
@@ -207,7 +210,7 @@ func ids(value: Variant, catalog: RefCounted, prefix: String) -> bool:
 func actor(target: Actor, value: Variant, catalog: RefCounted, is_hero: bool) -> bool:
 	if not value is Dictionary: return false
 	var data: Dictionary = value
-	if not keys(data,Capture.ACTOR_FIELDS+["statuses"]+(["items","committed_gold"] if is_hero else [])): return false
+	if not keys(data,Capture.ACTOR_FIELDS+["statuses"]+(["items","committed_gold","potions"] if is_hero else [])): return false
 	if not data.instance_id is String or not data.definition_id is String or not data.definition_id.begins_with("actor.") or catalog.definition(data.definition_id) == null: return false
 	for field: String in ["current","maximum","reserved","regeneration"]:
 		if not vector(data[field],3): return false
@@ -254,6 +257,8 @@ func actor(target: Actor, value: Variant, catalog: RefCounted, is_hero: bool) ->
 		else: target.set(field,data[field])
 	if is_hero:
 		if not integer(data.committed_gold) or not data.items is Array or data.items.size() > 1000: return false
+		if not integer(data.potions,0,5): return false
+		target.set("potions",data.potions)
 		target.set("committed_gold",data.committed_gold)
 		var instance_ids := {}
 		for record: Variant in data.items:

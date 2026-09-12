@@ -1,0 +1,7 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+SERVICE_FRESH_PROCESS: 0 potions=0 gold=20 full=false
+SERVICE_FRESH_PROCESS: 0 potions=1 gold=15 full=false
+SERVICE_FRESH_PROCESS: 0 potions=1 gold=15 full=true
+SERVICE_FRESH_PROCESS: 0 potions=1 gold=15 full=true
+TOWN_SERVICES_FIXTURE: PASS (64 checks)

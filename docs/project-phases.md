@@ -170,19 +170,21 @@ Verified on 2026-09-11 (2026-09-12 UTC) with Godot 4.7.2 (`ed1daf0bf`), content 
 
 ## Phase 7: Dialogue Manager town services and durable dungeon loop
 
-**Status: Not started. Dependencies: 3–6.**
+**Status: Complete. Dependencies: 3–6.**
 
-- [ ] Author Dialogue Manager 4 `.dialogue` resources and cues for one town NPC, a potion vendor, explicit free recovery and dungeon entry. Use a game-owned balloon and explicit mode context under persistent Main.
-- [ ] Route dialogue conditions through observations and service mutations through validated application commands. Revalidate proximity/session on confirmation; repeated lines or clicks must not duplicate purchases/recovery. No direct economy writes in dialogue text.
-- [ ] Integrate dialogue input/focus ownership and Phantom Camera conversation priorities; restore movement, focus and exploration framing on normal end, cancellation and scene replacement. Cancel stale awaits/subscriptions without granting anything.
-- [ ] Use one temporary gold balance and bounded potions with saved, atomic purchase and pre-roll potion actions.
-- [ ] Checkpoint battle entry/return; remove resolved encounters once; unlock exit only after required encounters.
-- [ ] Implement success, defeat and explicit exploration abandonment under the first-loop retention table.
-- [ ] Validate full exit/reward commit, lost pending rewards, retained unconsumed supplies, recovery and retry after a write failure.
-- [ ] Run the complete loop on desktop and perform early Android/iOS export/runtime smoke checks; log target-specific gaps.
-- [ ] Exercise fresh-process resume after accepted dialogue service commands and injected save failure; define safe conversation dismissal/restart without replaying mutations. QuestSystem remains unused for gameplay until Phase 9; a conversation is not an implicit quest.
+- [x] Author Dialogue Manager 4 `.dialogue` resources and cues for one town NPC, a potion vendor, explicit free recovery and dungeon entry. Use a game-owned balloon and explicit mode context under persistent Main.
+- [x] Route dialogue conditions through observations and service mutations through validated application commands. Revalidate proximity/session on confirmation; repeated lines or clicks must not duplicate purchases/recovery. No direct economy writes in dialogue text.
+- [x] Integrate dialogue input/focus ownership and Phantom Camera conversation priorities; restore movement, focus and exploration framing on normal end, cancellation and scene replacement. Cancel stale awaits/subscriptions without granting anything.
+- [x] Use one temporary gold balance and bounded potions with saved, atomic purchase and pre-roll potion actions.
+- [x] Checkpoint battle entry/return; remove resolved encounters once; unlock exit only after required encounters.
+- [x] Implement success, defeat and explicit exploration abandonment under the first-loop retention table.
+- [x] Validate full exit/reward commit, lost pending rewards, retained unconsumed supplies, recovery and retry after a write failure.
+- [x] Run the complete loop on desktop and perform early Android/iOS export/runtime smoke checks; log target-specific gaps.
+- [x] Exercise fresh-process resume after accepted dialogue service commands and injected save failure; define safe conversation dismissal/restart without replaying mutations. QuestSystem remains unused for gameplay until Phase 9; a conversation is not an implicit quest.
 
 **Exit criterion:** A user can converse, prepare, enter, fight, resume, exit or fail, recover and begin again with correct durable supplies/rewards and restored camera/input ownership. Dialogue replay cannot repeat a transaction. [Free exploration](free-exploration.md) owns the temporary economy.
+
+**Verification:** [Phase 7 implementation](phase7-implementation.md) and [dated evidence](evidence/phase7/README.md): 64 focused service/layout checks, four fresh-process service scenarios, all existing combat/UI/persistence/exploration fixtures, rendered purchase/retry/recovery/entry/two-encounter exit/resume/abandonment, and five resource-pack checks. Android/iOS exports were attempted; missing matching templates prevent executable/runtime acceptance. Those target-specific gaps remain explicit.
 
 ## Phase 8: Inventory, skills and lasting progression
 

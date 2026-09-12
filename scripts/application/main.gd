@@ -34,6 +34,10 @@ var _battle_view: Control
 var _battle_text_scale: float = 1.0
 var _battle_reduced_motion: bool = false
 var _world: Node2D
+var _dialogue: CanvasLayer
+var _dialogue_target: String = ""
+var _dialogue_serial: int = 0
+var _service_authorized: bool = false
 var _encounter_authorized: bool = false
 var _return_authorized: bool = false
 var _catalog := Catalog.new()
@@ -43,6 +47,7 @@ var catalog_path: String = "res://content/catalog.tres"
 const Mode = SessionShell.Mode
 const MODE_VIEW = preload("res://scenes/ui/mode_view.tscn")
 const REQUIRED := {
+	"res://content/dialogue/haven.dialogue": "Resource",
 	"res://scenes/battle/battle.tscn": "PackedScene",
 	"res://scenes/battle/stage.tscn": "PackedScene",
 	"res://scenes/battle/battle_theme.tres": "Theme",
@@ -93,6 +98,7 @@ func observation() -> Dictionary:
 		preload("res://scripts/application/battle_observation.gd").decorate(result, _session, _catalog)
 	if is_instance_valid(_world) and _world.is_inside_tree():
 		result["exploration"] = _world.observation()
+		if _session.exploration != null: result["exploration"]["pending_gold"] = _session.exploration.pending_gold
 	elif _session.exploration != null:
 		result["exploration"] = _session.exploration.capture()
 	return result
@@ -100,6 +106,8 @@ func observation() -> Dictionary:
 func submit_intent(intent: Dictionary) -> Dictionary:
 	if not _alive or not _focused or _pending != -1 or _publishing_result or checkpoint.busy() or _save_overlay != null or not loading_error.is_empty():
 		return {"accepted": false, "code": "application_unavailable", "events": []}
+	if intent.get("kind") in ["buy_potion","recover","enter_dungeon","abandon"] and not _service_authorized:
+		return {"accepted":false,"code":"conversation_required","events":[]}
 	var command := Resolver.parse_intent(intent)
 	var result := Resolver.resolve(_session, command, _catalog)
 	if result.accepted:
@@ -107,7 +115,7 @@ func submit_intent(intent: Dictionary) -> Dictionary:
 			_publish_checkpoint()
 		else:
 			_refresh_battle([], checkpoint.state)
-			return {"accepted": true, "code": "simulated_save_" + checkpoint.state, "operation_id": result.operation_id, "events": []}
+			return {"accepted": true, "code": ("save_" if persistence_enabled else "simulated_save_") + checkpoint.state, "operation_id": result.operation_id, "events": []}
 	elif is_instance_valid(_battle_view):
 		_battle_view.show_rejection(result.code)
 	return result.observation()
@@ -275,6 +283,7 @@ func _on_mode_entered(mode: int) -> void:
 		_load_required.call_deferred(_session.session_id, _session.revision, false)
 
 func _replace_view() -> void:
+	_close_dialogue()
 	if is_instance_valid(_battle_view):
 		_battle_text_scale = _battle_view.text_scale
 		_battle_reduced_motion = _battle_view.reduced_motion
@@ -320,14 +329,16 @@ func _replace_view() -> void:
 		Mode.RESULTS:
 			description = "Expedition complete · %d committed gold" % _session.hero.committed_gold
 			if _session.battle != null and _session.battle.outcome == "defeat":
-				description = "Defeated · pending expedition rewards lost.\nTown recovery arrives in Phase 7."
+				description = "Defeated · pending expedition rewards lost.\nReturn to Haven and ask the keeper for free recovery."
+			if _session.battle == null:
+				description = "Expedition abandoned · pending gold lost.\nCommitted gold and unused potions retained."
 			choices[Mode.TOWN] = "Return to Haven"
 	if _session.mode not in [Mode.MENU, Mode.LOADING, Mode.BATTLE]:
 		choices[Mode.MENU] = "Back to menu"
 	_view.configure(observation(), heading, description, choices)
 	_view.intent_requested.connect(_on_intent.bind(weakref(_view)))
 	_view.set_input_enabled(_focused)
-	_status.text = "Phase 6 · session %d · revision %d · %s" % [_session.session_id, _session.revision, heading]
+	_status.text = "Phase 7 · session %d · revision %d · %s" % [_session.session_id, _session.revision, heading]
 
 	if _session.mode == Mode.BATTLE and _session.battle != null:
 		_view.hide()
@@ -361,6 +372,7 @@ func _install_world() -> void:
 	_world.configure(_session.session_id, _session.revision, continuation, _world_session_valid)
 	_world.continuation_changed.connect(_capture_continuation.bind(_session.session_id, _session.revision))
 	_world.interaction_requested.connect(_world_interaction.bind(_session.session_id, _session.revision), CONNECT_DEFERRED)
+	_world.abandon_requested.connect(_open_abandon)
 	_world.menu_requested.connect(request_mode.bind(Mode.MENU, _session.session_id, _session.revision))
 	add_child(_world)
 	_world.set_focused(_focused)
@@ -384,8 +396,8 @@ func _capture_continuation(position: Vector2, discovered: Array[String], id: int
 func _world_interaction(stable_id: String, kind: String, id: int, revision: int) -> void:
 	if not _world_session_valid(id, revision) or not is_instance_valid(_world) or not _world.interaction_is_valid(stable_id, true):
 		return
-	if kind == "entrance" and _session.mode == Mode.TOWN:
-		request_mode(Mode.DUNGEON, id, revision)
+	if kind in ["entrance","npc"] and _session.mode == Mode.TOWN:
+		_open_dialogue(stable_id, "entrance" if kind == "entrance" else "keeper")
 	elif kind == "encounter" and _session.mode == Mode.DUNGEON:
 		if _catalog.definition(stable_id) == null or _session.exploration.active_encounter != "" or _session.exploration.resolved.has(stable_id):
 			return
@@ -493,6 +505,7 @@ func _notification(what: int) -> void:
 		set_application_focused(true)
 
 func set_application_focused(focused: bool) -> void:
+	if not focused: _close_dialogue()
 	if not focused and _focused and persistence_enabled: checkpoint_now()
 	_focused = focused
 	if is_instance_valid(_battle_view): _battle_view.set_input_enabled(focused and _pending == -1)
@@ -515,6 +528,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 func _exit_tree() -> void:
+	_close_dialogue()
 	_alive = false
 	_session.invalidate()
 	_resources.clear()
@@ -578,6 +592,7 @@ func _stage_transition(candidate: SessionShell) -> bool:
 	return true
 
 func checkpoint_now() -> void:
+	if is_instance_valid(_dialogue): return
 	if not persistence_enabled or repository == null or _recovery or _save_overlay != null or checkpoint.busy() or _publishing_result or _pending != -1 or _session.mode < Mode.TOWN: return
 	_movement_checkpoint = true
 	_movement_dirty = false
@@ -641,3 +656,56 @@ func _show_save_panel(title: String, message: String, action: String, callback: 
 	button.pressed.connect(callback,CONNECT_DEFERRED)
 	body.add_child(button)
 	button.grab_focus()
+
+func _open_abandon() -> void:
+	if _session.mode == Mode.DUNGEON and _world_session_valid(_session.session_id,_session.revision):
+		_open_dialogue("dungeon.undercrypt","abandon")
+
+func _open_dialogue(target: String, cue: String) -> void:
+	if is_instance_valid(_dialogue) or not is_instance_valid(_world): return
+	_dialogue_target = target
+	_dialogue_serial += 1
+	var serial := _dialogue_serial
+	var id := _session.session_id
+	var revision := _session.revision
+	_world.begin_conversation(target)
+	_dialogue = preload("res://scripts/presentation/town_dialogue.gd").new()
+	add_child(_dialogue)
+	Engine.get_singleton("DialogueManager").get_current_scene = func() -> Node: return _dialogue if is_instance_valid(_dialogue) else _world
+	_dialogue.closed.connect(_close_dialogue)
+	_dialogue.confirmed.connect(_confirm_service.bind(id,revision,serial))
+	_dialogue.start(observation(),cue,func() -> bool:
+		return _dialogue_serial == serial and _world_session_valid(id,revision))
+
+func _confirm_service(kind: String, id: int, revision: int, serial: int) -> Dictionary:
+	if not is_instance_valid(_dialogue) or serial != _dialogue_serial or not _world_session_valid(id,revision):
+		return {"accepted":false,"code":"stale_conversation"}
+	var target := _dialogue_target
+	if (kind == "abandon" and (target != "dungeon.undercrypt" or _session.mode != Mode.DUNGEON)) or (kind != "abandon" and not _world.interaction_is_valid(target,true)):
+		_close_dialogue()
+		return {"accepted":false,"code":"out_of_reach"}
+	var intent := {"session_id":id,"expected_revision":revision,"operation_id":"service:%d:%d:%d" % [id,revision,serial],
+		"kind":kind,"actor_id":"hero","skill_id":"","target_id":target}
+	_close_dialogue()
+	_service_authorized = true
+	var result := submit_intent(intent)
+	_service_authorized = false
+	if not result.accepted and is_instance_valid(_world):
+		_world.show_panel("Service unavailable",String(result.code).replace("_"," "))
+	return result
+
+func _close_dialogue() -> void:
+	_dialogue_serial += 1
+	if is_instance_valid(_dialogue):
+		var owner := get_viewport().gui_get_focus_owner()
+		if owner != null: owner.release_focus()
+		var old := _dialogue
+		_dialogue = null
+		remove_child(old)
+		old.queue_free()
+		Engine.get_singleton("DialogueManager").get_current_scene = _default_dialogue_scene
+		if is_instance_valid(_world): _world.end_conversation(_dialogue_target)
+	_dialogue_target = ""
+
+static func _default_dialogue_scene() -> Node:
+	return (Engine.get_main_loop() as SceneTree).current_scene

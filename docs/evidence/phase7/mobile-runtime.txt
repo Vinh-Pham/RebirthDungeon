@@ -1,0 +1,22 @@
+2026-09-12 UTC — macOS 27.0 (26A428), arm64.
+Engine: 4.7.2.stable.official.ed1daf0bf.
+
+Beckett export_project Android and iOS debug jobs both exited 1.
+No Android APK or iOS archive was produced; matching Android debug/release
+templates and ios.zip are absent. See android-export.log and ios-export.log.
+
+Runtime prerequisite probes:
+$ command -v adb
+/opt/homebrew/bin/adb
+$ adb devices -l
+List of devices attached
+(no devices)
+$ xcode-select -p
+/Applications/Xcode-beta.app/Contents/Developer
+$ xcrun simctl list devices booted
+iOS 18.2: iPhone SE (3rd generation), Booted
+
+Android runtime install/launch is blocked by missing APK and no connected device.
+iOS runtime install/launch is blocked by missing export; a booted simulator alone
+does not certify the game or the LimboAI native extension. Signing, native device
+support, suspension/resume and power-loss durability remain unverified.

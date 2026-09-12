@@ -15,6 +15,7 @@ Updated **2026-09-10**. Paths in the proposed tree are relative to the project r
 | [Phase 4](phase4-combat.md) | Provisional starter combat fixtures |
 | [Phase 5](phase5-combat.md) | Battle UI integration and acceptance |
 | [Phase 6 implementation](phase6-implementation.md) | Durable session schema, checkpoint storage and recovery |
+| [Phase 7 implementation](phase7-implementation.md) | Dialogue services, bounded supplies, retention and saved loop |
 | [References](references.md) | Official Godot sources and historical gameplay inspiration |
 | [Audit](audit.md) | Reset findings, design decisions and verification limits |
 
