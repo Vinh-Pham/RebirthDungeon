@@ -12,7 +12,14 @@ var stats: Dictionary[String, int] = {}
 var skill_ranks: Dictionary[String, String] = {}
 var training: Dictionary[String, int] = {}
 var statuses: Array[Status] = []
+var regeneration: PackedInt64Array = PackedInt64Array([0, 0, 0])
 var weapon: String = ""
+var completed_activations: int = 0
+var shield: int = 0
+var cooldowns: Dictionary = {}
+## Owned additive modifiers; equipment/progression sources arrive in later phases.
+var flat_modifiers: Dictionary = {}
+var percent_modifiers: Dictionary = {}
 
 func configure(definition: Definition, id: String) -> void:
 	instance_id = id
@@ -22,6 +29,12 @@ func configure(definition: Definition, id: String) -> void:
 	reserved = PackedInt64Array([0, 0, 0])
 	stats = definition.base_stats.duplicate()
 	weapon = definition.weapon
+	regeneration = definition.regeneration.duplicate()
+	completed_activations = 0
+	shield = 0
+	cooldowns.clear()
+	flat_modifiers.clear()
+	percent_modifiers.clear()
 	skill_ranks.clear()
 	training.clear()
 	statuses.clear()
@@ -39,7 +52,13 @@ func copy() -> RefCounted:
 	result.stats = stats.duplicate()
 	result.skill_ranks = skill_ranks.duplicate()
 	result.training = training.duplicate()
+	result.regeneration = regeneration.duplicate()
 	result.weapon = weapon
+	result.completed_activations = completed_activations
+	result.shield = shield
+	result.cooldowns = cooldowns.duplicate(true)
+	result.flat_modifiers = flat_modifiers.duplicate(true)
+	result.percent_modifiers = percent_modifiers.duplicate(true)
 	for status: Status in statuses:
 		result.statuses.append(status.copy())
 	return result
@@ -50,4 +69,6 @@ func observation() -> Dictionary:
 		active.append(status.observation())
 	return {"instance_id": instance_id, "definition_id": definition_id, "current": current.duplicate(),
 		"maximum": maximum.duplicate(), "reserved": reserved.duplicate(), "stats": stats.duplicate(),
-		"skill_ranks": skill_ranks.duplicate(), "training": training.duplicate(), "statuses": active, "weapon": weapon}
+		"skill_ranks": skill_ranks.duplicate(), "training": training.duplicate(), "statuses": active, "weapon": weapon, "regeneration": regeneration.duplicate(), "completed_activations": completed_activations, "shield": shield,
+		"cooldowns": cooldowns.duplicate(true), "flat_modifiers": flat_modifiers.duplicate(true),
+		"percent_modifiers": percent_modifiers.duplicate(true)}

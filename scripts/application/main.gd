@@ -13,6 +13,10 @@ const Hero = preload("res://scripts/domain/state/hero_state.gd")
 const ActorDefinitionType = preload("res://scripts/data/definitions/actor_definition.gd")
 const Resolver = preload("res://scripts/domain/commands/command_resolver.gd")
 const ExplorationState = preload("res://scripts/domain/state/exploration_state.gd")
+const Combat = preload("res://scripts/domain/rules/battle_rules.gd")
+const EnemyScheduler = preload("res://scripts/ai/enemy_scheduler.gd")
+var _scheduler: Node
+var _battle_view: Control
 var _world: Node2D
 var _encounter_authorized: bool = false
 var _return_authorized: bool = false
@@ -60,10 +64,24 @@ var development_enabled: bool = OS.is_debug_build()
 func _ready() -> void:
 	preload("res://scripts/application/shell_input_map.gd").configure()
 	preload("res://scripts/application/addon_lifecycle.gd").configure_runtime()
+	_scheduler = EnemyScheduler.new()
+	add_child(_scheduler)
 	_build_chart()
 
 func observation() -> Dictionary:
 	var result := _session.observation()
+	if _session.battle != null and _catalog.is_ready():
+		var options := {}
+		for id: String in _session.hero.skill_ranks:
+			var skill: Resource = _catalog.definition(id)
+			if skill == null: continue
+			for rank: Resource in skill.ranks:
+				if rank.rank == _session.hero.skill_ranks[id]:
+					var costs := preload("res://scripts/domain/rules/combat_math.gd").costs(_session.hero, rank)
+					var target: String = "hero" if skill.target == "self" else _session.battle.enemies[0].instance_id
+					var choice := Combat.selection(_session, "hero", id, target, _catalog)
+					options[id] = {"costs": costs, "unavailable": choice.get("error", "")}
+		result.battle["options"] = options
 	if is_instance_valid(_world) and _world.is_inside_tree():
 		result["exploration"] = _world.observation()
 	elif _session.exploration != null:
@@ -84,6 +102,9 @@ func submit_intent(intent: Dictionary) -> Dictionary:
 		for event: Dictionary in result.events:
 			accepted_result.emit(event.duplicate(true))
 		_publishing_result = false
+		_schedule_enemy.call_deferred()
+	elif is_instance_valid(_battle_view):
+		_battle_view.show_rejection(result.code)
 	return result.observation()
 
 func _build_chart() -> void:
@@ -125,7 +146,7 @@ func request_mode(target: int, id: int, revision: int) -> bool:
 		return false
 	if target == Mode.BATTLE and not _encounter_authorized:
 		return false
-	if _session.mode == Mode.BATTLE and target == Mode.DUNGEON and not _return_authorized:
+	if _session.mode == Mode.BATTLE and target in [Mode.DUNGEON, Mode.RESULTS] and not _return_authorized:
 		return false
 	if is_instance_valid(_world):
 		_world.freeze()
@@ -139,7 +160,7 @@ func _on_intent(target: int, id: int, revision: int, source_ref: WeakRef) -> voi
 	var source := source_ref.get_ref() as ShellModeView
 	if is_instance_valid(source) and source == _view and source.is_inside_tree():
 		if _session.mode == Mode.BATTLE and target == Mode.DUNGEON:
-			resolve_encounter_fixture(id, revision)
+			complete_battle(id, revision)
 		else:
 			request_mode(target, id, revision)
 
@@ -162,6 +183,11 @@ func _on_mode_entered(mode: int) -> void:
 		_load_required.call_deferred(_session.session_id, _session.revision, false)
 
 func _replace_view() -> void:
+	if is_instance_valid(_battle_view):
+		_battle_view.set_input_enabled(false)
+		_host.remove_child(_battle_view)
+		_battle_view.queue_free()
+		_battle_view = null
 	if is_instance_valid(_world):
 		_world.freeze()
 		remove_child(_world)
@@ -195,18 +221,29 @@ func _replace_view() -> void:
 		Mode.DUNGEON:
 			description = "Explore the Undercrypt."
 		Mode.BATTLE:
-			choices[Mode.DUNGEON] = "Resolve encounter fixture"
-			description = "Encounter trigger verified.\nCombat and saving arrive in later phases.\nResolving this fixture removes only this sentinel."
+			description = "Combat"
 
 		Mode.RESULTS:
-			choices[Mode.TOWN] = "Return to town fixture"
+			description = "Expedition complete · %d committed gold" % _session.hero.committed_gold
+			if _session.battle != null and _session.battle.outcome == "defeat":
+				description = "Defeated · pending expedition rewards lost.\nTown recovery arrives in Phase 7."
+			choices[Mode.TOWN] = "Return to Haven"
 	if _session.mode not in [Mode.MENU, Mode.LOADING, Mode.BATTLE]:
 		choices[Mode.MENU] = "Back to menu"
 	_view.configure(observation(), heading, description, choices)
 	_view.intent_requested.connect(_on_intent.bind(weakref(_view)))
 	_view.set_input_enabled(_focused)
-	_status.text = "Phase 3 · session %d · revision %d · %s" % [_session.session_id, _session.revision, heading]
+	_status.text = "Phase 4 · session %d · revision %d · %s" % [_session.session_id, _session.revision, heading]
 
+	if _session.mode == Mode.BATTLE and _session.battle != null:
+		_view.hide()
+		_battle_view = load("res://scenes/battle/battle.tscn").instantiate()
+		_host.add_child(_battle_view)
+		_battle_view.configure(observation(), _catalog)
+		_battle_view.command_requested.connect(submit_intent, CONNECT_DEFERRED)
+		_battle_view.continue_requested.connect(complete_battle, CONNECT_DEFERRED)
+		_battle_view.set_input_enabled(_focused)
+		_schedule_enemy.call_deferred()
 	var exploring := _session.mode in [Mode.TOWN, Mode.DUNGEON]
 	$UI/UIHost/Background.visible = not exploring
 	$UI/UIHost/Layout.visible = not exploring
@@ -247,6 +284,8 @@ func _world_interaction(stable_id: String, kind: String, id: int, revision: int)
 	elif kind == "encounter" and _session.mode == Mode.DUNGEON:
 		if _catalog.definition(stable_id) == null or _session.exploration.active_encounter != "" or _session.exploration.resolved.has(stable_id):
 			return
+		if not Combat.begin(_session, stable_id, _catalog):
+			return
 		_session.exploration.active_encounter = stable_id
 		_encounter_authorized = true
 		request_mode(Mode.BATTLE, id, revision)
@@ -254,20 +293,27 @@ func _world_interaction(stable_id: String, kind: String, id: int, revision: int)
 	elif kind == "exit":
 		_world.transition_locked = false
 		if _session.exploration.resolved.size() < 2:
-			_world.show_panel("The arch is sealed", "Resolve both sentinel encounter fixtures before returning.")
+			_world.show_panel("The arch is sealed", "Defeat both sentinels before returning.")
 		else:
+			_session.hero.committed_gold = mini(1000000, _session.hero.committed_gold + _session.exploration.pending_gold)
+			_session.exploration.pending_gold = 0
+			_session.hero.statuses.clear()
+			_session.hero.cooldowns.clear()
+			_session.hero.shield = 0
 			request_mode(Mode.RESULTS, id, revision)
 
-func resolve_encounter_fixture(id: int, revision: int) -> bool:
+func complete_battle(id: int, revision: int) -> bool:
 	if not _alive or not _focused or _publishing_result or not is_instance_valid(_view) or _pending != -1 or not development_enabled or not _session.matches(id, revision) or _session.mode != Mode.BATTLE or _session.exploration == null or _session.exploration.active_encounter.is_empty():
 		return false
-	var encounter: String = _session.exploration.active_encounter
-	if _session.exploration.resolved.has(encounter):
+	if _session.battle == null or _session.battle.phase != _session.battle.Phase.FINISHED:
 		return false
-	_session.exploration.resolved.append(encounter)
 	_session.exploration.active_encounter = ""
+	if _session.battle.outcome == "defeat":
+		_session.hero.statuses.clear()
+		_session.hero.cooldowns.clear()
+		_session.hero.shield = 0
 	_return_authorized = true
-	var accepted := request_mode(Mode.DUNGEON, id, revision)
+	var accepted := request_mode(Mode.DUNGEON if _session.battle.outcome == "victory" else Mode.RESULTS, id, revision)
 	_return_authorized = false
 	return accepted
 
@@ -330,6 +376,8 @@ func _notification(what: int) -> void:
 
 func set_application_focused(focused: bool) -> void:
 	_focused = focused
+	if is_instance_valid(_battle_view): _battle_view.set_input_enabled(focused and _pending == -1)
+	if focused: _schedule_enemy.call_deferred()
 	if is_instance_valid(_world):
 		_world.set_focused(focused)
 	for action: StringName in InputMap.get_actions():
@@ -355,3 +403,9 @@ func _exit_tree() -> void:
 		_view.detach()
 	## No production DialogueManager/QuestSystem subscriptions exist in Phase 1.
 	## Camera registrations are owned by camera nodes and removed on tree exit.
+
+func _schedule_enemy() -> void:
+	if not _alive or not _focused or _pending != -1 or _publishing_result or _session.mode != Mode.BATTLE:
+		return
+	var intent: Dictionary = _scheduler.propose(_session, _catalog)
+	if not intent.is_empty(): submit_intent(intent)

@@ -17,9 +17,15 @@ func run() -> PackedStringArray:
 	_check(errors.is_empty(), "Valid authored catalog rejected: " + str(errors))
 	if not errors.is_empty(): return _failures
 	var ids := catalog.ids()
-	_check(ids.size() == 18 and ids.has("skill.sword"), "Explicit catalog membership")
-	_check(catalog.versions().content == 2, "Catalog content version")
+	_check(ids.size() == 26 and ids.has("skill.sword"), "Explicit catalog membership")
+	_check(catalog.versions().content == 3, "Catalog content version")
 	var mutations: Array[Dictionary] = [
+		{"field": "cost", "change": func(m: Manifest): m.skills[0].ranks[0].sp_cost = 0},
+		{"field": "regeneration", "change": func(m: Manifest): m.actors[0].regeneration = PackedInt64Array([1])},
+		{"field": "regeneration", "change": func(m: Manifest): m.actors[0].regeneration[0] = -1},
+		{"field": "first_actor", "change": func(m: Manifest): m.encounters[0].first_actor = "random"},
+		{"field": "stack_group", "change": func(m: Manifest): m.statuses[0].stack_group = ""},
+		{"field": "magnitude", "change": func(m: Manifest): m.statuses[0].magnitude = -1},
 		{"field": "schema_version", "change": func(m: Manifest): m.schema_version = 2},
 		{"field": "content_version", "change": func(m: Manifest): m.content_version = 0},
 		{"field": "rules_version", "change": func(m: Manifest): m.rules_version = 2},
@@ -72,7 +78,7 @@ func run() -> PackedStringArray:
 		mutation.change.call(invalid)
 		errors = catalog.publish(invalid)
 		_check(not errors.is_empty() and str(errors).contains(mutation.field), "Invalid catalog must diagnose " + mutation.field)
-		_check(catalog.ids() == ids and catalog.versions().content == 2, "Invalid catalog must preserve previous publication")
+		_check(catalog.ids() == ids and catalog.versions().content == 3, "Invalid catalog must preserve previous publication")
 	_check(not Catalog.new().publish(null).is_empty(), "Null catalog rejected")
 	var invalid_file := load("res://tests/fixtures/invalid_catalog.tres") as Manifest
 	errors = Validator.new().validate(invalid_file)
@@ -81,7 +87,7 @@ func run() -> PackedStringArray:
 	returned.ranks[0].sp_cost = 999
 	_check(catalog.definition("skill.sword").ranks[0].sp_cost == 5, "Catalog lookups must not expose nested mutable Resources")
 	var candidate: Manifest = source.duplicate_deep(Resource.DEEP_DUPLICATE_ALL)
-	candidate.content_version = 3
+	candidate.content_version = 4
 	_check(catalog.publish(candidate).is_empty(), "New valid content publishes")
 	candidate.skills[0].ranks[0].sp_cost = 998
 	_check(catalog.definition("skill.sword").ranks[0].sp_cost == 5, "Publication must detach authored graph")

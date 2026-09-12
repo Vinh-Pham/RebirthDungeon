@@ -1,0 +1,185 @@
+{
+  "battle": {
+    "activation": 5,
+    "active_actor_id": "hero",
+    "content_versions": {
+      "content": 3,
+      "engine": "4.7.2.stable.official.ed1daf0bf",
+      "generator": 1,
+      "rng": 1,
+      "rules": 1,
+      "schema": 1
+    },
+    "encounter_id": "encounter.gallery",
+    "enemies": [
+      {
+        "completed_activations": 2,
+        "cooldowns": {},
+        "current": [
+          0,
+          0,
+          8
+        ],
+        "definition_id": "actor.training_enemy",
+        "flat_modifiers": {},
+        "instance_id": "enemy.0",
+        "maximum": [
+          48,
+          0,
+          10
+        ],
+        "percent_modifiers": {},
+        "regeneration": [
+          0,
+          1,
+          2
+        ],
+        "reserved": [
+          0,
+          0,
+          0
+        ],
+        "shield": 0,
+        "skill_ranks": {
+          "skill.enemy_strike": "F"
+        },
+        "stats": {
+          "stat.defense": 0,
+          "stat.magic_attack": 0,
+          "stat.magic_defense": 0,
+          "stat.magic_protection": 0,
+          "stat.protection": 0,
+          "stat.strength": 2
+        },
+        "statuses": [],
+        "training": {
+          "skill.enemy_strike": 0
+        },
+        "weapon": ""
+      }
+    ],
+    "hand": [],
+    "kept": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    "locked_inputs": {},
+    "options": {
+      "skill.fortify": {
+        "costs": [
+          0,
+          0,
+          4
+        ],
+        "unavailable": ""
+      },
+      "skill.sword": {
+        "costs": [
+          0,
+          0,
+          5
+        ],
+        "unavailable": "invalid_target"
+      }
+    },
+    "outcome": "victory",
+    "pending_gold": 10,
+    "phase": 3,
+    "rerolls_remaining": 2,
+    "selected_rank": "",
+    "selected_skill": "",
+    "target_id": ""
+  },
+  "content_versions": {
+    "content": 3,
+    "engine": "4.7.2.stable.official.ed1daf0bf",
+    "generator": 1,
+    "rng": 1,
+    "rules": 1,
+    "schema": 1
+  },
+  "exploration": {
+    "active_encounter": "encounter.gallery",
+    "discovered": [
+      "room.threshold",
+      "room.gallery"
+    ],
+    "pending_gold": 10,
+    "position": {
+      "x": 823.998168945312,
+      "y": 160
+    },
+    "resolved": [
+      "encounter.gallery"
+    ],
+    "world_id": "dungeon.undercrypt"
+  },
+  "hero": {
+    "committed_gold": 0,
+    "completed_activations": 3,
+    "cooldowns": {},
+    "current": [
+      25,
+      10,
+      12
+    ],
+    "definition_id": "actor.hero",
+    "flat_modifiers": {},
+    "instance_id": "hero",
+    "items": [],
+    "maximum": [
+      30,
+      10,
+      20
+    ],
+    "percent_modifiers": {},
+    "regeneration": [
+      0,
+      1,
+      2
+    ],
+    "reserved": [
+      0,
+      0,
+      0
+    ],
+    "shield": 0,
+    "skill_ranks": {
+      "skill.fortify": "F",
+      "skill.sword": "F"
+    },
+    "stats": {
+      "stat.defense": 1,
+      "stat.magic_attack": 3,
+      "stat.magic_defense": 1,
+      "stat.magic_protection": 0,
+      "stat.protection": 0,
+      "stat.strength": 3
+    },
+    "statuses": [
+      {
+        "definition_id": "status.weakened",
+        "effect": "stat_modifier",
+        "first_tick": 3,
+        "group": "strength.weaken",
+        "magnitude": -3,
+        "percent": false,
+        "priority": 0,
+        "remaining_activations": 2,
+        "source_id": "enemy.0",
+        "stat_id": "stat.strength"
+      }
+    ],
+    "training": {
+      "skill.fortify": 0,
+      "skill.sword": 0
+    },
+    "weapon": "sword"
+  },
+  "mode": 4,
+  "revision": 18,
+  "session_id": 1
+}

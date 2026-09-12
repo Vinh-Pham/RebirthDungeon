@@ -8,7 +8,10 @@ script = ExtResource("1")
 id = "actor.training_enemy"
 display_name = "Training Enemy"
 icon = ExtResource("icon")
-max_hp = 18
+max_hp = 48
+max_mp = 0
 max_sp = 10
-base_stats = Dictionary[String, int]({"stat.strength": 2, "stat.defense": 0})
+base_stats = Dictionary[String, int]({"stat.strength": 2, "stat.defense": 0, "stat.magic_attack": 0, "stat.magic_defense": 0, "stat.protection": 0, "stat.magic_protection": 0})
 skill_ids = PackedStringArray("skill.enemy_strike")
+
+regeneration = PackedInt64Array(0, 1, 2)

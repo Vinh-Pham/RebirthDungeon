@@ -12,3 +12,6 @@ effect = "stat_modifier"
 stat_id = "stat.strength"
 magnitude = -3
 duration = 3
+
+stack_group = "strength.weaken"
+priority = 0

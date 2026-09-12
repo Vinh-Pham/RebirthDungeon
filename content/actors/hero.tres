@@ -11,6 +11,8 @@ icon = ExtResource("icon")
 max_hp = 30
 max_mp = 10
 max_sp = 20
-base_stats = Dictionary[String, int]({"stat.strength": 3, "stat.defense": 1})
+base_stats = Dictionary[String, int]({"stat.strength": 3, "stat.defense": 1, "stat.magic_attack": 3, "stat.magic_defense": 1, "stat.protection": 0, "stat.magic_protection": 0})
 skill_ids = PackedStringArray("skill.sword", "skill.fortify")
 weapon = "sword"
+
+regeneration = PackedInt64Array(0, 1, 2)

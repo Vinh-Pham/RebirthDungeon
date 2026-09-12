@@ -118,15 +118,26 @@ func run(tree: SceneTree) -> PackedStringArray:
 	check(main.observation().mode == Mode.BATTLE, "Encounter did not enter separate fixture")
 	var saved: Dictionary = main._session.exploration.capture()
 	check(saved.active_encounter == "encounter.gallery", "Wrong encounter captured")
+	var combat_before: Dictionary = main.observation()
+	Input.action_press("move_right")
+	await frames(tree, 8)
+	Input.action_release("move_right")
+	check(main.observation() == combat_before, "Movement and frame updates cannot advance battle")
+	main.set_application_focused(false)
+	var rejected: Dictionary = main.submit_intent({"session_id":1, "expected_revision":main._session.revision, "operation_id":"unfocused", "kind":"pass", "actor_id":"hero", "skill_id":"", "target_id":""})
+	check(not rejected.accepted and main.observation() == combat_before, "Unfocused battle rejects actions")
+	main.set_application_focused(true)
+	check(not main.request_mode(Mode.RESULTS,1,main.observation().revision), "Unfinished battle cannot escape to results")
 	var battle_revision: int = main.observation().revision
 	check(not main.request_mode(Mode.MENU,1,battle_revision), "Battle fixture allowed an unresolved escape")
 	main._world_interaction("encounter.gallery","encounter",token.session_id,token.revision)
 	check(main.observation().revision == battle_revision, "Duplicate encounter entered twice")
 	var json := JSON.stringify(saved)
 	check(JSON.parse_string(json) is Dictionary, "Continuation is not JSON data")
-	check(main.resolve_encounter_fixture(1,battle_revision), "Fixture outcome rejected")
-	check(not main.resolve_encounter_fixture(1,battle_revision), "Duplicate fixture outcome accepted")
-	check(not main._world.navigation_ready, "Replacement enabled before navigation sync")
+	check(not main.complete_battle(1,battle_revision), "Unfinished battle cannot return")
+	await win_battle(tree, main)
+	check(not main.complete_battle(1,battle_revision), "Duplicate battle outcome accepted")
+	check(main.observation().mode == Mode.DUNGEON, "Combat victory must return to dungeon")
 	await settle_world(tree, main)
 	world = main._world
 	check(world.player.global_position.distance_to(Vector2(saved.position.x,saved.position.y)) < 1, "Return lost saved position")
@@ -139,12 +150,13 @@ func run(tree: SceneTree) -> PackedStringArray:
 	await walk(tree, world, Vector2(1408,160))
 	await frames(tree)
 	check(main.observation().mode == Mode.BATTLE, "Second encounter did not trigger")
-	main.resolve_encounter_fixture(1,main.observation().revision)
+	await win_battle(tree, main)
 	await settle_world(tree,main)
 	world = main._world
 	await walk(tree,world,Vector2(1552,160))
 	await frames(tree)
 	check(main.observation().mode == Mode.RESULTS, "Resolved dungeon exit did not reach results")
+	check(main._session.hero.committed_gold == 25 and main._session.exploration.pending_gold == 0, "Exit commits pending gold once")
 	# Physics-rate tolerance, independent camera rebind and viewport conversion.
 	for hz: int in [30, 120]:
 		Engine.physics_ticks_per_second = hz
@@ -192,3 +204,24 @@ func run(tree: SceneTree) -> PackedStringArray:
 	await frames(tree)
 	print("EXPLORATION_FIXTURE: %s (%d checks)" % ["PASS" if failures.is_empty() else "FAIL",checks])
 	return failures
+
+func win_battle(tree: SceneTree, main: Node) -> void:
+	var fixture := preload("res://tests/unit/combat_fixture.gd").new()
+	fixture.catalog = main._catalog
+	for activation: int in 24:
+		if main._session.battle.phase == 3: break
+		if main._session.battle.active_actor_id == "hero":
+			var kind: String = "pass" if main._session.hero.current[2] < 5 else "select_skill"
+			var cmd: RefCounted = fixture.command(main._session,kind,"skill.sword","enemy.0")
+			var intent := {"session_id":cmd.session_id,"expected_revision":cmd.expected_revision,"operation_id":"integration:%d" % cmd.expected_revision,
+				"kind":kind,"actor_id":"hero","skill_id":"skill.sword","target_id":"enemy.0"}
+			check(main.submit_intent(intent).accepted,"Combat integration selection/pass")
+			if kind == "select_skill":
+				for action: String in ["roll","commit"]:
+					intent.expected_revision = main._session.revision
+					intent.operation_id = "integration:%d" % main._session.revision
+					intent.kind = action
+					check(main.submit_intent(intent).accepted,"Combat integration " + action)
+		await frames(tree,1)
+	check(main._session.battle.outcome == "victory","Real command-driven encounter victory")
+	check(main.complete_battle(main._session.session_id,main._session.revision),"Completed battle return")

@@ -37,3 +37,7 @@ func ids() -> PackedStringArray:
 	var result := PackedStringArray(_index.keys())
 	result.sort()
 	return result
+
+func combination(index: int) -> Vector2i:
+	var combo := _manifest.combinations[index]
+	return Vector2i(combo.numerator, combo.denominator)

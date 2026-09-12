@@ -1,0 +1,61 @@
+extends RefCounted
+const Setup = preload("res://tests/unit/combat_fixture.gd")
+const Scheduler = preload("res://scripts/ai/enemy_scheduler.gd")
+const Checkpoint = preload("res://scripts/domain/state/combat_checkpoint.gd")
+const Resolver = preload("res://scripts/domain/commands/command_resolver.gd")
+var failures := PackedStringArray()
+func check(value: bool, label: String) -> void:
+	if not value: failures.append(label)
+func run(tree: SceneTree) -> PackedStringArray:
+	var fixture := Setup.new()
+	fixture.catalog.publish(load("res://content/catalog.tres"))
+	var a := Scheduler.new()
+	var b := Scheduler.new()
+	tree.root.add_child(a)
+	tree.root.add_child(b)
+	await tree.process_frame
+	var s := fixture.fresh()
+	var before := Checkpoint.capture(s)
+	for i: int in 10:
+		check(a.propose(s,fixture.catalog).is_empty(),"No AI while hero selects")
+	await tree.create_timer(0.05).timeout
+	check(Checkpoint.capture(s) == before,"Frames cannot advance combat")
+	var locked := fixture.locked()
+	var locked_before := Checkpoint.capture(locked)
+	for delta: float in [0.0,0.016,0.033,0.5]:
+		check(a.propose(locked,fixture.catalog).is_empty(),"No AI on locked hand at any frame delta")
+	check(Checkpoint.capture(locked) == locked_before,"AI inspection cannot mutate locks or RNG")
+	s = fixture.apply(s,"pass")
+	var decision_before := Checkpoint.capture(s)
+	var intent := a.propose(s,fixture.catalog)
+	check(Checkpoint.capture(s) == decision_before,"Tree proposes without payment/effects/RNG")
+	check(intent.skill_id == "skill.enemy_strike" and a.player.update_mode == BTPlayer.MANUAL,"Authored tree manual proposal")
+	for i: int in 5: check(a.propose(s,fixture.catalog).is_empty(),"Repeated tick no duplicate proposal")
+	var other: SessionShell = s.copy()
+	other.battle.enemies[0].current[2] = 0
+	var fallback := b.propose(other,fixture.catalog)
+	check(fallback.skill_id == "" and fallback.target_id == "","No legal action bounded fallback")
+	check(a.player.blackboard != b.player.blackboard and a.player.blackboard.get_var(&"proposal").skill_id == "skill.enemy_strike","Shared tree isolates per-agent blackboards")
+	var result := Resolver.resolve(other,Resolver.parse_intent(fallback),fixture.catalog)
+	check(result.accepted and result.candidate.battle.enemies[0].current[2] == 2,"Enemy pass regenerates")
+	var accepted := Resolver.resolve(s,Resolver.parse_intent(intent),fixture.catalog)
+	check(accepted.accepted and accepted.candidate.hero.current[0] == 25,"Enemy intent resolves once")
+	var after := Checkpoint.capture(accepted.candidate)
+	check(not Resolver.resolve(accepted.candidate,Resolver.parse_intent(intent),fixture.catalog).accepted,"Stale AI rejected")
+	check(Checkpoint.capture(accepted.candidate) == after,"Stale AI cannot pay or draw")
+	var bounded := Scheduler.new()
+	tree.root.add_child(bounded)
+	var running_tree := BehaviorTree.new()
+	running_tree.blackboard_plan = BlackboardPlan.new()
+	running_tree.root_task = load("res://tests/fixtures/combat/running_action.gd").new()
+	bounded.player.behavior_tree = running_tree
+	var running_fallback := bounded.propose(s,fixture.catalog)
+	check(running_fallback.skill_id == "" and bounded.player.blackboard.get_var(&"ticks") == 1,"RUNNING tree is bounded to one tick and falls back to pass")
+	check(bounded.propose(s,fixture.catalog).is_empty(),"RUNNING task cannot resubmit activation")
+	bounded.queue_free()
+	a.queue_free()
+	b.queue_free()
+	await tree.process_frame
+	failures.append_array(fixture.failures)
+	print("COMBAT_AI_FIXTURE: " + ("PASS" if failures.is_empty() else "FAIL"))
+	return failures

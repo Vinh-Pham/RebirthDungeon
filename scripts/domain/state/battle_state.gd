@@ -1,8 +1,11 @@
 class_name BattleState
 extends RefCounted
-## Data contract only. Phase 4 owns activation rules and timing.
+## Owned combat continuation. Only accepted commands advance activations.
 const Actor = preload("res://scripts/domain/state/actor_state.gd")
 enum Phase { PRE_ROLL, LOCKED, RESOLVED, FINISHED }
+var outcome: String = ""
+var activation: int = 0
+var pending_gold: int = 0
 var encounter_id: String = ""
 var phase: Phase = Phase.PRE_ROLL
 var active_actor_id: String = "hero"
@@ -19,6 +22,9 @@ var content_versions: Dictionary = {}
 
 func copy() -> RefCounted:
 	var result: RefCounted = get_script().new()
+	result.outcome = outcome
+	result.activation = activation
+	result.pending_gold = pending_gold
 	result.encounter_id = encounter_id
 	result.phase = phase
 	result.active_actor_id = active_actor_id
@@ -38,7 +44,7 @@ func observation() -> Dictionary:
 	var actors: Array[Dictionary] = []
 	for actor: Actor in enemies:
 		actors.append(actor.observation())
-	return {"encounter_id": encounter_id, "phase": phase, "active_actor_id": active_actor_id,
+	return {"outcome": outcome, "activation": activation, "pending_gold": pending_gold, "encounter_id": encounter_id, "phase": phase, "active_actor_id": active_actor_id,
 		"enemies": actors, "selected_skill": selected_skill, "selected_rank": selected_rank,
 		"target_id": target_id, "hand": hand.duplicate(), "kept": kept.duplicate(),
 		"rerolls_remaining": rerolls_remaining, "locked_inputs": locked_inputs.duplicate(true),

@@ -1,6 +1,6 @@
 # Rebirth Dungeon: Project Phases
 
-**Replanned: 2026-09-11 — Godot 4.7 / typed GDScript with the selected addons.** Phases 0–3 were implemented and verified after the 2026-09-10 reset; later phases remain unstarted. **Completed: 4 of 17. Current focus: Phase 4.** Pre-Godot implementation, tests and platform acceptance do not carry forward.
+**Replanned: 2026-09-11 — Godot 4.7 / typed GDScript with the selected addons.** Phases 0–4 were implemented and verified after the 2026-09-10 reset; later phases remain unstarted. **Completed: 5 of 17. Current focus: Phase 5.** Pre-Godot implementation, tests and platform acceptance do not carry forward.
 
 The repository contains the persistent State Charts application shell, validated content catalog, independent domain state/RNG/command foundations, isolated addon qualification fixtures, verification runner and export presets. Town and dungeon exploration now include continuous movement, discovery, guarded encounter fixtures and Phantom Camera follow. Combat, progression and durable saves remain unimplemented. This roadmap incorporates the currently configured addons without treating installation as feature completion. [Game Plan](game-plan.md) defines architecture, [Directory](directory.md) defines file placement, gameplay specs define rules, and [AGENTS.md](../AGENTS.md) defines addon usage and integration boundaries. Phase numbers remain stable so existing specification links retain their meaning.
 
@@ -39,7 +39,7 @@ Build only lightweight mode/command contracts in Phase 1, domain types in Phase 
 | 1 | Addon qualification and State Charts application shell | Complete |
 | 2 | Validated Resources and deterministic rule foundations | Complete |
 | 3 | Continuous exploration, authored rooms and Phantom Camera | Complete |
-| 4 | Five-dice combat rules and LimboAI decisions | Not started |
+| 4 | Five-dice combat rules and LimboAI decisions | Complete |
 | 5 | Battle HUD, state flow and camera staging | Not started |
 | 6 | Durable saves and interrupted-session recovery | Not started |
 | 7 | Dialogue Manager town services and durable dungeon loop | Not started |
@@ -120,18 +120,21 @@ Verified on 2026-09-11 (2026-09-12 UTC) with Godot 4.7.2 (`ed1daf0bf`), content 
 
 ## Phase 4: Five-dice combat rules and LimboAI decisions
 
-**Status: Not started. Dependencies: 2, 3.**
+**Status: Complete. Dependencies: 2, 3.**
 
-- [ ] Implement separate battle state and scene integration with one hero and one enemy; define first actor and initiative ties.
-- [ ] Implement skill-before-roll locking, five dice, kept flags, two batch rerolls and one whole-hand commit.
-- [ ] Implement HP/MP/SP reservation/payment, pre-roll pass, paid post-roll pass and exhaustion recovery.
-- [ ] Implement shared preview/effect math, status/shield/cooldown timing, enemy action, defeat precedence and pending encounter rewards.
-- [ ] Author complete starter stats/rewards and run exhaustive scoring plus deterministic action/restore fixtures.
-- [ ] Author one LimboAI BehaviorTree with game-owned BTAction/BTCondition tasks and per-agent blackboard state. Run BTPlayer in manual mode only when the domain scheduler requests an enemy decision; return a skill/target intent to the existing resolver.
-- [ ] Bound tree execution and provide a legal fallback; use stable candidate ordering and the owned AI RNG stream. Test repeated ticks, no legal action, stale session results and two actors sharing one tree without mutable-state leakage.
-- [ ] Verify no AI decisions occur while the player selects, keeps or rerolls; tasks cannot directly spend resources, resolve effects or grant rewards. Keep decisions reproducible independently of frame delta and animation speed.
+- [x] Implement separate battle state and scene integration with one hero and one enemy; define first actor and initiative ties.
+- [x] Implement skill-before-roll locking, five dice, kept flags, two batch rerolls and one whole-hand commit.
+- [x] Implement HP/MP/SP reservation/payment, pre-roll pass, paid post-roll pass and exhaustion recovery.
+- [x] Implement shared preview/effect math, status/shield/cooldown timing, enemy action, defeat precedence and pending encounter rewards.
+- [x] Author complete starter stats/rewards and run exhaustive scoring plus deterministic action/restore fixtures.
+- [x] Author one LimboAI BehaviorTree with game-owned BTAction/BTCondition tasks and per-agent blackboard state. Run BTPlayer in manual mode only when the domain scheduler requests an enemy decision; return a skill/target intent to the existing resolver.
+- [x] Bound tree execution and provide a legal fallback; use stable candidate ordering and the owned AI RNG stream. Test repeated ticks, no legal action, stale session results and two actors sharing one tree without mutable-state leakage.
+- [x] Verify no AI decisions occur while the player selects, keeps or rerolls; tasks cannot directly spend resources, resolve effects or grant rewards. Keep decisions reproducible independently of frame delta and animation speed.
 
 **Exit criterion:** The starter encounter resolves through custom domain rules and scheduler-owned LimboAI intents without spatial targeting, frame-driven turns or duplicate effects. Deterministic domain fixtures and addon integration fixtures pass, including all [Phase 4 acceptance checks](phase4-combat.md#acceptance).
+
+
+**Verification:** [Phase 4 implementation](phase4-implementation.md) and [fresh evidence](evidence/phase4/README.md): 7,883 combat checks (including all 7,776 hands), manual LimboAI isolation/fallback, 77 exploration checks, clean rendered combat/return and all five resource packs. Disk durability and full battle presentation remain Phases 6 and 5 respectively.
 
 ## Phase 5: Battle HUD, state flow and camera staging
 

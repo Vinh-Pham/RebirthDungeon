@@ -8,3 +8,6 @@ script = ExtResource("1")
 id = "encounter.training"
 display_name = "Foundation Encounter"
 actor_ids = PackedStringArray("actor.training_enemy")
+
+pending_gold = 5
+first_actor = "hero"

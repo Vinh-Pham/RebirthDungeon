@@ -1,6 +1,6 @@
 # Phase 4: Godot starter combat contract
 
-Status: **not started**. Reset **2026-09-10**. All numbers below are provisional content fixtures. [Battle](gameplay/battle.md) owns five-dice rules; [Stats](gameplay/stats.md) owns arithmetic and timing.
+Implementation and verification: [Phase 4 implementation](phase4-implementation.md), [dated evidence](evidence/phase4/README.md). The [phase tracker](project-phases.md) owns completion status. All numbers below are provisional content fixtures. [Battle](gameplay/battle.md) owns five-dice rules; [Stats](gameplay/stats.md) owns arithmetic and timing.
 
 ## Starter actions
 
@@ -31,13 +31,13 @@ One runtime actor record owns each HP/MP/SP pool and reservation. Content Resour
 
 ## Acceptance
 
-- [ ] Exhaustively classify all 7,776 five-die hands into one correct combination.
-- [ ] Verify weighted sample boundaries, subset rejection, kept flags and reroll budgets.
-- [ ] Verify mixed costs, nonlethal HP payment and paid versus free pass.
-- [ ] Compare previews with committed effects; test defense/protection/shield rounding and bounds.
-- [ ] Verify status replacement, skipped casting boundary, expiry, regeneration and periodic defeat.
-- [ ] Reject stale/duplicate commands without additional RNG, effects or resource payment.
-- [ ] Export/restore the same unfinished activation and RNG continuation in headless tests.
-- [ ] Run one-hero/one-enemy battle in a Godot scene; movement and animations never advance it.
+- [x] Exhaustively classify all 7,776 five-die hands into one correct combination.
+- [x] Verify weighted sample boundaries, subset rejection, kept flags and reroll budgets.
+- [x] Verify mixed costs, nonlethal HP payment and paid versus free pass.
+- [x] Compare previews with committed effects; test defense/protection/shield rounding and bounds.
+- [x] Verify status replacement, skipped casting boundary, expiry, regeneration and periodic defeat.
+- [x] Reject stale/duplicate commands without additional RNG, effects or resource payment.
+- [x] Export/restore the same unfinished activation and RNG continuation in headless tests.
+- [x] Run one-hero/one-enemy battle in a Godot scene; movement and animations never advance it.
 
 Durable disk continuation is Phase 6. No historical test counts or mobile outcomes are carried forward.

@@ -1,0 +1,14 @@
+[gd_resource type="BehaviorTree" format=3]
+[ext_resource type="Script" path="res://scripts/ai/has_legal_action.gd" id="condition"]
+[ext_resource type="Script" path="res://scripts/ai/propose_action.gd" id="action"]
+[sub_resource type="BlackboardPlan" id="plan"]
+[sub_resource type="BTCondition" id="legal"]
+script = ExtResource("condition")
+[sub_resource type="BTAction" id="propose"]
+script = ExtResource("action")
+[sub_resource type="BTSequence" id="root"]
+children = [SubResource("legal"), SubResource("propose")]
+[resource]
+description = "Choose the first affordable action in stable skill-ID order; scheduler owns fallback pass."
+blackboard_plan = SubResource("plan")
+root_task = SubResource("root")

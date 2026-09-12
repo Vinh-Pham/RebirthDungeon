@@ -8,3 +8,5 @@ var kind: String = ""
 var actor_id: String = ""
 var skill_id: String = ""
 var target_id: String = ""
+
+var indices: Array = []

@@ -10,3 +10,6 @@ display_name = "Fortified"
 icon = ExtResource("icon")
 effect = "shield"
 duration = 1
+
+stack_group = "shield.fortify"
+priority = 0

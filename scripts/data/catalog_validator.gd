@@ -79,15 +79,15 @@ func validate(manifest: Manifest) -> PackedStringArray:
 			_error(stat, "maximum", "basis points cannot exceed 10000")
 	for skill: Manifest.SKILLS in manifest.skills:
 		if skill == null: continue
-		if skill.effect not in ["physical_damage", "shield"]:
-			_error(skill, "effect", "unsupported Phase 2 effect")
-		if skill.target != ("self" if skill.effect == "shield" else "hostile"):
+		if skill.effect not in ["physical_damage", "magic_damage", "shield", "stat_buff"]:
+			_error(skill, "effect", "unsupported combat effect")
+		if skill.target != ("self" if skill.effect in ["shield", "stat_buff"] else "hostile"):
 			_error(skill, "target", "incompatible effect target")
 		if skill.weapon not in ["", "sword"]:
 			_error(skill, "weapon", "unsupported weapon")
 		if not skill.status_id.is_empty():
 			_reference(skill, "status_id", skill.status_id, "status")
-		if skill.effect == "shield" and skill.status_id.is_empty():
+		if skill.effect in ["shield", "stat_buff"] and skill.status_id.is_empty():
 			_error(skill, "status_id", "shield requires a status definition")
 		if skill.ranks.is_empty():
 			_error(skill, "ranks", "at least Rank F required")
@@ -103,7 +103,9 @@ func validate(manifest: Manifest) -> PackedStringArray:
 				_bound(skill, prefix + field, rank.get(field))
 			if rank.base_power >= 0 and rank.pip_scale >= 0 and (rank.base_power > Limits.VALUE_MAX or rank.pip_scale > (Limits.VALUE_MAX - mini(rank.base_power, Limits.VALUE_MAX)) / 30):
 				_error(skill, prefix + "pip_scale", "base + 30*pip_scale exceeds safe effect bound")
-			if skill.effect == "shield" and rank.duration < 1:
+			if rank.hp_cost + rank.mp_cost + rank.sp_cost < 1:
+				_error(skill, prefix + "cost", "skill requires a positive cost")
+			if skill.effect in ["shield", "stat_buff"] and rank.duration < 1:
 				_error(skill, prefix + "duration", "shield duration must be positive")
 			_weights(skill, prefix + "weights", rank.weights)
 		if not skill.ranks.is_empty() and skill.ranks.back() != null and skill.prototype_cap != skill.ranks.back().rank:
@@ -113,6 +115,10 @@ func validate(manifest: Manifest) -> PackedStringArray:
 		_bound(actor, "max_hp", actor.max_hp, 1)
 		_bound(actor, "max_mp", actor.max_mp)
 		_bound(actor, "max_sp", actor.max_sp)
+		if actor.regeneration.size() != 3:
+			_error(actor, "regeneration", "expected HP/MP/SP vector")
+		for amount: int in actor.regeneration:
+			_bound(actor, "regeneration", amount)
 		if actor.weapon not in ["", "sword"]:
 			_error(actor, "weapon", "unsupported weapon")
 		if actor.skill_ids.is_empty():
@@ -125,9 +131,14 @@ func validate(manifest: Manifest) -> PackedStringArray:
 				_error(actor, "base_stats." + id, "outside authored stat bounds")
 	for status: Manifest.STATUSES in manifest.statuses:
 		if status == null: continue
-		if status.effect not in ["shield", "stat_modifier"]:
+		if status.effect not in ["shield", "stat_modifier", "periodic_damage"]:
 			_error(status, "effect", "unsupported status effect")
 		_bound(status, "duration", status.duration, 1)
+		_bound(status, "priority", status.priority, -Limits.VALUE_MAX)
+		if status.stack_group.strip_edges().is_empty():
+			_error(status, "stack_group", "explicit stacking group required")
+		if status.effect in ["shield", "periodic_damage"] and status.magnitude < 0:
+			_error(status, "magnitude", "damage and shield cannot be negative")
 		if status.magnitude < -Limits.VALUE_MAX or status.magnitude > Limits.VALUE_MAX:
 			_error(status, "magnitude", "outside signed effect bounds")
 		if status.effect == "stat_modifier" or not status.stat_id.is_empty():
@@ -145,6 +156,8 @@ func validate(manifest: Manifest) -> PackedStringArray:
 			_error(encounter, "actor_ids", "foundation supports exactly one enemy")
 		_references(encounter, "actor_ids", encounter.actor_ids, "actor")
 		_bound(encounter, "pending_gold", encounter.pending_gold)
+		if encounter.first_actor not in ["hero", "enemy"]:
+			_error(encounter, "first_actor", "expected hero or enemy")
 	for room: Manifest.ROOMS in manifest.rooms:
 		if room != null:
 			_references(room, "encounter_ids", room.encounter_ids, "encounter")

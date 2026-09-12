@@ -7,3 +7,6 @@ id = "encounter.sanctum"
 display_name = "Crypt sentinel"
 icon = ExtResource("icon")
 actor_ids = PackedStringArray("actor.training_enemy")
+
+pending_gold = 15
+first_actor = "hero"
