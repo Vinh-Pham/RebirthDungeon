@@ -10,6 +10,8 @@ var row: int = 0
 var locked: bool = false
 var pages: Array[String] = []
 var rolled_modifiers: Dictionary[String, int] = {}
+## Installed enchants: {"prefix":{"id","values":{stat:int}},"suffix":{...}}. Empty when none.
+var enchants: Dictionary = {}
 func copy() -> RefCounted:
 	var result: RefCounted = get_script().new()
 	result.instance_id = instance_id
@@ -22,6 +24,10 @@ func copy() -> RefCounted:
 	result.locked = locked
 	result.pages = pages.duplicate()
 	result.rolled_modifiers = rolled_modifiers.duplicate()
+	result.enchants = enchants.duplicate(true)
 	return result
 func observation() -> Dictionary:
-	return {"instance_id": instance_id, "definition_id": definition_id, "quantity": quantity, "rolled_modifiers": rolled_modifiers.duplicate(), "origin_id":origin_id, "container":container, "column":column, "row":row, "locked":locked, "pages":pages.duplicate()}
+	return {"instance_id": instance_id, "definition_id": definition_id, "quantity": quantity, "rolled_modifiers": rolled_modifiers.duplicate(), "origin_id":origin_id, "container":container, "column":column, "row":row, "locked":locked, "pages":pages.duplicate(), "enchants":enchants.duplicate(true)}
+func installed_enchant(slot: String) -> Dictionary:
+	var record: Variant = enchants.get(slot, {})
+	return record if record is Dictionary else {}

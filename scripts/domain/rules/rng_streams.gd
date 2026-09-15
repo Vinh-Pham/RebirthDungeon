@@ -2,7 +2,7 @@ class_name RngStreams
 extends RefCounted
 const Stream = preload("res://scripts/domain/rules/rng_stream.gd")
 const Limits = preload("res://scripts/domain/rules/rule_limits.gd")
-const NAMES := ["generation", "combat", "ai", "loot"]
+const NAMES := ["generation", "combat", "ai", "loot", "enchant"]
 var _streams: Dictionary = {}
 var _root_seed: int = 0
 
@@ -36,11 +36,16 @@ func restore(saved: Dictionary) -> bool:
 		return false
 	if not Limits.valid_decimal(saved.get("root_seed")) or not saved.get("streams") is Dictionary:
 		return false
-	if saved.streams.size() != NAMES.size():
+	var entries: Dictionary = saved.streams.duplicate()
+	if entries.size() == NAMES.size() - 1 and not entries.has("enchant"):
+		# Phase 8 captures predate the enchant stream; derive it from the same
+		# versioned root seed so legacy sessions continue with identical draws.
+		entries["enchant"] = {"seed":str(derive_seed(saved.root_seed.to_int(),"enchant")),"state":str(derive_seed(saved.root_seed.to_int(),"enchant"))}
+	if entries.size() != NAMES.size():
 		return false
 	var candidate: Dictionary = {}
 	for stream_name: String in NAMES:
-		var entry: Variant = saved.streams.get(stream_name)
+		var entry: Variant = entries.get(stream_name)
 		if not entry is Dictionary:
 			return false
 		var restored := Stream.new()

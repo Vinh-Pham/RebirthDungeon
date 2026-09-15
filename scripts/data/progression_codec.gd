@@ -1,8 +1,9 @@
 extends RefCounted
 const Inventory = preload("res://scripts/domain/rules/inventory_rules.gd")
 const Rules = preload("res://scripts/domain/rules/progression_rules.gd")
-const ITEM_FIELDS := ["instance_id","definition_id","quantity","rolled_modifiers","origin_id","container","column","row","locked","pages"]
-const GROWTH_FIELDS := ["version","banked","level","xp","cumulative","ap","age","talent","talent_chosen","life_growth","base_stats","base_maximum","titles","known_titles","first","second","talent_display","evidence","bag_order"]
+const ITEM_FIELDS := ["instance_id","definition_id","quantity","rolled_modifiers","origin_id","container","column","row","locked","pages","enchants"]
+const GROWTH_FIELDS := ["version","banked","level","xp","cumulative","ap","age","talent","talent_chosen","life_growth","base_stats","base_maximum","titles","known_titles","first","second","talent_display","evidence","bag_order","quests","track","birth_week","birth_age","aged_to","rebirth_week","rebirths","ledger"]
+const QUEST_STATES := ["available","active","ready","claimed"]
 static func keys(value: Variant, fields: Array) -> bool:
 	if not value is Dictionary or value.size() != fields.size(): return false
 	for key: String in fields:
@@ -25,7 +26,26 @@ static func stats(value: Variant, catalog: RefCounted, allow_max: bool = false, 
 	return true
 static func item_fields(value: Variant) -> bool:
 	if not keys(value,ITEM_FIELDS): return false
-	return value.origin_id is String and value.origin_id.length() <= 256 and value.container is String and value.container.length() <= 256 and integer(value.column,0,6) and integer(value.row,0,10) and typeof(value.locked) == TYPE_BOOL and strings(value.pages)
+	if value.origin_id is String and value.origin_id.length() <= 256 and value.container is String and value.container.length() <= 256 and integer(value.column,0,6) and integer(value.row,0,10) and typeof(value.locked) == TYPE_BOOL and strings(value.pages):
+		return enchants(value.enchants)
+	return false
+
+static func enchants(value: Variant) -> bool:
+	if not value is Dictionary or value.size() > 2: return false
+	for slot: Variant in value:
+		if slot not in ["prefix","suffix"]: return false
+		var record: Variant = value[slot]
+		if not record is Dictionary or not keys(record,["id","values"]): return false
+		if not record.id is String or not Rules.CONFIG.enchants.has(record.id): return false
+		if not enchants_values(record.values): return false
+	return true
+
+static func enchants_values(value: Variant) -> bool:
+	if not value is Dictionary or value.size() > 8: return false
+	for key: Variant in value:
+		if not key is String or not integer(value[key],-1000000,1000000): return false
+		if not key.begins_with("stat.") and key not in ["max_hp","max_mp","max_sp"]: return false
+	return true
 static func validate(session: RefCounted, catalog: RefCounted) -> bool:
 	var hero: RefCounted = session.hero
 	var g: Dictionary = hero.growth
@@ -35,9 +55,15 @@ static func validate(session: RefCounted, catalog: RefCounted) -> bool:
 	if not keys(g,GROWTH_FIELDS): return false
 	for points: int in hero.training.values():
 		if points < 0 or points > 100: return false
-	for key: String in ["version","banked","level","xp","cumulative","ap","age"]:
+	for key: String in ["version","banked","level","xp","cumulative","ap"]:
 		if not integer(g[key]): return false
-	if g.version != 1 or g.level < 1 or g.level > Rules.CONFIG.xp_to_next.size()+1 or g.cumulative < g.level or g.age != 17: return false
+	if g.version != 2 or g.level < 1 or g.level > Rules.CONFIG.xp_to_next.size()+1 or g.cumulative < g.level: return false
+	for key: String in ["age","birth_age","aged_to"]:
+		if not integer(g[key],1,100): return false
+	if g.age != g.aged_to or g.aged_to < g.birth_age or g.aged_to > Rules.CONFIG.aging.maximum_age: return false
+	for key: String in ["birth_week","rebirth_week"]:
+		if typeof(g[key]) != TYPE_INT or g[key] < -1 or g[key] > 10000000: return false
+	if not integer(g.rebirths,0,1000): return false
 	if (g.level > Rules.CONFIG.xp_to_next.size() and g.xp != 0) or (g.level <= Rules.CONFIG.xp_to_next.size() and g.xp >= Rules.CONFIG.xp_to_next[g.level-1]): return false
 	if not g.talent is String or not Rules.CONFIG.talents.has(g.talent) or typeof(g.talent_chosen) != TYPE_BOOL: return false
 	if not stats(g.base_stats,catalog) or not stats(g.life_growth,catalog,true): return false
@@ -52,6 +78,16 @@ static func validate(session: RefCounted, catalog: RefCounted) -> bool:
 	if not g.evidence is Dictionary: return false
 	for key: Variant in g.evidence:
 		if key not in ["undercrypt_clears","reached_level"] or not integer(g.evidence[key]): return false
+	if not g.quests is Dictionary or g.quests.size() > Rules.CONFIG.quests.size(): return false
+	for id: Variant in g.quests:
+		if not id is String or not Rules.CONFIG.quests.has(id): return false
+		var record: Variant = g.quests[id]
+		if not record is Dictionary or not keys(record,["state","stage","claim"]): return false
+		if record.state not in QUEST_STATES or not integer(record.stage,0,16) or not record.claim is String or record.claim.length() > 128: return false
+	if not g.track is String or (not g.track.is_empty() and (not Rules.CONFIG.quests.has(g.track) or not g.quests.has(g.track))): return false
+	if not g.ledger is Dictionary or g.ledger.size() > 100: return false
+	for key: Variant in g.ledger:
+		if not key is String or key.length() > 128 or not integer(g.ledger[key]): return false
 	for id: String in g.bag_order:
 		if Inventory.dimensions(hero,id,catalog) == Vector2i.ZERO: return false
 	if not Inventory.validate(hero,catalog): return false
@@ -63,9 +99,12 @@ static func validate(session: RefCounted, catalog: RefCounted) -> bool:
 			if not item.origin_id.is_empty(): return false
 		return true
 	var p: Dictionary = session.exploration.progression
-	if not keys(p,["origins","stats","maximum","ranks","first","second","age","talent","xp","training","items","evidence","closed"]): return false
+	if not keys(p,["origins","stats","maximum","ranks","first","second","age","talent","xp","training","items","evidence","facts","closed"]): return false
 	if typeof(p.closed) != TYPE_BOOL or not integer(p.xp) or not stats(p.stats,catalog): return false
-	if p.age != 17 or not Rules.CONFIG.talents.has(p.talent) or not p.ranks is Dictionary: return false
+	if p.age < 1 or p.age > 100 or not Rules.CONFIG.talents.has(p.talent) or not p.ranks is Dictionary: return false
+	if not p.facts is Dictionary or p.facts.size() > 100: return false
+	for key: Variant in p.facts:
+		if not key is String or key.length() > 128 or not integer(p.facts[key]): return false
 	if not p.maximum is Array or p.maximum.size() != 3: return false
 	for number: Variant in p.maximum:
 		if not integer(number): return false
@@ -98,7 +137,7 @@ static func validate(session: RefCounted, catalog: RefCounted) -> bool:
 			if p.items[index] != {"id":"item.focus_page_one" if p.evidence[index] == "encounter.gallery" else "item.focus_page_two","quantity":1}: return false
 		if session.mode == SessionShell.Mode.RESULTS: return false
 	else:
-		if session.mode not in [SessionShell.Mode.RESULTS,SessionShell.Mode.BATTLE] or p.xp != 0 or not p.training.is_empty() or not p.items.is_empty() or not p.evidence.is_empty(): return false
+		if session.mode not in [SessionShell.Mode.RESULTS,SessionShell.Mode.BATTLE] or p.xp != 0 or not p.training.is_empty() or not p.items.is_empty() or not p.evidence.is_empty() or not p.facts.is_empty(): return false
 		for item: RefCounted in hero.items:
 			if not item.origin_id.is_empty(): return false
 	return true

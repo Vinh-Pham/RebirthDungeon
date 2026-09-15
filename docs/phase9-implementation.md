@@ -1,0 +1,29 @@
+# Phase 9 implementation
+
+Phase status belongs to [Project phases](project-phases.md). Quests follow the [quest specification](gameplay/quests.md), enchanting the [enchant specification](gameplay/enchants.md), and rebirth the [character specification](gameplay/character.md), narrowed to the authored slice below.
+
+## Quests
+
+Quest definitions are dictionaries in `content/progression/starter.tres` (the talents/titles pattern) with stable `quest.*` IDs, an explicit `numeric` QuestSystem mapping (validated unique, 1..1000), category/tab, Chapter/Generation membership for mainstream quests, one trigger, ordered stages, and authored rewards. The catalog validator rejects unknown references, cycles, unsupported objective/trigger types, duplicate numeric mappings, and skill quests whose objectives require the skill they grant. Authored slice: the `The Broken Seal → The Missing Expedition` Chapter 1 chain, the keeper's record hand-in sidequest, the NPC-offered `Words of Focus` skill-unlock quest, and skill quests for the Focus rank-E milestone, great-sword equipment and magic-talent rebirth triggers.
+
+Lifecycle truth lives in `hero.growth.quests` (growth schema v2): `locked → available → active ⇄ ready → claimed`, each record holding its state, stage and the recorded claim operation ID. Objective counters read a single committed global ledger (`hero.growth.ledger`), so a quest delivered later catches up on already-committed history without re-deriving per-quest counters. Delivery triggers (`start`, quest claim, rank, equip, talent rebirth) run idempotently after every committed town action and at the exit commit. Readiness is re-derived from the committed ledger and live inventory, so spending a hand-in item unreads its quest. `quest_accept`/`quest_claim` are town commands; NPC-delivered claims must target `npc.keeper` (journal attempts are rejected), auto-delivered quests claim from the journal. Claims revalidate item objectives, consume costs, grant rewards through the normal inventory/XP paths, record the claim ID, and unlock successors in one checkpointed transaction. Plugin completion signals grant nothing.
+
+`scripts/application/quest_adapter.gd` mirrors committed state into QuestSystem's available/active/completed pools using game-owned `DomainQuest` instances (`DomainQuest.id` = authored numeric, `objective_completed` = ready). Sync runs only after published checkpoints; pools reset per session so switching sessions cannot leak instances; restore rebuilds pools without replaying rewards. The bundled QuestSystem serializer is unused; the combined save remains authoritative. Pending run facts stay in `exploration.progression.facts` and merge into the committed ledger only on a successful exit, per the [Phase 8 retention policy](phase8-retention.md). The journal (Quests tab) filters Mainstream/Sidequests/Skills, supports tracking, and distinguishes offered, active-progress, objective-ready, return-to-the-keeper, and claimed feedback.
+
+## Enchants
+
+Enchant definitions author slot, rank, targets, scroll, chance (basis points, authored ≤ 9000 cap), MP cost, fixed effects, conditional clause (talent condition evaluated live), variable ranges, and burn chance. Scrolls and powder are ordinary catalog items; the shop lists them. `apply_enchant` validates target/scroll/powder/MP, consumes scroll + one powder + MP on success and failure alike, then draws once from the new dedicated `enchant` RNG stream; success rolls variable values (one bounded draw per variable stat, in authored order) and replaces only the target slot. Installed enchants live on the item instance (`ItemState.enchants`), travel with moves/equips, and feed `sources()`: fixed values always, conditional benefits only while their condition holds — so a rebirth into Magic activates Spellweave's bonus while its MP penalty never sleeps.
+
+`burn_item` is a separate confirmed action: one independent draw per installed slot (prefix, then suffix; empty slots never draw), the item is destroyed, and recovered scrolls must fit the inventory or the whole attempt aborts with state and RNG unchanged. Failure/success text is a committed `detail` on the accepted event; saves retry the identical outcome because the stream state was checkpointed with the candidate.
+
+## Aging and rebirth
+
+The session carries an explicit integer `clock_week` that the application injects at safe boundaries (`clock_provider`, overridable by tests; rules never read wall time). `reconcile_age` runs at town entry (and the legacy-town upgrade) through the save gate: it anchors `birth_week` once, then converts whole elapsed 52-week years into age with a one-AP-per-year watermark (`aged_to`), so backward clocks remove nothing and repeated reconciles award nothing. Legacy heroes keep their Phase 8 age with an unanchored clock until the first town reconcile.
+
+Rebirth is a deliberate town command at the level cap: authored 50-gold carried cost, 2-week cooldown, and an explicit age choice 10–17 with an optional talent switch. It resets level, XP and life growth without an AP refund and preserves skills, training, AP, cumulative level, mastery, titles, banked gold, committed inventory and quest history; the first rebirth awards the `the Second Life` title and rebirth triggers deliver their quests idempotently.
+
+## Save compatibility
+
+Envelope v3 checkpoints gain `clock_week`, item `enchants`, run `facts`, and growth v2 fields. Decode migrates Phase 8 saves structurally (defaults above, legacy age preserved, four-stream RNG captures derive the enchant stream from the same versioned root seed) with no content-version bump, so existing sessions resume without the incompatible-save path. Migration is idempotent and covered by fixtures.
+
+See [verification evidence](evidence/phase9/README.md).

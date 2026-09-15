@@ -19,3 +19,4 @@ extends "res://scripts/data/definitions/content_definition.gd"
 @export var required_pages: PackedStringArray = []
 @export var complete_book: String = ""
 @export var title_id: String = ""
+@export var enchant_id: String = ""

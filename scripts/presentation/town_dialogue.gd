@@ -2,10 +2,13 @@ extends CanvasLayer
 ## Game-owned Dialogue Manager renderer. Traversal is read-only; only an explicit
 ## confirmation emits a command. Epoch checks discard awaited obsolete lines.
 signal closed
-signal confirmed(kind: String)
+signal confirmed(kind: String, argument: String)
 var can_buy: bool = false
 var can_enter: bool = false
 var has_progression: bool = false
+var quest_offer: bool = false
+var quest_handin: bool = false
+var quest_work: bool = false
 var snapshot: Dictionary = {}
 var validator: Callable
 var _epoch: int = 0
@@ -20,6 +23,7 @@ func start(observation: Dictionary, cue: String, valid: Callable) -> void:
 	has_progression = not snapshot.hero.growth.is_empty()
 	can_buy = snapshot.hero.committed_gold >= 5 and (has_progression or snapshot.hero.potions < 5)
 	can_enter = snapshot.hero.current[0] > 0
+	_quest_context()
 	layer = 10
 	name = "TownDialogue"
 	var blocker := ColorRect.new()
@@ -40,6 +44,17 @@ func start(observation: Dictionary, cue: String, valid: Callable) -> void:
 	scroll.add_child(_body)
 	_resource = ResourceLoader.load("res://content/dialogue/haven.dialogue","",ResourceLoader.CACHE_MODE_IGNORE)
 	advance(cue)
+
+func _quest_context() -> void:
+	quest_offer = false
+	quest_handin = false
+	if not has_progression: return
+	var quests: Dictionary = snapshot.hero.growth.get("quests",{})
+	for id: String in quests:
+		var state: String = str(quests[id].get("state",""))
+		if state == "available": quest_offer = true
+		elif state == "ready": quest_handin = true
+	quest_work = quest_offer or quest_handin
 
 func advance(cue: String) -> void:
 	if not _valid() or _busy: return
@@ -72,10 +87,11 @@ func advance(cue: String) -> void:
 	_body.add_child(text)
 	if line.has_tag("service"):
 		var kind: String = line.get_tag_value("service")
+		var argument: String = line.get_tag_value("quest") if line.has_tag("quest") else ""
 		_button("Confirm",func() -> void:
 			if not _valid() or _busy: return
 			_busy = true
-			confirmed.emit(kind))
+			confirmed.emit(kind,argument))
 	elif not line.responses.is_empty():
 		for response: DialogueResponse in line.responses:
 			if response.is_allowed:

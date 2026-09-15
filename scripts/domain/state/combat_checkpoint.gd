@@ -18,6 +18,7 @@ static func capture(session: Session) -> Dictionary:
 	result["rng"] = session.rng.capture()
 	result["accepted_operations"] = session.accepted_operations.duplicate()
 	result["exploration"] = session.exploration.capture() if session.exploration != null else {}
+	result["clock_week"] = session.clock_week
 	return result
 
 static func restore(data: Dictionary, catalog: RefCounted) -> Session:
@@ -33,6 +34,7 @@ static func restore(data: Dictionary, catalog: RefCounted) -> Session:
 	result.session_id = data.session_id
 	result.revision = data.revision
 	result.mode = data.mode
+	result.clock_week = data.get("clock_week",0)
 	result.content_versions = data.content_versions.duplicate(true)
 	result.accepted_operations.assign(data.accepted_operations)
 	result.hero = Hero.new()
@@ -48,6 +50,7 @@ static func restore(data: Dictionary, catalog: RefCounted) -> Session:
 		item.rolled_modifiers.assign(record.rolled_modifiers)
 		for field: String in ["origin_id","container","column","row","locked"]: item.set(field,record.get(field,item.get(field)))
 		item.pages.assign(record.get("pages",[]))
+		item.enchants = record.get("enchants",{}).duplicate(true)
 		result.hero.items.append(item)
 	result.battle = Battle.new()
 	for field: String in BATTLE_FIELDS:

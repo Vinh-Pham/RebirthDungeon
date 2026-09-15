@@ -45,9 +45,29 @@ func decode(text: String, catalog: RefCounted) -> Dictionary:
 			if not keys(item,["instance_id","definition_id","quantity","rolled_modifiers"]): return _fail("Invalid legacy item.")
 			item.merge({"origin_id":"","container":"overflow","column":0,"row":0,"locked":false,"pages":[]})
 		if data.get("exploration") is Dictionary and not data.exploration.is_empty(): data.exploration["progression"] = {}
+	_migrate_phase9(data)
 	var session := restore(data,catalog)
 	if session == null: return _fail("Invalid saved state: "+error)
 	return {"status":"ok","session":session,"sequence":envelope.sequence.to_int()}
+
+## Phase 9 structural migration for existing checkpoints: growth v2 quest and
+## aging fields, item enchant records, pending quest facts and the clock.
+## Idempotent; never invents progression for heroes without growth.
+func _migrate_phase9(data: Dictionary) -> void:
+	if not data.has("clock_week"): data["clock_week"] = 0
+	if not data.get("hero") is Dictionary: return
+	var hero: Dictionary = data.hero
+	if hero.get("growth") is Dictionary and not hero.growth.is_empty() and not hero.growth.has("quests"):
+		var age: int = int(hero.growth.get("age",17))
+		hero.growth.merge({"version":2,"quests":{},"track":"","ledger":{},"birth_week":-1,"birth_age":age,
+			"aged_to":age,"rebirth_week":-1,"rebirths":0},true)
+	if hero.get("items") is Array:
+		for item: Variant in hero.items:
+			if item is Dictionary and not item.has("enchants"): item["enchants"] = {}
+	if data.get("exploration") is Dictionary and not data.exploration.is_empty():
+		var progression: Variant = data.exploration.get("progression",{})
+		if progression is Dictionary and not progression.is_empty() and not progression.has("facts"):
+			progression["facts"] = {}
 
 func _fail(message: String, status: String = "corrupt") -> Dictionary:
 	error = message
@@ -105,9 +125,10 @@ static func vector(value: Variant, size_value: int, low: int = 0, high: int = 10
 
 func restore(data: Dictionary, catalog: RefCounted) -> SessionShell:
 	error = "session fields"
-	if not keys(data,["checkpoint_version","session_id","revision","mode","hero","battle","content_versions","rng","accepted_operations","exploration","town_position"]): return null
+	if not keys(data,["checkpoint_version","session_id","revision","mode","hero","battle","content_versions","rng","accepted_operations","exploration","town_position","clock_week"]): return null
 	if not integer(data.checkpoint_version,1,1) or not integer(data.session_id,1,9223372036854775806) or not integer(data.revision,0,9223372036854775806): return null
 	if not integer(data.mode,2,5) or data.content_versions != catalog.versions(): return null
+	if not integer(data.clock_week,0,10000000): return null
 	if not data.rng is Dictionary or not data.accepted_operations is Dictionary or data.accepted_operations.size() > 100000: return null
 	var session := SessionShell.new()
 	if not session.rng.restore(data.rng): return null
@@ -119,6 +140,7 @@ func restore(data: Dictionary, catalog: RefCounted) -> SessionShell:
 	session.session_id = data.session_id
 	session.revision = data.revision
 	session.mode = data.mode
+	session.clock_week = data.clock_week
 	session.content_versions = data.content_versions.duplicate(true)
 	session.accepted_operations.assign(data.accepted_operations)
 	error = "hero"
@@ -291,6 +313,7 @@ func actor(target: Actor, value: Variant, catalog: RefCounted, is_hero: bool) ->
 			if not ProgressionCodec.item_fields(record): return false
 			for field: String in ["origin_id","container","column","row","locked"]: item.set(field,record[field])
 			item.pages.assign(record.pages)
+			item.enchants = record.get("enchants",{}).duplicate(true)
 			target.get("items").append(item)
 	return true
 

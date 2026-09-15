@@ -79,7 +79,7 @@ func run(tree: SceneTree) -> PackedStringArray:
 	await frames(tree)
 	await walk(tree, world, Vector2(416,160))
 	await frames(tree)
-	main._confirm_service("enter_dungeon",1,main._session.revision,main._dialogue_serial)
+	main._confirm_service("enter_dungeon","",1,main._session.revision,main._dialogue_serial)
 	await settle_world(tree, main)
 	check(main.observation().mode == Mode.DUNGEON, "Town entrance did not enter dungeon")
 	world = main._world

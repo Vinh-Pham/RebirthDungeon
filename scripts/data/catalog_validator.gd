@@ -150,7 +150,7 @@ func validate(manifest: Manifest) -> PackedStringArray:
 		_bound(item, "max_stack", item.max_stack, 1)
 		if item.weapon not in ["", "sword"]:
 			_error(item, "weapon", "unsupported weapon")
-		if item.category not in ["equipment","potion","bag","gold_bag","book","page","coupon"]: _error(item,"category","unsupported")
+		if item.category not in ["equipment","potion","bag","gold_bag","book","page","coupon","enchant_scroll","powder"]: _error(item,"category","unsupported")
 		_bound(item,"price",item.price)
 		_bound(item,"gold_capacity",item.gold_capacity)
 		if item.category == "bag" and (item.bag_width < 1 or item.bag_width > 6 or item.bag_height < 1 or item.bag_height > 10 or item.max_stack != 1): _error(item,"bag_width","invalid bag")
@@ -174,6 +174,9 @@ func validate(manifest: Manifest) -> PackedStringArray:
 				if seen_pages.has(page) or page.is_empty(): _error(item,"required_pages","invalid or duplicate page")
 				seen_pages[page] = true
 		if item.category == "coupon" and not load("res://content/progression/starter.tres").titles.has(item.title_id): _error(item,"title_id","unknown title")
+		if item.category == "enchant_scroll":
+			var enchants: Dictionary = load("res://content/progression/starter.tres").enchants
+			if not enchants.has(item.enchant_id): _error(item,"enchant_id","unknown enchant")
 	for encounter: Manifest.ENCOUNTERS in manifest.encounters:
 		if encounter == null: continue
 		if encounter.actor_ids.size() != 1:
@@ -243,3 +246,149 @@ func _validate_progression(config: Resource) -> void:
 		for stat: String in title.effects:
 			if stat not in ["max_hp","max_mp","max_sp"]: _reference(config,"effects",stat,"stat")
 			_bound(config,"effects",title.effects[stat],-1000000)
+	_validate_aging(config)
+	_validate_rebirth(config)
+	_validate_enchants(config)
+	_validate_quests(config)
+
+func _validate_aging(config: Resource) -> void:
+	var aging: Dictionary = config.aging
+	for field: String in ["weeks_per_year","ap_per_year","start_age","minimum_age","maximum_age"]:
+		if not aging.has(field) or typeof(aging[field]) != TYPE_INT: _error(config,"aging","missing "+field)
+	_bound(config,"weeks_per_year",aging.get("weeks_per_year",0),1,10000)
+	_bound(config,"ap_per_year",aging.get("ap_per_year",0),0,100)
+	_bound(config,"start_age",aging.get("start_age",0),1,100)
+	_bound(config,"minimum_age",aging.get("minimum_age",0),1,100)
+	_bound(config,"maximum_age",aging.get("maximum_age",0),2,100)
+	if int(aging.get("minimum_age",0)) > int(aging.get("start_age",0)) or int(aging.get("start_age",0)) >= int(aging.get("maximum_age",0)):
+		_error(config,"aging","start age must lie between the minimum and maximum")
+
+func _validate_rebirth(config: Resource) -> void:
+	var rebirth: Dictionary = config.rebirth
+	_bound(config,"cost",rebirth.get("cost",-1),0)
+	_bound(config,"cooldown_weeks",rebirth.get("cooldown_weeks",-1),0,10000)
+	_bound(config,"choice_minimum",rebirth.get("choice_minimum",0),1,100)
+	_bound(config,"choice_maximum",rebirth.get("choice_maximum",0),2,100)
+	if int(rebirth.get("choice_minimum",0)) >= int(rebirth.get("choice_maximum",0)):
+		_error(config,"rebirth","age choices need a positive span")
+
+func _stat_effect(config: Resource, effects: Dictionary, field: String) -> void:
+	if effects.size() > 8: _error(config,field,"too many effects")
+	for stat: String in effects:
+		if stat not in ["max_hp","max_mp","max_sp"]: _reference(config,field,stat,"stat")
+		_bound(config,field,effects[stat],-1000000)
+
+func _validate_enchants(config: Resource) -> void:
+	var enchants: Dictionary = config.enchants
+	if enchants.is_empty() or enchants.size() > 100: _error(config,"enchants","nonempty catalog required")
+	for id: String in enchants:
+		var enchant: Dictionary = enchants[id]
+		if not id.begins_with("enchant.") or enchant.name.is_empty(): _error(config,"enchants","invalid ID or name")
+		if enchant.get("slot","") not in ["prefix","suffix"]: _error(config,"enchants.slot","invalid slot")
+		_bound(config,"rank",enchant.get("rank",0),1,15)
+		_bound(config,"chance",enchant.get("chance",0),1,9000)
+		_bound(config,"burn_chance",enchant.get("burn_chance",0),0,9000)
+		_bound(config,"mp_cost",enchant.get("mp_cost",0),0,1000)
+		if enchant.get("targets",[]).is_empty(): _error(config,"enchants.targets","required")
+		for target: String in enchant.get("targets",[]):
+			if target != "equipment": _error(config,"enchants.targets","unsupported target "+target)
+		_reference(config,"scroll",str(enchant.get("scroll","")),"item")
+		_stat_effect(config,enchant.get("effects",{}),"enchants.effects")
+		_stat_effect(config,enchant.get("conditional",{}),"enchants.conditional")
+		for stat: String in enchant.get("variable",{}):
+			if stat not in ["max_hp","max_mp","max_sp"]: _reference(config,"variable",stat,"stat")
+			var range_values: Array = enchant.variable[stat]
+			if range_values.size() != 2: _error(config,"variable","needs min and max")
+			else:
+				_bound(config,"variable.min",range_values[0],-1000000)
+				_bound(config,"variable.max",range_values[1],-1000000)
+				if int(range_values[0]) > int(range_values[1]): _error(config,"variable","min exceeds max")
+		var condition: Dictionary = enchant.get("condition",{})
+		if not condition.is_empty():
+			if condition.get("type","") != "talent" or not config.talents.has(str(condition.get("talent",""))):
+				_error(config,"enchants.condition","unsupported condition")
+
+func _validate_quests(config: Resource) -> void:
+	var quests: Dictionary = config.quests
+	if quests.is_empty() or quests.size() > 100: _error(config,"quests","nonempty catalog required")
+	var numerics := {}
+	for id: String in quests:
+		var quest: Dictionary = quests[id]
+		if not id.begins_with("quest.") or quest.name.is_empty(): _error(config,"quests","invalid ID or name")
+		if typeof(quest.get("numeric",-1)) != TYPE_INT or int(quest.numeric) < 1 or int(quest.numeric) > 1000:
+			_error(config,"quests.numeric","expected 1..1000")
+		elif numerics.has(quest.numeric): _error(config,"quests.numeric","duplicate Quest.id mapping")
+		else: numerics[quest.numeric] = true
+		if quest.get("category","") not in ["mainstream","side","skill"]: _error(config,"quests.category","unsupported category")
+		if quest.get("tab","") not in ["mainstream","side","skills"]: _error(config,"quests.tab","unsupported journal tab")
+		if quest.get("delivery","") not in ["auto","npc"]: _error(config,"quests.delivery","unsupported delivery")
+		if quest.get("delivery","") == "npc" and str(quest.get("npc","")) != "npc.keeper": _error(config,"quests.npc","unreachable NPC")
+		if quest.get("category","") == "mainstream" and (str(quest.get("chapter","")).is_empty() or str(quest.get("generation","")).is_empty()):
+			_error(config,"quests.chapter","mainstream quests need chapter and generation")
+		_validate_quest_stages(config,quest,str(quest.get("rewards",{}).get("skill","")))
+		_validate_quest_rewards(config,quest)
+		_validate_quest_trigger(config,quests,id)
+	_validate_quest_successors(config,quests)
+
+func _validate_quest_stages(config: Resource, quest: Dictionary, granted_skill: String) -> void:
+	var stages: Array = quest.get("stages",[])
+	if stages.is_empty() or stages.size() > 16: _error(config,"quests.stages","at least one stage required")
+	for stage: Variant in stages:
+		if not stage is Array or stage.is_empty() or stage.size() > 8:
+			_error(config,"quests.stages","stage needs 1..8 objectives")
+			continue
+		for objective: Variant in stage:
+			if not objective is Dictionary: _error(config,"quests.objectives","invalid objective")
+			else:
+				var type: String = str(objective.get("type",""))
+				if type not in ["encounter","exit","skill","item"]: _error(config,"quests.objectives.type","unsupported "+type)
+				_bound(config,"quests.objectives.count",objective.get("count",1),1,1000)
+				if type in ["encounter","skill","item"]:
+					var target: String = str(objective.get("target",""))
+					if target.is_empty(): _error(config,"quests.objectives.target","required")
+					elif not _index.has(target): _error(config,"quests.objectives.target","unresolved reference: "+target)
+				if type == "skill" and not granted_skill.is_empty() and str(objective.get("target","")) == granted_skill:
+					_error(config,"quests.rewards.skill","objective requires the skill the quest grants")
+
+func _validate_quest_rewards(config: Resource, quest: Dictionary) -> void:
+	var rewards: Dictionary = quest.get("rewards",{})
+	if rewards.size() > 5: _error(config,"quests.rewards","too many rewards")
+	for key: String in rewards:
+		if key in ["gold","xp","ap"]: _bound(config,"quests.rewards."+key,rewards[key],0)
+		elif key == "item":
+			var bundle: Dictionary = rewards[key]
+			if not bundle is Dictionary or not _index.has(str(bundle.get("id",""))): _error(config,"quests.rewards.item","unresolved item")
+			else: _bound(config,"quantity",bundle.get("quantity",0),1,100)
+		elif key == "title":
+			if not config.titles.has(str(rewards[key])): _error(config,"quests.rewards.title","unknown title")
+		elif key == "skill":
+			_reference(config,"quests.rewards.skill",str(rewards[key]),"skill")
+		else: _error(config,"quests.rewards","unsupported reward "+key)
+
+func _validate_quest_trigger(config: Resource, quests: Dictionary, id: String) -> void:
+	var trigger: Dictionary = quests[id].get("trigger",{})
+	match trigger.get("type",""):
+		"start": pass
+		"quest":
+			if not quests.has(str(trigger.get("quest",""))): _error(config,"quests.trigger","unknown prerequisite quest")
+		"rank":
+			_reference(config,"quests.trigger.skill",str(trigger.get("skill","")),"skill")
+			if not Limits.RANKS.has(str(trigger.get("rank",""))): _error(config,"quests.trigger.rank","unknown rank")
+		"equip":
+			if not _index.has(str(trigger.get("item",""))): _error(config,"quests.trigger.item","unresolved item")
+		"talent_rebirth":
+			if not config.talents.has(str(trigger.get("talent",""))): _error(config,"quests.trigger.talent","unknown talent")
+		_: _error(config,"quests.trigger","unsupported trigger")
+
+func _validate_quest_successors(config: Resource, quests: Dictionary) -> void:
+	for id: String in quests:
+		var next: String = str(quests[id].get("successor",""))
+		if next.is_empty(): continue
+		if not quests.has(next): _error(config,"quests.successor","unknown successor on "+id)
+		var cursor := id
+		var visited := {}
+		for guard: int in quests.size()+1:
+			if visited.has(cursor): _error(config,"quests.successor","cycle at "+id)
+			visited[cursor] = true
+			cursor = str(quests.get(cursor,{}).get("successor",""))
+			if cursor.is_empty(): break

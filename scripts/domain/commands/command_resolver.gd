@@ -181,7 +181,11 @@ static func _service(session: Session, command: Command, catalog: Catalog) -> Re
 
 static func _progression(session: Session, command: Command, catalog: Catalog) -> Result:
 	if session.hero == null or command.actor_id != "hero" or not command.skill_id.is_empty() or session.content_versions != catalog.versions(): return _reject("invalid_progression_command",command)
-	if command.kind in ["buy_item","sell_item","bank_deposit","bank_withdraw","learn_lesson"] and command.target_id != "npc.keeper": return _reject("invalid_service_target",command)
+	if command.kind in ["buy_item","sell_item","bank_deposit","bank_withdraw","learn_lesson","apply_enchant","burn_item"] and command.target_id != "npc.keeper": return _reject("invalid_service_target",command)
+	if command.kind == "quest_claim":
+		var quest: Variant = Progression.CONFIG.quests.get(command.data.get("item",""),null)
+		if quest is Dictionary and quest.get("delivery","auto") == "npc" and command.target_id != "npc.keeper":
+			return _reject("Return this quest to the keeper.",command)
 	var candidate: Session = session.copy()
 	var error := Progression.action(candidate,command.kind,command.data,command.operation_id,catalog)
 	if not error.is_empty(): return _reject(error,command)
@@ -192,5 +196,5 @@ static func _progression(session: Session, command: Command, catalog: Catalog) -
 	result.code = "accepted"
 	result.operation_id = command.operation_id
 	result.candidate = candidate
-	result.events.append({"type":command.kind,"session_id":candidate.session_id,"revision":candidate.revision,"operation_id":command.operation_id})
+	result.events.append({"type":command.kind,"session_id":candidate.session_id,"revision":candidate.revision,"operation_id":command.operation_id,"detail":Progression.detail})
 	return result

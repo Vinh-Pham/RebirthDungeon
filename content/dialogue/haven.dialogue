@@ -3,8 +3,22 @@ Keeper: Welcome to Haven. I can restore your strength or supply healing potions.
 - Buy one potion — 5 gold [if can_buy /] => buy
 - Recover fully — free => recovery
 - Shop, bank and lessons [if has_progression /] => services
+- Ask about work [if quest_work /] => work
 - About the Undercrypt => advice
 - Goodbye => END
+
+~ work
+- Hand in a finished quest [if quest_handin /] => handin
+- Hear the keeper's offer [if quest_offer /] => offer
+- Back => keeper
+
+~ handin
+Keeper: You actually finished it. I will record the delivery and pay what was promised. [#service=quest_handin]
+=> END
+
+~ offer
+Keeper: There is work, if you want it. I will mark the contract accepted in your journal. [#service=quest_offer]
+=> END
 
 ~ advice
 Keeper: Defeat both sentinels to unlock the exit. Rewards remain pending until you leave through it. Consult Field notes for the expedition retention rules before entering.

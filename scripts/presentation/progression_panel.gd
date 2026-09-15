@@ -42,12 +42,13 @@ func start(observation: Dictionary, definitions: RefCounted, initial_tab: String
 	_body.add_child(heading)
 	var tabs := HFlowContainer.new()
 	_body.add_child(tabs)
-	for title: String in ["Inventory","Skills","Character","Titles"]:
+	for title: String in ["Inventory","Skills","Character","Titles","Quests"]:
 		button(tabs,title,show_tab.bind(title))
 	if services:
 		button(tabs,"Shop",show_tab.bind("Shop"))
 		button(tabs,"Bank",show_tab.bind("Bank"))
 		button(tabs,"Lessons",show_tab.bind("Lessons"))
+		button(tabs,"Enchants",show_tab.bind("Enchants"))
 	button(tabs,"Close",func() -> void: closed.emit())
 	_notice = Label.new()
 	_notice.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -101,6 +102,8 @@ func show_tab(value: String) -> void:
 				button(_content,"Rank Up "+definition.display_name,func(): propose("rank_up",data(id)))
 		"Character": character()
 		"Titles": titles()
+		"Quests": quests_tab()
+		"Enchants": enchants_tab()
 	_focus_links()
 
 func quantity() -> void:
@@ -196,6 +199,13 @@ func item_actions(item: Dictionary) -> void:
 	button(_content,"Back to grid / move selected item",show_tab.bind("Inventory"))
 	var definition: Resource = catalog.definition(item.definition_id)
 	label("%s • %s • Pages %s" % [definition.display_name,str(definition.modifiers),str(item.pages)])
+	for slot: String in ["prefix","suffix"]:
+		var enchant: Dictionary = item.get("enchants",{}).get(slot,{})
+		if enchant.get("id","") in Rules.CONFIG.enchants:
+			var record: Dictionary = item.get("enchants",{}).get(slot,{})
+			var values := PackedStringArray()
+			for key: String in record.get("values",{}): values.append("%s %+d" % [display_name(key),int(record.values[key])])
+			label("Enchant %s: %s (%s)" % [slot,Rules.CONFIG.enchants[record.id].name,", ".join(values)])
 	quantity()
 	button(_content,"Lock / unlock",func(): propose("lock_item",data(item.instance_id)))
 	if item.container == "overflow":
@@ -205,6 +215,7 @@ func item_actions(item: Dictionary) -> void:
 		for slot: String in (["main_hand","off_hand"] if definition.slot == "main_hand" else [definition.slot]):
 			button(_content,"Equip "+slot,func(): propose("equip_item",data(item.instance_id,1,slot)))
 		button(_content,"Unequip",func(): propose("unequip_item",data(item.instance_id)))
+		if services: button(_content,"Burn for enchants (destroys the item)",func(): propose("burn_item",data(item.instance_id)))
 	if definition.category == "book":
 		button(_content,"Read book",func(): propose("read_book",data(item.instance_id)))
 		for page: Dictionary in snapshot.hero.items:
@@ -249,9 +260,117 @@ func shop() -> void:
 		if definition.price <= 0: continue
 		button(_content,"%s • %d gold • %dx%d" % [definition.display_name,definition.price,definition.width,definition.height],func(): propose("buy_item",data(id)))
 
+## Quest journal: tabs by category, tracking, and distinct objective-ready,
+## return-to-NPC and claimed feedback. State mirrors committed growth only.
+var quest_filter: int = 0
+
+func quests_tab() -> void:
+	var g: Dictionary = snapshot.hero.growth
+	var quests: Dictionary = g.get("quests",{})
+	var filters := HFlowContainer.new()
+	_content.add_child(filters)
+	for index: int in ["All","Mainstream","Sidequests","Skills"].size():
+		var choice := index
+		var pick := button(filters,["All","Mainstream","Sidequests","Skills"][index],func():
+			quest_filter = choice
+			show_tab("Quests"))
+		pick.disabled = quest_filter == index
+	if not str(g.get("track","")).is_empty():
+		label("Tracked: %s" % Rules.CONFIG.quests.get(str(g.track),{}).get("name",str(g.track)))
+		button(_content,"Clear tracking",func(): propose("quest_track",data("")))
+	for id: String in Rules.CONFIG.quests:
+		var definition: Dictionary = Rules.CONFIG.quests[id]
+		var category: String = str(definition.get("category","side"))
+		if quest_filter == 1 and category != "mainstream": continue
+		if quest_filter == 2 and category != "side": continue
+		if quest_filter == 3 and category != "skill": continue
+		var heading := "%s [%s]" % [definition.name,definition.get("chapter","")+" / "+definition.get("generation","") if category == "mainstream" else category.capitalize()]
+		var record: Dictionary = quests.get(id,{})
+		if record.is_empty():
+			label("%s • Locked" % heading)
+			continue
+		match str(record.get("state","")):
+			"claimed":
+				label("%s • Claimed ✓" % heading)
+			"available":
+				label("%s • Offered — accept to begin" % heading)
+				button(_content,"Accept "+definition.name,func(): propose("quest_accept",data(id)))
+			"ready":
+				if definition.get("delivery","auto") == "npc":
+					label("%s • Ready — return to the keeper to claim" % heading)
+				else:
+					label("%s • Objectives complete — reward ready" % heading)
+					if snapshot.mode == SessionShell.Mode.TOWN:
+						button(_content,"Claim "+definition.name,func(): propose("quest_claim",data(id)))
+			_:
+				label("%s • %s" % [heading,objective_text(id,record)])
+		if str(record.get("state","")) in ["active","ready","available"]:
+			button(_content,"Track "+definition.name,func(): propose("quest_track",data(id)))
+
+func objective_text(id: String, record: Dictionary) -> String:
+	var ledger: Dictionary = snapshot.hero.growth.get("ledger",{})
+	var parts := PackedStringArray()
+	for stage: Variant in Rules.CONFIG.quests[id].stages:
+		for objective: Variant in stage:
+			match str(objective.get("type","")):
+				"item":
+					parts.append("Deliver %s ×%d" % [display_name(str(objective.target)),int(objective.get("count",1))])
+				"exit":
+					parts.append("Leave through the exit ×%d" % int(objective.get("count",1)))
+				_:
+					var done: int = int(record.get("counts",{}).get(Rules.fact_key(objective),0))
+					parts.append("%s %d / %d" % [objective.get("target","").trim_prefix("encounter.").trim_prefix("skill."),done,int(objective.get("count",1))])
+	return "; ".join(parts)
+
+## Enchant workbench: one prefix and one suffix per equipment instance.
+## Previews recompute through the same validated action as the commitment.
+func enchants_tab() -> void:
+	label("Applying consumes the scroll, one magic powder and MP on success and failure alike. Burning destroys the item and rolls each installed slot separately; empty slots never draw.")
+	var carried := 0
+	for item: Dictionary in snapshot.hero.items:
+		var definition: Resource = catalog.definition(item.definition_id)
+		if item.container == "overflow" or definition.category != "equipment": continue
+		carried += 1
+		var installed := PackedStringArray()
+		for slot: String in ["prefix","suffix"]:
+			var enchant: Dictionary = item.get("enchants",{}).get(slot,{})
+			if enchant.get("id","") in Rules.CONFIG.enchants:
+				installed.append("%s: %s" % [slot.capitalize(),Rules.CONFIG.enchants[enchant.id].name])
+		button(_content,"%s %s" % [definition.display_name,"• "+", ".join(installed) if not installed.is_empty() else "• no enchants"],func():
+			selected = item.instance_id
+			enchant_actions(item))
+	if carried == 0: label("Carry equipment to enchant or burn.")
+
+func enchant_actions(item: Dictionary) -> void:
+	for child: Node in _content.get_children():
+		_content.remove_child(child)
+		child.queue_free()
+	button(_content,"Back to the equipment list",show_tab.bind("Enchants"))
+	var definition: Resource = catalog.definition(item.definition_id)
+	label("%s — prefix %s • suffix %s" % [definition.display_name,enchant_slot_text(item,"prefix"),enchant_slot_text(item,"suffix")])
+	for scroll: Dictionary in snapshot.hero.items:
+		var scroll_definition: Resource = catalog.definition(scroll.definition_id)
+		if scroll.container == "overflow" or scroll_definition.category != "enchant_scroll": continue
+		var enchant: Dictionary = Rules.CONFIG.enchants.get(scroll_definition.enchant_id,{})
+		button(_content,"Apply %s (%s, %d%%, %d MP, 1 powder)%s" % [enchant.get("name",scroll_definition.enchant_id),enchant.get("slot","prefix"),
+			int(enchant.get("chance",0))/100,int(enchant.get("mp_cost",0)),
+			" — replaces "+enchant_slot_text(item,str(enchant.get("slot","prefix"))) if not enchant_slot_text(item,str(enchant.get("slot","prefix"))).is_empty() else ""],
+			func(): propose("apply_enchant",data(item.instance_id,1,scroll.instance_id)))
+	if services:
+		button(_content,"Burn %s for enchants (destroys it)" % definition.display_name,func(): propose("burn_item",data(item.instance_id)))
+	_focus_links()
+
+func enchant_slot_text(item: Dictionary, slot: String) -> String:
+	var enchant: Dictionary = item.get("enchants",{}).get(slot,{})
+	if enchant.get("id","") in Rules.CONFIG.enchants: return Rules.CONFIG.enchants[enchant.id].name
+	return ""
+
 func character() -> void:
 	var g: Dictionary = snapshot.hero.growth
-	label("Level %d • XP %d / %s • Cumulative %d • AP %d\nAge %d (aging arrives with rebirth) • %s" % [g.level,g.xp,str(Rules.CONFIG.xp_to_next[g.level-1]) if g.level <= Rules.CONFIG.xp_to_next.size() else "MAX",g.cumulative,g.ap,g.age,Rules.CONFIG.talents[g.talent].name])
+	var aging: Dictionary = Rules.CONFIG.aging
+	label("Level %d • XP %d / %s • Cumulative %d • AP %d\nAge %d • %s talent • Aging advances at town boundaries; each new age year grants %d AP." % [g.level,g.xp,str(Rules.CONFIG.xp_to_next[g.level-1]) if g.level <= Rules.CONFIG.xp_to_next.size() else "MAX",g.cumulative,g.ap,g.age,Rules.CONFIG.talents[g.talent].name,int(aging.ap_per_year)])
+	if int(g.birth_week) >= 0:
+		label("Next age-up (%d) after week %d." % [int(g.aged_to)+1,int(g.birth_week)+(int(g.aged_to)-int(g.birth_age)+1)*int(aging.weeks_per_year)])
 	label("HP / MP / SP: %s of %s. Increasing a maximum never refills a pool." % [str(snapshot.hero.current),str(snapshot.hero.maximum)])
 	if not g.talent_chosen:
 		for id: String in Rules.CONFIG.talents:
@@ -265,6 +384,22 @@ func character() -> void:
 	for id: String in Rules.CONFIG.talents:
 		button(_content,"Display "+Rules.CONFIG.talents[id].name,func(): propose("talent_display",data(id)))
 	button(_content,"Clear talent display",func(): propose("talent_display",data("")))
+	label("Rebirth resets level, XP and life growth while keeping skills, training, AP, titles, banked gold and quest history. It costs %d carried gold at the level cap, honors a %d-week cooldown, and chooses a new age." % [int(Rules.CONFIG.rebirth.cost),int(Rules.CONFIG.rebirth.cooldown_weeks)])
+	var rebirth_age := SpinBox.new()
+	rebirth_age.min_value = int(Rules.CONFIG.rebirth.choice_minimum)
+	rebirth_age.max_value = int(Rules.CONFIG.rebirth.choice_maximum)
+	rebirth_age.value = int(Rules.CONFIG.rebirth.choice_minimum)
+	rebirth_age.custom_minimum_size.y = 48
+	_content.add_child(rebirth_age)
+	var rebirth_talent := OptionButton.new()
+	rebirth_talent.custom_minimum_size.y = 48
+	rebirth_talent.add_item("Keep "+Rules.CONFIG.talents[g.talent].name)
+	rebirth_talent.set_item_metadata(0,"")
+	for id: String in Rules.CONFIG.talents:
+		rebirth_talent.add_item("Reborn into "+Rules.CONFIG.talents[id].name)
+		rebirth_talent.set_item_metadata(rebirth_talent.item_count-1,id)
+	_content.add_child(rebirth_talent)
+	button(_content,"Rebirth at the chosen age",func(): propose("rebirth",data(str(rebirth_talent.get_selected_metadata()),1,str(int(rebirth_age.value)))))
 
 func titles() -> void:
 	var g: Dictionary = snapshot.hero.growth

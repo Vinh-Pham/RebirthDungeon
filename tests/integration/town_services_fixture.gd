@@ -155,7 +155,7 @@ func run(tree: SceneTree) -> PackedStringArray:
 	var revision: int = main._session.revision
 	await frames(tree)
 	main._world.player.position = Vector2(96,160)
-	check(not main._confirm_service("recover",1,revision,serial).accepted,"Confirmation revalidates proximity")
+	check(not main._confirm_service("recover","",1,revision,serial).accepted,"Confirmation revalidates proximity")
 	check(main._session.revision == revision,"Out-of-range service unchanged")
 	main._world.player.position = Vector2(208,130)
 	main._open_dialogue("npc.keeper","keeper")
@@ -165,7 +165,7 @@ func run(tree: SceneTree) -> PackedStringArray:
 	main._dialogue._input(cancel)
 	await frames(tree)
 	check(not is_instance_valid(main._dialogue) and not is_instance_valid(main._world.conversation_camera),"Cancelled await releases conversation camera")
-	check(not main._confirm_service("recover",1,revision,serial).accepted,"Stale conversation rejected")
+	check(not main._confirm_service("recover","",1,revision,serial).accepted,"Stale conversation rejected")
 	main._open_dialogue("npc.keeper","keeper")
 	await frames(tree)
 	check(click(main._dialogue,"Goodbye"),"Normal dialogue end response")
@@ -198,7 +198,7 @@ func run(tree: SceneTree) -> PackedStringArray:
 			button_count += 1
 			check(Rect2(Vector2.ZERO,Vector2(960,540)).encloses(child.get_global_rect()) and child.size.y >= 48,"Compact dialogue touch target fits viewport")
 			check(not child.focus_next.is_empty() and not child.focus_previous.is_empty(),"Dialogue focus chain is explicit")
-	check(button_count == 5,"Compact keeper choices rendered")
+	check(button_count == 5,"Compact keeper choices rendered for a legacy hero (got "+str(button_count)+")")
 	compact.queue_free()
 	await frames(tree)
 	main._open_dialogue("npc.keeper","keeper")

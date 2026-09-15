@@ -1,6 +1,6 @@
 # Rebirth Dungeon: Project Phases
 
-**Replanned: 2026-09-11 — Godot 4.7 / typed GDScript with the selected addons.** Phases 0–6 were implemented and verified after the 2026-09-10 reset; later phases remain unstarted. **Completed: 7 of 17. Current focus: Phase 7.** Pre-Godot implementation, tests and platform acceptance do not carry forward.
+**Replanned: 2026-09-11 — Godot 4.7 / typed GDScript with the selected addons.** Phases 0–6 were implemented and verified after the 2026-09-10 reset; later phases remain unstarted. **Completed: 9 of 17. Current focus: Phase 10.** Pre-Godot implementation, tests and platform acceptance do not carry forward.
 
 The repository contains the persistent State Charts application shell, validated content catalog, independent domain state/RNG/command foundations, isolated addon qualification fixtures, verification runner and export presets. Town and dungeon exploration now include continuous movement, discovery, guarded encounter fixtures and Phantom Camera follow. Deterministic combat and the adaptive battle HUD now include guarded State Charts presentation, separate Phantom Camera staging and simulated save-failure/retry behavior. Durable two-slot saves now restore the full session, with validated recovery and exact candidate retries. Progression remains unimplemented. This roadmap incorporates the currently configured addons without treating installation as feature completion. [Game Plan](game-plan.md) defines architecture, [Directory](directory.md) defines file placement, gameplay specs define rules, and [AGENTS.md](../AGENTS.md) defines addon usage and integration boundaries. Phase numbers remain stable so existing specification links retain their meaning.
 
@@ -42,9 +42,9 @@ Build only lightweight mode/command contracts in Phase 1, domain types in Phase 
 | 4 | Five-dice combat rules and LimboAI decisions | Complete |
 | 5 | Battle HUD, state flow and camera staging | Complete |
 | 6 | Durable saves and interrupted-session recovery | Complete |
-| 7 | Dialogue Manager town services and durable dungeon loop | Not started |
-| 8 | Inventory, skills and lasting progression | Not started |
-| 9 | QuestSystem progression, enchanting and rebirth | Not started |
+| 7 | Dialogue Manager town services and durable dungeon loop | Complete |
+| 8 | Inventory, skills and lasting progression | Complete |
+| 9 | QuestSystem progression, enchanting and rebirth | Complete for host acceptance |
 | 10 | Role-playing missions and advanced combat | Not started |
 | 11 | Procedural dungeons and content expansion | Not started |
 | 12 | Presentation, accessibility and performance | Not started |
@@ -205,21 +205,23 @@ Verified on 2026-09-11 (2026-09-12 UTC) with Godot 4.7.2 (`ed1daf0bf`), content 
 
 ## Phase 9: QuestSystem progression, enchanting and rebirth
 
-**Status: Not started. Dependencies: 8.**
+**Status: Complete for host acceptance (2026-09-15). Dependencies: 8.**
 
-- [ ] Create game-owned Quest subclasses and a QuestSystem adapter mapping stable domain quest IDs to integer Quest.id values. Keep per-session instances separate from authored Resources; represent Locked and Ready-to-complete explicitly alongside available/active/completed pools.
-- [ ] Author the first quest slice: one short Chapter/Generation chain, an NPC sidequest, an automatically delivered rank-milestone Skill Quest and an NPC-offered skill-unlock quest. Validate prerequisites, ordered objectives and reachable acquisition paths.
-- [ ] Feed deduplicated committed evidence into QuestSystem; keep the run's eligible-stage snapshot and pending evidence separate until its outcome commits under Phase 8 policy. Add journal tabs, tracking and distinct objective-ready/return-to-NPC/reward-claimed feedback.
-- [ ] Integrate Dialogue Manager quest offers and explicit hand-in/claim commands. Atomically revalidate objectives/items, consume costs, grant rewards/overflow, record the claim ID and unlock successors through the save gate; only then synchronize QuestSystem pools and notifications. Plugin completion signals never grant rewards.
-- [ ] Persist explicit quest lifecycle/stage/evidence/claim data in the combined save and reconstruct pools without replaying start/complete rewards. Test changed inventory invalidating readiness, repeated dialogue claims, interrupted automatic delivery and switching sessions without pool leakage.
-- [ ] Add skill quests, item hand-ins and quest-awarded titles without bypassing skill acquisition/rank rules.
-- [ ] Implement prefix/suffix enchant application and separately confirmed burning with output-space validation and a dedicated saved RNG stream.
-- [ ] Author rebirth eligibility, age choices, cost/cooldown and aging-clock policy; implement retained mastery versus reset life growth.
-- [ ] Add the required town services and reconcile aging only at safe town/result boundaries.
-- [ ] Add equipment- and talent-rebirth-triggered Skill Quests when their consumers work; recover milestone delivery idempotently and preserve committed quests/claims across rebirth. Keep repeatable/daily quests deferred.
-- [ ] Exercise a complete level/train/rank-up/rebirth cycle, quest claims and failed-save retries without duplicated rewards.
+- [x] Create game-owned Quest subclasses and a QuestSystem adapter mapping stable domain quest IDs to integer Quest.id values. Keep per-session instances separate from authored Resources; represent Locked and Ready-to-complete explicitly alongside available/active/completed pools.
+- [x] Author the first quest slice: one short Chapter/Generation chain, an NPC sidequest, an automatically delivered rank-milestone Skill Quest and an NPC-offered skill-unlock quest. Validate prerequisites, ordered objectives and reachable acquisition paths.
+- [x] Feed deduplicated committed evidence into QuestSystem; keep the run's eligible-stage snapshot and pending evidence separate until its outcome commits under Phase 8 policy. Add journal tabs, tracking and distinct objective-ready/return-to-NPC/reward-claimed feedback.
+- [x] Integrate Dialogue Manager quest offers and explicit hand-in/claim commands. Atomically revalidate objectives/items, consume costs, grant rewards/overflow, record the claim ID and unlock successors through the save gate; only then synchronize QuestSystem pools and notifications. Plugin completion signals never grant rewards.
+- [x] Persist explicit quest lifecycle/stage/evidence/claim data in the combined save and reconstruct pools without replaying start/complete rewards. Test changed inventory invalidating readiness, repeated dialogue claims, interrupted automatic delivery and switching sessions without pool leakage.
+- [x] Add skill quests, item hand-ins and quest-awarded titles without bypassing skill acquisition/rank rules.
+- [x] Implement prefix/suffix enchant application and separately confirmed burning with output-space validation and a dedicated saved RNG stream.
+- [x] Author rebirth eligibility, age choices, cost/cooldown and aging-clock policy; implement retained mastery versus reset life growth.
+- [x] Add the required town services and reconcile aging only at safe town/result boundaries.
+- [x] Add equipment- and talent-rebirth-triggered Skill Quests when their consumers work; recover milestone delivery idempotently and preserve committed quests/claims across rebirth. Keep repeatable/daily quests deferred.
+- [x] Exercise a complete level/train/rank-up/rebirth cycle, quest claims and failed-save retries without duplicated rewards.
 
 **Exit criterion:** The authored QuestSystem/Dialogue Manager slice and the level/train/rank-up/rebirth loop are playable and persistent. Claims, successor delivery, enchant results and rebirth survive save retries without duplication; pending evidence never commits early and rebirth preserves documented mastery and quest history.
+
+**Verification:** [Implementation and closed decisions](phase9-implementation.md) and [dated evidence](evidence/phase9/README.md): all regressions plus new quest/enchant/rebirth domain fixtures, QuestSystem pool-mirror integration, dialogue offer/hand-in through the real balloon, four fresh-process quest scenarios, legacy Phase 8 checkpoint migration and legacy four-stream RNG derivation. Beckett rendered playtesting of the new panels and executable/mobile acceptance remain outstanding, as in Phase 8.
 
 ## Phase 10: Role-playing missions and advanced combat
 
@@ -326,13 +328,15 @@ Verified on 2026-09-11 (2026-09-12 UTC) with Godot 4.7.2 (`ed1daf0bf`), content 
 | Dialogue cancellation/resume and service mutation retry policy | Phase 7 exit |
 | Full item/gold/XP/training/quest/title retention and temporary-economy transition | Phase 8 implementation of inventory-backed runs |
 | XP/AP/training pace, talent growth and initial title catalog | Phase 8 exit |
-| Rebirth eligibility/cost/cooldown, aging clock and enchant economy | Phase 9 exit |
-| Quest ID mapping, ready/claimed lifecycle, evidence retention and pool reconstruction | Phase 9 exit using Phase 8 retention policy |
+| Rebirth eligibility/cost/cooldown, aging clock and enchant economy | Closed 2026-09-15 in [Phase 9 implementation](phase9-implementation.md): cap + 50 gold + 2-week cooldown, ages 10–17, 52-week year at 1 AP, enchant chances ≤90% with powder/MP economy |
+| Quest ID mapping, ready/claimed lifecycle, evidence retention and pool reconstruction | Closed 2026-09-15 in [Phase 9 implementation](phase9-implementation.md): authored numeric mapping, growth v2 lifecycle, exit-commit evidence, post-publication pool mirror |
 | Reaction/area rules and non-spatial Charge disposition | Before each Phase 10 feature |
 | Platform performance budgets and supported device coverage | Phases 12–14 |
 | Connected services, purchases and gacha inclusion | Separate Phase 15 product decision |
 
 ## Verification record
+
+2026-09-15: Phase 9 host acceptance completed. QuestSystem 2.0.2 quest lifecycle, Dialogue Manager offers/hand-ins, enchanting with the dedicated RNG stream, aging and rebirth verified with domain, integration and fresh-process fixtures on Godot `4.7.2.stable.official.ed1daf0bf`; Phase 8 checkpoints migrate structurally to growth v2 without loss. Beckett rendered playtests of the new journal/enchant/rebirth UI and executable/device acceptance remain outstanding. [Retained evidence](evidence/phase9/README.md).
 
 2026-09-11: Phase 1 host acceptance completed. Persistent guarded State Charts shell and isolated addon fixtures pass on Godot `4.7.2.stable.official.ed1daf0bf`; Beckett input/focus/loading/resize playtests pass. Final resource packs exclude demos, editor-only camera assets and C# examples while preserving runtime dependencies and license notices. A documented local State Charts compatibility patch removes a reproduced pinned-engine shutdown leak. Matching templates and executable/device acceptance remain outstanding. [Retained evidence](evidence/phase-1/README.md).
 

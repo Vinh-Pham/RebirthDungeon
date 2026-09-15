@@ -1,10 +1,13 @@
 extends RefCounted
 const Inventory = preload("res://scripts/domain/rules/inventory_rules.gd")
+const Limits = preload("res://scripts/domain/rules/rule_limits.gd")
 static var CONFIG: Resource = load("res://content/progression/starter.tres")
 const Item = preload("res://scripts/domain/state/item_state.gd")
-const KINDS := ["buy_item","sell_item","bank_deposit","bank_withdraw","learn_lesson","read_book","insert_page","rank_up","equip_title","read_coupon","choose_talent","move_item","withdraw_item","split_stack","merge_stack","lock_item","equip_item","unequip_item","sort_items","bag_priority","talent_display"]
+const KINDS := ["buy_item","sell_item","bank_deposit","bank_withdraw","learn_lesson","read_book","insert_page","rank_up","equip_title","read_coupon","choose_talent","move_item","withdraw_item","split_stack","merge_stack","lock_item","equip_item","unequip_item","sort_items","bag_priority","talent_display","quest_accept","quest_claim","quest_track","apply_enchant","burn_item","rebirth"]
 const INVENTORY_KINDS := ["move_item","withdraw_item","split_stack","merge_stack","lock_item","equip_item","unequip_item","sort_items"]
 const DATA_FIELDS := {"item":TYPE_STRING,"destination":TYPE_STRING,"column":TYPE_INT,"row":TYPE_INT,"quantity":TYPE_INT}
+## Outcome text of the last committed action, copied into its event by the resolver.
+static var detail: String = ""
 static func valid_data(data: Dictionary) -> bool:
 	if data.size() != DATA_FIELDS.size(): return false
 	for key: String in DATA_FIELDS:
@@ -13,10 +16,11 @@ static func valid_data(data: Dictionary) -> bool:
 
 static func initialize(hero: RefCounted, catalog: RefCounted) -> void:
 	if not hero.growth.is_empty(): return
-	hero.growth = {"version":1,"banked":hero.committed_gold,"level":1,"xp":0,"cumulative":1,"ap":0,
-		"age":17,"talent":"talent.combat","talent_chosen":false,"life_growth":{},"base_stats":hero.stats.duplicate(),
+	hero.growth = {"version":2,"banked":hero.committed_gold,"level":1,"xp":0,"cumulative":1,"ap":0,
+		"age":CONFIG.aging.start_age,"talent":"talent.combat","talent_chosen":false,"life_growth":{},"ledger":{},"base_stats":hero.stats.duplicate(),
 		"base_maximum":Array(hero.maximum),"titles":[],"known_titles":["title.delver"],"first":"","second":"","talent_display":"",
-		"evidence":{},"bag_order":[]}
+		"evidence":{},"bag_order":[],"quests":{},"track":"","birth_week":-1,"birth_age":CONFIG.aging.start_age,
+		"aged_to":CONFIG.aging.start_age,"rebirth_week":-1,"rebirths":0}
 	hero.committed_gold = 0
 	var potions: int = hero.potions
 	for item: Item in hero.items:
@@ -40,6 +44,129 @@ static func initialize(hero: RefCounted, catalog: RefCounted) -> void:
 	Inventory.grant(hero,"item.gold_bag",1,unique_prefix(hero,"starter:goldbag"),catalog,true)
 	if potions > 0: Inventory.grant(hero,"item.potion",potions,unique_prefix(hero,"legacy:potions"),catalog,true)
 	recompute(hero,catalog)
+	deliver(hero,catalog)
+
+## Quest engine: domain lifecycle is authoritative; QuestSystem pools mirror it.
+static func quest_record(hero: RefCounted, id: String) -> Dictionary:
+	var record: Variant = hero.growth.quests.get(id,{})
+	return record if record is Dictionary else {}
+
+static func fact_key(objective: Dictionary) -> String:
+	match objective.get("type",""):
+		"encounter": return "encounter:"+str(objective.target)
+		"skill": return "skill:"+str(objective.target)
+		"exit": return "exit"
+	return ""
+
+static func objective_ready(hero: RefCounted, quest_id: String, objective: Dictionary) -> bool:
+	var needed: int = maxi(1,int(objective.get("count",1)))
+	match objective.get("type",""):
+		"item":
+			return Inventory.count(hero,str(objective.target)) >= needed
+		_:
+			var key := fact_key(objective)
+			return not key.is_empty() and int(hero.growth.get("ledger",{}).get(key,0)) >= needed
+	return false
+
+static func quest_complete(hero: RefCounted, id: String) -> bool:
+	if not CONFIG.quests.has(id): return false
+	var record: Dictionary = quest_record(hero,id)
+	for stage: Variant in CONFIG.quests[id].stages:
+		for objective: Variant in stage:
+			if not objective_ready(hero,id,objective): return false
+	return true
+
+## Delivery: locked quests become available/active when their trigger commits.
+## Idempotent by construction: only quests absent from growth can deliver once.
+static func deliver(hero: RefCounted, catalog: RefCounted) -> void:
+	for id: String in CONFIG.quests:
+		if hero.growth.quests.has(id): continue
+		var definition: Dictionary = CONFIG.quests[id]
+		var trigger: Dictionary = definition.get("trigger",{})
+		var reached := false
+		match trigger.get("type",""):
+			"start": reached = true
+			"quest": reached = quest_record(hero,str(trigger.get("quest",""))).get("state","") == "claimed"
+			"rank": reached = _rank_index(str(hero.skill_ranks.get(str(trigger.get("skill","")),""))) >= _rank_index(str(trigger.get("rank","F")))
+			"equip":
+				for item: Item in hero.items:
+					if item.definition_id == str(trigger.get("item","")) and item.container.begins_with("equip:"):
+						reached = true
+						break
+			"talent_rebirth": reached = int(hero.growth.get("rebirths",0)) > 0 and hero.growth.talent == str(trigger.get("talent",""))
+		if not reached: continue
+		hero.growth.quests[id] = {"state":"active" if definition.get("delivery","auto") == "auto" else "available",
+			"stage":0,"claim":""}
+
+static func _rank_index(rank: String) -> int:
+	return Limits.RANKS.find(rank) if Limits.RANKS.has(rank) else -1
+
+## Readiness re-evaluation: inventory changes may complete or unready item hand-ins.
+static func refresh(hero: RefCounted, catalog: RefCounted) -> void:
+	for id: String in hero.growth.quests:
+		var record: Dictionary = quest_record(hero,id)
+		if record.get("state","") not in ["active","ready"]: continue
+		record.state = "ready" if quest_complete(hero,id) else "active"
+
+## Pending run facts merge into the committed global ledger only on a
+## successful exit, so later-delivered quests catch up on completed history.
+static func merge_facts(hero: RefCounted, facts: Dictionary) -> void:
+	var ledger: Dictionary = hero.growth.ledger
+	for key: String in facts:
+		ledger[key] = mini(1000000,int(ledger.get(key,0))+int(facts[key]))
+
+## Aging reconciles only at application-driven town/result boundaries with an
+## explicit injected clock. Backward clock changes never remove age or re-award.
+static func reconcile_age(session: RefCounted, now_week: int) -> void:
+	var hero: RefCounted = session.hero
+	if hero == null or hero.growth.is_empty(): return
+	session.clock_week = clampi(now_week,0,10000000)
+	var now: int = session.clock_week
+	if int(hero.growth.birth_week) < 0:
+		hero.growth.birth_week = now
+		return
+	var policy: Dictionary = CONFIG.aging
+	var elapsed: int = maxi(0,(now-int(hero.growth.birth_week))/maxi(1,int(policy.weeks_per_year)))
+	var target: int = mini(int(policy.maximum_age),int(hero.growth.birth_age)+elapsed)
+	if target > int(hero.growth.aged_to):
+		hero.growth.ap = mini(1000000,int(hero.growth.ap)+(target-int(hero.growth.aged_to))*int(policy.ap_per_year))
+		hero.growth.aged_to = target
+		hero.growth.age = target
+
+static func rebirth_eligible(hero: RefCounted, session: RefCounted) -> String:
+	if hero.growth.is_empty(): return "Progression becomes available in town."
+	if hero.growth.level <= CONFIG.xp_to_next.size(): return "Rebirth requires the level cap (%d)." % (CONFIG.xp_to_next.size()+1)
+	if hero.committed_gold < int(CONFIG.rebirth.cost): return "Rebirth costs %d carried gold." % int(CONFIG.rebirth.cost)
+	var ready_week: int = int(hero.growth.rebirth_week)+int(CONFIG.rebirth.cooldown_weeks)
+	if int(hero.growth.rebirth_week) >= 0 and session.clock_week < ready_week:
+		return "Rebirth cooldown: %d more weeks." % (ready_week-session.clock_week)
+	return ""
+
+## Enchant clauses: fixed effects always apply; conditional benefits apply only
+## while their authored condition holds (evaluated live, e.g. across rebirths).
+static func clause_active(enchant_id: String, hero: RefCounted) -> bool:
+	var condition: Dictionary = CONFIG.enchants[enchant_id].get("condition",{})
+	if condition.is_empty(): return true
+	match condition.get("type",""):
+		"talent": return hero.growth.talent == str(condition.get("talent",""))
+	return false
+
+static func enchant_values(enchant_id: String, stream: RefCounted) -> Dictionary:
+	var definition: Dictionary = CONFIG.enchants[enchant_id]
+	var values: Dictionary = {}
+	for key: String in definition.get("effects",{}): values[key] = int(definition.effects[key])
+	for key: String in definition.get("variable",{}):
+		var range_values: Array = definition.variable[key]
+		var span: int = maxi(1,int(range_values[1])-int(range_values[0])+1)
+		values[key] = int(range_values[0])+stream.bounded(span)
+	return values
+
+static func accessible_stack(hero: RefCounted, definition_id: String, catalog: RefCounted) -> Item:
+	for item: Item in hero.items:
+		if item.definition_id == definition_id and item.container != "overflow" and not item.locked:
+			return item
+	return null
+
 
 static func mastery(hero: RefCounted) -> Dictionary:
 	var result := {}
@@ -65,6 +192,15 @@ static func sources(hero: RefCounted, catalog: RefCounted) -> Dictionary:
 		var definition: Resource = catalog.definition(item.definition_id)
 		for key: String in definition.modifiers: result.Equipment[key] = result.Equipment.get(key,0)+definition.modifiers[key]
 		for key: String in item.rolled_modifiers: result.Equipment[key] = result.Equipment.get(key,0)+item.rolled_modifiers[key]
+		for slot: String in ["prefix","suffix"]:
+			var installed: Dictionary = item.installed_enchant(slot)
+			var enchant_id: String = str(installed.get("id",""))
+			if enchant_id.is_empty() or not CONFIG.enchants.has(enchant_id): continue
+			var values: Dictionary = installed.get("values",{})
+			for key: String in values: result.Equipment[key] = result.Equipment.get(key,0)+int(values[key])
+			if clause_active(enchant_id,hero):
+				for key: String in CONFIG.enchants[enchant_id].get("conditional",{}):
+					result.Equipment[key] = result.Equipment.get(key,0)+int(CONFIG.enchants[enchant_id].conditional[key])
 	for slot: String in ["first","second"]:
 		var id: String = hero.growth[slot]
 		if id.is_empty(): continue
@@ -91,13 +227,16 @@ static func begin(session: RefCounted) -> void:
 	for item: Item in hero.items: item.origin_id = item.instance_id
 	session.exploration.progression = {"origins":hero.observation().items,"stats":hero.stats.duplicate(),"maximum":Array(hero.maximum),
 		"ranks":hero.skill_ranks.duplicate(),"first":hero.growth.first,"second":hero.growth.second,
-		"age":hero.growth.age,"talent":hero.growth.talent,"xp":0,"training":{},"items":[],"evidence":[],"closed":false}
+		"age":hero.growth.age,"talent":hero.growth.talent,"xp":0,"training":{},"items":[],"evidence":[],"facts":{},"closed":false}
 
 static func activation(session: RefCounted, skill_id: String) -> void:
 	if session.exploration == null or session.exploration.progression.is_empty() or skill_id.is_empty(): return
 	var p: Dictionary = session.exploration.progression
 	var total: int = session.hero.training.get(skill_id,0)+p.training.get(skill_id,0)
 	p.training[skill_id] = p.training.get(skill_id,0)+mini(CONFIG.training_per_use,maxi(0,100-total))
+	var facts: Dictionary = p.get("facts",{})
+	facts["skill:"+skill_id] = mini(1000000,int(facts.get("skill:"+skill_id,0))+1)
+	p["facts"] = facts
 
 static func encounter(session: RefCounted) -> void:
 	if session.exploration == null or session.exploration.progression.is_empty(): return
@@ -107,6 +246,9 @@ static func encounter(session: RefCounted) -> void:
 	p.evidence.append(id)
 	p.xp += CONFIG.encounter_xp
 	p.items.append({"id":"item.focus_page_one" if id == "encounter.gallery" else "item.focus_page_two","quantity":1})
+	var facts: Dictionary = p.get("facts",{})
+	facts["encounter:"+id] = mini(1000000,int(facts.get("encounter:"+id,0))+1)
+	p["facts"] = facts
 
 static func finish(session: RefCounted, success: bool, catalog: RefCounted) -> String:
 	var ex: RefCounted = session.exploration
@@ -117,15 +259,10 @@ static func finish(session: RefCounted, success: bool, catalog: RefCounted) -> S
 	var hero: RefCounted = session.hero
 	if success and hero.committed_gold+ex.pending_gold > Inventory.capacity(hero,catalog): return "Carried gold is full. Abandon or free gold capacity on a future run."
 	if success:
-		hero.growth.xp += p.xp
-		while hero.growth.level <= CONFIG.xp_to_next.size() and hero.growth.xp >= CONFIG.xp_to_next[hero.growth.level-1]:
-			hero.growth.xp -= CONFIG.xp_to_next[hero.growth.level-1]
-			hero.growth.level += 1
-			hero.growth.cumulative += 1
-			hero.growth.ap += CONFIG.ap_per_level
-			for key: String in CONFIG.talents[p.talent].growth:
-				hero.growth.life_growth[key] = hero.growth.life_growth.get(key,0)+CONFIG.talents[p.talent].growth[key]
-		if hero.growth.level > CONFIG.xp_to_next.size(): hero.growth.xp = 0
+		var facts: Dictionary = p.get("facts",{})
+		facts["exit"] = mini(1000000,int(facts.get("exit",0))+1)
+		merge_facts(hero,facts)
+		grant_xp(hero,p.xp,p.talent)
 		for skill: String in p.training: hero.training[skill] = mini(100,hero.training.get(skill,0)+p.training[skill])
 		for index: int in p.items.size():
 			var reward: Dictionary = p.items[index]
@@ -141,13 +278,31 @@ static func finish(session: RefCounted, success: bool, catalog: RefCounted) -> S
 	p.training.clear()
 	p.items.clear()
 	p.evidence.clear()
+	p["facts"] = {}
 	for item: Item in hero.items: item.origin_id = ""
 	p.closed = true
 	hero.growth.talent_chosen = true
 	recompute(hero,catalog)
+	deliver(hero,catalog)
+	refresh(hero,catalog)
 	return ""
 
+## Shared level-up loop for committed XP rewards (exits and quest claims).
+static func grant_xp(hero: RefCounted, amount: int, talent_id: String) -> void:
+	if amount <= 0: return
+	hero.growth.xp += amount
+	var talent: Dictionary = CONFIG.talents[talent_id if CONFIG.talents.has(talent_id) else hero.growth.talent]
+	while hero.growth.level <= CONFIG.xp_to_next.size() and hero.growth.xp >= CONFIG.xp_to_next[hero.growth.level-1]:
+		hero.growth.xp -= CONFIG.xp_to_next[hero.growth.level-1]
+		hero.growth.level += 1
+		hero.growth.cumulative += 1
+		hero.growth.ap += CONFIG.ap_per_level
+		for key: String in talent.growth:
+			hero.growth.life_growth[key] = hero.growth.life_growth.get(key,0)+int(talent.growth[key])
+	if hero.growth.level > CONFIG.xp_to_next.size(): hero.growth.xp = 0
+
 static func action(session: RefCounted, kind: String, data: Dictionary, operation: String, catalog: RefCounted) -> String:
+	detail = ""
 	if session.hero.growth.is_empty(): return "Progression becomes available in town."
 	if not valid_data(data): return "Invalid progression inputs."
 	var hero: RefCounted = session.hero
@@ -244,10 +399,27 @@ static func action(session: RefCounted, kind: String, data: Dictionary, operatio
 				if data.item == "backpack" or Inventory.dimensions(hero,data.item,catalog) == Vector2i.ZERO: return "Choose a bag."
 				hero.growth.bag_order.erase(data.item)
 				hero.growth.bag_order.push_front(data.item)
+			"quest_accept":
+				if not CONFIG.quests.has(data.item): return "Unknown quest."
+				if quest_record(hero,data.item).get("state","") != "available": return "This quest is not offered right now."
+				hero.growth.quests[data.item].state = "active"
+			"quest_claim":
+				error = claim_quest(hero,data,catalog,operation)
+			"quest_track":
+				if not data.item.is_empty() and (not CONFIG.quests.has(data.item) or not hero.growth.quests.has(data.item)): return "Track a delivered quest."
+				hero.growth.track = data.item
+			"apply_enchant":
+				error = apply_enchant(session,hero,data,catalog)
+			"burn_item":
+				error = burn_item(session,hero,data,catalog)
+			"rebirth":
+				error = perform_rebirth(session,hero,data,catalog)
 			_: return "Unsupported progression action."
 	if not error.is_empty(): return error
 	recompute(hero,catalog)
 	if hero.growth.banked > 1000000 or not Inventory.validate(hero,catalog): return "Inventory or carried gold capacity exceeded."
+	deliver(hero,catalog)
+	refresh(hero,catalog)
 	return ""
 
 static func unique_prefix(hero: RefCounted, base: String) -> String:
@@ -261,3 +433,135 @@ static func unique_prefix(hero: RefCounted, base: String) -> String:
 		suffix += 1
 		prefix = base+"-"+str(suffix)
 	return prefix
+
+## Explicit town hand-in/claim. Item objectives are revalidated against the
+## live inventory so spending the required items elsewhere unreads the quest.
+static func claim_quest(hero: RefCounted, data: Dictionary, catalog: RefCounted, operation: String) -> String:
+	if not CONFIG.quests.has(data.item): return "Unknown quest."
+	var record: Dictionary = quest_record(hero,data.item)
+	if record.is_empty(): return "This quest was never delivered."
+	var state: String = str(record.get("state",""))
+	if state == "claimed": return "This quest was already claimed."
+	if state != "ready": return "Objectives are not complete yet."
+	var definition: Dictionary = CONFIG.quests[data.item]
+	for stage: Variant in definition.stages:
+		for objective: Variant in stage:
+			if str(objective.get("type","")) != "item": continue
+			var remaining: int = maxi(1,int(objective.get("count",1)))
+			while remaining > 0:
+				var stack: Item = accessible_stack(hero,str(objective.target),catalog)
+				if stack == null: return "The required items are no longer carried."
+				var take: int = mini(remaining,stack.quantity)
+				if not Inventory.consume(hero,stack,take): return "Unlock the required items first."
+				remaining -= take
+	var rewards: Dictionary = definition.get("rewards",{})
+	if int(rewards.get("gold",0)) > 0: hero.committed_gold += int(rewards.gold)
+	if int(rewards.get("xp",0)) > 0: grant_xp(hero,int(rewards.xp),hero.growth.talent)
+	if int(rewards.get("ap",0)) > 0: hero.growth.ap = mini(1000000,int(hero.growth.ap)+int(rewards.ap))
+	var title: String = str(rewards.get("title",""))
+	if not title.is_empty() and CONFIG.titles.has(title):
+		if not hero.growth.titles.has(title): hero.growth.titles.append(title)
+		if not hero.growth.known_titles.has(title): hero.growth.known_titles.append(title)
+	var skill: String = str(rewards.get("skill",""))
+	if not skill.is_empty() and catalog.definition(skill) != null and not hero.skill_ranks.has(skill):
+		hero.skill_ranks[skill] = "F"
+		hero.training[skill] = 0
+	var item_reward: Dictionary = rewards.get("item",{})
+	if not item_reward.is_empty() and not Inventory.grant(hero,str(item_reward.get("id","")),maxi(1,int(item_reward.get("quantity",1))),"quest:"+operation,catalog,false):
+		return "No room for the quest reward."
+	record.state = "claimed"
+	record.claim = operation
+	deliver(hero,catalog)
+	refresh(hero,catalog)
+	return ""
+
+## Deliberate rebirth: level cap, carried cost and authored cooldown gate it.
+## Mastery, ranks, training, AP, titles, banked gold and committed quest
+## history survive; life growth, level and XP reset without an AP refund.
+static func perform_rebirth(session: RefCounted, hero: RefCounted, data: Dictionary, catalog: RefCounted) -> String:
+	var blocker: String = rebirth_eligible(hero,session)
+	if not blocker.is_empty(): return blocker
+	if not data.destination.is_valid_int(): return "Choose a rebirth age."
+	var age: int = data.destination.to_int()
+	if age < int(CONFIG.rebirth.choice_minimum) or age > int(CONFIG.rebirth.choice_maximum):
+		return "Rebirth ages span %d-%d." % [int(CONFIG.rebirth.choice_minimum),int(CONFIG.rebirth.choice_maximum)]
+	if not data.item.is_empty() and not CONFIG.talents.has(data.item): return "Unknown talent."
+	hero.committed_gold -= int(CONFIG.rebirth.cost)
+	hero.growth.rebirth_week = session.clock_week
+	hero.growth.birth_week = session.clock_week
+	hero.growth.birth_age = age
+	hero.growth.aged_to = age
+	hero.growth.age = age
+	hero.growth.rebirths = int(hero.growth.rebirths)+1
+	hero.growth.level = 1
+	hero.growth.xp = 0
+	hero.growth.life_growth = {}
+	hero.growth.talent_chosen = false
+	if not data.item.is_empty(): hero.growth.talent = data.item
+	if not hero.growth.titles.has("title.reborn"):
+		hero.growth.titles.append("title.reborn")
+		if not hero.growth.known_titles.has("title.reborn"): hero.growth.known_titles.append("title.reborn")
+	deliver(hero,catalog)
+	refresh(hero,catalog)
+	detail = "Reborn at age %d. Level, XP and life growth reset; skills, training, AP, titles and quests are retained." % age
+	return ""
+
+## One prefix and one suffix per equipment instance; an occupied slot replaces
+## on success only. Scroll, powder and MP are spent on success and failure.
+static func apply_enchant(session: RefCounted, hero: RefCounted, data: Dictionary, catalog: RefCounted) -> String:
+	var target: Item = Inventory.find(hero,data.item)
+	var scroll: Item = Inventory.find(hero,data.destination)
+	if target == null or scroll == null: return "Choose carried equipment and a scroll."
+	if target.container == "overflow" or scroll.container == "overflow": return "Withdraw both items first."
+	var scroll_definition: Resource = catalog.definition(scroll.definition_id)
+	if scroll_definition == null or scroll_definition.category != "enchant_scroll" or not CONFIG.enchants.has(scroll_definition.enchant_id):
+		return "Choose an enchant scroll."
+	var enchant: Dictionary = CONFIG.enchants[scroll_definition.enchant_id]
+	var target_definition: Resource = catalog.definition(target.definition_id)
+	if target_definition == null or target_definition.category != "equipment": return "Enchants apply to equipment."
+	if not enchant.get("targets",[]).has(target_definition.category): return "This scroll does not fit that equipment."
+	var slot: String = str(enchant.get("slot","prefix"))
+	var powder: Item = accessible_stack(hero,"item.powder",catalog)
+	if powder == null: return "Enchanting consumes one magic powder."
+	var mp_cost: int = int(enchant.get("mp_cost",0))
+	if hero.current[1] < mp_cost: return "Not enough MP."
+	if scroll.quantity <= 1: hero.items.erase(scroll)
+	else: scroll.quantity -= 1
+	if not Inventory.consume(hero,powder,1): return "Unlock the powder first."
+	hero.current[1] -= mp_cost
+	var stream: RefCounted = session.rng.stream("enchant")
+	var success: bool = stream.bounded(10000) < int(enchant.get("chance",0))
+	if success:
+		target.enchants[slot] = {"id":scroll_definition.enchant_id,"values":enchant_values(scroll_definition.enchant_id,stream)}
+		detail = "%s now carries %s in its %s slot." % [target_definition.display_name,enchant.name,slot]
+	else:
+		detail = "The enchant failed. Scroll, powder and MP are spent; the equipment keeps its current enchants."
+	return ""
+
+## Destructive burning: one independent draw per installed slot; empty slots
+## never draw. Recovered scrolls must fit the inventory or the attempt aborts.
+static func burn_item(session: RefCounted, hero: RefCounted, data: Dictionary, catalog: RefCounted) -> String:
+	var target: Item = Inventory.find(hero,data.item)
+	if target == null or target.container == "overflow": return "Choose carried equipment."
+	var target_definition: Resource = catalog.definition(target.definition_id)
+	if target_definition == null or target_definition.category != "equipment": return "Only equipment can be burned."
+	if target.locked: return "Unlock the item before burning it."
+	var stream: RefCounted = session.rng.stream("enchant")
+	var recovered: Array[String] = []
+	for slot: String in ["prefix","suffix"]:
+		var installed: Dictionary = target.installed_enchant(slot)
+		var enchant_id: String = str(installed.get("id",""))
+		if enchant_id.is_empty() or not CONFIG.enchants.has(enchant_id): continue
+		if stream.bounded(10000) < int(CONFIG.enchants[enchant_id].get("burn_chance",0)):
+			recovered.append(str(CONFIG.enchants[enchant_id].get("scroll","")))
+	hero.items.erase(target)
+	var names: Array[String] = []
+	var index: int = 0
+	for scroll_id: String in recovered:
+		if scroll_id.is_empty() or catalog.definition(scroll_id) == null: continue
+		if not Inventory.grant(hero,scroll_id,1,"burn:%d:%d" % [session.revision,index],catalog,false):
+			return "No room for the recovered scrolls."
+		names.append(catalog.definition(scroll_id).display_name)
+		index += 1
+	detail = "The item burned away. Recovered: "+", ".join(names)+"." if not names.is_empty() else "The item burned away. Nothing was recovered."
+	return ""

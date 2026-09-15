@@ -7,6 +7,12 @@ script = ExtResource("rank")
 mp_cost = 3
 duration = 3
 
+[sub_resource type="Resource" id="E"]
+script = ExtResource("rank")
+rank = "E"
+mp_cost = 3
+duration = 4
+
 [resource]
 script = ExtResource("script")
 id = "skill.focus"
@@ -15,4 +21,5 @@ icon = ExtResource("icon")
 effect = "stat_buff"
 target = "self"
 status_id = "status.focused"
-ranks = Array[ExtResource("rank")]([SubResource("F")])
+prototype_cap = "E"
+ranks = Array[ExtResource("rank")]([SubResource("F"), SubResource("E")])

@@ -42,6 +42,9 @@ var _dialogue: CanvasLayer
 var _dialogue_target: String = ""
 var _dialogue_serial: int = 0
 var _service_authorized: bool = false
+var _quest_adapter: RefCounted = preload("res://scripts/application/quest_adapter.gd").new()
+## Explicit aging clock source in whole weeks; fixtures inject controllable time.
+var clock_provider: Callable = func() -> int: return int(Time.get_unix_time_from_system() / 604800.0)
 var _encounter_authorized: bool = false
 var _return_authorized: bool = false
 var _catalog := Catalog.new()
@@ -115,7 +118,7 @@ func observation() -> Dictionary:
 func submit_intent(intent: Dictionary) -> Dictionary:
 	if not _alive or not _focused or _pending != -1 or _publishing_result or checkpoint.busy() or _save_overlay != null or not loading_error.is_empty():
 		return {"accepted": false, "code": "application_unavailable", "events": []}
-	if intent.get("kind") in ["buy_potion","recover","enter_dungeon","abandon","buy_item","sell_item","bank_deposit","bank_withdraw","learn_lesson"] and not _service_authorized:
+	if intent.get("kind") in ["buy_potion","recover","enter_dungeon","abandon","buy_item","sell_item","bank_deposit","bank_withdraw","learn_lesson","apply_enchant","burn_item"] and not _service_authorized:
 		return {"accepted":false,"code":"conversation_required","events":[]}
 	var command := Resolver.parse_intent(intent)
 	var result := Resolver.resolve(_session, command, _catalog)
@@ -138,6 +141,7 @@ func _publish_checkpoint() -> void:
 	_movement_checkpoint = false
 	_publishing_result = true
 	_session = result.candidate
+	_quest_adapter.sync(_session)
 	_hide_save_panel()
 	if changing_mode:
 		_pending = _session.mode
@@ -155,6 +159,8 @@ func _publish_checkpoint() -> void:
 	observation_changed.emit(observation())
 	for event: Dictionary in result.events:
 		accepted_result.emit(event.duplicate(true))
+		if not str(event.get("detail","")).is_empty() and is_instance_valid(_world):
+			_world.show_panel("Town service",str(event.detail))
 	_publishing_result = false
 	if _pause_requested:
 		_pause_requested = false
@@ -291,8 +297,24 @@ func _on_mode_entered(mode: int) -> void:
 		_load_required.call_deferred(_session.session_id, _session.revision)
 	elif mode == Mode.TOWN and progression_enabled and _session.hero.growth.is_empty():
 		_upgrade_legacy_town.call_deferred()
+	elif mode == Mode.TOWN and progression_enabled:
+		_reconcile_town.call_deferred()
 	elif mode == Mode.MENU and _resources.is_empty() and loading_error.is_empty():
 		_load_required.call_deferred(_session.session_id, _session.revision, false)
+
+func _now_week() -> int:
+	return clampi(int(clock_provider.call()) if clock_provider.is_valid() else 0,0,10000000)
+
+## Aging reconciles only at this safe town boundary, through the save gate.
+func _reconcile_town() -> void:
+	if not _alive or _publishing_result or _pending != -1 or checkpoint.busy(): return
+	if _session.mode != Mode.TOWN or _session.hero == null or _session.hero.growth.is_empty(): return
+	var now := _now_week()
+	if _session.clock_week == now and int(_session.hero.growth.birth_week) >= 0: return
+	var candidate: SessionShell = _session.copy()
+	preload("res://scripts/domain/rules/progression_rules.gd").reconcile_age(candidate,now)
+	candidate.revision += 1
+	_stage_transition(candidate)
 
 func _replace_view() -> void:
 	_close_progression()
@@ -561,6 +583,7 @@ func _exit_tree() -> void:
 	_close_dialogue()
 	_alive = false
 	_session.invalidate()
+	_quest_adapter.reset()
 	_resources.clear()
 	if is_instance_valid(_view):
 		_view.detach()
@@ -707,7 +730,7 @@ func _open_dialogue(target: String, cue: String) -> void:
 	_dialogue.start(observation(),cue,func() -> bool:
 		return _dialogue_serial == serial and _world_session_valid(id,revision))
 
-func _confirm_service(kind: String, id: int, revision: int, serial: int) -> Dictionary:
+func _confirm_service(kind: String, argument: String, id: int, revision: int, serial: int) -> Dictionary:
 	if not is_instance_valid(_dialogue) or serial != _dialogue_serial or not _world_session_valid(id,revision):
 		return {"accepted":false,"code":"stale_conversation"}
 	var target := _dialogue_target
@@ -718,8 +741,17 @@ func _confirm_service(kind: String, id: int, revision: int, serial: int) -> Dict
 		_close_dialogue()
 		_open_progression("Shop","npc.keeper")
 		return {"accepted":true,"code":"opened"}
+	var command_kind := kind
+	var data := {"item":"","destination":"","column":0,"row":0,"quantity":1}
+	if kind == "quest_offer":
+		command_kind = "quest_accept"
+		data.item = _npc_quest_id("available")
+	elif kind == "quest_handin":
+		command_kind = "quest_claim"
+		data.item = _npc_quest_id("ready")
 	var intent := {"session_id":id,"expected_revision":revision,"operation_id":"service:%d:%d:%d" % [id,revision,serial],
-		"kind":kind,"actor_id":"hero","skill_id":"","target_id":target}
+		"kind":command_kind,"actor_id":"hero","skill_id":"","target_id":target}
+	if command_kind in preload("res://scripts/domain/rules/progression_rules.gd").KINDS: intent.data = data
 	_close_dialogue()
 	_service_authorized = true
 	var result := submit_intent(intent)
@@ -727,6 +759,16 @@ func _confirm_service(kind: String, id: int, revision: int, serial: int) -> Dict
 	if not result.accepted and is_instance_valid(_world):
 		_world.show_panel("Service unavailable",String(result.code).replace("_"," "))
 	return result
+
+## First NPC-delivered quest in the given committed state, in authored order.
+func _npc_quest_id(state: String) -> String:
+	if _session.hero == null: return ""
+	var quests: Dictionary = _session.hero.growth.get("quests",{})
+	for quest_id: String in quests:
+		var record: Dictionary = quests[quest_id]
+		if str(record.get("state","")) == state and preload("res://scripts/domain/rules/progression_rules.gd").CONFIG.quests.get(quest_id,{}).get("delivery","auto") == "npc":
+			return quest_id
+	return ""
 
 func _close_dialogue() -> void:
 	_dialogue_serial += 1
@@ -771,7 +813,7 @@ func _preview_progression(kind: String, data: Dictionary) -> Dictionary:
 
 func _progression_intent(kind: String, data: Dictionary, id: int, revision: int, serial: int) -> Dictionary:
 	if not is_instance_valid(_progression_view) or serial != _progression_serial or not _world_session_valid(id,revision): return {"accepted":false,"code":"stale_panel"}
-	var service := kind in ["buy_item","sell_item","bank_deposit","bank_withdraw","learn_lesson"]
+	var service := kind in ["buy_item","sell_item","bank_deposit","bank_withdraw","learn_lesson","apply_enchant","burn_item"]
 	if service and (_progression_target != "npc.keeper" or not _world.interaction_is_valid("npc.keeper",true)):
 		_close_progression()
 		return {"accepted":false,"code":"out_of_reach"}
@@ -800,5 +842,6 @@ func _upgrade_legacy_town() -> void:
 	if not _alive or _session.mode != Mode.TOWN or not _session.hero.growth.is_empty() or checkpoint.busy(): return
 	var candidate: SessionShell = _session.copy()
 	preload("res://scripts/domain/rules/progression_rules.gd").initialize(candidate.hero,_catalog)
+	preload("res://scripts/domain/rules/progression_rules.gd").reconcile_age(candidate,_now_week())
 	candidate.revision += 1
 	_stage_transition(candidate)
