@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="EncounterDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/definitions/encounter_definition.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/art/dungeon_mark.svg" id="icon"]
+
+[resource]
+script = ExtResource("1")
+id = "encounter.warden_trial"
+display_name = "The Warden's Trial"
+actor_ids = PackedStringArray("actor.memory_shade", "actor.acolyte")
+
+pending_gold = 0
+first_actor = "hero"

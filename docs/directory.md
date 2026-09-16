@@ -19,6 +19,7 @@ Updated **2026-09-10**. Paths in the proposed tree are relative to the project r
 | [Phase 8 implementation](phase8-implementation.md) | Inventory, bank, skills, XP, talents, titles and migration |
 | [Phase 8 retention](phase8-retention.md) | Full inventory-backed outcome and reservation policy |
 | [Phase 9 implementation](phase9-implementation.md) | Quests, QuestSystem mirror, enchanting, aging and rebirth |
+| [Phase 10 implementation](phase10-implementation.md) | RP missions, multi-enemy combat, reactions, criticals and masteries |
 | [References](references.md) | Official Godot sources and historical gameplay inspiration |
 | [Audit](audit.md) | Reset findings, design decisions and verification limits |
 

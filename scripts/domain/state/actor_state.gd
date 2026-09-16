@@ -14,6 +14,11 @@ var training: Dictionary[String, int] = {}
 var statuses: Array[Status] = []
 var regeneration: PackedInt64Array = PackedInt64Array([0, 0, 0])
 var weapon: String = ""
+## Off-hand shield tag frozen at battle begin; gates Shield Mastery defenses.
+var shield_equipped: bool = false
+## Prepared Counterattack stance: {"skill_id": String, "power": int}.
+## One charge; expires at the start of the owner's next activation.
+var reaction: Dictionary = {}
 var completed_activations: int = 0
 var shield: int = 0
 var cooldowns: Dictionary = {}
@@ -29,6 +34,8 @@ func configure(definition: Definition, id: String) -> void:
 	reserved = PackedInt64Array([0, 0, 0])
 	stats = definition.base_stats.duplicate()
 	weapon = definition.weapon
+	shield_equipped = definition.shield
+	reaction = {}
 	regeneration = definition.regeneration.duplicate()
 	completed_activations = 0
 	shield = 0
@@ -54,6 +61,8 @@ func copy() -> RefCounted:
 	result.training = training.duplicate()
 	result.regeneration = regeneration.duplicate()
 	result.weapon = weapon
+	result.shield_equipped = shield_equipped
+	result.reaction = reaction.duplicate(true)
 	result.completed_activations = completed_activations
 	result.shield = shield
 	result.cooldowns = cooldowns.duplicate(true)
@@ -69,6 +78,7 @@ func observation() -> Dictionary:
 		active.append(status.observation())
 	return {"instance_id": instance_id, "definition_id": definition_id, "current": current.duplicate(),
 		"maximum": maximum.duplicate(), "reserved": reserved.duplicate(), "stats": stats.duplicate(),
-		"skill_ranks": skill_ranks.duplicate(), "training": training.duplicate(), "statuses": active, "weapon": weapon, "regeneration": regeneration.duplicate(), "completed_activations": completed_activations, "shield": shield,
+		"skill_ranks": skill_ranks.duplicate(), "training": training.duplicate(), "statuses": active, "weapon": weapon,
+		"shield_equipped": shield_equipped, "reaction": reaction.duplicate(true), "regeneration": regeneration.duplicate(), "completed_activations": completed_activations, "shield": shield,
 		"cooldowns": cooldowns.duplicate(true), "flat_modifiers": flat_modifiers.duplicate(true),
 		"percent_modifiers": percent_modifiers.duplicate(true)}

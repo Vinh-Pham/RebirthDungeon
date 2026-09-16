@@ -12,6 +12,9 @@ var mode: Mode = Mode.MENU
 var hero: Hero
 var battle: Battle
 var exploration: RefCounted
+## Authored role-playing mission currently suspended or running. Empty outside
+## mission battles; committed outcomes live in hero.growth, never here.
+var mission_id: String = ""
 var town_position_x: float = 96.0
 var town_position_y: float = 160.0
 ## Explicit aging clock in whole weeks since the epoch. Injected by the
@@ -36,6 +39,7 @@ func copy() -> RefCounted:
 	result.hero = hero.copy() if hero != null else null
 	result.battle = battle.copy() if battle != null else null
 	result.exploration = exploration.copy() if exploration != null else null
+	result.mission_id = mission_id
 	result.town_position_x = town_position_x
 	result.town_position_y = town_position_y
 	result.clock_week = clock_week
@@ -54,6 +58,7 @@ func invalidate() -> void:
 	hero = null
 	battle = null
 	exploration = null
+	mission_id = ""
 	town_position_x = 96.0
 	town_position_y = 160.0
 	clock_week = 0

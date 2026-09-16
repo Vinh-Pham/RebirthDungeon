@@ -63,6 +63,23 @@
 [ext_resource type="Resource" path="res://content/items/scroll_spellweave.tres" id="items_scroll_spellweave"]
 [ext_resource type="Resource" path="res://content/items/scroll_fortunate.tres" id="items_scroll_fortunate"]
 
+[ext_resource type="Resource" path="res://content/actors/acolyte.tres" id="actors_acolyte"]
+[ext_resource type="Resource" path="res://content/actors/warden.tres" id="actors_warden"]
+[ext_resource type="Resource" path="res://content/actors/memory_shade.tres" id="actors_memory_shade"]
+[ext_resource type="Resource" path="res://content/skills/counter.tres" id="skills_counter"]
+[ext_resource type="Resource" path="res://content/skills/windmill.tres" id="skills_windmill"]
+[ext_resource type="Resource" path="res://content/skills/final_hit.tres" id="skills_final_hit"]
+[ext_resource type="Resource" path="res://content/skills/critical.tres" id="skills_critical"]
+[ext_resource type="Resource" path="res://content/skills/combat_mastery.tres" id="skills_combat_mastery"]
+[ext_resource type="Resource" path="res://content/skills/sword_mastery.tres" id="skills_sword_mastery"]
+[ext_resource type="Resource" path="res://content/skills/shield_mastery.tres" id="skills_shield_mastery"]
+[ext_resource type="Resource" path="res://content/skills/acolyte_buff.tres" id="skills_acolyte_buff"]
+[ext_resource type="Resource" path="res://content/statuses/empowered.tres" id="statuses_empowered"]
+[ext_resource type="Resource" path="res://content/statuses/final_hit.tres" id="statuses_final_hit"]
+[ext_resource type="Resource" path="res://content/encounters/dual.tres" id="encounters_dual"]
+[ext_resource type="Resource" path="res://content/encounters/warden_trial.tres" id="encounters_warden_trial"]
+[ext_resource type="Resource" path="res://content/rooms/nave.tres" id="rooms_nave"]
+
 [sub_resource type="Resource" id="combo0"]
 script = ExtResource("combo")
 key = "none"
@@ -115,10 +132,10 @@ denominator = 1
 script = ExtResource("script")
 content_version = 3
 combinations = Array[ExtResource("combo")]([SubResource("combo0"), SubResource("combo1"), SubResource("combo2"), SubResource("combo3"), SubResource("combo4"), SubResource("combo5"), SubResource("combo6"), SubResource("combo7")])
-actors = Array[ExtResource("actors_type")]([ExtResource("actors_hero"), ExtResource("actors_training_enemy")])
-skills = Array[ExtResource("skills_type")]([ExtResource("skills_sword"), ExtResource("skills_fortify"), ExtResource("skills_enemy_strike"), ExtResource("skills_focus"), ExtResource("skills_spark"), ExtResource("skills_blood")])
+actors = Array[ExtResource("actors_type")]([ExtResource("actors_hero"), ExtResource("actors_training_enemy"), ExtResource("actors_acolyte"), ExtResource("actors_warden"), ExtResource("actors_memory_shade")])
+skills = Array[ExtResource("skills_type")]([ExtResource("skills_sword"), ExtResource("skills_fortify"), ExtResource("skills_enemy_strike"), ExtResource("skills_focus"), ExtResource("skills_spark"), ExtResource("skills_blood"), ExtResource("skills_counter"), ExtResource("skills_windmill"), ExtResource("skills_final_hit"), ExtResource("skills_critical"), ExtResource("skills_combat_mastery"), ExtResource("skills_sword_mastery"), ExtResource("skills_shield_mastery"), ExtResource("skills_acolyte_buff")])
 stats = Array[ExtResource("stats_type")]([ExtResource("stats_strength"), ExtResource("stats_defense"), ExtResource("stats_magic_attack"), ExtResource("stats_magic_defense"), ExtResource("stats_protection"), ExtResource("stats_magic_protection")])
-statuses = Array[ExtResource("statuses_type")]([ExtResource("statuses_fortified"), ExtResource("statuses_weakened"), ExtResource("statuses_focused")])
+statuses = Array[ExtResource("statuses_type")]([ExtResource("statuses_fortified"), ExtResource("statuses_weakened"), ExtResource("statuses_focused"), ExtResource("statuses_empowered"), ExtResource("statuses_final_hit")])
 items = Array[ExtResource("items_type")]([ExtResource("items_training_sword"), ExtResource("items_potion"), ExtResource("items_field_bag"), ExtResource("items_gold_bag"), ExtResource("items_iron_sword"), ExtResource("items_great_sword"), ExtResource("items_shield"), ExtResource("items_armor"), ExtResource("items_spark_book"), ExtResource("items_focus_notes"), ExtResource("items_focus_page_one"), ExtResource("items_focus_page_two"), ExtResource("items_focus_book"), ExtResource("items_lantern_coupon"), ExtResource("items_powder"), ExtResource("items_scroll_keen"), ExtResource("items_scroll_spellweave"), ExtResource("items_scroll_fortunate")])
-encounters = Array[ExtResource("encounters_type")]([ExtResource("encounters_training"), ExtResource("encounters_gallery"), ExtResource("encounters_sanctum")])
-rooms = Array[ExtResource("rooms_type")]([ExtResource("rooms_training"), ExtResource("rooms_haven"), ExtResource("rooms_threshold"), ExtResource("rooms_gallery"), ExtResource("rooms_sanctum")])
+encounters = Array[ExtResource("encounters_type")]([ExtResource("encounters_training"), ExtResource("encounters_gallery"), ExtResource("encounters_sanctum"), ExtResource("encounters_dual"), ExtResource("encounters_warden_trial")])
+rooms = Array[ExtResource("rooms_type")]([ExtResource("rooms_training"), ExtResource("rooms_haven"), ExtResource("rooms_threshold"), ExtResource("rooms_gallery"), ExtResource("rooms_sanctum"), ExtResource("rooms_nave")])

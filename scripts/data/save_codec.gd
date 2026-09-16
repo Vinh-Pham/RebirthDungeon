@@ -9,6 +9,7 @@ const Battle = preload("res://scripts/domain/state/battle_state.gd")
 const Status = preload("res://scripts/domain/state/status_state.gd")
 const Item = preload("res://scripts/domain/state/item_state.gd")
 const Exploration = preload("res://scripts/domain/state/exploration_state.gd")
+const Progression = preload("res://scripts/domain/rules/progression_rules.gd")
 const FORMAT = "rebirth.session.v3"
 const ProgressionCodec = preload("res://scripts/data/progression_codec.gd")
 const MAX_BYTES = 4194304
@@ -68,6 +69,29 @@ func _migrate_phase9(data: Dictionary) -> void:
 		var progression: Variant = data.exploration.get("progression",{})
 		if progression is Dictionary and not progression.is_empty() and not progression.has("facts"):
 			progression["facts"] = {}
+	_migrate_phase10(data)
+
+## Phase 10 structural migration: mission context, the borrowed champion and
+## per-actor reaction/shield fields default for existing checkpoints without a
+## content-version bump, so existing sessions resume without loss.
+func _migrate_phase10(data: Dictionary) -> void:
+	if not data.has("mission_id"): data["mission_id"] = ""
+	if data.get("battle") is Dictionary and not data.battle.is_empty():
+		if not data.battle.has("mission_id"): data.battle["mission_id"] = ""
+		if not data.battle.has("champion"): data.battle["champion"] = {}
+	if data.get("hero") is Dictionary and not data.hero.is_empty():
+		if not data.hero.has("shield_equipped"): data.hero["shield_equipped"] = false
+		if not data.hero.has("reaction"): data.hero["reaction"] = {}
+	if data.get("battle") is Dictionary and data.battle.get("enemies") is Array:
+		for enemy: Variant in data.battle.enemies:
+			if enemy is Dictionary:
+				if not enemy.has("shield_equipped"): enemy["shield_equipped"] = false
+				if not enemy.has("reaction"): enemy["reaction"] = {}
+		if data.battle.get("champion") is Dictionary and not data.battle.champion.is_empty():
+			if not data.battle.champion.has("shield_equipped"): data.battle.champion["shield_equipped"] = false
+			if not data.battle.champion.has("reaction"): data.battle.champion["reaction"] = {}
+	if data.get("hero") is Dictionary and data.hero.get("growth") is Dictionary and not data.hero.growth.is_empty() and not data.hero.growth.has("missions"):
+		data.hero.growth["missions"] = {}
 
 func _fail(message: String, status: String = "corrupt") -> Dictionary:
 	error = message
@@ -125,10 +149,11 @@ static func vector(value: Variant, size_value: int, low: int = 0, high: int = 10
 
 func restore(data: Dictionary, catalog: RefCounted) -> SessionShell:
 	error = "session fields"
-	if not keys(data,["checkpoint_version","session_id","revision","mode","hero","battle","content_versions","rng","accepted_operations","exploration","town_position","clock_week"]): return null
+	if not keys(data,["checkpoint_version","session_id","revision","mode","hero","battle","content_versions","rng","accepted_operations","exploration","town_position","clock_week","mission_id"]): return null
 	if not integer(data.checkpoint_version,1,1) or not integer(data.session_id,1,9223372036854775806) or not integer(data.revision,0,9223372036854775806): return null
 	if not integer(data.mode,2,5) or data.content_versions != catalog.versions(): return null
 	if not integer(data.clock_week,0,10000000): return null
+	if not data.mission_id is String: return null
 	if not data.rng is Dictionary or not data.accepted_operations is Dictionary or data.accepted_operations.size() > 100000: return null
 	var session := SessionShell.new()
 	if not session.rng.restore(data.rng): return null
@@ -141,6 +166,7 @@ func restore(data: Dictionary, catalog: RefCounted) -> SessionShell:
 	session.revision = data.revision
 	session.mode = data.mode
 	session.clock_week = data.clock_week
+	session.mission_id = data.mission_id
 	session.content_versions = data.content_versions.duplicate(true)
 	session.accepted_operations.assign(data.accepted_operations)
 	error = "hero"
@@ -152,7 +178,7 @@ func restore(data: Dictionary, catalog: RefCounted) -> SessionShell:
 	if not data.exploration.is_empty():
 		var ex: Dictionary = data.exploration
 		if not keys(ex,["layout_id","layout","world_id","position","discovered","resolved","active_encounter","pending_gold","progression"]): return null
-		if ex.layout_id != "undercrypt.v1" or ex.layout != Exploration.LAYOUT: return null
+		if ex.layout_id != "undercrypt.v1" or (ex.layout != Exploration.LAYOUT and ex.layout != Exploration.LEGACY_LAYOUT): return null
 		if ex.world_id != "dungeon.undercrypt" or not integer(ex.pending_gold): return null
 		if not position(ex.position): return null
 		if not ids(ex.discovered,catalog,"room.") or not ids(ex.resolved,catalog,"encounter."): return null
@@ -160,6 +186,13 @@ func restore(data: Dictionary, catalog: RefCounted) -> SessionShell:
 		if not ex.progression is Dictionary: return null
 		session.exploration = Exploration.new()
 		session.exploration.progression = ex.progression.duplicate(true)
+		# Repair a Phase 10 regression: enemy strikes could write run training
+		# for skills the hero never learned, which the validator rejects. Drop
+		# those meaningless keys so affected sessions resume and re-save.
+		var run_training: Dictionary = session.exploration.progression.get("training",{})
+		if not run_training.is_empty():
+			for skill_id: String in run_training.keys():
+				if not session.hero.skill_ranks.has(skill_id): run_training.erase(skill_id)
 		session.exploration.world_id = ex.world_id
 		session.exploration.position_x = ex.position.x
 		session.exploration.position_y = ex.position.y
@@ -167,66 +200,94 @@ func restore(data: Dictionary, catalog: RefCounted) -> SessionShell:
 		session.exploration.resolved.assign(ex.resolved)
 		session.exploration.active_encounter = ex.active_encounter
 		session.exploration.pending_gold = ex.pending_gold
-	if session.mode in [3,4] and session.exploration == null: return null
+	if session.mode in [3,4] and session.exploration == null and not (session.mode == 4 and not session.mission_id.is_empty()): return null
 	error = "battle"
 	if not data.battle is Dictionary: return null
 	if not data.battle.is_empty():
 		var b: Dictionary = data.battle
-		if not keys(b,Capture.BATTLE_FIELDS+["enemies"]): return null
+		if not keys(b,Capture.BATTLE_FIELDS+["enemies","champion"]): return null
 		if not b.encounter_id is String or not b.encounter_id.begins_with("encounter.") or catalog.definition(b.encounter_id) == null: return null
 		if b.pending_gold != catalog.definition(b.encounter_id).pending_gold: return null
 		if not integer(b.phase,0,3) or b.phase == 2 or not integer(b.activation,0,9223372036854775806) or not integer(b.pending_gold): return null
-		if b.content_versions != catalog.versions() or b.active_actor_id not in ["hero","enemy.0"]: return null
+		if b.content_versions != catalog.versions(): return null
 		if b.outcome not in ["","victory","defeat"] or not integer(b.rerolls_remaining,0,2): return null
-		if not b.enemies is Array or b.enemies.size() != 1: return null
-		var enemy := Actor.new()
-		if not actor(enemy,b.enemies[0],catalog,false) or enemy.instance_id != "enemy.0": return null
-		if enemy.definition_id != catalog.definition(b.encounter_id).actor_ids[0]: return null
-		if not b.kept is Array or b.kept.size() != 5: return null
-		for kept: Variant in b.kept:
-			if typeof(kept) != TYPE_BOOL: return null
-		if not b.hand is Array or b.hand.size() not in [0,5]: return null
-		for face: Variant in b.hand:
-			if not integer(face,1,6): return null
-		for field: String in ["selected_skill","selected_rank","target_id"]:
-			if not b[field] is String: return null
-		if not b.locked_inputs is Dictionary: return null
-		var battle := Battle.new()
-		for field: String in Capture.BATTLE_FIELDS:
-			if field not in ["hand","kept"]: battle.set(field,b[field])
-		battle.hand = PackedInt32Array(b.hand)
-		battle.kept.assign(b.kept)
-		battle.enemies.append(enemy)
-		session.battle = battle
+		if not b.mission_id is String: return null
+		var encounter: Resource = catalog.definition(b.encounter_id)
+		if not b.enemies is Array or b.enemies.is_empty() or b.enemies.size() > Capture.MAX_ENEMIES: return null
+		if b.enemies.size() != encounter.actor_ids.size(): return null
+		var enemies: Array[Actor] = []
+		for i: int in b.enemies.size():
+			var enemy := Actor.new()
+			if not actor(enemy,b.enemies[i],catalog,false): return null
+			if enemy.instance_id != "enemy.%d" % i or enemy.definition_id != encounter.actor_ids[i]: return null
+			enemies.append(enemy)
+		var active_ok: bool = b.active_actor_id == "hero"
+		if not active_ok and str(b.active_actor_id).begins_with("enemy."):
+			var active_suffix: String = str(b.active_actor_id).trim_prefix("enemy.")
+			active_ok = active_suffix.is_valid_int() and int(active_suffix) >= 0 and int(active_suffix) < b.enemies.size()
+		if not active_ok: return null
+		if not b.champion is Dictionary: return null
+		var mission_id: String = b.mission_id
+		if (mission_id.is_empty()) == (not b.champion.is_empty()): return null
+		if session.mission_id != mission_id: return null
+		if not mission_id.is_empty():
+			var mission: Variant = Progression.CONFIG.missions.get(mission_id,{})
+			if not mission is Dictionary: return null
+			var champion := Actor.new()
+			if not actor(champion,b.champion,catalog,false) or champion.instance_id != "hero": return null
+			if champion.definition_id != str(mission.npc): return null
+			session.battle = _battle(b, enemies, champion)
+		else:
+			session.battle = _battle(b, enemies, null)
+		if session.battle == null: return null
 		if b.phase == 1:
 			if b.active_actor_id != "hero" or b.hand.size() != 5 or b.selected_skill.is_empty(): return null
 			var probe := session.copy()
 			probe.hero.reserved.fill(0)
 			var expected := Rules.selection(probe,"hero",b.selected_skill,b.target_id,catalog)
 			if expected.has("error") or wire(expected) != wire(b.locked_inputs) or b.selected_rank != expected.rank: return null
-			if wire(hero.reserved) != wire(expected.costs): return null
-			battle.locked_inputs.costs = PackedInt64Array(b.locked_inputs.costs)
-			battle.locked_inputs.weights = PackedInt64Array(b.locked_inputs.weights)
+			var fighter = session.hero if session.battle.champion == null else session.battle.champion
+			if wire(fighter.reserved) != wire(expected.costs): return null
+			session.battle.locked_inputs.costs = PackedInt64Array(b.locked_inputs.costs)
+			session.battle.locked_inputs.weights = PackedInt64Array(b.locked_inputs.weights)
 		else:
 			if not b.hand.is_empty() or not b.locked_inputs.is_empty() or b.kept.has(true) or b.rerolls_remaining != 2: return null
-			if hero.reserved != PackedInt64Array([0,0,0]): return null
+			var fighter = session.hero if session.battle.champion == null else session.battle.champion
+			if fighter.reserved != PackedInt64Array([0,0,0]): return null
 			if not b.selected_skill.is_empty():
 				var selected := Rules.selection(session,b.active_actor_id,b.selected_skill,b.target_id,catalog)
 				if selected.has("error") or b.selected_rank != selected.rank: return null
 			elif not b.selected_rank.is_empty() or not b.target_id.is_empty(): return null
-		if enemy.reserved != PackedInt64Array([0,0,0]): return null
+		for restored_enemy: Actor in session.battle.enemies:
+			if restored_enemy.reserved != PackedInt64Array([0,0,0]): return null
 		if b.phase == 3:
-			var expected_outcome := "defeat" if hero.current[0] == 0 else "victory"
-			if b.outcome != expected_outcome or (b.outcome == "victory" and enemy.current[0] != 0): return null
-		elif b.outcome != "" or hero.current[0] == 0 or enemy.current[0] == 0: return null
+			var participant = session.hero if session.battle.champion == null else session.battle.champion
+			var expected_outcome := "defeat" if participant.current[0] == 0 else "victory"
+			if b.outcome != expected_outcome: return null
+			if b.outcome == "victory":
+				for restored_enemy: Actor in session.battle.enemies:
+					if restored_enemy.current[0] != 0: return null
+		elif b.outcome != "":
+			return null
+		else:
+			# Unfinished battles keep every participant alive on disk.
+			var participant_actor = session.hero if session.battle.champion == null else session.battle.champion
+			if participant_actor.current[0] == 0: return null
+			for restored_enemy: Actor in session.battle.enemies:
+				if restored_enemy.current[0] == 0: return null
 	if session.mode == 2 and (session.exploration != null or session.battle != null): return null
 	if session.mode == 5 and (session.exploration == null or session.exploration.pending_gold != 0): return null
+	if session.mode == 5 and not session.mission_id.is_empty(): return null
+	if session.mode != 4 and not session.mission_id.is_empty(): return null
 	if session.mode != 4 and session.battle != null and session.battle.phase != 3: return null
 	if session.mode == 4:
-		if session.battle == null or session.exploration.active_encounter != session.battle.encounter_id: return null
-		if session.battle.outcome == "victory" and not session.exploration.resolved.has(session.battle.encounter_id): return null
-		if session.battle.outcome == "defeat" and session.exploration.pending_gold != 0: return null
-		if session.battle.outcome.is_empty() and session.exploration.resolved.has(session.battle.encounter_id): return null
+		if session.battle == null: return null
+		if session.battle.mission_id.is_empty():
+			if session.exploration == null or session.exploration.active_encounter != session.battle.encounter_id: return null
+			if session.battle.outcome == "victory" and not session.exploration.resolved.has(session.battle.encounter_id): return null
+		if session.battle.mission_id.is_empty():
+			if session.battle.outcome == "defeat" and session.exploration.pending_gold != 0: return null
+			if session.battle.outcome.is_empty() and session.exploration.resolved.has(session.battle.encounter_id): return null
 	elif session.exploration != null and not session.exploration.active_encounter.is_empty(): return null
 	if session.battle == null and hero.reserved != PackedInt64Array([0,0,0]): return null
 	error = "progression or inventory"
@@ -245,7 +306,7 @@ func ids(value: Variant, catalog: RefCounted, prefix: String) -> bool:
 func actor(target: Actor, value: Variant, catalog: RefCounted, is_hero: bool) -> bool:
 	if not value is Dictionary: return false
 	var data: Dictionary = value
-	if not keys(data,Capture.ACTOR_FIELDS+["statuses"]+(["items","committed_gold","potions","growth"] if is_hero else [])): return false
+	if not keys(data,Capture.ACTOR_FIELDS+["statuses","shield_equipped","reaction"]+(["items","committed_gold","potions","growth"] if is_hero else [])): return false
 	if not data.instance_id is String or not data.definition_id is String or not data.definition_id.begins_with("actor.") or catalog.definition(data.definition_id) == null: return false
 	for field: String in ["current","maximum","reserved","regeneration"]:
 		if not vector(data[field],3): return false
@@ -279,7 +340,11 @@ func actor(target: Actor, value: Variant, catalog: RefCounted, is_hero: bool) ->
 		var definition: Resource = catalog.definition(record.definition_id)
 		if record.effect != definition.effect or record.stat_id != definition.stat_id or record.percent != definition.percent or typeof(record.percent) != TYPE_BOOL: return false
 		if record.group != (definition.stack_group if not definition.stack_group.is_empty() else definition.id) or record.priority != definition.priority: return false
-		if record.source_id not in ["hero","enemy.0"] or not integer(record.remaining_activations,1) or not integer(record.magnitude,-1000000) or not integer(record.priority,-1000000) or not integer(record.first_tick,0,9223372036854775806): return false
+		if record.source_id != "hero" and not str(record.source_id).begins_with("enemy."): return false
+		if str(record.source_id).begins_with("enemy."):
+			var suffix: String = str(record.source_id).trim_prefix("enemy.")
+			if not suffix.is_valid_int() or int(suffix) < 0 or int(suffix) >= Capture.MAX_ENEMIES: return false
+		if not integer(record.remaining_activations,1) or not integer(record.magnitude,-1000000) or not integer(record.priority,-1000000) or not integer(record.first_tick,0,9223372036854775806): return false
 		if groups.has(record.group): return false
 		groups[record.group] = true
 		var status := Status.new()
@@ -290,6 +355,15 @@ func actor(target: Actor, value: Variant, catalog: RefCounted, is_hero: bool) ->
 		elif field in ["stats","training"]: target.get(field).assign(data[field])
 		elif field == "skill_ranks": target.skill_ranks.assign(data[field])
 		else: target.set(field,data[field])
+	# Phase 10 fields: shield tag and the prepared reaction stance.
+	if data.has("shield_equipped") and typeof(data.shield_equipped) != TYPE_BOOL: return false
+	if data.has("shield_equipped"): target.shield_equipped = data.shield_equipped
+	if data.has("reaction"):
+		if not data.reaction is Dictionary: return false
+		if not data.reaction.is_empty():
+			if data.reaction.size() != 2 or not data.reaction.get("skill_id") is String or not integer(data.reaction.get("power"),0): return false
+			if catalog.definition(str(data.reaction.skill_id)) == null: return false
+		target.reaction = data.reaction.duplicate(true)
 	if is_hero:
 		if not integer(data.committed_gold) or not data.items is Array or data.items.size() > 1000: return false
 		if not integer(data.potions,0,1000000) or not data.growth is Dictionary: return false
@@ -322,3 +396,23 @@ static func position(value: Variant) -> bool:
 	for axis: String in ["x","y"]:
 		if typeof(value[axis]) not in [TYPE_FLOAT,TYPE_INT] or not is_finite(value[axis]) or absf(value[axis]) > 100000: return false
 	return true
+
+## Rebuild one validated battle from decoded wire data.
+static func _battle(b: Dictionary, enemies: Array[Actor], champion: Actor) -> Battle:
+	if not b.kept is Array or b.kept.size() != 5: return null
+	for kept: Variant in b.kept:
+		if typeof(kept) != TYPE_BOOL: return null
+	if not b.hand is Array or b.hand.size() not in [0,5]: return null
+	for face: Variant in b.hand:
+		if not integer(face,1,6): return null
+	for field: String in ["selected_skill","selected_rank","target_id"]:
+		if not b[field] is String: return null
+	if not b.locked_inputs is Dictionary: return null
+	var battle := Battle.new()
+	for field: String in Capture.BATTLE_FIELDS:
+		if field not in ["hand","kept"]: battle.set(field,b[field])
+	battle.hand = PackedInt32Array(b.hand)
+	battle.kept.assign(b.kept)
+	battle.enemies.assign(enemies)
+	battle.champion = champion
+	return battle

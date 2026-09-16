@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="ActorDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/definitions/actor_definition.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/art/dungeon_mark.svg" id="icon"]
+
+[resource]
+script = ExtResource("1")
+id = "actor.acolyte"
+display_name = "Crypt Acolyte"
+icon = ExtResource("icon")
+max_hp = 30
+max_mp = 0
+max_sp = 8
+base_stats = Dictionary[String, int]({"stat.strength": 1, "stat.defense": 0, "stat.magic_attack": 0, "stat.magic_defense": 0, "stat.protection": 0, "stat.magic_protection": 0})
+skill_ids = PackedStringArray("skill.acolyte_buff", "skill.enemy_strike")
+
+regeneration = PackedInt64Array(0, 0, 2)

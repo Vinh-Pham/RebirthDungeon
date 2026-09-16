@@ -7,28 +7,27 @@
 [sub_resource type="Resource" id="F"]
 script = ExtResource("rank")
 rank = "F"
-sp_cost = 5
-base_power = 2
+sp_cost = 8
+base_power = 1
 pip_scale = 1
-duration = 0
-cooldown = 0
+critical_chance = 1500
 
 [sub_resource type="Resource" id="E"]
 script = ExtResource("rank")
 rank = "E"
-sp_cost = 5
-base_power = 4
+sp_cost = 8
+base_power = 2
 pip_scale = 1
-critical_chance = 2000
-weights = PackedInt64Array(1, 1, 1, 1, 2, 2)
+critical_chance = 2500
+weights = PackedInt64Array(1, 1, 1, 2, 1, 1)
 
 [resource]
 script = ExtResource("script")
-id = "skill.sword"
-display_name = "sword"
+id = "skill.windmill"
+display_name = "windmill"
 icon = ExtResource("icon")
 effect = "physical_damage"
-target = "hostile"
+target = "hostile_all"
 weapon = "sword"
 status_id = ""
 uses_dice = true

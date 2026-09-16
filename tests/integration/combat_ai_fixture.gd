@@ -29,13 +29,13 @@ func run(tree: SceneTree) -> PackedStringArray:
 	var decision_before := Checkpoint.capture(s)
 	var intent := a.propose(s,fixture.catalog)
 	check(Checkpoint.capture(s) == decision_before,"Tree proposes without payment/effects/RNG")
-	check(intent.skill_id == "skill.enemy_strike" and a.player.update_mode == BTPlayer.MANUAL,"Authored tree manual proposal")
+	check(intent.skill_id == "skill.enemy_strike" and a.player_for("enemy.0","actor.training_enemy").update_mode == BTPlayer.MANUAL,"Authored tree manual proposal")
 	for i: int in 5: check(a.propose(s,fixture.catalog).is_empty(),"Repeated tick no duplicate proposal")
 	var other: SessionShell = s.copy()
 	other.battle.enemies[0].current[2] = 0
 	var fallback := b.propose(other,fixture.catalog)
 	check(fallback.skill_id == "" and fallback.target_id == "","No legal action bounded fallback")
-	check(a.player.blackboard != b.player.blackboard and a.player.blackboard.get_var(&"proposal").skill_id == "skill.enemy_strike","Shared tree isolates per-agent blackboards")
+	check(a.player_for("enemy.0","actor.training_enemy").blackboard != b.player_for("enemy.0","actor.training_enemy").blackboard and a.player_for("enemy.0","actor.training_enemy").blackboard.get_var(&"proposal").skill_id == "skill.enemy_strike","Shared tree isolates per-agent blackboards")
 	var result := Resolver.resolve(other,Resolver.parse_intent(fallback),fixture.catalog)
 	check(result.accepted and result.candidate.battle.enemies[0].current[2] == 2,"Enemy pass regenerates")
 	var accepted := Resolver.resolve(s,Resolver.parse_intent(intent),fixture.catalog)
@@ -48,9 +48,10 @@ func run(tree: SceneTree) -> PackedStringArray:
 	var running_tree := BehaviorTree.new()
 	running_tree.blackboard_plan = BlackboardPlan.new()
 	running_tree.root_task = load("res://tests/fixtures/combat/running_action.gd").new()
-	bounded.player.behavior_tree = running_tree
+	var bounded_player: BTPlayer = bounded.player_for("enemy.0","actor.training_enemy")
+	bounded_player.behavior_tree = running_tree
 	var running_fallback := bounded.propose(s,fixture.catalog)
-	check(running_fallback.skill_id == "" and bounded.player.blackboard.get_var(&"ticks") == 1,"RUNNING tree is bounded to one tick and falls back to pass")
+	check(running_fallback.skill_id == "" and bounded_player.blackboard.get_var(&"ticks") == 1,"RUNNING tree is bounded to one tick and falls back to pass")
 	check(bounded.propose(s,fixture.catalog).is_empty(),"RUNNING task cannot resubmit activation")
 	bounded.queue_free()
 	a.queue_free()

@@ -29,6 +29,7 @@ static func resolve(session: Session, command: Command, catalog: Catalog) -> Res
 	if command.operation_id.strip_edges().is_empty() or command.operation_id.length() > 128: return _reject("invalid_operation_id", command)
 	if session.accepted_operations.has(command.operation_id): return _reject("duplicate_operation", command)
 	if session.revision >= 9223372036854775807: return _reject("revision_exhausted", command)
+	if command.kind == "mission_enter": return _mission(session,command,catalog)
 	if command.kind in Progression.KINDS: return _progression(session,command,catalog)
 	if command.kind not in KINDS: return _reject("unsupported_command", command)
 	if command.kind in ["buy_potion","recover","enter_dungeon","abandon"]:
@@ -112,6 +113,28 @@ static func resolve(session: Session, command: Command, catalog: Catalog) -> Res
 	result.operation_id = command.operation_id
 	result.candidate = candidate
 	result.events = events
+	return result
+
+## RP mission entry: one validated town transaction that isolates the borrowed
+## NPC champion into its own battle. The hero's state never participates.
+static func _mission(session: Session, command: Command, catalog: Catalog) -> Result:
+	if session.hero == null or session.content_versions != catalog.versions(): return _reject("invalid_mission",command)
+	if command.actor_id != "hero" or not command.skill_id.is_empty(): return _reject("invalid_mission",command)
+	if command.target_id != "npc.keeper": return _reject("invalid_mission_target",command)
+	if typeof(command.data.get("item")) != TYPE_STRING: return _reject("invalid_mission",command)
+	var candidate: Session = session.copy()
+	var error: String = Rules.begin_mission(candidate, command.data.item, catalog)
+	if not error.is_empty(): return _reject(error,command)
+	candidate.mode = Session.Mode.BATTLE
+	candidate.revision += 1
+	candidate.accepted_operations[command.operation_id] = candidate.revision
+	var result := Result.new()
+	result.accepted = true
+	result.code = "accepted"
+	result.operation_id = command.operation_id
+	result.candidate = candidate
+	result.events.append({"type":"mission_entered","mission_id":command.data.item,
+		"session_id":candidate.session_id,"revision":candidate.revision,"operation_id":command.operation_id})
 	return result
 
 static func _reject(code: String, command: Command = null) -> Result:
@@ -198,3 +221,5 @@ static func _progression(session: Session, command: Command, catalog: Catalog) -
 	result.candidate = candidate
 	result.events.append({"type":command.kind,"session_id":candidate.session_id,"revision":candidate.revision,"operation_id":command.operation_id,"detail":Progression.detail})
 	return result
+
+## Phase 10: role-playing mission entry (mission_enter) resolves here as well.

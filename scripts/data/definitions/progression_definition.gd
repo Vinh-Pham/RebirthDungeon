@@ -16,6 +16,21 @@ extends Resource
 	"title.reborn":{"name":"the Second Life","slot":"second","hint":"Rebirth for the first time","effects":{"max_sp":5}}}
 @export var lesson_skill: String = "skill.blood"
 @export var lesson_price: int = 10
+## Phase 10 lesson catalog: skill ID to carried-gold price. The legacy scalar
+## lesson above remains valid and maps to the empty selection.
+@export var lessons: Dictionary = {
+	"skill.counter":{"price":12},
+	"skill.critical":{"price":14},
+	"skill.combat_mastery":{"price":10},
+	"skill.sword_mastery":{"price":10},
+	"skill.shield_mastery":{"price":10},
+	"skill.final_hit":{"price":15}}
+## Role-playing mission scenarios: an isolated NPC session fights the authored
+## encounter with the borrowed actor; only a committed victory records evidence.
+@export var missions: Dictionary = {
+	"mission.defenders_memory":{"name":"The Warden's Memory","npc":"actor.warden","encounter":"encounter.warden_trial",
+		"summary":"Relive the warden's last stand as the warden themselves.",
+		"rewards":{"gold":30,"xp":40}}}
 ## Aging clock policy: integer weeks; reconciled only at town/result boundaries.
 @export var aging: Dictionary = {"weeks_per_year":52,"ap_per_year":1,"start_age":16,"minimum_age":10,"maximum_age":80}
 ## Rebirth economy: deliberate town action at the level cap.
@@ -59,4 +74,12 @@ extends Resource
 	"quest.skill.second_life":{"name":"A Second Beginning","numeric":7,"category":"skill","delivery":"auto",
 		"trigger":{"type":"talent_rebirth","talent":"talent.magic"},"tab":"skills","successor":"",
 		"stages":[[{"type":"skill","target":"skill.spark","count":2}]],
-		"rewards":{"gold":15}}}
+		"rewards":{"gold":15}},
+	"quest.rp.defender":{"name":"The Warden's Memory","numeric":8,"category":"side","delivery":"npc","npc":"npc.keeper","rp":true,
+		"trigger":{"type":"quest","quest":"quest.main.expedition"},"tab":"side","successor":"",
+		"stages":[[{"type":"mission","target":"mission.defenders_memory","count":1}]],
+		"rewards":{"gold":30,"xp":40}},
+	"quest.skill.windmill":{"name":"Lessons of the Whirl","numeric":9,"category":"skill","delivery":"npc","npc":"npc.keeper",
+		"trigger":{"type":"rank","skill":"skill.sword","rank":"E"},"tab":"skills","successor":"",
+		"stages":[[{"type":"encounter","target":"encounter.dual","count":1}]],
+		"rewards":{"skill":"skill.windmill"}}}

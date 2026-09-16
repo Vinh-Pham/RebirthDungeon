@@ -39,6 +39,9 @@ var _feedback: HBoxContainer
 var _action_row: HBoxContainer
 var _resource_text: Dictionary = {}
 var _bars: Dictionary = {}
+var _hero_name: Label
+var _enemy_names: Dictionary = {}
+var _enemy_panels: Dictionary = {}
 var _enemy_intent: Label
 var _stage_box: SubViewportContainer
 var _inspector: PanelContainer
@@ -79,27 +82,50 @@ func _build() -> void:
 	_button(header,"Inspect / Menu",open_details,"Inspect")
 	var resources := HBoxContainer.new()
 	_layout.add_child(resources)
-	for actor_id: String in ["hero","enemy.0"]:
+	var hero_panel := PanelContainer.new()
+	hero_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	resources.add_child(hero_panel)
+	var hero_column := VBoxContainer.new()
+	hero_panel.add_child(hero_column)
+	_hero_name = _label(hero_column,"",16)
+	var hero_row := HBoxContainer.new()
+	hero_column.add_child(hero_row)
+	for pool: int in 3:
+		var block := VBoxContainer.new()
+		block.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		hero_row.add_child(block)
+		var key := "hero" + str(pool)
+		_resource_text[key] = _label(block,"",16)
+		var bar := ProgressBar.new()
+		bar.show_percentage = false
+		bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		bar.custom_minimum_size.y = 5
+		block.add_child(bar)
+		_bars[key] = bar
+	_enemy_intent = _label(hero_column,"",16)
+	# Up to three enemy resource blocks; unused blocks stay hidden.
+	for enemy_index: int in 3:
 		var panel := PanelContainer.new()
 		panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		resources.add_child(panel)
 		var column := VBoxContainer.new()
 		panel.add_child(column)
+		var name_label := _label(column,"",16)
 		var row := HBoxContainer.new()
 		column.add_child(row)
-		for pool: int in (3 if actor_id == "hero" else 1):
-			var block := VBoxContainer.new()
-			block.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			row.add_child(block)
-			var key := actor_id + str(pool)
-			_resource_text[key] = _label(block,"",16)
-			var bar := ProgressBar.new()
-			bar.show_percentage = false
-			bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			bar.custom_minimum_size.y = 5
-			block.add_child(bar)
-			_bars[key] = bar
-		if actor_id == "enemy.0": _enemy_intent = _label(column,"",16)
+		var block := VBoxContainer.new()
+		block.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(block)
+		var key := "enemy.%d0" % enemy_index
+		_resource_text[key] = _label(block,"",16)
+		var enemy_bar := ProgressBar.new()
+		enemy_bar.show_percentage = false
+		enemy_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		enemy_bar.custom_minimum_size.y = 5
+		block.add_child(enemy_bar)
+		_bars[key] = enemy_bar
+		_enemy_names[enemy_index] = name_label
+		_enemy_panels[enemy_index] = panel
 	_stage_box = SubViewportContainer.new()
 	_stage_box.stretch = true
 	_stage_box.focus_mode = Control.FOCUS_NONE
@@ -229,15 +255,36 @@ func _phase_changed(_phase: String) -> void:
 func _render() -> void:
 	var battle: Dictionary = snapshot.battle
 	var hero: Dictionary = snapshot.hero
-	var enemy: Dictionary = battle.enemies[0]
-	_header.text = "%s  /  %s" % [battle.encounter_id.trim_prefix("encounter.").to_upper(), _phase_label()]
-	for actor: Dictionary in [hero,enemy]:
-		for pool: int in (3 if actor.instance_id == "hero" else 1):
-			var key: String = actor.instance_id + str(pool)
-			_resource_text[key].text = "%s %d/%d" % [["HP","MP","SP"][pool] if actor.instance_id == "hero" else "Sentinel HP",actor.current[pool],actor.maximum[pool]]
-			_bars[key].max_value = maxi(1,actor.maximum[pool])
-			_bars[key].value = actor.current[pool]
-	_enemy_intent.text = "Next: Strike · 3 SP" if enemy.current[2] >= 3 else "Next: Pass · recover 2 SP"
+	_header.text = "%s  /  %s" % [String(battle.encounter_id).trim_prefix("encounter.").to_upper(), _phase_label()]
+	# Mission battles present the borrowed champion, never the hero profile.
+	var champion: Dictionary = battle.get("champion",{})
+	_hero_name.visible = champion is Dictionary and not champion.is_empty()
+	if _hero_name.visible:
+		_hero_name.text = "Memory · %s" % String(champion.definition_id).trim_prefix("actor.").capitalize()
+	for pool: int in 3:
+		var key := "hero" + str(pool)
+		_resource_text[key].text = "%s %d/%d" % [["HP","MP","SP"][pool],hero.current[pool],hero.maximum[pool]]
+		_bars[key].max_value = maxi(1,hero.maximum[pool])
+		_bars[key].value = hero.current[pool]
+	var enemies: Array = battle.enemies
+	for enemy_index: int in 3:
+		var panel: PanelContainer = _enemy_panels[enemy_index]
+		if enemy_index >= enemies.size():
+			panel.visible = false
+			continue
+		panel.visible = true
+		var enemy: Dictionary = enemies[enemy_index]
+		var key := "enemy.%d0" % enemy_index
+		_enemy_names[enemy_index].text = String(enemy.definition_id).trim_prefix("actor.").capitalize()
+		_resource_text[key].text = "HP %d/%d" % [enemy.current[0],enemy.maximum[0]]
+		_bars[key].max_value = maxi(1,enemy.maximum[0])
+		_bars[key].value = enemy.current[0]
+	var active_enemy: String = ""
+	if battle.active_actor_id != "hero" and battle.outcome.is_empty():
+		var index := int(String(battle.active_actor_id).trim_prefix("enemy.").to_int()) if String(battle.active_actor_id).begins_with("enemy.") else -1
+		if index >= 0 and index < enemies.size():
+			active_enemy = String(enemies[index].definition_id).trim_prefix("actor.").capitalize()
+	_enemy_intent.text = ("%s acts…" % active_enemy) if not active_enemy.is_empty() else ""
 	if not battle.outcome.is_empty(): _enemy_intent.text = "Encounter ended"
 	var skill: String = battle.selected_skill
 	var selected: Dictionary = battle.options.get(skill,{})
@@ -251,8 +298,21 @@ func _render() -> void:
 		var p: Dictionary = battle.preview
 		_summary.text = "%d pips · %s ×%s · %d %s · %d rerolls" % [p.pips,Limits.COMBINATIONS[p.combination].replace("_"," "),battle.multiplier,p.amount,
 			"shield" if battle.locked_inputs.effect == "shield" else "damage",battle.rerolls_remaining]
+		# Area actions preview each frozen member in stable order.
+		if battle.locked_inputs.get("targets",[]).size() > 1:
+			var parts := PackedStringArray()
+			for entry: Dictionary in p.get("targets",[]):
+				parts.append("%s %d" % [String(entry.target_id).replace("enemy.","#"),entry.amount])
+			_summary.text += "\nTargets: " + " · ".join(parts)
 	if battle.phase == 1 and battle.locked_inputs.effect == "stat_buff":
 		_summary.text = "Apply %s · %d owner activations · %d rerolls" % [String(battle.locked_inputs.status_id).trim_prefix("status."),battle.locked_inputs.duration,battle.rerolls_remaining]
+	if battle.phase == 1 and battle.locked_inputs.effect == "counter":
+		_summary.text = "Prepare one counter of %d power · expires at your next turn · %d rerolls" % [battle.preview.amount,battle.rerolls_remaining]
+	if battle.phase == 1 and battle.locked_inputs.effect == "final_hit":
+		_summary.text = "Store +%d melee power for %d activations · %d rerolls" % [battle.preview.amount,battle.locked_inputs.duration,battle.rerolls_remaining]
+	var prepared: Dictionary = hero.get("reaction",{})
+	if not prepared.is_empty():
+		_summary.text += "\nCounterattack ready · %d power · one charge" % int(prepared.get("power",0))
 	var costs: Variant = hero.reserved if battle.phase == 1 else selected.get("costs",[0,0,0])
 	_cost.text = "%s HP %d / MP %d / SP %d%s" % ["Reserved:" if battle.phase == 1 else "Cost:",costs[0],costs[1],costs[2]," · Pass pays this cost" if battle.phase == 1 else " · Pass has no skill cost"]
 	if not battle.outcome.is_empty():
@@ -263,7 +323,10 @@ func _render() -> void:
 	actions["pass"].text = "Paid Pass" if battle.phase == 1 else "Free Pass"
 	actions["retry"].visible = _save_state == "failed"
 	actions["continue"].visible = not battle.outcome.is_empty() and _save_state == "idle"
-	actions["continue"].text = "Return to dungeon" if battle.outcome == "victory" else "View results"
+	if String(battle.get("mission_id","")) != "":
+		actions["continue"].text = "Return to Haven"
+	else:
+		actions["continue"].text = "Return to dungeon" if battle.outcome == "victory" else "View results"
 	_notice.text = _reason
 	if _save_state == "pending": _notice.text = ("Saving · actions locked" if durable_saves else "Simulated save pending · actions locked")
 	elif _save_state == "failed": _notice.text = ("Save failed · Retry keeps the same result" if durable_saves else "Simulated save failed · Retry keeps the same result")

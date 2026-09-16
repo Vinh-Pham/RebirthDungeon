@@ -3,7 +3,7 @@ const Inventory = preload("res://scripts/domain/rules/inventory_rules.gd")
 const Limits = preload("res://scripts/domain/rules/rule_limits.gd")
 static var CONFIG: Resource = load("res://content/progression/starter.tres")
 const Item = preload("res://scripts/domain/state/item_state.gd")
-const KINDS := ["buy_item","sell_item","bank_deposit","bank_withdraw","learn_lesson","read_book","insert_page","rank_up","equip_title","read_coupon","choose_talent","move_item","withdraw_item","split_stack","merge_stack","lock_item","equip_item","unequip_item","sort_items","bag_priority","talent_display","quest_accept","quest_claim","quest_track","apply_enchant","burn_item","rebirth"]
+const KINDS := ["buy_item","sell_item","bank_deposit","bank_withdraw","learn_lesson","read_book","insert_page","rank_up","equip_title","read_coupon","choose_talent","move_item","withdraw_item","split_stack","merge_stack","lock_item","equip_item","unequip_item","sort_items","bag_priority","talent_display","quest_accept","quest_claim","quest_track","apply_enchant","burn_item","rebirth","mission_enter"]
 const INVENTORY_KINDS := ["move_item","withdraw_item","split_stack","merge_stack","lock_item","equip_item","unequip_item","sort_items"]
 const DATA_FIELDS := {"item":TYPE_STRING,"destination":TYPE_STRING,"column":TYPE_INT,"row":TYPE_INT,"quantity":TYPE_INT}
 ## Outcome text of the last committed action, copied into its event by the resolver.
@@ -20,7 +20,7 @@ static func initialize(hero: RefCounted, catalog: RefCounted) -> void:
 		"age":CONFIG.aging.start_age,"talent":"talent.combat","talent_chosen":false,"life_growth":{},"ledger":{},"base_stats":hero.stats.duplicate(),
 		"base_maximum":Array(hero.maximum),"titles":[],"known_titles":["title.delver"],"first":"","second":"","talent_display":"",
 		"evidence":{},"bag_order":[],"quests":{},"track":"","birth_week":-1,"birth_age":CONFIG.aging.start_age,
-		"aged_to":CONFIG.aging.start_age,"rebirth_week":-1,"rebirths":0}
+		"aged_to":CONFIG.aging.start_age,"rebirth_week":-1,"rebirths":0,"missions":{}}
 	hero.committed_gold = 0
 	var potions: int = hero.potions
 	for item: Item in hero.items:
@@ -56,6 +56,7 @@ static func fact_key(objective: Dictionary) -> String:
 		"encounter": return "encounter:"+str(objective.target)
 		"skill": return "skill:"+str(objective.target)
 		"exit": return "exit"
+		"mission": return "mission:"+str(objective.target)
 	return ""
 
 static func objective_ready(hero: RefCounted, quest_id: String, objective: Dictionary) -> bool:
@@ -229,13 +230,53 @@ static func begin(session: RefCounted) -> void:
 		"ranks":hero.skill_ranks.duplicate(),"first":hero.growth.first,"second":hero.growth.second,
 		"age":hero.growth.age,"talent":hero.growth.talent,"xp":0,"training":{},"items":[],"evidence":[],"facts":{},"closed":false}
 
-static func activation(session: RefCounted, skill_id: String) -> void:
+static func activation(session: RefCounted, skill_id: String, context: Dictionary = {}, source: RefCounted = null, catalog: RefCounted = null) -> void:
 	if session.exploration == null or session.exploration.progression.is_empty() or skill_id.is_empty(): return
 	var p: Dictionary = session.exploration.progression
 	var total: int = session.hero.training.get(skill_id,0)+p.training.get(skill_id,0)
 	p.training[skill_id] = p.training.get(skill_id,0)+mini(CONFIG.training_per_use,maxi(0,100-total))
 	var facts: Dictionary = p.get("facts",{})
 	facts["skill:"+skill_id] = mini(1000000,int(facts.get("skill:"+skill_id,0))+1)
+	# Area outcomes: one multi-target fact per action with two or more valid hits.
+	if int(context.get("hits",0)) >= 2:
+		facts["multi:"+skill_id] = mini(1000000,int(facts.get("multi:"+skill_id,0))+1)
+	if int(context.get("criticals",0)) > 0:
+		facts["critical:"+skill_id] = mini(1000000,int(facts.get("critical:"+skill_id,0))+1)
+	p["facts"] = facts
+	# Passive training: each learned passive gains exactly once per committed
+	# activation, independent of target count. Passives never grant turns.
+	_train_passives(session, skill_id, context, source, catalog)
+
+static func _train_passives(session: RefCounted, skill_id: String, context: Dictionary, source: RefCounted, catalog: RefCounted) -> void:
+	if catalog == null or source == null: return
+	var skill: Resource = catalog.definition(skill_id)
+	if skill == null: return
+	for passive_id: String in source.skill_ranks:
+		var passive: Resource = catalog.definition(passive_id)
+		if passive == null or passive.effect != "passive": continue
+		var qualifies: bool = false
+		if passive_id == "skill.combat_mastery":
+			qualifies = skill.effect == "physical_damage"
+		elif passive_id == "skill.sword_mastery":
+			qualifies = skill.effect == "physical_damage" and skill.weapon == "sword"
+		elif passive_id == "skill.critical":
+			qualifies = int(context.get("criticals",0)) > 0
+		if not qualifies: continue
+		_train(session, passive_id)
+
+## One training point for one skill, bounded by the 100-point rank gate.
+static func _train(session: RefCounted, skill_id: String) -> void:
+	var p: Dictionary = session.exploration.progression
+	var total: int = session.hero.training.get(skill_id,0)+p.training.get(skill_id,0)
+	p.training[skill_id] = p.training.get(skill_id,0)+mini(CONFIG.training_per_use,maxi(0,100-total))
+
+## A successful Counterattack trains the stance once per resolved reaction.
+static func reaction(session: RefCounted, skill_id: String) -> void:
+	if session.exploration == null or session.exploration.progression.is_empty() or skill_id.is_empty(): return
+	var p: Dictionary = session.exploration.progression
+	_train(session, skill_id)
+	var facts: Dictionary = p.get("facts",{})
+	facts["counter:"+skill_id] = mini(1000000,int(facts.get("counter:"+skill_id,0))+1)
 	p["facts"] = facts
 
 static func encounter(session: RefCounted) -> void:
@@ -245,10 +286,13 @@ static func encounter(session: RefCounted) -> void:
 	if p.evidence.has(id): return
 	p.evidence.append(id)
 	p.xp += CONFIG.encounter_xp
-	p.items.append({"id":"item.focus_page_one" if id == "encounter.gallery" else "item.focus_page_two","quantity":1})
 	var facts: Dictionary = p.get("facts",{})
 	facts["encounter:"+id] = mini(1000000,int(facts.get("encounter:"+id,0))+1)
 	p["facts"] = facts
+	# Focus pages stay tied to the two authored sentinels; later encounters
+	# grant XP and evidence only until Phase 11 authors drop tables.
+	if id == "encounter.gallery" or id == "encounter.sanctum":
+		p.items.append({"id":"item.focus_page_one" if id == "encounter.gallery" else "item.focus_page_two","quantity":1})
 
 static func finish(session: RefCounted, success: bool, catalog: RefCounted) -> String:
 	var ex: RefCounted = session.exploration
@@ -341,11 +385,17 @@ static func action(session: RefCounted, kind: String, data: Dictionary, operatio
 					hero.growth.banked -= data.quantity
 					hero.committed_gold += data.quantity
 			"learn_lesson":
-				if hero.skill_ranks.has(CONFIG.lesson_skill): return "Already learned; training is unchanged."
-				if hero.committed_gold < CONFIG.lesson_price: return "Lesson costs %d carried gold." % CONFIG.lesson_price
-				hero.committed_gold -= CONFIG.lesson_price
-				hero.skill_ranks[CONFIG.lesson_skill] = "F"
-				hero.training[CONFIG.lesson_skill] = 0
+				var lesson_skill: String = data.item if not data.item.is_empty() else CONFIG.lesson_skill
+				var price: int = CONFIG.lesson_price
+				if not data.item.is_empty():
+					if not CONFIG.lessons.has(data.item): return "The keeper does not teach that lesson."
+					price = int(CONFIG.lessons[data.item].price)
+				if hero.skill_ranks.has(lesson_skill): return "Already learned; training is unchanged."
+				if hero.committed_gold < price: return "Lesson costs %d carried gold." % price
+				hero.committed_gold -= price
+				hero.skill_ranks[lesson_skill] = "F"
+				hero.training[lesson_skill] = 0
+				detail = "Learned %s at rank F." % lesson_skill.trim_prefix("skill.")
 			"read_book":
 				if item == null or item.container == "overflow": return "Choose a carried book."
 				var definition: Resource = catalog.definition(item.definition_id)
@@ -473,6 +523,45 @@ static func claim_quest(hero: RefCounted, data: Dictionary, catalog: RefCounted,
 	record.claim = operation
 	deliver(hero,catalog)
 	refresh(hero,catalog)
+	return ""
+
+## Role-playing mission sessions: a borrowed NPC actor fights the authored
+## encounter in an isolated battle. The hero never participates; borrowed
+## skills and gear cannot export. Only a committed victory records the
+## mission evidence, grants authored rewards and can advance quests.
+static func mission_record(hero: RefCounted, mission_id: String) -> Dictionary:
+	var missions: Dictionary = hero.growth.get("missions",{})
+	var record: Variant = missions.get(mission_id,{})
+	return record if record is Dictionary else {}
+
+## Commits a finished mission battle inside the caller's candidate session.
+## Victory grants rewards once and merges mission evidence into the committed
+## ledger; failure and abandonment change nothing, so the scenario stays
+## available for a deliberate retry. The mission context clears either way.
+static func mission_complete(session: RefCounted, catalog: RefCounted, operation: String) -> String:
+	var mission_id: String = str(session.mission_id)
+	var battle: RefCounted = session.battle
+	if mission_id.is_empty() or battle == null or str(battle.mission_id) != mission_id: return "No mission is active."
+	if battle.phase != BattleState.Phase.FINISHED: return "The battle is not finished."
+	var mission: Dictionary = CONFIG.missions.get(mission_id,{})
+	if battle.outcome == "victory":
+		var hero: RefCounted = session.hero
+		var missions: Dictionary = hero.growth.get("missions",{})
+		var record: Dictionary = mission_record(hero,mission_id)
+		if record.get("state","") == "claimed": return "This outcome is already committed."
+		var rewards: Dictionary = mission.get("rewards",{})
+		merge_facts(hero,{"mission:"+mission_id:1})
+		if int(rewards.get("gold",0)) > 0: hero.committed_gold = mini(1000000,hero.committed_gold+int(rewards.gold))
+		if int(rewards.get("xp",0)) > 0: grant_xp(hero,int(rewards.xp),hero.growth.talent)
+		missions[mission_id] = {"state":"claimed","claim":operation}
+		hero.growth["missions"] = missions
+		deliver(hero,catalog)
+		refresh(hero,catalog)
+		detail = "The memory is recorded. The keeper will want to hear of it."
+	else:
+		detail = "The memory fades. The scenario can be attempted again."
+	session.mission_id = ""
+	session.battle = null
 	return ""
 
 ## Deliberate rebirth: level cap, carried cost and authored cooldown gate it.

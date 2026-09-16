@@ -7,6 +7,13 @@ var outcome: String = ""
 var activation: int = 0
 var pending_gold: int = 0
 var encounter_id: String = ""
+## Role-playing mission context: the authored mission this battle belongs to.
+## Empty for ordinary expedition encounters. The borrowed NPC champion fights
+## as the hero side; session.hero is never a combatant in a mission battle.
+var mission_id: String = ""
+## Borrowed mission champion; null in expedition battles, where the hero side
+## is SessionShell.hero. Uses the instance id "hero" so combat rules stay uniform.
+var champion: Actor = null
 var phase: Phase = Phase.PRE_ROLL
 var active_actor_id: String = "hero"
 ## The hero's pools live only in SessionShell.hero, never duplicated here.
@@ -26,6 +33,8 @@ func copy() -> RefCounted:
 	result.activation = activation
 	result.pending_gold = pending_gold
 	result.encounter_id = encounter_id
+	result.mission_id = mission_id
+	result.champion = champion.copy() if champion != null else null
 	result.phase = phase
 	result.active_actor_id = active_actor_id
 	for actor: Actor in enemies:
@@ -44,7 +53,8 @@ func observation() -> Dictionary:
 	var actors: Array[Dictionary] = []
 	for actor: Actor in enemies:
 		actors.append(actor.observation())
-	return {"outcome": outcome, "activation": activation, "pending_gold": pending_gold, "encounter_id": encounter_id, "phase": phase, "active_actor_id": active_actor_id,
+	return {"outcome": outcome, "activation": activation, "pending_gold": pending_gold, "encounter_id": encounter_id,
+		"mission_id": mission_id, "champion": champion.observation() if champion != null else {}, "phase": phase, "active_actor_id": active_actor_id,
 		"enemies": actors, "selected_skill": selected_skill, "selected_rank": selected_rank,
 		"target_id": target_id, "hand": hand.duplicate(), "kept": kept.duplicate(),
 		"rerolls_remaining": rerolls_remaining, "locked_inputs": locked_inputs.duplicate(true),

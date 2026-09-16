@@ -7,7 +7,12 @@ const FLOOR = preload("res://assets/art/exploration/floor.png")
 @onready var detail: PhantomCamera2D = $Detail
 @onready var camera: Camera2D = $Camera2D
 var _motion: Tween
+var _extras: Array[Sprite2D] = []
 var reduced_motion: bool = false
+
+const MAX_ENEMIES := 3
+## Stable cosmetic slots keep multi-enemy framing deterministic.
+const SLOTS := [Vector2(170,32), Vector2(300,50), Vector2(60,54)]
 
 func _ready() -> void:
 	get_viewport().size_changed.connect(_fit)
@@ -21,7 +26,20 @@ func _fit() -> void:
 	queue_redraw()
 
 func present(snapshot: Dictionary, events: Array) -> void:
-	enemy.modulate = Color(0.5,0.5,0.5,0.6) if snapshot.battle.enemies[0].current[0] <= 0 else Color.WHITE
+	var enemies: Array = snapshot.battle.enemies
+	enemy.position = SLOTS[0]
+	while _extras.size() < mini(enemies.size() - 1, MAX_ENEMIES - 1):
+		var sprite := Sprite2D.new()
+		sprite.texture = enemy.texture
+		add_child(sprite)
+		sprite.position = SLOTS[_extras.size() + 1]
+		_extras.append(sprite)
+	for i: int in _extras.size():
+		_extras[i].visible = i + 1 < enemies.size()
+		if i + 1 < enemies.size(): _extras[i].position = SLOTS[i + 1]
+	enemy.modulate = Color(0.5,0.5,0.5,0.6) if enemies[0].current[0] <= 0 else Color.WHITE
+	for i: int in _extras.size():
+		if i + 1 < enemies.size(): _extras[i].modulate = Color(0.5,0.5,0.5,0.6) if enemies[i + 1].current[0] <= 0 else Color.WHITE
 	var selected: bool = not String(snapshot.battle.selected_skill).is_empty()
 	detail.position.x = -24 if snapshot.battle.target_id == "hero" else 24
 	detail.set_priority(30 if selected else 10)
@@ -43,7 +61,8 @@ func set_reduced_motion(enabled: bool) -> void:
 func skip_motion() -> void:
 	if _motion != null: _motion.kill()
 	hero.position.y = 0
-	enemy.position.y = 0
+	enemy.position.y = SLOTS[0].y
+	for i: int in _extras.size(): _extras[i].position.y = SLOTS[i + 1].y
 	camera.get_node("PhantomCameraHost").skip_transition()
 
 func _draw() -> void:

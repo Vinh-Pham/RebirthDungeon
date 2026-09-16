@@ -30,6 +30,7 @@ func _objective_text(definition: Dictionary) -> String:
 				"encounter": parts.append("Defeat %s ×%d" % [str(objective.get("target","")).trim_prefix("encounter."),int(objective.get("count",1))])
 				"exit": parts.append("Leave the dungeon through the exit")
 				"skill": parts.append("Activate %s ×%d" % [str(objective.get("target","")).trim_prefix("skill."),int(objective.get("count",1))])
+				"mission": parts.append("Relive %s ×%d" % [str(objective.get("target","")).trim_prefix("mission."),int(objective.get("count",1))])
 				"item": parts.append("Deliver %s ×%d" % [str(objective.get("target","")).trim_prefix("item."),int(objective.get("count",1))])
 	return "; ".join(parts) if not parts.is_empty() else "Explore the Undercrypt."
 

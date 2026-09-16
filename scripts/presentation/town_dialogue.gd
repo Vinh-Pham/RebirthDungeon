@@ -9,6 +9,10 @@ var has_progression: bool = false
 var quest_offer: bool = false
 var quest_handin: bool = false
 var quest_work: bool = false
+## RP mission context: an authored scenario is available and not yet claimed.
+var mission_offer: bool = false
+var mission_ready: bool = false
+var mission_id: String = ""
 var snapshot: Dictionary = {}
 var validator: Callable
 var _epoch: int = 0
@@ -48,13 +52,24 @@ func start(observation: Dictionary, cue: String, valid: Callable) -> void:
 func _quest_context() -> void:
 	quest_offer = false
 	quest_handin = false
-	if not has_progression: return
-	var quests: Dictionary = snapshot.hero.growth.get("quests",{})
-	for id: String in quests:
-		var state: String = str(quests[id].get("state",""))
-		if state == "available": quest_offer = true
-		elif state == "ready": quest_handin = true
-	quest_work = quest_offer or quest_handin
+	mission_offer = false
+	mission_ready = false
+	mission_id = ""
+	if has_progression:
+		var quests: Dictionary = snapshot.hero.growth.get("quests",{})
+		for id: String in quests:
+			var state: String = str(quests[id].get("state",""))
+			if state == "available": quest_offer = true
+			elif state == "ready": quest_handin = true
+		quest_work = quest_offer or quest_handin
+		# First authored mission without a committed claim, in authored order.
+		for id: String in preload("res://scripts/domain/rules/progression_rules.gd").CONFIG.missions:
+			var record: Dictionary = snapshot.hero.growth.get("missions",{}).get(id,{})
+			if str(record.get("state","")) == "claimed": continue
+			mission_offer = true
+			mission_ready = snapshot.hero.current[0] > 0
+			mission_id = id
+			break
 
 func advance(cue: String) -> void:
 	if not _valid() or _busy: return
@@ -88,6 +103,7 @@ func advance(cue: String) -> void:
 	if line.has_tag("service"):
 		var kind: String = line.get_tag_value("service")
 		var argument: String = line.get_tag_value("quest") if line.has_tag("quest") else ""
+		if kind == "mission_enter" and not mission_id.is_empty(): argument = mission_id
 		_button("Confirm",func() -> void:
 			if not _valid() or _busy: return
 			_busy = true

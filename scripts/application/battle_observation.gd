@@ -16,7 +16,7 @@ static func decorate(result: Dictionary, session: RefCounted, catalog: RefCounte
 			var odds := PackedStringArray()
 			for i: int in 6: odds.append("%d: %.1f%%" % [i+1,100.0*rank.weights[i]/total])
 			options[id] = {"name":skill.display_name.capitalize(),"rank":rank.rank,"target_id":target,
-				"target_name":"Hero" if target == "hero" else "Sentinel","costs":Math.costs(session.hero,rank),
+				"target_name":_target_name(session,skill,target),"costs":Math.costs(session.hero,rank),
 				"weights":rank.weights.duplicate(),"odds":" · ".join(odds),"unavailable":_reason(choice.get("error",""))}
 	battle.options = options
 	battle.preview = Math.preview(battle.locked_inputs,battle.hand,catalog)
@@ -28,7 +28,7 @@ static func decorate(result: Dictionary, session: RefCounted, catalog: RefCounte
 	for kind: String in ["select_skill","roll","keep","reroll","commit","pass","use_potion"]:
 		var reason: String = ""
 		if not battle.outcome.is_empty(): reason = "This encounter has ended."
-		elif battle.active_actor_id != "hero": reason = "Wait for the sentinel's activation."
+		elif battle.active_actor_id != "hero": reason = "Wait for the enemy's activation."
 		elif kind == "use_potion":
 			if battle.phase != 0: reason = "Potions are full actions before rolling."
 			elif session.hero.potions <= 0: reason = "Buy potions from the keeper in Haven."
@@ -46,4 +46,14 @@ static func decorate(result: Dictionary, session: RefCounted, catalog: RefCounte
 static func _reason(code: String) -> String:
 	return {"unaffordable":"Insufficient available HP, MP or SP.","cooldown":"Cooldown: complete your next activation.",
 		"weapon_required":"Equip the required sword.","invalid_target":"No living legal target.",
-		"unlearned_skill":"Learn this skill first.","unsupported_rank":"Rank is not authored."}.get(code,code.replace("_"," "))
+		"unlearned_skill":"Learn this skill first.","unsupported_rank":"Rank is not authored.",
+		"already_active":"Final Hit is already active; it cannot be recast."}.get(code,code.replace("_"," "))
+
+## Display name for a skill's target: the champion, one enemy, or the whole set.
+static func _target_name(session: RefCounted, skill: Resource, target_id: String) -> String:
+	if skill.target == "self":
+		return "Hero" if session.battle.champion == null else String(session.battle.champion.definition_id).trim_prefix("actor.").capitalize()
+	if skill.target == "hostile_all": return "All enemies"
+	for enemy: RefCounted in session.battle.enemies:
+		if String(enemy.instance_id) == target_id: return String(enemy.definition_id).trim_prefix("actor.").capitalize()
+	return "Enemy"

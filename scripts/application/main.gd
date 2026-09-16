@@ -73,7 +73,7 @@ const EDGES := {
 	Mode.MENU: [Mode.LOADING], Mode.LOADING: [Mode.TOWN, Mode.MENU],
 	Mode.TOWN: [Mode.DUNGEON, Mode.MENU],
 	Mode.DUNGEON: [Mode.BATTLE, Mode.RESULTS, Mode.MENU],
-	Mode.BATTLE: [Mode.DUNGEON, Mode.RESULTS, Mode.MENU],
+	Mode.BATTLE: [Mode.DUNGEON, Mode.RESULTS, Mode.MENU, Mode.TOWN],
 	Mode.RESULTS: [Mode.TOWN, Mode.MENU],
 }
 
@@ -118,7 +118,7 @@ func observation() -> Dictionary:
 func submit_intent(intent: Dictionary) -> Dictionary:
 	if not _alive or not _focused or _pending != -1 or _publishing_result or checkpoint.busy() or _save_overlay != null or not loading_error.is_empty():
 		return {"accepted": false, "code": "application_unavailable", "events": []}
-	if intent.get("kind") in ["buy_potion","recover","enter_dungeon","abandon","buy_item","sell_item","bank_deposit","bank_withdraw","learn_lesson","apply_enchant","burn_item"] and not _service_authorized:
+	if intent.get("kind") in ["buy_potion","recover","enter_dungeon","abandon","buy_item","sell_item","bank_deposit","bank_withdraw","learn_lesson","apply_enchant","burn_item","mission_enter"] and not _service_authorized:
 		return {"accepted":false,"code":"conversation_required","events":[]}
 	var command := Resolver.parse_intent(intent)
 	var result := Resolver.resolve(_session, command, _catalog)
@@ -200,7 +200,25 @@ func _battle_intent(intent: Dictionary, source_ref: WeakRef) -> void:
 func _battle_continue(id: int, revision: int, source_ref: WeakRef) -> void:
 	var source: Variant = source_ref.get_ref()
 	if is_instance_valid(source) and source == _battle_view and source.is_inside_tree():
-		if not complete_battle(id, revision): source.show_rejection("application_unavailable")
+		var accepted := complete_mission(id, revision) if _session.mission_id != "" else complete_battle(id, revision)
+		if not accepted: source.show_rejection("application_unavailable")
+
+## Commit a finished role-playing mission through the save gate: victory grants
+## authored rewards and records evidence exactly once; failure changes nothing.
+func complete_mission(id: int, revision: int) -> bool:
+	if not _alive or not _focused or _publishing_result or checkpoint.busy() or not is_instance_valid(_view) or _pending != -1 or not development_enabled or not _session.matches(id, revision) or _session.mode != Mode.BATTLE:
+		return false
+	if _session.battle == null or _session.mission_id.is_empty() or _session.battle.phase != _session.battle.Phase.FINISHED:
+		return false
+	var candidate: SessionShell = _session.copy() if persistence_enabled else _session
+	var error: String = preload("res://scripts/domain/rules/progression_rules.gd").mission_complete(candidate,_catalog,"mission:%d:%d" % [id,revision])
+	if not error.is_empty():
+		return false
+	if persistence_enabled: _navigation_candidate = candidate
+	_return_authorized = true
+	var accepted := request_mode(Mode.TOWN, id, revision)
+	_return_authorized = false
+	return accepted
 
 func _build_chart() -> void:
 	_chart = StateChart.new()
@@ -241,7 +259,7 @@ func request_mode(target: int, id: int, revision: int) -> bool:
 		return false
 	if target == Mode.BATTLE and not _encounter_authorized:
 		return false
-	if _session.mode == Mode.BATTLE and target in [Mode.DUNGEON, Mode.RESULTS] and not _return_authorized:
+	if _session.mode == Mode.BATTLE and target in [Mode.DUNGEON, Mode.RESULTS, Mode.TOWN] and not _return_authorized:
 		return false
 	if persistence_enabled and repository != null:
 		if _save_overlay != null or _recovery: return false
@@ -380,7 +398,7 @@ func _replace_view() -> void:
 	_view.configure(observation(), heading, description, choices)
 	_view.intent_requested.connect(_on_intent.bind(weakref(_view)))
 	_view.set_input_enabled(_focused)
-	_status.text = "Phase 8 · session %d · revision %d · %s" % [_session.session_id, _session.revision, heading]
+	_status.text = "Phase 10 · session %d · revision %d · %s" % [_session.session_id, _session.revision, heading]
 
 	if _session.mode == Mode.BATTLE and _session.battle != null:
 		_view.hide()
@@ -749,6 +767,9 @@ func _confirm_service(kind: String, argument: String, id: int, revision: int, se
 	elif kind == "quest_handin":
 		command_kind = "quest_claim"
 		data.item = _npc_quest_id("ready")
+	elif kind == "mission_enter":
+		command_kind = "mission_enter"
+		data.item = argument
 	var intent := {"session_id":id,"expected_revision":revision,"operation_id":"service:%d:%d:%d" % [id,revision,serial],
 		"kind":command_kind,"actor_id":"hero","skill_id":"","target_id":target}
 	if command_kind in preload("res://scripts/domain/rules/progression_rules.gd").KINDS: intent.data = data

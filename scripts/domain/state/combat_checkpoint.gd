@@ -7,9 +7,10 @@ const Battle = preload("res://scripts/domain/state/battle_state.gd")
 const Status = preload("res://scripts/domain/state/status_state.gd")
 const Item = preload("res://scripts/domain/state/item_state.gd")
 const Exploration = preload("res://scripts/domain/state/exploration_state.gd")
+const MAX_ENEMIES := 3
 const ACTOR_FIELDS := ["instance_id", "definition_id", "current", "maximum", "reserved", "stats", "skill_ranks", "training", "weapon", "regeneration", "completed_activations", "shield", "cooldowns", "flat_modifiers", "percent_modifiers"]
 const STATUS_FIELDS := ["definition_id", "source_id", "remaining_activations", "magnitude", "group", "priority", "effect", "stat_id", "percent", "first_tick"]
-const BATTLE_FIELDS := ["encounter_id", "phase", "active_actor_id", "selected_skill", "selected_rank", "target_id", "hand", "kept", "rerolls_remaining", "locked_inputs", "content_versions", "outcome", "activation", "pending_gold"]
+const BATTLE_FIELDS := ["encounter_id", "phase", "active_actor_id", "selected_skill", "selected_rank", "target_id", "hand", "kept", "rerolls_remaining", "locked_inputs", "content_versions", "outcome", "activation", "pending_gold", "mission_id"]
 
 static func capture(session: Session) -> Dictionary:
 	var result := session.observation()
@@ -19,6 +20,7 @@ static func capture(session: Session) -> Dictionary:
 	result["accepted_operations"] = session.accepted_operations.duplicate()
 	result["exploration"] = session.exploration.capture() if session.exploration != null else {}
 	result["clock_week"] = session.clock_week
+	result["mission_id"] = session.mission_id
 	return result
 
 static func restore(data: Dictionary, catalog: RefCounted) -> Session:
@@ -35,6 +37,7 @@ static func restore(data: Dictionary, catalog: RefCounted) -> Session:
 	result.revision = data.revision
 	result.mode = data.mode
 	result.clock_week = data.get("clock_week",0)
+	result.mission_id = data.get("mission_id","")
 	result.content_versions = data.content_versions.duplicate(true)
 	result.accepted_operations.assign(data.accepted_operations)
 	result.hero = Hero.new()
@@ -60,7 +63,14 @@ static func restore(data: Dictionary, catalog: RefCounted) -> Session:
 		var enemy := Actor.new()
 		if not _actor(enemy, record): return null
 		result.battle.enemies.append(enemy)
-	if result.battle.enemies.size() != 1: return null
+	if result.battle.enemies.is_empty() or result.battle.enemies.size() > MAX_ENEMIES: return null
+	var champion_record: Dictionary = data.battle.get("champion",{})
+	if not champion_record is Dictionary: return null
+	if not champion_record.is_empty():
+		var champion := Actor.new()
+		if not _actor(champion, champion_record) or champion.instance_id != "hero": return null
+		result.battle.champion = champion
+	if (result.battle.champion != null) == str(result.battle.mission_id).is_empty(): return null
 	if not data.exploration.is_empty():
 		result.exploration = Exploration.new()
 		result.exploration.progression = data.exploration.get("progression",{}).duplicate(true)
@@ -74,6 +84,11 @@ static func _actor(actor: Actor, data: Dictionary) -> bool:
 	for field: String in ACTOR_FIELDS:
 		if not data.has(field): return false
 		actor.set(field, _detached(data[field]))
+	# Phase 10 fields default for legacy captures.
+	actor.shield_equipped = bool(data.get("shield_equipped", false))
+	var stance: Variant = data.get("reaction", {})
+	if not stance is Dictionary or not (stance.is_empty() or (stance.size() == 2 and stance.get("skill_id") is String and stance.get("power") is int)): return false
+	actor.reaction = stance.duplicate(true)
 	if actor.current.size() != 3 or actor.maximum.size() != 3 or actor.reserved.size() != 3: return false
 	for record: Dictionary in data.get("statuses", []):
 		var status := Status.new()

@@ -4,6 +4,7 @@ Keeper: Welcome to Haven. I can restore your strength or supply healing potions.
 - Recover fully — free => recovery
 - Shop, bank and lessons [if has_progression /] => services
 - Ask about work [if quest_work /] => work
+- Relive a memory [if mission_offer /] => mission
 - About the Undercrypt => advice
 - Goodbye => END
 
@@ -47,4 +48,13 @@ Expedition: Abandon this expedition? All pending gold will be lost. Committed go
 
 ~ services
 Keeper: Browse equipment and books, deposit or withdraw gold, or learn Blood Strike for 10 carried gold. Rank advancement is in your Skills panel. [#service=open_services]
+=> END
+
+~ mission
+Keeper: The warden who sealed the Undercrypt left a memory in this ledger. Step into it, fight as the warden, and I will record what you bring back. Your own gear and training stay untouched outside the memory.
+- Enter the memory [if mission_ready /] => mission_enter
+- Back => keeper
+
+~ mission_enter
+Keeper: The ledger is open. The warden's last stand begins. [#service=mission_enter #mission=mission.defenders_memory]
 => END

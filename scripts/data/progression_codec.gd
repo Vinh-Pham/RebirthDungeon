@@ -2,7 +2,7 @@ extends RefCounted
 const Inventory = preload("res://scripts/domain/rules/inventory_rules.gd")
 const Rules = preload("res://scripts/domain/rules/progression_rules.gd")
 const ITEM_FIELDS := ["instance_id","definition_id","quantity","rolled_modifiers","origin_id","container","column","row","locked","pages","enchants"]
-const GROWTH_FIELDS := ["version","banked","level","xp","cumulative","ap","age","talent","talent_chosen","life_growth","base_stats","base_maximum","titles","known_titles","first","second","talent_display","evidence","bag_order","quests","track","birth_week","birth_age","aged_to","rebirth_week","rebirths","ledger"]
+const GROWTH_FIELDS := ["version","banked","level","xp","cumulative","ap","age","talent","talent_chosen","life_growth","base_stats","base_maximum","titles","known_titles","first","second","talent_display","evidence","bag_order","quests","track","birth_week","birth_age","aged_to","rebirth_week","rebirths","ledger","missions"]
 const QUEST_STATES := ["available","active","ready","claimed"]
 static func keys(value: Variant, fields: Array) -> bool:
 	if not value is Dictionary or value.size() != fields.size(): return false
@@ -53,6 +53,11 @@ static func validate(session: RefCounted, catalog: RefCounted) -> bool:
 		if hero.potions > 5: return false
 		return session.exploration == null or session.exploration.progression.is_empty()
 	if not keys(g,GROWTH_FIELDS): return false
+	if not g.missions is Dictionary or g.missions.size() > 100: return false
+	for mission_id: String in g.missions:
+		var record: Variant = g.missions[mission_id]
+		if not record is Dictionary or not keys(record,["state","claim"]) or record.state != "claimed": return false
+		if not record.claim is String or record.claim.is_empty() or not Rules.CONFIG.missions.has(mission_id): return false
 	for points: int in hero.training.values():
 		if points < 0 or points > 100: return false
 	for key: String in ["version","banked","level","xp","cumulative","ap"]:
@@ -109,7 +114,7 @@ static func validate(session: RefCounted, catalog: RefCounted) -> bool:
 	for number: Variant in p.maximum:
 		if not integer(number): return false
 	if not p.first is String or not p.second is String: return false
-	if not p.training is Dictionary or not p.items is Array or p.items.size() > 1000 or not strings(p.evidence,["encounter.gallery","encounter.sanctum"]): return false
+	if not p.training is Dictionary or not p.items is Array or p.items.size() > 1000 or not strings(p.evidence,["encounter.gallery","encounter.sanctum","encounter.dual"]): return false
 	for skill: Variant in p.training:
 		if not hero.skill_ranks.has(skill) or not integer(p.training[skill],0,100): return false
 	for reward: Variant in p.items:

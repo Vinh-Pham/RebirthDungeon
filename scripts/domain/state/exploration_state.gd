@@ -1,6 +1,10 @@
 extends RefCounted
 ## Explicit continuation; never contains scenes, Nodes, Resources or RIDs.
-const LAYOUT = [{"room_id":"room.threshold","x":0.0,"y":0.0},{"room_id":"room.gallery","x":560.0,"y":0.0},{"room_id":"room.sanctum","x":1120.0,"y":0.0}]
+## The Phase 10 nave adds the optional dual-sentinel encounter east of the vault.
+const LAYOUT = [{"room_id":"room.threshold","x":0.0,"y":0.0},{"room_id":"room.gallery","x":560.0,"y":0.0},{"room_id":"room.sanctum","x":1120.0,"y":0.0},{"room_id":"room.nave","x":1680.0,"y":0.0}]
+## Captures written before the nave exist keep restoring: the layout is
+## validated against this legacy record as well as the current one.
+const LEGACY_LAYOUT = [{"room_id":"room.threshold","x":0.0,"y":0.0},{"room_id":"room.gallery","x":560.0,"y":0.0},{"room_id":"room.sanctum","x":1120.0,"y":0.0}]
 var pending_gold: int = 0
 var progression: Dictionary = {}
 var world_id: String = "dungeon.undercrypt"

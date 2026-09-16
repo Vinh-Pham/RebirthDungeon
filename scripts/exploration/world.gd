@@ -86,7 +86,7 @@ func _resize_camera() -> void:
 	phantom.zoom = Vector2.ONE * zoom_value
 	phantom.limit_left = -120
 	phantom.limit_top = -90
-	phantom.limit_right = 600 if town else 1720
+	phantom.limit_right = 600 if town else 2280
 	phantom.limit_bottom = 410
 
 func _sync_navigation(restore: bool = false) -> void:

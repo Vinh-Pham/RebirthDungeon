@@ -1,8 +1,8 @@
 # Rebirth Dungeon: Project Phases
 
-**Replanned: 2026-09-11 — Godot 4.7 / typed GDScript with the selected addons.** Phases 0–6 were implemented and verified after the 2026-09-10 reset; later phases remain unstarted. **Completed: 9 of 17. Current focus: Phase 10.** Pre-Godot implementation, tests and platform acceptance do not carry forward.
+**Replanned: 2026-09-11 — Godot 4.7 / typed GDScript with the selected addons.** Phases 0–6 were implemented and verified after the 2026-09-10 reset; later phases remain unstarted. **Completed: 10 of 17. Current focus: Phase 11.** Pre-Godot implementation, tests and platform acceptance do not carry forward.
 
-The repository contains the persistent State Charts application shell, validated content catalog, independent domain state/RNG/command foundations, isolated addon qualification fixtures, verification runner and export presets. Town and dungeon exploration now include continuous movement, discovery, guarded encounter fixtures and Phantom Camera follow. Deterministic combat and the adaptive battle HUD now include guarded State Charts presentation, separate Phantom Camera staging and simulated save-failure/retry behavior. Durable two-slot saves now restore the full session, with validated recovery and exact candidate retries. Progression remains unimplemented. This roadmap incorporates the currently configured addons without treating installation as feature completion. [Game Plan](game-plan.md) defines architecture, [Directory](directory.md) defines file placement, gameplay specs define rules, and [AGENTS.md](../AGENTS.md) defines addon usage and integration boundaries. Phase numbers remain stable so existing specification links retain their meaning.
+The repository contains the persistent State Charts application shell, validated content catalog, independent domain state/RNG/command foundations, isolated addon qualification fixtures, verification runner and export presets. Town and dungeon exploration now include continuous movement, discovery, guarded encounter fixtures and Phantom Camera follow. Deterministic combat and the adaptive battle HUD now include guarded State Charts presentation, separate Phantom Camera staging and simulated save-failure/retry behavior. Durable two-slot saves now restore the full session, with validated recovery and exact candidate retries. Progression through Phase 9 proved quests, enchanting, aging and rebirth. Phase 10 adds multi-enemy encounters with frozen member target sets and Windmill, Counterattack, Final Hit, criticals, equipment masteries, the isolated Warden's Memory role-playing mission with committed-outcome QuestSystem advancement, and per-agent LimboAI trees; Charge stays disabled and Master Titles are deferred with an explicit record. This roadmap incorporates the currently configured addons without treating installation as feature completion. [Game Plan](game-plan.md) defines architecture, [Directory](directory.md) defines file placement, gameplay specs define rules, and [AGENTS.md](../AGENTS.md) defines addon usage and integration boundaries. Phase numbers remain stable so existing specification links retain their meaning.
 
 ## Status and completion policy
 
@@ -45,7 +45,7 @@ Build only lightweight mode/command contracts in Phase 1, domain types in Phase 
 | 7 | Dialogue Manager town services and durable dungeon loop | Complete |
 | 8 | Inventory, skills and lasting progression | Complete |
 | 9 | QuestSystem progression, enchanting and rebirth | Complete for host acceptance |
-| 10 | Role-playing missions and advanced combat | Not started |
+| 10 | Role-playing missions and advanced combat | Complete for host acceptance |
 | 11 | Procedural dungeons and content expansion | Not started |
 | 12 | Presentation, accessibility and performance | Not started |
 | 13 | Regression, balance and release candidate hardening | Not started |
@@ -225,18 +225,20 @@ Verified on 2026-09-11 (2026-09-12 UTC) with Godot 4.7.2 (`ed1daf0bf`), content 
 
 ## Phase 10: Role-playing missions and advanced combat
 
-**Status: Not started. Dependencies: 9.**
+**Status: Complete for host acceptance (2026-09-15). Dependencies: 9.**
 
-- [ ] Create isolated authored NPC mission sessions with explicit return/failure policy and no borrowed-item export.
-- [ ] Add multi-enemy ordering and encounter-member target sets before enabling area skills.
-- [ ] Author and implement Counterattack, Final Hit, Windmill, criticals and equipment masteries in separately tested increments.
-- [ ] Redesign Charge for non-spatial battles or keep it disabled; no grid/range mechanic is silently reintroduced.
-- [ ] Persist reaction inputs, multi-target sets, critical outcomes and mission context; test exactly-once training across passives.
-- [ ] Add Master Titles or further rank tiers only with reachable authored objectives and a defined economy.
-- [ ] Route RP mission entry/return through Dialogue Manager and State Charts with a separate NPC session; only its committed scenario outcome may advance QuestSystem. Test success, failure and suspension without borrowed gear/training leaking into the hero.
-- [ ] Extend LimboAI trees only for authored multi-enemy rules; preserve manual scheduling, target ordering, per-agent blackboards and AI RNG continuation. Camera group framing is cosmetic, not an area-target resolver.
+- [x] Create isolated authored NPC mission sessions with explicit return/failure policy and no borrowed-item export.
+- [x] Add multi-enemy ordering and encounter-member target sets before enabling area skills.
+- [x] Author and implement Counterattack, Final Hit, Windmill, criticals and equipment masteries in separately tested increments.
+- [x] Keep Charge disabled (recorded disposition; no grid/range mechanic reintroduced).
+- [x] Persist reaction inputs, multi-target sets, critical outcomes and mission context; test exactly-once training across passives.
+- [x] Apply the Master Titles gate and record the outcome: deferred — authored prototype ranks cap at E, so no reachable Rank-1 objective or defined economy exists; revisit in Phase 11+ with authored content.
+- [x] Route RP mission entry/return through Dialogue Manager and State Charts with a separate NPC session; only its committed scenario outcome may advance QuestSystem. Test success, failure and suspension without borrowed gear/training leaking into the hero.
+- [x] Extend LimboAI trees only for authored multi-enemy rules; preserve manual scheduling, target ordering, per-agent blackboards and AI RNG continuation. Camera group framing is cosmetic, not an area-target resolver.
 
-**Exit criterion:** Each enabled extension has explicit rules, content, UI, save/restore and regression coverage; unsupported skills remain unavailable.
+**Exit criterion:** Each enabled extension has explicit rules, content, UI, save/restore and regression coverage; unsupported skills remain unavailable. — Met. Charge is disabled and Master Titles are recorded as deferred rather than enabled without their gates.
+
+**Verification:** [Phase 10 implementation](phase10-implementation.md) and [dated evidence](evidence/phase10/README.md): all suites pass with the new 118-check Phase 10 fixture (multi-enemy target sets, reactions, criticals, masteries, Final Hit, mission isolation and exactly-once commit, save/restore, legacy migration, and the enemy-training save-poisoning regression found via a player report), full `verify.py` gate (import, positive/negative fixtures, runtime smoke, five asset packs), and a Beckett rendered playtest entering the Warden's Memory mission battle on a migrated legacy save. Executable export and device acceptance remain Phase 14 work.
 
 ## Phase 11: Procedural dungeons and content expansion
 
@@ -266,7 +268,7 @@ Verified on 2026-09-11 (2026-09-12 UTC) with Godot 4.7.2 (`ed1daf0bf`), content 
 
 ## Phase 13: Regression, balance and release candidate hardening
 
-**Status: Not started. Dependencies: 8, 9, 11, 12; 10 if enabled.**
+**Status: Not started. Dependencies: 8, 9, 10, 11, 12.**
 
 - [ ] Run content validation, exhaustive scoring, rule fixtures, save fault injection and complete progression regression suites.
 - [ ] Playtest battle length, resource exhaustion, reward pacing, training/AP access and rebirth motivation.
@@ -330,11 +332,13 @@ Verified on 2026-09-11 (2026-09-12 UTC) with Godot 4.7.2 (`ed1daf0bf`), content 
 | XP/AP/training pace, talent growth and initial title catalog | Phase 8 exit |
 | Rebirth eligibility/cost/cooldown, aging clock and enchant economy | Closed 2026-09-15 in [Phase 9 implementation](phase9-implementation.md): cap + 50 gold + 2-week cooldown, ages 10–17, 52-week year at 1 AP, enchant chances ≤90% with powder/MP economy |
 | Quest ID mapping, ready/claimed lifecycle, evidence retention and pool reconstruction | Closed 2026-09-15 in [Phase 9 implementation](phase9-implementation.md): authored numeric mapping, growth v2 lifecycle, exit-commit evidence, post-publication pool mirror |
-| Reaction/area rules and non-spatial Charge disposition | Before each Phase 10 feature |
+| Reaction/area rules and non-spatial Charge disposition | Closed 2026-09-15 in [Phase 10 implementation](phase10-implementation.md): Counterattack one-charge negation/retaliation inside the attacker's transaction, Windmill `hostile_all` with selection-frozen member sets, Critical Hit as a learned passive gating per-target draws; Charge stays disabled (recorded), Master Titles deferred pending reachable objectives and a defined economy |
 | Platform performance budgets and supported device coverage | Phases 12–14 |
 | Connected services, purchases and gacha inclusion | Separate Phase 15 product decision |
 
 ## Verification record
+
+2026-09-15: Phase 10 host acceptance completed. Multi-enemy encounters with stable ordering and selection-frozen member target sets, Windmill, Counterattack reactions with negation/retaliation inside the attacker's transaction, Final Hit stored magnitudes, criticals gated by the learned passive with per-target combat draws, equipment masteries with exactly-once passive training, disabled Charge, and the isolated Warden's Memory role-playing mission (Dialogue Manager entry, champion battle, committed-outcome QuestSystem advancement, failure/retry policy) verified on Godot `4.7.2.stable.official.ed1daf0bf` with domain, integration, fresh-process and save-migration fixtures; the full `verify.py` gate passes including all five asset-pack exclusions, and a Beckett rendered playtest entered the mission battle on a migrated legacy checkpoint. Master Titles are recorded as deferred with an explicit gate evaluation. Executable/device acceptance remains outstanding. [Implementation](phase10-implementation.md) · [Evidence](evidence/phase10/README.md).
 
 2026-09-15: Phase 9 host acceptance completed. QuestSystem 2.0.2 quest lifecycle, Dialogue Manager offers/hand-ins, enchanting with the dedicated RNG stream, aging and rebirth verified with domain, integration and fresh-process fixtures on Godot `4.7.2.stable.official.ed1daf0bf`; Phase 8 checkpoints migrate structurally to growth v2 without loss. Beckett rendered playtests of the new journal/enchant/rebirth UI and executable/device acceptance remain outstanding. [Retained evidence](evidence/phase9/README.md).
 

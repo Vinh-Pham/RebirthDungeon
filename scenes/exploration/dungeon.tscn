@@ -50,8 +50,15 @@ position = Vector2(1120,0)
 room_id = "room.sanctum"
 title = "The quiet vault"
 left_door = true
-right_door = false
-next_room_id = ""
+right_door = true
+next_room_id = "room.nave"
+
+[node name="Discovery" parent="Rooms/Sanctum" instance=ExtResource("3")]
+position = Vector2(448,160)
+stable_id = "connector.sanctum_nave"
+kind = "discovery"
+destination_id = "room.nave"
+radius = 28.0
 
 [node name="Sentinel" parent="Rooms/Sanctum" instance=ExtResource("3")]
 position = Vector2(288,160)
@@ -64,6 +71,20 @@ position = Vector2(432,160)
 stable_id = "exit.undercrypt"
 kind = "exit"
 label = "Return arch"
+
+[node name="Nave" parent="Rooms" instance=ExtResource("2")]
+position = Vector2(1680,0)
+room_id = "room.nave"
+title = "The flooded nave"
+left_door = true
+right_door = false
+next_room_id = ""
+
+[node name="Watch" parent="Rooms/Nave" instance=ExtResource("3")]
+position = Vector2(240,160)
+stable_id = "encounter.dual"
+kind = "encounter"
+label = "Twin watch"
 
 [node name="Camera2D" type="Camera2D" parent="."]
 [node name="PhantomCameraHost" type="Node" parent="Camera2D"]

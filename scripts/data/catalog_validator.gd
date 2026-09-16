@@ -79,16 +79,25 @@ func validate(manifest: Manifest) -> PackedStringArray:
 			_error(stat, "maximum", "basis points cannot exceed 10000")
 	for skill: Manifest.SKILLS in manifest.skills:
 		if skill == null: continue
-		if skill.effect not in ["physical_damage", "magic_damage", "shield", "stat_buff"]:
+		if skill.effect not in ["physical_damage", "magic_damage", "shield", "stat_buff", "counter", "final_hit", "passive"]:
 			_error(skill, "effect", "unsupported combat effect")
-		if skill.target != ("self" if skill.effect in ["shield", "stat_buff"] else "hostile"):
+		var expected_targets: Array = []
+		match skill.effect:
+			"physical_damage", "magic_damage": expected_targets = ["hostile", "hostile_all"]
+			"shield", "final_hit", "counter", "passive": expected_targets = ["self"]
+			"stat_buff": expected_targets = ["self", "ally"]
+		if skill.target not in expected_targets:
 			_error(skill, "target", "incompatible effect target")
+		if skill.effect == "passive" and skill.uses_dice:
+			_error(skill, "uses_dice", "passives never roll or grant turns")
 		if skill.weapon not in ["", "sword"]:
 			_error(skill, "weapon", "unsupported weapon")
 		if not skill.status_id.is_empty():
 			_reference(skill, "status_id", skill.status_id, "status")
-		if skill.effect in ["shield", "stat_buff"] and skill.status_id.is_empty():
-			_error(skill, "status_id", "shield requires a status definition")
+		if skill.effect in ["shield", "stat_buff", "final_hit"] and skill.status_id.is_empty():
+			_error(skill, "status_id", "status effects require a status definition")
+		if skill.effect == "counter" and not skill.status_id.is_empty():
+			_error(skill, "status_id", "counter stances are actor state, not statuses")
 		if skill.ranks.is_empty():
 			_error(skill, "ranks", "at least Rank F required")
 		for i: int in skill.ranks.size():
@@ -101,12 +110,20 @@ func validate(manifest: Manifest) -> PackedStringArray:
 				_error(skill, prefix + "rank", "ranks must be contiguous from F")
 			for field: String in ["hp_cost", "mp_cost", "sp_cost", "base_power", "pip_scale", "cooldown", "duration"]:
 				_bound(skill, prefix + field, rank.get(field))
+			_bound(skill, prefix + "critical_chance", rank.critical_chance, 0, Limits.BASIS_POINTS)
+			_bound(skill, prefix + "critical_bonus", rank.critical_bonus, 0, Limits.BASIS_POINTS)
+			if skill.effect == "passive" and (rank.critical_chance != 0 or rank.base_power != 0 or rank.pip_scale != 0):
+				_error(skill, prefix + "critical_chance", "passives author only mastery contributions")
+			for key: String in rank.mastery:
+				if key not in ["melee_attack", "sword_attack", "shield_defense", "shield_magic_defense"]:
+					_error(skill, prefix + "mastery", "unsupported mastery key " + str(key))
+				_bound(skill, prefix + "mastery." + key, int(rank.mastery[key]), 0, 1000)
 			if rank.base_power >= 0 and rank.pip_scale >= 0 and (rank.base_power > Limits.VALUE_MAX or rank.pip_scale > (Limits.VALUE_MAX - mini(rank.base_power, Limits.VALUE_MAX)) / 30):
 				_error(skill, prefix + "pip_scale", "base + 30*pip_scale exceeds safe effect bound")
-			if rank.hp_cost + rank.mp_cost + rank.sp_cost < 1:
+			if skill.effect != "passive" and rank.hp_cost + rank.mp_cost + rank.sp_cost < 1:
 				_error(skill, prefix + "cost", "skill requires a positive cost")
-			if skill.effect in ["shield", "stat_buff"] and rank.duration < 1:
-				_error(skill, prefix + "duration", "shield duration must be positive")
+			if skill.effect in ["shield", "stat_buff", "final_hit"] and rank.duration < 1:
+				_error(skill, prefix + "duration", "status effects need a positive duration")
 			_weights(skill, prefix + "weights", rank.weights)
 		if not skill.ranks.is_empty() and skill.ranks.back() != null and skill.prototype_cap != skill.ranks.back().rank:
 			_error(skill, "prototype_cap", "must match last authored rank")
@@ -131,7 +148,7 @@ func validate(manifest: Manifest) -> PackedStringArray:
 				_error(actor, "base_stats." + id, "outside authored stat bounds")
 	for status: Manifest.STATUSES in manifest.statuses:
 		if status == null: continue
-		if status.effect not in ["shield", "stat_modifier", "periodic_damage"]:
+		if status.effect not in ["shield", "stat_modifier", "periodic_damage", "attack_bonus"]:
 			_error(status, "effect", "unsupported status effect")
 		_bound(status, "duration", status.duration, 1)
 		_bound(status, "priority", status.priority, -Limits.VALUE_MAX)
@@ -179,8 +196,8 @@ func validate(manifest: Manifest) -> PackedStringArray:
 			if not enchants.has(item.enchant_id): _error(item,"enchant_id","unknown enchant")
 	for encounter: Manifest.ENCOUNTERS in manifest.encounters:
 		if encounter == null: continue
-		if encounter.actor_ids.size() != 1:
-			_error(encounter, "actor_ids", "foundation supports exactly one enemy")
+		if encounter.actor_ids.is_empty() or encounter.actor_ids.size() > 3:
+			_error(encounter, "actor_ids", "encounters author 1..3 enemies")
 		_references(encounter, "actor_ids", encounter.actor_ids, "actor")
 		_bound(encounter, "pending_gold", encounter.pending_gold)
 		if encounter.first_actor not in ["hero", "enemy"]:
@@ -248,6 +265,40 @@ func _validate_progression(config: Resource) -> void:
 			_bound(config,"effects",title.effects[stat],-1000000)
 	_validate_aging(config)
 	_validate_rebirth(config)
+	_validate_lessons(config)
+	_validate_missions(config)
+
+## Phase 10 lessons: authored skill/price pairs with reachable acquisition.
+func _validate_lessons(config: Resource) -> void:
+	for id: String in config.lessons:
+		var lesson: Dictionary = config.lessons[id]
+		if not lesson is Dictionary or not id.begins_with("skill."): _error(config,"lessons","invalid lesson "+str(id))
+		_reference(config,"lessons."+id,id,"skill")
+		if not lesson.get("price",0) is int or int(lesson.get("price",0)) < 1 or int(lesson.get("price",0)) > 100000:
+			_error(config,"lessons."+id+".price","expected bounded positive price")
+
+## Phase 10 RP missions: an authored NPC champion fights an authored encounter.
+func _validate_missions(config: Resource) -> void:
+	for id: String in config.missions:
+		var mission: Dictionary = config.missions[id]
+		if not mission is Dictionary or not id.begins_with("mission.") or str(mission.get("name","")).is_empty():
+			_error(config,"missions","invalid mission "+str(id))
+			continue
+		_reference(config,"missions."+id+".npc",str(mission.get("npc","")),"actor")
+		_reference(config,"missions."+id+".encounter",str(mission.get("encounter","")),"encounter")
+		var npc: Resource = _index.get(str(mission.get("npc","")))
+		if npc != null and npc.skill_ids.is_empty(): _error(config,"missions."+id+".npc","champion needs an authored skill")
+		var rewards: Dictionary = mission.get("rewards",{})
+		for key: String in rewards:
+			if key in ["gold","xp"]: _bound(config,"missions."+id+".rewards."+key,rewards[key],0)
+			else: _error(config,"missions."+id+".rewards","unsupported reward "+key)
+		# Only quests may reference missions as objectives; keep them claimable.
+		var referenced := false
+		for quest_id: String in config.quests:
+			for stage: Variant in config.quests[quest_id].get("stages",[]):
+				for objective: Variant in stage:
+					if str(objective.get("type","")) == "mission" and str(objective.get("target","")) == id: referenced = true
+		if not referenced: _error(config,"missions",id+" has no committed quest path")
 	_validate_enchants(config)
 	_validate_quests(config)
 
@@ -341,12 +392,15 @@ func _validate_quest_stages(config: Resource, quest: Dictionary, granted_skill: 
 			if not objective is Dictionary: _error(config,"quests.objectives","invalid objective")
 			else:
 				var type: String = str(objective.get("type",""))
-				if type not in ["encounter","exit","skill","item"]: _error(config,"quests.objectives.type","unsupported "+type)
+				if type not in ["encounter","exit","skill","item","mission"]: _error(config,"quests.objectives.type","unsupported "+type)
 				_bound(config,"quests.objectives.count",objective.get("count",1),1,1000)
 				if type in ["encounter","skill","item"]:
 					var target: String = str(objective.get("target",""))
 					if target.is_empty(): _error(config,"quests.objectives.target","required")
 					elif not _index.has(target): _error(config,"quests.objectives.target","unresolved reference: "+target)
+				elif type == "mission":
+					var target: String = str(objective.get("target",""))
+					if not config.missions.has(target): _error(config,"quests.objectives.target","unresolved mission: "+target)
 				if type == "skill" and not granted_skill.is_empty() and str(objective.get("target","")) == granted_skill:
 					_error(config,"quests.rewards.skill","objective requires the skill the quest grants")
 
