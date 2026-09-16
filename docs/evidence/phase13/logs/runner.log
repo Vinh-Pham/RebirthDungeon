@@ -1,0 +1,100 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+CATALOG_FIXTURE: PASS (117 checks)
+SETTINGS_FIXTURE: PASS (23 checks)
+RNG_FIXTURE: PASS (397 checks)
+PROGRESSION_FIXTURE: PASS (99 checks)
+QUEST_FIXTURE: PASS (35 checks)
+QUEST_FIXTURE2: PASS (22 checks)
+ENCHANT_FIXTURE: PASS (14 checks)
+ENCHANT_FIXTURE2: PASS (7 checks)
+ENCHANT_FIXTURE3: PASS (12 checks)
+REBIRTH_FIXTURE: PASS (25 checks)
+REBIRTH_FIXTURE2: PASS (15 checks)
+COMMAND_FIXTURE: PASS (56 checks)
+RELEASE_FIXTURE: PASS (14 checks)
+DUNGEON_FIXTURE: PASS (24 checks)
+DUNGEON_FIXTURE: PASS (20 checks)
+DUNGEON_FIXTURE: PASS (10 checks)
+COMBAT_FIXTURE: PASS (7883 checks)
+COMBAT10_FIXTURE: PASS (118 checks)
+COMBAT_AI_FIXTURE: PASS
+BATTLE_UI_FIXTURE: PASS (148 checks)
+FRESH_PROCESS write: 0
+FRESH_PROCESS resume: 0
+FRESH_PROCESS write-ai: 0
+FRESH_PROCESS resume-ai: 0
+FRESH_PROCESS write-torn: 0
+FRESH_PROCESS resume-torn: 0
+FRESH_PROCESS write-after: 0
+FRESH_PROCESS resume-after: 0
+FRESH_PROCESS write-world: 0
+FRESH_PROCESS resume-world: 0
+FRESH_PROCESS write-town: 0
+FRESH_PROCESS resume-town: 0
+SAVE_FIXTURE: PASS (97 checks)
+SERVICE_FRESH_PROCESS: 0 potions=0 gold=20 full=false
+SERVICE_FRESH_PROCESS: 0 potions=1 gold=15 full=false
+SERVICE_FRESH_PROCESS: 0 potions=1 gold=15 full=true
+SERVICE_FRESH_PROCESS: 0 potions=1 gold=15 full=true
+TOWN_SERVICES_FIXTURE: PASS (64 checks)
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+PROGRESSION_FRESH_PROCESS: true
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+PROGRESSION_FRESH_PROCESS: true
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+PROGRESSION_FRESH_PROCESS: true
+PROGRESSION_INTEGRATION: PASS (13 checks)
+QUEST_FRESH: 0 Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+QUEST_FRESH: 0 Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+QUEST_INTEGRATION: PASS (28 checks)
+AUTOLOAD: DialogueManager -> res://addons/dialogue_manager/dialogue_manager.gd
+AUTOLOAD: PhantomCameraManager -> res://addons/phantom_camera/scripts/managers/phantom_camera_manager.gd
+AUTOLOAD: QuestSystem -> res://addons/quest_system/quest_manager.gd
+ADDON_SMOKE: PASS
+SHELL_FIXTURE: PASS
+CONTENT_LOADING_FIXTURE: PASS
+EXPLORATION_FIXTURE: PASS (95 checks)
+BALANCE_BATTLE: run=1 encounter=encounter.gallery won=true activations=4 resolved=["encounter.gallery"]
+BALANCE_BATTLE: run=1 encounter=encounter.sanctum won=true activations=8 resolved=["encounter.gallery", "encounter.sanctum"]
+BALANCE_BATTLE: run=1 encounter=encounter.dual won=true activations=13 resolved=["encounter.gallery", "encounter.sanctum", "encounter.dual"]
+BALANCE_BATTLE: run=2 encounter=encounter.gallery won=false activations=9 resolved=[]
+BALANCE_BATTLE: run=3 encounter=encounter.gallery won=true activations=8 resolved=["encounter.gallery"]
+BALANCE_BATTLE: run=3 encounter=encounter.sanctum won=true activations=8 resolved=["encounter.gallery", "encounter.sanctum"]
+BALANCE_BATTLE: run=3 encounter=encounter.dual won=true activations=17 resolved=["encounter.gallery", "encounter.sanctum", "encounter.dual"]
+BALANCE_BATTLE: run=4 encounter=encounter.gallery won=false activations=3 resolved=[]
+BALANCE_BATTLE: run=5 encounter=encounter.gallery won=true activations=4 resolved=["encounter.gallery"]
+BALANCE_BATTLE: run=5 encounter=encounter.sanctum won=true activations=8 resolved=["encounter.gallery", "encounter.sanctum"]
+BALANCE_BATTLE: run=5 encounter=encounter.dual won=true activations=13 resolved=["encounter.gallery", "encounter.sanctum", "encounter.dual"]
+BALANCE_BATTLE: run=6 encounter=encounter.gallery won=true activations=8 resolved=["encounter.gallery"]
+BALANCE_BATTLE: run=6 encounter=encounter.sanctum won=false activations=7 resolved=["encounter.gallery"]
+BALANCE_BATTLE: run=7 encounter=encounter.gallery won=true activations=4 resolved=["encounter.gallery"]
+BALANCE_BATTLE: run=7 encounter=encounter.sanctum won=true activations=4 resolved=["encounter.gallery", "encounter.sanctum"]
+BALANCE_BATTLE: run=8 encounter=encounter.gallery won=true activations=4 resolved=["encounter.gallery"]
+BALANCE_BATTLE: run=8 encounter=encounter.sanctum won=true activations=4 resolved=["encounter.gallery", "encounter.sanctum"]
+BALANCE_BATTLE: run=8 encounter=encounter.dual won=true activations=17 resolved=["encounter.gallery", "encounter.sanctum", "encounter.dual"]
+BALANCE_BATTLE: run=9 encounter=encounter.gallery won=false activations=9 resolved=[]
+BALANCE_BATTLE: run=10 encounter=encounter.gallery won=true activations=4 resolved=["encounter.gallery"]
+BALANCE_BATTLE: run=10 encounter=encounter.sanctum won=true activations=8 resolved=["encounter.gallery", "encounter.sanctum"]
+BALANCE run=1 battles_won=3/3 activations=25 required_won=2 optional_won=1 outcome=exit gold=33 potions_bought=0 potions_drunk=0 level=2 xp=125
+BALANCE run=2 battles_won=0/3 activations=9 required_won=0 optional_won=0 outcome=defeat gold=24 potions_bought=5 potions_drunk=0 level=2 xp=125
+BALANCE run=3 battles_won=3/3 activations=33 required_won=2 optional_won=1 outcome=exit gold=57 potions_bought=4 potions_drunk=0 level=4 xp=0
+BALANCE run=4 battles_won=0/3 activations=3 required_won=0 optional_won=0 outcome=defeat gold=40 potions_bought=5 potions_drunk=0 level=4 xp=0
+BALANCE run=5 battles_won=3/3 activations=25 required_won=2 optional_won=1 outcome=exit gold=73 potions_bought=5 potions_drunk=0 level=4 xp=225
+BALANCE run=6 battles_won=1/3 activations=15 required_won=1 optional_won=0 outcome=defeat gold=52 potions_bought=5 potions_drunk=0 level=4 xp=225
+BALANCE run=7 battles_won=2/2 activations=8 required_won=2 optional_won=0 outcome=exit gold=77 potions_bought=5 potions_drunk=0 level=5 xp=0
+BALANCE run=8 battles_won=3/3 activations=25 required_won=2 optional_won=1 outcome=exit gold=110 potions_bought=5 potions_drunk=0 level=5 xp=0
+BALANCE run=9 battles_won=0/3 activations=9 required_won=0 optional_won=0 outcome=defeat gold=77 potions_bought=5 potions_drunk=0 level=5 xp=0
+BALANCE run=10 battles_won=2/2 activations=12 required_won=2 optional_won=0 outcome=exit gold=102 potions_bought=5 potions_drunk=0 level=5 xp=0
+BALANCE_SUMMARY: battles=21 activations=164 required_wins=13/13 optional_wins=4 deaths=4 clean_exits=6
+BALANCE_FIXTURE: PASS (57 checks)
+HARDENING_OBJECT_DRIFT: -300
+HARDENING_LONG_OBJECT_DRIFT: 2
+HARDENING_FIXTURE: PASS (92 checks)
+MATRIX_DEBUG: nav=true focused=true panel=false player=(208.0, 112.0) marker=true dist=0.0 session=1/11 world_session=1/11
+MATRIX_AI_DEBUG: phase=0 active=enemy.0 mode=4
+MATRIX_FIXTURE: PASS (35 checks)
+TEST_RESULT: PASS

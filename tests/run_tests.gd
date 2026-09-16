@@ -22,6 +22,7 @@ func _run() -> void:
 		failures.append_array(load("res://tests/unit/rebirth_fixture.gd").new().run())
 		failures.append_array(load("res://tests/unit/rebirth_fixture.gd").new().run_part2())
 		failures.append_array(load("res://tests/unit/command_fixture.gd").new().run())
+		failures.append_array(load("res://tests/unit/release_fixture.gd").new().run())
 		failures.append_array(load("res://tests/unit/dungeon_fixture.gd").new().run())
 		failures.append_array(load("res://tests/unit/dungeon_fixture.gd").new().run_part2())
 		failures.append_array(load("res://tests/unit/dungeon_fixture.gd").new().run_part3())
@@ -37,6 +38,9 @@ func _run() -> void:
 		failures.append_array(await load("res://tests/integration/shell_fixture.gd").new().run(self))
 		failures.append_array(await load("res://tests/integration/content_loading_fixture.gd").new().run(self))
 		failures.append_array(await load("res://tests/integration/exploration_fixture.gd").new().run(self))
+		failures.append_array(await load("res://tests/integration/balance_fixture.gd").new().run(self))
+		failures.append_array(await load("res://tests/integration/hardening_fixture.gd").new().run(self))
+		failures.append_array(await load("res://tests/integration/matrix_fixture.gd").new().run(self))
 	for failure: String in failures:
 		print("FAIL: " + failure)
 	if failures.is_empty():

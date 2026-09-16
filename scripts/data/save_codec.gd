@@ -464,3 +464,4 @@ static func _battle(b: Dictionary, enemies: Array[Actor], champion: Actor) -> Ba
 	battle.enemies.assign(enemies)
 	battle.champion = champion
 	return battle
+

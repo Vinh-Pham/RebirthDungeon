@@ -52,6 +52,7 @@ func resolve(s: SessionShell, c: RefCounted, input: Dictionary) -> RefCounted:
 	return Resolver.resolve(s,Resolver.parse_intent(input),c)
 func step(s: SessionShell, c: RefCounted, input: Dictionary) -> SessionShell:
 	var result := resolve(s,c,input)
+	if not result.accepted: print("C10_DEBUG: kind=", input.get("kind","<none>"), " keys=", input.keys(), " code=", result.code, " mode=", s.mode)
 	check(result.accepted,"accept %s: %s" % [input.get("kind",""),result.code])
 	return result.candidate if result.accepted else s
 func locked_hand(s: SessionShell, c: RefCounted, skill: String, target: String = "") -> SessionShell:

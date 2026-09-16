@@ -1,0 +1,223 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+CATALOG_FIXTURE: PASS (117 checks)
+SETTINGS_FIXTURE: PASS (23 checks)
+RNG_FIXTURE: PASS (397 checks)
+PROGRESSION_FIXTURE: PASS (99 checks)
+QUEST_FIXTURE: PASS (35 checks)
+QUEST_FIXTURE2: PASS (22 checks)
+ENCHANT_FIXTURE: PASS (14 checks)
+ENCHANT_FIXTURE2: PASS (7 checks)
+ENCHANT_FIXTURE3: PASS (12 checks)
+REBIRTH_FIXTURE: PASS (25 checks)
+REBIRTH_FIXTURE2: PASS (15 checks)
+COMMAND_FIXTURE: PASS (56 checks)
+RELEASE_FIXTURE: PASS (14 checks)
+DUNGEON_FIXTURE: PASS (24 checks)
+DUNGEON_FIXTURE: PASS (20 checks)
+DUNGEON_FIXTURE: PASS (10 checks)
+ADV_DEBUG: mission_empty=true exploration_null=true encounter=encounter.training
+ADV_DEBUG: mission_empty=true exploration_null=false encounter=encounter.training
+SCRIPT ERROR: Invalid call. Nonexistent function 'get_instance_id' in base 'Array[String]'.
+          at: _advance (res://scripts/domain/rules/battle_rules.gd:353)
+          GDScript backtrace (most recent call first):
+              [0] _advance (res://scripts/domain/rules/battle_rules.gd:353)
+              [1] finish (res://scripts/domain/rules/battle_rules.gd:220)
+              [2] resolve (res://scripts/domain/commands/command_resolver.gd:104)
+              [3] apply (res://tests/unit/combat_fixture.gd:24)
+              [4] _outcomes (res://tests/unit/combat_fixture.gd:175)
+              [5] run (res://tests/unit/combat_fixture.gd:110)
+              [6] _run (res://tests/run_tests.gd:29)
+              [7] run (res://tests/fixtures/baseline_fixture.gd:35)
+COMBAT_FIXTURE: FAIL (7883 checks)
+ADV_DEBUG: mission_empty=true exploration_null=false encounter=encounter.dual
+SCRIPT ERROR: Invalid call. Nonexistent function 'get_instance_id' in base 'Array[String]'.
+          at: _advance (res://scripts/domain/rules/battle_rules.gd:353)
+          GDScript backtrace (most recent call first):
+              [0] _advance (res://scripts/domain/rules/battle_rules.gd:353)
+              [1] finish (res://scripts/domain/rules/battle_rules.gd:220)
+              [2] _multi_enemy (res://tests/unit/combat10_fixture.gd:102)
+              [3] run (res://tests/unit/combat10_fixture.gd:67)
+              [4] _run (res://tests/run_tests.gd:30)
+              [5] run (res://tests/fixtures/baseline_fixture.gd:35)
+ADV_DEBUG: mission_empty=true exploration_null=false encounter=encounter.dual
+SCRIPT ERROR: Invalid call. Nonexistent function 'get_instance_id' in base 'Array[String]'.
+          at: _advance (res://scripts/domain/rules/battle_rules.gd:353)
+          GDScript backtrace (most recent call first):
+              [0] _advance (res://scripts/domain/rules/battle_rules.gd:353)
+              [1] finish (res://scripts/domain/rules/battle_rules.gd:220)
+              [2] resolve (res://scripts/domain/commands/command_resolver.gd:104)
+              [3] resolve (res://tests/unit/combat10_fixture.gd:52)
+              [4] step (res://tests/unit/combat10_fixture.gd:54)
+              [5] _area_and_training (res://tests/unit/combat10_fixture.gd:120)
+              [6] run (res://tests/unit/combat10_fixture.gd:68)
+              [7] _run (res://tests/run_tests.gd:30)
+              [8] run (res://tests/fixtures/baseline_fixture.gd:35)
+ADV_DEBUG: mission_empty=true exploration_null=false encounter=encounter.dual
+SCRIPT ERROR: Invalid call. Nonexistent function 'get_instance_id' in base 'Array[String]'.
+          at: _advance (res://scripts/domain/rules/battle_rules.gd:353)
+          GDScript backtrace (most recent call first):
+              [0] _advance (res://scripts/domain/rules/battle_rules.gd:353)
+              [1] finish (res://scripts/domain/rules/battle_rules.gd:220)
+              [2] resolve (res://scripts/domain/commands/command_resolver.gd:104)
+              [3] resolve (res://tests/unit/combat10_fixture.gd:52)
+              [4] step (res://tests/unit/combat10_fixture.gd:54)
+              [5] _critical (res://tests/unit/combat10_fixture.gd:194)
+              [6] run (res://tests/unit/combat10_fixture.gd:70)
+              [7] _run (res://tests/run_tests.gd:30)
+              [8] run (res://tests/fixtures/baseline_fixture.gd:35)
+ADV_DEBUG: mission_empty=true exploration_null=false encounter=encounter.dual
+SCRIPT ERROR: Invalid call. Nonexistent function 'get_instance_id' in base 'Array[String]'.
+          at: _advance (res://scripts/domain/rules/battle_rules.gd:353)
+          GDScript backtrace (most recent call first):
+              [0] _advance (res://scripts/domain/rules/battle_rules.gd:353)
+              [1] finish (res://scripts/domain/rules/battle_rules.gd:220)
+              [2] resolve (res://scripts/domain/commands/command_resolver.gd:104)
+              [3] resolve (res://tests/unit/combat10_fixture.gd:52)
+              [4] step (res://tests/unit/combat10_fixture.gd:54)
+              [5] _masteries (res://tests/unit/combat10_fixture.gd:225)
+              [6] run (res://tests/unit/combat10_fixture.gd:71)
+              [7] _run (res://tests/run_tests.gd:30)
+              [8] run (res://tests/fixtures/baseline_fixture.gd:35)
+ADV_DEBUG: mission_empty=false exploration_null=true encounter=encounter.warden_trial
+COMBAT10_FIXTURE: PASS (118 checks)
+COMBAT_AI_FIXTURE: PASS
+BATTLE_UI_FIXTURE: PASS (148 checks)
+CODEC_FAIL_20
+CODEC_FAIL_20
+CODEC_FAIL_22
+CODEC_FAIL_11
+CODEC_FAIL_38
+CODEC_PENDING_FAIL
+CODEC_FAIL_4
+CODEC_FAIL_43
+ADV_DEBUG: mission_empty=true exploration_null=false encounter=encounter.gallery
+SCRIPT ERROR: Invalid call. Nonexistent function 'get_instance_id' in base 'Array[String]'.
+          at: _advance (res://scripts/domain/rules/battle_rules.gd:353)
+          GDScript backtrace (most recent call first):
+              [0] _advance (res://scripts/domain/rules/battle_rules.gd:353)
+              [1] finish (res://scripts/domain/rules/battle_rules.gd:220)
+              [2] resolve (res://scripts/domain/commands/command_resolver.gd:104)
+              [3] submit_intent (res://scripts/application/main.gd:131)
+              [4] run (res://tests/integration/save_fixture.gd:223)
+              [5] frames (res://tests/integration/save_fixture.gd:50)
+CODEC_FAIL_41
+CODEC_FAIL_41
+CODEC_FAIL_41
+CODEC_FAIL_41
+SCRIPT ERROR: Invalid access to property or key 'navigation_ready' on a base object of type 'Nil'.
+          at: run (res://tests/integration/save_fixture.gd:243)
+          GDScript backtrace (most recent call first):
+              [0] run (res://tests/integration/save_fixture.gd:243)
+              [1] frames (res://tests/integration/save_fixture.gd:50)
+SERVICE_FRESH_PROCESS: 0 potions=0 gold=20 full=false
+SERVICE_FRESH_PROCESS: 0 potions=1 gold=15 full=false
+SERVICE_FRESH_PROCESS: 0 potions=1 gold=15 full=true
+SERVICE_FRESH_PROCESS: 0 potions=1 gold=15 full=true
+TOWN_SERVICES_FIXTURE: PASS (64 checks)
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+PROGRESSION_FRESH_PROCESS: true
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+PROGRESSION_FRESH_PROCESS: true
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+PROGRESSION_FRESH_PROCESS: true
+PROGRESSION_INTEGRATION: PASS (13 checks)
+QUEST_FRESH: 0 Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+QUEST_FRESH: 0 Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+QUEST_INTEGRATION: PASS (28 checks)
+AUTOLOAD: DialogueManager -> res://addons/dialogue_manager/dialogue_manager.gd
+AUTOLOAD: PhantomCameraManager -> res://addons/phantom_camera/scripts/managers/phantom_camera_manager.gd
+AUTOLOAD: QuestSystem -> res://addons/quest_system/quest_manager.gd
+ADDON_SMOKE: FAIL
+SHELL_FIXTURE: PASS
+CONTENT_LOADING_FIXTURE: PASS
+ADV_DEBUG: mission_empty=true exploration_null=false encounter=encounter.gallery
+SCRIPT ERROR: Invalid call. Nonexistent function 'get_instance_id' in base 'Array[String]'.
+          at: _advance (res://scripts/domain/rules/battle_rules.gd:353)
+          GDScript backtrace (most recent call first):
+              [0] _advance (res://scripts/domain/rules/battle_rules.gd:353)
+              [1] finish (res://scripts/domain/rules/battle_rules.gd:220)
+              [2] resolve (res://scripts/domain/commands/command_resolver.gd:104)
+              [3] submit_intent (res://scripts/application/main.gd:131)
+              [4] win_battle (res://tests/integration/exploration_fixture.gd:284)
+              [5] run (res://tests/integration/exploration_fixture.gd:173)
+              [6] frames (res://tests/integration/exploration_fixture.gd:14)
+SCRIPT ERROR: Invalid access to property or key 'discovered' on a base object of type 'Nil'.
+          at: run (res://tests/integration/exploration_fixture.gd:193)
+          GDScript backtrace (most recent call first):
+              [0] run (res://tests/integration/exploration_fixture.gd:193)
+              [1] settle_world (res://tests/integration/exploration_fixture.gd:21)
+              [2] frames (res://tests/integration/exploration_fixture.gd:14)
+ADV_DEBUG: mission_empty=true exploration_null=false encounter=encounter.gallery
+SCRIPT ERROR: Invalid call. Nonexistent function 'get_instance_id' in base 'Array[String]'.
+          at: _advance (res://scripts/domain/rules/battle_rules.gd:353)
+          GDScript backtrace (most recent call first):
+              [0] _advance (res://scripts/domain/rules/battle_rules.gd:353)
+              [1] finish (res://scripts/domain/rules/battle_rules.gd:220)
+              [2] resolve (res://scripts/domain/commands/command_resolver.gd:104)
+              [3] fight (res://tests/integration/balance_fixture.gd:57)
+              [4] run (res://tests/integration/balance_fixture.gd:140)
+              [5] _run (res://tests/run_tests.gd:41)
+              [6] run (res://tests/integration/exploration_fixture.gd:193)
+              [7] settle_world (res://tests/integration/exploration_fixture.gd:21)
+              [8] frames (res://tests/integration/exploration_fixture.gd:14)
+SCRIPT ERROR: Invalid call. Nonexistent function 'get_instance_id' in base 'Array[String]'.
+          at: run (res://tests/integration/balance_fixture.gd:150)
+          GDScript backtrace (most recent call first):
+              [0] run (res://tests/integration/balance_fixture.gd:150)
+              [1] _run (res://tests/run_tests.gd:41)
+              [2] run (res://tests/integration/exploration_fixture.gd:193)
+              [3] settle_world (res://tests/integration/exploration_fixture.gd:21)
+              [4] frames (res://tests/integration/exploration_fixture.gd:14)
+HARDENING_OBJECT_DRIFT: -273
+ADV_DEBUG: mission_empty=true exploration_null=false encounter=encounter.gallery
+SCRIPT ERROR: Invalid call. Nonexistent function 'get_instance_id' in base 'Array[String]'.
+          at: _advance (res://scripts/domain/rules/battle_rules.gd:353)
+          GDScript backtrace (most recent call first):
+              [0] _advance (res://scripts/domain/rules/battle_rules.gd:353)
+              [1] finish (res://scripts/domain/rules/battle_rules.gd:220)
+              [2] resolve (res://scripts/domain/commands/command_resolver.gd:104)
+              [3] _long_session (res://tests/integration/hardening_fixture.gd:135)
+              [4] settle (res://tests/integration/hardening_fixture.gd:24)
+ADV_DEBUG: mission_empty=true exploration_null=false encounter=encounter.sanctum
+SCRIPT ERROR: Invalid call. Nonexistent function 'get_instance_id' in base 'Array[String]'.
+          at: _advance (res://scripts/domain/rules/battle_rules.gd:353)
+          GDScript backtrace (most recent call first):
+              [0] _advance (res://scripts/domain/rules/battle_rules.gd:353)
+              [1] finish (res://scripts/domain/rules/battle_rules.gd:220)
+              [2] resolve (res://scripts/domain/commands/command_resolver.gd:104)
+              [3] _long_session (res://tests/integration/hardening_fixture.gd:135)
+              [4] settle (res://tests/integration/hardening_fixture.gd:24)
+ADV_DEBUG: mission_empty=true exploration_null=false encounter=encounter.dual
+SCRIPT ERROR: Invalid call. Nonexistent function 'get_instance_id' in base 'Array[String]'.
+          at: _advance (res://scripts/domain/rules/battle_rules.gd:353)
+          GDScript backtrace (most recent call first):
+              [0] _advance (res://scripts/domain/rules/battle_rules.gd:353)
+              [1] finish (res://scripts/domain/rules/battle_rules.gd:220)
+              [2] resolve (res://scripts/domain/commands/command_resolver.gd:104)
+              [3] _long_session (res://tests/integration/hardening_fixture.gd:135)
+              [4] settle (res://tests/integration/hardening_fixture.gd:24)
+HARDENING_LONG_OBJECT_DRIFT: 2
+HARDENING_FIXTURE: PASS (92 checks)
+MATRIX_DEBUG: nav=true focused=true panel=false player=(208.0, 112.0) marker=true dist=0.0 session=1/11 world_session=1/11
+ADV_DEBUG: mission_empty=true exploration_null=false encounter=encounter.gallery
+SCRIPT ERROR: Invalid call. Nonexistent function 'get_instance_id' in base 'Array[String]'.
+          at: _advance (res://scripts/domain/rules/battle_rules.gd:353)
+          GDScript backtrace (most recent call first):
+              [0] _advance (res://scripts/domain/rules/battle_rules.gd:353)
+              [1] finish (res://scripts/domain/rules/battle_rules.gd:220)
+              [2] resolve (res://scripts/domain/commands/command_resolver.gd:104)
+              [3] submit_intent (res://scripts/application/main.gd:131)
+              [4] run (res://tests/integration/matrix_fixture.gd:148)
+              [5] settle (res://tests/integration/matrix_fixture.gd:20)
+MATRIX_AI_DEBUG: phase=0 active=enemy.0 mode=4
+MATRIX_FIXTURE: FAIL (35 checks)
+FAIL: Rewards pending
+FAIL: Phantom Camera did not select highest priority
+FAIL: Phantom Camera did not restore lower view
+FAIL: Phantom Camera registrations survived fixture teardown
+FAIL: Matrix: Phantom Camera registrations empty after session teardown
+TEST_RESULT: FAIL (5 checks)
