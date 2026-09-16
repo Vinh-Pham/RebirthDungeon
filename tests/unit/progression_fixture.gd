@@ -104,8 +104,8 @@ func run() -> PackedStringArray:
 	for encounter: String in ["encounter.gallery","encounter.sanctum"]:
 		run.battle = preload("res://scripts/domain/state/battle_state.gd").new()
 		run.battle.encounter_id = encounter
-		P.encounter(run)
-		P.encounter(run)
+		P.encounter(run,c)
+		P.encounter(run,c)
 		run.exploration.resolved.append(encounter)
 	run.battle = null
 	run.exploration.pending_gold = 25

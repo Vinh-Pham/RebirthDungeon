@@ -7,3 +7,5 @@ id = "room.nave"
 display_name = "The flooded nave"
 icon = ExtResource("icon")
 encounter_ids = PackedStringArray("encounter.dual")
+west_connector = "arch.flooded"
+east_connector = "arch.stone"

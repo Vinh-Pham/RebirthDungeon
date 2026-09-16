@@ -74,8 +74,9 @@ static func restore(data: Dictionary, catalog: RefCounted) -> Session:
 	if not data.exploration.is_empty():
 		result.exploration = Exploration.new()
 		result.exploration.progression = data.exploration.get("progression",{}).duplicate(true)
-		for field: String in ["world_id", "discovered", "resolved", "active_encounter", "pending_gold"]:
+		for field: String in ["world_id", "layout_id", "bindings", "exit_room_id", "run_seed", "discovered", "resolved", "active_encounter", "pending_gold"]:
 			result.exploration.set(field, _detached(data.exploration[field]))
+		result.exploration.rooms = _detached(data.exploration.layout)
 		result.exploration.position_x = data.exploration.position.x
 		result.exploration.position_y = data.exploration.position.y
 	return result

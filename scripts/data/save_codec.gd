@@ -9,6 +9,7 @@ const Battle = preload("res://scripts/domain/state/battle_state.gd")
 const Status = preload("res://scripts/domain/state/status_state.gd")
 const Item = preload("res://scripts/domain/state/item_state.gd")
 const Exploration = preload("res://scripts/domain/state/exploration_state.gd")
+const Dungeon = preload("res://scripts/domain/rules/dungeon_rules.gd")
 const Progression = preload("res://scripts/domain/rules/progression_rules.gd")
 const FORMAT = "rebirth.session.v3"
 const ProgressionCodec = preload("res://scripts/data/progression_codec.gd")
@@ -47,6 +48,7 @@ func decode(text: String, catalog: RefCounted) -> Dictionary:
 			item.merge({"origin_id":"","container":"overflow","column":0,"row":0,"locked":false,"pages":[]})
 		if data.get("exploration") is Dictionary and not data.exploration.is_empty(): data.exploration["progression"] = {}
 	_migrate_phase9(data)
+	_migrate_phase11(data)
 	var session := restore(data,catalog)
 	if session == null: return _fail("Invalid saved state: "+error)
 	return {"status":"ok","session":session,"sequence":envelope.sequence.to_int()}
@@ -92,6 +94,24 @@ func _migrate_phase10(data: Dictionary) -> void:
 			if not data.battle.champion.has("reaction"): data.battle.champion["reaction"] = {}
 	if data.get("hero") is Dictionary and data.hero.get("growth") is Dictionary and not data.hero.growth.is_empty() and not data.hero.growth.has("missions"):
 		data.hero.growth["missions"] = {}
+
+## Phase 11 structural migration: exploration captures written before generated
+## layouts gain the authored binding records of their stored layout, the exit
+## room and a zero run seed. Idempotent; generated payloads already carry every
+## field and are never touched.
+func _migrate_phase11(data: Dictionary) -> void:
+	var ex: Variant = data.get("exploration")
+	# Generated payloads always carry their binding records; captures written
+	# before Phase 11 lack the key entirely and gain the authored defaults.
+	if not ex is Dictionary or ex.is_empty() or ex.has("bindings"): return
+	if ex.get("layout") == Exploration.LAYOUT:
+		ex["bindings"] = Exploration.LEGACY_BINDINGS.duplicate(true)
+	elif ex.get("layout") == Exploration.LEGACY_LAYOUT:
+		ex["bindings"] = Exploration.LEGACY_SMALL_BINDINGS.duplicate(true)
+	else:
+		return
+	if not ex.has("exit_room_id"): ex["exit_room_id"] = Exploration.LEGACY_EXIT
+	if not ex.has("run_seed"): ex["run_seed"] = 0
 
 func _fail(message: String, status: String = "corrupt") -> Dictionary:
 	error = message
@@ -177,12 +197,35 @@ func restore(data: Dictionary, catalog: RefCounted) -> SessionShell:
 	if not data.exploration is Dictionary: return null
 	if not data.exploration.is_empty():
 		var ex: Dictionary = data.exploration
-		if not keys(ex,["layout_id","layout","world_id","position","discovered","resolved","active_encounter","pending_gold","progression"]): return null
-		if ex.layout_id != "undercrypt.v1" or (ex.layout != Exploration.LAYOUT and ex.layout != Exploration.LEGACY_LAYOUT): return null
-		if ex.world_id != "dungeon.undercrypt" or not integer(ex.pending_gold): return null
+		if not keys(ex,["layout_id","layout","bindings","exit_room_id","run_seed","world_id","position","discovered","resolved","active_encounter","pending_gold","progression"]): return null
+		if ex.world_id != "dungeon.undercrypt" or not integer(ex.pending_gold) or not integer(ex.run_seed,0,Limits.VALUE_MAX): return null
+		if ex.layout_id == "undercrypt.v1":
+			# Authored layouts keep their strict legacy equality records.
+			if ex.layout != Exploration.LAYOUT and ex.layout != Exploration.LEGACY_LAYOUT: return null
+			var expected: Array = Exploration.LEGACY_BINDINGS if ex.layout == Exploration.LAYOUT else Exploration.LEGACY_SMALL_BINDINGS
+			if ex.bindings != expected or ex.exit_room_id != Exploration.LEGACY_EXIT: return null
+		elif str(ex.layout_id).begins_with("undercrypt.g"):
+			# Generated layouts validate against the authored generator tables;
+			# the saved layout restores as-is and is never regenerated.
+			var def: Resource = catalog.definition("dungeon.undercrypt")
+			if def == null: return null
+			var payload := {"layout_id":ex.layout_id,"world_id":ex.world_id,"run_seed":ex.run_seed,
+				"rooms":ex.layout,"bindings":ex.bindings,"exit_room_id":ex.exit_room_id}
+			if not Dungeon.validate_payload(payload,def,catalog.definition).is_empty(): return null
+		else:
+			return null
 		if not position(ex.position): return null
 		if not ids(ex.discovered,catalog,"room.") or not ids(ex.resolved,catalog,"encounter."): return null
+		var room_ids := {}
+		for room: Variant in ex.layout: room_ids[str(room.room_id)] = true
+		for room_id: Variant in ex.discovered:
+			if not room_ids.has(str(room_id)): return null
 		if not ex.active_encounter is String or (not ex.active_encounter.is_empty() and catalog.definition(ex.active_encounter) == null): return null
+		if not ex.active_encounter.is_empty():
+			var bound := false
+			for record: Variant in ex.bindings:
+				if record is Dictionary and str(record.encounter_id) == ex.active_encounter: bound = true
+			if not bound: return null
 		if not ex.progression is Dictionary: return null
 		session.exploration = Exploration.new()
 		session.exploration.progression = ex.progression.duplicate(true)
@@ -194,6 +237,11 @@ func restore(data: Dictionary, catalog: RefCounted) -> SessionShell:
 			for skill_id: String in run_training.keys():
 				if not session.hero.skill_ranks.has(skill_id): run_training.erase(skill_id)
 		session.exploration.world_id = ex.world_id
+		session.exploration.layout_id = ex.layout_id
+		session.exploration.rooms = ex.layout.duplicate(true)
+		session.exploration.bindings = ex.bindings.duplicate(true)
+		session.exploration.exit_room_id = ex.exit_room_id
+		session.exploration.run_seed = ex.run_seed
 		session.exploration.position_x = ex.position.x
 		session.exploration.position_y = ex.position.y
 		session.exploration.discovered.assign(ex.discovered)

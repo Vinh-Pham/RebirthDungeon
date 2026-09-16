@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="DungeonDefinition" load_steps=3 format=3]
+[ext_resource type="Script" path="res://scripts/data/definitions/dungeon_definition.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/art/dungeon_mark.svg" id="icon"]
+[resource]
+script = ExtResource("1")
+id = "dungeon.undercrypt"
+display_name = "The Undercrypt"
+icon = ExtResource("icon")
+entry_room_id = "room.threshold"
+exit_room_id = "room.sanctum"
+mids_min = 2
+mids_max = 3
+attempts = 24
+mid_pool = [{"room_id":"room.gallery","weight":3,"allow_repeat":false}, {"room_id":"room.nave","weight":3,"allow_repeat":true}, {"room_id":"room.oratory","weight":2,"allow_repeat":false}, {"room_id":"room.crypt","weight":2,"allow_repeat":true}, {"room_id":"room.hall","weight":2,"allow_repeat":true}]
+required_encounters = PackedStringArray("encounter.gallery", "encounter.sanctum")
+optional_pool = [{"encounter_id":"encounter.dual","weight":2,"min_depth":2}]
+required_drops = [{"item_id":"item.focus_page_one","quantity":1}, {"item_id":"item.focus_page_two","quantity":1}]
+bonus_drops = [{"encounter_id":"encounter.dual","item_id":"item.powder","chance_bp":4000,"min_quantity":1,"max_quantity":1}, {"encounter_id":"encounter.dual","item_id":"item.scroll_fortunate","chance_bp":1500,"min_quantity":1,"max_quantity":1}]

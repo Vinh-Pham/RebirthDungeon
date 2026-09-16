@@ -77,6 +77,7 @@ content/
   items/
   encounters/
   rooms/
+  dungeon/                   # Phase 11: authored generator tables per dungeon
   progression/
   quests/
   titles/

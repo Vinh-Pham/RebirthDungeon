@@ -279,7 +279,7 @@ static func reaction(session: RefCounted, skill_id: String) -> void:
 	facts["counter:"+skill_id] = mini(1000000,int(facts.get("counter:"+skill_id,0))+1)
 	p["facts"] = facts
 
-static func encounter(session: RefCounted) -> void:
+static func encounter(session: RefCounted, catalog: RefCounted) -> void:
 	if session.exploration == null or session.exploration.progression.is_empty(): return
 	var p: Dictionary = session.exploration.progression
 	var id: String = session.battle.encounter_id
@@ -289,17 +289,43 @@ static func encounter(session: RefCounted) -> void:
 	var facts: Dictionary = p.get("facts",{})
 	facts["encounter:"+id] = mini(1000000,int(facts.get("encounter:"+id,0))+1)
 	p["facts"] = facts
-	# Focus pages stay tied to the two authored sentinels; later encounters
-	# grant XP and evidence only until Phase 11 authors drop tables.
-	if id == "encounter.gallery" or id == "encounter.sanctum":
-		p.items.append({"id":"item.focus_page_one" if id == "encounter.gallery" else "item.focus_page_two","quantity":1})
+	# Phase 11 authored drop tables replace the hardcoded sentinel pages. The
+	# required table grants one entry per distinct required victory, in order,
+	# so the focus-book quest chain stays completable in every generated layout.
+	var def: Resource = catalog.definition(session.exploration.world_id) if catalog != null else null
+	if def == null: return
+	if PackedStringArray(def.required_encounters).has(id):
+		var won_required: int = 0
+		for required_id: String in session.exploration.required_encounters():
+			if p.evidence.has(required_id): won_required += 1
+		var drop_index: int = won_required - 1
+		if drop_index >= 0 and drop_index < def.required_drops.size() and def.required_drops[drop_index] is Dictionary:
+			p.items.append({"id":str(def.required_drops[drop_index].item_id),"quantity":int(def.required_drops[drop_index].quantity)})
+	# Bonus drops roll per distinct victory on the independent loot stream, in
+	# authored order: one chance draw, then one bounded quantity draw on a hit.
+	# A full pending bundle skips further bonus draws without consuming RNG.
+	if p.items.size() >= preload("res://scripts/domain/rules/dungeon_rules.gd").MAX_DROPS: return
+	var loot: RefCounted = session.rng.stream("loot") if session.rng != null else null
+	if loot == null or not loot.has_method("bounded"): return
+	for drop: Variant in def.bonus_drops:
+		if not drop is Dictionary or str(drop.get("encounter_id","")) != id: continue
+		var chance: int = int(drop.get("chance_bp",0))
+		var roll: int = loot.bounded(10000)
+		if roll < 0 or roll >= chance: continue
+		var span: int = int(drop.get("max_quantity",1))-int(drop.get("min_quantity",1))+1
+		var quantity: int = int(drop.get("min_quantity",1)) + maxi(0,loot.bounded(maxi(1,span)))
+		p.items.append({"id":str(drop.get("item_id","")),"quantity":quantity})
+		if p.items.size() >= preload("res://scripts/domain/rules/dungeon_rules.gd").MAX_DROPS: return
 
 static func finish(session: RefCounted, success: bool, catalog: RefCounted) -> String:
 	var ex: RefCounted = session.exploration
 	if ex == null or ex.progression.is_empty(): return ""
 	var p: Dictionary = ex.progression
 	if p.closed: return "This outcome is already committed."
-	if success and (not ex.resolved.has("encounter.gallery") or not ex.resolved.has("encounter.sanctum")): return "Defeat both sentinels before committing rewards."
+	# Phase 11: the exit unlocks when every required encounter of the saved
+	# layout is resolved; optional guardians never gate the return arch.
+	var outstanding: Array[String] = ex.outstanding_required()
+	if success and not outstanding.is_empty(): return "Defeat the remaining guardians before committing rewards."
 	var hero: RefCounted = session.hero
 	if success and hero.committed_gold+ex.pending_gold > Inventory.capacity(hero,catalog): return "Carried gold is full. Abandon or free gold capacity on a future run."
 	if success:

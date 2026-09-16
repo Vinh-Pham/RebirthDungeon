@@ -79,6 +79,11 @@
 [ext_resource type="Resource" path="res://content/encounters/dual.tres" id="encounters_dual"]
 [ext_resource type="Resource" path="res://content/encounters/warden_trial.tres" id="encounters_warden_trial"]
 [ext_resource type="Resource" path="res://content/rooms/nave.tres" id="rooms_nave"]
+[ext_resource type="Resource" path="res://content/rooms/oratory.tres" id="rooms_oratory"]
+[ext_resource type="Resource" path="res://content/rooms/crypt.tres" id="rooms_crypt"]
+[ext_resource type="Resource" path="res://content/rooms/hall.tres" id="rooms_hall"]
+[ext_resource type="Script" path="res://scripts/data/definitions/dungeon_definition.gd" id="dungeons_type"]
+[ext_resource type="Resource" path="res://content/dungeon/undercrypt.tres" id="dungeons_undercrypt"]
 
 [sub_resource type="Resource" id="combo0"]
 script = ExtResource("combo")
@@ -138,4 +143,5 @@ stats = Array[ExtResource("stats_type")]([ExtResource("stats_strength"), ExtReso
 statuses = Array[ExtResource("statuses_type")]([ExtResource("statuses_fortified"), ExtResource("statuses_weakened"), ExtResource("statuses_focused"), ExtResource("statuses_empowered"), ExtResource("statuses_final_hit")])
 items = Array[ExtResource("items_type")]([ExtResource("items_training_sword"), ExtResource("items_potion"), ExtResource("items_field_bag"), ExtResource("items_gold_bag"), ExtResource("items_iron_sword"), ExtResource("items_great_sword"), ExtResource("items_shield"), ExtResource("items_armor"), ExtResource("items_spark_book"), ExtResource("items_focus_notes"), ExtResource("items_focus_page_one"), ExtResource("items_focus_page_two"), ExtResource("items_focus_book"), ExtResource("items_lantern_coupon"), ExtResource("items_powder"), ExtResource("items_scroll_keen"), ExtResource("items_scroll_spellweave"), ExtResource("items_scroll_fortunate")])
 encounters = Array[ExtResource("encounters_type")]([ExtResource("encounters_training"), ExtResource("encounters_gallery"), ExtResource("encounters_sanctum"), ExtResource("encounters_dual"), ExtResource("encounters_warden_trial")])
-rooms = Array[ExtResource("rooms_type")]([ExtResource("rooms_training"), ExtResource("rooms_haven"), ExtResource("rooms_threshold"), ExtResource("rooms_gallery"), ExtResource("rooms_sanctum"), ExtResource("rooms_nave")])
+rooms = Array[ExtResource("rooms_type")]([ExtResource("rooms_training"), ExtResource("rooms_haven"), ExtResource("rooms_threshold"), ExtResource("rooms_gallery"), ExtResource("rooms_sanctum"), ExtResource("rooms_nave"), ExtResource("rooms_oratory"), ExtResource("rooms_crypt"), ExtResource("rooms_hall")])
+dungeons = Array[ExtResource("dungeons_type")]([ExtResource("dungeons_undercrypt")])

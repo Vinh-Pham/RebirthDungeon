@@ -7,3 +7,5 @@ id = "room.gallery"
 display_name = "Moss gallery"
 icon = ExtResource("icon")
 encounter_ids = PackedStringArray("encounter.gallery")
+west_connector = "arch.stone"
+east_connector = "arch.flooded"

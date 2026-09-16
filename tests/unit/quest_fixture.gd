@@ -49,10 +49,10 @@ func run_run(c: RefCounted, s: SessionShell, skill: String = "skill.sword") -> S
 	Battle.begin(s,"encounter.gallery",c)
 	P.begin(s)
 	s.battle.encounter_id = "encounter.gallery"
-	P.encounter(s)
+	P.encounter(s,c)
 	s.exploration.resolved.append("encounter.gallery")
 	s.battle.encounter_id = "encounter.sanctum"
-	P.encounter(s)
+	P.encounter(s,c)
 	s.exploration.resolved.append("encounter.sanctum")
 	for i: int in 2: P.activation(s,skill)
 	P.finish(s,true,c)

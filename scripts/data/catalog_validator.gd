@@ -4,7 +4,7 @@ extends RefCounted
 const Manifest = preload("res://scripts/data/definitions/catalog_manifest.gd")
 const Definition = preload("res://scripts/data/definitions/content_definition.gd")
 const Limits = preload("res://scripts/domain/rules/rule_limits.gd")
-const GROUPS := {"actors": "actor", "skills": "skill", "stats": "stat", "statuses": "status", "items": "item", "encounters": "encounter", "rooms": "room"}
+const GROUPS := {"actors": "actor", "skills": "skill", "stats": "stat", "statuses": "status", "items": "item", "encounters": "encounter", "rooms": "room", "dungeons": "dungeon"}
 
 var _errors: PackedStringArray = []
 var _index: Dictionary = {}
@@ -205,8 +205,116 @@ func validate(manifest: Manifest) -> PackedStringArray:
 	for room: Manifest.ROOMS in manifest.rooms:
 		if room != null:
 			_references(room, "encounter_ids", room.encounter_ids, "encounter")
+			_connector(room, "west_connector", room.west_connector)
+			_connector(room, "east_connector", room.east_connector)
+	_validate_dungeons(manifest)
 	_validate_progression(load("res://content/progression/starter.tres"))
 	return _errors.duplicate()
+
+## Connector kinds name corridor arches; the generator only joins equal kinds.
+func _connector(room: Resource, field: String, value: String) -> void:
+	if value.is_empty(): return
+	var pattern := RegEx.new()
+	pattern.compile("^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$")
+	if pattern.search(value) == null:
+		_error(room, field, "expected a namespaced connector kind or an empty string")
+
+## Phase 11 generator tables: references, bounds, host feasibility and the
+## publication-time proof that the deterministic known-valid fallback layout
+## passes full structural validation for every authored dungeon.
+func _validate_dungeons(manifest: Manifest) -> void:
+	var rules := preload("res://scripts/domain/rules/dungeon_rules.gd")
+	var lookup := func(id: String) -> Resource: return _index.get(id)
+	for dungeon: Variant in manifest.dungeons:
+		if dungeon == null:
+			_error(manifest, "dungeons", "null definition")
+			continue
+		_reference(dungeon, "entry_room_id", dungeon.entry_room_id, "room")
+		_reference(dungeon, "exit_room_id", dungeon.exit_room_id, "room")
+		if dungeon.entry_room_id == dungeon.exit_room_id:
+			_error(dungeon, "exit_room_id", "entry and exit must differ")
+		_bound(dungeon, "mids_min", dungeon.mids_min, 1, 6)
+		_bound(dungeon, "mids_max", dungeon.mids_max, dungeon.mids_min, 6)
+		_bound(dungeon, "attempts", dungeon.attempts, 1, 1000)
+		if dungeon.mid_pool.is_empty():
+			_error(dungeon, "mid_pool", "at least one mid room is required")
+		var total_weight: int = 0
+		for pick: Variant in dungeon.mid_pool:
+			if not pick is Dictionary or str(pick.get("room_id", "")).is_empty():
+				_error(dungeon, "mid_pool", "entries need a room_id")
+				continue
+			_reference(dungeon, "mid_pool.room_id", str(pick.get("room_id", "")), "room")
+			if str(pick.get("room_id", "")) in [dungeon.entry_room_id, dungeon.exit_room_id]:
+				_error(dungeon, "mid_pool.room_id", "pool rooms exclude entry and exit")
+			_bound(dungeon, "mid_pool.weight", int(pick.get("weight", 0)), 1)
+			total_weight += int(pick.get("weight", 0))
+		if total_weight > Limits.WEIGHT_MAX * 8:
+			_error(dungeon, "mid_pool", "weight sum cannot exceed eight million")
+		if dungeon.required_encounters.is_empty():
+			_error(dungeon, "required_encounters", "at least one required encounter is required")
+		if dungeon.required_encounters.size() > dungeon.mids_max + 1:
+			_error(dungeon, "required_encounters", "required encounters must fit the deepest layout")
+		_references(dungeon, "required_encounters", dungeon.required_encounters, "encounter")
+		var optional_weight: int = 0
+		for pick: Variant in dungeon.optional_pool:
+			if not pick is Dictionary or str(pick.get("encounter_id", "")).is_empty():
+				_error(dungeon, "optional_pool", "entries need an encounter_id")
+				continue
+			_reference(dungeon, "optional_pool.encounter_id", str(pick.get("encounter_id", "")), "encounter")
+			if dungeon.required_encounters.has(str(pick.get("encounter_id", ""))):
+				_error(dungeon, "optional_pool.encounter_id", "optional pool overlaps required encounters")
+			_bound(dungeon, "optional_pool.weight", int(pick.get("weight", 0)), 1)
+			_bound(dungeon, "optional_pool.min_depth", int(pick.get("min_depth", 1)), 1, dungeon.mids_max)
+			optional_weight += int(pick.get("weight", 0))
+		if optional_weight > Limits.WEIGHT_MAX * 8:
+			_error(dungeon, "optional_pool", "weight sum cannot exceed eight million")
+		if dungeon.required_drops.size() > 8:
+			_error(dungeon, "required_drops", "at most eight guaranteed drops")
+		for drop: Variant in dungeon.required_drops:
+			if not drop is Dictionary:
+				_error(dungeon, "required_drops", "entries need item tables")
+				continue
+			_reference(dungeon, "required_drops.item_id", str(drop.get("item_id", "")), "item")
+			_bound(dungeon, "required_drops.quantity", int(drop.get("quantity", 0)), 1, 100)
+		if dungeon.bonus_drops.size() > 16:
+			_error(dungeon, "bonus_drops", "at most sixteen bonus drops")
+		for drop: Variant in dungeon.bonus_drops:
+			if not drop is Dictionary:
+				_error(dungeon, "bonus_drops", "entries need item tables")
+				continue
+			var encounter_id := str(drop.get("encounter_id", ""))
+			if not dungeon.required_encounters.has(encounter_id) and not _dungeon_optional_ids(dungeon).has(encounter_id):
+				_error(dungeon, "bonus_drops.encounter_id", "unresolved dungeon encounter: " + encounter_id)
+			_reference(dungeon, "bonus_drops.item_id", str(drop.get("item_id", "")), "item")
+			_bound(dungeon, "bonus_drops.chance_bp", int(drop.get("chance_bp", 0)), 1, Limits.BASIS_POINTS)
+			_bound(dungeon, "bonus_drops.min_quantity", int(drop.get("min_quantity", 0)), 1, 100)
+			_bound(dungeon, "bonus_drops.max_quantity", int(drop.get("max_quantity", 0)), int(drop.get("min_quantity", 0)), 100)
+		# Hosting feasibility: every required encounter must have a possible host.
+		for required_id: String in dungeon.required_encounters:
+			var hostable := false
+			for pick: Variant in dungeon.mid_pool:
+				var pool_room: Resource = _index.get(str(pick.get("room_id", ""))) if pick is Dictionary else null
+				if pool_room != null and (pool_room.encounter_ids.is_empty() or pool_room.encounter_ids.has(required_id)):
+					hostable = true
+					break
+			var exit_room: Resource = _index.get(dungeon.exit_room_id)
+			if exit_room != null and (exit_room.encounter_ids.is_empty() or exit_room.encounter_ids.has(required_id)):
+				hostable = true
+			if not hostable:
+				_error(dungeon, "required_encounters", "no room can host " + required_id)
+		# The known-valid fallback must satisfy the generator contract at publish time.
+		var fallback: Dictionary = rules.fallback_layout(dungeon, lookup, str(dungeon.id))
+		if fallback.is_empty():
+			_error(dungeon, "fallback", "no valid fallback chain exists for these tables")
+		else:
+			for failure: String in rules.validate(fallback.rooms, fallback.bindings, fallback.exit_room_id, dungeon, lookup):
+				_error(dungeon, "fallback", failure)
+
+func _dungeon_optional_ids(dungeon: Resource) -> PackedStringArray:
+	var result := PackedStringArray()
+	for pick: Variant in dungeon.optional_pool:
+		if pick is Dictionary: result.append(str(pick.get("encounter_id", "")))
+	return result
 
 func _error(resource: Resource, property: String, reason: String) -> void:
 	var id: String = resource.id if resource is Definition else "manifest"

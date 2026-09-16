@@ -1,8 +1,8 @@
 # Rebirth Dungeon: Project Phases
 
-**Replanned: 2026-09-11 — Godot 4.7 / typed GDScript with the selected addons.** Phases 0–6 were implemented and verified after the 2026-09-10 reset; later phases remain unstarted. **Completed: 10 of 17. Current focus: Phase 11.** Pre-Godot implementation, tests and platform acceptance do not carry forward.
+**Replanned: 2026-09-11 — Godot 4.7 / typed GDScript with the selected addons.** Phases 0–6 were implemented and verified after the 2026-09-10 reset; later phases remain unstarted. **Completed: 11 of 17. Current focus: Phase 12.** Pre-Godot implementation, tests and platform acceptance do not carry forward.
 
-The repository contains the persistent State Charts application shell, validated content catalog, independent domain state/RNG/command foundations, isolated addon qualification fixtures, verification runner and export presets. Town and dungeon exploration now include continuous movement, discovery, guarded encounter fixtures and Phantom Camera follow. Deterministic combat and the adaptive battle HUD now include guarded State Charts presentation, separate Phantom Camera staging and simulated save-failure/retry behavior. Durable two-slot saves now restore the full session, with validated recovery and exact candidate retries. Progression through Phase 9 proved quests, enchanting, aging and rebirth. Phase 10 adds multi-enemy encounters with frozen member target sets and Windmill, Counterattack, Final Hit, criticals, equipment masteries, the isolated Warden's Memory role-playing mission with committed-outcome QuestSystem advancement, and per-agent LimboAI trees; Charge stays disabled and Master Titles are deferred with an explicit record. This roadmap incorporates the currently configured addons without treating installation as feature completion. [Game Plan](game-plan.md) defines architecture, [Directory](directory.md) defines file placement, gameplay specs define rules, and [AGENTS.md](../AGENTS.md) defines addon usage and integration boundaries. Phase numbers remain stable so existing specification links retain their meaning.
+The repository contains the persistent State Charts application shell, validated content catalog, independent domain state/RNG/command foundations, isolated addon qualification fixtures, verification runner and export presets. Town and dungeon exploration now include continuous movement, discovery, guarded encounter fixtures and Phantom Camera follow. Deterministic combat and the adaptive battle HUD now include guarded State Charts presentation, separate Phantom Camera staging and simulated save-failure/retry behavior. Durable two-slot saves now restore the full session, with validated recovery and exact candidate retries. Progression through Phase 9 proved quests, enchanting, aging and rebirth. Phase 10 adds multi-enemy encounters with frozen member target sets and Windmill, Counterattack, Final Hit, criticals, equipment masteries, the isolated Warden's Memory role-playing mission with committed-outcome QuestSystem advancement, and per-agent LimboAI trees; Charge stays disabled and Master Titles are deferred with an explicit record. Phase 11 adds seeded procedural dungeons: authored generator tables with connector matching and a bounded attempt budget over a proven known-valid fallback, persisted layouts with generator/content versions, binding-driven encounter hosting and exit gating, authored required/bonus drop tables on the independent loot stream, and a world adapter that rebuilds any generated chain from the saved layout. This roadmap incorporates the currently configured addons without treating installation as feature completion. [Game Plan](game-plan.md) defines architecture, [Directory](directory.md) defines file placement, gameplay specs define rules, and [AGENTS.md](../AGENTS.md) defines addon usage and integration boundaries. Phase numbers remain stable so existing specification links retain their meaning.
 
 ## Status and completion policy
 
@@ -46,7 +46,7 @@ Build only lightweight mode/command contracts in Phase 1, domain types in Phase 
 | 8 | Inventory, skills and lasting progression | Complete |
 | 9 | QuestSystem progression, enchanting and rebirth | Complete for host acceptance |
 | 10 | Role-playing missions and advanced combat | Complete for host acceptance |
-| 11 | Procedural dungeons and content expansion | Not started |
+| 11 | Procedural dungeons and content expansion | Complete for host acceptance |
 | 12 | Presentation, accessibility and performance | Not started |
 | 13 | Regression, balance and release candidate hardening | Not started |
 | 14 | Android and iOS delivery acceptance | Not started |
@@ -242,16 +242,16 @@ Verified on 2026-09-11 (2026-09-12 UTC) with Godot 4.7.2 (`ed1daf0bf`), content 
 
 ## Phase 11: Procedural dungeons and content expansion
 
-**Status: Not started. Dependencies: 7; 8–10 for dependent rewards/features.**
+**Status: Complete for host acceptance (2026-09-15). Dependencies: 7; 8–10 for dependent rewards/features.**
 
-- [ ] Implement seeded room selection using stable IDs, connector matching and a bounded attempt budget.
-- [ ] Validate overlap, navigation clearance, room reachability, required encounters and exit access; provide a known valid fallback.
-- [ ] Persist the generated layout and generator/content versions rather than trusting regeneration across engine changes.
-- [ ] Add encounter/loot variety and progression pacing with authored tables; keep RNG streams independent.
-- [ ] Exercise many seeds and worst-case layouts; add floors/towns/gathering/cooking only with complete consuming rules.
-- [ ] Validate generated encounter bindings to LimboAI trees, Phantom Camera room limits and eligible QuestSystem evidence against saved stable room/encounter IDs. Keep hidden rooms out of camera transitions and quest observations; moving NPC AI requires a separate authored feature contract.
+- [x] Implement seeded room selection using stable IDs, connector matching and a bounded attempt budget.
+- [x] Validate overlap, navigation clearance, room reachability, required encounters and exit access; provide a known valid fallback.
+- [x] Persist the generated layout and generator/content versions rather than trusting regeneration across engine changes.
+- [x] Add encounter/loot variety and progression pacing with authored tables; keep RNG streams independent.
+- [x] Exercise many seeds and worst-case layouts; add floors/towns/gathering/cooking only with complete consuming rules. — Floors, additional towns, gathering and cooking are recorded as excluded: no complete consuming rules are authored yet, so none ship.
+- [x] Validate generated encounter bindings to LimboAI trees, Phantom Camera room limits and eligible QuestSystem evidence against saved stable room/encounter IDs. Keep hidden rooms out of camera transitions and quest observations; moving NPC AI requires a separate authored feature contract.
 
-**Exit criterion:** Generated runs remain traversable and completable, reproduce layout fixtures under pinned versions and restore their saved layout correctly.
+**Exit criterion:** Generated runs remain traversable and completable, reproduce layout fixtures under pinned versions and restore their saved layout correctly. — Met: see [Phase 11 implementation](phase11-implementation.md) and [evidence](evidence/phase11/README.md).
 
 ## Phase 12: Presentation, accessibility and performance
 
@@ -337,6 +337,8 @@ Verified on 2026-09-11 (2026-09-12 UTC) with Godot 4.7.2 (`ed1daf0bf`), content 
 | Connected services, purchases and gacha inclusion | Separate Phase 15 product decision |
 
 ## Verification record
+
+2026-09-15: Phase 11 host acceptance completed. Seeded procedural dungeons verified on Godot `4.7.2.stable.official.ed1daf0bf`: authored generator tables (`content/dungeon/undercrypt.tres`) with connector matching, weighted room pools, hosting whitelists, minimum-depth optional guardians, a bounded attempt budget and a publication-proven known-valid fallback; structural validation shared by the generator, the save codec and fixtures; layouts persisted with run seed, binding records and authored labels and restored without regeneration, including a structural migration for pre-Phase-11 checkpoints; authored required/bonus drop tables consuming the independent loot stream with pinned draw order; a bindings-driven exit gate in the resolver and HUD; a data-driven world adapter with layout-derived camera limits. `tests/unit/dungeon_fixture.gd` (54 checks over determinism, a 120-seed sweep, hostile-seed fallback, validator negatives, resolver RNG isolation, drop order, codec round trips and migration) plus the binding-driven exploration sweep pass; the full runner reports `TEST_RESULT: PASS` with zero script errors, and the `tools/verify.py` gate passes including all five resource-pack exclusions. Beckett rendered playtests: a pre-Phase-11 checkpoint resumes through the migration, the entrance dialogue generates a fresh five-room expedition (`threshold → oratory → crypt → hall → sanctum`), and a mid-run checkpoint restores the identical generated layout in a fresh process. Executable export and device acceptance remain outstanding. Floors, additional towns, gathering and cooking are recorded as excluded pending complete consuming rules. [Implementation](phase11-implementation.md) · [Evidence](evidence/phase11/README.md).
 
 2026-09-15: Phase 10 host acceptance completed. Multi-enemy encounters with stable ordering and selection-frozen member target sets, Windmill, Counterattack reactions with negation/retaliation inside the attacker's transaction, Final Hit stored magnitudes, criticals gated by the learned passive with per-target combat draws, equipment masteries with exactly-once passive training, disabled Charge, and the isolated Warden's Memory role-playing mission (Dialogue Manager entry, champion battle, committed-outcome QuestSystem advancement, failure/retry policy) verified on Godot `4.7.2.stable.official.ed1daf0bf` with domain, integration, fresh-process and save-migration fixtures; the full `verify.py` gate passes including all five asset-pack exclusions, and a Beckett rendered playtest entered the mission battle on a migrated legacy checkpoint. Master Titles are recorded as deferred with an explicit gate evaluation. Executable/device acceptance remains outstanding. [Implementation](phase10-implementation.md) · [Evidence](evidence/phase10/README.md).
 

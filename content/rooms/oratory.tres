@@ -3,9 +3,9 @@
 [ext_resource type="Texture2D" path="res://assets/art/exploration/floor.png" id="icon"]
 [resource]
 script = ExtResource("1")
-id = "room.sanctum"
-display_name = "The quiet vault"
+id = "room.oratory"
+display_name = "The echoing oratory"
 icon = ExtResource("icon")
-encounter_ids = PackedStringArray("encounter.sanctum")
+encounter_ids = PackedStringArray()
 west_connector = "arch.stone"
-east_connector = ""
+east_connector = "arch.flooded"

@@ -8,7 +8,18 @@ signal progression_requested(tab: String)
 var conversation_camera: PhantomCamera2D
 const PlayerScene = preload("res://scenes/exploration/player.tscn")
 const InteractionMarkerScript = preload("res://scripts/exploration/interaction_marker.gd")
+const RoomScene = preload("res://scenes/exploration/room.tscn")
+const MarkerScene = preload("res://scenes/exploration/interaction_marker.tscn")
 @export var town: bool = false
+## Authored presentation for layout records written before generated labels.
+const LEGACY_TITLES := {"room.threshold":"The threshold","room.gallery":"Moss gallery","room.sanctum":"The quiet vault","room.nave":"The flooded nave"}
+## Phase 11: the persisted layout. Rooms, encounter bindings and the exit room
+## come from the exploration capture; nothing here is regenerated. An empty
+## continuation (development fixtures) installs the authored Undercrypt chain.
+const DungeonState = preload("res://scripts/domain/state/exploration_state.gd")
+var rooms: Array = DungeonState.LAYOUT.duplicate(true)
+var bindings: Array = DungeonState.LEGACY_BINDINGS.duplicate(true)
+var exit_room_id: String = DungeonState.LEGACY_EXIT
 var session_id: int
 var revision: int
 var session_valid: Callable
@@ -40,6 +51,10 @@ func configure(id: int, expected_revision: int, continuation: Dictionary, valida
 		if not town:
 			discovered.assign(continuation.discovered)
 			resolved.assign(continuation.resolved)
+			# The capture wire keeps the historical "layout" key.
+			rooms = continuation.get("layout", []).duplicate(true)
+			bindings = continuation.get("bindings", []).duplicate(true)
+			exit_room_id = str(continuation.get("exit_room_id", ""))
 
 func _draw() -> void:
 	draw_rect(Rect2(-10000,-10000,20000,20000), Color("#0e1b21"))
@@ -51,8 +66,9 @@ func _ready() -> void:
 	NavigationServer2D.map_set_active(_navigation_map, true)
 	if town:
 		discovered = ["room.haven"]
-	elif discovered.is_empty():
-		discovered = ["room.threshold"]
+	else:
+		_build_dungeon()
+		if discovered.is_empty(): discovered = [entry_room_id()]
 	player = PlayerScene.instantiate()
 	player.name = "Player"
 	player.visible = false
@@ -86,8 +102,67 @@ func _resize_camera() -> void:
 	phantom.zoom = Vector2.ONE * zoom_value
 	phantom.limit_left = -120
 	phantom.limit_top = -90
-	phantom.limit_right = 600 if town else 2280
+	# Dungeon limits derive from the installed layout so generated chains of any
+	# authored length stay framed; discovery masking keeps hidden rooms unseen.
+	var right := 600.0 if town else 2280.0
+	if not town:
+		for record: Variant in rooms:
+			if record is Dictionary: right = maxf(right, float(record.get("x", 0.0)) + 600.0)
+	phantom.limit_right = int(right)
 	phantom.limit_bottom = 410
+
+func entry_room_id() -> String:
+	return str(rooms[0].room_id) if not rooms.is_empty() else "room.threshold"
+
+## Rebuild the authored/generated chain from the persisted layout: one room
+## scene per record, discovery gates between neighbours, encounter markers for
+## the saved bindings and the exit arch inside the exit room. The room template
+## keeps every corridor at the same clearance, so any valid chain is traversable.
+func _build_dungeon() -> void:
+	for index: int in rooms.size():
+		var record: Dictionary = rooms[index] if rooms[index] is Dictionary else {}
+		if record.is_empty(): continue
+		var room: Node2D = RoomScene.instantiate()
+		room.name = "Room%d" % index
+		room.position = Vector2(float(record.get("x", 0.0)), float(record.get("y", 0.0)))
+		room.room_id = str(record.get("room_id", ""))
+		room.title = str(record.get("label", LEGACY_TITLES.get(room.room_id, room.room_id)))
+		room.left_door = index > 0
+		room.right_door = index < rooms.size() - 1
+		room.next_room_id = str(rooms[index + 1].room_id) if index < rooms.size() - 1 else ""
+		$Rooms.add_child(room)
+		if index < rooms.size() - 1:
+			var gate: Area2D = MarkerScene.instantiate()
+			gate.position = Vector2(448, 160)
+			gate.stable_id = "connector.%s.%s" % [room.room_id.trim_prefix("room."), room.next_room_id.trim_prefix("room.")]
+			gate.kind = "discovery"
+			gate.destination_id = room.next_room_id
+			gate.radius = 28.0
+			room.add_child(gate)
+	for record: Variant in bindings:
+		if not record is Dictionary: continue
+		var host := _room_node(str(record.get("room_id", "")))
+		if host == null: continue
+		var marker: Area2D = MarkerScene.instantiate()
+		# The nave guardian keeps its authored deeper placement.
+		marker.position = Vector2(240, 160) if host.room_id == "room.nave" else Vector2(288, 160)
+		marker.stable_id = str(record.get("encounter_id", ""))
+		marker.kind = "encounter"
+		marker.label = str(record.get("label", ""))
+		host.add_child(marker)
+	var exit_host := _room_node(exit_room_id)
+	if exit_host != null:
+		var arch: Area2D = MarkerScene.instantiate()
+		arch.position = Vector2(432, 160)
+		arch.stable_id = "exit.undercrypt"
+		arch.kind = "exit"
+		arch.label = "Return arch"
+		exit_host.add_child(arch)
+
+func _room_node(room_id: String) -> Node2D:
+	for room: Node2D in $Rooms.get_children():
+		if room.room_id == room_id: return room
+	return null
 
 func _sync_navigation(restore: bool = false) -> void:
 	navigation_ready = false

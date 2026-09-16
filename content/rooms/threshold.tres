@@ -7,3 +7,5 @@ id = "room.threshold"
 display_name = "The threshold"
 icon = ExtResource("icon")
 encounter_ids = PackedStringArray()
+west_connector = ""
+east_connector = "arch.stone"

@@ -9,6 +9,8 @@ const Rules = preload("res://scripts/domain/rules/battle_rules.gd")
 const Dice = preload("res://scripts/domain/rules/dice_rules.gd")
 const Progression = preload("res://scripts/domain/rules/progression_rules.gd")
 const Inventory = preload("res://scripts/domain/rules/inventory_rules.gd")
+const Dungeon = preload("res://scripts/domain/rules/dungeon_rules.gd")
+const Limits = preload("res://scripts/domain/rules/rule_limits.gd")
 const KINDS := ["select_skill", "roll", "keep", "reroll", "commit", "pass", "enemy_action", "buy_potion", "recover", "enter_dungeon", "abandon", "use_potion"]
 
 static func parse_intent(intent: Dictionary) -> Command:
@@ -143,6 +145,28 @@ static func _reject(code: String, command: Command = null) -> Result:
 	if command != null: result.operation_id = command.operation_id
 	return result
 
+## Phase 11: one seeded expedition layout per accepted entry. The run seed mixes
+## a bounded generation-stream draw with the session identity, so expeditions
+## differ across runs and sessions while staying fully reproducible. The whole
+## candidate is discarded on rejection, so a failed entry leaves the session's
+## state and RNG unchanged.
+static func _generate_exploration(candidate: Session, catalog: Catalog) -> String:
+	var def: Resource = catalog.definition("dungeon.undercrypt")
+	if def == null: return "dungeon_unavailable"
+	var draw: int = candidate.rng.stream("generation").bounded(Limits.VALUE_MAX)
+	if draw < 0: return "dungeon_unavailable"
+	var payload: Dictionary = Dungeon.generate(def, catalog.definition, candidate.rng.stream("generation"),
+		(draw + candidate.session_id) % (Limits.VALUE_MAX + 1), "dungeon.undercrypt")
+	if payload.has("error"): return str(payload.error)
+	candidate.exploration.layout_id = str(payload.layout_id)
+	candidate.exploration.rooms = payload.rooms.duplicate(true)
+	candidate.exploration.bindings = payload.bindings.duplicate(true)
+	candidate.exploration.exit_room_id = str(payload.exit_room_id)
+	candidate.exploration.run_seed = int(payload.run_seed)
+	candidate.exploration.world_id = str(payload.world_id)
+	candidate.exploration.discovered.assign([str(payload.rooms[0].room_id)])
+	return ""
+
 ## Temporary first-loop service values: one potion per purchase, 5 gold, cap 5.
 ## Spatial/session ownership is revalidated by Main before this pure resolver.
 static func _service(session: Session, command: Command, catalog: Catalog) -> Result:
@@ -180,6 +204,8 @@ static func _service(session: Session, command: Command, catalog: Catalog) -> Re
 			candidate.hero.shield = 0
 		"enter_dungeon":
 			candidate.exploration = preload("res://scripts/domain/state/exploration_state.gd").new()
+			var generated := _generate_exploration(candidate, catalog)
+			if not generated.is_empty(): return _reject(generated,command)
 			candidate.battle = null
 			candidate.mode = Session.Mode.DUNGEON
 			Progression.begin(candidate)

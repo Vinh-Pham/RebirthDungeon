@@ -398,7 +398,7 @@ func _replace_view() -> void:
 	_view.configure(observation(), heading, description, choices)
 	_view.intent_requested.connect(_on_intent.bind(weakref(_view)))
 	_view.set_input_enabled(_focused)
-	_status.text = "Phase 10 · session %d · revision %d · %s" % [_session.session_id, _session.revision, heading]
+	_status.text = "Phase 11 · session %d · revision %d · %s" % [_session.session_id, _session.revision, heading]
 
 	if _session.mode == Mode.BATTLE and _session.battle != null:
 		_view.hide()
@@ -472,8 +472,9 @@ func _world_interaction(stable_id: String, kind: String, id: int, revision: int)
 		_encounter_authorized = false
 	elif kind == "exit":
 		_world.transition_locked = false
-		if _session.exploration.resolved.size() < 2:
-			_world.show_panel("The arch is sealed", "Defeat both sentinels before returning.")
+		var outstanding: Array[String] = _session.exploration.outstanding_required()
+		if not outstanding.is_empty():
+			_world.show_panel("The arch is sealed", "Defeat every required guardian before returning (%d remaining)." % outstanding.size())
 		else:
 			var exit_session: SessionShell = _session.copy() if persistence_enabled else _session
 			var progression_error := preload("res://scripts/domain/rules/progression_rules.gd").finish(exit_session,true,_catalog)

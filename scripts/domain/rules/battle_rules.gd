@@ -348,7 +348,7 @@ static func _advance(session: Session, finished: Actor, catalog: RefCounted, eve
 		battle.phase = Battle.Phase.FINISHED
 		if battle.mission_id.is_empty() and session.exploration != null:
 			if battle.outcome == "victory" and not session.exploration.resolved.has(battle.encounter_id):
-				Progression.encounter(session)
+				Progression.encounter(session, catalog)
 				session.exploration.resolved.append(battle.encounter_id)
 				session.exploration.pending_gold = mini(Math.CAP, session.exploration.pending_gold + battle.pending_gold)
 			elif battle.outcome == "defeat":

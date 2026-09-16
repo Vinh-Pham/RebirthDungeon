@@ -20,6 +20,22 @@ func settle_world(tree: SceneTree, main: Node) -> void:
 			return
 	check(false, "Navigation installation did not synchronize")
 
+func _room_node(world: Node2D, room_id: String) -> Node2D:
+	for room: Node2D in world.get_node("Rooms").get_children():
+		if room.room_id == room_id: return room
+	return null
+
+func _bindings_in(expedition: RefCounted, room_id: String) -> Array:
+	var result: Array = []
+	for record: Variant in expedition.bindings:
+		if record is Dictionary and str(record.room_id) == room_id: result.append(record)
+	return result
+
+func _room_index(expedition: RefCounted, room_id: String) -> int:
+	for index: int in expedition.rooms.size():
+		if str(expedition.rooms[index].room_id) == room_id: return index
+	return 0
+
 func walk(tree: SceneTree, world: Node2D, point: Vector2, max_frames: int = 400) -> void:
 	var queued: bool = world.queue_destination(point)
 	check(queued, "Destination rejected before routing: %s" % point)
@@ -79,13 +95,21 @@ func run(tree: SceneTree) -> PackedStringArray:
 	await frames(tree)
 	await walk(tree, world, Vector2(416,160))
 	await frames(tree)
+	# Fixture scaffolding: a survivable hero so the sweep can win every bound
+	# guardian, including the optional twin-enemy watch, without potions.
+	main._session.hero.maximum[0] = 200
+	main._session.hero.current[0] = 200
 	main._confirm_service("enter_dungeon","",1,main._session.revision,main._dialogue_serial)
 	await settle_world(tree, main)
 	check(main.observation().mode == Mode.DUNGEON, "Town entrance did not enter dungeon")
 	world = main._world
-	check(world.discovered == ["room.threshold"], "New dungeon revealed extra rooms")
+	var expedition: RefCounted = main._session.exploration
+	check(world.discovered == [world.entry_room_id()], "New dungeon revealed extra rooms")
 	check(world.visible_markers().is_empty(), "Hidden encounter leaked into observation")
-	check(not world.get_node("Rooms/Gallery").visible, "Unknown room was rendered")
+	var hidden_rendered := false
+	for room: Node2D in world.get_node("Rooms").get_children():
+		if not world.discovered.has(room.room_id) and room.visible: hidden_rendered = true
+	check(not hidden_rendered, "Unknown room was rendered")
 	check(not main.request_mode(Mode.BATTLE,1,main.observation().revision), "Battle entered without encounter authorization")
 	check(world.queue_destination(Vector2(800,160)), "Visible input should queue for validation")
 	await frames(tree, 12)
@@ -97,32 +121,38 @@ func run(tree: SceneTree) -> PackedStringArray:
 	await frames(tree, 70)
 	Input.action_release("move_left")
 	check(world.player.global_position.x >= 7.8, "Keyboard crossed wall collision")
+	# Sweep the generated chain room by room: doorway reveals, every bound
+	# guardian, then the exit arch. All of it follows the saved stable ids.
+	var first_room: String = str(expedition.rooms[1].room_id)
 	await walk(tree, world, Vector2(430,160))
 	await settle_world(tree, main)
-	check(world.discovered.has("room.gallery"), "Doorway approach did not reveal gallery")
-	check(world.visible_markers().size() == 1, "Discovery exposed wrong encounter count")
+	check(world.discovered.has(first_room), "Doorway approach did not reveal the next room")
+	var first_bindings := _bindings_in(expedition, first_room)
+	check(world.visible_markers().size() == first_bindings.size(), "Discovery exposed wrong encounter count")
 	# A revealed but disconnected authored region must not become a teleport.
-	var gallery: Node2D = world.get_node("Rooms/Gallery")
-	gallery.position.y = 600
+	var revealed: Node2D = _room_node(world, first_room)
+	revealed.position.y = 600
 	world._sync_navigation()
 	await settle_world(tree,main)
 	world.queue_destination(Vector2(650,760))
 	await frames(tree,8)
 	check(not world.player.path_active, "Disconnected navigation target remained active")
-	gallery.position.y = 0
+	revealed.position.y = 0
 	world._sync_navigation()
 	await settle_world(tree,main)
 	await walk(tree, world, Vector2(650,160))
 	check(world.player.global_position.distance_to(Vector2(650,160)) < 5, "Navigation failed narrow connector")
-	check(not world.discovered.has("room.sanctum"), "Route revealed distant room")
+	var exit_room: String = str(expedition.exit_room_id)
+	check(not world.discovered.has(exit_room) or exit_room == first_room, "Route revealed distant room")
 	var token := main.observation()
-	main._world_interaction("encounter.gallery","encounter",token.session_id,token.revision-1)
+	var first_id: String = str(first_bindings[0].encounter_id) if not first_bindings.is_empty() else ""
+	main._world_interaction(first_id,"encounter",token.session_id,token.revision-1)
 	check(main.observation().mode == Mode.DUNGEON, "Stale encounter callback accepted")
-	await walk(tree, world, Vector2(848,160))
+	await walk(tree, world, Vector2(1*560.0+288.0,160))
 	await frames(tree)
 	check(main.observation().mode == Mode.BATTLE, "Encounter did not enter separate fixture")
 	var saved: Dictionary = main._session.exploration.capture()
-	check(saved.active_encounter == "encounter.gallery", "Wrong encounter captured")
+	check(saved.active_encounter == first_id, "Wrong encounter captured")
 	var combat_before: Dictionary = main.observation()
 	Input.action_press("move_right")
 	await frames(tree, 8)
@@ -135,7 +165,7 @@ func run(tree: SceneTree) -> PackedStringArray:
 	check(not main.request_mode(Mode.RESULTS,1,main.observation().revision), "Unfinished battle cannot escape to results")
 	var battle_revision: int = main.observation().revision
 	check(not main.request_mode(Mode.MENU,1,battle_revision), "Battle fixture allowed an unresolved escape")
-	main._world_interaction("encounter.gallery","encounter",token.session_id,token.revision)
+	main._world_interaction(first_id,"encounter",token.session_id,token.revision)
 	check(main.observation().revision == battle_revision, "Duplicate encounter entered twice")
 	var json := JSON.stringify(saved)
 	check(JSON.parse_string(json) is Dictionary, "Continuation is not JSON data")
@@ -146,22 +176,42 @@ func run(tree: SceneTree) -> PackedStringArray:
 	await settle_world(tree, main)
 	world = main._world
 	check(world.player.global_position.distance_to(Vector2(saved.position.x,saved.position.y)) < 1, "Return lost saved position")
-	check(world.visible_markers().is_empty(), "Resolved encounter survived / hidden encounter leaked")
+	for marker: Node2D in world.visible_markers():
+		check(not world.resolved.has(marker.stable_id), "Resolved encounter survived / hidden encounter leaked")
 	check(world.phantom.follow_target == world.player, "Camera retained old player")
-	check(main._session.exploration.resolved == ["encounter.gallery"], "Outcome removed unrelated encounter")
-	await walk(tree, world, Vector2(990,160))
-	await settle_world(tree,main)
-	check(world.discovered.size() == 3, "Second doorway did not reveal sanctum")
-	await walk(tree, world, Vector2(1408,160))
-	await frames(tree)
-	check(main.observation().mode == Mode.BATTLE, "Second encounter did not trigger")
-	await win_battle(tree, main)
-	await settle_world(tree,main)
-	world = main._world
-	await walk(tree,world,Vector2(1552,160))
-	await frames(tree)
-	check(main.observation().mode == Mode.RESULTS, "Resolved dungeon exit did not reach results")
-	check(main._session.hero.committed_gold == 25 and main._session.exploration.pending_gold == 0, "Exit commits pending gold once")
+	check(main._session.exploration.resolved == [first_id], "Outcome removed unrelated encounter")
+	# Continue through the remaining rooms: reveal each doorway, fight whatever
+	# guardian the saved layout binds there, then leave through the exit arch.
+	for index: int in range(2, expedition.rooms.size()):
+		var room_id: String = str(expedition.rooms[index].room_id)
+		if not is_instance_valid(world): world = main._world
+		if not is_instance_valid(world): break
+		if not world.discovered.has(room_id):
+			await walk(tree, world, Vector2((index-1)*560.0+448.0,160))
+			await settle_world(tree, main)
+			world = main._world
+			check(world.discovered.has(room_id), "Second doorway did not reveal " + room_id)
+		var bound := _bindings_in(expedition, room_id)
+		if bound.is_empty(): continue
+		var local_x := 240.0 if room_id == "room.nave" else 288.0
+		await walk(tree, world, Vector2(index*560.0+local_x,160))
+		await frames(tree)
+		check(main.observation().mode == Mode.BATTLE, "Second encounter did not trigger")
+		await win_battle(tree, main)
+		await settle_world(tree,main)
+		world = main._world
+	check(main._session.exploration.resolved.size() == expedition.bindings.size(), "Sweep resolved every bound guardian")
+	if not is_instance_valid(world): world = main._world
+	check(is_instance_valid(world) and main.observation().mode == Mode.DUNGEON, "Sweep ends back in the generated dungeon")
+	if is_instance_valid(world) and main.observation().mode == Mode.DUNGEON:
+		var exit_index := _room_index(expedition, exit_room)
+		await walk(tree,world,Vector2(exit_index*560.0+432.0,160))
+		await frames(tree)
+		check(main.observation().mode == Mode.RESULTS, "Resolved dungeon exit did not reach results")
+		var expected_gold := 0
+		for id: String in main._session.exploration.resolved:
+			expected_gold += main._catalog.definition(id).pending_gold
+		check(main._session.hero.committed_gold == expected_gold and main._session.exploration.pending_gold == 0, "Exit commits pending gold once")
 	# Physics-rate tolerance, independent camera rebind and viewport conversion.
 	for hz: int in [30, 120]:
 		Engine.physics_ticks_per_second = hz
@@ -213,13 +263,18 @@ func run(tree: SceneTree) -> PackedStringArray:
 func win_battle(tree: SceneTree, main: Node) -> void:
 	var fixture := preload("res://tests/unit/combat_fixture.gd").new()
 	fixture.catalog = main._catalog
-	for activation: int in 24:
+	for activation: int in 60:
 		if main._session.battle.phase == 3: break
 		if main._session.battle.active_actor_id == "hero":
+			var target := "enemy.0"
+			for i: int in main._session.battle.enemies.size():
+				if main._session.battle.enemies[i].current[0] > 0:
+					target = "enemy.%d" % i
+					break
 			var kind: String = "pass" if main._session.hero.current[2] < 5 else "select_skill"
-			var cmd: RefCounted = fixture.command(main._session,kind,"skill.sword","enemy.0")
+			var cmd: RefCounted = fixture.command(main._session,kind,"skill.sword",target)
 			var intent := {"session_id":cmd.session_id,"expected_revision":cmd.expected_revision,"operation_id":"integration:%d" % cmd.expected_revision,
-				"kind":kind,"actor_id":"hero","skill_id":"skill.sword","target_id":"enemy.0"}
+				"kind":kind,"actor_id":"hero","skill_id":"skill.sword","target_id":target}
 			check(main.submit_intent(intent).accepted,"Combat integration selection/pass")
 			if kind == "select_skill":
 				for action: String in ["roll","commit"]:
