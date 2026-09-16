@@ -4,9 +4,18 @@ extends Area2D
 @export var destination_id: String = ""
 @export var label: String = ""
 @export var radius: float = 26.0
+## Phase 12: gentle pulse is cosmetic and skipped under reduced motion.
+var reduced_motion: bool = false
+var _pulse: float = 0.0
 var texture: Texture2D
 
+func _process(delta: float) -> void:
+	if reduced_motion or not visible: return
+	_pulse += delta
+	queue_redraw()
+
 func _ready() -> void:
+	set_process(true)
 	collision_layer = 0
 	collision_mask = 2
 	var shape := CollisionShape2D.new()
@@ -24,7 +33,8 @@ func _draw() -> void:
 	if kind == "discovery":
 		return
 	var color := Color("#e4bc76") if kind == "encounter" else Color("#9ccdc0")
-	draw_arc(Vector2.ZERO, radius, 0, TAU, 32, Color(color,0.35), 1)
+	var pulse: float = 0.0 if reduced_motion else 2.5 * sin(_pulse * 5.0)
+	draw_arc(Vector2.ZERO, radius + pulse, 0, TAU, 32, Color(color,0.35), 1)
 	draw_circle(Vector2(0,2), 12, Color(0,0,0,0.3))
 	if texture != null:
 		draw_texture_rect(texture,Rect2(-20,-35,40,40),false,Color("#d4b899") if kind == "npc" else Color.WHITE)

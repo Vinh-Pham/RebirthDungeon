@@ -77,8 +77,21 @@ func run(tree: SceneTree) -> PackedStringArray:
 				failures.append("Old mode view survived replacement")
 	main.development_enabled = false
 	var before := main.observation()
-	if main.request_mode(Mode.LOADING, before.session_id, before.revision):
-		failures.append("Development destinations exposed with development disabled")
+	# Phase 12: starting from the title is the release path; only the town's
+	# direct dungeon fixture stays development-only.
+	if not main.request_mode(Mode.LOADING, before.session_id, before.revision):
+		failures.append("Release build could not start from the title screen")
+	for i: int in 300:
+		await _settle(tree)
+		if main._session.mode == Mode.TOWN: break
+	if main._session.mode == Mode.TOWN:
+		var fixture_found := false
+		for button: Node in main.get_node("UI/UIHost/Layout/ModeHost").find_children("*", "Button", true, false):
+			if (button as Button).text == "Open dungeon fixture": fixture_found = true
+		if fixture_found:
+			failures.append("Development dungeon fixture exposed with development disabled")
+	else:
+		failures.append("Release build never reached town")
 	main.queue_free()
 	await _settle(tree)
 	print("SHELL_FIXTURE: %s" % ("PASS" if failures.is_empty() else "FAIL"))

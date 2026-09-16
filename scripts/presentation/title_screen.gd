@@ -2,6 +2,8 @@ extends ShellModeView
 ## Penpot composition. Emits only the existing revision-scoped loading intent.
 ## Lettering is exported artwork; Button.text retains its semantic action name.
 
+signal settings_requested
+
 const WALL = preload("res://assets/art/title_screen/wall.png")
 const STATUE = preload("res://assets/art/title_screen/statue.png")
 const TITLE = preload("res://assets/art/title_screen/title.png")
@@ -10,8 +12,14 @@ const VIGNETTE = preload("res://assets/art/title_screen/vignette.png")
 const START = preload("res://assets/art/title_screen/start.png")
 var _factor: float = 1.0
 var _origin := Vector2.ZERO
+var _settings_button: Button
 
 func _ready() -> void:
+	_settings_button = Button.new()
+	_settings_button.text = "Settings"
+	_settings_button.custom_minimum_size = Vector2(240, 48)
+	_settings_button.pressed.connect(func() -> void: settings_requested.emit())
+	$Controls.add_child(_settings_button)
 	resized.connect(_layout_art)
 	_layout_art()
 
@@ -39,6 +47,14 @@ func configure(observation: Dictionary, _heading: String, description: String, c
 		button.add_theme_color_override(state, Color.TRANSPARENT)
 	button.mouse_entered.connect(func() -> void: button.self_modulate = Color(1.18, 1.18, 1.18))
 	button.mouse_exited.connect(func() -> void: button.self_modulate = Color.WHITE)
+	# Keyboard flow reaches the settings entry below the start button.
+	var start_button: Button = $Controls/StartGame
+	start_button.focus_neighbor_bottom = start_button.get_path_to(_settings_button)
+	start_button.focus_next = start_button.focus_neighbor_bottom
+	_settings_button.focus_neighbor_top = _settings_button.get_path_to(start_button)
+	_settings_button.focus_previous = _settings_button.focus_neighbor_top
+	_settings_button.focus_neighbor_bottom = _settings_button.get_path_to(start_button)
+	_settings_button.focus_next = _settings_button.focus_neighbor_top
 	$Controls/Error.text = description if not description.begins_with("Explore.") else ""
 	_layout_art()
 
@@ -51,6 +67,8 @@ func _layout_art() -> void:
 	_origin = (size - Vector2(1280, 720) * _factor) * 0.5
 	$Controls/StartGame.position = _origin + Vector2(88, 568) * _factor
 	$Controls/StartGame.size = Vector2(300, 68) * _factor
+	_settings_button.position = _origin + Vector2(88, 652) * _factor
+	_settings_button.size = Vector2(240, 48) * _factor
 	$Controls/Error.position = _origin + Vector2(56, 270) * _factor
 	$Controls/Error.size = Vector2(380, 250) * _factor
 	queue_redraw()

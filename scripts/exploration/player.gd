@@ -4,6 +4,9 @@ const SPEED: float = 140.0
 var input_allowed: Callable
 var path_active: bool = false
 var stalled_seconds: float = 0.0
+## Phase 12 cosmetic flag from the settings service; never touches movement.
+var reduced_motion: bool = false
+var _bob: float = 0.0
 @onready var agent: NavigationAgent2D = $NavigationAgent2D
 @onready var sprite: Sprite2D = $Sprite2D
 
@@ -44,3 +47,10 @@ func _physics_process(delta: float) -> void:
 		stalled_seconds = 0.0
 	if absf(direction.x) > 0.05:
 		sprite.flip_h = direction.x < 0
+	# Cosmetic walk bob; reduced motion keeps the sprite level. Presentation
+	# only: movement, collision and navigation never read this.
+	if reduced_motion or velocity.is_zero_approx():
+		sprite.position.y = 0
+	else:
+		_bob += delta
+		sprite.position.y = -absf(sin(_bob * 10.0)) * 2.0

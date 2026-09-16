@@ -5,6 +5,8 @@ signal interaction_requested(stable_id: String, kind: String)
 signal menu_requested
 signal abandon_requested
 signal progression_requested(tab: String)
+signal settings_requested
+signal feedback_requested(name: String)
 var conversation_camera: PhantomCamera2D
 const PlayerScene = preload("res://scenes/exploration/player.tscn")
 const InteractionMarkerScript = preload("res://scripts/exploration/interaction_marker.gd")
@@ -20,6 +22,9 @@ const DungeonState = preload("res://scripts/domain/state/exploration_state.gd")
 var rooms: Array = DungeonState.LAYOUT.duplicate(true)
 var bindings: Array = DungeonState.LEGACY_BINDINGS.duplicate(true)
 var exit_room_id: String = DungeonState.LEGACY_EXIT
+## Phase 12 persisted presentation, mirrored from the settings service.
+var text_scale: float = 1.0
+var reduced_motion: bool = false
 var session_id: int
 var revision: int
 var session_valid: Callable
@@ -75,6 +80,7 @@ func _ready() -> void:
 	player.input_allowed = can_move
 	add_child(player)
 	player.agent.set_navigation_map(_navigation_map)
+	player.reduced_motion = reduced_motion
 	for room: Node2D in $Rooms.get_children():
 		room.region.set_navigation_map(_navigation_map)
 		room.set_discovered(discovered.has(room.room_id))
@@ -82,6 +88,7 @@ func _ready() -> void:
 			room.open_connector()
 		for marker: Node in room.get_children():
 			if marker.get_script() == InteractionMarkerScript:
+				marker.reduced_motion = reduced_motion
 				if resolved.has(marker.stable_id):
 					marker.hide()
 				marker.body_entered.connect(_on_overlap.bind(marker.stable_id, true))
@@ -89,6 +96,7 @@ func _ready() -> void:
 	_build_hud()
 	phantom.set_follow_target(player)
 	phantom.set_priority(20)
+	phantom.follow_damping = not reduced_motion
 	get_viewport().size_changed.connect(_resize_camera)
 	_resize_camera()
 	_sync_navigation(true)
@@ -340,6 +348,7 @@ func _reveal(id: String) -> void:
 				if previous.next_room_id == id:
 					previous.open_connector()
 			_hint.text = room.title + " discovered"
+			feedback_requested.emit("discover")
 			continuation_changed.emit(player.global_position, discovered.duplicate())
 			_sync_navigation()
 			return
@@ -401,6 +410,14 @@ func _build_hud() -> void:
 		freeze()
 		menu_requested.emit())
 	top.add_child(menu)
+	var settings_button := Button.new()
+	settings_button.text = "Settings"
+	settings_button.custom_minimum_size = Vector2(110,48)
+	settings_button.focus_entered.connect(suspend_input)
+	settings_button.pressed.connect(func() -> void:
+		freeze()
+		settings_requested.emit())
+	top.add_child(settings_button)
 	var spacer := Control.new()
 	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -408,8 +425,20 @@ func _build_hud() -> void:
 	_hint = Label.new()
 	_hint.text = "WASD / arrows to move  ·  Click or tap to walk  ·  Approach the eastern arch"
 	_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_hint.add_theme_font_size_override("font_size",16)
+	_hint.add_theme_font_size_override("font_size",roundi(16 * text_scale))
 	stack.add_child(_hint)
+
+## Phase 12 live presentation updates from the settings panel.
+func set_text_scale(value: float) -> void:
+	text_scale = clampf(value, 1.0, 1.4)
+	_hint.add_theme_font_size_override("font_size",roundi(16 * text_scale))
+
+func set_reduced_motion(value: bool) -> void:
+	reduced_motion = value
+	if is_instance_valid(phantom): phantom.follow_damping = not reduced_motion
+	player.reduced_motion = reduced_motion
+	for marker: Node in find_children("*", "", true, false):
+		if marker.get_script() == InteractionMarkerScript: marker.reduced_motion = reduced_motion
 
 func show_panel(title: String, body: String) -> void:
 	if panel_open:

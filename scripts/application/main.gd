@@ -32,8 +32,9 @@ var _pause_requested: bool = false
 var checkpoint := preload("res://scripts/application/checkpoint_test_adapter.gd").new()
 var _scheduler: Node
 var _battle_view: Control
-var _battle_text_scale: float = 1.0
-var _battle_reduced_motion: bool = false
+var _settings := preload("res://scripts/services/settings_service.gd").new()
+var _audio: Node = preload("res://scripts/services/audio_service.gd").new()
+var _settings_panel: CanvasLayer
 var _progression_view: CanvasLayer
 var _progression_target: String = ""
 var _progression_serial: int = 0
@@ -97,6 +98,12 @@ var development_enabled: bool = OS.is_debug_build()
 func _ready() -> void:
 	preload("res://scripts/application/shell_input_map.gd").configure()
 	preload("res://scripts/application/addon_lifecycle.gd").configure_runtime()
+	_settings.load_settings()
+	_settings.apply_bindings()
+	_settings.apply_audio()
+	add_child(_audio)
+	_status.visible = development_enabled
+	_apply_theme_text_scale()
 	_scheduler = EnemyScheduler.new()
 	add_child(_scheduler)
 	_build_chart()
@@ -141,6 +148,7 @@ func _publish_checkpoint() -> void:
 	_movement_checkpoint = false
 	_publishing_result = true
 	_session = result.candidate
+	for event: Dictionary in result.events: _audio.map_event(event)
 	_quest_adapter.sync(_session)
 	_hide_save_panel()
 	if changing_mode:
@@ -251,8 +259,6 @@ func request_mode(target: int, id: int, revision: int) -> bool:
 		return false
 	if not _session.matches(id, revision) or not EDGES[_session.mode].has(target):
 		return false
-	if target != Mode.MENU and not development_enabled:
-		return false
 	if target == Mode.TOWN and _session.mode == Mode.LOADING and (_resources.is_empty() or not loading_error.is_empty()):
 		return false
 	if _session.mode == Mode.BATTLE and target == Mode.MENU:
@@ -310,6 +316,7 @@ func _on_mode_entered(mode: int) -> void:
 		_pending = -1
 	_chart.set_expression_property(&"authorized_target", -1)
 	_replace_view()
+	_audio.play_music("battle" if mode == Mode.BATTLE else "town")
 	observation_changed.emit(observation())
 	if mode == Mode.LOADING:
 		_load_required.call_deferred(_session.session_id, _session.revision)
@@ -338,8 +345,9 @@ func _replace_view() -> void:
 	_close_progression()
 	_close_dialogue()
 	if is_instance_valid(_battle_view):
-		_battle_text_scale = _battle_view.text_scale
-		_battle_reduced_motion = _battle_view.reduced_motion
+		_settings.set_text_scale(_battle_view.text_scale)
+		_settings.reduced_motion = _battle_view.reduced_motion
+		_settings.save_settings()
 		_battle_view.set_input_enabled(false)
 		_battle_view.get_parent().remove_child(_battle_view)
 		_battle_view.queue_free()
@@ -355,6 +363,7 @@ func _replace_view() -> void:
 		_view.queue_free()
 		mode_detached.emit()
 	_view = (TITLE_VIEW if _session.mode == Mode.MENU else MODE_VIEW).instantiate() as ShellModeView
+	if _view.has_signal("settings_requested"): _view.settings_requested.connect(_open_settings.bind(false))
 	if _session.mode == Mode.MENU:
 		_ui.add_child(_view)
 	else:
@@ -365,18 +374,18 @@ func _replace_view() -> void:
 	match _session.mode:
 		Mode.MENU:
 			heading = "Rebirth Dungeon"
-			description = "Explore. Master. Begin again.\nApplication shell · development preview"
+			description = "Explore. Master. Begin again."
 			if not loading_error.is_empty():
 				description = loading_error
-			if development_enabled:
-				choices[Mode.LOADING] = "Start Game"
+			choices[Mode.LOADING] = "Start Game"
 		Mode.LOADING:
 			description = "Loading required resources and validating content…"
 			if not loading_error.is_empty():
 				description = loading_error
 			choices[Mode.MENU] = "Back to menu"
 		Mode.TOWN:
-			choices[Mode.DUNGEON] = "Open dungeon fixture"
+			if development_enabled:
+				choices[Mode.DUNGEON] = "Open dungeon fixture"
 		Mode.DUNGEON:
 			description = "Explore the Undercrypt."
 		Mode.BATTLE:
@@ -406,8 +415,8 @@ func _replace_view() -> void:
 		add_child(_battle_view)
 		_battle_view.durable_saves = persistence_enabled
 		_battle_view.present(observation(), [], checkpoint.state)
-		_battle_view.set_text_scale(_battle_text_scale)
-		_battle_view.set_reduced_motion(_battle_reduced_motion)
+		_battle_view.set_text_scale(_settings.text_scale)
+		_battle_view.set_reduced_motion(_settings.reduced_motion)
 		_battle_view.command_requested.connect(_battle_intent.bind(weakref(_battle_view)), CONNECT_DEFERRED)
 		_battle_view.continue_requested.connect(_battle_continue.bind(weakref(_battle_view)), CONNECT_DEFERRED)
 		_battle_view.retry_requested.connect(retry_checkpoint, CONNECT_DEFERRED)
@@ -428,18 +437,22 @@ func _install_world() -> void:
 		_session.exploration = ExplorationState.new()
 	var scene: PackedScene = load("res://scenes/exploration/town.tscn" if town else "res://scenes/exploration/dungeon.tscn")
 	_world = scene.instantiate()
+	_world.text_scale = _settings.text_scale
+	_world.reduced_motion = _settings.reduced_motion
 	var continuation: Dictionary = ({"position":{"x":_session.town_position_x,"y":_session.town_position_y}} if persistence_enabled else {}) if town else _session.exploration.capture()
 	_world.configure(_session.session_id, _session.revision, continuation, _world_session_valid)
 	_world.continuation_changed.connect(_capture_continuation.bind(_session.session_id, _session.revision))
 	_world.interaction_requested.connect(_world_interaction.bind(_session.session_id, _session.revision), CONNECT_DEFERRED)
 	_world.progression_requested.connect(_open_progression)
 	_world.abandon_requested.connect(_open_abandon)
+	_world.settings_requested.connect(_open_settings.bind(true))
+	_world.feedback_requested.connect(func(name: String) -> void: _audio.play_sfx("door" if name == "discover" else "click"))
 	_world.menu_requested.connect(request_mode.bind(Mode.MENU, _session.session_id, _session.revision))
 	add_child(_world)
 	_world.set_focused(_focused)
 
 func _world_session_valid(id: int, revision: int) -> bool:
-	return _alive and _focused and development_enabled and loading_error.is_empty() and _pending == -1 and not _publishing_result and not checkpoint.busy() and _save_overlay == null and _session.matches(id, revision) and _session.mode in [Mode.TOWN, Mode.DUNGEON]
+	return _alive and _focused and loading_error.is_empty() and _pending == -1 and not _publishing_result and not checkpoint.busy() and _save_overlay == null and _session.matches(id, revision) and _session.mode in [Mode.TOWN, Mode.DUNGEON]
 
 func _capture_continuation(position: Vector2, discovered: Array[String], id: int, revision: int) -> void:
 	if not _world_session_valid(id, revision) or not position.is_finite():
@@ -807,6 +820,41 @@ func _close_dialogue() -> void:
 
 static func _default_dialogue_scene() -> Node:
 	return (Engine.get_main_loop() as SceneTree).current_scene
+
+## Phase 12: persisted presentation. The theme base size and every live view
+## re-derive from the settings service; audio buses apply immediately.
+func _apply_theme_text_scale() -> void:
+	var theme: Theme = _ui.theme
+	if theme != null: theme.default_font_size = roundi(20 * _settings.text_scale)
+
+func _apply_presentation() -> void:
+	_apply_theme_text_scale()
+	if is_instance_valid(_world):
+		_world.set_text_scale(_settings.text_scale)
+		_world.set_reduced_motion(_settings.reduced_motion)
+	if is_instance_valid(_battle_view):
+		_battle_view.set_text_scale(_settings.text_scale)
+		_battle_view.set_reduced_motion(_settings.reduced_motion)
+
+func _open_settings(from_world: bool = false) -> void:
+	if is_instance_valid(_settings_panel): return
+	if from_world and (not _world_session_valid(_session.session_id, _session.revision) or not is_instance_valid(_world)): return
+	if from_world and is_instance_valid(_world): _world.freeze()
+	_settings_panel = preload("res://scripts/presentation/settings_panel.gd").new()
+	_settings_panel.start(_settings)
+	add_child(_settings_panel)
+	_settings_panel.closed.connect(_close_settings)
+	_settings_panel.presentation_changed.connect(_apply_presentation)
+
+func _close_settings() -> void:
+	if not is_instance_valid(_settings_panel): return
+	var focus := get_viewport().gui_get_focus_owner()
+	if focus != null: focus.release_focus()
+	var old := _settings_panel
+	_settings_panel = null
+	remove_child(old)
+	old.queue_free()
+	if is_instance_valid(_world): _world.end_conversation("")
 
 func _open_progression(tab: String, target: String = "") -> void:
 	if not _world_session_valid(_session.session_id,_session.revision) or not is_instance_valid(_world) or is_instance_valid(_progression_view) or is_instance_valid(_dialogue): return

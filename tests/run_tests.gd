@@ -11,6 +11,7 @@ func _run() -> void:
 	var failures: PackedStringArray = await BaselineFixture.new().run(self, negative)
 	if not negative:
 		failures.append_array(load("res://tests/unit/catalog_fixture.gd").new().run())
+		failures.append_array(load("res://tests/unit/settings_fixture.gd").new().run())
 		failures.append_array(load("res://tests/unit/rng_fixture.gd").new().run())
 		failures.append_array(load("res://tests/unit/progression_fixture.gd").new().run())
 		failures.append_array(load("res://tests/unit/quest_fixture.gd").new().run())
