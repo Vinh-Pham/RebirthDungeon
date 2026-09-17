@@ -12,6 +12,16 @@ const PlayerScene = preload("res://scenes/exploration/player.tscn")
 const InteractionMarkerScript = preload("res://scripts/exploration/interaction_marker.gd")
 const RoomScene = preload("res://scenes/exploration/room.tscn")
 const MarkerScene = preload("res://scenes/exploration/interaction_marker.tscn")
+const Progression = preload("res://scripts/domain/rules/progression_rules.gd")
+## System bar palette from the authored reference: pink HP, violet mana,
+## amber stamina and a teal experience track.
+const VITAL_NAMES := ["HP", "Mana", "Stamina"]
+const VITAL_TINTS := [Color(0.878, 0.267, 0.486), Color(0.482, 0.251, 0.788), Color(0.851, 0.647, 0.133)]
+const EXP_TINT := Color(0.149, 0.776, 0.635)
+## StyleBox corner indexes (top-left, top-right); the Corner enum is not
+## reachable as StyleBox members from GDScript on this engine build.
+const CORNER_TOP_LEFT := 0
+const CORNER_TOP_RIGHT := 1
 @export var town: bool = false
 ## Authored presentation for layout records written before generated labels.
 const LEGACY_TITLES := {"room.threshold":"The threshold","room.gallery":"Moss gallery","room.sanctum":"The quiet vault","room.nave":"The flooded nave"}
@@ -44,6 +54,13 @@ var _approach_id: String = ""
 var _overlaps: Dictionary = {}
 var _hint: Label
 var _panel: PanelContainer
+## Bottom system bar presentation, updated from copied observations only.
+var _vital_bars: Array[ProgressBar] = []
+var _vital_texts: Array[Label] = []
+var _bar_labels: Array[Label] = []
+var _level_text: Label
+var _exp_bar: ProgressBar
+var _exp_text: Label
 @onready var camera: Camera2D = $Camera2D
 @onready var phantom: PhantomCamera2D = $ExplorationCamera
 
@@ -366,6 +383,7 @@ func _build_hud() -> void:
 	layer.name = "HUD"
 	add_child(layer)
 	var margin := MarginContainer.new()
+	margin.name = "Margin"
 	margin.theme = load("res://scenes/ui/shell_theme.tres")
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -373,6 +391,7 @@ func _build_hud() -> void:
 		margin.add_theme_constant_override("margin_" + edge, 24)
 	layer.add_child(margin)
 	var stack := VBoxContainer.new()
+	stack.name = "Stack"
 	stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	margin.add_child(stack)
 	var top := HFlowContainer.new()
@@ -384,7 +403,9 @@ func _build_hud() -> void:
 	heading.add_theme_font_size_override("font_size", 20)
 	heading.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	top.add_child(heading)
-	for tab: String in ["Inventory","Skills","Character","Titles"]:
+	# The journal window launchers live in the bottom system bar now; the
+	# titles journal keeps its top-bar entry.
+	for tab: String in ["Titles"]:
 		var feature := Button.new()
 		feature.text = tab
 		feature.custom_minimum_size.y = 48
@@ -427,11 +448,194 @@ func _build_hud() -> void:
 	_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_hint.add_theme_font_size_override("font_size",roundi(16 * text_scale))
 	stack.add_child(_hint)
+	# The system bar is full-bleed outside this margin stack, so the stack
+	# reserves its height to keep the hint and top controls clear of it.
+	var bar_space := Control.new()
+	bar_space.name = "BarSpace"
+	bar_space.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stack.add_child(bar_space)
+	_build_system_bar(layer, bar_space)
+
+## Bottom system bar: settings entry on the left, hero vitals, and the journal
+## window launchers above the experience bar (Quests and Pets remain
+## placeholders). The bar spans the full viewport width and sits flush with
+## the bottom screen edge. Presentation only — every value arrives as a copied
+## observation through present_vitals(); nothing here reads the session,
+## grants rewards or changes gameplay outcomes.
+func _build_system_bar(layer: CanvasLayer, bar_space: Control) -> void:
+	var strip := PanelContainer.new()
+	strip.name = "SystemBar"
+	var strip_style := StyleBoxFlat.new()
+	strip_style.bg_color = Color(0.03, 0.06, 0.08, 0.92)
+	strip_style.set_corner_radius(CORNER_TOP_LEFT, 6)
+	strip_style.set_corner_radius(CORNER_TOP_RIGHT, 6)
+	strip_style.set_content_margin_all(8)
+	strip.add_theme_stylebox_override("panel", strip_style)
+	# Anchored across the whole viewport with the bottom edge at zero offset;
+	# growing upward keeps the authored content height flush to the screen.
+	layer.add_child(strip)
+	strip.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	strip.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_sync_bar_space(strip, bar_space)
+	strip.resized.connect(_sync_bar_space.call_deferred.bind(strip, bar_space))
+	var row := HBoxContainer.new()
+	row.name = "SystemRow"
+	row.add_theme_constant_override("separation", 16)
+	strip.add_child(row)
+	var menu_button := Button.new()
+	menu_button.name = "MenuButton"
+	menu_button.text = "MENU"
+	menu_button.custom_minimum_size = Vector2(84, 48)
+	menu_button.size_flags_vertical = Control.SIZE_SHRINK_END
+	menu_button.tooltip_text = "Open settings"
+	menu_button.focus_entered.connect(suspend_input)
+	menu_button.pressed.connect(func() -> void:
+		freeze()
+		settings_requested.emit())
+	row.add_child(menu_button)
+	var vitals := VBoxContainer.new()
+	vitals.name = "Vitals"
+	vitals.size_flags_vertical = Control.SIZE_SHRINK_END
+	vitals.add_theme_constant_override("separation", 4)
+	row.add_child(vitals)
+	for pool: int in 3:
+		vitals.add_child(_vital_bar(pool))
+	var left_space := Control.new()
+	left_space.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	left_space.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(left_space)
+	var center := VBoxContainer.new()
+	center.name = "CenterColumn"
+	center.add_theme_constant_override("separation", 6)
+	row.add_child(center)
+	var windows := HBoxContainer.new()
+	windows.name = "WindowButtons"
+	windows.alignment = BoxContainer.ALIGNMENT_CENTER
+	windows.add_theme_constant_override("separation", 8)
+	center.add_child(windows)
+	# Journal launchers request their windows through Main's validated
+	# progression flow; Quests and Pets stay placeholders until those windows
+	# exist. Pressing returns focus to the world when nothing opens.
+	for title: String in ["Character", "Skills", "Quests", "Inventory", "Pets"]:
+		var window_button := Button.new()
+		window_button.text = title
+		window_button.custom_minimum_size.y = 44
+		window_button.focus_entered.connect(suspend_input)
+		if title in ["Character", "Skills", "Inventory"]:
+			window_button.tooltip_text = "Open the %s window" % title
+			window_button.pressed.connect(func() -> void: progression_requested.emit(title))
+		else:
+			window_button.tooltip_text = "%s window is not implemented yet" % title
+			window_button.pressed.connect(window_button.release_focus)
+		windows.add_child(window_button)
+	var exp_row := HBoxContainer.new()
+	exp_row.name = "ExpRow"
+	exp_row.add_theme_constant_override("separation", 8)
+	center.add_child(exp_row)
+	_level_text = Label.new()
+	_level_text.name = "Lv"
+	_level_text.text = "Lv 1"
+	_level_text.add_theme_font_size_override("font_size", roundi(14 * text_scale))
+	_bar_labels.append(_level_text)
+	exp_row.add_child(_level_text)
+	_exp_bar = ProgressBar.new()
+	_exp_bar.name = "ExpBar"
+	_exp_bar.show_percentage = false
+	_exp_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_exp_bar.custom_minimum_size = Vector2(420, 22)
+	_exp_bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_style_bar(_exp_bar, EXP_TINT)
+	_exp_text = Label.new()
+	_exp_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_style_overlay_text(_exp_text)
+	_exp_bar.add_child(_exp_text)
+	_bar_labels.append(_exp_text)
+	exp_row.add_child(_exp_bar)
+	var right_space := Control.new()
+	right_space.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	right_space.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(right_space)
+
+## Keep the margin stack's reservation in sync with the live bar height, so
+## layout changes to the bar can never overlap the hint or the top controls.
+func _sync_bar_space(strip: PanelContainer, bar_space: Control) -> void:
+	var reserved := ceilf(strip.size.y)
+	if bar_space.custom_minimum_size.y != reserved:
+		bar_space.custom_minimum_size.y = reserved
+
+func _vital_bar(pool: int) -> ProgressBar:
+	var bar := ProgressBar.new()
+	bar.name = "Vital%d" % pool
+	bar.show_percentage = false
+	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bar.custom_minimum_size = Vector2(220, 20)
+	_style_bar(bar, VITAL_TINTS[pool])
+	var text := Label.new()
+	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_style_overlay_text(text)
+	text.text = VITAL_NAMES[pool] + " 0/0"
+	bar.add_child(text)
+	_vital_bars.append(bar)
+	_vital_texts.append(text)
+	_bar_labels.append(text)
+	return bar
+
+func _style_bar(bar: ProgressBar, tint: Color) -> void:
+	var fill := StyleBoxFlat.new()
+	fill.bg_color = tint
+	fill.set_corner_radius_all(4)
+	var track := StyleBoxFlat.new()
+	track.bg_color = Color(0.05, 0.08, 0.1, 0.9)
+	track.set_corner_radius_all(4)
+	track.set_border_width_all(1)
+	track.border_color = Color(0.25, 0.32, 0.36)
+	bar.add_theme_stylebox_override("fill", fill)
+	bar.add_theme_stylebox_override("background", track)
+
+func _style_overlay_text(label: Label) -> void:
+	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", roundi(14 * text_scale))
+	label.add_theme_color_override("font_color", Color(0.94, 0.96, 0.94))
+
+## Present a copied session observation as pool and growth ratios. The world
+## treats the observation as read-only and never reaches into the session.
+func present_vitals(observation: Dictionary) -> void:
+	if _vital_bars.is_empty() or _exp_bar == null or _level_text == null:
+		return
+	var hero: Dictionary = observation.get("hero", {})
+	if hero.is_empty():
+		return
+	var current: Variant = hero.get("current")
+	var maximum: Variant = hero.get("maximum")
+	if current == null or maximum == null or current.size() < 3 or maximum.size() < 3:
+		return
+	for pool: int in 3:
+		_vital_bars[pool].max_value = maxi(1, int(maximum[pool]))
+		_vital_bars[pool].value = clampi(int(current[pool]), 0, int(maximum[pool]))
+		_vital_texts[pool].text = "%s %d/%d" % [VITAL_NAMES[pool], clampi(int(current[pool]), 0, int(maximum[pool])), int(maximum[pool])]
+	# Committed growth only: empty growth (development fixtures) reads as level 1.
+	var growth: Dictionary = hero.get("growth", {})
+	var level := maxi(1, int(growth.get("level", 1)))
+	var xp := maxi(0, int(growth.get("xp", 0)))
+	_level_text.text = "Lv %d" % level
+	if level <= Progression.CONFIG.xp_to_next.size():
+		var needed := maxi(1, int(Progression.CONFIG.xp_to_next[level - 1]))
+		_exp_bar.max_value = needed
+		_exp_bar.value = mini(xp, needed)
+		_exp_text.text = "%.1f%%" % [100.0 * float(mini(xp, needed)) / float(needed)]
+	else:
+		_exp_bar.max_value = 1.0
+		_exp_bar.value = 1.0
+		_exp_text.text = "MAX"
 
 ## Phase 12 live presentation updates from the settings panel.
 func set_text_scale(value: float) -> void:
 	text_scale = clampf(value, 1.0, 1.4)
 	_hint.add_theme_font_size_override("font_size",roundi(16 * text_scale))
+	for label: Label in _bar_labels:
+		label.add_theme_font_size_override("font_size", roundi(14 * text_scale))
 
 func set_reduced_motion(value: bool) -> void:
 	reduced_motion = value

@@ -48,6 +48,58 @@ func walk(tree: SceneTree, world: Node2D, point: Vector2, max_frames: int = 400)
 		if world.navigation_ready and (world.player.global_position.distance_to(point) < 5 or (i > 10 and not world.player.path_active)):
 			return
 
+func check_system_bar(tree: SceneTree, main: Node) -> void:
+	var strip: PanelContainer = main._world.get_node("HUD/SystemBar")
+	var row: HBoxContainer = strip.get_node("SystemRow")
+	check(strip.anchor_left == 0.0 and strip.anchor_right == 1.0, "System bar must span the full viewport width")
+	check(strip.anchor_bottom == 1.0 and strip.offset_bottom == 0.0 and strip.offset_left == 0.0 and strip.offset_right == 0.0, "System bar must sit flush with the bottom screen edge")
+	check(strip.grow_vertical == Control.GROW_DIRECTION_BEGIN, "System bar must grow upward from the bottom edge")
+	var reserved: Control = main._world.get_node("HUD/Margin/Stack/BarSpace")
+	check(ceilf(strip.size.y) > 0.0 and ceilf(reserved.custom_minimum_size.y) == ceilf(strip.size.y), "HUD stack must reserve the live system bar height")
+	check(row.get_node("MenuButton").text == "MENU", "System bar must host the settings entry")
+	var vitals: VBoxContainer = row.get_node("Vitals")
+	check(vitals.get_child_count() == 3, "System bar must show three vital pools")
+	var hero: Dictionary = main.observation().hero
+	for pool: int in 3:
+		var vital: ProgressBar = vitals.get_child(pool)
+		check(int(vital.max_value) == int(hero.maximum[pool]), "Vital %d maximum must mirror the observation" % pool)
+		check(int(vital.value) == int(hero.current[pool]), "Vital %d value must mirror the observation" % pool)
+	var exp_row: HBoxContainer = row.get_node("CenterColumn/ExpRow")
+	var exp_bar: ProgressBar = exp_row.get_node("ExpBar")
+	var rules := preload("res://scripts/domain/rules/progression_rules.gd")
+	check(int(exp_bar.max_value) == int(rules.CONFIG.xp_to_next[0]), "Experience bar must track the first level requirement")
+	check(is_equal_approx(float(exp_bar.value), 0.0), "Experience bar must start empty")
+	check(exp_row.get_node("Lv").text == "Lv 1", "Level label must mirror growth")
+	var windows: HBoxContainer = row.get_node("CenterColumn/WindowButtons")
+	var world: Node2D = main._world
+	# Journal launchers route through Main's progression flow; without
+	# progression they must surface the gated expedition notice. Placeholders
+	# must open nothing. Both must return focus to the world.
+	var expected := {"Character": true, "Skills": true, "Quests": false, "Inventory": true, "Pets": false}
+	check(windows.get_child_count() == expected.size(), "Window launcher set changed")
+	for window_button: Button in windows.get_children():
+		check(expected.has(window_button.text), "Unexpected window launcher %s" % window_button.text)
+		window_button.grab_focus()
+		window_button.pressed.emit()
+		if expected[window_button.text]:
+			check(world.panel_open, "%s launcher did not open the journal flow" % window_button.text)
+			check(not is_instance_valid(main._progression_view), "Gated journal launcher opened the journal without progression")
+			world.close_panel()
+			check(not world.panel_open, "Gated journal notice must close")
+		else:
+			check(not world.panel_open, "Placeholder launcher %s opened a window" % window_button.text)
+		check(main.get_viewport().gui_get_focus_owner() == null, "Launcher %s must return focus to the world" % window_button.text)
+	check(not is_instance_valid(main._progression_view) and not is_instance_valid(main._dialogue), "Launcher opened an unexpected window")
+	var menu_button: Button = row.get_node("MenuButton")
+	menu_button.pressed.emit()
+	check(is_instance_valid(main._settings_panel), "System bar settings entry did not open settings")
+	await frames(tree, 2)
+	check(main.get_viewport().gui_get_focus_owner() == main._settings_panel._close, "Settings panel must take initial focus")
+	main._close_settings()
+	await frames(tree)
+	check(not is_instance_valid(main._settings_panel), "Settings panel must close")
+	check(not main._world.transition_locked, "Settings flow must release the world")
+
 func run(tree: SceneTree) -> PackedStringArray:
 	var main := load("res://scenes/main.tscn").instantiate() as DungeonApplication
 	main.progression_enabled = false # Preserve the pre-progression contract fixture.
@@ -60,6 +112,7 @@ func run(tree: SceneTree) -> PackedStringArray:
 	check(world.player.global_position.distance_to(Vector2(96,160)) < 1, "Spawn restoration must happen after map sync")
 	check(world.visible_markers().size() == 2, "Town markers must be fully observable")
 	check(world.phantom.follow_target == world.player, "Phantom Camera must bind current player")
+	await check_system_bar(tree, main)
 	var detached := main.observation()
 	detached.exploration.discovered.append("room.secret")
 	check(not world.discovered.has("room.secret"), "Exploration observation leaked mutable discovery")
@@ -103,6 +156,8 @@ func run(tree: SceneTree) -> PackedStringArray:
 	await settle_world(tree, main)
 	check(main.observation().mode == Mode.DUNGEON, "Town entrance did not enter dungeon")
 	world = main._world
+	var dungeon_vitals: VBoxContainer = world.get_node("HUD/SystemBar/SystemRow/Vitals")
+	check(int(dungeon_vitals.get_child(0).value) == 200, "Dungeon HUD vitals did not re-present hero pools")
 	var expedition: RefCounted = main._session.exploration
 	check(world.discovered == [world.entry_room_id()], "New dungeon revealed extra rooms")
 	check(world.visible_markers().is_empty(), "Hidden encounter leaked into observation")

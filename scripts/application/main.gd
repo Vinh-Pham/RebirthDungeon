@@ -165,6 +165,7 @@ func _publish_checkpoint() -> void:
 	else:
 		_replace_view()
 	observation_changed.emit(observation())
+	if is_instance_valid(_world): _world.present_vitals(observation())
 	for event: Dictionary in result.events:
 		accepted_result.emit(event.duplicate(true))
 		if not str(event.get("detail","")).is_empty() and is_instance_valid(_world):
@@ -450,6 +451,7 @@ func _install_world() -> void:
 	_world.menu_requested.connect(request_mode.bind(Mode.MENU, _session.session_id, _session.revision))
 	add_child(_world)
 	_world.set_focused(_focused)
+	_world.present_vitals(observation())
 
 func _world_session_valid(id: int, revision: int) -> bool:
 	return _alive and _focused and loading_error.is_empty() and _pending == -1 and not _publishing_result and not checkpoint.busy() and _save_overlay == null and _session.matches(id, revision) and _session.mode in [Mode.TOWN, Mode.DUNGEON]

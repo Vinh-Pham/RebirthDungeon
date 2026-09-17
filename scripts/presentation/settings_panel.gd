@@ -55,7 +55,14 @@ func start(service: Settings) -> void:
 	_close.pressed.connect(close)
 	buttons.add_child(_close)
 	_refresh_keys()
-	_close.grab_focus()
+	# The panel enters the tree right after start(); grab initial focus then,
+	# since grab_focus requires the control to already be inside the tree. The
+	# guard keeps a same-frame close from grabbing into a removed panel.
+	_focus_close.call_deferred()
+
+func _focus_close() -> void:
+	if _close != null and _close.is_inside_tree():
+		_close.grab_focus()
 
 func _audio_section(stack: VBoxContainer) -> void:
 	stack.add_child(_section_label("Audio"))
