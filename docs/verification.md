@@ -46,3 +46,23 @@ Local Firefox launch currently fails with “Could not find profile folder” be
 - Chromium: the five existing scenarios passed, including the full dungeon/reload journey and catalog paging. The new stats scenario passed on its focused rerun after correcting its test control name. It exercises potion use, status persistence, Character stats, HP/SP reservations, another reload, and exactly-once paid pass. The 600×800 Character panel screenshot was visually inspected (`test-results/character-stats-mobile.png`).
 
 See [stats implementation rules](gameplay/stats-implementation.md) for numeric balance and compatibility, and [the per-skill reference index](references/skills/README.md) for wiki data.
+
+## Character information modal — September 18, 2026
+
+- Lint, TypeScript, all 83 unit/React tests, production build, and touched-code formatting passed.
+- Focused Chromium character-stats journey passed: three tabs, source accordion, status/reload
+  behavior, reserved costs, four HeroUI progress bars, and no dialog overflow at 320px.
+- Visually inspected the 320px screenshot. A negative HeroUI body margin found during the
+  narrow-screen rerun was removed; the final browser run passed.
+- No gameplay or persistence changes. Full browser suite, Firefox, WebKit, and coverage were
+  not rerun for this presentation change.
+
+## Character panel aligned with Skill Journal — September 18, 2026
+
+- Replaced the custom teal skin with native HeroUI tabs, secondary cards, shared modal styling,
+  readable labels, and stacked stat groups on narrow screens.
+- Lint, TypeScript, all 83 unit/React tests, and touched-code formatting passed.
+- Focused Chromium journey passed, including all three tabs, source disclosure, Details navigation,
+  keyboard tab navigation, reserved resources, reloads, and dialog/content overflow at 320px.
+- Desktop and mobile screenshots were visually inspected. Production build passed.
+- No domain or persistence changes; full browser suite, Firefox, WebKit, and coverage were not rerun.

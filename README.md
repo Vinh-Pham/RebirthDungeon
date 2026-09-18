@@ -24,6 +24,7 @@ Open http://127.0.0.1:8080. Build with `pnpm build`; deploy the `dist/` director
 - Clear three seals before fighting the boss. Take selected loot or everything that fits. Choose exactly one treasure chest, then return home.
 - Town services offer healing, food, banking, equipment, potions, selling, and repairs. Equipped items must be unequipped before selling or banking.
 - Menu contains Settings and Title Screen. Skills opens the ranked skill journal; Inventory supports equipment, consumables, books, and page insertion. Character, Talent, Quests, and Pets remain reserved HUD buttons.
+- HeroUI uses dark mode by default across the interface, including modals.
 
 ## Architecture
 

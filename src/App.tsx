@@ -439,7 +439,7 @@ function App() {
                                   Trainer: 'Combat instructor',
                               }[service] || service
                             : panel === 'character'
-                              ? 'Character stats'
+                              ? 'Character Info'
                               : panel === 'menu'
                                 ? 'Adventure menu'
                                 : panel === 'skills'

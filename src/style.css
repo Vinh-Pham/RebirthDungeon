@@ -114,16 +114,16 @@
 }
 
 @layer components {
-    .game-hud [data-resource='HP'] {
+    :is(.game-hud, .character-stats) [data-resource='HP'] {
         --progress-bar-fill: var(--color-red-400);
     }
-    .game-hud [data-resource='MP'] {
+    :is(.game-hud, .character-stats) [data-resource='MP'] {
         --progress-bar-fill: var(--color-blue-400);
     }
-    .game-hud [data-resource='SP'] {
+    :is(.game-hud, .character-stats) [data-resource='SP'] {
         --progress-bar-fill: var(--color-yellow-400);
     }
-    .game-hud [data-resource='XP'] {
+    :is(.game-hud, .character-stats) [data-resource='XP'] {
         --progress-bar-fill: var(--color-sky-300);
     }
     .game-modal p {

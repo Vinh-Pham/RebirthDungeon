@@ -46,6 +46,17 @@ At each completed owner activation: process periodic effects in stable group/sou
 
 An in-battle consumable is a full action before rolling. Recovery applies once, then side effects; the item is consumed once, the owner activation ends and enemies respond. Timed potions require a run; ordinary recovery potions can still be used in town. Status definitions, source/target identity, remaining duration and skip counters are serialized. Schema-2 saves gain `statsVersion: 1` through an explicit Immer migration; legacy schema-1 conversion still runs first. Pending action costs/dice/targets remain unchanged. Loading never repeats recovery, growth or status application. Unsupported versions and malformed definitions are rejected by validation.
 
-The Character panel displays current/max/reserved/available pools, effective values, named source breakdowns, shield, effect icons and timing/removal details. The HUD shows reservations and active effect buttons. Catalog and battle controls show all required cost pools.
+The Character panel displays current/max/reserved/available pools, effective values, named source breakdowns, shield, effects and timing/removal details. The HUD shows reservations and active effect buttons. Catalog and battle controls show all required cost pools.
 
 Wounds, hunger, toxicity accumulation, accuracy/evasion, initiative changes, full title acquisition, cross-run illnesses and additional Mabinogi-specific conversions are deferred. Existing critical-hit mechanics are unchanged.
+
+## Character information window
+
+The Character modal shares the Skill Journal’s native HeroUI tabs, neutral secondary cards,
+spacing, and modal shell. Stat groups stack on narrow screens; tab content scrolls within a
+55dvh maximum height.
+Basic Info shows identity, current resources, XP, level/AP, resolved attributes and combat stats,
+and active effects. All four bars use HeroUI ProgressBar. Reserved resources remain visible.
+Additional Info explains stat rules and retains source and effect breakdowns using HeroUI accordions;
+the Status Effects Details button opens this tab. Part-Time Job and Potential explicitly show
+unavailable states. No unsupported reference-game stats or progression systems are invented.

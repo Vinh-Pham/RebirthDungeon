@@ -157,7 +157,6 @@ export function SkillJournal({
     };
     const browser = (
         <Tabs
-            variant="secondary"
             selectedKey={tab}
             onSelectionChange={(key) => setTab(String(key))}
         >

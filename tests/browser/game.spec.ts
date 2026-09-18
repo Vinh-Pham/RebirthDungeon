@@ -530,6 +530,14 @@ test('character stats, potion side effects and mixed reservations survive reload
     await expect(page.getByRole('region', { name: 'Character stats' })).toContainText(
         'Magic Defense',
     );
+    await page.screenshot({
+        path: 'test-results/character-stats-desktop.png',
+        animations: 'disabled',
+    });
+    await expect(page.getByRole('tab')).toHaveCount(3);
+    await page.getByRole('tab', { name: 'Part-Time Job', exact: true }).click();
+    await expect(page.getByRole('tabpanel')).toContainText('Part-time jobs are not yet available.');
+    await page.getByRole('tab', { name: 'Additional Info', exact: true }).click();
     await page.getByText('Stat sources', { exact: false }).click();
     await expect(page.getByRole('region', { name: 'Character stats' })).toContainText(
         'Unstable Elixir',
@@ -540,11 +548,29 @@ test('character stats, potion side effects and mixed reservations survive reload
     await control(page, 'bloodStrike');
     await page.getByRole('button', { name: 'Character', exact: true }).click();
     await expect(page.getByRole('region', { name: 'Character stats' })).toContainText('4 reserved');
-    await page.setViewportSize({ width: 600, height: 800 });
+    await expect(
+        page.getByRole('region', { name: 'Character stats' }).getByRole('progressbar'),
+    ).toHaveCount(4);
+    await page.setViewportSize({ width: 320, height: 800 });
+    const characterDialog = page.getByRole('dialog', { name: 'character', exact: true });
+    await expect(characterDialog).toBeVisible();
+    expect(await characterDialog.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
     await page.screenshot({
         path: 'test-results/character-stats-mobile.png',
         animations: 'disabled',
     });
+    const basicPanel = page.getByRole('tabpanel', { name: 'Basic Info' });
+    expect(await basicPanel.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+    await page.getByRole('button', { name: 'Details', exact: true }).click();
+    await expect(page.getByRole('tab', { name: 'Additional Info' })).toHaveAttribute(
+        'aria-selected',
+        'true',
+    );
+    await page.getByRole('tab', { name: 'Additional Info' }).press('ArrowLeft');
+    await expect(page.getByRole('tab', { name: 'Basic Info' })).toHaveAttribute(
+        'aria-selected',
+        'true',
+    );
     await page.getByRole('button', { name: 'Close', exact: true }).click();
     const before = (await state(page)).save.data.characters[0];
     await page.reload();
