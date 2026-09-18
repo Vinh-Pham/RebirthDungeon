@@ -21,7 +21,7 @@ export function PhaserGame() {
     return (
         <div
             id="game-container"
-            className="absolute inset-x-0 top-0 bottom-[calc(108px*var(--hudscale,1))]"
+            className="absolute inset-x-0 top-0 bottom-[calc(var(--hud-height)*var(--hudscale,1))]"
             ref={container}
             aria-label="Rebirth Dungeon game world"
         />

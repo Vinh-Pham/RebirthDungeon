@@ -8,6 +8,7 @@ import {
     snapshotAction,
     requirementReason,
     train,
+    useOutsideBattle,
 } from './skillSystem';
 import {
     commitAbility,
@@ -46,6 +47,7 @@ export type Command =
     | { type: 'PASS'; actionId?: string }
     | { type: 'LEARN'; skill: string }
     | { type: 'RANK_UP'; skill: string }
+    | { type: 'USE_SKILL'; skill: string }
     | { type: 'READ'; id: string }
     | { type: 'INSERT_PAGE'; id: string }
     | { type: 'DISMISS_MIGRATION' }
@@ -180,6 +182,8 @@ export function allowed(save: Immutable<SaveData>, cmd: Command): boolean {
         return screen === 'Battle' && phase === 'choosingDice';
     if (cmd.type === 'USE')
         return ['Town1', 'Alby'].includes(screen) || (screen === 'Battle' && phase === 'selecting');
+    if (cmd.type === 'USE_SKILL')
+        return ['Town1', 'Alby'].includes(screen) && phase === 'exploring';
     if (['EQUIP', 'LEARN', 'RANK_UP', 'READ', 'INSERT_PAGE'].includes(cmd.type))
         return screen === 'Town1' && !active(save)?.run;
     if (cmd.type === 'PASS')
@@ -464,6 +468,9 @@ export function reduceCommand(
                     break;
                 case 'RANK_UP':
                     advance(c, cmd.skill);
+                    break;
+                case 'USE_SKILL':
+                    useOutsideBattle(c, cmd.skill);
                     break;
                 case 'READ': {
                     const item = c.inventory.find((i) => i.id === cmd.id),

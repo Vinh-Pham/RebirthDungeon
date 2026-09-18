@@ -1,8 +1,9 @@
 import type { Immutable } from 'immer';
 import type { Character, Stats, ActionSnapshot } from './model';
 import { wikiValue } from './skills/wiki';
+import type { Skill } from './skills/types';
 import { resolveStats, equipment, enemyStats } from './stats/resolve';
-import { effectiveCosts, affordability } from './stats/resources';
+import { effectiveCosts, affordability, pools } from './stats/resources';
 export { equipment, progressionStats } from './stats/resolve';
 import { skills, ranks, skillRank, trainingPoints } from './skillCatalog';
 export const learned = (c: Immutable<Character>) => c.run?.baseline?.skills ?? c.skills;
@@ -76,6 +77,38 @@ export function usableReason(c: Immutable<Character>, id: string): string {
     const rank = skillRank(id, learned(c)[id], c.race);
     const costs = actionCosts(c, id, rank);
     return affordability(c, costs);
+}
+/** Wiki sources mark Healing and Mana Recovery as usable outside combat; every other action needs a battle. */
+const outsideBattleEffects: readonly Skill['effect'][] = ['heal', 'restoreMana'];
+export function outsideBattleSkill(id: string): boolean {
+    const s = skills[id];
+    return (
+        !!s &&
+        s.route !== 'reference' &&
+        s.type === 'active' &&
+        outsideBattleEffects.includes(s.effect)
+    );
+}
+export function outsideBattleReason(c: Immutable<Character>, id: string): string {
+    if (!outsideBattleSkill(id)) return 'Usable in battle only';
+    return usableReason(c, id);
+}
+/** Out-of-battle activation: pays once, restores with combination 1, trains, and starts the cooldown. */
+export function useOutsideBattle(c: Character, id: string) {
+    const reason = outsideBattleReason(c, id);
+    if (reason) throw new Error(reason);
+    const rank = skillRank(id, learned(c)[id], c.race);
+    const costs = actionCosts(c, id, rank);
+    for (const pool of pools) c[pool] -= costs[pool];
+    if (skills[id].effect === 'heal') {
+        const max = effectiveStats(c).hp;
+        c.hp = Math.min(max, c.hp + Math.floor(rank.base * 5));
+    } else {
+        const max = effectiveStats(c).mana;
+        c.mana = Math.min(max, c.mana + Math.floor((max * rank.base) / 100));
+    }
+    train(c, id, 'use');
+    c.cooldowns[id] = rank.cooldown;
 }
 export function snapshotAction(
     c: Immutable<Character>,

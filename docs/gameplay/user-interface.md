@@ -4,6 +4,12 @@ Updated **2026-09-10**. Status: **planned; not implemented**. Use Godot `Control
 
 The interface adapts Mabinogi's status/menu bar, character panels and quest journal to a small offline game. Original art/fonts are required; historical reference screenshots are not shipped assets. [Mabinogi UI reference](https://wiki.mabinogiworld.com/view/User_Interface). The detailed behavior below belongs to Rebirth Dungeon.
 
+## Current Browser HUD — September 18, 2026
+
+The implemented React HUD uses a dark HeroUI Surface and native secondary Buttons matching the skill catalog. Character name, race, and current talent appear above HP, MP, and SP; every resource and XP display uses HeroUI ProgressBar. Resources retain actual current/max values, and reserved costs remain visible as a Held summary and accessible value labels. Character, Skills, Inventory, and Menu remain directly accessible; Talent, Quests, and Pets are disabled placeholders inside Menu. With no character selected, character-specific navigation is disabled.
+
+Narrow layouts use two navigation columns and place resource tracks below their values. The HUD and Phaser canvas share the same `--hud-height` clearance, including the saved HUD scale. Status buttons remain above the footer and open Character stats. Existing transaction and input-blocking behavior is unchanged.
+
 ## 1. Godot composition
 
 `Main` owns a persistent UI host. Mode-specific HUDs attach to the active town, dungeon or battle view. Compose HUD → feature panels → modal input shield/dialog → noninteractive tooltips/toasts. Reuse feature scenes for Character, Skills, Inventory, Quests and NPC services; opening one does not replace the game session.
@@ -78,7 +84,7 @@ The UI uses [Battle](battle.md) and [Stats](stats.md) observations for pips, one
 | View | Required contents and actions |
 | --- | --- |
 | Character | Life/cumulative levels, age, talent, AP, stats and source breakdown; equipment and First/Second Title choices with no-refill preview |
-| Skills | Learned/unlearned states, rank/prototype cap, training goals/progress, AP cost, Rank Up, lesson/book/page progress and visible limitations |
+| Skills | Learned skills only, in category tabs (All/Life/Combat/Magic) with HeroUI cards showing rank, training bar, Advance at ≥100 training, Use for out-of-battle recovery skills and a disabled Passive state; unlearned catalog entries (including life references) stay browsable at the trainer; clicking the skill name opens a HeroUI detail modal that keeps rank/prototype cap, training goals/progress, AP cost, Rank Up, lesson/book/page progress and visible limitations; AP is in the catalog footer, with no search field or skill count; all dialogs use a HeroUI modal and an X close button |
 | Inventory | Equipment plus footprint grid, bag tabs, stack/lock state, search/sort and saved overflow; tap-select then destination as a drag alternative |
 | Quests | Chapter/Generation, NPC/Skill and RP categories, stage/objective progress, return/claim distinction, rewards and tracked objectives |
 | NPC services | Dialogue plus implemented services; validate proximity/session on confirmation and close stale panels on context change |

@@ -13,6 +13,8 @@ import {
     requirementReason,
     usableReason,
     passiveDescription,
+    actionCosts,
+    outsideBattleReason,
 } from '../../src/domain/skillSystem';
 import { damageAmount, previewDamage } from '../../src/domain/combat';
 import { roll, combination } from '../../src/domain/dice';
@@ -455,4 +457,60 @@ it('retains a legacy backup and restores the last valid save after corruption', 
     expect(backup.data.characters[0].skills).toEqual(['normal', 'smash']);
     await p.save({ broken: true } as any);
     expect(await p.load()).toEqual(migrated);
+});
+describe('outside-battle skill use', () => {
+    const mage = () => {
+        let s = run(blankSave(), { type: 'NAV', screen: 'NewCharacter' });
+        return run(s, {
+            type: 'CREATE',
+            input: { name: 'Caster', race: 'Human', age: 17, talent: 'Magic' },
+            id: 'mage',
+            now: 0,
+        });
+    };
+    it('heals from the skill window, paying once, training, and starting the cooldown', () => {
+        let s = run(mage(), { type: 'LEARN', skill: 'healing' });
+        s = edit(s, (c) => {
+            c.hp = 10;
+        });
+        const before = active(s)!,
+            costs = actionCosts(before, 'healing'),
+            cooldown = skillRank('healing', before.skills.healing).cooldown;
+        expect(cooldown).toBe(0);
+        s = run(s, { type: 'USE_SKILL', skill: 'healing' });
+        const c = active(s)!;
+        expect(c.mana).toBe(before.mana - costs.mana);
+        expect(c.hp).toBe(Math.min(effectiveStats(c).hp, 10 + 30));
+        expect(c.skills.healing.counts.use).toBe(1);
+    });
+    it('restores mana by rank percentage and blocks reuse during cooldown', () => {
+        let s = run(mage(), { type: 'LEARN', skill: 'manaRegeneration' });
+        s = edit(s, (c) => {
+            c.mana = 5;
+        });
+        const before = active(s)!;
+        s = run(s, { type: 'USE_SKILL', skill: 'manaRegeneration' });
+        const c = active(s)!;
+        expect(c.mana).toBe(
+            Math.min(effectiveStats(c).mana, 5 + Math.floor((effectiveStats(c).mana * 20) / 100)),
+        );
+        expect(c.stamina).toBe(before.stamina - 5);
+        expect(c.cooldowns.manaRegeneration).toBe(50);
+        expect(() => run(s, { type: 'USE_SKILL', skill: 'manaRegeneration' })).toThrow('Cooldown');
+    });
+    it('rejects battle-only skills, unlearned skills, and battle-phase timing', () => {
+        const s = mage();
+        expect(outsideBattleReason(active(s)!, 'smash')).toBe('Usable in battle only');
+        expect(() => run(s, { type: 'USE_SKILL', skill: 'smash' })).toThrow(
+            'Usable in battle only',
+        );
+        expect(() => run(s, { type: 'USE_SKILL', skill: 'healing' })).toThrow(
+            'Skill is not learned',
+        );
+        let battled = run(mage(), { type: 'ENTER', seed: 42 });
+        battled = run(battled, { type: 'ENCOUNTER', room: 1 });
+        expect(() => run(battled, { type: 'USE_SKILL', skill: 'normal' })).toThrow(
+            'not available right now',
+        );
+    });
 });

@@ -8,6 +8,7 @@
 @layer base {
     :root {
         @apply bg-[#142930] font-[Arial,sans-serif] text-[#f1efdb] [font-synthesis:none];
+        --hud-height: 132px;
         --accent: #50b8a4;
     }
     * {
@@ -58,13 +59,13 @@
     .eyebrow {
         @apply mb-3 text-[10px] font-bold tracking-[3px] text-[#78d1b9];
     }
-    .button {
+    .button:not(:where(.game-modal *, .game-hud *)) {
         @apply min-h-10 cursor-pointer rounded-[6px] border border-[#63857866] bg-[#29463f] px-[17px] py-[10px] text-[13px] text-[#e1ece2];
     }
-    .button:hover {
+    .button:not(:where(.game-modal *, .game-hud *)):hover {
         @apply bg-[#3d6355];
     }
-    .button:disabled {
+    .button:not(:where(.game-modal *, .game-hud *)):disabled {
         @apply opacity-40;
     }
     .button.primary {
@@ -98,19 +99,6 @@
     .modal__dialog .input {
         @apply min-h-[42px];
     }
-    .bar,
-    .resource-meter .bar {
-        @apply relative h-[17px] overflow-hidden rounded-[2px] border border-[#738f8766] bg-[#07181e];
-    }
-    .bar span {
-        @apply relative block text-center text-[10px] leading-[15px] tracking-[1px] text-white [text-shadow:0_1px_2px_black];
-    }
-    .resource-meter {
-        @apply w-full gap-0;
-    }
-    .hud-button {
-        @apply flex min-w-0 flex-1 flex-col gap-0 border-[#50897b88]! bg-[#244340]! px-[6px]! py-[3px]! text-[#56c1bb]! narrow:p-[3px]!;
-    }
     .item {
         @apply flex items-center gap-3 rounded-[5px] border border-[#6c967644] bg-[#213c35] p-[10px] text-[12px];
     }
@@ -122,5 +110,29 @@
     }
     .reward-option {
         @apply flex items-center gap-[15px] border-b border-[#82a08a33] py-[13px];
+    }
+}
+
+@layer components {
+    .game-hud [data-resource='HP'] {
+        --progress-bar-fill: var(--color-red-400);
+    }
+    .game-hud [data-resource='MP'] {
+        --progress-bar-fill: var(--color-blue-400);
+    }
+    .game-hud [data-resource='SP'] {
+        --progress-bar-fill: var(--color-yellow-400);
+    }
+    .game-hud [data-resource='XP'] {
+        --progress-bar-fill: var(--color-sky-300);
+    }
+    .game-modal p {
+        @apply m-0 text-muted;
+    }
+    .game-modal .modal__heading {
+        @apply font-sans text-xl font-semibold tracking-tight;
+    }
+    .game-modal .skill-card {
+        @apply shadow-none;
     }
 }

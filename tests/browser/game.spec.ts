@@ -191,7 +191,7 @@ test('town shopping, inventory, bank and settings use accessible panels', async 
     await page.getByRole('button', { name: 'Withdraw gold', exact: true }).click();
     await expect(page.getByText(/Stored gold: 0/)).toBeVisible();
     await page.getByRole('button', { name: 'Close', exact: true }).click();
-    await page.getByRole('button', { name: 'MENU' }).click();
+    await page.getByRole('button', { name: 'Menu', exact: true }).click();
     await page.getByRole('button', { name: 'Settings', exact: true }).click();
     await page.getByRole('button', { name: 'Reduced motion: Off' }).click();
     await expect(page.getByRole('button', { name: 'Reduced motion: On' })).toBeVisible();
@@ -225,19 +225,21 @@ test('trainer teaches a skill and the journal survives reload', async ({ page },
         .toBeLessThan(60);
     await page.keyboard.press('e', { delay: 40 });
     await expect(page.getByRole('heading', { name: 'Combat instructor' })).toBeVisible();
+    await page.getByRole('button', { name: 'Smash', exact: true }).click();
     await page.getByRole('button', { name: 'Learn Smash', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Smash · Rank F' })).toBeVisible();
     await expect(page.getByText('0 / 100 training points')).toBeVisible();
-    await page.getByRole('button', { name: 'Close', exact: true }).click();
+    await page
+        .getByRole('dialog', { name: 'Smash · Rank F' })
+        .getByRole('button', { name: 'Close', exact: true })
+        .click();
     await page.reload();
     await page.getByRole('button', { name: 'Skills', exact: true }).click();
-    await expect(page.getByRole('heading', { name: 'Smash · Rank F' })).toBeVisible();
+    await expect(page.getByTestId('skill-detail')).toHaveCount(0);
     await expect(
-        page
-            .getByRole('navigation', { name: 'Skills' })
-            .getByRole('button', { name: /Critical Hit/ }),
+        page.getByRole('list', { name: 'Skills' }).getByRole('button', { name: /Smash/ }),
     ).toHaveCount(1);
-    await page.screenshot({ path: 'test-results/skill-journal.png' });
+    await page.screenshot({ path: 'test-results/skill-journal.png', animations: 'disabled' });
 });
 
 test('books, page assembly, equipment and AP advancement use saved UI transactions', async ({
@@ -317,6 +319,7 @@ test('books, page assembly, equipment and AP advancement use saved UI transactio
         .click();
     await page.getByRole('button', { name: 'Close', exact: true }).click();
     await page.getByRole('button', { name: 'Skills', exact: true }).click();
+    await page.getByRole('button', { name: 'Smash', exact: true }).click();
     await expect(page.getByText('Ready to advance', { exact: false })).toBeVisible();
     await page.getByRole('button', { name: 'Rank up Smash', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Smash · Rank E' })).toBeVisible();
@@ -330,9 +333,10 @@ test('books, page assembly, equipment and AP advancement use saved UI transactio
     expect(saved.ap).toBe(1);
     expect(saved.offhand).toBe('shield');
     await page.setViewportSize({ width: 600, height: 800 });
+    await page.getByRole('button', { name: 'Smash', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Smash · Rank E' })).toBeVisible();
     await page.waitForTimeout(400);
-    const bounds = await page.getByRole('dialog').boundingBox();
+    const bounds = await page.getByRole('dialog', { name: 'Smash · Rank E' }).boundingBox();
     expect(bounds!.y).toBeGreaterThanOrEqual(0);
     expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(801);
     await page.screenshot({
@@ -387,7 +391,13 @@ test('catalog icons, life references, and a full spellbook remain usable on a sm
     await page.evaluate(store, fixture);
     await page.reload();
     await page.getByRole('button', { name: 'Skills', exact: true }).click();
-    await page.getByRole('searchbox', { name: 'Search skills' }).fill('firebolt');
+    await expect(page.getByRole('searchbox')).toHaveCount(0);
+    await expect(page.getByTestId('skill-detail')).toHaveCount(0);
+    await expect(page.getByRole('dialog').locator('.modal__footer')).toContainText(
+        `${fixture.data.characters[0].ap} AP`,
+    );
+    await page.getByRole('tab', { name: 'Magic' }).click();
+    await page.getByRole('button', { name: 'Firebolt', exact: true }).click();
     await expect(page.getByTestId('skill-icon')).toHaveAttribute(
         'src',
         '/assets/game/skills/firebolt.webp',
@@ -397,15 +407,50 @@ test('catalog icons, life references, and a full spellbook remain usable on a sm
             page.getByTestId('skill-icon').evaluate((img: HTMLImageElement) => img.naturalWidth),
         )
         .toBeGreaterThan(0);
-    await page.getByRole('combobox', { name: 'Inspect wiki rank' }).selectOption('1');
+    await page.getByRole('button', { name: /Inspect wiki rank/ }).click();
+    await page.getByRole('option', { name: 'Rank 1', exact: true }).click();
     await expect(page.getByRole('table')).toContainText('27.5%');
-    await page.screenshot({ path: 'test-results/skill-catalog-firebolt.png' });
-    await page.getByRole('searchbox').fill('');
-    await page.getByRole('combobox', { name: 'Category' }).selectOption('Life');
-    await expect(page.getByText('8 / 42 skills')).toBeVisible();
+    await page
+        .getByRole('dialog', { name: 'Firebolt · Rank F' })
+        .locator('.modal__body')
+        .evaluate((body) => {
+            body.scrollTop = 0;
+        });
+    await page.screenshot({
+        path: 'test-results/skill-catalog-firebolt.png',
+        animations: 'disabled',
+    });
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog', { name: 'skills', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Firebolt', exact: true })).toBeFocused();
+    await expect(page.getByRole('tab', { name: 'Magic' })).toHaveAttribute('aria-selected', 'true');
+    await page.getByRole('tab', { name: 'Life' }).click();
+    await expect(page.getByText(/\d+ \/ 42 skills/)).toHaveCount(0);
+    await expect(page.getByText('No learned skills in this category.')).toBeVisible();
     await expect(page.getByRole('button', { name: /^Learn / })).toHaveCount(0);
     await page.setViewportSize({ width: 600, height: 800 });
     await page.screenshot({ path: 'test-results/skill-catalog-life-mobile.png' });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.getByRole('tab', { name: 'Magic' }).click();
+    await page.getByRole('button', { name: 'Meteor Strike', exact: true }).scrollIntoViewIfNeeded();
+    const catalogBounds = await page.getByRole('dialog').boundingBox();
+    expect(catalogBounds!.x).toBeGreaterThanOrEqual(0);
+    expect(catalogBounds!.x + catalogBounds!.width).toBeLessThanOrEqual(390);
+    await expect
+        .poll(() =>
+            page
+                .getByTestId('skill-row-meteorStrike')
+                .locator('img')
+                .evaluate((img: HTMLImageElement) => img.naturalWidth),
+        )
+        .toBeGreaterThan(0);
+    await page.screenshot({
+        path: 'test-results/skill-catalog-cards-mobile.png',
+        animations: 'disabled',
+    });
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await page.setViewportSize({ width: 600, height: 800 });
     fixture = reduceCommand(fixture, { type: 'ENTER', seed: 42 }, 'catalog-enter');
     fixture = reduceCommand(fixture, { type: 'ENCOUNTER', room: 1 }, 'catalog-battle');
     await page.evaluate(store, fixture);
@@ -513,4 +558,63 @@ test('character stats, potion side effects and mixed reservations survive reload
     expect(after.stamina).toBe(before.stamina - 3);
     expect(after.hp).toBeLessThanOrEqual(before.hp - 4);
     expect(after.statuses[0].remaining).toBe(2);
+});
+
+test('HeroUI HUD keeps identity, resources and navigation usable at narrow sizes and larger scale', async ({
+    page,
+}, info) => {
+    test.skip(info.project.name !== 'chromium', 'HUD layout runs in Chromium');
+    await page.goto('/');
+    const hud = page.getByRole('contentinfo', { name: 'Game menu and character status' });
+    await expect(hud.getByRole('progressbar')).toHaveCount(4);
+    await expect(hud.getByRole('button', { name: 'Skills', exact: true })).toBeDisabled();
+    await page.getByRole('button', { name: 'Begin your journey' }).click();
+    await page.getByRole('button', { name: 'Create a character' }).click();
+    await page.getByRole('textbox', { name: 'Character name' }).fill('Wayfarer');
+    await page.getByRole('button', { name: 'Start a new life' }).click();
+    await expect(hud.getByText('Human · Close Combat')).toBeVisible();
+    await expect(hud.getByRole('progressbar', { name: 'HP', exact: true })).toHaveAttribute(
+        'aria-valuenow',
+        '118',
+    );
+    await expect(hud.getByRole('progressbar', { name: 'Experience' })).toHaveAttribute(
+        'aria-valuenow',
+        '0',
+    );
+    await expect.poll(async () => (await state(page))?.position?.y).toBeGreaterThan(500);
+    await page.screenshot({ path: 'test-results/hud-desktop.png', animations: 'disabled' });
+    await page.getByRole('button', { name: 'Menu', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Talent', exact: true })).toBeDisabled();
+    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await page.getByRole('spinbutton', { name: /HUD scale/ }).fill('130');
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
+    for (const width of [600, 390, 320]) {
+        await page.setViewportSize({ width, height: 800 });
+        const identity = await hud.getByTestId('hud-identity').boundingBox();
+        const hp = await hud.getByRole('progressbar', { name: 'HP', exact: true }).boundingBox();
+        expect(identity!.y + identity!.height).toBeLessThanOrEqual(hp!.y);
+        const track = await hud
+            .getByRole('progressbar', { name: 'HP', exact: true })
+            .locator('.progress-bar__track')
+            .boundingBox();
+        expect(track!.width).toBeGreaterThan(40);
+        const stamina = await hud
+            .getByRole('progressbar', { name: 'SP', exact: true })
+            .boundingBox();
+        expect(stamina!.y + stamina!.height).toBeLessThanOrEqual(800);
+        for (const name of ['Character', 'Skills', 'Inventory', 'Menu']) {
+            const button = hud.getByRole('button', { name, exact: true });
+            await expect(button).toBeVisible();
+            const bounds = await button.boundingBox();
+            expect(bounds!.x).toBeGreaterThanOrEqual(0);
+            expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width + 1);
+            expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(800);
+        }
+        const footer = await hud.boundingBox();
+        const game = await page.locator('#game-container').boundingBox();
+        expect(game!.y + game!.height).toBeLessThanOrEqual(footer!.y + 1);
+    }
+    await page.screenshot({ path: 'test-results/hud-mobile-scaled.png', animations: 'disabled' });
+    await hud.getByRole('button', { name: 'Skills', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Skill catalog' })).toBeVisible();
 });

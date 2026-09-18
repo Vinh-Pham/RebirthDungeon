@@ -1,11 +1,23 @@
 import { costDescription } from '../domain/stats/resources';
 import { useState } from 'react';
-import { Button, ProgressBar } from '@heroui/react';
+import { GameModal } from './GameModal';
+import { Button, Card, ProgressBar, Tabs, Select, ListBox, Tooltip } from '@heroui/react';
 import type { Immutable } from 'immer';
 import type { Character } from '../domain/model';
-import { skills, ranks, skillRank, trainingPoints } from '../domain/skillCatalog';
-import { passiveDescription, requirementReason, actionCosts } from '../domain/skillSystem';
+import { skills, ranks, skillRank, trainingPoints, type Skill } from '../domain/skillCatalog';
+import {
+    passiveDescription,
+    requirementReason,
+    actionCosts,
+    outsideBattleReason,
+} from '../domain/skillSystem';
 import type { Command } from '../domain/commands';
+const categories = [
+    'All',
+    ...['Life', 'Combat', 'Magic'].filter((value) =>
+        Object.values(skills).some((s) => (s.category ?? 'Combat') === value),
+    ),
+];
 export function SkillJournal({
     character: c,
     disabled,
@@ -17,61 +29,209 @@ export function SkillJournal({
     trainer?: boolean;
     send: (command: Command) => void;
 }) {
-    const [selection, setSelected] = useState('smash');
-    const [query, setQuery] = useState('');
-    const [category, setCategory] = useState('All');
-    const [inspectedRank, setInspectedRank] = useState('F');
+    const [selection, setSelected] = useState<string | null>(null);
+    const [tab, setTab] = useState('All');
+    const town = !c.run;
     const visibleSkills = Object.entries(skills).filter(
-        ([, skill]) =>
-            (category === 'All' || (skill.category ?? 'Combat') === category) &&
-            skill.name.toLowerCase().includes(query.trim().toLowerCase()),
+        ([id, skill]) =>
+            // The skill window lists learned skills; the trainer keeps the full catalog browsable.
+            (trainer || !!c.skills[id]) && (tab === 'All' || (skill.category ?? 'Combat') === tab),
     );
-    const selected = visibleSkills.some(([id]) => id === selection)
-        ? selection
-        : visibleSkills[0]?.[0];
-    const filters = (
-        <div className="flex flex-wrap items-end gap-3">
-            <label className="flex flex-1 flex-col gap-1 text-sm">
-                Search skills
-                <input
-                    className="rounded border p-2"
-                    type="search"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Find a skill…"
-                />
-            </label>
-            <label className="flex flex-col gap-1 text-sm">
-                Category
-                <select
-                    className="rounded border p-2"
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                >
-                    {['All', 'Combat', 'Magic', 'Life'].map((value) => (
-                        <option key={value}>{value}</option>
-                    ))}
-                </select>
-            </label>
-            <span className="text-xs">
-                {visibleSkills.length} / {Object.keys(skills).length} skills
-            </span>
-        </div>
-    );
-    if (!selected)
-        return (
-            <section aria-label="Skill journal" className="space-y-4">
-                {filters}
-                <p>No skills match your search.</p>
-            </section>
+    const guarded = (
+        label: string,
+        reason: string,
+        onPress: (() => void) | undefined,
+        variant: 'primary' | 'secondary' = 'secondary',
+    ) => {
+        const button = (
+            <Button
+                variant={variant}
+                size="sm"
+                className="w-[76px] px-1"
+                isDisabled={disabled || !!reason || !onPress}
+                onPress={onPress}
+            >
+                {label}
+            </Button>
         );
+        return reason ? (
+            <Tooltip>
+                <Tooltip.Trigger
+                    tabIndex={0}
+                    aria-label={`${label}: ${reason}`}
+                    className="inline-flex"
+                >
+                    {button}
+                </Tooltip.Trigger>
+                <Tooltip.Content>{reason}</Tooltip.Content>
+            </Tooltip>
+        ) : (
+            button
+        );
+    };
+    const row = ([id, s]: [string, Skill]) => {
+        const progress = c.skills[id],
+            rank = skillRank(id, progress, c.race),
+            points = progress ? trainingPoints(id, progress) : 0;
+        const trainable = !!progress && id !== 'normal' && ranks.indexOf(rank.rank) < 14;
+        const passive = s.type === 'passive' || s.route === 'reference';
+        return (
+            <Card
+                variant="secondary"
+                key={id}
+                role="listitem"
+                data-testid={`skill-row-${id}`}
+                className="skill-card flex flex-row items-center gap-4 p-4 narrow:flex-wrap narrow:gap-3"
+            >
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto min-w-0 flex-1 justify-start p-0 text-sm narrow:basis-full"
+                    aria-haspopup="dialog"
+                    onPress={() => setSelected(id)}
+                >
+                    <span className="flex min-w-0 items-center gap-2">
+                        {s.icon.startsWith('/') ? (
+                            <img
+                                src={s.icon}
+                                alt=""
+                                width={40}
+                                height={40}
+                                className="shrink-0 rounded"
+                                loading="lazy"
+                            />
+                        ) : (
+                            <span
+                                aria-hidden="true"
+                                className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-default text-sm font-semibold text-muted"
+                            >
+                                {s.name
+                                    .split(' ')
+                                    .map((word) => word[0])
+                                    .join('')
+                                    .slice(0, 2)}
+                            </span>
+                        )}
+                        <span className="whitespace-normal text-left">{s.name}</span>
+                    </span>
+                </Button>
+                {passive
+                    ? guarded('Passive', 'Passive skills apply automatically.', undefined)
+                    : guarded('Use', outsideBattleReason(c, id), () =>
+                          send({ type: 'USE_SKILL', skill: id }),
+                      )}
+                <div className="flex w-32 shrink-0 flex-col items-end gap-2 text-xs tabular-nums narrow:ml-auto">
+                    <span>
+                        {id === 'normal'
+                            ? 'Basic'
+                            : progress
+                              ? `Rank ${progress.rank}`
+                              : 'Not learned'}
+                    </span>
+                    {trainable && (
+                        <ProgressBar
+                            aria-label={`${s.name} training`}
+                            size="sm"
+                            value={Math.min(100, points)}
+                        >
+                            <ProgressBar.Track>
+                                <ProgressBar.Fill />
+                            </ProgressBar.Track>
+                        </ProgressBar>
+                    )}
+                    {trainable &&
+                        points >= 100 &&
+                        guarded(
+                            'Advance',
+                            !town
+                                ? 'Return to town to advance.'
+                                : c.ap < rank.ap
+                                  ? `Requires ${rank.ap} AP.`
+                                  : '',
+                            () => send({ type: 'RANK_UP', skill: id }),
+                            'primary',
+                        )}
+                </div>
+            </Card>
+        );
+    };
+    const browser = (
+        <Tabs
+            variant="secondary"
+            selectedKey={tab}
+            onSelectionChange={(key) => setTab(String(key))}
+        >
+            <Tabs.ListContainer>
+                <Tabs.List aria-label="Skill groups">
+                    {categories.map((value) => (
+                        <Tabs.Tab key={value} id={value} className="text-xs">
+                            {value}
+                            <Tabs.Indicator />
+                        </Tabs.Tab>
+                    ))}
+                </Tabs.List>
+            </Tabs.ListContainer>
+            {categories.map((value) => (
+                <Tabs.Panel key={value} id={value}>
+                    {value === tab &&
+                        (visibleSkills.length ? (
+                            <div
+                                role="list"
+                                aria-label="Skills"
+                                className="flex max-h-[55dvh] flex-col gap-3 overflow-auto p-1"
+                            >
+                                {visibleSkills.map(row)}
+                            </div>
+                        ) : (
+                            <p className="py-8 text-center text-sm text-muted">
+                                No learned skills in this category.
+                            </p>
+                        ))}
+                </Tabs.Panel>
+            ))}
+        </Tabs>
+    );
+    return (
+        <section aria-label="Skill journal">
+            {browser}
+            {selection && (
+                <SkillDetails
+                    key={selection}
+                    selected={selection}
+                    character={c}
+                    disabled={disabled}
+                    trainer={trainer}
+                    send={send}
+                    onClose={() => setSelected(null)}
+                />
+            )}
+        </section>
+    );
+}
+
+function SkillDetails({
+    selected,
+    character: c,
+    disabled,
+    trainer,
+    send,
+    onClose,
+}: {
+    selected: string;
+    character: Immutable<Character>;
+    disabled: boolean;
+    trainer: boolean;
+    send: (command: Command) => void;
+    onClose: () => void;
+}) {
+    const [inspectedRank, setInspectedRank] = useState('F');
+    const town = !c.run;
     const skill = skills[selected],
         progress = c.skills[selected],
         rank = skillRank(selected, progress, c.race),
         index = ranks.indexOf(rank.rank);
     const points = progress ? trainingPoints(selected, progress) : 0,
         reason = requirementReason(c, selected);
-    const town = !c.run;
     const effect = (r: number) => {
         const value = skillRank(selected, { rank: ranks[r] }, c.race);
         const costs = actionCosts(c, selected, value);
@@ -110,260 +270,232 @@ export function SkillJournal({
                       ? 'Training complete, insufficient AP'
                       : 'Ready to advance';
     return (
-        <section aria-label="Skill journal" className="space-y-4">
-            {filters}
-            <p>
-                {c.name} · <strong>{c.ap} AP</strong> · Learn and advance in town. Earned training
-                survives every dungeon outcome.
-            </p>
-            <div className="grid grid-cols-[220px_minmax(0,1fr)] gap-5 narrow:grid-cols-1">
-                <nav
-                    aria-label="Skills"
-                    className="flex max-h-96 flex-col gap-1 overflow-auto narrow:max-h-40"
-                >
-                    {visibleSkills.map(([id, s]) => (
-                        <Button
-                            key={id}
-                            variant={id === selected ? 'primary' : 'secondary'}
-                            className="h-auto min-h-12 justify-between px-2 py-2 text-xs"
-                            aria-pressed={id === selected}
-                            onPress={() => setSelected(id)}
-                        >
-                            <span className="flex items-center gap-2 text-left">
-                                {s.icon.startsWith('/') ? (
-                                    <img
-                                        src={s.icon}
-                                        alt=""
-                                        width={32}
-                                        height={32}
-                                        className="shrink-0 rounded"
-                                        loading="lazy"
-                                    />
-                                ) : (
-                                    <span aria-hidden="true">{s.icon}</span>
-                                )}
-                                {s.name}
-                            </span>
-                            <span>{id === 'normal' ? 'Basic' : (c.skills[id]?.rank ?? '—')}</span>
-                        </Button>
-                    ))}
-                </nav>
-                <div className="space-y-3" data-testid="skill-detail">
-                    <h3 className="flex items-center gap-3">
-                        {skill.icon.startsWith('/') && (
-                            <img
-                                src={skill.icon}
-                                alt=""
-                                data-testid="skill-icon"
-                                width={56}
-                                height={56}
-                                className="rounded"
-                            />
-                        )}
+        <GameModal
+            onClose={onClose}
+            title={
+                <span className="flex items-center gap-3">
+                    {skill.icon.startsWith('/') && (
+                        <img
+                            src={skill.icon}
+                            alt=""
+                            data-testid="skill-icon"
+                            width={48}
+                            height={48}
+                            className="rounded-lg"
+                        />
+                    )}
+                    <span>
                         {skill.name}
                         {progress && selected !== 'normal' ? ` · Rank ${progress.rank}` : ''}
-                    </h3>
-                    <p className="text-xs uppercase tracking-wide">
-                        {skill.category ?? 'Combat'} ·{' '}
-                        {skill.route === 'reference' ? 'Catalog' : skill.type} · {status}
+                    </span>
+                </span>
+            }
+        >
+            <div className="space-y-4 text-sm" data-testid="skill-detail">
+                <p className="text-xs text-muted">
+                    {skill.category ?? 'Combat'} ·{' '}
+                    {skill.route === 'reference' ? 'Catalog' : skill.type} · {status}
+                </p>
+                <p>{skill.description}</p>
+                <p>{effect(index)}</p>
+                {skill.adaptation && skill.route !== 'reference' && (
+                    <p className="text-xs">
+                        <strong>In this game:</strong> {skill.adaptation}
                     </p>
-                    <p>{skill.description}</p>
-                    <p>{effect(index)}</p>
-                    {skill.adaptation && skill.route !== 'reference' && (
-                        <p className="text-xs">
-                            <strong>In this game:</strong> {skill.adaptation}
-                        </p>
-                    )}
-                    {skill.wiki && (
-                        <section
-                            aria-label="Wiki rank statistics"
-                            className="space-y-2 rounded border p-3"
-                        >
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                                <h4>Mabinogi Wiki stats</h4>
-                                {!skill.wiki.unavailable && (
-                                    <label className="text-sm">
-                                        Inspect rank{' '}
-                                        <select
-                                            aria-label="Inspect wiki rank"
-                                            className="rounded border p-1"
-                                            value={inspectedRank}
-                                            onChange={(e) => setInspectedRank(e.target.value)}
-                                        >
+                )}
+                {skill.wiki && (
+                    <section aria-label="Wiki rank statistics" className="space-y-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                            <h4>Mabinogi Wiki stats</h4>
+                            {!skill.wiki.unavailable && (
+                                <Select
+                                    aria-label="Inspect wiki rank"
+                                    className="w-32"
+                                    variant="secondary"
+                                    value={inspectedRank}
+                                    onChange={(value) => setInspectedRank(String(value))}
+                                >
+                                    <Select.Trigger>
+                                        <Select.Value />
+                                        <Select.Indicator />
+                                    </Select.Trigger>
+                                    <Select.Popover className="dark">
+                                        <ListBox>
                                             {ranks.map((value) => (
-                                                <option key={value}>{value}</option>
+                                                <ListBox.Item
+                                                    key={value}
+                                                    id={value}
+                                                    textValue={`Rank ${value}`}
+                                                >
+                                                    Rank {value}
+                                                    <ListBox.ItemIndicator />
+                                                </ListBox.Item>
                                             ))}
-                                        </select>
-                                    </label>
-                                )}
-                            </div>
-                            <p className="text-xs">
+                                        </ListBox>
+                                    </Select.Popover>
+                                </Select>
+                            )}
+                        </div>
+                        <p className="text-xs">
+                            <a
+                                href={skill.wiki.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="underline"
+                            >
+                                Source: Mabinogi World Wiki
+                            </a>{' '}
+                            · Retrieved {skill.wiki.retrievedAt}
+                            {skill.wiki.additionalUrls?.map((url) => (
                                 <a
-                                    href={skill.wiki.url}
+                                    className="ml-2 underline"
+                                    key={url}
+                                    href={url}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="underline"
                                 >
-                                    Source: Mabinogi World Wiki
-                                </a>{' '}
-                                · Retrieved {skill.wiki.retrievedAt}
-                                {skill.wiki.additionalUrls?.map((url) => (
-                                    <a
-                                        className="ml-2 underline"
-                                        key={url}
-                                        href={url}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                    >
-                                        Elf reference
-                                    </a>
-                                ))}
-                            </p>
-                            {skill.wiki.unavailable ? (
-                                <p>{skill.wiki.unavailable}</p>
-                            ) : (
-                                <>
-                                    <p className="text-xs">
-                                        Original wiki values, including race differences. AP shown
-                                        here is the cost to reach the inspected rank. Seconds and
-                                        percentages retain their wiki units.
-                                    </p>
-                                    <div className="max-h-72 overflow-auto">
-                                        <table className="w-full text-left text-xs">
-                                            <caption className="sr-only">
-                                                {skill.name} · Wiki rank {inspectedRank}
-                                            </caption>
-                                            <thead>
-                                                <tr>
-                                                    <th className="p-2">Stat</th>
-                                                    <th className="p-2">Rank {inspectedRank}</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {skill.wiki.rows.map((row, i) => (
-                                                    <tr
-                                                        key={`${row.label}-${i}`}
-                                                        className="border-t"
-                                                    >
-                                                        <th scope="row" className="p-2 font-normal">
-                                                            {row.label}
-                                                        </th>
-                                                        <td className="p-2">
-                                                            {
-                                                                row.values[
-                                                                    ranks.indexOf(
-                                                                        inspectedRank as (typeof ranks)[number],
-                                                                    )
-                                                                ]
-                                                            }
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </>
-                            )}
-                        </section>
-                    )}
-                    {skill.type === 'passive' && progress && (
-                        <p>
-                            {selected === 'combatMastery' && reason
-                                ? 'Max HP active; melee attack requires a melee action'
-                                : reason || 'Active for eligible actions'}
+                                    Elf reference
+                                </a>
+                            ))}
                         </p>
-                    )}
-                    {skill.type === 'active' && skill.route !== 'reference' && (
-                        <p className="text-xs">
-                            Faces 1–6:{' '}
-                            {rank.weights
-                                .map(
-                                    (w) =>
-                                        `${((100 * w) / rank.weights.reduce((a, b) => a + b, 0)).toFixed(1)}%`,
-                                )
-                                .join(' / ')}
-                            . {reason}
-                        </p>
-                    )}
-                    <p className="text-sm">
-                        {skill.route === 'reference'
-                            ? 'Catalog reference only; learning and gameplay are unavailable.'
-                            : skill.route === 'starter'
-                              ? 'Known at creation'
-                              : skill.route === 'lesson'
-                                ? 'Free lesson from the trainer beside the Blacksmith'
-                                : skill.route === 'book'
-                                  ? 'Read the Critical Hit manual · General Shop · 60 gold'
-                                  : 'Assemble five Final Hit pages in the incomplete manual, then read it. Book and pages: General Shop, 30 gold each; pages also drop from Alby encounters.'}
-                    </p>
-                    {!progress &&
-                        skill.route === 'lesson' &&
-                        (trainer ? (
-                            <Button
-                                isDisabled={disabled || !town || !!reason}
-                                onPress={() => send({ type: 'LEARN', skill: selected })}
-                            >
-                                Learn {skill.name}
-                            </Button>
+                        {skill.wiki.unavailable ? (
+                            <p>{skill.wiki.unavailable}</p>
                         ) : (
-                            <p>Visit the trainer to learn this skill.</p>
-                        ))}
-                    {progress && selected !== 'normal' && index < 14 && (
-                        <>
-                            <ProgressBar
-                                aria-label="Training progress"
-                                value={Math.min(100, points)}
-                            >
-                                <ProgressBar.Track>
-                                    <ProgressBar.Fill />
-                                </ProgressBar.Track>
-                            </ProgressBar>
-                            <p>{points} / 100 training points</p>
-                            <ul className="space-y-1 text-sm">
-                                {rank.objectives.map((o) => (
-                                    <li key={o.id}>
-                                        {o.label}: {progress.counts[o.id] ?? 0}/{o.cap} · {o.points}{' '}
-                                        points each
-                                    </li>
-                                ))}
-                            </ul>
-                            <p>
-                                Next: Rank {ranks[index + 1]} · {rank.ap} AP
-                                <br />
-                                {effect(index + 1)}
-                            </p>
-                            <Button
-                                isDisabled={disabled || !town || points < 100 || c.ap < rank.ap}
-                                onPress={() => send({ type: 'RANK_UP', skill: selected })}
-                            >
-                                Rank up {skill.name}
-                            </Button>
-                        </>
-                    )}
-                    {selected === 'final' && (
-                        <div className="space-y-2">
-                            <p>Collection: {c.collection.length}/5 pages inserted</p>
-                            <div className="flex gap-2">
-                                {[1, 2, 3, 4, 5].map((p) => (
-                                    <span className="rounded border p-2" key={p}>
-                                        {c.collection.includes(p) ? '✓' : p}
-                                    </span>
-                                ))}
-                            </div>
-                            <p className="text-xs">
-                                Missing pages: Alby encounter rewards or General Shop. Insert pages
-                                from Inventory while in town.
-                            </p>
-                        </div>
-                    )}
-                    {!town && (
+                            <>
+                                <p className="text-xs">
+                                    Original wiki values, including race differences. AP shown here
+                                    is the cost to reach the inspected rank. Seconds and percentages
+                                    retain their wiki units.
+                                </p>
+                                <div className="max-h-72 overflow-auto">
+                                    <table className="w-full text-left text-xs tabular-nums">
+                                        <caption className="sr-only">
+                                            {skill.name} · Wiki rank {inspectedRank}
+                                        </caption>
+                                        <thead>
+                                            <tr>
+                                                <th className="p-2">Stat</th>
+                                                <th className="p-2">Rank {inspectedRank}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {skill.wiki.rows.map((row, i) => (
+                                                <tr key={`${row.label}-${i}`} className="border-t">
+                                                    <th scope="row" className="p-2 font-normal">
+                                                        {row.label}
+                                                    </th>
+                                                    <td className="p-2">
+                                                        {
+                                                            row.values[
+                                                                ranks.indexOf(
+                                                                    inspectedRank as (typeof ranks)[number],
+                                                                )
+                                                            ]
+                                                        }
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </>
+                        )}
+                    </section>
+                )}
+                {skill.type === 'passive' && progress && (
+                    <p>
+                        {selected === 'combatMastery' && reason
+                            ? 'Max HP active; melee attack requires a melee action'
+                            : reason || 'Active for eligible actions'}
+                    </p>
+                )}
+                {skill.type === 'active' && skill.route !== 'reference' && (
+                    <p className="text-xs">
+                        Faces 1–6:{' '}
+                        {rank.weights
+                            .map(
+                                (w) =>
+                                    `${((100 * w) / rank.weights.reduce((a, b) => a + b, 0)).toFixed(1)}%`,
+                            )
+                            .join(' / ')}
+                        . {reason}
+                    </p>
+                )}
+                <p className="text-sm">
+                    {skill.route === 'reference'
+                        ? 'Catalog reference only; learning and gameplay are unavailable.'
+                        : skill.route === 'starter'
+                          ? 'Known at creation'
+                          : skill.route === 'lesson'
+                            ? 'Free lesson from the trainer beside the Blacksmith'
+                            : skill.route === 'book'
+                              ? 'Read the Critical Hit manual · General Shop · 60 gold'
+                              : 'Assemble five Final Hit pages in the incomplete manual, then read it. Book and pages: General Shop, 30 gold each; pages also drop from Alby encounters.'}
+                </p>
+                {!progress &&
+                    skill.route === 'lesson' &&
+                    (trainer ? (
+                        <Button
+                            isDisabled={disabled || !town || !!reason}
+                            onPress={() => send({ type: 'LEARN', skill: selected })}
+                        >
+                            Learn {skill.name}
+                        </Button>
+                    ) : (
+                        <p>Visit the trainer to learn this skill.</p>
+                    ))}
+                {progress && selected !== 'normal' && index < 14 && (
+                    <>
+                        <ProgressBar aria-label="Training progress" value={Math.min(100, points)}>
+                            <ProgressBar.Track>
+                                <ProgressBar.Fill />
+                            </ProgressBar.Track>
+                        </ProgressBar>
+                        <p>{points} / 100 training points</p>
+                        <ul className="space-y-1 text-sm">
+                            {rank.objectives.map((o) => (
+                                <li key={o.id}>
+                                    {o.label}: {progress.counts[o.id] ?? 0}/{o.cap} · {o.points}{' '}
+                                    points each
+                                </li>
+                            ))}
+                        </ul>
                         <p>
-                            Return to town to learn, read, assemble, or advance. This run keeps its
-                            starting ranks and equipment.
+                            Next: Rank {ranks[index + 1]} · {rank.ap} AP
+                            <br />
+                            {effect(index + 1)}
                         </p>
-                    )}
-                </div>
+                        <Button
+                            isDisabled={disabled || !town || points < 100 || c.ap < rank.ap}
+                            onPress={() => send({ type: 'RANK_UP', skill: selected })}
+                        >
+                            Rank up {skill.name}
+                        </Button>
+                    </>
+                )}
+                {selected === 'final' && (
+                    <div className="space-y-2">
+                        <p>Collection: {c.collection.length}/5 pages inserted</p>
+                        <div className="flex gap-2">
+                            {[1, 2, 3, 4, 5].map((p) => (
+                                <span className="rounded border p-2" key={p}>
+                                    {c.collection.includes(p) ? '✓' : p}
+                                </span>
+                            ))}
+                        </div>
+                        <p className="text-xs">
+                            Missing pages: Alby encounter rewards or General Shop. Insert pages from
+                            Inventory while in town.
+                        </p>
+                    </div>
+                )}
+                {!town && (
+                    <p>
+                        Return to town to learn, read, assemble, or advance. This run keeps its
+                        starting ranks and equipment.
+                    </p>
+                )}
             </div>
-        </section>
+        </GameModal>
     );
 }
