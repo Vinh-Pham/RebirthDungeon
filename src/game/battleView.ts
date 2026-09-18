@@ -1,3 +1,4 @@
+import { costDescription } from '../domain/stats/resources';
 import Phaser from 'phaser';
 import Button from 'phaser4-rex-plugins/plugins/button.js';
 import Anchor from 'phaser4-rex-plugins/plugins/anchor.js';
@@ -128,7 +129,7 @@ export function battleView(
                     ? 'Recover +10 MP / +20 SP'
                     : id === 'pass'
                       ? 'Pass'
-                      : `${skills[id].name} ${id === 'normal' ? '' : rank.rank} · ${actionCosts(c, id, rank)[skills[id].resource]} ${skills[id].resource === 'mana' ? 'MP' : 'SP'}${reason ? '\n' + reason : ''}`,
+                      : `${skills[id].name} ${id === 'normal' ? '' : rank.rank} · ${costDescription(actionCosts(c, id, rank))}${reason ? '\n' + reason : ''}`,
                 () =>
                     id === 'recover'
                         ? send({ type: 'RECOVER' })
@@ -229,12 +230,10 @@ export function battleView(
                 ? ` · Critical ${a.criticalChance / 100}%: ${attackDamage(c, target, b.skill, b.dice, true)} damage`
                 : '';
         scene.add
-            .text(
-                w / 2,
-                top + 185,
-                `Reserved: ${a.costs.stamina} SP / ${a.costs.mana} MP${preview}`,
-                { fontSize: '12px', color: '#b9c9be' },
-            )
+            .text(w / 2, top + 185, `Reserved: ${costDescription(a.costs)}${preview}`, {
+                fontSize: '12px',
+                color: '#b9c9be',
+            })
             .setOrigin(0.5)
             .setDepth(10000);
         scene.add

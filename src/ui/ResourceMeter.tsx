@@ -11,16 +11,18 @@ export function ResourceMeter({
     max,
     kind,
     empty = false,
+    reserved = 0,
 }: {
     label: string;
     value: number;
     max: number;
     kind: string;
     empty?: boolean;
+    reserved?: number;
 }) {
     return (
         <Meter
-            aria-label={label}
+            aria-label={`${label}${reserved ? `, ${reserved} reserved` : ''}`}
             value={value}
             minValue={0}
             maxValue={max || 1}
@@ -31,7 +33,10 @@ export function ResourceMeter({
                     className={`absolute inset-y-0 rounded-none ${resourceFills[kind] ?? ''}`}
                 />
                 <span>
-                    {label} {empty ? '—' : `${Math.ceil(value)} / ${max}`}
+                    {label}{' '}
+                    {empty
+                        ? '—'
+                        : `${Math.ceil(value)} / ${max}${reserved ? ` (${reserved} held)` : ''}`}
                 </span>
             </Meter.Track>
         </Meter>

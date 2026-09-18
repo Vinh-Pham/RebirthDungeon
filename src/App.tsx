@@ -1,3 +1,4 @@
+import { StatsPanel } from './ui/StatsPanel';
 import { SkillJournal } from './ui/SkillJournal';
 import {
     useEffect,
@@ -450,20 +451,23 @@ function App() {
                                               Bank: 'Bank',
                                               Trainer: 'Combat instructor',
                                           }[service] || service
-                                        : panel === 'menu'
-                                          ? 'Adventure menu'
-                                          : panel === 'skills'
-                                            ? 'Skill catalog'
-                                            : panel === 'inventory'
-                                              ? 'Your belongings'
-                                              : panel === 'settings'
-                                                ? 'Settings'
-                                                : panel === 'rebirth'
-                                                  ? 'Begin another life'
-                                                  : 'Leave this chapter?'}
+                                        : panel === 'character'
+                                          ? 'Character stats'
+                                          : panel === 'menu'
+                                            ? 'Adventure menu'
+                                            : panel === 'skills'
+                                              ? 'Skill catalog'
+                                              : panel === 'inventory'
+                                                ? 'Your belongings'
+                                                : panel === 'settings'
+                                                  ? 'Settings'
+                                                  : panel === 'rebirth'
+                                                    ? 'Begin another life'
+                                                    : 'Leave this chapter?'}
                                 </h2>
                                 {action('Close', close, { className: 'subtle' })}
                             </div>
+                            {panel === 'character' && c && <StatsPanel c={c} />}
                             {(panel === 'skills' || service === 'Trainer') && c && (
                                 <SkillJournal
                                     character={c}
@@ -672,11 +676,12 @@ function App() {
                                                         {items[kind].name}
                                                     </h3>
                                                     <small>
-                                                        {items[kind].power
-                                                            ? `${items[kind].power} power`
-                                                            : items[kind].restore
-                                                              ? `Restores ${items[kind].restore} ${items[kind].resource}`
-                                                              : `${items[kind].defense} defense`}
+                                                        {items[kind].description ??
+                                                            (items[kind].power
+                                                                ? `${items[kind].power} power`
+                                                                : items[kind].restore
+                                                                  ? `Restores ${items[kind].restore} ${items[kind].resource}`
+                                                                  : `${items[kind].defense ?? 0} defense`)}
                                                     </small>
                                                 </div>
                                                 {action(`Buy · ${items[kind].price}g`, () =>
@@ -746,6 +751,11 @@ function App() {
                                                         <strong>
                                                             {items[i.kind].name} ×{i.count}
                                                         </strong>
+                                                        {items[i.kind].description && (
+                                                            <p className="text-xs">
+                                                                {items[i.kind].description}
+                                                            </p>
+                                                        )}
                                                         <small className="mt-[5px] block text-[10px]">
                                                             {c.weapon === i.id ||
                                                             c.offhand === i.id ||
@@ -758,7 +768,9 @@ function App() {
                                                         </small>
                                                     </div>
                                                     <div className="choices">
-                                                        {items[i.kind].resource &&
+                                                        {(items[i.kind].resource ||
+                                                            items[i.kind].statuses ||
+                                                            items[i.kind].cleanse) &&
                                                             action('Use', () =>
                                                                 send({ type: 'USE', id: i.id }),
                                                             )}
@@ -871,6 +883,24 @@ function App() {
                 </div>
             )}
             <footer className="absolute bottom-0 left-0 flex h-[108px] w-[calc(100%/var(--hudscale,1))] origin-bottom-left scale-[var(--hudscale,1)] items-center gap-5 border-t border-[#8db6a169] bg-[linear-gradient(#203638,#101e25)] px-[25px] py-[10px] shadow-[0_-10px_40px_#13242144] compact:gap-[10px] compact:p-2 narrow:h-[100px]">
+                {!!c?.statuses.length && (
+                    <div
+                        aria-label="Active effects"
+                        className="absolute bottom-full left-4 flex max-w-[90vw] flex-wrap gap-2 pb-2"
+                    >
+                        {c.statuses.map((status) => (
+                            <Button
+                                key={status.definition.group}
+                                size="sm"
+                                aria-label={`${status.definition.name}, ${status.remaining} activations remaining`}
+                                onPress={() => setPanel('character')}
+                            >
+                                {status.definition.icon} {status.definition.name} ·{' '}
+                                {status.remaining}
+                            </Button>
+                        ))}
+                    </div>
+                )}
                 <Tooltip>
                     <Button
                         aria-label="MENU"
@@ -888,6 +918,7 @@ function App() {
                             label={key === 'hp' ? 'HP' : key === 'mana' ? 'MP' : 'SP'}
                             value={c?.[key] ?? 0}
                             max={c?.stats[key] ?? 0}
+                            reserved={c?.battle?.action?.costs[key] ?? 0}
                             kind={key}
                             empty={!c}
                         />
@@ -910,6 +941,7 @@ function App() {
                                     onPress={() => {
                                         if (name === 'Inventory' && c) setPanel('inventory');
                                         if (name === 'Skills' && c) setPanel('skills');
+                                        if (name === 'Character' && c) setPanel('character');
                                     }}
                                 >
                                     <span aria-hidden="true" className="text-[25px] leading-[27px]">
@@ -917,11 +949,13 @@ function App() {
                                     </span>
                                 </Button>
                                 <Tooltip.Content>
-                                    {name === 'Skills'
-                                        ? 'Open skill journal'
-                                        : name === 'Inventory'
-                                          ? 'Open inventory'
-                                          : `${name} · coming later`}
+                                    {name === 'Character'
+                                        ? 'Open character stats'
+                                        : name === 'Skills'
+                                          ? 'Open skill journal'
+                                          : name === 'Inventory'
+                                            ? 'Open inventory'
+                                            : `${name} · coming later`}
                                 </Tooltip.Content>
                             </Tooltip>
                         ))}

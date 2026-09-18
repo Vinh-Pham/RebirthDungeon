@@ -55,7 +55,9 @@ export interface Skill {
         | 'heal'
         | 'defend'
         | 'manaShield'
-        | 'restoreMana';
+        | 'restoreMana'
+        | 'status';
+    appliedStatuses?: { id: string; target: 'self' | 'targets' }[];
     category?: 'Combat' | 'Magic' | 'Life';
     wiki?: WikiReference;
     adaptation?: string;

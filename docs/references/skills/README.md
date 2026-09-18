@@ -1,6 +1,6 @@
 # Skill catalog and saved wiki references
 
-The catalog contains all 33 icons supplied in `public/assets/game/skills`, plus seven existing actions without supplied icons (40 entries total). Each skill has its own TypeScript module. The 32 verified entries each have a separate `.wiki.json` file with rank F–1 rows; Wand Mastery has no published article or invented stats. Eight life skills are reference-only, as requested.
+The catalog contains all 33 icons supplied in `public/assets/game/skills`, plus seven existing actions and two original stats-system skills without supplied icons (42 entries total). Each skill has its own TypeScript module. The 32 verified entries each have a separate `.wiki.json` file with rank F–1 rows; Wand Mastery has no published article or invented stats. Eight life skills are reference-only, as requested.
 
 Sources were retrieved on **2026-09-18 UTC** using **Firecrawl**. The source snapshots below are saved locally and require no network access. Ranged Attack also has an [Elf reference](elf-ranged-attack.md). Mana Regeneration is the icon filename for the wiki’s Mana Recovery skill.
 
@@ -57,3 +57,5 @@ Life skills and Wand Mastery cannot be learned, ranked, or used in combat. Their
 3. Review source changes and the corresponding per-skill adaptation module, then run lint, typecheck, tests, build, and browser checks. Cached Firecrawl responses stay ignored; normalized stats and reference documents are tracked.
 
 Raw source markdown retains the wiki’s original merged-table limitations; the normalized JSON preserves the corrected rank-column alignment.
+
+Arcane Focus and Blood Strike are original Rebirth Dungeon skills with separate modules. Their costs and status adaptations are documented in [stats implementation](../../gameplay/stats-implementation.md). Mana Recovery now requires 5 SP up front so recovery cannot finance its own activation.

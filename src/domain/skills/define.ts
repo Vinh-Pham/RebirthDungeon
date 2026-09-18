@@ -30,7 +30,7 @@ export function define(
     const effect = options.effect ?? 'attack';
     const objectives =
         training ??
-        (['heal', 'defend', 'manaShield', 'restoreMana'].includes(effect)
+        (['heal', 'defend', 'manaShield', 'restoreMana', 'status'].includes(effect)
             ? [objective('use', 'Successful uses', 4, 25)]
             : effect === 'counter'
               ? [

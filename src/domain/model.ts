@@ -1,3 +1,10 @@
+import type {
+    StatModifier,
+    CostModifier,
+    StatusInstance,
+    StatSnapshot,
+    ModifierSource,
+} from './stats/types';
 import type { SkillProgress, RankDefinition } from './skillCatalog';
 export type Race = 'Human' | 'Elf' | 'Giant';
 export type Talent = 'Close Combat' | 'Archery' | 'Magic' | 'Dual Gun';
@@ -36,6 +43,12 @@ export interface ItemDefinition {
     armorCategory?: 'light' | 'heavy';
     skill?: string;
     page?: number;
+    modifiers?: StatModifier[];
+    costModifiers?: CostModifier[];
+    statuses?: string[];
+    cleanse?: 'harmful' | 'buff' | 'poison';
+    requiresRun?: boolean;
+    description?: string;
 }
 export interface Enemy {
     id: string;
@@ -50,6 +63,8 @@ export interface Enemy {
     magicProtection?: number;
     shield?: number;
     attackType?: 'melee' | 'ranged' | 'magic';
+    statuses?: StatusInstance[];
+    inflicts?: string[];
 }
 export interface Battle {
     room: number;
@@ -128,9 +143,12 @@ export interface Character {
     reward: Reward | null;
     checkpoint: Phase;
     tutorial: number;
+    statuses: StatusInstance[];
+    titleModifiers: { first?: ModifierSource; second?: ModifierSource };
 }
 export interface RunBaseline {
     contentVersion: 2;
+    statSnapshot?: StatSnapshot;
     skills: Record<string, SkillProgress>;
     stats: Stats;
     weapon: string | null;
@@ -152,6 +170,7 @@ export interface CombatEffects {
 export interface ActionSnapshot {
     id: string;
     combatVersion: 2;
+    statsVersion?: 1;
     skill: string;
     rank: RankDefinition;
     attack: number;
@@ -171,6 +190,7 @@ export interface Settings {
 }
 export interface GameData {
     version: 2;
+    statsVersion: 1;
     revision: number;
     rng: number;
     activeId: string | null;
@@ -209,6 +229,7 @@ export const zeroStats = (): Stats => ({
 });
 export const initialData = (): GameData => ({
     version: 2,
+    statsVersion: 1,
     revision: 0,
     rng: 0x7c813ea,
     activeId: null,

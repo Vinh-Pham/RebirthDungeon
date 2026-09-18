@@ -52,11 +52,16 @@ const cast = (s: SaveData, skill: string) =>
     run(run(s, { type: 'ROLL', skill, target: 'enemy-0' }), { type: 'ATTACK' });
 describe('ranked skill content and acquisition', () => {
     it('has the complete icon catalog and legacy skills with fifteen reachable ranks and an unranked basic action', () => {
-        expect(Object.keys(skills)).toHaveLength(40);
+        expect(Object.keys(skills)).toHaveLength(42);
         expect(skills.charge).toBeUndefined();
         for (const [id, s] of Object.entries(skills)) {
             expect(s.ranks.map((r) => r.rank)).toEqual(ranks);
             for (const r of s.ranks) {
+                if (s.type === 'active' && s.route !== 'reference')
+                    expect(
+                        Object.values(r.costs).some((cost) => cost > 0),
+                        `${id} ${r.rank} has an upfront cost`,
+                    ).toBe(true);
                 expect(r.weights).toHaveLength(6);
                 expect(r.weights.reduce((a, b) => a + b)).toBeGreaterThan(0);
                 if (id !== 'normal' && r.rank !== '1')
@@ -148,18 +153,18 @@ describe('equipment and derived mastery effects', () => {
         s = run(s, { type: 'EQUIP', id: item(s, 'shield') });
         s = run(s, { type: 'LEARN', skill: 'shieldMastery' });
         expect(requirementReason(active(s)!, 'dualMastery')).toContain('dual');
-        expect(defenses(active(s)!)).toEqual({ defense: 3, protection: 0.01 });
+        expect(defenses(active(s)!)).toEqual({ defense: 6, protection: 0.01 });
         s = buy(s, 'heavyArmor', 'Blacksmith');
         s = run(s, { type: 'EQUIP', id: item(s, 'heavyArmor') });
         s = run(s, { type: 'LEARN', skill: 'heavyMastery' });
-        expect(defenses(active(s)!)).toEqual({ defense: 10, protection: 0.02 });
-        expect(defenses(active(s)!, true)).toEqual({ defense: 5, protection: 0.01 });
+        expect(defenses(active(s)!)).toEqual({ defense: 13, protection: 0.02 });
+        expect(defenses(active(s)!, true)).toEqual({ defense: 7, protection: 0.034 });
         expect(effectiveStats(active(s)!).dex).toBe(58);
         s = buy(s, 'lightArmor', 'Blacksmith');
         s = run(s, { type: 'EQUIP', id: item(s, 'lightArmor') });
         s = run(s, { type: 'LEARN', skill: 'lightMastery' });
         expect(effectiveStats(active(s)!).dex).toBe(58);
-        expect(defenses(active(s)!)).toEqual({ defense: 8, protection: 0.01 });
+        expect(defenses(active(s)!)).toEqual({ defense: 11, protection: 0.01 });
         for (const id of [
             'combatMastery',
             'swordMastery',
@@ -280,7 +285,7 @@ describe('revised combat transactions', () => {
         s = run(s, { type: 'ENTER', seed: 1 });
         s = run(s, { type: 'ENCOUNTER', room: 1 });
         s = edit(s, (c) => {
-            c.battle!.enemies[0].hp = 10000;
+            c.battle!.enemies[0].hp = c.battle!.enemies[0].maxHp = 10000;
         });
         s = cast(s, 'final');
         expect(active(s)!.effects.final?.remaining).toBe(2);

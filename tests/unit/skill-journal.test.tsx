@@ -25,7 +25,7 @@ it('discovers unlearned skills, shows their supplied icons, filters, and browses
     fireEvent.change(screen.getByRole('searchbox', { name: 'Search skills' }), {
         target: { value: 'firebolt' },
     });
-    expect(screen.getByText('1 / 40 skills')).toBeDefined();
+    expect(screen.getByText('1 / 42 skills')).toBeDefined();
     expect(screen.getByTestId('skill-icon').getAttribute('src')).toBe(
         '/assets/game/skills/firebolt.webp',
     );
@@ -44,7 +44,7 @@ it('discovers unlearned skills, shows their supplied icons, filters, and browses
     fireEvent.change(screen.getByRole('combobox', { name: 'Category' }), {
         target: { value: 'Life' },
     });
-    expect(screen.getByText('8 / 40 skills')).toBeDefined();
+    expect(screen.getByText('8 / 42 skills')).toBeDefined();
     expect(screen.queryByRole('button', { name: /^Learn / })).toBeNull();
 });
 it('teaches eligible combat skills from the trainer and identifies unverified data', () => {

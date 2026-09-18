@@ -1,3 +1,5 @@
+import { createStatSnapshot } from './stats/resolve';
+import { applyStatus, removeStatuses, restorePool } from './stats/statuses';
 import {
     learn,
     advance,
@@ -127,7 +129,7 @@ function makeReward(s: SaveData, id: string, boss = false): Reward {
 }
 function finishActivation(s: SaveData, c: Character) {
     const b = c.battle!;
-    if (b.enemies.some((e) => e.hp > 0)) enemiesAct(c);
+    if (c.hp > 0 && b.enemies.some((e) => e.hp > 0)) enemiesAct(c);
     if (c.hp > 0 && b.enemies.every((e) => e.hp === 0)) {
         const boss = b.enemies.some((e) => e.boss);
         if (!c.run!.cleared.includes(b.room)) {
@@ -280,6 +282,8 @@ export function reduceCommand(
                 reward: null,
                 checkpoint: 'exploring',
                 tutorial: 0,
+                statuses: [],
+                titleModifiers: {},
             };
             s.data.characters.push(c);
             s.data.activeId = c.id;
@@ -323,8 +327,10 @@ export function reduceCommand(
                         offhand: c.offhand,
                         armor: c.armor,
                     };
+                    c.run.baseline.statSnapshot = createStatSnapshot(c);
                     c.run.pageRewards = 0;
                     c.effects = {};
+                    c.statuses = [];
                     c.cooldowns = {};
                     c.battle = null;
                     c.reward = null;
@@ -375,6 +381,7 @@ export function reduceCommand(
                             const boss = r.kind === 'boss' && i === 0;
                             return {
                                 id: `enemy-${i}`,
+                                inflicts: boss ? ['armorBreak'] : r.id > 2 ? ['poison'] : [],
                                 name: boss
                                     ? 'Giant Spider'
                                     : r.id > 2
@@ -531,6 +538,7 @@ export function reduceCommand(
                 case 'ABANDON':
                     c.run = null;
                     c.effects = {};
+                    c.statuses = [];
                     c.cooldowns = {};
                     c.battle = null;
                     c.reward = null;
@@ -591,11 +599,32 @@ export function reduceCommand(
                 case 'USE': {
                     const item = c.inventory.find((i) => i.id === cmd.id),
                         def = item && items[item.kind];
-                    if (!item || !def?.resource) throw new Error('Choose a consumable.');
-                    c[def.resource] = Math.min(
-                        c.stats[def.resource],
-                        c[def.resource] + def.restore!,
-                    );
+                    if (!item || !def || (!def.resource && !def.statuses && !def.cleanse))
+                        throw new Error('Choose a consumable.');
+                    if (c.hp <= 0) throw new Error('Cannot restore a defeated character.');
+                    if (def.requiresRun && !c.run)
+                        throw new Error('Use this during a dungeon run.');
+                    if (def.cleanse) {
+                        if (
+                            !c.statuses.some(
+                                (status) =>
+                                    status.definition.removable &&
+                                    status.definition.tags.includes(def.cleanse!),
+                            )
+                        )
+                            throw new Error('No matching effect to remove.');
+                        c.statuses = removeStatuses(c, def.cleanse).statuses;
+                    }
+                    if (def.resource)
+                        c[def.resource] = restorePool(c, def.resource, def.restore!)[def.resource];
+                    for (const id of def.statuses ?? [])
+                        c.statuses = applyStatus(
+                            c,
+                            id,
+                            { id: item.id, name: def.name },
+                            s.checkpoint.screen === 'Battle',
+                        ).statuses;
+                    refreshStats(c);
                     consume(c.inventory, item.id);
                     if (s.checkpoint.screen === 'Battle') {
                         endPlayerActivation(c);
@@ -648,6 +677,7 @@ export function reduceCommand(
             if (c.hp <= 0) {
                 c.run = null;
                 c.effects = {};
+                c.statuses = [];
                 c.cooldowns = {};
                 refreshStats(c);
                 c.battle = null;

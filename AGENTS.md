@@ -44,6 +44,7 @@ src/
     catalog.ts            Items, shops, and talent equipment
     skillCatalog.ts       Skill registry and rank/training accessors
     skillSystem.ts        Learning, ranking, equipment eligibility, and derived stats
+    stats/                Versioned stat resolution, costs, statuses, and save validation
     skills/               One module per skill; separate *.wiki.json source stats
     migration.ts          Save upgrades and reconstruction of legacy actions
     xp-table.json         Extracted XP data

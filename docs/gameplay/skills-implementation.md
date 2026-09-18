@@ -4,7 +4,7 @@ This is the accepted implementation contract for the Phaser 4 / React game. It s
 
 ## Current catalog update — September 18, 2026 UTC
 
-The [per-skill catalog and source index](../references/skills/README.md) supersedes the original balance tables below for every skill with a supplied icon. There are now 40 catalog entries: 31 playable actions/masteries, eight life references, and one unverified Wand Mastery reference. All skills are browsable even before learning, with icon images, search, category filters, and independent F–1 wiki rank inspection. Combat menus paginate when needed.
+The [per-skill catalog and source index](../references/skills/README.md) supersedes the original balance tables below for every skill with a supplied icon. There are now 42 catalog entries: 33 playable actions/masteries, eight life references, and one unverified Wand Mastery reference. All skills are browsable even before learning, with icon images, search, category filters, and independent F–1 wiki rank inspection. Combat menus paginate when needed. Arcane Focus and Blood Strike are original additions described in [stats implementation](stats-implementation.md).
 
 `src/domain/skillCatalog.ts` is now a registry; individual definitions and normalized wiki rows live in `src/domain/skills/`. Existing skill IDs and pending action snapshots remain compatible. Wiki AP, costs, damage, defenses, and cumulative character gains replace the old authored values for verified skills. The source index documents time conversion, race variants, and simplified effects.
 

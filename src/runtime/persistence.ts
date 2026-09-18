@@ -1,3 +1,4 @@
+import { validateActorStats } from '../domain/stats/validate';
 import { migrateSave } from '../domain/migration';
 import { ranks, skills, skillRank } from '../domain/skillCatalog';
 import type { Immutable } from 'immer';
@@ -12,6 +13,7 @@ export function validateSave(value: unknown): asserts value is SaveData {
         !s ||
         s.version !== 2 ||
         s.data?.version !== 2 ||
+        s.data.statsVersion !== 1 ||
         s.checkpoint?.version !== 1 ||
         !Array.isArray(s.data.characters) ||
         s.data.characters.length > 20 ||
@@ -22,6 +24,8 @@ export function validateSave(value: unknown): asserts value is SaveData {
         throw new Error('This save is damaged or from an unsupported version.');
     const ids = new Set<string>();
     for (const c of s.data.characters) {
+        validateActorStats(c);
+        for (const enemy of c.battle?.enemies ?? []) validateActorStats(enemy);
         if (
             !c.id ||
             ids.has(c.id) ||
@@ -108,6 +112,7 @@ export function validateSave(value: unknown): asserts value is SaveData {
             const a = c.battle.action;
             if (
                 a.combatVersion !== 2 ||
+                (a.statsVersion !== undefined && a.statsVersion !== 1) ||
                 !skills[a.skill] ||
                 skills[a.skill].type !== 'active' ||
                 !ranks.includes(a.rank?.rank) ||

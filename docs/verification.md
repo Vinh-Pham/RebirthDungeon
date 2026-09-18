@@ -8,10 +8,10 @@ Local Firefox launch currently fails with “Could not find profile folder” be
 
 ## Latest local results — September 18, 2026 UTC
 
-- TypeScript, lint, and production build: passed.
-- Vitest: 61 tests passed. Includes all 33 icon mappings and local source files, race-specific AP and costs, merged wiki cells, new offensive/support skills, source-only life skills, unverified Wand Mastery, save corruption checks, catalog search/rank browsing, and the previous dungeon/progression checks.
-- Coverage includes the per-skill helpers: 98.77% lines, 93.38% branches, 96.86% statements, 97.29% functions. All 90% gates pass.
-- Chromium: all five browser scenarios passed across the existing full dungeon/reload journey, town services, trainer learning, inventory/AP advancement, and the new catalog/full-spellbook scenario. Icons load successfully; wiki rank inspection, life filters, and combat paging work at a 600×800 viewport. Screenshots are written under `test-results/skill-catalog-*.png`.
-- WebKit and Firefox were not rerun for this catalog change. The earlier WebKit creation/walking/dungeon-entry result and Firefox launch limitation remain historical context above.
+- TypeScript, lint, and production build: passed for the stats implementation.
+- Vitest: 74 tests passed. New checks cover modifier ordering/removal, title-slot sources, fractional growth, frozen baselines, no-refill clamping, all active skills having positive costs, mixed-cost affordability/payment, HP costs bypassing shields, status priorities/timing, poison defeat, regeneration, consumable side effects/cleansing, save migration and malformed data.
+- Coverage: 98.25% lines, 92.80% branches, 96.40% statements, 97.59% functions. All 90% gates pass.
+- Chromium: the five existing scenarios passed, including the full dungeon/reload journey and catalog paging. The new stats scenario passed on its focused rerun after correcting its test control name. It exercises potion use, status persistence, Character stats, HP/SP reservations, another reload, and exactly-once paid pass. The 600×800 Character panel screenshot was visually inspected (`test-results/character-stats-mobile.png`).
+- WebKit and Firefox were not rerun for this stats change. The earlier WebKit creation/walking/dungeon-entry result and Firefox launch limitation remain historical context above.
 
-The catalog source index and current adaptation rules are in [the per-skill reference index](references/skills/README.md).
+See [stats implementation rules](gameplay/stats-implementation.md) for numeric balance and compatibility, and [the per-skill reference index](references/skills/README.md) for wiki data.

@@ -1,3 +1,7 @@
+import { statusDefinitions } from './stats/statusCatalog';
+import { applyStatus, completeStatusActivation } from './stats/statuses';
+import { enemyStats } from './stats/resolve';
+import { affordability } from './stats/resources';
 import type { Immutable } from 'immer';
 import type { ActionSnapshot, Character, Enemy, SaveData } from './model';
 import { wikiValue } from './skills/wiki';
@@ -10,6 +14,7 @@ import {
     requirementReason,
     effectiveStats,
     equipment,
+    refreshStats,
 } from './skillSystem';
 import { enemyDamage } from './behavior';
 export function damageAmount(
@@ -90,9 +95,9 @@ function trainOffense(
 export function payReservation(c: Character) {
     const a = c.battle!.action;
     if (!a) throw new Error('No reserved action.');
+    const reason = affordability(c, a.costs, false);
+    if (reason) throw new Error(reason);
     for (const pool of ['hp', 'mana', 'stamina'] as const) {
-        if (c[pool] - a.costs[pool] < (pool === 'hp' ? 1 : 0))
-            throw new Error(`Not enough ${pool}.`);
         c[pool] -= a.costs[pool];
     }
 }
@@ -134,15 +139,22 @@ export function commitAbility(s: SaveData, c: Character) {
         train(c, a.skill, 'use');
         b.log.push(`${skill.name} restores ${c.mana - before} MP.`);
     } else if (skill.effect === 'defend') {
-        c.effects.defense = {
-            defense: a.rank.base,
-            protection: wikiValue(
-                skill.wiki,
-                'Protection Bonus',
-                ranks.indexOf(a.rank.rank),
-                c.race,
-            ),
-        };
+        c.statuses = applyStatus(c, 'guard', { id: a.skill, name: skill.name }, true, {
+            ...statusDefinitions.guard,
+            name: 'Defense',
+            modifiers: [
+                { stat: 'defense', flat: a.rank.base },
+                {
+                    stat: 'protection',
+                    flat: wikiValue(
+                        skill.wiki,
+                        'Protection Bonus',
+                        ranks.indexOf(a.rank.rank),
+                        c.race,
+                    ),
+                },
+            ],
+        }).statuses;
         train(c, a.skill, 'use');
         b.log.push('Defense prepared for the next enemy response.');
     } else if (skill.effect === 'manaShield') {
@@ -160,6 +172,8 @@ export function commitAbility(s: SaveData, c: Character) {
         };
         train(c, a.skill, 'use');
         b.log.push('Mana Shield active for three enemy responses.');
+    } else if (skill.effect === 'status') {
+        train(c, a.skill, 'use');
     } else {
         let hit = false,
             kills = 0,
@@ -201,6 +215,26 @@ export function commitAbility(s: SaveData, c: Character) {
             if (item) item.durability = Math.max(0, (item.durability ?? 20) - 1);
         }
     }
+    for (const status of skill.appliedStatuses ?? []) {
+        if (status.target === 'self')
+            c.statuses = applyStatus(
+                c,
+                status.id,
+                { id: a.skill, name: skill.name },
+                true,
+            ).statuses;
+        else
+            for (const target of a.targets) {
+                const enemy = b.enemies.find((e) => e.id === target.id && e.hp > 0);
+                if (enemy)
+                    enemy.statuses = applyStatus(
+                        enemy,
+                        status.id,
+                        { id: a.skill, name: skill.name },
+                        false,
+                    ).statuses;
+            }
+    }
     c.cooldowns[a.skill] = a.rank.cooldown;
     endPlayerActivation(c, a.skill);
 }
@@ -209,6 +243,12 @@ export function endPlayerActivation(c: Character, cast?: string) {
         if (id !== cast) c.cooldowns[id] = Math.max(0, c.cooldowns[id] - 1);
     if (c.effects.final && cast !== 'final' && --c.effects.final.remaining <= 0)
         delete c.effects.final;
+    const completed = completeStatusActivation(c);
+    for (const pool of ['hp', 'mana', 'stamina'] as const) c[pool] = completed.actor[pool];
+    c.statuses = completed.actor.statuses;
+    c.stats = completed.actor.stats;
+    c.effects = completed.actor.effects;
+    c.battle?.log.push(...completed.log);
 }
 export function enemiesAct(c: Character) {
     const b = c.battle!;
@@ -220,10 +260,10 @@ export function enemiesAct(c: Character) {
             const damage = hitEnemy(
                 e,
                 damageAmount(
-                    stance.power + e.attack * (stance.opponentMultiplier ?? 0),
+                    stance.power + enemyStats(e).attack * (stance.opponentMultiplier ?? 0),
                     stance.multiplier,
-                    e.defense,
-                    e.protection ?? 0,
+                    enemyStats(e).defense,
+                    enemyStats(e).protection,
                 ),
             );
             train(c, 'counter', 'counter');
@@ -231,7 +271,9 @@ export function enemiesAct(c: Character) {
             b.log.push(`Counterattack negates ${e.name}'s hit and deals ${damage}.`);
         } else {
             const d = defenses(c, e.attackType === 'magic');
-            const raw = Math.floor(enemyDamage(e.attack, d.defense, e.hp) * (1 - d.protection));
+            const raw = Math.floor(
+                enemyDamage(enemyStats(e).attack, d.defense, e.hp) * (1 - d.protection),
+            );
             const absorbed = Math.min(c.effects.shield ?? 0, raw);
             c.effects.shield = (c.effects.shield ?? 0) - absorbed;
             let damage = raw - absorbed;
@@ -245,7 +287,14 @@ export function enemiesAct(c: Character) {
             for (const id of ['shieldMastery', 'lightMastery', 'heavyMastery'])
                 if (!requirementReason(c, id)) train(c, id, 'incoming');
             b.log.push(`${e.name} deals ${damage} damage.`);
+            if (c.hp > 0)
+                for (const id of e.inflicts ?? [])
+                    c.statuses = applyStatus(c, id, { id: e.id, name: e.name }, false).statuses;
+            refreshStats(c);
         }
+        const completed = completeStatusActivation(e);
+        Object.assign(e, completed.actor);
+        b.log.push(...completed.log);
         if (!c.hp) break;
     }
     delete c.effects.defense;

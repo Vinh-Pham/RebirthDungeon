@@ -2,7 +2,7 @@ import { define } from './define';
 import { withWiki } from './wiki';
 import wiki from './mana-regeneration.wiki.json';
 
-export default withWiki(
+const skill = withWiki(
     define('Mana Recovery', 'magic', 0, 0, 0, 0, {
         description: 'Channel magic to restore a percentage of maximum mana.',
         effect: 'restoreMana',
@@ -19,3 +19,9 @@ export default withWiki(
         power: 'Mana Recovery',
     },
 );
+
+// Resource recovery still pays an upfront cost; it cannot finance its own activation.
+for (const rows of Object.values(skill.ranksByRace!))
+    for (const rank of rows) rank.costs.stamina = 5;
+skill.adaptation += ' Activation costs 5 SP in Rebirth Dungeon.';
+export default skill;

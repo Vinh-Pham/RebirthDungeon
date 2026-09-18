@@ -177,3 +177,85 @@ shops.General.push(
     ...Array.from({ length: 5 }, (_, i) => `finalPage${i + 1}`),
 );
 shops.Blacksmith.push('shield', 'lightArmor', 'heavyArmor');
+
+// Original stat-system items; these are game balance data, not wiki values.
+Object.assign(items, {
+    strengthDraught: {
+        name: 'Strength draught',
+        icon: '⚔',
+        type: 'consumable',
+        price: 18,
+        statuses: ['strengthDraught'],
+        requiresRun: true,
+        description: '+10 STR for 3 subsequent activations. Refreshes, does not stack.',
+    },
+    unstableElixir: {
+        name: 'Unstable elixir',
+        icon: '▽',
+        type: 'consumable',
+        price: 12,
+        resource: 'mana',
+        restore: 45,
+        statuses: ['unstableWeakness'],
+        requiresRun: true,
+        description: 'Restore 45 MP; suffer -15 Will for 3 subsequent activations.',
+    },
+    antidote: {
+        name: 'Antidote',
+        icon: '✚',
+        type: 'consumable',
+        price: 12,
+        cleanse: 'poison',
+        description: 'Remove poison. Does not undo damage already taken.',
+    },
+    cleansingTonic: {
+        name: 'Cleansing tonic',
+        icon: '✦',
+        type: 'consumable',
+        price: 25,
+        cleanse: 'harmful',
+        description: 'Remove dispellable harmful statuses. Equipment penalties remain.',
+    },
+    renewalTonic: {
+        name: 'Renewal tonic',
+        icon: '♥',
+        type: 'consumable',
+        price: 20,
+        statuses: ['regeneration'],
+        requiresRun: true,
+        description: 'Restore 5 HP at the end of each of your next 3 activations.',
+    },
+    vigorCoat: {
+        name: 'Vigor coat',
+        icon: '♜',
+        type: 'armor',
+        price: 95,
+        defense: 2,
+        modifiers: [
+            { stat: 'hp', flat: 10 },
+            { stat: 'staminaRegen', flat: 2 },
+        ],
+        description:
+            '+10 Max HP, +2 Defense, +2 SP regeneration per activation. Capacity does not heal.',
+    },
+    focusWand: {
+        name: 'Focus wand',
+        icon: '✧',
+        type: 'weapon',
+        price: 120,
+        talent: 'Magic',
+        power: 10,
+        modifiers: [{ stat: 'int', flat: 10 }],
+        costModifiers: [{ pool: 'mana', percentBp: -2000 }],
+        description: '+10 INT; mana costs -20%, minimum 1 MP for positive costs.',
+    },
+});
+shops.General.push(
+    'strengthDraught',
+    'unstableElixir',
+    'antidote',
+    'cleansingTonic',
+    'renewalTonic',
+    'vigorCoat',
+);
+shops.Blacksmith.push('focusWand');

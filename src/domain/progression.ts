@@ -45,7 +45,8 @@ export function gainXp(c: Character, amount: number) {
         c.totalLevel++;
         c.ap++;
         for (const [k, v] of Object.entries(level[c.talent])) {
-            c.growth[k as keyof Stats] += v;
+            c.growth[k as keyof Stats] =
+                Math.round((c.growth[k as keyof Stats] + v) * 10000) / 10000;
             c.stats[k as keyof Stats] += v;
         }
     }
@@ -78,7 +79,8 @@ export function applyAging(c: Character, now: number) {
         c.ap += 5;
         if (c.age <= 20)
             for (const [k, v] of Object.entries(age[c.talent])) {
-                c.growth[k as keyof Stats] += v;
+                c.growth[k as keyof Stats] =
+                    Math.round((c.growth[k as keyof Stats] + v) * 10000) / 10000;
                 c.stats[k as keyof Stats] += v;
             }
     }

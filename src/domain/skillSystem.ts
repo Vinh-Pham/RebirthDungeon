@@ -1,32 +1,13 @@
 import type { Immutable } from 'immer';
 import type { Character, Stats, ActionSnapshot } from './model';
 import { wikiValue } from './skills/wiki';
-import { items } from './catalog';
+import { resolveStats, equipment, enemyStats } from './stats/resolve';
+import { effectiveCosts, affordability } from './stats/resources';
+export { equipment, progressionStats } from './stats/resolve';
 import { skills, ranks, skillRank, trainingPoints } from './skillCatalog';
 export const learned = (c: Immutable<Character>) => c.run?.baseline?.skills ?? c.skills;
 export const rankIndex = (c: Immutable<Character>, id: string) =>
     learned(c)[id] ? ranks.indexOf(learned(c)[id].rank) : -1;
-export function equipment(c: Immutable<Character>) {
-    const loadout = c.run?.baseline ?? c;
-    const main = c.inventory.find((i) => i.id === loadout.weapon),
-        off = c.inventory.find((i) => i.id === loadout.offhand),
-        body = c.inventory.find((i) => i.id === loadout.armor);
-    const weapon = main && items[main.kind],
-        offDef = off && items[off.kind],
-        armor = body && items[body.kind];
-    const sword = !!main && ['sword', 'steel'].includes(main.kind);
-    const dual = sword && !!off && main!.id !== off.id && ['sword', 'steel'].includes(off.kind);
-    return {
-        main,
-        off,
-        weapon,
-        offDef,
-        armor,
-        sword,
-        dual,
-        melee: !weapon || weapon.talent === 'Close Combat',
-    };
-}
 export function requirementReason(c: Immutable<Character>, id: string): string {
     const s = skills[id];
     if (!s) return 'Unavailable';
@@ -50,120 +31,40 @@ export function requirementReason(c: Immutable<Character>, id: string): string {
         ? ''
         : `Requires ${{ any: 'equipment', melee: 'a melee weapon', sword: 'a sword', dual: 'dual swords', shield: 'a shield', light: 'light armor', heavy: 'heavy armor', bow: 'a bow', guns: 'dual guns', magic: 'a wand' }[s.requirement]}`;
 }
-export function progressionStats(c: Immutable<Character>): Stats {
-    return Object.fromEntries(
-        Object.keys(c.base).map((k) => [k, c.base[k as keyof Stats] + c.growth[k as keyof Stats]]),
-    ) as unknown as Stats;
-}
 export function effectiveStats(c: Immutable<Character>): Stats {
-    const result = { ...(c.run?.baseline?.stats ?? progressionStats(c)) };
-    for (const [id, progress] of Object.entries(learned(c))) {
-        const wiki = skills[id]?.wiki;
-        if (!wiki || skills[id].route === 'reference') continue;
-        const index = ranks.indexOf(progress.rank);
-        for (const row of wiki.rows) {
-            if (!row.label.startsWith('Additional ') || !row.label.includes('Total')) continue;
-            if (/Human|Elf|Giant/.test(row.label) && !row.label.includes(c.race)) continue;
-            const value = Number.parseFloat(row.values[index]) || 0;
-            const names: [keyof Stats, RegExp][] = [
-                ['hp', /Additional HP/],
-                ['mana', /Additional (Mana|MP)/],
-                ['stamina', /Additional Stamina/],
-                ['str', /Additional (Str|Strength)/],
-                ['dex', /Additional (Dex|Dexterity)/],
-                ['int', /Additional (Int|Intelligence)/],
-                ['will', /Additional Will/],
-                ['luck', /Additional Luck/],
-            ];
-            for (const [key, pattern] of names) if (pattern.test(row.label)) result[key] += value;
-        }
-    }
-    if (equipment(c).armor?.armorCategory === 'heavy') {
-        const index = rankIndex(c, 'heavyMastery');
-        const penalty =
-            index < 0 ? 20 : wikiValue(skills.heavyMastery.wiki, 'Dex Reduction', index, c.race);
-        result.dex = Math.floor(result.dex * (1 - penalty / 100));
-    }
-    return result;
+    return resolveStats(c).primary;
 }
 export function refreshStats(c: Character) {
     c.stats = effectiveStats(c);
     for (const pool of ['hp', 'mana', 'stamina'] as const)
-        c[pool] = Math.min(c[pool], c.stats[pool]);
+        c[pool] = Math.max(0, Math.min(c[pool], c.stats[pool]));
 }
 export function defenses(c: Immutable<Character>, magic = false) {
-    const e = equipment(c);
-    let defense = (magic ? e.armor?.magicDefense : e.armor?.defense) ?? 0;
-    defense += (magic ? e.offDef?.magicDefense : e.offDef?.defense) ?? 0;
-    let protection = 0;
-    for (const id of ['shieldMastery', 'lightMastery', 'heavyMastery']) {
-        const r = rankIndex(c, id);
-        if (r < 0 || requirementReason(c, id)) continue;
-        if (skills[id].wiki) {
-            defense += wikiValue(
-                skills[id].wiki,
-                magic ? 'Additional Magic Defense' : 'Additional Defense',
-                r,
-                c.race,
-            );
-            protection += wikiValue(
-                skills[id].wiki,
-                magic ? 'Additional Magic Protection' : 'Additional Protection',
-                r,
-                c.race,
-            );
-        } else {
-            defense += skills[id].ranks[r].base;
-            protection += skills[id].ranks[r].base;
-        }
-    }
-    const dr = rankIndex(c, 'defense');
-    if (!magic && dr >= 0)
-        defense += wikiValue(skills.defense.wiki, 'Additional Base Defense', dr, c.race);
-    if (!magic && c.effects.defense) {
-        defense += c.effects.defense.defense;
-        protection += c.effects.defense.protection;
-    }
-    return { defense, protection: Math.min(1, protection / 100) };
+    const values = resolveStats(c).values;
+    return {
+        defense: magic ? values.magicDefense : values.defense,
+        protection: (magic ? values.magicProtection : values.protection) / 100,
+    };
 }
 export function attackInputs(c: Immutable<Character>, id: string) {
     const e = equipment(c),
-        stats = effectiveStats(c),
         s = skills[id];
     const talent = s.talent ?? e.weapon?.talent ?? 'Close Combat';
-    const melee = talent === 'Close Combat',
-        sword = melee && e.sword,
-        dual = melee && e.dual;
-    const power =
-        (e.weapon?.power ?? 2) * (e.main?.durability === 0 ? 0.5 : 1) +
-        (dual ? (e.offDef?.power ?? 0) * 0.5 * (e.off?.durability === 0 ? 0.5 : 1) : 0);
-    const attribute =
-        talent === 'Magic'
-            ? stats.int
-            : talent === 'Archery'
-              ? stats.dex
-              : talent === 'Dual Gun'
-                ? (stats.str + stats.int) / 2
-                : stats.str;
-    let attack = power + attribute / 10;
-    for (const [sid, eligible] of [
-        ['combatMastery', melee],
-        ['swordMastery', sword],
-        ['dualMastery', dual],
-        ['bowMastery', talent === 'Archery'],
-        ['rangeAttack', talent === 'Archery'],
-    ] as const) {
-        const r = rankIndex(c, sid);
-        if (eligible && r >= 0) {
-            attack += skills[sid].wiki
-                ? (wikiValue(skills[sid].wiki, 'Additional Min Damage', r, c.race) +
-                      wikiValue(skills[sid].wiki, 'Additional Max Damage', r, c.race)) /
-                  2
-                : skills[sid].ranks[r].base;
-        }
-    }
-    if (melee) attack += c.effects.final?.magnitude ?? 0;
-    return { attack, melee, sword, dual, magic: talent === 'Magic' };
+    const values = resolveStats(c).values;
+    return {
+        attack:
+            talent === 'Magic'
+                ? values.magicAttack
+                : talent === 'Archery'
+                  ? values.rangedAttack
+                  : talent === 'Dual Gun'
+                    ? values.dualGunAttack
+                    : values.meleeAttack,
+        melee: talent === 'Close Combat',
+        sword: talent === 'Close Combat' && e.sword,
+        dual: talent === 'Close Combat' && e.dual,
+        magic: talent === 'Magic',
+    };
 }
 export function usableReason(c: Immutable<Character>, id: string): string {
     if (!skills[id] || !learned(c)[id] || skills[id].type !== 'active')
@@ -174,9 +75,7 @@ export function usableReason(c: Immutable<Character>, id: string): string {
     if (id === 'final' && c.effects.final) return 'Final Hit is already active';
     const rank = skillRank(id, learned(c)[id], c.race);
     const costs = actionCosts(c, id, rank);
-    for (const pool of ['hp', 'mana', 'stamina'] as const)
-        if (c[pool] - costs[pool] < (pool === 'hp' ? 1 : 0)) return `Not enough ${pool}`;
-    return '';
+    return affordability(c, costs);
 }
 export function snapshotAction(
     c: Immutable<Character>,
@@ -199,6 +98,7 @@ export function snapshotAction(
     return {
         id: `${c.run?.id}:${c.battle!.room}:${c.battle!.turn}`,
         combatVersion: 2,
+        statsVersion: 1,
         skill: id,
         rank: structuredClone(rank),
         ...inputs,
@@ -209,8 +109,12 @@ export function snapshotAction(
                       .sort((a, b) => a.id.localeCompare(b.id))
                       .map((e) => ({
                           id: e.id,
-                          defense: (inputs.magic ? e.magicDefense : e.defense) ?? 0,
-                          protection: (inputs.magic ? e.magicProtection : e.protection) ?? 0,
+                          defense: inputs.magic
+                              ? enemyStats(e).magicDefense
+                              : enemyStats(e).defense,
+                          protection: inputs.magic
+                              ? enemyStats(e).magicProtection
+                              : enemyStats(e).protection,
                       })),
         criticalChance: critical >= 0 ? 1000 : 0,
         criticalBonus:
@@ -277,5 +181,7 @@ export function actionCosts(
                 wikiValue(skills[id].wiki, 'Mana Usage', ranks.indexOf(rank.rank), c.race)) /
                 100,
         );
-    return costs;
+    return skills[id].type === 'active' && skills[id].route !== 'reference'
+        ? effectiveCosts(c, id, costs)
+        : costs;
 }

@@ -1,3 +1,4 @@
+import { costDescription } from '../domain/stats/resources';
 import { useState } from 'react';
 import { Button, ProgressBar } from '@heroui/react';
 import type { Immutable } from 'immer';
@@ -77,18 +78,20 @@ export function SkillJournal({
         if (skill.route === 'reference') return skill.adaptation;
         if (skill.type === 'passive') return passiveDescription(c, selected, r);
         const power =
-            skill.effect === 'attack' || skill.effect === 'counter'
-                ? `${value.attackMultiplier !== undefined ? `${(value.attackMultiplier * 100).toFixed(1)}% attack · ` : ''}Base ${value.base} + ${value.pip} per pip`
-                : skill.effect === 'heal'
-                  ? `Restore at least ${value.base * 5} HP, multiplied by the dice combination`
-                  : skill.effect === 'restoreMana'
-                    ? `Restore ${value.base}% maximum mana`
-                    : skill.effect === 'defend'
-                      ? `+${value.base} defense for the next enemy response`
-                      : skill.effect === 'manaShield'
-                        ? `${value.base} damage absorbed per MP · 3 enemy responses`
-                        : `Buff base ${value.base} + ${value.pip} per pip · ${value.duration} activations`;
-        return `${power} · ${costs[skill.resource]} ${skill.resource} · cooldown ${value.cooldown} turns`;
+            skill.effect === 'status'
+                ? skill.description
+                : skill.effect === 'attack' || skill.effect === 'counter'
+                  ? `${value.attackMultiplier !== undefined ? `${(value.attackMultiplier * 100).toFixed(1)}% attack · ` : ''}Base ${value.base} + ${value.pip} per pip`
+                  : skill.effect === 'heal'
+                    ? `Restore at least ${value.base * 5} HP, multiplied by the dice combination`
+                    : skill.effect === 'restoreMana'
+                      ? `Restore ${value.base}% maximum mana`
+                      : skill.effect === 'defend'
+                        ? `+${value.base} defense for the next enemy response`
+                        : skill.effect === 'manaShield'
+                          ? `${value.base} damage absorbed per MP · 3 enemy responses`
+                          : `Buff base ${value.base} + ${value.pip} per pip · ${value.duration} activations`;
+        return `${power} · ${costDescription(costs)} · cooldown ${value.cooldown} turns`;
     };
     const status =
         skill.route === 'reference'

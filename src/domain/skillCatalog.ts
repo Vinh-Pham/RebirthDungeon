@@ -48,7 +48,11 @@ import rangeAttack from './skills/range-attack';
 import shockwave from './skills/shockwave';
 import thunder from './skills/thunder';
 import wandMastery from './skills/wand-mastery';
+import arcaneFocus from './skills/arcane-focus';
+import bloodStrike from './skills/blood-strike';
 export const skills: Record<string, Skill> = {
+    arcaneFocus,
+    bloodStrike,
     wandMastery,
     normal,
     shot,

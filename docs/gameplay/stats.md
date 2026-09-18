@@ -2,9 +2,7 @@
 
 Stats describe a character's resources, attributes, attack power, and defenses. They come from character growth, learned skills, talents, and equipment, and can be changed temporarily by potions, skills, enemies, and other effects. **Activating a skill consumes stamina, mana, HP, or an explicitly authored combination of these resources.**
 
-**Implementation status:** Skill/equipment stat contributions, costs and advanced combat effects are implemented according to [the accepted contract](skills-implementation.md). Broader systems below remain proposals unless included there. This design is inspired by [Mabinogi's Stats documentation](https://wiki.mabinogiworld.com/view/Stats). It complements [character.md](character.md), [skills.md](skills.md), and [battle.md](battle.md). The stat sources and resource costs requested above are requirements. Formulas, stacking, durations, and other defaults below are Rebirth Dungeon proposals, not implemented systems or an exact copy of Mabinogi's rules.
-
-The [Phase 4 starter contract](../phase4-combat.md) authors the initial skill values, recovery/exhaustion policy, encounter scope and integration boundary for these rules.
+**Implementation status:** The first playable slice is implemented with Immer transactions, source-tracked stat resolution, resource reservations, timed statuses, consumables, Character-panel breakdowns, and save migration. See [version 1 implementation rules](stats-implementation.md) for numeric values, compatibility, and explicitly deferred features. The sections below retain the original design rationale; the implementation rules resolve their proposed defaults. This is an independent adaptation of [Mabinogi's stats](https://wiki.mabinogiworld.com/view/Stats).
 
 ## 1. Mabinogi reference
 
@@ -178,7 +176,7 @@ Rolls, kept-die changes, rerolls, and paused menus neither tick nor expire effec
 
 Before the first roll, derive current effective stats and costs from the run baseline plus active modifiers. Freeze the selected action's attack inputs, target mitigation, costs, and roll profile with the dice activation. A skill's newly applied buff or debuff affects subsequent actions; it does not retroactively improve the roll or damage that applied it. Skills that deliberately debuff before damaging need a later explicit exception to this default.
 
-When in-battle consumables are introduced, **Use Item** is an alternative full action available before rolling. Consume one item, resolve its instant effects and statuses, then end the activation; do not also roll a skill in that activation. Invalid use consumes nothing. Equipment changes remain a town/loadout operation in the initial battle design. This action is planned for the first playable loop; no item-use implementation is claimed.
+When in-battle consumables are introduced, **Use Item** is an alternative full action available before rolling. Consume one item, resolve its instant effects and statuses, then end the activation; do not also roll a skill in that activation. Invalid use consumes nothing. Equipment changes remain a town/loadout operation in the initial battle design. This action is implemented for recovery, buffs, side effects, and cleansing.
 
 Show HP, MP, SP, their maxima and reservations, skill costs, effective attack/defense values, and visible buff/debuff icons. Status details show the source, exact modifier, stacking behavior, and remaining target activations. Insufficient-resource messages identify the missing pool. The damage preview must use the same stat resolver as combat.
 

@@ -402,7 +402,7 @@ test('catalog icons, life references, and a full spellbook remain usable on a sm
     await page.screenshot({ path: 'test-results/skill-catalog-firebolt.png' });
     await page.getByRole('searchbox').fill('');
     await page.getByRole('combobox', { name: 'Category' }).selectOption('Life');
-    await expect(page.getByText('8 / 40 skills')).toBeVisible();
+    await expect(page.getByText('8 / 42 skills')).toBeVisible();
     await expect(page.getByRole('button', { name: /^Learn / })).toHaveCount(0);
     await page.setViewportSize({ width: 600, height: 800 });
     await page.screenshot({ path: 'test-results/skill-catalog-life-mobile.png' });
@@ -426,4 +426,91 @@ test('catalog icons, life references, and a full spellbook remain usable on a sm
     expect(controls.some((c: any) => c.name === 'previous-skills')).toBe(true);
     expect(controls.every((c: any) => c.y + c.height / 2 <= 800)).toBe(true);
     await page.screenshot({ path: 'test-results/skill-catalog-spellbook-mobile.png' });
+});
+
+test('character stats, potion side effects and mixed reservations survive reload', async ({
+    page,
+}, info) => {
+    if (info.project.name !== 'chromium') return;
+    const { blankSave, reduceCommand } = await import('../../src/domain/commands');
+    let fixture = reduceCommand(blankSave(), { type: 'NAV', screen: 'NewCharacter' }, 'stats-nav');
+    fixture = reduceCommand(
+        fixture,
+        {
+            type: 'CREATE',
+            input: { name: 'Stats', race: 'Human', age: 17, talent: 'Close Combat' },
+            id: 'stats',
+            now: 0,
+        },
+        'stats-create',
+    );
+    fixture = reduceCommand(fixture, { type: 'LEARN', skill: 'bloodStrike' }, 'stats-learn');
+    fixture = reduceCommand(
+        fixture,
+        { type: 'BUY', shop: 'General', kind: 'unstableElixir' },
+        'stats-buy',
+    );
+    fixture = reduceCommand(fixture, { type: 'ENTER', seed: 42 }, 'stats-enter');
+    fixture = reduceCommand(fixture, { type: 'ENCOUNTER', room: 1 }, 'stats-encounter');
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Begin your journey' }).waitFor();
+    await page.evaluate(async (save) => {
+        await new Promise<void>((resolve, reject) => {
+            const open = indexedDB.open('rebirth-dungeon', 1);
+            open.onupgradeneeded = () => open.result.createObjectStore('saves');
+            open.onsuccess = () => {
+                const tx = open.result.transaction('saves', 'readwrite');
+                tx.objectStore('saves').put(save, 'current');
+                tx.oncomplete = () => {
+                    open.result.close();
+                    resolve();
+                };
+                tx.onerror = () => reject(tx.error);
+            };
+            open.onerror = () => reject(open.error);
+        });
+    }, fixture);
+    await page.reload();
+    await page.getByRole('button', { name: 'Inventory', exact: true }).click();
+    await page
+        .locator('.item')
+        .filter({ hasText: 'Unstable Elixir' })
+        .getByRole('button', { name: 'Use', exact: true })
+        .click();
+    await expect
+        .poll(async () => (await state(page)).save.data.characters[0].statuses.length)
+        .toBe(1);
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
+    await page.getByRole('button', { name: 'Character', exact: true }).click();
+    await expect(page.getByRole('region', { name: 'Character stats' })).toContainText(
+        'Magic Defense',
+    );
+    await page.getByText('Stat sources', { exact: false }).click();
+    await expect(page.getByRole('region', { name: 'Character stats' })).toContainText(
+        'Unstable Elixir',
+    );
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
+    await page.reload();
+    expect((await state(page)).save.data.characters[0].statuses[0].remaining).toBe(3);
+    await control(page, 'bloodStrike');
+    await page.getByRole('button', { name: 'Character', exact: true }).click();
+    await expect(page.getByRole('region', { name: 'Character stats' })).toContainText('4 reserved');
+    await page.setViewportSize({ width: 600, height: 800 });
+    await page.screenshot({
+        path: 'test-results/character-stats-mobile.png',
+        animations: 'disabled',
+    });
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
+    const before = (await state(page)).save.data.characters[0];
+    await page.reload();
+    expect((await state(page)).save.data.characters[0].battle.action.costs).toEqual({
+        hp: 4,
+        mana: 0,
+        stamina: 3,
+    });
+    await control(page, 'pass');
+    const after = (await state(page)).save.data.characters[0];
+    expect(after.stamina).toBe(before.stamina - 3);
+    expect(after.hp).toBeLessThanOrEqual(before.hp - 4);
+    expect(after.statuses[0].remaining).toBe(2);
 });
