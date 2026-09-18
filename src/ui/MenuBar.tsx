@@ -10,7 +10,10 @@ export function MenuBar({
     onOpen,
 }: {
     character: Immutable<Character> | undefined;
-    onOpen: (panel: 'character' | 'skills' | 'inventory' | 'menu') => void;
+    onOpen: (
+        panel: 'character' | 'skills' | 'inventory' | 'menu',
+        opener?: EventTarget | null,
+    ) => void;
 }) {
     return (
         <Surface
@@ -20,7 +23,10 @@ export function MenuBar({
             className="game-hud dark absolute bottom-0 left-0 h-[var(--hud-height)] w-[calc(100%/var(--hudscale,1))] origin-bottom-left scale-[var(--hudscale,1)] bg-overlay px-6 py-3 text-foreground narrow:px-3"
         >
             {!!c?.statuses.length && (
-                <MenuBarStatuses statuses={c.statuses} onOpen={() => onOpen('character')} />
+                <MenuBarStatuses
+                    statuses={c.statuses}
+                    onOpen={(opener) => onOpen('character', opener)}
+                />
             )}
             <div className="mx-auto grid h-full max-w-6xl grid-cols-[minmax(0,280px)_minmax(0,1fr)] items-center gap-8 narrow:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] narrow:gap-3">
                 <MenuBarResources character={c} />

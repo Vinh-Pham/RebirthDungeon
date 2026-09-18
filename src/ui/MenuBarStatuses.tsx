@@ -7,7 +7,7 @@ export function MenuBarStatuses({
     onOpen,
 }: {
     statuses: Immutable<Character>['statuses'];
-    onOpen: () => void;
+    onOpen: (opener?: EventTarget | null) => void;
 }) {
     return (
         <div
@@ -20,7 +20,7 @@ export function MenuBarStatuses({
                     size="sm"
                     variant="secondary"
                     aria-label={`${status.definition.name}, ${status.remaining} activations remaining`}
-                    onPress={onOpen}
+                    onPress={(event) => onOpen(event.target)}
                 >
                     {status.definition.name} · {status.remaining}
                 </Button>

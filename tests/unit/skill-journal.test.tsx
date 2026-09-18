@@ -1,25 +1,17 @@
 // @vitest-environment jsdom
-import { afterAll, beforeAll, afterEach, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { afterAll, afterEach, beforeAll, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { produce } from 'immer';
-import { GameModal } from '../../src/ui/GameModal';
 import { SkillJournal } from '../../src/ui/SkillJournal';
+import { renderWithWindows, stubWindowEnvironment } from './helpers/windowHarness';
 import { active, blankSave, reduceCommand } from '../../src/domain/commands';
 import type { SaveData } from '../../src/domain/model';
 
 const originalGetAnimations = Element.prototype.getAnimations;
 beforeAll(() => {
     Element.prototype.getAnimations = () => [];
-    // jsdom has no layout observer; browser tests cover scrolling and sizing.
-    vi.stubGlobal(
-        'ResizeObserver',
-        class {
-            observe() {}
-            unobserve() {}
-            disconnect() {}
-        },
-    );
+    stubWindowEnvironment();
 });
 afterAll(() => {
     Element.prototype.getAnimations = originalGetAnimations;
@@ -41,7 +33,9 @@ function saveWith(talent: 'Magic' | 'Close Combat') {
 }
 const hero = (save: SaveData) => active(save)!;
 it('lists only learned skills in the skill window', () => {
-    render(<SkillJournal character={hero(saveWith('Magic'))} disabled={false} send={() => {}} />);
+    renderWithWindows(
+        <SkillJournal character={hero(saveWith('Magic'))} disabled={false} send={() => {}} />,
+    );
     expect(screen.getByRole('tab', { name: 'All' }).getAttribute('aria-selected')).toBe('true');
     expect(screen.getByTestId('skill-row-normal')).toBeDefined();
     expect(screen.queryByTestId('skill-row-firebolt')).toBeNull();
@@ -56,7 +50,7 @@ it('lists only learned skills in the skill window', () => {
 it('opens details only on request and browses wiki ranks in a modal', async () => {
     const user = userEvent.setup();
     const learned = reduceCommand(saveWith('Magic'), { type: 'LEARN', skill: 'firebolt' }, 'learn');
-    render(<SkillJournal character={hero(learned)} disabled={false} send={() => {}} />);
+    renderWithWindows(<SkillJournal character={hero(learned)} disabled={false} send={() => {}} />);
     expect(screen.queryByRole('dialog')).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Firebolt', exact: true }));
     expect(screen.getByRole('dialog', { name: 'Firebolt · Rank F' })).toBeDefined();
@@ -78,7 +72,7 @@ it('opens details only on request and browses wiki ranks in a modal', async () =
 it('marks passive and battle-only rows, teaches from the trainer, and shows unverified data', async () => {
     const user = userEvent.setup();
     const send = vi.fn();
-    render(
+    renderWithWindows(
         <SkillJournal
             character={hero(saveWith('Close Combat'))}
             disabled={false}
@@ -111,7 +105,7 @@ it('offers Advance once a rank reaches 100 training and dispatches the rank up',
     const trained = produce(saveWith('Close Combat'), (d) => {
         d.data.characters[0].skills.smash = { rank: 'F', counts: { hit: 40, kill: 10 } };
     });
-    render(<SkillJournal character={hero(trained)} disabled={false} send={send} />);
+    renderWithWindows(<SkillJournal character={hero(trained)} disabled={false} send={send} />);
     const advance = within(screen.getByTestId('skill-row-smash')).getByRole('button', {
         name: 'Advance',
     });
@@ -125,7 +119,7 @@ it('keeps Advance hidden while training is incomplete and disabled reasons stay 
         d.data.characters[0].skills.smash = { rank: 'F', counts: { hit: 20, kill: 2 } };
         d.data.characters[0].ap = 0;
     });
-    render(<SkillJournal character={hero(partial)} disabled={false} send={send} />);
+    renderWithWindows(<SkillJournal character={hero(partial)} disabled={false} send={send} />);
     expect(
         screen.getByRole('progressbar', { name: 'Smash training' }).getAttribute('aria-valuenow'),
     ).toBe('50');
@@ -136,29 +130,11 @@ it('keeps Advance hidden while training is incomplete and disabled reasons stay 
 it('uses recovery skills outside battle from their row', () => {
     const send = vi.fn();
     const learned = reduceCommand(saveWith('Magic'), { type: 'LEARN', skill: 'healing' }, 'learn');
-    render(<SkillJournal character={hero(learned)} disabled={false} send={send} />);
+    renderWithWindows(<SkillJournal character={hero(learned)} disabled={false} send={send} />);
     const use = within(screen.getByTestId('skill-row-healing')).getByRole('button', {
         name: 'Use',
     });
     expect(use.hasAttribute('disabled')).toBe(false);
     fireEvent.click(use);
     expect(send).toHaveBeenCalledWith({ type: 'USE_SKILL', skill: 'healing' });
-});
-
-it('dismisses only the top modal when saving has left focus outside the dialog', async () => {
-    const user = userEvent.setup();
-    const closeCatalog = vi.fn();
-    render(
-        <GameModal title="Skill catalog" onClose={closeCatalog}>
-            <SkillJournal character={hero(saveWith('Magic'))} disabled={false} send={() => {}} />
-        </GameModal>,
-    );
-    await user.click(screen.getByRole('button', { name: 'Normal Attack', exact: true }));
-    expect(screen.getByTestId('skill-detail')).toBeDefined();
-    fireEvent.keyDown(window, { key: 'Escape' });
-    expect(screen.queryByTestId('skill-detail')).toBeNull();
-    expect(closeCatalog).not.toHaveBeenCalled();
-    expect(screen.getByRole('heading', { name: 'Skill catalog' })).toBeDefined();
-    fireEvent.keyDown(window, { key: 'Escape' });
-    expect(closeCatalog).toHaveBeenCalledTimes(1);
 });

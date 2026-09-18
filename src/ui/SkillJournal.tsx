@@ -1,6 +1,5 @@
 import { costDescription } from '../domain/stats/resources';
-import { useState } from 'react';
-import { GameModal } from './GameModal';
+import { useRef, useState } from 'react';
 import { Button, Card, ProgressBar, Tabs, Select, ListBox, Tooltip } from '@heroui/react';
 import type { Immutable } from 'immer';
 import type { Character } from '../domain/model';
@@ -12,6 +11,7 @@ import {
     outsideBattleReason,
 } from '../domain/skillSystem';
 import type { Command } from '../domain/commands';
+import { GameWindow } from './windows/GameWindow';
 const categories = [
     'All',
     ...['Life', 'Combat', 'Magic'].filter((value) =>
@@ -31,6 +31,7 @@ export function SkillJournal({
 }) {
     const [selection, setSelected] = useState<string | null>(null);
     const [tab, setTab] = useState('All');
+    const openerRef = useRef<HTMLElement | null>(null);
     const town = !c.run;
     const visibleSkills = Object.entries(skills).filter(
         ([id, skill]) =>
@@ -81,14 +82,17 @@ export function SkillJournal({
                 key={id}
                 role="listitem"
                 data-testid={`skill-row-${id}`}
-                className="skill-card flex flex-row items-center gap-4 p-4 narrow:flex-wrap narrow:gap-3"
+                className="skill-card flex flex-row items-center gap-4 p-4 wnarrow:flex-wrap wnarrow:gap-3"
             >
                 <Button
                     variant="ghost"
                     size="sm"
-                    className="h-auto min-w-0 flex-1 justify-start p-0 text-sm narrow:basis-full"
+                    className="h-auto min-w-0 flex-1 justify-start p-0 text-sm wnarrow:basis-full"
                     aria-haspopup="dialog"
-                    onPress={() => setSelected(id)}
+                    onPress={(event) => {
+                        openerRef.current = (event.target as HTMLElement) ?? null;
+                        setSelected(id);
+                    }}
                 >
                     <span className="flex min-w-0 items-center gap-2">
                         {s.icon.startsWith('/') ? (
@@ -120,7 +124,7 @@ export function SkillJournal({
                     : guarded('Use', outsideBattleReason(c, id), () =>
                           send({ type: 'USE_SKILL', skill: id }),
                       )}
-                <div className="flex w-32 shrink-0 flex-col items-end gap-2 text-xs tabular-nums narrow:ml-auto">
+                <div className="flex w-32 shrink-0 flex-col items-end gap-2 text-xs tabular-nums wnarrow:ml-auto">
                     <span>
                         {id === 'normal'
                             ? 'Basic'
@@ -156,10 +160,7 @@ export function SkillJournal({
         );
     };
     const browser = (
-        <Tabs
-            selectedKey={tab}
-            onSelectionChange={(key) => setTab(String(key))}
-        >
+        <Tabs selectedKey={tab} onSelectionChange={(key) => setTab(String(key))}>
             <Tabs.ListContainer>
                 <Tabs.List aria-label="Skill groups">
                     {categories.map((value) => (
@@ -177,7 +178,7 @@ export function SkillJournal({
                             <div
                                 role="list"
                                 aria-label="Skills"
-                                className="flex max-h-[55dvh] flex-col gap-3 overflow-auto p-1"
+                                className="flex flex-col gap-3 overflow-auto p-1"
                             >
                                 {visibleSkills.map(row)}
                             </div>
@@ -201,6 +202,7 @@ export function SkillJournal({
                     disabled={disabled}
                     trainer={trainer}
                     send={send}
+                    getOpener={() => openerRef.current}
                     onClose={() => setSelected(null)}
                 />
             )}
@@ -214,6 +216,7 @@ function SkillDetails({
     disabled,
     trainer,
     send,
+    getOpener,
     onClose,
 }: {
     selected: string;
@@ -221,6 +224,7 @@ function SkillDetails({
     disabled: boolean;
     trainer: boolean;
     send: (command: Command) => void;
+    getOpener: () => HTMLElement | null;
     onClose: () => void;
 }) {
     const [inspectedRank, setInspectedRank] = useState('F');
@@ -268,27 +272,18 @@ function SkillDetails({
                     : c.ap < rank.ap
                       ? 'Training complete, insufficient AP'
                       : 'Ready to advance';
+    const detailName = `${skill.name}${
+        progress && selected !== 'normal' ? ` · Rank ${progress.rank}` : ''
+    }`;
     return (
-        <GameModal
+        <GameWindow
+            id={trainer ? 'trainer-detail' : 'skills-detail'}
+            title={detailName}
+            icon={skill.icon.startsWith('/') ? skill.icon : undefined}
+            iconTestId="skill-icon"
+            open
             onClose={onClose}
-            title={
-                <span className="flex items-center gap-3">
-                    {skill.icon.startsWith('/') && (
-                        <img
-                            src={skill.icon}
-                            alt=""
-                            data-testid="skill-icon"
-                            width={48}
-                            height={48}
-                            className="rounded-lg"
-                        />
-                    )}
-                    <span>
-                        {skill.name}
-                        {progress && selected !== 'normal' ? ` · Rank ${progress.rank}` : ''}
-                    </span>
-                </span>
-            }
+            getOpener={getOpener}
         >
             <div className="space-y-4 text-sm" data-testid="skill-detail">
                 <p className="text-xs text-muted">
@@ -495,6 +490,6 @@ function SkillDetails({
                     </p>
                 )}
             </div>
-        </GameModal>
+        </GameWindow>
     );
 }

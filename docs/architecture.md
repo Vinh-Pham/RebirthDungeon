@@ -6,6 +6,14 @@ This prevents spending currency without receiving an item, awarding battle rewar
 
 Phaser rebuilds scene presentation from committed data and owns transient movement, targets, hit effects, and control bounds. Movement checkpoints are periodic, rather than per frame. React local state contains only form input and presentation choices. XState enemy actors produce damage decisions; dialogue and tutorial actors describe behavior. Domain snapshots remain plain serializable data.
 
+## Window layer
+
+Browsing panels (Character, Skills, skill details, Inventory, Menu, Settings, and the active town service) render as wmkit windows above the canvas through one React-owned provider in `src/ui/windows`. The provider owns window existence and geometry; `GameWindow` components own when a panel is open and what its live content is. React renders and removes all content; wmkit owns geometry and stacking only.
+
+Window state is presentation state: it never enters an Immer save snapshot. Positions and sizes survive close/reopen for the page session and reset on reload. Scene or active-character changes close every window through the transaction-published snapshot, not from Phaser callbacks. The single service window follows the dialogue actor, which accepts an `OPEN` while `choosing` so interacting with another sign replaces the service without dropping other windows.
+
+Input ownership is presentation state in `src/game/inputState.ts`: blocking overlays (retained confirmations and reward collection), interface focus (window, HUD, or owned popup), and window gestures. Uncovered canvas stays playable while windows are open; Phaser checks these flags for movement keys, world clicks, and interaction, and resets held keys whenever ownership changes. Rebirth and leave confirmations remain blocking HeroUI modals that take Escape priority over windows.
+
 The current storage schema is version 2. Version 1 migrates learned skill IDs to ranked records and reconstructs pending actions without rerolling. A retained legacy backup accompanies the first durable write. Unsupported versions fail explicitly. A malformed current snapshot falls back to the previous validated snapshot. A second tab is read-only while another tab holds the writer lock.
 
 ## Reference decisions

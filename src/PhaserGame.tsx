@@ -21,7 +21,9 @@ export function PhaserGame() {
     return (
         <div
             id="game-container"
-            className="absolute inset-x-0 top-0 bottom-[calc(var(--hud-height)*var(--hudscale,1))]"
+            // Focusable so closing the last window can hand keyboard control back to the game.
+            tabIndex={-1}
+            className="absolute inset-x-0 top-0 bottom-[calc(var(--hud-height)*var(--hudscale,1))] outline-none"
             ref={container}
             aria-label="Rebirth Dungeon game world"
         />

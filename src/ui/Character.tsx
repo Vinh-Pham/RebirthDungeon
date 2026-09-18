@@ -47,7 +47,7 @@ export function Character({ c }: { c: Immutable<CharacterModel> }) {
             ))}
         </dl>
     );
-    const panelClassName = 'max-h-[55dvh] space-y-4 overflow-auto p-1';
+    const panelClassName = 'space-y-4 p-1';
     return (
         <section aria-label="Character stats" className="character-stats">
             <Tabs selectedKey={tab} onSelectionChange={(key) => setTab(String(key))}>
@@ -75,7 +75,7 @@ export function Character({ c }: { c: Immutable<CharacterModel> }) {
                                 {c.race} · {c.age} years old · {c.talent}
                             </p>
                         </div>
-                        <dl className="grid grid-cols-2 gap-4 narrow:grid-cols-1 narrow:gap-2">
+                        <dl className="grid grid-cols-2 gap-4 wnarrow:grid-cols-1 wnarrow:gap-2">
                             <InfoRow label="Title" value={c.titleModifiers.first?.name ?? 'None'} />
                             <InfoRow
                                 label="Second Title"
@@ -83,7 +83,7 @@ export function Character({ c }: { c: Immutable<CharacterModel> }) {
                             />
                         </dl>
                     </div>
-                    <div className="grid grid-cols-2 items-start gap-3 narrow:grid-cols-1">
+                    <div className="grid grid-cols-2 items-start gap-3 wnarrow:grid-cols-1">
                         <StatGroup title="Resources">
                             {(['hp', 'mana', 'stamina'] as const).map((pool) => {
                                 const r = resourceState(c, pool);

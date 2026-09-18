@@ -23,14 +23,16 @@ Open http://127.0.0.1:8080. Build with `pnpm build`; deploy the `dist/` director
 - Use Inventory for equipment and potions. Potions also consume a turn in combat.
 - Clear three seals before fighting the boss. Take selected loot or everything that fits. Choose exactly one treasure chest, then return home.
 - Town services offer healing, food, banking, equipment, potions, selling, and repairs. Equipped items must be unequipped before selling or banking.
+- Character, Skills, Inventory, Menu, and Settings open as independent, draggable, resizable windows above the world. Reopening a window restores its session position and size; scene or character changes close every window. Uncovered world areas stay playable while windows are open; clicking a window or the HUD keeps movement keys in the interface, and clicking the canvas hands them back. **F6** / **Shift+F6** cycle open windows and the game; **Escape** closes only the active window behind owned popups and confirmations; arrow keys nudge the focused window (Shift resizes, Alt fine-tunes). Rebirth and leaving confirmations remain blocking dialogs.
 - Menu contains Settings and Title Screen. Skills opens the ranked skill journal; Inventory supports equipment, consumables, books, and page insertion. Character, Talent, Quests, and Pets remain reserved HUD buttons.
-- HeroUI uses dark mode by default across the interface, including modals.
+- HeroUI uses dark mode by default across the interface, including windows and dialogs.
 
 ## Architecture
 
 - **Phaser 4.2.1:** Boot, Preloader, Title, CharacterSelect, NewCharacter, Town1, Alby, Battle, and TreasureRoom scenes. World input, collision-aware pathfinding, canvas controls, and original SVG/audio presentation.
 - **Rex 4.2.0:** EightDirection, Button, Anchor, ShakePosition, FadeOutDestroy, and SoundFade, imported individually.
-- **React 19 / HeroUI 3:** character forms, service and settings modals, inventory, reward selection, and persistent HUD.
+- **React 19 / HeroUI 3:** character forms, inventory, reward selection, and persistent HUD. Browsing panels render as wmkit windows above the canvas; rebirth and leave confirmations remain HeroUI dialogs.
+- **wmkit 0.11.1:** one React-owned window manager and desktop (`src/ui/windows`). Windows use custom game styling, session-scoped geometry memory, and scoped keyboard handling; wmkit's snapping, grouping, minimization, history, and keyboard layers stay disabled.
 - **XState 5:** session routing, combat checkpoints, serialized asynchronous commits, enemy decisions, dialogue transactions, and tutorial progression.
 - **Immer 11:** immutable character, inventory, economy, dungeon, dice, reward, settings, and progression updates. Random seeds and timestamps are explicit inputs.
 - **IndexedDB:** versioned data and workflow checkpoints committed atomically before publication; previous snapshot recovery and a single-writer browser lock. Reload resumes committed dice, rewards, and chest choices. Saves are local to this browser and origin.

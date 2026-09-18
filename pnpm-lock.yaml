@@ -23,6 +23,9 @@ importers:
       '@react-aria/utils':
         specifier: ^3.34.1
         version: 3.34.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@surdeddd/wmkit':
+        specifier: 0.11.1
+        version: 0.11.1(react@19.3.0)
       immer:
         specifier: ^11.1.18
         version: 11.1.18
@@ -668,6 +671,27 @@ packages:
       '@adobe/react-spectrum': ^3.47.0
       react: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1
       react-dom: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1
+
+  '@surdeddd/wmkit@0.11.1':
+    resolution: {integrity: sha512-EIDh2gyf+y7LGtKON9M4SW7mwBxDs9gm60ZuSc/g0Xet7TcxpCqND0vQMISpNY7EO0lBYaiCBPeCVotvkrg8Vw==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      '@angular/core': '>=16'
+      react: '>=18'
+      solid-js: '>=1.8'
+      svelte: '>=4'
+      vue: '>=3.3'
+    peerDependenciesMeta:
+      '@angular/core':
+        optional: true
+      react:
+        optional: true
+      solid-js:
+        optional: true
+      svelte:
+        optional: true
+      vue:
+        optional: true
 
   '@swc/helpers@0.5.23':
     resolution: {integrity: sha512-5lSsMOTXURePglDfvuAQUqkGek9Hg2kksOYay2m0+XR++b2NWYL/4sWyuvVBIs8oKnJaxkdi9whaL/sqN13afw==}
@@ -2339,6 +2363,10 @@ snapshots:
       '@swc/helpers': 0.5.23
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
+
+  '@surdeddd/wmkit@0.11.1(react@19.3.0)':
+    optionalDependencies:
+      react: 19.3.0
 
   '@swc/helpers@0.5.23':
     dependencies:

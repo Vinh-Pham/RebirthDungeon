@@ -160,6 +160,14 @@ test('town shopping, inventory, bank and settings use accessible panels', async 
     await expect(page.getByRole('heading', { name: 'Town1', exact: true })).toBeVisible();
     await expect.poll(async () => (await state(page))?.position?.y).toBeGreaterThan(500);
     await page.waitForTimeout(250);
+    const serviceTitles: Record<string, string> = {
+        Healer: 'Healer House',
+        Grocery: 'Grocery Store',
+        General: 'General Shop',
+        Blacksmith: 'Blacksmith',
+        Bank: 'Bank',
+        Trainer: 'Combat instructor',
+    };
     async function approach(id: string) {
         const s = await state(page),
             l = s.locations.find((l: any) => l.id === id);
@@ -174,7 +182,7 @@ test('town shopping, inventory, bank and settings use accessible panels', async 
             )
             .toBeLessThan(90);
         await page.keyboard.press('e', { delay: 40 });
-        await expect(page.getByRole('dialog')).toBeVisible();
+        await expect(page.getByRole('dialog', { name: serviceTitles[id] })).toBeVisible();
     }
     await approach('General');
     await page
@@ -195,8 +203,10 @@ test('town shopping, inventory, bank and settings use accessible panels', async 
     await page.getByRole('button', { name: 'Settings', exact: true }).click();
     await page.getByRole('button', { name: 'Reduced motion: Off' }).click();
     await expect(page.getByRole('button', { name: 'Reduced motion: On' })).toBeVisible();
+    // Escape closes only the active (Settings) window; the menu window stays open.
     await page.keyboard.press('Escape');
-    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(page.getByRole('dialog', { name: 'Settings' })).toHaveCount(0);
+    await expect(page.getByRole('dialog', { name: 'Adventure menu' })).toBeVisible();
     await page.reload();
     await expect(page.getByRole('heading', { name: 'Town1', exact: true })).toBeVisible();
     expect((await state(page)).save.data.settings.reducedMotion).toBe(true);
@@ -393,9 +403,9 @@ test('catalog icons, life references, and a full spellbook remain usable on a sm
     await page.getByRole('button', { name: 'Skills', exact: true }).click();
     await expect(page.getByRole('searchbox')).toHaveCount(0);
     await expect(page.getByTestId('skill-detail')).toHaveCount(0);
-    await expect(page.getByRole('dialog').locator('.modal__footer')).toContainText(
-        `${fixture.data.characters[0].ap} AP`,
-    );
+    await expect(
+        page.getByRole('dialog', { name: 'Skill catalog' }).locator('.game-window-footer'),
+    ).toContainText(`${fixture.data.characters[0].ap} AP`);
     await page.getByRole('tab', { name: 'Magic' }).click();
     await page.getByRole('button', { name: 'Firebolt', exact: true }).click();
     await expect(page.getByTestId('skill-icon')).toHaveAttribute(
@@ -409,10 +419,12 @@ test('catalog icons, life references, and a full spellbook remain usable on a sm
         .toBeGreaterThan(0);
     await page.getByRole('button', { name: /Inspect wiki rank/ }).click();
     await page.getByRole('option', { name: 'Rank 1', exact: true }).click();
+    // Let the owned popup finish dismissing so the next Escape reaches the window.
+    await expect(page.getByRole('option', { name: 'Rank 1', exact: true })).toBeHidden();
     await expect(page.getByRole('table')).toContainText('27.5%');
     await page
         .getByRole('dialog', { name: 'Firebolt · Rank F' })
-        .locator('.modal__body')
+        .locator('[data-wm-content]')
         .evaluate((body) => {
             body.scrollTop = 0;
         });
@@ -421,7 +433,7 @@ test('catalog icons, life references, and a full spellbook remain usable on a sm
         animations: 'disabled',
     });
     await page.keyboard.press('Escape');
-    await expect(page.getByRole('dialog', { name: 'skills', exact: true })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: 'Skill catalog' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Firebolt', exact: true })).toBeFocused();
     await expect(page.getByRole('tab', { name: 'Magic' })).toHaveAttribute('aria-selected', 'true');
     await page.getByRole('tab', { name: 'Life' }).click();
@@ -433,7 +445,7 @@ test('catalog icons, life references, and a full spellbook remain usable on a sm
     await page.setViewportSize({ width: 390, height: 844 });
     await page.getByRole('tab', { name: 'Magic' }).click();
     await page.getByRole('button', { name: 'Meteor Strike', exact: true }).scrollIntoViewIfNeeded();
-    const catalogBounds = await page.getByRole('dialog').boundingBox();
+    const catalogBounds = await page.getByRole('dialog', { name: 'Skill catalog' }).boundingBox();
     expect(catalogBounds!.x).toBeGreaterThanOrEqual(0);
     expect(catalogBounds!.x + catalogBounds!.width).toBeLessThanOrEqual(390);
     await expect
@@ -552,9 +564,14 @@ test('character stats, potion side effects and mixed reservations survive reload
         page.getByRole('region', { name: 'Character stats' }).getByRole('progressbar'),
     ).toHaveCount(4);
     await page.setViewportSize({ width: 320, height: 800 });
-    const characterDialog = page.getByRole('dialog', { name: 'character', exact: true });
+    const characterDialog = page.getByRole('dialog', { name: 'Character Info' });
     await expect(characterDialog).toBeVisible();
-    expect(await characterDialog.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+    // The body is the scroll container; wmkit resize handles sit outside the frame.
+    expect(
+        await characterDialog
+            .locator('[data-wm-content]')
+            .evaluate((el) => el.scrollWidth <= el.clientWidth),
+    ).toBe(true);
     await page.screenshot({
         path: 'test-results/character-stats-mobile.png',
         animations: 'disabled',
@@ -613,7 +630,10 @@ test('HeroUI HUD keeps identity, resources and navigation usable at narrow sizes
     await expect(page.getByRole('button', { name: 'Talent', exact: true })).toBeDisabled();
     await page.getByRole('button', { name: 'Settings', exact: true }).click();
     await page.getByRole('spinbutton', { name: /HUD scale/ }).fill('130');
-    await page.getByRole('button', { name: 'Close', exact: true }).click();
+    await page
+        .getByRole('dialog', { name: 'Settings' })
+        .getByRole('button', { name: 'Close' })
+        .click();
     for (const width of [600, 390, 320]) {
         await page.setViewportSize({ width, height: 800 });
         const identity = await hud.getByTestId('hud-identity').boundingBox();

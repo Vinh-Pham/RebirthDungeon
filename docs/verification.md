@@ -6,6 +6,15 @@ Browser tests use real input and inspect a read-only test-mode snapshot. Chromiu
 
 Local Firefox launch currently fails with “Could not find profile folder” before navigation, including when using an explicitly created profile directory. This is a host/browser-launch limitation; the Firefox project remains enabled in CI. Do not report Firefox as verified until that launch succeeds.
 
+## Latest local results — September 18, 2026 UTC (wmkit game windows)
+
+- Lint (Oxlint, deny-warnings), TypeScript, and the production build passed.
+- Vitest: 92 tests passed, including the new window suite (independent windows, duplicate-open focus, session geometry restore, parent/detail cleanup, in-place service switching, live content updates, focus restoration, Escape precedence behind confirmations and owned popups, keyboard window movement, Strict Mode cleanup). Coverage: 96.39% statements, 92.94% branches, 97.23% functions, 98.2% lines — all 90% gates pass.
+- Chromium: all ten journeys passed in one full run — the seven previous scenarios (combat/reload/treasure, town services, trainer, books/assembly/equipment, catalog with wiki-rank popup and focus restoration, stats/reservations, HUD at 600/390/320px with 130% scale) plus three new window journeys (drag/resize/stack/session geometry; uncovered-canvas play with no click-through and keyboard ownership; scene transitions closing windows with confirmation priority). Window drag, resize, stacking, close, reopen, Escape, and focus restoration were driven with real input.
+- WebKit: the three enabled creation/walking/dungeon-entry flows passed.
+- Firefox: all journeys fail at `browserType.launch` on this host (persistent profile-folder launch limitation documented above); not verified locally.
+- `docs/references/wmkit.md` records the wmkit sources (README, api.md, adapters.md, theming.md) with the retrieval date.
+
 ## Latest local results — September 18, 2026 UTC (HeroUI HUD)
 
 - Lint, TypeScript, Prettier, whitespace checks, and production build: passed.

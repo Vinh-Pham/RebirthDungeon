@@ -4,6 +4,10 @@
 /* Keep the original inclusive responsive breakpoints. */
 @custom-variant compact (@media (max-width: 850px));
 @custom-variant narrow (@media (max-width: 600px));
+/* Window-container breakpoints: a window resized narrow must stack its content
+   even on a wide monitor, so window bodies query their own inline size. */
+@custom-variant wcompact (@container (max-width: 850px));
+@custom-variant wnarrow (@container (max-width: 600px));
 
 @layer base {
     :root {
@@ -134,5 +138,89 @@
     }
     .game-modal .skill-card {
         @apply shadow-none;
+    }
+}
+
+/*
+ * wmkit window theme (custom CSS instead of a shipped theme).
+ * wmkit writes data-wm-* attributes and inline geometry; this layer supplies the
+ * game's dark HeroUI surface: same border, radius, shadow, and blur as `.panel`,
+ * with a 40px close control and no backdrop or outside-click dismissal.
+ */
+@layer components {
+    /* Transparent desktop above the canvas and the scaled HUD boundary. Empty space
+       passes pointer input through; windows receive input normally. */
+    .wm-desktop {
+        @apply pointer-events-none absolute inset-x-0 top-0 z-30;
+        bottom: calc(var(--hud-height) * var(--hudscale, 1));
+    }
+    .wm-desktop[data-blocked] [data-wm-window] {
+        pointer-events: none;
+    }
+    [data-wm-window] {
+        @apply pointer-events-auto absolute flex flex-col overflow-visible rounded-[12px] border border-[#7b9c7555] bg-[#172c2bef] text-[#f1efdb] shadow-[0_20px_90px_#03141270] backdrop-blur-[18px];
+    }
+    /* A minimized window must stay hidden even against display:flex. */
+    [data-wm-window][hidden] {
+        display: none;
+    }
+    [data-wm-window][data-wm-focused] {
+        @apply border-[#a6d792aa];
+    }
+    [data-wm-window]:focus-visible {
+        @apply outline-2 outline-offset-2 outline-[var(--accent)];
+    }
+    /* Never animate against the pointer. */
+    [data-wm-window][data-wm-dragging],
+    [data-wm-window][data-wm-resizing] {
+        transition: none;
+        user-select: none;
+    }
+    [data-wm-window] [data-wm-drag] {
+        @apply flex shrink-0 cursor-default items-center gap-3 border-b border-[#7b9c7544] py-2.5 pl-[18px] pr-3 font-sans text-xl font-semibold tracking-tight select-none;
+        touch-action: none;
+    }
+    .game-window-title {
+        /* Overrides the base h2 rules to match the game-modal heading. */
+        @apply min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap font-sans text-xl font-semibold tracking-tight;
+    }
+    .game-window-controls {
+        @apply flex items-center gap-1;
+    }
+    .game-window-close {
+        @apply flex size-10 items-center justify-center rounded-[6px] text-lg text-[#b8cabe] hover:bg-[#29463f] hover:text-[#e1ece2];
+    }
+    .game-window-close svg {
+        @apply size-3.5;
+    }
+    /* The body scrolls; header and footer stay visible. */
+    [data-wm-window] [data-wm-content] {
+        @apply flex-1 overflow-auto p-[30px] wnarrow:px-4 wnarrow:py-4;
+        container-type: inline-size;
+    }
+    .game-window-footer {
+        @apply shrink-0 border-t border-[#7b9c7544] px-[30px] py-3.5;
+    }
+    .game-window-footer:empty {
+        display: none;
+    }
+    /* Window content shares the game-modal reading rules. */
+    [data-wm-window] [data-wm-content] p {
+        @apply m-0 text-muted;
+    }
+    [data-wm-window] .skill-card {
+        @apply shadow-none;
+    }
+    /* Resize handles sit slightly outside the border box and stay invisible. */
+    [data-wm-resize] {
+        background: transparent;
+        touch-action: none;
+    }
+    @media (prefers-reduced-motion: reduce) {
+        [data-wm-window],
+        [data-wm-window] * {
+            transition: none !important;
+            animation: none !important;
+        }
     }
 }

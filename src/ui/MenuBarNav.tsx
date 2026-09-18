@@ -8,7 +8,10 @@ export function MenuBarNav({
     onOpen,
 }: {
     character: Immutable<Character> | undefined;
-    onOpen: (panel: 'character' | 'skills' | 'inventory' | 'menu') => void;
+    onOpen: (
+        panel: 'character' | 'skills' | 'inventory' | 'menu',
+        opener?: EventTarget | null,
+    ) => void;
 }) {
     return (
         <div className="flex min-w-0 flex-col gap-3 narrow:gap-2">
@@ -21,7 +24,7 @@ export function MenuBarNav({
                         key={panel}
                         variant="secondary"
                         isDisabled={!c && panel !== 'menu'}
-                        onPress={() => onOpen(panel)}
+                        onPress={(event) => onOpen(panel, event.target)}
                         className="w-full min-w-0 px-3 narrow:h-8 narrow:px-1 narrow:text-[11px]"
                     >
                         {panel.charAt(0).toUpperCase() + panel.slice(1)}

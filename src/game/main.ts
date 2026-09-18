@@ -17,7 +17,7 @@ import {
 } from '../runtime/game';
 import { locations, townGrid } from './world';
 import { findPath } from '../domain/dungeon';
-import { modalOpen } from './inputState';
+import { canvasBlocked, worldKeysBlocked, onOwnershipChange } from './inputState';
 class Boot extends Phaser.Scene {
     constructor() {
         super('Boot');
@@ -53,6 +53,7 @@ class World extends Phaser.Scene {
     screen = '';
     signature = '';
     unsubscribe?: () => void;
+    unsubscribeOwnership?: () => void;
     lastSave = 0;
     markers: Phaser.GameObjects.GameObject[] = [];
     constructor(key: string) {
@@ -67,14 +68,21 @@ class World extends Phaser.Scene {
         ) as typeof this.keys;
         this.input.keyboard!.on('keydown-E', () => this.interact());
         this.unsubscribe = subscribe(() => this.sync());
+        this.unsubscribeOwnership = onOwnershipChange(() => {
+            // Input ownership moved between the game, windows, the HUD, or a gesture:
+            // drop held keys and any click path so nothing keeps walking underneath.
+            this.input.keyboard?.resetKeys();
+            this.path = [];
+        });
         this.events.once('shutdown', () => {
             this.unsubscribe?.();
+            this.unsubscribeOwnership?.();
             this.input.removeAllListeners();
             this.input.keyboard?.removeAllListeners();
         });
         this.sync();
         this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
-            if (modalOpen || busy() || !['Town1', 'Alby'].includes(this.screen)) return;
+            if (canvasBlocked() || busy() || !['Town1', 'Alby'].includes(this.screen)) return;
             this.path = findPath(
                 this.grid,
                 { x: Math.floor(this.player.x / 32), y: Math.floor(this.player.y / 32) },
@@ -150,7 +158,7 @@ class World extends Phaser.Scene {
                 new Button(label).on('click', () => {
                     if (
                         this.screen === 'Town1' &&
-                        !modalOpen &&
+                        !canvasBlocked() &&
                         Phaser.Math.Distance.Between(this.player.x, this.player.y, l.x, l.y) < 170
                     ) {
                         if (l.id === 'Alby')
@@ -207,7 +215,7 @@ class World extends Phaser.Scene {
                         .setDisplaySize(64, 52);
                     new Button(icon).on('click', () => {
                         if (
-                            !modalOpen &&
+                            !canvasBlocked() &&
                             Phaser.Math.Distance.Between(
                                 this.player.x,
                                 this.player.y,
@@ -290,7 +298,7 @@ class World extends Phaser.Scene {
                     dir,
                     {
                         get isDown() {
-                            return !modalOpen && (keys[a].isDown || keys[b].isDown);
+                            return !worldKeysBlocked() && (keys[a].isDown || keys[b].isDown);
                         },
                     },
                 ]),
@@ -339,7 +347,7 @@ class World extends Phaser.Scene {
         }
     }
     interact() {
-        if (modalOpen || busy() || !this.player?.active) return;
+        if (worldKeysBlocked() || busy() || !this.player?.active) return;
         if (this.screen === 'Town1') {
             const l = [...locations]
                 .sort(
@@ -375,7 +383,7 @@ class World extends Phaser.Scene {
     update(time: number, delta: number) {
         if (
             !this.player?.active ||
-            modalOpen ||
+            worldKeysBlocked() ||
             busy() ||
             ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName || '') ||
             !['Town1', 'Alby'].includes(this.screen)

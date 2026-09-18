@@ -34,7 +34,7 @@ export function GameModal({
             isOpen
             onOpenChange={(open) => !open && onClose()}
             variant="blur"
-            className="dark"
+            className="dark z-[70]"
         >
             <Modal.Container placement="center" scroll="inside" size="lg">
                 <Modal.Dialog

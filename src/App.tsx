@@ -3,6 +3,7 @@ import { GameModal } from './ui/GameModal';
 import { SkillJournal } from './ui/SkillJournal';
 import {
     useEffect,
+    useRef,
     useState,
     useSyncExternalStore,
     type CSSProperties,
@@ -21,19 +22,58 @@ import {
     readOnly,
     busy,
 } from './runtime/game';
-import { blockWorld } from './game/inputState';
-import { items, shops } from './domain/catalog';
+import { setBlockingOverlay } from './game/inputState';
+import { items } from './domain/catalog';
 import { races, talents, type CreateInput } from './domain/model';
 import { MenuBar } from './ui/MenuBar';
 import { rebirthCooldown } from './domain/progression';
+import { GameWindow } from './ui/windows/GameWindow';
+import { WindowProvider } from './ui/windows/WindowProvider';
+import { useWindows, type WindowId } from './ui/windows/context';
+import { MenuContent } from './ui/MenuContent';
+import { SettingsContent } from './ui/SettingsContent';
+import { ServiceContent } from './ui/ServiceContent';
+import { InventoryList } from './ui/InventoryList';
 import './style.css';
+
+type PanelId = 'character' | 'skills' | 'inventory' | 'menu' | 'settings';
+type Confirmation = 'rebirth' | 'abandon' | 'leaveLoot';
+
+const SERVICE_TITLES: Record<string, string> = {
+    Healer: 'Healer House',
+    Grocery: 'Grocery Store',
+    General: 'General Shop',
+    Blacksmith: 'Blacksmith',
+    Bank: 'Bank',
+    Trainer: 'Combat instructor',
+};
+
+const CLOSED_PANELS: Record<PanelId, boolean> = {
+    character: false,
+    skills: false,
+    inventory: false,
+    menu: false,
+    settings: false,
+};
+
 function App() {
+    // One React-owned window provider hosts every browsing window above the canvas.
+    return (
+        <WindowProvider>
+            <Game />
+        </WindowProvider>
+    );
+}
+
+function Game() {
     const snapshot = useSyncExternalStore(subscribe, () => actor.getSnapshot());
+    const { closeAllWindows } = useWindows();
     const save = snapshot.context.save,
         c = getCharacter(),
         screen = save.checkpoint.screen,
         phase = save.checkpoint.phase;
-    const [panel, setPanel] = useState('');
+    const [panels, setPanels] = useState(CLOSED_PANELS);
+    const [confirm, setConfirm] = useState<Confirmation | ''>('');
     const [rebirthId, setRebirthId] = useState('');
     const [service, setService] = useState('');
     const [input, setInput] = useState<CreateInput>({
@@ -44,7 +84,7 @@ function App() {
     });
     const [selected, setSelected] = useState<string[]>([]);
     const [gold, setGold] = useState(true);
-    const [amount, setAmount] = useState('10');
+    const openers = useRef<Partial<Record<WindowId, HTMLElement | null>>>({});
     useEffect(() => {
         startRuntime();
         const sub = dialogue.subscribe((s) =>
@@ -56,14 +96,20 @@ function App() {
         window.dispatchEvent(new Event('resize'));
     }, [save.data.settings.hudScale]);
     useEffect(() => {
-        blockWorld(!!panel || !!service || phase === 'reward');
-        return () => blockWorld(false);
-    }, [panel, service, phase]);
+        // Retained confirmations and reward collection block windows and the game;
+        // plain window browsing keeps uncovered canvas playable.
+        setBlockingOverlay(!!confirm || phase === 'reward');
+        return () => setBlockingOverlay(false);
+    }, [confirm, phase]);
+    const characterId = c?.id;
     useEffect(() => {
-        setPanel('');
-        setService('');
+        // Scene or active-character changes close every window; session geometry
+        // survives so reopening in the new scene restores size and position.
+        closeAllWindows();
+        setPanels(CLOSED_PANELS);
+        setConfirm('');
         dialogue.send({ type: 'CLOSE' });
-    }, [screen]);
+    }, [screen, characterId, closeAllWindows]);
     useEffect(() => {
         setSelected(
             c?.reward?.items.filter((i) => !c.reward!.claimed.includes(i.id)).map((i) => i.id) ||
@@ -87,10 +133,19 @@ function App() {
         );
     };
     const rebirthCharacter = save.data.characters.find((ch) => ch.id === rebirthId);
-    const close = () => {
-        setPanel('');
-        dialogue.send({ type: 'CLOSE' });
+    const openPanel = (panel: PanelId, opener?: EventTarget | null) => {
+        openers.current[panel] = (opener as HTMLElement) ?? null;
+        setPanels((previous) => ({ ...previous, [panel]: true }));
     };
+    const closePanel = (panel: PanelId) =>
+        setPanels((previous) => ({ ...previous, [panel]: false }));
+    const getOpener = (panel: PanelId) => () => openers.current[panel] ?? null;
+    const apFooter = c ? (
+        <div className="flex w-full items-center justify-between gap-4 text-sm">
+            <span className="text-muted">Available AP</span>
+            <strong className="text-foreground tabular-nums">{c.ap} AP</strong>
+        </div>
+    ) : undefined;
     return (
         <main
             className="h-dvh overflow-hidden"
@@ -179,7 +234,7 @@ function App() {
                                             talent: ch.talent,
                                             age: Math.min(ch.age, 17),
                                         });
-                                        setPanel('rebirth');
+                                        setConfirm('rebirth');
                                     },
                                     { className: 'subtle' },
                                 )}
@@ -343,14 +398,14 @@ function App() {
                             ◈ {c.gold.toLocaleString()} gold
                         </span>
                         {c.run &&
-                            action('Return to town', () => setPanel('abandon'), {
+                            action('Return to town', () => setConfirm('abandon'), {
                                 className: 'subtle',
                             })}
                     </aside>
                 </>
             )}
             {phase === 'reward' && c?.reward && (
-                <section className="center panel z-10 w-[460px]">
+                <section className="center panel z-40 w-[460px]">
                     <div className="eyebrow">
                         {c.reward.boss ? 'VICTORY IS YOURS' : 'SPOILS OF ADVENTURE'}
                     </div>
@@ -410,430 +465,171 @@ function App() {
                     </div>
                     {action(screen === 'TreasureRoom' ? 'Return to town' : 'Continue', () => {
                         if (c.reward!.claimed.length < c.reward!.items.length + 1)
-                            setPanel('leaveLoot');
+                            setConfirm('leaveLoot');
                         else
                             send({ type: screen === 'TreasureRoom' ? 'CONTINUE' : 'LEAVE_REWARD' });
                     })}
                 </section>
             )}
-            {(panel || service) && (
-                <GameModal
-                    onClose={close}
-                    label={panel || service}
-                    footer={
-                        (panel === 'skills' || service === 'Trainer') && c ? (
-                            <div className="flex w-full items-center justify-between gap-4 text-sm">
-                                <span className="text-muted">Available AP</span>
-                                <strong className="text-foreground tabular-nums">{c.ap} AP</strong>
-                            </div>
-                        ) : undefined
-                    }
-                    title={
-                        service
-                            ? {
-                                  Healer: 'Healer House',
-                                  Grocery: 'Grocery Store',
-                                  General: 'General Shop',
-                                  Blacksmith: 'Blacksmith',
-                                  Bank: 'Bank',
-                                  Trainer: 'Combat instructor',
-                              }[service] || service
-                            : panel === 'character'
-                              ? 'Character Info'
-                              : panel === 'menu'
-                                ? 'Adventure menu'
-                                : panel === 'skills'
-                                  ? 'Skill catalog'
-                                  : panel === 'inventory'
-                                    ? 'Your belongings'
-                                    : panel === 'settings'
-                                      ? 'Settings'
-                                      : panel === 'rebirth'
-                                        ? 'Begin another life'
-                                        : 'Leave this chapter?'
-                    }
+            {c && (
+                <>
+                    <GameWindow
+                        id="character"
+                        title="Character Info"
+                        open={panels.character}
+                        onClose={() => closePanel('character')}
+                        getOpener={getOpener('character')}
+                    >
+                        <Character c={c} />
+                    </GameWindow>
+                    <GameWindow
+                        id="skills"
+                        title="Skill catalog"
+                        open={panels.skills}
+                        onClose={() => closePanel('skills')}
+                        getOpener={getOpener('skills')}
+                        footer={apFooter}
+                    >
+                        <SkillJournal character={c} disabled={disabled} send={send} />
+                    </GameWindow>
+                    <GameWindow
+                        id="inventory"
+                        title="Your belongings"
+                        open={panels.inventory}
+                        onClose={() => closePanel('inventory')}
+                        getOpener={getOpener('inventory')}
+                    >
+                        <InventoryList character={c} disabled={disabled} send={send} />
+                    </GameWindow>
+                    <GameWindow
+                        id="menu"
+                        title="Adventure menu"
+                        open={panels.menu}
+                        onClose={() => closePanel('menu')}
+                        getOpener={getOpener('menu')}
+                    >
+                        <MenuContent
+                            disabled={disabled}
+                            send={send}
+                            onOpenSettings={() => openPanel('settings')}
+                        />
+                    </GameWindow>
+                    <GameWindow
+                        id="settings"
+                        title="Settings"
+                        open={panels.settings}
+                        onClose={() => closePanel('settings')}
+                        getOpener={getOpener('settings')}
+                    >
+                        <SettingsContent save={save} disabled={disabled} send={send} />
+                    </GameWindow>
+                </>
+            )}
+            {!!service && c && (
+                <GameWindow
+                    id="service"
+                    title={SERVICE_TITLES[service] ?? service}
+                    open
+                    onClose={() => dialogue.send({ type: 'CLOSE' })}
+                    footer={service === 'Trainer' ? apFooter : undefined}
                 >
-                    {panel === 'character' && c && <Character c={c} />}
-                    {(panel === 'skills' || service === 'Trainer') && c && (
-                        <SkillJournal
+                    {service === 'Trainer' ? (
+                        <SkillJournal character={c} disabled={disabled} trainer send={send} />
+                    ) : (
+                        <ServiceContent
+                            service={service}
                             character={c}
                             disabled={disabled}
-                            trainer={service === 'Trainer'}
                             send={send}
                         />
                     )}
-                    {panel === 'menu' && (
-                        <div className="stack">
-                            {action('Settings', () => setPanel('settings'))}
-                            {action('Title Screen', () => {
-                                close();
-                                send({ type: 'NAV', screen: 'Title' });
-                            })}
-                            <div className="mt-2 space-y-2">
-                                <span className="text-xs text-muted">Coming Later</span>
-                                <div className="flex flex-wrap gap-2">
-                                    {['Talent', 'Quests', 'Pets'].map((name) => (
-                                        <Button key={name} variant="secondary" isDisabled>
-                                            {name}
-                                        </Button>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                    {panel === 'rebirth' && rebirthCharacter && (
-                        <div className="stack">
-                            <p>
-                                {rebirthCharacter.name} · {rebirthCharacter.race}
-                                <br />
-                                Retain possessions, learned skills, cumulative levels and AP. Reset
-                                current level and growth.
-                            </p>
-                            <Label>New age</Label>
-                            <div className="choices">
-                                {Array.from({ length: 8 }, (_, i) => i + 10)
-                                    .filter((age) => age <= rebirthCharacter.age)
-                                    .map((age) =>
-                                        action(String(age), () => setInput({ ...input, age }), {
-                                            key: age,
-                                            className: input.age === age ? 'selected' : '',
-                                        }),
-                                    )}
-                            </div>
-                            <Label>New talent</Label>
-                            <div className="choices">
-                                {talents
-                                    .filter(
-                                        (t) => rebirthCharacter.race !== 'Giant' || t !== 'Archery',
-                                    )
-                                    .map((t) =>
-                                        action(t, () => setInput({ ...input, talent: t }), {
-                                            key: t,
-                                            className: input.talent === t ? 'selected' : '',
-                                        }),
-                                    )}
-                            </div>
-                            <p>
-                                Next available:{' '}
-                                {new Date(
-                                    rebirthCharacter.rebornAt +
-                                        rebirthCooldown(rebirthCharacter.totalLevel),
-                                ).toLocaleString()}
-                            </p>
-                            {action(
-                                `Rebirth as age ${input.age} · ${input.talent}`,
-                                () =>
-                                    send({
-                                        type: 'REBIRTH',
-                                        id: rebirthId,
-                                        talent: input.talent,
-                                        age: input.age,
-                                        now: Date.now(),
-                                    }),
-                                {
-                                    className: 'primary',
-                                    isDisabled:
-                                        disabled ||
-                                        !!rebirthCharacter.run ||
-                                        Date.now() <
-                                            rebirthCharacter.rebornAt +
-                                                rebirthCooldown(rebirthCharacter.totalLevel),
-                                },
-                            )}
-                        </div>
-                    )}
-                    {panel === 'settings' && (
-                        <div className="stack">
-                            {(['music', 'effects'] as const).map((key) => (
-                                <TextField key={key}>
-                                    <Label>
-                                        {key === 'music' ? 'Music volume' : 'Effects volume'}{' '}
-                                        (0–100)
-                                    </Label>
-                                    <Input
-                                        type="number"
-                                        min="0"
-                                        max="100"
-                                        value={String(Math.round(save.data.settings[key] * 100))}
-                                        onChange={(e) =>
-                                            send({
-                                                type: 'SETTINGS',
-                                                settings: {
-                                                    [key]: Number(e.target.value) / 100,
-                                                },
-                                            })
-                                        }
-                                    />
-                                </TextField>
-                            ))}
-                            <TextField>
-                                <Label>HUD scale (80–130%)</Label>
-                                <Input
-                                    type="number"
-                                    min="80"
-                                    max="130"
-                                    step="10"
-                                    value={String(Math.round(save.data.settings.hudScale * 100))}
-                                    onChange={(e) =>
-                                        send({
-                                            type: 'SETTINGS',
-                                            settings: {
-                                                hudScale: Number(e.target.value) / 100,
-                                            },
-                                        })
-                                    }
-                                />
-                            </TextField>
-                            <p>
-                                WASD / arrows: walk · Click: move or select
-                                <br />
-                                E: interact · Hold dice, then reroll up to twice.
-                            </p>
-                            {action(
-                                `Reduced motion: ${save.data.settings.reducedMotion ? 'On' : 'Off'}`,
-                                () =>
-                                    send({
-                                        type: 'SETTINGS',
-                                        settings: {
-                                            reducedMotion: !save.data.settings.reducedMotion,
-                                        },
-                                    }),
-                            )}
-                        </div>
-                    )}
-                    {(panel === 'abandon' || panel === 'leaveLoot') && (
-                        <>
-                            <p>
-                                {panel === 'abandon'
-                                    ? 'Leave this dungeon run? Claimed loot and experience are kept.'
-                                    : 'Leave the unclaimed rewards behind?'}
-                            </p>
-                            {action(
-                                'Leave',
-                                () => {
-                                    send({
-                                        type:
-                                            panel === 'abandon'
-                                                ? 'ABANDON'
-                                                : screen === 'TreasureRoom'
-                                                  ? 'CONTINUE'
-                                                  : 'LEAVE_REWARD',
-                                    });
-                                    close();
-                                },
-                                { className: 'primary' },
-                            )}
-                        </>
-                    )}
-                    {service === 'Healer' && (
-                        <>
-                            <p>Elara smiles. “Rest a moment, traveler. The road can wait.”</p>
-                            {action('Restore HP, mana & stamina · 10 gold', () =>
-                                send({ type: 'HEAL' }),
-                            )}
-                        </>
-                    )}
-                    {shops[service] && (
-                        <>
-                            <p>
-                                {service === 'Blacksmith'
-                                    ? 'Bram checks the edge of your weapon. “A good blade deserves care.”'
-                                    : 'Supplies for the road ahead.'}
-                            </p>
-                            <div className="grid gap-[7px]" data-testid="shop-catalog">
-                                {shops[service].map((kind) => (
-                                    <article
-                                        key={kind}
-                                        className="flex items-center gap-[15px] border-b border-[#819e7c44] p-[10px]"
-                                    >
-                                        <span className="text-[25px]">{items[kind].icon}</span>
-                                        <div className="flex-1">
-                                            <h3 className="text-[16px]">{items[kind].name}</h3>
-                                            <small>
-                                                {items[kind].description ??
-                                                    (items[kind].power
-                                                        ? `${items[kind].power} power`
-                                                        : items[kind].restore
-                                                          ? `Restores ${items[kind].restore} ${items[kind].resource}`
-                                                          : `${items[kind].defense ?? 0} defense`)}
-                                            </small>
-                                        </div>
-                                        {action(`Buy · ${items[kind].price}g`, () =>
-                                            send({ type: 'BUY', shop: service, kind }),
-                                        )}
-                                    </article>
-                                ))}
-                            </div>
-                        </>
-                    )}
-                    {service === 'Bank' && c && (
-                        <>
-                            <p>
-                                Stored gold: {c.bankGold} · Bank slots: {c.bank.length}/60
-                            </p>
-                            <TextField>
-                                <Label>Gold amount</Label>
-                                <Input
-                                    type="number"
-                                    min="1"
-                                    value={amount}
-                                    onChange={(e) => setAmount(e.target.value)}
-                                />
-                            </TextField>
-                            <div className="choices">
-                                {action('Deposit gold', () =>
-                                    send({
-                                        type: 'BANK_GOLD',
-                                        amount: Number(amount),
-                                        deposit: true,
+                </GameWindow>
+            )}
+            {confirm === 'rebirth' && rebirthCharacter && (
+                <GameModal onClose={() => setConfirm('')} title="Begin another life">
+                    <div className="stack">
+                        <p>
+                            {rebirthCharacter.name} · {rebirthCharacter.race}
+                            <br />
+                            Retain possessions, learned skills, cumulative levels and AP. Reset
+                            current level and growth.
+                        </p>
+                        <Label>New age</Label>
+                        <div className="choices">
+                            {Array.from({ length: 8 }, (_, i) => i + 10)
+                                .filter((age) => age <= rebirthCharacter.age)
+                                .map((age) =>
+                                    action(String(age), () => setInput({ ...input, age }), {
+                                        key: age,
+                                        className: input.age === age ? 'selected' : '',
                                     }),
                                 )}
-                                {action('Withdraw gold', () =>
-                                    send({
-                                        type: 'BANK_GOLD',
-                                        amount: Number(amount),
-                                        deposit: false,
+                        </div>
+                        <Label>New talent</Label>
+                        <div className="choices">
+                            {talents
+                                .filter((t) => rebirthCharacter.race !== 'Giant' || t !== 'Archery')
+                                .map((t) =>
+                                    action(t, () => setInput({ ...input, talent: t }), {
+                                        key: t,
+                                        className: input.talent === t ? 'selected' : '',
                                     }),
                                 )}
-                            </div>
-                            {c.bank.map((i) => (
-                                <div className="item" key={i.id}>
-                                    {items[i.kind].name} ×{i.count}
-                                    {action('Withdraw', () =>
-                                        send({
-                                            type: 'BANK_ITEM',
-                                            id: i.id,
-                                            deposit: false,
-                                        }),
-                                    )}
-                                </div>
-                            ))}
-                        </>
-                    )}
-                    {(panel === 'inventory' ||
-                        (service && service !== 'Healer' && service !== 'Trainer')) &&
-                        c && (
-                            <>
-                                <h3>Inventory · {c.inventory.length}/30</h3>
-                                <div className="mt-[15px] flex flex-col gap-[6px]">
-                                    {c.inventory.map((i) => (
-                                        <div className="item" key={i.id}>
-                                            <span className="text-[26px]">
-                                                {items[i.kind].icon}
-                                            </span>
-                                            <div className="flex-1">
-                                                <strong>
-                                                    {items[i.kind].name} ×{i.count}
-                                                </strong>
-                                                {items[i.kind].description && (
-                                                    <p className="text-xs">
-                                                        {items[i.kind].description}
-                                                    </p>
-                                                )}
-                                                <small className="mt-[5px] block text-[10px]">
-                                                    {c.weapon === i.id ||
-                                                    c.offhand === i.id ||
-                                                    c.armor === i.id
-                                                        ? 'Equipped · '
-                                                        : ''}
-                                                    {i.durability !== undefined
-                                                        ? `${i.durability}/20 durability`
-                                                        : items[i.kind].type}
-                                                </small>
-                                            </div>
-                                            <div className="choices">
-                                                {(items[i.kind].resource ||
-                                                    items[i.kind].statuses ||
-                                                    items[i.kind].cleanse) &&
-                                                    action('Use', () =>
-                                                        send({ type: 'USE', id: i.id }),
-                                                    )}
-                                                {['weapon', 'armor', 'shield'].includes(
-                                                    items[i.kind].type,
-                                                ) &&
-                                                    action(
-                                                        c.weapon === i.id ||
-                                                            c.offhand === i.id ||
-                                                            c.armor === i.id
-                                                            ? 'Unequip'
-                                                            : 'Equip',
-                                                        () =>
-                                                            send({
-                                                                type: 'EQUIP',
-                                                                id: i.id,
-                                                                ...(c.offhand === i.id
-                                                                    ? {
-                                                                          slot: 'offhand' as const,
-                                                                      }
-                                                                    : {}),
-                                                            }),
-                                                        { isDisabled: disabled || !!c.run },
-                                                    )}
-                                                {['sword', 'steel'].includes(i.kind) &&
-                                                    c.weapon !== i.id &&
-                                                    action(
-                                                        c.offhand === i.id
-                                                            ? 'Unequip off-hand'
-                                                            : 'Equip off-hand',
-                                                        () =>
-                                                            send({
-                                                                type: 'EQUIP',
-                                                                id: i.id,
-                                                                slot: 'offhand',
-                                                            }),
-                                                        { isDisabled: disabled || !!c.run },
-                                                    )}
-                                                {items[i.kind].type === 'book' &&
-                                                    action(
-                                                        'Read',
-                                                        () =>
-                                                            send({
-                                                                type: 'READ',
-                                                                id: i.id,
-                                                            }),
-                                                        { isDisabled: disabled || !!c.run },
-                                                    )}
-                                                {items[i.kind].type === 'page' &&
-                                                    action(
-                                                        'Insert page',
-                                                        () =>
-                                                            send({
-                                                                type: 'INSERT_PAGE',
-                                                                id: i.id,
-                                                            }),
-                                                        { isDisabled: disabled || !!c.run },
-                                                    )}
-                                                {service === 'Blacksmith' &&
-                                                    i.durability !== undefined &&
-                                                    action(`Repair · ${20 - i.durability}g`, () =>
-                                                        send({
-                                                            type: 'REPAIR',
-                                                            id: i.id,
-                                                        }),
-                                                    )}
-                                                {shops[service] &&
-                                                    action(
-                                                        `Sell · ${Math.floor(items[i.kind].price / 4)}g`,
-                                                        () =>
-                                                            send({
-                                                                type: 'SELL',
-                                                                id: i.id,
-                                                            }),
-                                                    )}
-                                                {service === 'Bank' &&
-                                                    action('Deposit', () =>
-                                                        send({
-                                                            type: 'BANK_ITEM',
-                                                            id: i.id,
-                                                            deposit: true,
-                                                        }),
-                                                    )}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </>
+                        </div>
+                        <p>
+                            Next available:{' '}
+                            {new Date(
+                                rebirthCharacter.rebornAt +
+                                    rebirthCooldown(rebirthCharacter.totalLevel),
+                            ).toLocaleString()}
+                        </p>
+                        {action(
+                            `Rebirth as age ${input.age} · ${input.talent}`,
+                            () =>
+                                send({
+                                    type: 'REBIRTH',
+                                    id: rebirthId,
+                                    talent: input.talent,
+                                    age: input.age,
+                                    now: Date.now(),
+                                }),
+                            {
+                                className: 'primary',
+                                isDisabled:
+                                    disabled ||
+                                    !!rebirthCharacter.run ||
+                                    Date.now() <
+                                        rebirthCharacter.rebornAt +
+                                            rebirthCooldown(rebirthCharacter.totalLevel),
+                            },
                         )}
+                    </div>
+                </GameModal>
+            )}
+            {(confirm === 'abandon' || confirm === 'leaveLoot') && (
+                <GameModal onClose={() => setConfirm('')} title="Leave this chapter?">
+                    <div className="stack">
+                        <p>
+                            {confirm === 'abandon'
+                                ? 'Leave this dungeon run? Claimed loot and experience are kept.'
+                                : 'Leave the unclaimed rewards behind?'}
+                        </p>
+                        {action(
+                            'Leave',
+                            () => {
+                                send({
+                                    type:
+                                        confirm === 'abandon'
+                                            ? 'ABANDON'
+                                            : screen === 'TreasureRoom'
+                                              ? 'CONTINUE'
+                                              : 'LEAVE_REWARD',
+                                });
+                                setConfirm('');
+                            },
+                            { className: 'primary' },
+                        )}
+                    </div>
                 </GameModal>
             )}
             {save.migrationNotice && (
@@ -852,7 +648,7 @@ function App() {
                     </Button>
                 </div>
             )}
-            <MenuBar character={c} onOpen={setPanel} />
+            <MenuBar character={c} onOpen={openPanel} />
         </main>
     );
 }

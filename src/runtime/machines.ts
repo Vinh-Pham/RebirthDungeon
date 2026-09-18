@@ -27,7 +27,15 @@ export const dialogueMachine = setup({
                 },
             },
         },
-        choosing: { on: { CLOSE: 'closed', TRANSACT: 'transacting' } },
+        choosing: {
+            on: {
+                CLOSE: 'closed',
+                TRANSACT: 'transacting',
+                // Interacting with another sign replaces the service through the
+                // close/open flow; windows follow the actor without dropping state.
+                OPEN: { actions: assign({ service: ({ event }) => event.service }) },
+            },
+        },
         transacting: { on: { DONE: 'choosing', CLOSE: 'closed' } },
     },
 });
