@@ -350,7 +350,7 @@ test('catalog icons, life references, and a full spellbook remain usable on a sm
 }, info) => {
     if (info.project.name !== 'chromium') return;
     const { blankSave, reduceCommand } = await import('../../src/domain/commands');
-    const { skills } = await import('../../src/domain/skillCatalog');
+    const { skills } = await import('../../src/domain/Skills');
     let fixture = reduceCommand(
         blankSave(),
         { type: 'NAV', screen: 'NewCharacter' },

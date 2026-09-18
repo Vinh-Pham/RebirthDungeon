@@ -24,7 +24,7 @@ import {
 import { statusDefinitions } from '../../src/domain/stats/statusCatalog';
 import { validateActorStats } from '../../src/domain/stats/validate';
 import { actionCosts, refreshStats } from '../../src/domain/skillSystem';
-import { skillRank } from '../../src/domain/skillCatalog';
+import { skillRank } from '../../src/domain/Skills';
 import { migrateSave } from '../../src/domain/migration';
 import { validateSave } from '../../src/runtime/persistence';
 import { payReservation, previewDamage } from '../../src/domain/combat';

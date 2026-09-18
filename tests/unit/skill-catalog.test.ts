@@ -2,7 +2,7 @@ import { readdirSync, existsSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { produce } from 'immer';
 import { active, blankSave, reduceCommand, type Command } from '../../src/domain/commands';
-import { skills, ranks, skillRank } from '../../src/domain/skillCatalog';
+import { skills, ranks, skillRank } from '../../src/domain/Skills';
 import {
     actionCosts,
     effectiveStats,

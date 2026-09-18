@@ -1,4 +1,4 @@
-import { StatsPanel } from './ui/StatsPanel';
+import { Character } from './ui/Character';
 import { GameModal } from './ui/GameModal';
 import { SkillJournal } from './ui/SkillJournal';
 import {
@@ -24,7 +24,7 @@ import {
 import { blockWorld } from './game/inputState';
 import { items, shops } from './domain/catalog';
 import { races, talents, type CreateInput } from './domain/model';
-import { GameHud } from './ui/GameHud';
+import { MenuBar } from './ui/MenuBar';
 import { rebirthCooldown } from './domain/progression';
 import './style.css';
 function App() {
@@ -453,7 +453,7 @@ function App() {
                                         : 'Leave this chapter?'
                     }
                 >
-                    {panel === 'character' && c && <StatsPanel c={c} />}
+                    {panel === 'character' && c && <Character c={c} />}
                     {(panel === 'skills' || service === 'Trainer') && c && (
                         <SkillJournal
                             character={c}
@@ -852,7 +852,7 @@ function App() {
                     </Button>
                 </div>
             )}
-            <GameHud character={c} onOpen={setPanel} />
+            <MenuBar character={c} onOpen={setPanel} />
         </main>
     );
 }

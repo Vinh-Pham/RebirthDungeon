@@ -5,7 +5,7 @@ import { affordability } from './stats/resources';
 import type { Immutable } from 'immer';
 import type { ActionSnapshot, Character, Enemy, SaveData } from './model';
 import { wikiValue } from './skills/wiki';
-import { skills, ranks } from './skillCatalog';
+import { skills, ranks } from './Skills';
 import { combination, nextRandom } from './dice';
 import {
     defenses,

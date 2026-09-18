@@ -4,7 +4,7 @@ import { GameModal } from './GameModal';
 import { Button, Card, ProgressBar, Tabs, Select, ListBox, Tooltip } from '@heroui/react';
 import type { Immutable } from 'immer';
 import type { Character } from '../domain/model';
-import { skills, ranks, skillRank, trainingPoints, type Skill } from '../domain/skillCatalog';
+import { skills, ranks, skillRank, trainingPoints, type Skill } from '../domain/Skills';
 import {
     passiveDescription,
     requirementReason,

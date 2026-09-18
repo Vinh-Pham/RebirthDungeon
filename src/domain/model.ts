@@ -5,7 +5,7 @@ import type {
     StatSnapshot,
     ModifierSource,
 } from './stats/types';
-import type { SkillProgress, RankDefinition } from './skillCatalog';
+import type { SkillProgress, RankDefinition } from './Skills';
 export type Race = 'Human' | 'Elf' | 'Giant';
 export type Talent = 'Close Combat' | 'Archery' | 'Magic' | 'Dual Gun';
 export type Screen =

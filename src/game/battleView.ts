@@ -4,7 +4,7 @@ import Button from 'phaser4-rex-plugins/plugins/button.js';
 import Anchor from 'phaser4-rex-plugins/plugins/anchor.js';
 import type { Immutable } from 'immer';
 import type { Character } from '../domain/model';
-import { skills, skillRank } from '../domain/skillCatalog';
+import { skills, skillRank } from '../domain/Skills';
 import { learned, usableReason, actionCosts } from '../domain/skillSystem';
 import { attackDamage, combination } from '../domain/dice';
 import { send, getSave, busy, workflowPhase } from '../runtime/game';

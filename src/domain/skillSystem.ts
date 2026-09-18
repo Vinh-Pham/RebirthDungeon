@@ -5,7 +5,7 @@ import type { Skill } from './skills/types';
 import { resolveStats, equipment, enemyStats } from './stats/resolve';
 import { effectiveCosts, affordability, pools } from './stats/resources';
 export { equipment, progressionStats } from './stats/resolve';
-import { skills, ranks, skillRank, trainingPoints } from './skillCatalog';
+import { skills, ranks, skillRank, trainingPoints } from './Skills';
 export const learned = (c: Immutable<Character>) => c.run?.baseline?.skills ?? c.skills;
 export const rankIndex = (c: Immutable<Character>, id: string) =>
     learned(c)[id] ? ranks.indexOf(learned(c)[id].rank) : -1;

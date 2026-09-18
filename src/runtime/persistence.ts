@@ -1,6 +1,6 @@
 import { validateActorStats } from '../domain/stats/validate';
 import { migrateSave } from '../domain/migration';
-import { ranks, skills, skillRank } from '../domain/skillCatalog';
+import { ranks, skills, skillRank } from '../domain/Skills';
 import type { Immutable } from 'immer';
 import type { SaveData } from '../domain/model';
 export interface Persistence {

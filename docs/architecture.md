@@ -17,4 +17,4 @@ The current storage schema is version 2. Version 1 migrates learned skill IDs to
 
 ## Ranked skills
 
-`skillCatalog.ts` owns rank content; `skillSystem.ts` owns acquisition, advancement, derived stats and equipment eligibility; `combat.ts` owns committed outcomes and training. Every run freezes profile ranks/stats/loadout; every first roll freezes its action inputs, resource reservation and target set. Temporary effects and cooldowns tick only on defined activation boundaries. The React skill journal and Phaser combat controls use these same domain definitions. See [accepted rules](gameplay/skills-implementation.md).
+`Skills.ts` owns rank content; `skillSystem.ts` owns acquisition, advancement, derived stats and equipment eligibility; `combat.ts` owns committed outcomes and training. Every run freezes profile ranks/stats/loadout; every first roll freezes its action inputs, resource reservation and target set. Temporary effects and cooldowns tick only on defined activation boundaries. The React skill journal and Phaser combat controls use these same domain definitions. See [accepted rules](gameplay/skills-implementation.md).

@@ -42,7 +42,7 @@ src/
     progression.ts        Character creation stats, XP, aging, and rebirth
     behavior.ts           Enemy behavior
     catalog.ts            Items, shops, and talent equipment
-    skillCatalog.ts       Skill registry and rank/training accessors
+    Skills.ts             Skill registry and rank/training accessors
     skillSystem.ts        Learning, ranking, equipment eligibility, and derived stats
     stats/                Versioned stat resolution, costs, statuses, and save validation
     skills/               One module per skill; separate *.wiki.json source stats
@@ -86,7 +86,7 @@ For a new gameplay action, follow the existing path through command typing/guard
 
 ## Skills, wiki sources, and assets
 
-- Keep each skill's definition and adaptations in `src/domain/skills/<slug>.ts`. Keep its verified source rows in a separate `<slug>.wiki.json`; `skillCatalog.ts` should remain a registry rather than a large content file. Shared types and builders belong in `skills/types.ts`, `define.ts`, and `wiki.ts`.
+- Keep each skill's definition and adaptations in `src/domain/skills/<slug>.ts`. Keep its verified source rows in a separate `<slug>.wiki.json`; `Skills.ts` should remain a registry rather than a large content file. Shared types and builders belong in `skills/types.ts`, `define.ts`, and `wiki.ts`.
 - Use the supplied icon at `/assets/game/skills/<slug>.webp` in the catalog. Support browsing unlearned entries, original wiki ranks, and race differences independently from the character's current rank.
 - Use Firecrawl for requested wiki research and reuse local snapshots when suitable. Save raw responses under ignored `.firecrawl/skills/`, but retain per-skill documentation under `docs/references/skills/` with its source URL and retrieval date.
 - Follow the refresh instructions in the skill reference index. `scripts/import-skill-wiki.py` requires Python and `beautifulsoup4`; it consumes saved Firecrawl markdown/HTML responses. HTML row/column spans must be expanded before assigning rank values. Thunder's charge-cost table is not a rank-cost table.

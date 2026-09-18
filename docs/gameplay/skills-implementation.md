@@ -10,7 +10,7 @@ The skill window lists only learned skills, grouped into All, Life, Combat, and 
 
 The catalog and all app dialogs share a HeroUI Modal shell with an accessible X close button. The catalog has no search field or skill count. Available AP appears in its footer. Clicking a skill name opens a second modal with the description, effects, training, learning/ranking actions, and wiki rank inspection using HeroUI Select. Closing that modal restores focus to the skill name and preserves the catalog tab and scroll position; Escape dismisses only the top modal. Cards remain scrollable on narrow screens.
 
-`src/domain/skillCatalog.ts` is now a registry; individual definitions and normalized wiki rows live in `src/domain/skills/`. Existing skill IDs and pending action snapshots remain compatible. Wiki AP, costs, damage, defenses, and cumulative character gains replace the old authored values for verified skills. The source index documents time conversion, race variants, and simplified effects.
+`src/domain/Skills.ts` is now a registry; individual definitions and normalized wiki rows live in `src/domain/skills/`. Existing skill IDs and pending action snapshots remain compatible. Wiki AP, costs, damage, defenses, and cumulative character gains replace the old authored values for verified skills. The source index documents time conversion, race variants, and simplified effects.
 
 ## Original content-version-2 contract (historical balance)
 
@@ -28,7 +28,7 @@ Critical Hit is learned by explicitly reading its 60-gold General Shop manual. F
 
 ## Versioned balance content
 
-`src/domain/skillCatalog.ts` owns explicit generated rank records, cost vectors, dice weights, training objectives and AP costs. The following use `r = 0…14`.
+`src/domain/Skills.ts` owns explicit generated rank records, cost vectors, dice weights, training objectives and AP costs. The following use `r = 0…14`.
 
 | Active | Base B | Per pip K | Cost | Cooldown |
 | --- | --- | --- | --- | --- |

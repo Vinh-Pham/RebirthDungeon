@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { produce } from 'immer';
 import { waitFor } from 'xstate';
 import { blankSave, reduceCommand, active, type Command } from '../../src/domain/commands';
-import { skills, ranks, skillRank, trainingPoints } from '../../src/domain/skillCatalog';
+import { skills, ranks, skillRank, trainingPoints } from '../../src/domain/Skills';
 import {
     advance,
     learn,

@@ -1,7 +1,7 @@
 import { produce } from 'immer';
 import { createStatSnapshot } from './stats/resolve';
 import type { SaveData, Character } from './model';
-import { skills } from './skillCatalog';
+import { skills } from './Skills';
 import { progressionStats, refreshStats, snapshotAction } from './skillSystem';
 /** Migration never rerolls a saved hand or spends a resource. */
 function migrateLegacy(value: unknown): SaveData {

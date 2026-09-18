@@ -102,7 +102,7 @@ export const items: Record<string, ItemDefinition> = {
     silk: { name: 'Spider silk', icon: '❋', type: 'material', price: 20 },
     gem: { name: 'Moonstone fragment', icon: '◇', type: 'material', price: 80 },
 };
-export { skills } from './skillCatalog';
+export { skills } from './Skills';
 export const talentSkill: Record<Talent, string> = {
     'Close Combat': 'smash',
     Archery: 'shot',

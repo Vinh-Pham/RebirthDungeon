@@ -1,7 +1,7 @@
 import { produce, type Immutable } from 'immer';
 import type { Character, Enemy, Stats } from '../model';
 import { items } from '../catalog';
-import { ranks, skills } from '../skillCatalog';
+import { ranks, skills } from '../Skills';
 import { wikiValue } from '../skills/wiki';
 import { emptyCombatStats, isPercentage, statBound, statRules } from './rules';
 import {
