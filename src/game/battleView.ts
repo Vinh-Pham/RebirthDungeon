@@ -4,7 +4,7 @@ import Anchor from 'phaser4-rex-plugins/plugins/anchor.js';
 import type { Immutable } from 'immer';
 import type { Character } from '../domain/model';
 import { skills, skillRank } from '../domain/skillCatalog';
-import { learned, usableReason } from '../domain/skillSystem';
+import { learned, usableReason, actionCosts } from '../domain/skillSystem';
 import { attackDamage, combination } from '../domain/dice';
 import { send, getSave, busy, workflowPhase } from '../runtime/game';
 export interface ControlBounds {
@@ -19,6 +19,8 @@ export function battleView(
     c: Immutable<Character>,
     selected: string,
     select: (id: string) => void,
+    skillPage = 0,
+    changePage: (page: number) => void = () => {},
 ): ControlBounds[] {
     const w = scene.scale.width,
         h = scene.scale.height,
@@ -111,8 +113,11 @@ export function battleView(
         ];
         const columns = w < 650 ? 3 : 4,
             width = (panelWidth - 40) / columns - 8;
-        list.forEach((id, i) => {
-            const rank = skills[id] && skillRank(id, learned(c)[id]);
+        const pageSize = columns * 3;
+        const pages = Math.ceil(list.length / pageSize);
+        const page = Math.min(skillPage, pages - 1);
+        list.slice(page * pageSize, (page + 1) * pageSize).forEach((id, i) => {
+            const rank = skills[id] && skillRank(id, learned(c)[id], c.race);
             const reason = skills[id] ? usableReason(c, id) : '';
             button(
                 id,
@@ -123,7 +128,7 @@ export function battleView(
                     ? 'Recover +10 MP / +20 SP'
                     : id === 'pass'
                       ? 'Pass'
-                      : `${skills[id].name} ${id === 'normal' ? '' : rank.rank} · ${rank.costs[skills[id].resource]} ${skills[id].resource === 'mana' ? 'MP' : 'SP'}${reason ? '\n' + reason : ''}`,
+                      : `${skills[id].name} ${id === 'normal' ? '' : rank.rank} · ${actionCosts(c, id, rank)[skills[id].resource]} ${skills[id].resource === 'mana' ? 'MP' : 'SP'}${reason ? '\n' + reason : ''}`,
                 () =>
                     id === 'recover'
                         ? send({ type: 'RECOVER' })
@@ -134,6 +139,33 @@ export function battleView(
                 id !== 'recover' && id !== 'pass',
             );
         });
+        if (pages > 1) {
+            button(
+                'previous-skills',
+                w / 2 - 125,
+                top + 251,
+                150,
+                'Previous skills',
+                () => changePage(page - 1),
+                page > 0,
+            );
+            button(
+                'next-skills',
+                w / 2 + 125,
+                top + 251,
+                150,
+                'Next skills',
+                () => changePage(page + 1),
+                page < pages - 1,
+            );
+            scene.add
+                .text(w / 2, top + 251, `${page + 1}/${pages}`, {
+                    fontSize: '12px',
+                    color: '#e1ece2',
+                })
+                .setOrigin(0.5)
+                .setDepth(10000);
+        }
         scene.add
             .text(
                 w / 2,

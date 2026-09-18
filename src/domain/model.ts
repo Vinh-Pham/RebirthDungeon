@@ -138,9 +138,12 @@ export interface RunBaseline {
     armor: string | null;
 }
 export interface CombatEffects {
+    defense?: { defense: number; protection: number };
+    manaShield?: { efficiency: number; upkeep: number; remaining: number };
     final?: { magnitude: number; remaining: number };
     counter?: {
         power: number;
+        opponentMultiplier?: number;
         multiplier: number;
         source: Pick<ActionSnapshot, 'skill' | 'melee' | 'sword' | 'dual'>;
     };

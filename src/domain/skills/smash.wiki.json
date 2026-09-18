@@ -1,0 +1,407 @@
+{
+    "url": "https://wiki.mabinogiworld.com/view/Smash",
+    "retrievedAt": "2026-09-18",
+    "rows": [
+        {
+            "label": "Required AP (Human/Giant)",
+            "values": [
+                "1",
+                "4",
+                "4",
+                "4",
+                "5",
+                "6",
+                "7",
+                "8",
+                "10",
+                "12",
+                "20",
+                "22",
+                "24",
+                "26",
+                "30"
+            ]
+        },
+        {
+            "label": "Required AP (Human/Giant Total)",
+            "values": [
+                "1",
+                "5",
+                "9",
+                "13",
+                "18",
+                "24",
+                "31",
+                "39",
+                "49",
+                "61",
+                "81",
+                "103",
+                "127",
+                "153",
+                "183"
+            ]
+        },
+        {
+            "label": "Required AP (Elf)",
+            "values": [
+                "-",
+                "2",
+                "4",
+                "6",
+                "8",
+                "10",
+                "11",
+                "11",
+                "11",
+                "11",
+                "13",
+                "13",
+                "13",
+                "13",
+                "20"
+            ]
+        },
+        {
+            "label": "Required AP (Total) (Elf)",
+            "values": [
+                "-",
+                "2",
+                "6",
+                "12",
+                "20",
+                "30",
+                "41",
+                "52",
+                "63",
+                "74",
+                "87",
+                "100",
+                "113",
+                "126",
+                "146"
+            ]
+        },
+        {
+            "label": "Additional Str and Will (Total)",
+            "values": [
+                "-",
+                "-",
+                "-",
+                "-",
+                "-",
+                "-",
+                "-",
+                "+1",
+                "+2",
+                "+3",
+                "+4",
+                "+5",
+                "+6",
+                "+7",
+                "+8"
+            ]
+        },
+        {
+            "label": "Stamina Use",
+            "values": ["4", "4", "4", "4", "5", "5", "6", "6", "7", "7", "8", "8", "9", "9", "10"]
+        },
+        {
+            "label": "Damage ( Human / Elf ) [%]",
+            "values": [
+                "200",
+                "210",
+                "220",
+                "230",
+                "240",
+                "250",
+                "300",
+                "310",
+                "320",
+                "330",
+                "400",
+                "420",
+                "440",
+                "460",
+                "500"
+            ]
+        },
+        {
+            "label": "Damage ( Giant ) [%]",
+            "values": [
+                "300",
+                "310",
+                "320",
+                "330",
+                "340",
+                "350",
+                "400",
+                "410",
+                "420",
+                "430",
+                "500",
+                "520",
+                "540",
+                "560",
+                "600"
+            ]
+        },
+        {
+            "label": "Additional Multiplier ( Two-Handed Weapons )",
+            "values": [
+                "x1.2",
+                "x1.2",
+                "x1.2",
+                "x1.2",
+                "x1.2",
+                "x1.2",
+                "x1.2",
+                "x1.2",
+                "x1.2",
+                "x1.2",
+                "x1.2",
+                "x1.2",
+                "x1.2",
+                "x1.2",
+                "x1.2"
+            ]
+        },
+        {
+            "label": "Additional Critical ( Two-Handed Weapons ) [%]",
+            "values": ["5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5"]
+        },
+        {
+            "label": "Splash Damage [%]*",
+            "values": [
+                "-",
+                "-",
+                "-",
+                "-",
+                "-",
+                "-",
+                "-",
+                "-",
+                "-",
+                "-",
+                "10",
+                "10",
+                "10",
+                "10",
+                "20"
+            ]
+        },
+        {
+            "label": "Debuff Chance ( Human ) (%)",
+            "values": [
+                "30",
+                "32",
+                "34",
+                "36",
+                "38",
+                "40",
+                "42",
+                "44",
+                "46",
+                "48",
+                "50",
+                "50",
+                "50",
+                "50",
+                "50"
+            ]
+        },
+        {
+            "label": "Debuff Chance ( Elf ) (%)",
+            "values": [
+                "20",
+                "22",
+                "24",
+                "26",
+                "28",
+                "30",
+                "32",
+                "34",
+                "36",
+                "38",
+                "40",
+                "40",
+                "40",
+                "40",
+                "40"
+            ]
+        },
+        {
+            "label": "Debuff Chance ( Giant ) (%)",
+            "values": [
+                "40",
+                "42",
+                "44",
+                "46",
+                "48",
+                "50",
+                "52",
+                "54",
+                "56",
+                "58",
+                "60",
+                "60",
+                "60",
+                "60",
+                "60"
+            ]
+        },
+        {
+            "label": "Sword Bleed Debuff Damage (%) [/sec]",
+            "values": [
+                "5",
+                "6",
+                "7",
+                "8",
+                "9",
+                "10",
+                "11",
+                "12",
+                "13",
+                "14",
+                "15",
+                "16",
+                "17",
+                "18",
+                "20"
+            ]
+        },
+        {
+            "label": "Sword Bleed Debuff Duration [sec]",
+            "values": ["5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5"]
+        },
+        {
+            "label": "Blunt Weapon Daze Debuff Duration [sec]",
+            "values": [
+                "5",
+                "5",
+                "6",
+                "6",
+                "7",
+                "7",
+                "8",
+                "8",
+                "9",
+                "9",
+                "10",
+                "10",
+                "11",
+                "11",
+                "12"
+            ]
+        },
+        {
+            "label": "Axe Bleed Debuff Damage (%) [/sec]",
+            "values": [
+                "5",
+                "6",
+                "7",
+                "8",
+                "9",
+                "10",
+                "11",
+                "12",
+                "13",
+                "14",
+                "15",
+                "16",
+                "17",
+                "18",
+                "20"
+            ]
+        },
+        {
+            "label": "Axe Bleed Debuff Duration [sec]",
+            "values": ["5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5"]
+        },
+        {
+            "label": "Load Time [sec]",
+            "values": ["0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"]
+        },
+        {
+            "label": "Cooldown Time [sec]",
+            "values": ["3", "3", "3", "3", "3", "3", "3", "3", "3", "3", "3", "3", "3", "3", "3"]
+        },
+        {
+            "label": "Skill CP (Total)",
+            "values": [
+                "5",
+                "10",
+                "30",
+                "50",
+                "70",
+                "90",
+                "110",
+                "130",
+                "150",
+                "170",
+                "200",
+                "230",
+                "260",
+                "290",
+                "320"
+            ]
+        },
+        {
+            "label": "Stat CP (Total)",
+            "values": [
+                "-",
+                "-",
+                "-",
+                "-",
+                "-",
+                "-",
+                "-",
+                "1.5",
+                "3.0",
+                "4.5",
+                "6.0",
+                "7.5",
+                "9.0",
+                "10.5",
+                "12.0"
+            ]
+        }
+    ],
+    "effects": {
+        "F": ["Human: Damage 200%", "Elf: Damage 200%", "Giant: Damage 300%"],
+        "E": ["Human: Damage 210%", "Elf: Damage 210%", "Giant: Damage 310%"],
+        "D": ["Human: Damage 220%", "Elf: Damage 220%", "Giant: Damage 320%"],
+        "C": ["Human: Damage 230%", "Elf: Damage 230%", "Giant: Damage 330%"],
+        "B": ["Human: Damage 240%", "Elf: Damage 240%", "Giant: Damage 340%"],
+        "A": ["Human: Damage 250%", "Elf: Damage 250%", "Giant: Damage 350%"],
+        "9": ["Human: Damage 300%", "Elf: Damage 300%", "Giant: Damage 400%"],
+        "8": ["Human: Damage 310%", "Elf: Damage 310%", "Giant: Damage 410%"],
+        "7": ["Human: Damage 320%", "Elf: Damage 320%", "Giant: Damage 420%"],
+        "6": ["Human: Damage 330%", "Elf: Damage 330%", "Giant: Damage 430%"],
+        "5": [
+            "Human: Damage 400%, Splash Damage 10%",
+            "Elf: Damage 400%, Splash Damage 10%",
+            "Giant: Damage 500%, Splash Damage 10%"
+        ],
+        "4": [
+            "Human: Damage 420%, Splash Damage 10%",
+            "Elf: Damage 420%, Splash Damage 10%",
+            "Giant: Damage 520%, Splash Damage 10%"
+        ],
+        "3": [
+            "Human: Damage 440%, Splash Damage 10%",
+            "Elf: Damage 440%, Splash Damage 10%",
+            "Giant: Damage 540%, Splash Damage 10%"
+        ],
+        "2": [
+            "Human: Damage 460%, Splash Damage 10%",
+            "Elf: Damage 460%, Splash Damage 10%",
+            "Giant: Damage 560%, Splash Damage 10%"
+        ],
+        "1": [
+            "Human: Damage 500%, Splash Damage 20%",
+            "Elf: Damage 500%, Splash Damage 20%",
+            "Giant: Damage 600%, Splash Damage 20%"
+        ]
+    }
+}

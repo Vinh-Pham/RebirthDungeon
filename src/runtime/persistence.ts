@@ -80,10 +80,30 @@ export function validateSave(value: unknown): asserts value is SaveData {
             c.effects.counter &&
             (!Number.isFinite(c.effects.counter.power) ||
                 c.effects.counter.power < 0 ||
+                (c.effects.counter.opponentMultiplier !== undefined &&
+                    (!Number.isFinite(c.effects.counter.opponentMultiplier) ||
+                        c.effects.counter.opponentMultiplier < 0)) ||
                 !Number.isFinite(c.effects.counter.multiplier) ||
                 c.effects.counter.multiplier <= 0)
         )
             throw new Error('Invalid Counterattack status.');
+        if (
+            c.effects.defense &&
+            ![c.effects.defense.defense, c.effects.defense.protection].every(
+                (n) => Number.isFinite(n) && n >= 0,
+            )
+        )
+            throw new Error('Invalid Defense status.');
+        if (
+            c.effects.manaShield &&
+            (!Number.isFinite(c.effects.manaShield.efficiency) ||
+                c.effects.manaShield.efficiency <= 0 ||
+                !Number.isInteger(c.effects.manaShield.remaining) ||
+                c.effects.manaShield.remaining < 1 ||
+                !Number.isInteger(c.effects.manaShield.upkeep) ||
+                c.effects.manaShield.upkeep < 0)
+        )
+            throw new Error('Invalid Mana Shield status.');
         if (c.battle?.action) {
             const a = c.battle.action;
             if (
@@ -111,6 +131,10 @@ export function validateSave(value: unknown): asserts value is SaveData {
                 a.criticalChance > 10000 ||
                 !Number.isFinite(a.criticalBonus) ||
                 a.criticalBonus < 0 ||
+                (a.rank.attackMultiplier !== undefined &&
+                    (!Number.isFinite(a.rank.attackMultiplier) || a.rank.attackMultiplier < 0)) ||
+                (a.rank.counterMultiplier !== undefined &&
+                    (!Number.isFinite(a.rank.counterMultiplier) || a.rank.counterMultiplier < 0)) ||
                 a.rank.weights.length !== 6 ||
                 a.rank.weights.some((n) => !Number.isSafeInteger(n) || n < 0) ||
                 !a.rank.weights.some((n) => n > 0)

@@ -1,0 +1,403 @@
+{
+    "url": "https://wiki.mabinogiworld.com/view/Ice_Spear",
+    "retrievedAt": "2026-09-18",
+    "rows": [
+        {
+            "label": "Required AP",
+            "values": [
+                "4",
+                "6",
+                "8",
+                "10",
+                "12",
+                "14",
+                "20",
+                "25",
+                "30",
+                "35",
+                "42",
+                "48",
+                "54",
+                "60",
+                "70"
+            ]
+        },
+        {
+            "label": "Required AP (Total)",
+            "values": [
+                "4",
+                "10",
+                "18",
+                "28",
+                "40",
+                "54",
+                "74",
+                "99",
+                "129",
+                "164",
+                "206",
+                "254",
+                "308",
+                "368",
+                "438"
+            ]
+        },
+        {
+            "label": "Additional Int",
+            "values": [
+                "+1",
+                "+1",
+                "+1",
+                "+1",
+                "+1",
+                "+1",
+                "+2",
+                "+2",
+                "+2",
+                "+2",
+                "+3",
+                "+3",
+                "+3",
+                "+3",
+                "+3"
+            ]
+        },
+        {
+            "label": "Additional Int (Total)",
+            "values": [
+                "+1",
+                "+2",
+                "+3",
+                "+4",
+                "+5",
+                "+6",
+                "+8",
+                "+10",
+                "+12",
+                "+14",
+                "+17",
+                "+20",
+                "+23",
+                "+26",
+                "+29"
+            ]
+        },
+        {
+            "label": "Additional MP",
+            "values": [
+                "-",
+                "-",
+                "-",
+                "-",
+                "-",
+                "-",
+                "-",
+                "-",
+                "-",
+                "-",
+                "+5",
+                "+5",
+                "+5",
+                "+5",
+                "+5"
+            ]
+        },
+        {
+            "label": "Additional MP (Total)",
+            "values": [
+                "-",
+                "-",
+                "-",
+                "-",
+                "-",
+                "-",
+                "-",
+                "-",
+                "-",
+                "-",
+                "+5",
+                "+10",
+                "+15",
+                "+20",
+                "+25"
+            ]
+        },
+        {
+            "label": "Minimum Magic Attack Modifier [%]",
+            "values": [
+                "28",
+                "29",
+                "30",
+                "31",
+                "32",
+                "33",
+                "34",
+                "35",
+                "36",
+                "37",
+                "38",
+                "39",
+                "40",
+                "41",
+                "42"
+            ]
+        },
+        {
+            "label": "Maximum Magic Attack Modifier [%]",
+            "values": [
+                "78",
+                "81",
+                "84",
+                "87",
+                "90",
+                "93",
+                "96",
+                "99",
+                "102",
+                "105",
+                "108",
+                "111",
+                "114",
+                "117",
+                "120"
+            ]
+        },
+        {
+            "label": "Mana Use [/Charge] (Elf)*",
+            "values": [
+                "8",
+                "8",
+                "8",
+                "10",
+                "10",
+                "10",
+                "12",
+                "12",
+                "12",
+                "12",
+                "14",
+                "14",
+                "14",
+                "14",
+                "16"
+            ]
+        },
+        {
+            "label": "Mana Use [/Charge] (Human)*",
+            "values": [
+                "13",
+                "13",
+                "13",
+                "16",
+                "16",
+                "16",
+                "19",
+                "19",
+                "19",
+                "19",
+                "22",
+                "22",
+                "22",
+                "22",
+                "26"
+            ]
+        },
+        {
+            "label": "Mana Use [/Charge] (Giant)*",
+            "values": [
+                "16",
+                "16",
+                "16",
+                "20",
+                "20",
+                "20",
+                "24",
+                "24",
+                "24",
+                "24",
+                "28",
+                "28",
+                "28",
+                "28",
+                "32"
+            ]
+        },
+        {
+            "label": "Base Cast Time [sec]",
+            "values": [
+                "2",
+                "2",
+                "2",
+                "1.8",
+                "1.8",
+                "1.8",
+                "1.6",
+                "1.6",
+                "1.6",
+                "1.6",
+                "1.6",
+                "1.6",
+                "1.6",
+                "1.6",
+                "1.6"
+            ]
+        },
+        {
+            "label": "Standby Time [sec]",
+            "values": [
+                "3.5**",
+                "3.5**",
+                "3.5**",
+                "3.5**",
+                "3.5**",
+                "3.5**",
+                "3.5**",
+                "3.5**",
+                "3.5**",
+                "3.5**",
+                "3.5**",
+                "3.5**",
+                "3.5**",
+                "3.5**",
+                "3.5**"
+            ]
+        },
+        {
+            "label": "Range",
+            "values": [
+                "1200 (1400 with Ice Wands )",
+                "1200 (1400 with Ice Wands )",
+                "1200 (1400 with Ice Wands )",
+                "1200 (1400 with Ice Wands )",
+                "1200 (1400 with Ice Wands )",
+                "1200 (1400 with Ice Wands )",
+                "1200 (1400 with Ice Wands )",
+                "1200 (1400 with Ice Wands )",
+                "1200 (1400 with Ice Wands )",
+                "1200 (1400 with Ice Wands )",
+                "1200 (1400 with Ice Wands )",
+                "1200 (1400 with Ice Wands )",
+                "1200 (1400 with Ice Wands )",
+                "1200 (1400 with Ice Wands )",
+                "1200 (1400 with Ice Wands )"
+            ]
+        },
+        {
+            "label": "Linear Area of Effect Width",
+            "values": [
+                "200",
+                "200",
+                "200",
+                "200",
+                "200",
+                "200",
+                "200",
+                "200",
+                "200",
+                "200",
+                "250",
+                "250",
+                "250",
+                "250",
+                "300"
+            ]
+        },
+        {
+            "label": "Explosion Radius",
+            "values": [
+                "200",
+                "200",
+                "200",
+                "300",
+                "300",
+                "300",
+                "400",
+                "400",
+                "400",
+                "400",
+                "500",
+                "500",
+                "500",
+                "500",
+                "600"
+            ]
+        },
+        {
+            "label": "Frozen Damage Reduction",
+            "values": [
+                "50%",
+                "50%",
+                "50%",
+                "50%",
+                "50%",
+                "50%",
+                "50%",
+                "50%",
+                "50%",
+                "50%",
+                "50%",
+                "50%",
+                "50%",
+                "50%",
+                "50%"
+            ]
+        },
+        {
+            "label": "Skill CP (Total)",
+            "values": [
+                "10",
+                "20",
+                "30",
+                "40",
+                "50",
+                "60",
+                "70",
+                "80",
+                "90",
+                "100",
+                "110",
+                "120",
+                "130",
+                "140",
+                "150"
+            ]
+        },
+        {
+            "label": "Stat CP (Total)",
+            "values": [
+                "0.2",
+                "0.4",
+                "0.6",
+                "0.8",
+                "1.0",
+                "1.2",
+                "1.6",
+                "2.0",
+                "2.4",
+                "2.8",
+                "5.9",
+                "9.0",
+                "12.1",
+                "15.2",
+                "18.3"
+            ]
+        }
+    ],
+    "effects": {
+        "F": ["Ice Spear Damage: 80 - 88 Linear AoE Width increases; Explosion Radius increases"],
+        "E": ["Ice Spear Damage: 84 - 96"],
+        "D": ["Ice Spear Damage: 88 - 104"],
+        "C": ["Ice Spear Damage: 92 - 112 Explosion Radius increases"],
+        "B": ["Ice Spear Damage: 96 - 120"],
+        "A": ["Ice Spear Damage: 100 - 128"],
+        "9": ["Ice Spear Damage: 112 - 144 Explosion Radius increases"],
+        "8": ["Ice Spear Damage: 116 - 152"],
+        "7": ["Ice Spear Damage: 120 - 160"],
+        "6": ["Ice Spear Damage: 124 - 168"],
+        "5": ["Ice Spear Damage: 136 - 184 Linear AoE increases; Explosion Radius increases"],
+        "4": ["Ice Spear Damage: 140 - 192"],
+        "3": ["Ice Spear Damage: 144 - 200"],
+        "2": ["Ice Spear Damage: 148 - 208"],
+        "1": ["Ice Spear Damage: 160 - 240 Linear AoE increases; Explosion Radius increases"]
+    }
+}

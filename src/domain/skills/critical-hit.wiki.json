@@ -1,0 +1,143 @@
+{
+    "url": "https://wiki.mabinogiworld.com/view/Critical_Hit",
+    "retrievedAt": "2026-09-18",
+    "rows": [
+        {
+            "label": "Required AP",
+            "values": [
+                "3",
+                "3",
+                "3",
+                "3",
+                "4",
+                "5",
+                "6",
+                "7",
+                "8",
+                "10",
+                "12",
+                "14",
+                "16",
+                "18",
+                "20"
+            ]
+        },
+        {
+            "label": "Required AP (Total)",
+            "values": [
+                "3",
+                "6",
+                "9",
+                "12",
+                "16",
+                "21",
+                "27",
+                "34",
+                "42",
+                "52",
+                "64",
+                "78",
+                "94",
+                "112",
+                "132"
+            ]
+        },
+        {
+            "label": "Additional Will (Total)",
+            "values": [
+                "+3",
+                "+6",
+                "+9",
+                "+12",
+                "+15",
+                "+18",
+                "+21",
+                "+24",
+                "+27",
+                "+30",
+                "+33",
+                "+36",
+                "+39",
+                "+42",
+                "+45"
+            ]
+        },
+        {
+            "label": "Additional Damage [%]",
+            "values": [
+                "50",
+                "55",
+                "60",
+                "65",
+                "70",
+                "75",
+                "90",
+                "95",
+                "100",
+                "105",
+                "110",
+                "120",
+                "130",
+                "140",
+                "150"
+            ]
+        },
+        {
+            "label": "Skill CP (Total)",
+            "values": [
+                "10",
+                "20",
+                "30",
+                "40",
+                "50",
+                "60",
+                "70",
+                "80",
+                "90",
+                "100",
+                "110",
+                "120",
+                "130",
+                "140",
+                "150"
+            ]
+        },
+        {
+            "label": "Stat CP (Total)",
+            "values": [
+                "1.5",
+                "3.0",
+                "4.5",
+                "6.0",
+                "7.5",
+                "9.0",
+                "10.5",
+                "12.0",
+                "13.5",
+                "15.0",
+                "16.5",
+                "18.0",
+                "19.5",
+                "21.0",
+                "22.5"
+            ]
+        }
+    ],
+    "effects": {
+        "F": ["Damage increased by 50% of max damage upon critical"],
+        "E": ["Damage increased by 55% of max damage upon critical"],
+        "D": ["Damage increased by 60% of max damage upon critical"],
+        "C": ["Damage increased by 65% of max damage upon critical"],
+        "B": ["Damage increased by 70% of max damage upon critical"],
+        "A": ["Damage increased by 75% of max damage upon critical"],
+        "9": ["Damage increased by 90% of max damage upon critical"],
+        "8": ["Damage increased by 95% of max damage upon critical"],
+        "7": ["Damage increased by 100% of max damage upon critical"],
+        "6": ["Damage increased by 105% of max damage upon critical"],
+        "5": ["Damage increased by 110% of max damage upon critical"],
+        "4": ["Damage increased by 120% of max damage upon critical"],
+        "3": ["Damage increased by 130% of max damage upon critical"],
+        "2": ["Damage increased by 140% of max damage upon critical"],
+        "1": ["Damage increased by 150% of max damage upon critical"]
+    }
+}

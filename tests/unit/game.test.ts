@@ -155,7 +155,7 @@ it('complete dungeon, prevent duplicate loot/chests, and resume battle', () => {
             }
             g.doIt({
                 type: 'ROLL',
-                skill: g.c.stamina >= 6 ? 'smash' : 'normal',
+                skill: g.c.stamina >= 4 && !g.c.cooldowns.smash ? 'smash' : 'normal',
                 target: g.c.battle!.enemies.find((e) => e.hp)!.id,
             });
             g.doIt({ type: 'HOLD', index: 0 });

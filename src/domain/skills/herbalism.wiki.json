@@ -1,0 +1,209 @@
+{
+    "url": "https://wiki.mabinogiworld.com/view/Herbalism",
+    "retrievedAt": "2026-09-18",
+    "rows": [
+        {
+            "label": "Required AP",
+            "values": ["5", "5", "5", "6", "6", "6", "7", "7", "7", "8", "8", "8", "9", "9", "10"]
+        },
+        {
+            "label": "Required AP (Total)",
+            "values": [
+                "5",
+                "10",
+                "15",
+                "21",
+                "27",
+                "33",
+                "40",
+                "47",
+                "54",
+                "62",
+                "70",
+                "78",
+                "87",
+                "96",
+                "106"
+            ]
+        },
+        {
+            "label": "Additional Int",
+            "values": [
+                "+1",
+                "+1",
+                "+1",
+                "+1",
+                "+1",
+                "+1",
+                "+1",
+                "+1",
+                "+1",
+                "+2",
+                "+2",
+                "+2",
+                "+2",
+                "+2",
+                "+2"
+            ]
+        },
+        {
+            "label": "Additional Int (Total)",
+            "values": [
+                "+1",
+                "+2",
+                "+3",
+                "+4",
+                "+5",
+                "+6",
+                "+7",
+                "+8",
+                "+9",
+                "+11",
+                "+13",
+                "+15",
+                "+17",
+                "+19",
+                "+21"
+            ]
+        },
+        {
+            "label": "Additional Dex",
+            "values": [
+                "-",
+                "-",
+                "-",
+                "-",
+                "-",
+                "-",
+                "+1",
+                "+1",
+                "+1",
+                "-",
+                "-",
+                "+2",
+                "+2",
+                "+2",
+                "+2"
+            ]
+        },
+        {
+            "label": "Additional Dex (Total)",
+            "values": [
+                "-",
+                "-",
+                "-",
+                "-",
+                "-",
+                "-",
+                "+1",
+                "+2",
+                "+3",
+                "+3",
+                "+3",
+                "+5",
+                "+7",
+                "+9",
+                "+11"
+            ]
+        },
+        {
+            "label": "Gathering Time [sec]",
+            "values": [
+                "2.0",
+                "1.9",
+                "1.8",
+                "1.7",
+                "1.6",
+                "1.5",
+                "1.4",
+                "1.3",
+                "1.2",
+                "1.1",
+                "1.0",
+                "1.0",
+                "1.0",
+                "1.0",
+                "1.0"
+            ]
+        },
+        {
+            "label": "Stamina Use [1]",
+            "values": [
+                "2.0",
+                "1.9",
+                "1.8",
+                "1.7",
+                "1.6",
+                "1.5",
+                "1.4",
+                "1.3",
+                "1.2",
+                "1.1",
+                "1",
+                "1",
+                "1",
+                "1",
+                "1"
+            ]
+        },
+        {
+            "label": "Stat CP [2]",
+            "values": [
+                "0.2",
+                "0.4",
+                "0.6",
+                "0.8",
+                "1.0",
+                "1.2",
+                "1.5",
+                "1.8",
+                "2.1",
+                "2.5",
+                "2.9",
+                "3.5",
+                "4.1",
+                "4.7",
+                "5.2"
+            ]
+        }
+    ],
+    "effects": {
+        "F": [
+            "It is possible to gather Herbs. Base Herbs can be identified. Gathering Time: 2.0 Seconds"
+        ],
+        "E": [
+            "It is possible to gather Herbs. White Herbs can be picked. Gathering Time: 1.9 Seconds"
+        ],
+        "D": [
+            "It is possible to gather Herbs. Gold Herbs can be picked. Gathering Time: 1.8 Seconds"
+        ],
+        "C": [
+            "It is possible to gather Herbs. Bloody Herbs can be identified. Gathering Time: 1.7 Seconds"
+        ],
+        "B": [
+            "It is possible to gather Herbs. Sunlight Herbs can be identified. Gathering Time: 1.6 Seconds"
+        ],
+        "A": [
+            "It is possible to gather Herbs. Mandrakes can be picked. Gathering Time: 1.5 Seconds"
+        ],
+        "9": [
+            "It is possible to gather Herbs. Mana Herbs can be identified. Gathering Time: 1.4 seconds"
+        ],
+        "8": ["It is possible to gather Herbs. Gathering Time: 1.3 Seconds"],
+        "7": ["It is possible to gather Herbs. Gathering Time: 1.2 Seconds"],
+        "6": [
+            "It is possible to gather Herbs. White Herbs can be identified. Gathering Time: 1.1 Seconds"
+        ],
+        "5": [
+            "It is possible to gather Herbs. Antidote Herbs can be identified. Gathering Time: 1.0 Seconds"
+        ],
+        "4": ["It is possible to gather Herbs. Gathering Time: 1.0 Seconds"],
+        "3": [
+            "It is possible to gather Herbs. Poison Herbs can be identified. Gold Herbs can be identified. Gathering Time: 1.0 Seconds"
+        ],
+        "2": ["It is possible to gather Herbs. Gathering Time: 1.0 Seconds"],
+        "1": [
+            "It is possible to gather Herbs. Mandrakes can be identified. Gathering Time: 1.0 Seconds"
+        ]
+    }
+}

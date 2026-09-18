@@ -103,7 +103,10 @@ test('create, explore, fight, resume, defeat the boss and return with treasure',
                 await row.getByRole('button', { name: 'Use', exact: true }).click();
                 await page.getByRole('button', { name: 'Close', exact: true }).click();
             }
-            await control(page, c.skills.smash && c.stamina >= 6 ? 'smash' : 'normal');
+            await control(
+                page,
+                c.skills.smash && c.stamina >= 4 && !c.cooldowns.smash ? 'smash' : 'normal',
+            );
             if (room === 1 && turns === 1) {
                 await control(page, 'die-0');
                 await control(page, 'reroll');
@@ -230,8 +233,10 @@ test('trainer teaches a skill and the journal survives reload', async ({ page },
     await page.getByRole('button', { name: 'Skills', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Smash · Rank F' })).toBeVisible();
     await expect(
-        page.getByRole('navigation', { name: 'Skills' }).getByRole('button', { name: /Critical Hit/ }),
-    ).toHaveCount(0);
+        page
+            .getByRole('navigation', { name: 'Skills' })
+            .getByRole('button', { name: /Critical Hit/ }),
+    ).toHaveCount(1);
     await page.screenshot({ path: 'test-results/skill-journal.png' });
 });
 
@@ -322,7 +327,7 @@ test('books, page assembly, equipment and AP advancement use saved UI transactio
     expect(saved.skills.final.rank).toBe('F');
     expect(saved.skills.critical.rank).toBe('F');
     expect(saved.skills.smash.rank).toBe('E');
-    expect(saved.ap).toBe(3);
+    expect(saved.ap).toBe(1);
     expect(saved.offhand).toBe('shield');
     await page.setViewportSize({ width: 600, height: 800 });
     await expect(page.getByRole('heading', { name: 'Smash · Rank E' })).toBeVisible();
@@ -334,4 +339,91 @@ test('books, page assembly, equipment and AP advancement use saved UI transactio
         path: 'test-results/skill-journal-mobile.png',
         animations: 'disabled',
     });
+});
+
+test('catalog icons, life references, and a full spellbook remain usable on a small screen', async ({
+    page,
+}, info) => {
+    if (info.project.name !== 'chromium') return;
+    const { blankSave, reduceCommand } = await import('../../src/domain/commands');
+    const { skills } = await import('../../src/domain/skillCatalog');
+    let fixture = reduceCommand(
+        blankSave(),
+        { type: 'NAV', screen: 'NewCharacter' },
+        'catalog-nav',
+    );
+    fixture = reduceCommand(
+        fixture,
+        {
+            type: 'CREATE',
+            input: { name: 'Catalog', race: 'Human', age: 17, talent: 'Magic' },
+            id: 'catalog',
+            now: 0,
+        },
+        'catalog-create',
+    );
+    for (const [id, skill] of Object.entries(skills)) {
+        if (skill.category === 'Magic' && skill.route === 'lesson')
+            fixture = reduceCommand(fixture, { type: 'LEARN', skill: id }, `catalog-learn-${id}`);
+    }
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Begin your journey' }).waitFor();
+    const store = async (save: unknown) => {
+        await new Promise<void>((resolve, reject) => {
+            const open = indexedDB.open('rebirth-dungeon', 1);
+            open.onupgradeneeded = () => open.result.createObjectStore('saves');
+            open.onsuccess = () => {
+                const tx = open.result.transaction('saves', 'readwrite');
+                tx.objectStore('saves').put(save, 'current');
+                tx.oncomplete = () => {
+                    open.result.close();
+                    resolve();
+                };
+                tx.onerror = () => reject(tx.error);
+            };
+            open.onerror = () => reject(open.error);
+        });
+    };
+    await page.evaluate(store, fixture);
+    await page.reload();
+    await page.getByRole('button', { name: 'Skills', exact: true }).click();
+    await page.getByRole('searchbox', { name: 'Search skills' }).fill('firebolt');
+    await expect(page.getByTestId('skill-icon')).toHaveAttribute(
+        'src',
+        '/assets/game/skills/firebolt.webp',
+    );
+    await expect
+        .poll(() =>
+            page.getByTestId('skill-icon').evaluate((img: HTMLImageElement) => img.naturalWidth),
+        )
+        .toBeGreaterThan(0);
+    await page.getByRole('combobox', { name: 'Inspect wiki rank' }).selectOption('1');
+    await expect(page.getByRole('table')).toContainText('27.5%');
+    await page.screenshot({ path: 'test-results/skill-catalog-firebolt.png' });
+    await page.getByRole('searchbox').fill('');
+    await page.getByRole('combobox', { name: 'Category' }).selectOption('Life');
+    await expect(page.getByText('8 / 40 skills')).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Learn / })).toHaveCount(0);
+    await page.setViewportSize({ width: 600, height: 800 });
+    await page.screenshot({ path: 'test-results/skill-catalog-life-mobile.png' });
+    fixture = reduceCommand(fixture, { type: 'ENTER', seed: 42 }, 'catalog-enter');
+    fixture = reduceCommand(fixture, { type: 'ENCOUNTER', room: 1 }, 'catalog-battle');
+    await page.evaluate(store, fixture);
+    await page.reload();
+    await expect
+        .poll(async () => (await state(page)).controls.some((c: any) => c.name === 'next-skills'))
+        .toBe(true);
+    const before = (await state(page)).controls;
+    const next = before.find((c: any) => c.name === 'next-skills');
+    await page.mouse.move(next.x, next.y);
+    await page.mouse.down();
+    await page.waitForTimeout(50);
+    await page.mouse.up();
+    await expect
+        .poll(async () => (await state(page)).controls.some((c: any) => c.name === 'pass'))
+        .toBe(true);
+    const controls = (await state(page)).controls;
+    expect(controls.some((c: any) => c.name === 'previous-skills')).toBe(true);
+    expect(controls.every((c: any) => c.y + c.height / 2 <= 800)).toBe(true);
+    await page.screenshot({ path: 'test-results/skill-catalog-spellbook-mobile.png' });
 });

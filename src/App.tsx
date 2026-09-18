@@ -453,7 +453,7 @@ function App() {
                                         : panel === 'menu'
                                           ? 'Adventure menu'
                                           : panel === 'skills'
-                                            ? 'Skill journal'
+                                            ? 'Skill catalog'
                                             : panel === 'inventory'
                                               ? 'Your belongings'
                                               : panel === 'settings'

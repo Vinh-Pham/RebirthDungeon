@@ -51,8 +51,8 @@ const item = (s: SaveData, kind: string) => active(s)!.inventory.find((i) => i.k
 const cast = (s: SaveData, skill: string) =>
     run(run(s, { type: 'ROLL', skill, target: 'enemy-0' }), { type: 'ATTACK' });
 describe('ranked skill content and acquisition', () => {
-    it('has fourteen ranked skills with fifteen reachable ranks and an unranked basic action', () => {
-        expect(Object.keys(skills)).toHaveLength(15);
+    it('has the complete icon catalog and legacy skills with fifteen reachable ranks and an unranked basic action', () => {
+        expect(Object.keys(skills)).toHaveLength(40);
         expect(skills.charge).toBeUndefined();
         for (const [id, s] of Object.entries(skills)) {
             expect(s.ranks.map((r) => r.rank)).toEqual(ranks);
@@ -111,7 +111,7 @@ describe('ranked skill content and acquisition', () => {
         c.skills.smash.counts = { hit: 40, kill: 4 };
         c.ap = 1;
         expect(() => advance(c, 'smash')).toThrow('AP');
-        c.ap = 2;
+        c.ap = 4;
         advance(c, 'smash');
         expect(c.ap).toBe(0);
         expect(c.skills.smash).toEqual({ rank: 'E', counts: {} });
@@ -134,7 +134,7 @@ describe('equipment and derived mastery effects', () => {
         const initial = active(s)!.hp;
         s = run(s, { type: 'LEARN', skill: 'combatMastery' });
         expect(active(s)!.hp).toBe(initial);
-        expect(active(s)!.stats.hp).toBe(initial + 5);
+        expect(active(s)!.stats.hp).toBe(initial + 10);
         s = run(s, { type: 'LEARN', skill: 'swordMastery' });
         const single = attackInputs(active(s)!, 'normal').attack;
         s = buy(s, 'sword', 'Blacksmith');
@@ -153,13 +153,13 @@ describe('equipment and derived mastery effects', () => {
         s = run(s, { type: 'EQUIP', id: item(s, 'heavyArmor') });
         s = run(s, { type: 'LEARN', skill: 'heavyMastery' });
         expect(defenses(active(s)!)).toEqual({ defense: 10, protection: 0.02 });
-        expect(defenses(active(s)!, true)).toEqual({ defense: 7, protection: 0.02 });
-        expect(effectiveStats(active(s)!).dex).toBe(Math.floor(58 * 0.8));
+        expect(defenses(active(s)!, true)).toEqual({ defense: 5, protection: 0.01 });
+        expect(effectiveStats(active(s)!).dex).toBe(58);
         s = buy(s, 'lightArmor', 'Blacksmith');
         s = run(s, { type: 'EQUIP', id: item(s, 'lightArmor') });
         s = run(s, { type: 'LEARN', skill: 'lightMastery' });
         expect(effectiveStats(active(s)!).dex).toBe(58);
-        expect(defenses(active(s)!)).toEqual({ defense: 7, protection: 0.02 });
+        expect(defenses(active(s)!)).toEqual({ defense: 8, protection: 0.01 });
         for (const id of [
             'combatMastery',
             'swordMastery',
@@ -198,7 +198,7 @@ describe('revised combat transactions', () => {
         s = run(s, { type: 'ROLL', skill: 'smash', target: 'enemy-0' });
         const action = active(s)!.battle!.action!;
         expect(active(s)!.stamina).toBe(stamina);
-        expect(action.costs.stamina).toBe(6);
+        expect(action.costs.stamina).toBe(4);
         const original = s;
         expect(() => run(s, { type: 'ROLL', skill: 'normal', target: 'enemy-0' })).toThrow();
         expect(() => run(s, { type: 'USE', id: 'hero-hp' })).toThrow();
@@ -227,11 +227,11 @@ describe('revised combat transactions', () => {
             ),
         ).toBe(preview);
         s = run(s, { type: 'PASS' }, 'paid-pass');
-        expect(active(s)!.stamina).toBe(stamina - 6);
+        expect(active(s)!.stamina).toBe(stamina - 4);
         expect(active(s)!.skills.combatMastery.counts).toEqual({});
         expect(run(s, { type: 'PASS' }, 'paid-pass')).toBe(s);
         s = run(s, { type: 'PASS' });
-        expect(active(s)!.stamina).toBe(stamina - 6);
+        expect(active(s)!.stamina).toBe(stamina - 4);
     });
     it('trains once per action, retains progress on abandonment, and awards pages once', () => {
         let s = battle(['smash', 'combatMastery', 'swordMastery']);
@@ -258,6 +258,7 @@ describe('revised combat transactions', () => {
         expect(active(s)!.effects.counter).toBeUndefined();
         s = edit(s, (c) => {
             c.battle!.enemies[0].attackType = 'ranged';
+            c.cooldowns.counter = 0;
         });
         s = cast(s, 'counter');
         expect(active(s)!.hp).toBeLessThan(hp);
@@ -265,6 +266,7 @@ describe('revised combat transactions', () => {
         expect(active(s)!.skills.combatMastery.counts.hit).toBe(1);
         s = edit(s, (c) => {
             c.battle!.enemies[0].attackType = 'melee';
+            c.cooldowns.counter = 0;
             c.battle!.enemies[0].hp = 1;
         });
         s = cast(s, 'counter');
@@ -367,7 +369,7 @@ describe('migration and durable state', () => {
             operationId: 'rank',
         });
         await waitFor(actor, (s) => active(s.context.save)!.skills.smash.rank === 'E');
-        expect(active(storage.value!)!.ap).toBe(3);
+        expect(active(storage.value!)!.ap).toBe(1);
         actor.stop();
     });
 });

@@ -152,6 +152,8 @@ function finishActivation(s: SaveData, c: Character) {
                 if (!requirementReason(c, id)) train(c, id, 'survive');
         }
         delete c.effects.counter;
+        delete c.effects.defense;
+        delete c.effects.manaShield;
         c.tutorial = Math.max(c.tutorial, boss ? 3 : 2);
         s.checkpoint.phase = 'reward';
     } else s.checkpoint.phase = 'selecting';

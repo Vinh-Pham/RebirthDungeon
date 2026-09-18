@@ -1,8 +1,16 @@
 import type { Immutable } from 'immer';
 import type { ActionSnapshot, Character, Enemy, SaveData } from './model';
-import { skills } from './skillCatalog';
+import { wikiValue } from './skills/wiki';
+import { skills, ranks } from './skillCatalog';
 import { combination, nextRandom } from './dice';
-import { defenses, snapshotAction, train, requirementReason } from './skillSystem';
+import {
+    defenses,
+    snapshotAction,
+    train,
+    requirementReason,
+    effectiveStats,
+    equipment,
+} from './skillSystem';
 import { enemyDamage } from './behavior';
 export function damageAmount(
     power: number,
@@ -18,7 +26,10 @@ export function damageAmount(
 }
 export function handPower(a: Immutable<ActionSnapshot>, dice: readonly number[]) {
     return (
-        a.rank.base + a.attack / skills[a.skill].hits + a.rank.pip * dice.reduce((x, y) => x + y, 0)
+        a.rank.base +
+        (a.attack * (a.rank.attackMultiplier ?? 1)) /
+            (a.skill === 'arrowRevolver' ? 1 : skills[a.skill].hits) +
+        a.rank.pip * dice.reduce((x, y) => x + y, 0)
     );
 }
 export function previewDamage(
@@ -62,6 +73,12 @@ function trainOffense(
         ...(a.melee ? ['combatMastery'] : []),
         ...(a.sword ? ['swordMastery'] : []),
         ...(a.dual ? ['dualMastery'] : []),
+        ...((skills[a.skill].talent ?? equipment(c).weapon?.talent) === 'Magic'
+            ? ['magicMastery']
+            : []),
+        ...((skills[a.skill].talent ?? equipment(c).weapon?.talent) === 'Archery'
+            ? ['bowMastery', 'rangeAttack'].filter((id) => id !== a.skill)
+            : []),
     ]) {
         if (hit) train(c, id, 'hit');
         if (kills) train(c, id, 'kill', kills);
@@ -90,6 +107,7 @@ export function commitAbility(s: SaveData, c: Character) {
         c.effects.counter = {
             power: handPower(a, b.dice),
             multiplier,
+            opponentMultiplier: a.rank.counterMultiplier ?? 0,
             source: { skill: a.skill, melee: a.melee, sword: a.sword, dual: a.dual },
         };
         train(c, 'counter', 'use');
@@ -103,6 +121,45 @@ export function commitAbility(s: SaveData, c: Character) {
         };
         train(c, 'final', 'use');
         b.log.push(`Final Hit grants +${c.effects.final.magnitude} melee attack.`);
+    } else if (skill.effect === 'heal') {
+        const amount = Math.floor(a.rank.base * 5 * multiplier);
+        const before = c.hp;
+        c.hp = Math.min(effectiveStats(c).hp, c.hp + amount);
+        train(c, a.skill, 'use');
+        b.log.push(`${skill.name} restores ${c.hp - before} HP.`);
+    } else if (skill.effect === 'restoreMana') {
+        const before = c.mana;
+        const max = effectiveStats(c).mana;
+        c.mana = Math.min(max, c.mana + Math.floor((max * a.rank.base) / 100));
+        train(c, a.skill, 'use');
+        b.log.push(`${skill.name} restores ${c.mana - before} MP.`);
+    } else if (skill.effect === 'defend') {
+        c.effects.defense = {
+            defense: a.rank.base,
+            protection: wikiValue(
+                skill.wiki,
+                'Protection Bonus',
+                ranks.indexOf(a.rank.rank),
+                c.race,
+            ),
+        };
+        train(c, a.skill, 'use');
+        b.log.push('Defense prepared for the next enemy response.');
+    } else if (skill.effect === 'manaShield') {
+        c.effects.manaShield = {
+            efficiency: wikiValue(
+                skill.wiki,
+                'Base Mana Efficiency',
+                ranks.indexOf(a.rank.rank),
+                c.race,
+            ),
+            upkeep: Math.ceil(
+                wikiValue(skill.wiki, 'Mana Use [/sec]', ranks.indexOf(a.rank.rank), c.race),
+            ),
+            remaining: 3,
+        };
+        train(c, a.skill, 'use');
+        b.log.push('Mana Shield active for three enemy responses.');
     } else {
         let hit = false,
             kills = 0,
@@ -162,7 +219,12 @@ export function enemiesAct(c: Character) {
             delete c.effects.counter;
             const damage = hitEnemy(
                 e,
-                damageAmount(stance.power, stance.multiplier, e.defense, e.protection ?? 0),
+                damageAmount(
+                    stance.power + e.attack * (stance.opponentMultiplier ?? 0),
+                    stance.multiplier,
+                    e.defense,
+                    e.protection ?? 0,
+                ),
             );
             train(c, 'counter', 'counter');
             trainOffense(c, stance.source, damage > 0, e.hp === 0 ? 1 : 0);
@@ -172,13 +234,24 @@ export function enemiesAct(c: Character) {
             const raw = Math.floor(enemyDamage(e.attack, d.defense, e.hp) * (1 - d.protection));
             const absorbed = Math.min(c.effects.shield ?? 0, raw);
             c.effects.shield = (c.effects.shield ?? 0) - absorbed;
-            const damage = raw - absorbed;
+            let damage = raw - absorbed;
+            const manaShield = c.effects.manaShield;
+            if (manaShield) {
+                const blocked = Math.min(damage, Math.floor(c.mana * manaShield.efficiency));
+                c.mana -= Math.ceil(blocked / manaShield.efficiency);
+                damage -= blocked;
+            }
             c.hp = Math.max(0, c.hp - damage);
             for (const id of ['shieldMastery', 'lightMastery', 'heavyMastery'])
                 if (!requirementReason(c, id)) train(c, id, 'incoming');
             b.log.push(`${e.name} deals ${damage} damage.`);
         }
         if (!c.hp) break;
+    }
+    delete c.effects.defense;
+    if (c.effects.manaShield) {
+        c.mana = Math.max(0, c.mana - c.effects.manaShield.upkeep);
+        if (--c.effects.manaShield.remaining <= 0 || !c.mana) delete c.effects.manaShield;
     }
     // The next player activation starts immediately after all surviving enemies act.
     delete c.effects.counter;

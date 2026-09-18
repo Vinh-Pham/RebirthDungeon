@@ -6,12 +6,12 @@ Browser tests use real input and inspect a read-only test-mode snapshot. Chromiu
 
 Local Firefox launch currently fails with “Could not find profile folder” before navigation, including when using an explicitly created profile directory. This is a host/browser-launch limitation; the Firefox project remains enabled in CI. Do not report Firefox as verified until that launch succeeds.
 
-## Latest local results
+## Latest local results — September 18, 2026 UTC
 
-- TypeScript: passed.
-- Production build: passed; interface and Phaser are separate bundles.
-- Vitest: 41 tests passed, including exhaustive dice/dungeon cases and ranked skill acquisition, mastery eligibility, action snapshots, advanced combat, migration, legacy backup, corruption recovery and durable rollback. Coverage: 98.63% lines, 92.79% branches, 96.52% statements, 97% functions for the configured rules/persistence scope.
-- Chromium: complete dungeon/boss/treasure/reload journey, town services, trainer learning/reload, book reading, page assembly, equipment and AP advancement passed. The journal is also checked at a 600px viewport.
-- WebKit: creation, walking, and dungeon entry passed. The service and skill-interface tests intentionally run only in Chromium.
-- Full Chromium journey asserts no browser page or console errors. The test-only bridge remains gated to e2e mode.
-- Firefox: blocked before launch by the local profile-folder error described above.
+- TypeScript, lint, and production build: passed.
+- Vitest: 61 tests passed. Includes all 33 icon mappings and local source files, race-specific AP and costs, merged wiki cells, new offensive/support skills, source-only life skills, unverified Wand Mastery, save corruption checks, catalog search/rank browsing, and the previous dungeon/progression checks.
+- Coverage includes the per-skill helpers: 98.77% lines, 93.38% branches, 96.86% statements, 97.29% functions. All 90% gates pass.
+- Chromium: all five browser scenarios passed across the existing full dungeon/reload journey, town services, trainer learning, inventory/AP advancement, and the new catalog/full-spellbook scenario. Icons load successfully; wiki rank inspection, life filters, and combat paging work at a 600×800 viewport. Screenshots are written under `test-results/skill-catalog-*.png`.
+- WebKit and Firefox were not rerun for this catalog change. The earlier WebKit creation/walking/dungeon-entry result and Firefox launch limitation remain historical context above.
+
+The catalog source index and current adaptation rules are in [the per-skill reference index](references/skills/README.md).

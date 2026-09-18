@@ -49,6 +49,7 @@ class World extends Phaser.Scene {
     lastEnemyHealth = 0;
     controls: ControlBounds[] = [];
     selectedEnemy = 'enemy-0';
+    skillPage = 0;
     screen = '';
     signature = '';
     unsubscribe?: () => void;
@@ -261,10 +262,20 @@ class World extends Phaser.Scene {
                     this.add.image((w * (i + 1)) / 6, h * 0.4, 'chest').setDisplaySize(110, 92);
         }
         if (screen === 'Battle' && c?.battle)
-            this.controls = battleView(this, c, this.selectedEnemy, (id) => {
-                this.selectedEnemy = id;
-                this.sync(true);
-            });
+            this.controls = battleView(
+                this,
+                c,
+                this.selectedEnemy,
+                (id) => {
+                    this.selectedEnemy = id;
+                    this.sync(true);
+                },
+                this.skillPage,
+                (page) => {
+                    this.skillPage = page;
+                    this.sync(true);
+                },
+            );
         if (screen === 'TreasureRoom' && save.checkpoint.phase === 'treasure')
             this.controls = treasureView(this);
         if (['Town1', 'Alby'].includes(screen)) {

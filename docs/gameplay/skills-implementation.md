@@ -2,6 +2,16 @@
 
 This is the accepted implementation contract for the Phaser 4 / React game. It supersedes provisional numbers, prototype limits, Godot notes, and unresolved progression policy in `skills.md`, `battle.md`, and `stats.md`. Other systems described in those documents are not implicitly implemented.
 
+## Current catalog update — September 18, 2026 UTC
+
+The [per-skill catalog and source index](../references/skills/README.md) supersedes the original balance tables below for every skill with a supplied icon. There are now 40 catalog entries: 31 playable actions/masteries, eight life references, and one unverified Wand Mastery reference. All skills are browsable even before learning, with icon images, search, category filters, and independent F–1 wiki rank inspection. Combat menus paginate when needed.
+
+`src/domain/skillCatalog.ts` is now a registry; individual definitions and normalized wiki rows live in `src/domain/skills/`. Existing skill IDs and pending action snapshots remain compatible. Wiki AP, costs, damage, defenses, and cumulative character gains replace the old authored values for verified skills. The source index documents time conversion, race variants, and simplified effects.
+
+## Original content-version-2 contract (historical balance)
+
+The following original contract is retained for save/acquisition context and non-icon legacy skills. Its fourteen-skill limit and numerical tables are superseded as described above.
+
 ## Progression and learning
 
 Skills and AP belong to each character. New characters know only Normal Attack. Aren, the Combat instructor beside the Blacksmith, teaches talent attacks and equipment masteries for free when the matching equipment is worn. Existing save skills migrate to F without loss. Normal Attack is unranked; all fourteen other skills support F, E, D, C, B, A, 9, 8, 7, 6, 5, 4, 3, 2, 1. Charge remains unavailable.
