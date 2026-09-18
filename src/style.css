@@ -1,0 +1,126 @@
+@import 'tailwindcss';
+@import '@heroui/styles';
+
+/* Keep the original inclusive responsive breakpoints. */
+@custom-variant compact (@media (max-width: 850px));
+@custom-variant narrow (@media (max-width: 600px));
+
+@layer base {
+    :root {
+        @apply bg-[#142930] font-[Arial,sans-serif] text-[#f1efdb] [font-synthesis:none];
+        --accent: #50b8a4;
+    }
+    * {
+        @apply box-border;
+    }
+    body {
+        @apply m-0;
+    }
+    button {
+        @apply cursor-pointer;
+    }
+    canvas {
+        @apply block;
+    }
+    h1,
+    h2,
+    h3,
+    p {
+        @apply m-0;
+    }
+    h1,
+    h2,
+    h3 {
+        @apply font-[Georgia,serif];
+    }
+    h1 {
+        @apply text-[42px] leading-[1.1];
+    }
+    h2 {
+        @apply text-[26px];
+    }
+    h3 {
+        @apply text-[19px];
+    }
+    p {
+        @apply my-[14px] leading-[1.6] text-[#bdccc3];
+    }
+    small {
+        @apply text-[12px] text-[#9eb7ad];
+    }
+    input[type='checkbox'] {
+        @apply size-[18px] accent-[#8ecba1];
+    }
+}
+
+/* Shared game components. Utilities on an element can override these defaults. */
+@layer components {
+    .eyebrow {
+        @apply mb-3 text-[10px] font-bold tracking-[3px] text-[#78d1b9];
+    }
+    .button {
+        @apply min-h-10 cursor-pointer rounded-[6px] border border-[#63857866] bg-[#29463f] px-[17px] py-[10px] text-[13px] text-[#e1ece2];
+    }
+    .button:hover {
+        @apply bg-[#3d6355];
+    }
+    .button:disabled {
+        @apply opacity-40;
+    }
+    .button.primary {
+        @apply border-[#d1e8af] bg-[#b9d79a] font-bold text-[#203a2b];
+    }
+    .button.subtle {
+        @apply border-transparent bg-transparent text-[#b8cabe];
+    }
+    .button.selected {
+        @apply border-[#a6d792] bg-[#48674e];
+    }
+    .panel {
+        @apply rounded-[12px] border border-[#7b9c7555] bg-[#172c2bef] p-[30px] shadow-[0_20px_90px_#03141270] backdrop-blur-[18px];
+    }
+    .center {
+        @apply absolute top-[calc(50%-54px)] left-1/2 max-h-[calc(100dvh-150px)] w-[min(880px,94vw)] -translate-x-1/2 -translate-y-1/2 overflow-auto;
+    }
+    .choices {
+        @apply my-[10px] flex flex-wrap gap-2;
+    }
+    .stack {
+        @apply flex flex-col gap-4;
+    }
+    .input {
+        @apply w-full rounded-[6px] border border-[#66827566] bg-[#0c2223] px-3 py-[10px] text-[#eaf0db];
+        @apply [--field-hover:#0c2223] [--field-focus:#0c2223] [--field-border-hover:#66827566] [--field-border-focus:#66827566];
+    }
+    .label {
+        @apply text-[12px] text-[#c5d3be];
+    }
+    .modal__dialog .input {
+        @apply min-h-[42px];
+    }
+    .bar,
+    .resource-meter .bar {
+        @apply relative h-[17px] overflow-hidden rounded-[2px] border border-[#738f8766] bg-[#07181e];
+    }
+    .bar span {
+        @apply relative block text-center text-[10px] leading-[15px] tracking-[1px] text-white [text-shadow:0_1px_2px_black];
+    }
+    .resource-meter {
+        @apply w-full gap-0;
+    }
+    .hud-button {
+        @apply flex min-w-0 flex-1 flex-col gap-0 border-[#50897b88]! bg-[#244340]! px-[6px]! py-[3px]! text-[#56c1bb]! narrow:p-[3px]!;
+    }
+    .item {
+        @apply flex items-center gap-3 rounded-[5px] border border-[#6c967644] bg-[#213c35] p-[10px] text-[12px];
+    }
+    .item .button {
+        @apply min-h-7 px-[9px] py-[6px] text-[11px];
+    }
+    .notice {
+        @apply absolute top-[5px] left-1/2 z-50 -translate-x-1/2 rounded-[8px] border border-[#8faa73] bg-[#213e37] px-5 py-3 text-[13px];
+    }
+    .reward-option {
+        @apply flex items-center gap-[15px] border-b border-[#82a08a33] py-[13px];
+    }
+}

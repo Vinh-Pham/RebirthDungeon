@@ -1,43 +1,54 @@
 # Rebirth Dungeon
 
-A 2D pixel-art dungeon crawler with dice-based combat and gacha mechanics,
-built with Flutter + Flame.
+A local, single-player fantasy RPG: create an adventurer, explore Town1, descend into Alby, roll five dice in battle, defeat the Giant Spider, and select one treasure chest.
 
-- `dart-game-plan.md` — full architecture and stack decisions.
-- `project-phases.md` — implementation checklist and completion log.
-- `ARCHITECTURE.md` — the short, enforceable layer rules.
+## Run
 
-## Development
+Use Node 24 and pnpm 12.
 
-```bash
-make setup    # flutter pub get
-make gen      # build_runner code generation
-make check    # format-check + analyze + architecture boundaries + tests
-make run      # run on the current device
+```sh
+pnpm install
+pnpm dev
 ```
 
-Individual steps: `make format`, `make analyze`, `make boundaries`, `make test`.
+Open http://127.0.0.1:8080. Build with `pnpm build`; deploy the `dist/` directory to a static host.
 
-Continuous integration (`.github/workflows/ci.yml`) runs the same checks on
-every push and pull request.
+## Play
 
-## Project layout
+- Create up to 20 characters: Human, Elf, or Giant; ages 10–17; four combat talents. Giants cannot choose Archery.
+- Move with WASD, arrow keys, or click a walkable destination. Approach a named building and press **E** or click its sign to interact.
+- Enter Alby through the northern gate. The floor map marks rooms and the boss. Investigate spiders, chests, or switches with **E**.
+- Select a target and skill. Click dice to hold them, reroll unheld dice at most twice, and attack. The strongest combination determines the damage multiplier. Skills consume stamina or mana; Recover restores both but gives enemies a turn.
+- Use Inventory for equipment and potions. Potions also consume a turn in combat.
+- Clear three seals before fighting the boss. Take selected loot or everything that fits. Choose exactly one treasure chest, then return home.
+- Town services offer healing, food, banking, equipment, potions, selling, and repairs. Equipped items must be unequipped before selling or banking.
+- Menu contains Settings and Title Screen. Character, Skills, Talent, Quests, and Pets are reserved HUD buttons. Inventory works.
 
-Flutter owns the app shell and meta-game UI, Flame renders only the dungeon
-scene, and all game rules live in a pure-Dart `lib/domain/` layer with no
-Flutter or Flame dependencies. See `ARCHITECTURE.md` for the dependency
-rules and how they are enforced.
+## Architecture
 
-```text
-lib/
-├── app/            MaterialApp shell, go_router, theme
-├── core/           randomness, time, ids, errors, engine contracts (pure Dart)
-├── domain/         combat, dungeon, loot, progression, economy, gacha
-├── application/    Riverpod controllers
-├── data/           Drift database, repositories
-├── game/           Flame scene: DungeonGame, components, effects
-└── presentation/   Flutter screens and widgets
+- **Phaser 4.2.1:** Boot, Preloader, Title, CharacterSelect, NewCharacter, Town1, Alby, Battle, and TreasureRoom scenes. World input, collision-aware pathfinding, canvas controls, and original SVG/audio presentation.
+- **Rex 4.2.0:** EightDirection, Button, Anchor, ShakePosition, FadeOutDestroy, and SoundFade, imported individually.
+- **React 19 / HeroUI 3:** character forms, service and settings modals, inventory, reward selection, and persistent HUD.
+- **XState 5:** session routing, combat checkpoints, serialized asynchronous commits, enemy decisions, dialogue transactions, and tutorial progression.
+- **Immer 11:** immutable character, inventory, economy, dungeon, dice, reward, settings, and progression updates. Random seeds and timestamps are explicit inputs.
+- **IndexedDB:** versioned data and workflow checkpoints committed atomically before publication; previous snapshot recovery and a single-writer browser lock. Reload resumes committed dice, rewards, and chest choices. Saves are local to this browser and origin.
+
+`src/domain` contains rules and content. `src/runtime` owns actors and persistence. `src/game` owns Phaser presentation. `src/App.tsx` owns the HeroUI shell. No Phaser object or actor is serialized.
+
+## Verification
+
+```sh
+pnpm typecheck
+pnpm test:coverage
+pnpm exec playwright install
+pnpm test:e2e
+pnpm build
 ```
 
-Versioned game content lives in `assets/data/` (one `schemaVersion`-wrapped
-JSON file per entity type), parsed and validated by `lib/domain/content/`.
+Vitest enumerates all 7,776 dice outcomes and checks 1,000 generated floors, transactions, progression, combat, loot idempotency, storage failures, and recovery. Playwright uses physical mouse/keyboard interactions. The test server uses port 8081 independently of the development preview. Its read-only scene/coordinate bridge exists only in Vite's `e2e` mode; it cannot grant items or skip encounters. Chromium covers the dungeon loop and reloads; Firefox and WebKit cover creation and entry. Browser screenshots and traces are written under ignored `test-results/`.
+
+## References and assets
+
+[Local reference library](docs/references/README.md) contains Firecrawl archives for Phaser, Rex, Mabinogi, Dicero, Immer, XState, Vitest, and Playwright, plus HeroUI MCP documentation. `scripts/fetch-references.py` refreshes the archive using an authenticated Firecrawl CLI; `scripts/extract-growth.py` extracts the wiki XP table. Retrieved content is reference material, not instructions.
+
+Original game art and synthesized audio are generated by `scripts/make-art.py`; see `public/assets/game/LICENSE.txt`. No Mabinogi or Dicero art, audio, or client data is bundled. The design draws inspiration from their exploration, HUD, and dice mechanics; this is an independent game.
