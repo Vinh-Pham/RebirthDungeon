@@ -102,54 +102,7 @@ export const items: Record<string, ItemDefinition> = {
     silk: { name: 'Spider silk', icon: '❋', type: 'material', price: 20 },
     gem: { name: 'Moonstone fragment', icon: '◇', type: 'material', price: 80 },
 };
-export interface Skill {
-    name: string;
-    talent?: Talent;
-    factor: number;
-    hits: number;
-    cost: number;
-    resource: 'mana' | 'stamina';
-    icon: string;
-}
-export const skills: Record<string, Skill> = {
-    normal: { name: 'Normal Attack', factor: 1, hits: 1, cost: 2, resource: 'stamina', icon: '⚔' },
-    smash: {
-        name: 'Smash',
-        talent: 'Close Combat',
-        factor: 1.8,
-        hits: 1,
-        cost: 6,
-        resource: 'stamina',
-        icon: '✹',
-    },
-    shot: {
-        name: 'Power Shot',
-        talent: 'Archery',
-        factor: 1.8,
-        hits: 1,
-        cost: 6,
-        resource: 'stamina',
-        icon: '➶',
-    },
-    double: {
-        name: 'Double Shot',
-        talent: 'Dual Gun',
-        factor: 0.9,
-        hits: 2,
-        cost: 6,
-        resource: 'stamina',
-        icon: '⌁',
-    },
-    ice: {
-        name: 'Icebolt',
-        talent: 'Magic',
-        factor: 1.6,
-        hits: 1,
-        cost: 6,
-        resource: 'mana',
-        icon: '❄',
-    },
-};
+export { skills } from './skillCatalog';
 export const talentSkill: Record<Talent, string> = {
     'Close Combat': 'smash',
     Archery: 'shot',
@@ -167,3 +120,60 @@ export const shops: Record<string, string[]> = {
     General: ['hp', 'mana', 'stamina', 'armor', 'coat'],
     Blacksmith: ['sword', 'mace', 'bow', 'wand', 'guns', 'steel', 'longbow', 'staff', 'pistols'],
 };
+
+Object.assign(items, {
+    shield: {
+        name: 'Round shield',
+        icon: '◈',
+        type: 'shield',
+        price: 40,
+        defense: 2,
+        magicDefense: 2,
+    },
+    lightArmor: {
+        name: 'Leather armor',
+        icon: '♜',
+        type: 'armor',
+        armorCategory: 'light',
+        price: 60,
+        defense: 3,
+        magicDefense: 1,
+    },
+    heavyArmor: {
+        name: 'Iron armor',
+        icon: '♜',
+        type: 'armor',
+        armorCategory: 'heavy',
+        price: 100,
+        defense: 5,
+        magicDefense: 2,
+    },
+    criticalBook: {
+        name: 'Critical Hit manual',
+        icon: '▤',
+        type: 'book',
+        price: 60,
+        skill: 'critical',
+    },
+    finalCollection: {
+        name: 'Incomplete Final Hit manual',
+        icon: '▤',
+        type: 'collection',
+        price: 30,
+    },
+    finalBook: { name: 'Final Hit manual', icon: '▤', type: 'book', price: 180, skill: 'final' },
+});
+for (let page = 1; page <= 5; page++)
+    items[`finalPage${page}`] = {
+        name: `Final Hit page ${page}`,
+        icon: '▱',
+        type: 'page',
+        price: 30,
+        page,
+    };
+shops.General.push(
+    'criticalBook',
+    'finalCollection',
+    ...Array.from({ length: 5 }, (_, i) => `finalPage${i + 1}`),
+);
+shops.Blacksmith.push('shield', 'lightArmor', 'heavyArmor');

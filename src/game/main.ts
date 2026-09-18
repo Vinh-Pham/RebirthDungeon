@@ -268,6 +268,7 @@ class World extends Phaser.Scene {
         if (screen === 'TreasureRoom' && save.checkpoint.phase === 'treasure')
             this.controls = treasureView(this);
         if (['Town1', 'Alby'].includes(screen)) {
+            const { keys } = this;
             const cursorKeys = Object.fromEntries(
                 [
                     ['up', 'W', 'UP'],
@@ -278,12 +279,11 @@ class World extends Phaser.Scene {
                     dir,
                     {
                         get isDown() {
-                            return !modalOpen && (scene.keys[a].isDown || scene.keys[b].isDown);
+                            return !modalOpen && (keys[a].isDown || keys[b].isDown);
                         },
                     },
                 ]),
             ) as unknown as Phaser.Types.Input.Keyboard.CursorKeys;
-            const scene = this;
             this.movement = new EightDirection(this.player, {
                 speed: 180,
                 dir: '8dir',
@@ -330,13 +330,20 @@ class World extends Phaser.Scene {
     interact() {
         if (modalOpen || busy() || !this.player?.active) return;
         if (this.screen === 'Town1') {
-            const l = locations.find(
-                (l) => Phaser.Math.Distance.Between(l.x, l.y, this.player.x, this.player.y) < 170,
-            );
-            if (l)
-                l.id === 'Alby'
-                    ? send({ type: 'ENTER', seed: Date.now() >>> 0 })
-                    : openService(l.id);
+            const l = [...locations]
+                .sort(
+                    (a, b) =>
+                        Phaser.Math.Distance.Between(a.x, a.y, this.player.x, this.player.y) -
+                        Phaser.Math.Distance.Between(b.x, b.y, this.player.x, this.player.y),
+                )
+                .find(
+                    (l) =>
+                        Phaser.Math.Distance.Between(l.x, l.y, this.player.x, this.player.y) < 170,
+                );
+            if (l) {
+                if (l.id === 'Alby') send({ type: 'ENTER', seed: Date.now() >>> 0 });
+                else openService(l.id);
+            }
         } else {
             const c = getCharacter(),
                 r = c?.run?.rooms.find(

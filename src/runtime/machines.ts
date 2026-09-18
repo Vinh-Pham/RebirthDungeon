@@ -102,23 +102,21 @@ export function sessionMachine(persistence: Persistence) {
                 },
             },
             routing: {
-                always: [
-                    ...(
-                        [
-                            'Title',
-                            'CharacterSelect',
-                            'NewCharacter',
-                            'Town1',
-                            'Alby',
-                            'Battle',
-                            'TreasureRoom',
-                        ] as const
-                    ).map((screen) => ({
-                        guard: ({ context }: { context: Context }) =>
-                            context.save.checkpoint.screen === screen,
-                        target: screen,
-                    })),
-                ],
+                always: (
+                    [
+                        'Title',
+                        'CharacterSelect',
+                        'NewCharacter',
+                        'Town1',
+                        'Alby',
+                        'Battle',
+                        'TreasureRoom',
+                    ] as const
+                ).map((screen) => ({
+                    guard: ({ context }: { context: Context }) =>
+                        context.save.checkpoint.screen === screen,
+                    target: screen,
+                })),
             },
             Title: {},
             CharacterSelect: {},

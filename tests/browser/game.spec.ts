@@ -93,7 +93,7 @@ test('create, explore, fight, resume, defeat the boss and return with treasure',
                 await row.getByRole('button', { name: 'Use', exact: true }).click();
                 await page.getByRole('button', { name: 'Close', exact: true }).click();
             }
-            await control(page, c.stamina >= 6 ? 'smash' : 'normal');
+            await control(page, c.skills.smash && c.stamina >= 6 ? 'smash' : 'normal');
             if (room === 1 && turns === 1) {
                 await control(page, 'die-0');
                 await control(page, 'reroll');
@@ -187,4 +187,143 @@ test('town shopping, inventory, bank and settings use accessible panels', async 
     await page.reload();
     await expect(page.getByRole('heading', { name: 'Town1', exact: true })).toBeVisible();
     expect((await state(page)).save.data.settings.reducedMotion).toBe(true);
+});
+
+test('trainer teaches a skill and the journal survives reload', async ({ page }, info) => {
+    test.skip(info.project.name !== 'chromium', 'Skill interactions run in Chromium');
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Begin your journey' }).click();
+    await page.getByRole('button', { name: 'Create a character' }).click();
+    await page.getByRole('textbox', { name: 'Character name' }).fill('Learner');
+    await page.getByRole('button', { name: 'Start a new life' }).click();
+    await expect.poll(async () => (await state(page))?.position?.y).toBeGreaterThan(500);
+    await page.waitForTimeout(300);
+    const s = await state(page),
+        trainer = s.locations.find((l: any) => l.id === 'Trainer');
+    await page.mouse.click(trainer.x - s.camera.x, trainer.y - s.camera.y);
+    await expect
+        .poll(
+            async () => {
+                const s = await state(page);
+                return Math.hypot(s.position.x - trainer.x, s.position.y - trainer.y);
+            },
+            { timeout: 15000 },
+        )
+        .toBeLessThan(60);
+    await page.keyboard.press('e', { delay: 40 });
+    await expect(page.getByRole('heading', { name: 'Combat instructor' })).toBeVisible();
+    await page.getByRole('button', { name: 'Learn Smash', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Smash · Rank F' })).toBeVisible();
+    await expect(page.getByText('0 / 100 training points')).toBeVisible();
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
+    await page.reload();
+    await page.getByRole('button', { name: 'Skills', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Smash · Rank F' })).toBeVisible();
+    await page
+        .getByRole('navigation', { name: 'Skills' })
+        .getByRole('button', { name: /Critical Hit/ })
+        .click();
+    await expect(page.getByText(/Read the Critical Hit manual/)).toBeVisible();
+    await page.screenshot({ path: 'test-results/skill-journal.png' });
+});
+
+test('books, page assembly, equipment and AP advancement use saved UI transactions', async ({
+    page,
+}, info) => {
+    test.skip(info.project.name !== 'chromium', 'Progression UI coverage runs in Chromium');
+    const { blankSave, reduceCommand } = await import('../../src/domain/commands');
+    let fixture: any = reduceCommand(
+        blankSave(),
+        { type: 'NAV', screen: 'NewCharacter' },
+        'fixture-nav',
+    );
+    fixture = reduceCommand(
+        fixture,
+        {
+            type: 'CREATE',
+            input: { name: 'Scholar', race: 'Human', age: 17, talent: 'Close Combat' },
+            id: 'scholar',
+            now: Date.now(),
+        },
+        'fixture-create',
+    );
+    fixture = JSON.parse(JSON.stringify(fixture));
+    const c = fixture.data.characters[0];
+    c.skills.smash = { rank: 'F', counts: { hit: 40, kill: 4 } };
+    c.inventory.push(
+        ...[
+            'criticalBook',
+            'finalCollection',
+            ...Array.from({ length: 5 }, (_, i) => `finalPage${i + 1}`),
+            'shield',
+        ].map((kind) => ({ id: kind, kind, count: 1 })),
+    );
+    await page.goto('/');
+    await expect(page.getByRole('button', { name: 'Begin your journey' })).toBeEnabled();
+    await page.evaluate(async (save) => {
+        await new Promise<void>((resolve, reject) => {
+            const open = indexedDB.open('rebirth-dungeon', 1);
+            open.onupgradeneeded = () => open.result.createObjectStore('saves');
+            open.onsuccess = () => {
+                const tx = open.result.transaction('saves', 'readwrite');
+                tx.objectStore('saves').put(save, 'current');
+                tx.oncomplete = () => {
+                    open.result.close();
+                    resolve();
+                };
+                tx.onerror = () => reject(tx.error);
+            };
+            open.onerror = () => reject(open.error);
+        });
+    }, fixture);
+    await page.reload();
+    await page.getByRole('button', { name: 'Inventory', exact: true }).click();
+    await page
+        .locator('.item')
+        .filter({ hasText: 'Critical Hit manual' })
+        .getByRole('button', { name: 'Read', exact: true })
+        .click();
+    await expect
+        .poll(async () => (await state(page)).save.data.characters[0].skills.critical?.rank)
+        .toBe('F');
+    for (const number of [5, 2, 4, 1, 3])
+        await page
+            .locator('.item')
+            .filter({ hasText: `Final Hit page ${number}` })
+            .getByRole('button', { name: 'Insert page', exact: true })
+            .click();
+    await page
+        .locator('.item')
+        .filter({ hasText: 'Final Hit manual' })
+        .getByRole('button', { name: 'Read', exact: true })
+        .click();
+    await page
+        .locator('.item')
+        .filter({ hasText: 'Round shield' })
+        .getByRole('button', { name: 'Equip', exact: true })
+        .click();
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
+    await page.getByRole('button', { name: 'Skills', exact: true }).click();
+    await expect(page.getByText('Ready to advance', { exact: false })).toBeVisible();
+    await page.getByRole('button', { name: 'Rank up Smash', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Smash · Rank E' })).toBeVisible();
+    await expect(page.getByText('0 / 100 training points')).toBeVisible();
+    await page.reload();
+    await page.getByRole('button', { name: 'Skills', exact: true }).click();
+    const saved = (await state(page)).save.data.characters[0];
+    expect(saved.skills.final.rank).toBe('F');
+    expect(saved.skills.critical.rank).toBe('F');
+    expect(saved.skills.smash.rank).toBe('E');
+    expect(saved.ap).toBe(3);
+    expect(saved.offhand).toBe('shield');
+    await page.setViewportSize({ width: 600, height: 800 });
+    await expect(page.getByRole('heading', { name: 'Smash · Rank E' })).toBeVisible();
+    await page.waitForTimeout(400);
+    const bounds = await page.getByRole('dialog').boundingBox();
+    expect(bounds!.y).toBeGreaterThanOrEqual(0);
+    expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(801);
+    await page.screenshot({
+        path: 'test-results/skill-journal-mobile.png',
+        animations: 'disabled',
+    });
 });

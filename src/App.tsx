@@ -1,3 +1,4 @@
+import { SkillJournal } from './ui/SkillJournal';
 import {
     useEffect,
     useState,
@@ -67,6 +68,8 @@ function App() {
                 [],
         );
         setGold(true);
+        // Initialize once per reward; claims must not reset the player's remaining loot choices.
+        // oxlint-disable-next-line react-hooks/exhaustive-deps
     }, [c?.reward?.id]);
     const disabled = readOnly || busy();
     const action = (
@@ -445,19 +448,30 @@ function App() {
                                               General: 'General Shop',
                                               Blacksmith: 'Blacksmith',
                                               Bank: 'Bank',
+                                              Trainer: 'Combat instructor',
                                           }[service] || service
                                         : panel === 'menu'
                                           ? 'Adventure menu'
-                                          : panel === 'inventory'
-                                            ? 'Your belongings'
-                                            : panel === 'settings'
-                                              ? 'Settings'
-                                              : panel === 'rebirth'
-                                                ? 'Begin another life'
-                                                : 'Leave this chapter?'}
+                                          : panel === 'skills'
+                                            ? 'Skill journal'
+                                            : panel === 'inventory'
+                                              ? 'Your belongings'
+                                              : panel === 'settings'
+                                                ? 'Settings'
+                                                : panel === 'rebirth'
+                                                  ? 'Begin another life'
+                                                  : 'Leave this chapter?'}
                                 </h2>
                                 {action('Close', close, { className: 'subtle' })}
                             </div>
+                            {(panel === 'skills' || service === 'Trainer') && c && (
+                                <SkillJournal
+                                    character={c}
+                                    disabled={disabled}
+                                    trainer={service === 'Trainer'}
+                                    send={send}
+                                />
+                            )}
                             {panel === 'menu' && (
                                 <div className="stack">
                                     {action('Settings', () => setPanel('settings'))}
@@ -717,71 +731,144 @@ function App() {
                                     ))}
                                 </>
                             )}
-                            {(panel === 'inventory' || (service && service !== 'Healer')) && c && (
-                                <>
-                                    <h3>Inventory · {c.inventory.length}/30</h3>
-                                    <div className="mt-[15px] flex flex-col gap-[6px]">
-                                        {c.inventory.map((i) => (
-                                            <div className="item" key={i.id}>
-                                                <span className="text-[26px]">
-                                                    {items[i.kind].icon}
-                                                </span>
-                                                <div className="flex-1">
-                                                    <strong>
-                                                        {items[i.kind].name} ×{i.count}
-                                                    </strong>
-                                                    <small className="mt-[5px] block text-[10px]">
-                                                        {c.weapon === i.id || c.armor === i.id
-                                                            ? 'Equipped · '
-                                                            : ''}
-                                                        {i.durability !== undefined
-                                                            ? `${i.durability}/20 durability`
-                                                            : items[i.kind].type}
-                                                    </small>
+                            {(panel === 'inventory' ||
+                                (service && service !== 'Healer' && service !== 'Trainer')) &&
+                                c && (
+                                    <>
+                                        <h3>Inventory · {c.inventory.length}/30</h3>
+                                        <div className="mt-[15px] flex flex-col gap-[6px]">
+                                            {c.inventory.map((i) => (
+                                                <div className="item" key={i.id}>
+                                                    <span className="text-[26px]">
+                                                        {items[i.kind].icon}
+                                                    </span>
+                                                    <div className="flex-1">
+                                                        <strong>
+                                                            {items[i.kind].name} ×{i.count}
+                                                        </strong>
+                                                        <small className="mt-[5px] block text-[10px]">
+                                                            {c.weapon === i.id ||
+                                                            c.offhand === i.id ||
+                                                            c.armor === i.id
+                                                                ? 'Equipped · '
+                                                                : ''}
+                                                            {i.durability !== undefined
+                                                                ? `${i.durability}/20 durability`
+                                                                : items[i.kind].type}
+                                                        </small>
+                                                    </div>
+                                                    <div className="choices">
+                                                        {items[i.kind].resource &&
+                                                            action('Use', () =>
+                                                                send({ type: 'USE', id: i.id }),
+                                                            )}
+                                                        {['weapon', 'armor', 'shield'].includes(
+                                                            items[i.kind].type,
+                                                        ) &&
+                                                            action(
+                                                                c.weapon === i.id ||
+                                                                    c.offhand === i.id ||
+                                                                    c.armor === i.id
+                                                                    ? 'Unequip'
+                                                                    : 'Equip',
+                                                                () =>
+                                                                    send({
+                                                                        type: 'EQUIP',
+                                                                        id: i.id,
+                                                                        ...(c.offhand === i.id
+                                                                            ? {
+                                                                                  slot: 'offhand' as const,
+                                                                              }
+                                                                            : {}),
+                                                                    }),
+                                                                { isDisabled: disabled || !!c.run },
+                                                            )}
+                                                        {['sword', 'steel'].includes(i.kind) &&
+                                                            c.weapon !== i.id &&
+                                                            action(
+                                                                c.offhand === i.id
+                                                                    ? 'Unequip off-hand'
+                                                                    : 'Equip off-hand',
+                                                                () =>
+                                                                    send({
+                                                                        type: 'EQUIP',
+                                                                        id: i.id,
+                                                                        slot: 'offhand',
+                                                                    }),
+                                                                { isDisabled: disabled || !!c.run },
+                                                            )}
+                                                        {items[i.kind].type === 'book' &&
+                                                            action(
+                                                                'Read',
+                                                                () =>
+                                                                    send({
+                                                                        type: 'READ',
+                                                                        id: i.id,
+                                                                    }),
+                                                                { isDisabled: disabled || !!c.run },
+                                                            )}
+                                                        {items[i.kind].type === 'page' &&
+                                                            action(
+                                                                'Insert page',
+                                                                () =>
+                                                                    send({
+                                                                        type: 'INSERT_PAGE',
+                                                                        id: i.id,
+                                                                    }),
+                                                                { isDisabled: disabled || !!c.run },
+                                                            )}
+                                                        {service === 'Blacksmith' &&
+                                                            i.durability !== undefined &&
+                                                            action(
+                                                                `Repair · ${20 - i.durability}g`,
+                                                                () =>
+                                                                    send({
+                                                                        type: 'REPAIR',
+                                                                        id: i.id,
+                                                                    }),
+                                                            )}
+                                                        {shops[service] &&
+                                                            action(
+                                                                `Sell · ${Math.floor(items[i.kind].price / 4)}g`,
+                                                                () =>
+                                                                    send({
+                                                                        type: 'SELL',
+                                                                        id: i.id,
+                                                                    }),
+                                                            )}
+                                                        {service === 'Bank' &&
+                                                            action('Deposit', () =>
+                                                                send({
+                                                                    type: 'BANK_ITEM',
+                                                                    id: i.id,
+                                                                    deposit: true,
+                                                                }),
+                                                            )}
+                                                    </div>
                                                 </div>
-                                                <div className="choices">
-                                                    {items[i.kind].resource &&
-                                                        action('Use', () =>
-                                                            send({ type: 'USE', id: i.id }),
-                                                        )}
-                                                    {['weapon', 'armor'].includes(
-                                                        items[i.kind].type,
-                                                    ) &&
-                                                        action(
-                                                            c.weapon === i.id || c.armor === i.id
-                                                                ? 'Unequip'
-                                                                : 'Equip',
-                                                            () => send({ type: 'EQUIP', id: i.id }),
-                                                        )}
-                                                    {service === 'Blacksmith' &&
-                                                        i.durability !== undefined &&
-                                                        action(
-                                                            `Repair · ${20 - i.durability}g`,
-                                                            () =>
-                                                                send({ type: 'REPAIR', id: i.id }),
-                                                        )}
-                                                    {shops[service] &&
-                                                        action(
-                                                            `Sell · ${Math.floor(items[i.kind].price / 4)}g`,
-                                                            () => send({ type: 'SELL', id: i.id }),
-                                                        )}
-                                                    {service === 'Bank' &&
-                                                        action('Deposit', () =>
-                                                            send({
-                                                                type: 'BANK_ITEM',
-                                                                id: i.id,
-                                                                deposit: true,
-                                                            }),
-                                                        )}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </>
-                            )}
+                                            ))}
+                                        </div>
+                                    </>
+                                )}
                         </Modal.Dialog>
                     </Modal.Container>
                 </Modal.Backdrop>
+            )}
+            {save.migrationNotice && (
+                <div
+                    role="status"
+                    className="absolute top-4 left-1/2 z-50 w-[min(90vw,600px)] -translate-x-1/2 rounded border bg-[#203638] p-4 text-sm"
+                >
+                    Your skills are now Rank F. Saved dice and possessions were preserved; pending
+                    attacks use the revised combat rules.
+                    <Button
+                        className="ml-3"
+                        isDisabled={disabled}
+                        onPress={() => send({ type: 'DISMISS_MIGRATION' })}
+                    >
+                        Got it
+                    </Button>
+                </div>
             )}
             <footer className="absolute bottom-0 left-0 flex h-[108px] w-[calc(100%/var(--hudscale,1))] origin-bottom-left scale-[var(--hudscale,1)] items-center gap-5 border-t border-[#8db6a169] bg-[linear-gradient(#203638,#101e25)] px-[25px] py-[10px] shadow-[0_-10px_40px_#13242144] compact:gap-[10px] compact:p-2 narrow:h-[100px]">
                 <Button
@@ -818,6 +905,7 @@ function App() {
                                     className="hud-button"
                                     onPress={() => {
                                         if (name === 'Inventory' && c) setPanel('inventory');
+                                        if (name === 'Skills' && c) setPanel('skills');
                                     }}
                                 >
                                     <span className="text-[25px] leading-[27px]">{icon}</span>
@@ -826,9 +914,11 @@ function App() {
                                     </small>
                                 </Button>
                                 <Tooltip.Content>
-                                    {name === 'Inventory'
-                                        ? 'Open inventory'
-                                        : `${name} · coming later`}
+                                    {name === 'Skills'
+                                        ? 'Open skill journal'
+                                        : name === 'Inventory'
+                                          ? 'Open inventory'
+                                          : `${name} · coming later`}
                                 </Tooltip.Content>
                             </Tooltip>
                         ))}

@@ -1,0 +1,40 @@
+{
+    "$schema": "./node_modules/oxlint/configuration_schema.json",
+    "plugins": ["typescript", "unicorn", "oxc", "react"],
+    "categories": {
+        "correctness": "error"
+    },
+    "env": {
+        "browser": true,
+        "es2020": true
+    },
+    "rules": {
+        "react/rules-of-hooks": "error",
+        "react/exhaustive-deps": "error",
+        "react/only-export-components": ["error", { "allowConstantExport": true }]
+    },
+    "overrides": [
+        {
+            "files": ["src/App.tsx"],
+            "rules": {
+                "react/purity": "off",
+                "react/set-state-in-effect": "off"
+            }
+        },
+        {
+            "files": ["tests/**", "vite/**", "*.config.ts", "log.js"],
+            "env": { "node": true }
+        }
+    ],
+    "ignorePatterns": [
+        "node_modules/**",
+        "dist/**",
+        "dist-ssr/**",
+        "coverage/**",
+        "playwright-report/**",
+        "test-results/**",
+        ".firecrawl/**",
+        ".kilo/**",
+        ".codex/**"
+    ]
+}

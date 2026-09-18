@@ -1,5 +1,14 @@
 export const locations = [
     {
+        id: 'Trainer',
+        name: 'Combat instructor',
+        npc: 'Aren',
+        x: 475,
+        y: 870,
+        icon: '⚔',
+        text: 'Train your skills, and let experience become mastery.',
+    },
+    {
         id: 'Healer',
         name: 'Healer House',
         npc: 'Elara',

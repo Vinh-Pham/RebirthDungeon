@@ -23,7 +23,7 @@ export const enemyMachine = setup({
                     {
                         target: 'acting',
                         actions: assign({
-                            damage: ({ context }) => Math.max(1, context.attack - context.defense),
+                            damage: ({ context }) => Math.max(0, context.attack - context.defense),
                         }),
                     },
                 ],

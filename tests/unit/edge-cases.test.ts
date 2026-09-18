@@ -1,6 +1,7 @@
+import { talentSkill } from '../../src/domain/catalog';
 import { it, expect } from 'vitest';
 import { produce } from 'immer';
-import { createActor, waitFor } from 'xstate';
+import { waitFor } from 'xstate';
 import {
     blankSave,
     reduceCommand,
@@ -112,6 +113,7 @@ it('transactions reject insufficient funds, unknown items and equipped bank depo
     s = edit(s, (s) => {
         s.data.characters[0].gold = 0;
         s.data.characters[0].inventory[0].durability = 0;
+        if (s.data.characters[0].battle) delete s.data.characters[0].battle!.action;
     });
     expect(() => run(s, { type: 'HEAL' })).toThrow();
     expect(() => run(s, { type: 'REPAIR', id: 'aster-weapon' })).toThrow();
@@ -182,6 +184,7 @@ it('combat guards, recovery, defeat and unarmed or broken-weapon damage', () => 
     const damage = attackDamage(c, enemy, 'normal', [1, 1, 1, 1, 1]);
     const broken = edit(s, (s) => {
         s.data.characters[0].inventory[0].durability = 0;
+        if (s.data.characters[0].battle) delete s.data.characters[0].battle!.action;
     });
     expect(attackDamage(active(broken)!, enemy, 'normal', [1, 1, 1, 1, 1])).toBeLessThan(damage);
     const unarmed = edit(s, (s) => {
@@ -200,20 +203,20 @@ it('combat guards, recovery, defeat and unarmed or broken-weapon damage', () => 
     s = run(s, { type: 'RECOVER' });
     expect(s.checkpoint.screen).toBe('Town1');
     expect(active(s)!.hp).toBe(active(s)!.stats.hp);
-    expect(enemyDamage(10, 20, 1)).toBe(1);
+    expect(enemyDamage(10, 20, 1)).toBe(0);
     expect(enemyDamage(10, 0, 0)).toBe(0);
 });
 it.each(['Magic', 'Archery', 'Dual Gun'] as Talent[])(
     'talent %s has deterministic attack and growth',
     (talent) => {
-        let s = fixture('Human', talent);
+        let s = run(fixture('Human', talent), { type: 'LEARN', skill: talentSkill[talent] });
         s = run(s, { type: 'ENTER', seed: 1 });
         s = run(s, { type: 'ENCOUNTER', room: 1 });
         const c = active(s)!;
-        s = run(s, { type: 'ROLL', skill: c.skills[1], target: 'enemy-0' });
-        expect(attackDamage(c, c.battle!.enemies[0], c.skills[1], [2, 2, 2, 3, 3])).toBeGreaterThan(
-            0,
-        );
+        s = run(s, { type: 'ROLL', skill: talentSkill[talent], target: 'enemy-0' });
+        expect(
+            attackDamage(c, c.battle!.enemies[0], talentSkill[talent], [2, 2, 2, 3, 3]),
+        ).toBeGreaterThan(0);
         s = run(s, { type: 'ATTACK' });
         const ch = structuredClone(active(s)!);
         gainXp(ch, 1000);

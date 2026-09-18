@@ -1,7 +1,22 @@
-import { enemyDamage } from './behavior';
+import {
+    learn,
+    advance,
+    refreshStats,
+    progressionStats,
+    snapshotAction,
+    requirementReason,
+    train,
+} from './skillSystem';
+import {
+    commitAbility,
+    payReservation,
+    endPlayerActivation,
+    enemiesAct,
+    clearHand,
+} from './combat';
 import { produce, type Immutable } from 'immer';
-import { items, skills, shops, talentSkill, talentWeapon } from './catalog';
-import { attackDamage, nextRandom, roll } from './dice';
+import { items, skills, shops, talentWeapon } from './catalog';
+import { nextRandom, roll } from './dice';
 import { generateDungeon } from './dungeon';
 import { applyAging, gainXp, rebirth, startingStats } from './progression';
 import {
@@ -24,9 +39,15 @@ export type Command =
     | { type: 'ENCOUNTER'; room: number; x?: number; y?: number }
     | { type: 'POSITION'; x: number; y: number }
     | { type: 'ROLL'; skill: string; target: string }
-    | { type: 'HOLD'; index: number }
-    | { type: 'REROLL' }
-    | { type: 'ATTACK' }
+    | { type: 'HOLD'; index: number; actionId?: string }
+    | { type: 'REROLL'; indices?: number[]; actionId?: string }
+    | { type: 'PASS'; actionId?: string }
+    | { type: 'LEARN'; skill: string }
+    | { type: 'RANK_UP'; skill: string }
+    | { type: 'READ'; id: string }
+    | { type: 'INSERT_PAGE'; id: string }
+    | { type: 'DISMISS_MIGRATION' }
+    | { type: 'ATTACK'; actionId?: string }
     | { type: 'RECOVER' }
     | { type: 'CLAIM'; ids: string[]; gold: boolean }
     | { type: 'LEAVE_REWARD' }
@@ -35,7 +56,7 @@ export type Command =
     | { type: 'ABANDON' }
     | { type: 'BUY'; shop: string; kind: string }
     | { type: 'SELL'; id: string }
-    | { type: 'EQUIP'; id: string }
+    | { type: 'EQUIP'; id: string; slot?: 'main' | 'offhand' }
     | { type: 'USE'; id: string }
     | { type: 'REPAIR'; id: string }
     | { type: 'HEAL' }
@@ -44,7 +65,7 @@ export type Command =
     | { type: 'REBIRTH'; id: string; talent: CreateInput['talent']; age: number; now: number }
     | { type: 'SETTINGS'; settings: Partial<Settings> };
 export const blankSave = (): SaveData => ({
-    version: 1,
+    version: 2,
     data: initialData(),
     checkpoint: { version: 1, screen: 'Title', phase: 'exploring' },
 });
@@ -55,7 +76,7 @@ export function addItem(list: Item[], item: Item, limit: number) {
     const def = items[item.kind];
     if (!def || !Number.isInteger(item.count) || item.count < 1) throw new Error('Invalid item.');
     let remaining = item.count;
-    if (def.type === 'weapon' || def.type === 'armor') {
+    if (def.type === 'weapon' || def.type === 'armor' || def.type === 'shield') {
         if (list.length + remaining > limit) throw new Error('Not enough inventory space.');
         for (let i = 0; i < remaining; i++)
             list.push({ ...item, id: i ? `${item.id}-${i}` : item.id, count: 1 });
@@ -104,27 +125,43 @@ function makeReward(s: SaveData, id: string, boss = false): Reward {
         ],
     };
 }
-function enemiesAct(c: Character) {
+function finishActivation(s: SaveData, c: Character) {
     const b = c.battle!;
-    const armor = c.inventory.find((i) => i.id === c.armor);
-    const defense = armor ? items[armor.kind].defense || 0 : 0;
-    for (const e of b.enemies.filter((e) => e.hp > 0)) {
-        const hit = enemyDamage(e.attack, defense, e.hp);
-        c.hp = Math.max(0, c.hp - hit);
-        b.log.push(`${e.name} deals ${hit} damage.`);
-        if (!c.hp) break;
-    }
-    b.turn++;
-    b.dice = [];
-    b.held = [false, false, false, false, false];
-    b.rerolls = 2;
-    b.skill = '';
-    b.log = b.log.slice(-5);
+    if (b.enemies.some((e) => e.hp > 0)) enemiesAct(c);
+    if (c.hp > 0 && b.enemies.every((e) => e.hp === 0)) {
+        const boss = b.enemies.some((e) => e.boss);
+        if (!c.run!.cleared.includes(b.room)) {
+            c.run!.cleared.push(b.room);
+            gainXp(c, boss ? 400 : 100);
+            c.reward = makeReward(s, `${c.run!.id}-room-${b.room}`, boss);
+            if ((c.run!.pageRewards ?? 0) < 5) {
+                const page = [1, 2, 3, 4, 5].find(
+                    (p) =>
+                        !c.collection.includes(p) &&
+                        ![...c.inventory, ...c.bank].some((i) => i.kind === `finalPage${p}`),
+                );
+                if (page && !c.skills.final)
+                    c.reward.items.push({
+                        id: `${c.reward.id}-page`,
+                        kind: `finalPage${page}`,
+                        count: 1,
+                    });
+                c.run!.pageRewards = (c.run!.pageRewards ?? 0) + 1;
+            }
+            for (const id of ['shieldMastery', 'lightMastery', 'heavyMastery'])
+                if (!requirementReason(c, id)) train(c, id, 'survive');
+        }
+        delete c.effects.counter;
+        c.tutorial = Math.max(c.tutorial, boss ? 3 : 2);
+        s.checkpoint.phase = 'reward';
+    } else s.checkpoint.phase = 'selecting';
+    clearHand(c);
 }
 export function allowed(save: Immutable<SaveData>, cmd: Command): boolean {
     const screen = save.checkpoint.screen,
         phase = save.checkpoint.phase;
-    if (cmd.type === 'NAV' || cmd.type === 'SETTINGS') return true;
+    if (cmd.type === 'NAV' || cmd.type === 'SETTINGS' || cmd.type === 'DISMISS_MIGRATION')
+        return true;
     if (cmd.type === 'CREATE') return screen === 'NewCharacter';
     if (cmd.type === 'PLAY' || cmd.type === 'REBIRTH') return screen === 'CharacterSelect';
     if (cmd.type === 'ENTER') return screen === 'Town1';
@@ -139,7 +176,10 @@ export function allowed(save: Immutable<SaveData>, cmd: Command): boolean {
         return screen === 'Battle' && phase === 'choosingDice';
     if (cmd.type === 'USE')
         return ['Town1', 'Alby'].includes(screen) || (screen === 'Battle' && phase === 'selecting');
-    if (cmd.type === 'EQUIP') return ['Town1', 'Alby'].includes(screen);
+    if (['EQUIP', 'LEARN', 'RANK_UP', 'READ', 'INSERT_PAGE'].includes(cmd.type))
+        return screen === 'Town1' && !active(save)?.run;
+    if (cmd.type === 'PASS')
+        return screen === 'Battle' && ['selecting', 'choosingDice'].includes(phase);
     return screen === 'Town1';
 }
 export function reduceCommand(
@@ -149,9 +189,17 @@ export function reduceCommand(
 ): Immutable<SaveData> {
     if (save.data.operations.includes(operationId)) return save;
     if (!allowed(save, cmd)) throw new Error('That action is not available right now.');
+    if (
+        'actionId' in cmd &&
+        cmd.actionId !== undefined &&
+        active(save)?.battle?.action?.id !== cmd.actionId
+    )
+        throw new Error('This action has already ended.');
     return produce(save, (d) => {
         const s = d as SaveData;
-        if (cmd.type === 'NAV') {
+        if (cmd.type === 'DISMISS_MIGRATION') {
+            s.migrationNotice = false;
+        } else if (cmd.type === 'NAV') {
             s.checkpoint.screen = cmd.screen;
             s.checkpoint.phase = 'exploring';
         } else if (cmd.type === 'SETTINGS') {
@@ -217,7 +265,11 @@ export function reduceCommand(
                 bank: [],
                 weapon: `${cmd.id}-weapon`,
                 armor: null,
-                skills: ['normal', talentSkill[talent]],
+                skills: { normal: { rank: 'F', counts: {} } },
+                offhand: null,
+                collection: [],
+                cooldowns: {},
+                effects: {},
                 createdAt: cmd.now,
                 rebornAt: cmd.now,
                 agedAt: cmd.now,
@@ -237,8 +289,7 @@ export function reduceCommand(
             if (cmd.type === 'REBIRTH') {
                 if (!talents.includes(cmd.talent)) throw new Error('Unknown talent.');
                 rebirth(c, cmd.talent, cmd.age, cmd.now);
-                const skill = talentSkill[cmd.talent];
-                if (!c.skills.includes(skill)) c.skills.push(skill);
+                refreshStats(c);
             } else {
                 applyAging(c, cmd.now);
                 s.checkpoint = {
@@ -262,6 +313,17 @@ export function reduceCommand(
                 case 'ENTER':
                     c.run = generateDungeon(cmd.seed);
                     c.run.id = `${c.run.id}-${operationId}`;
+                    c.run.baseline = {
+                        contentVersion: 2,
+                        skills: JSON.parse(JSON.stringify(c.skills)),
+                        stats: progressionStats(c),
+                        weapon: c.weapon,
+                        offhand: c.offhand,
+                        armor: c.armor,
+                    };
+                    c.run.pageRewards = 0;
+                    c.effects = {};
+                    c.cooldowns = {};
                     c.battle = null;
                     c.reward = null;
                     c.tutorial = Math.max(c.tutorial, 1);
@@ -335,19 +397,9 @@ export function reduceCommand(
                     break;
                 }
                 case 'ROLL': {
-                    const b = c.battle!,
-                        skill = skills[cmd.skill],
-                        weapon = c.inventory.find((i) => i.id === c.weapon);
-                    if (
-                        !skill ||
-                        !c.skills.includes(cmd.skill) ||
-                        c[skill.resource] < skill.cost ||
-                        (skill.talent && items[weapon?.kind || '']?.talent !== skill.talent)
-                    )
-                        throw new Error('You need the matching weapon and enough resources.');
-                    if (!b.enemies.some((e) => e.id === cmd.target && e.hp > 0))
-                        throw new Error('Choose a living enemy.');
-                    const rolled = roll(s.data.rng);
+                    const b = c.battle!;
+                    b.action = snapshotAction(c, cmd.skill, cmd.target);
+                    const rolled = roll(s.data.rng, [], [], b.action.rank.weights);
                     s.data.rng = rolled.seed;
                     b.dice = rolled.dice;
                     b.skill = cmd.skill;
@@ -364,44 +416,69 @@ export function reduceCommand(
                     break;
                 case 'REROLL': {
                     const b = c.battle!;
-                    if (b.rerolls <= 0 || b.held.every(Boolean))
+                    if (b.rerolls <= 0 || (!cmd.indices && b.held.every(Boolean)))
                         throw new Error('No dice available to reroll.');
-                    const rolled = roll(s.data.rng, b.dice, b.held);
+                    if (cmd.indices) {
+                        if (
+                            !cmd.indices.length ||
+                            new Set(cmd.indices).size !== cmd.indices.length ||
+                            cmd.indices.some((i) => !Number.isInteger(i) || i < 0 || i > 4)
+                        )
+                            throw new Error('Choose valid die indices.');
+                        b.held = Array.from({ length: 5 }, (_, i) => !cmd.indices!.includes(i));
+                    }
+                    const rolled = roll(s.data.rng, b.dice, b.held, b.action!.rank.weights);
                     s.data.rng = rolled.seed;
                     b.dice = rolled.dice;
                     b.rerolls--;
                     break;
                 }
-                case 'ATTACK': {
-                    const b = c.battle!,
-                        skill = skills[b.skill],
-                        enemy = b.enemies.find((e) => e.id === b.target && e.hp > 0);
-                    if (!enemy || !skill || c[skill.resource] < skill.cost)
-                        throw new Error('Invalid attack.');
-                    const damage = attackDamage(c, enemy, b.skill, b.dice);
-                    c[skill.resource] -= skill.cost;
-                    enemy.hp = Math.max(0, enemy.hp - damage);
-                    const w = c.inventory.find((i) => i.id === c.weapon);
-                    if (w) w.durability = Math.max(0, (w.durability ?? 20) - 1);
-                    b.log.push(`${skill.name} hits ${enemy.name} for ${damage}.`);
-                    if (b.enemies.every((e) => e.hp === 0)) {
-                        const boss = b.enemies.some((e) => e.boss);
-                        c.run!.cleared.push(b.room);
-                        gainXp(c, boss ? 400 : 100);
-                        c.tutorial = Math.max(c.tutorial, boss ? 3 : 2);
-                        c.reward = makeReward(s, `${c.run!.id}-room-${b.room}`, boss);
-                        s.checkpoint.phase = 'reward';
-                    } else {
-                        enemiesAct(c);
-                        s.checkpoint.phase = 'selecting';
-                    }
+                case 'ATTACK':
+                    commitAbility(s, c);
+                    finishActivation(s, c);
                     break;
-                }
+                case 'PASS':
+                    if (c.battle!.action) payReservation(c);
+                    endPlayerActivation(c);
+                    finishActivation(s, c);
+                    break;
                 case 'RECOVER':
                     c.mana = Math.min(c.stats.mana, c.mana + 10);
                     c.stamina = Math.min(c.stats.stamina, c.stamina + 20);
-                    enemiesAct(c);
+                    endPlayerActivation(c);
+                    finishActivation(s, c);
                     break;
+                case 'LEARN':
+                    if (skills[cmd.skill]?.route !== 'lesson')
+                        throw new Error('This skill requires a book.');
+                    learn(c, cmd.skill);
+                    break;
+                case 'RANK_UP':
+                    advance(c, cmd.skill);
+                    break;
+                case 'READ': {
+                    const item = c.inventory.find((i) => i.id === cmd.id),
+                        def = item && items[item.kind];
+                    if (!def?.skill) throw new Error('Choose a complete skill book.');
+                    learn(c, def.skill);
+                    consume(c.inventory, cmd.id);
+                    break;
+                }
+                case 'INSERT_PAGE': {
+                    const item = c.inventory.find((i) => i.id === cmd.id),
+                        page = item && items[item.kind].page;
+                    const book = c.inventory.find((i) => i.kind === 'finalCollection');
+                    if (!page || !book || c.skills.final || c.collection.includes(page))
+                        throw new Error('Requires an incomplete book and a missing page.');
+                    c.collection.push(page);
+                    c.collection.sort();
+                    consume(c.inventory, cmd.id);
+                    if (c.collection.length === 5) {
+                        consume(c.inventory, book.id);
+                        addItem(c.inventory, { id: operationId, kind: 'finalBook', count: 1 }, 30);
+                    }
+                    break;
+                }
                 case 'CLAIM': {
                     const r = c.reward;
                     if (!r) throw new Error('No rewards available.');
@@ -451,6 +528,8 @@ export function reduceCommand(
                 case 'CONTINUE':
                 case 'ABANDON':
                     c.run = null;
+                    c.effects = {};
+                    c.cooldowns = {};
                     c.battle = null;
                     c.reward = null;
                     s.checkpoint = { version: 1, screen: 'Town1', phase: 'exploring' };
@@ -476,7 +555,7 @@ export function reduceCommand(
                 case 'SELL': {
                     const item = c.inventory.find((i) => i.id === cmd.id);
                     if (!item) throw new Error('Item not found.');
-                    if (c.weapon === item.id || c.armor === item.id)
+                    if (c.weapon === item.id || c.offhand === item.id || c.armor === item.id)
                         throw new Error('Unequip the item before selling.');
                     c.gold += Math.floor(items[item.kind].price / 4);
                     consume(c.inventory, item.id);
@@ -487,8 +566,23 @@ export function reduceCommand(
                     if (!item || !compatible(c, item.kind))
                         throw new Error('You cannot equip this item.');
                     const def = items[item.kind];
-                    if (def.type === 'weapon') c.weapon = c.weapon === item.id ? null : item.id;
-                    else if (def.type === 'armor') c.armor = c.armor === item.id ? null : item.id;
+                    if (def.type === 'shield' || cmd.slot === 'offhand') {
+                        const main = c.inventory.find((i) => i.id === c.weapon);
+                        if (def.type !== 'shield' && !['sword', 'steel'].includes(item.kind))
+                            throw new Error('Off-hand requires a shield or sword.');
+                        if (
+                            !main ||
+                            items[main.kind].talent !== 'Close Combat' ||
+                            main.id === item.id
+                        )
+                            throw new Error('Equip a distinct one-handed melee weapon first.');
+                        if (def.type === 'weapon' && !['sword', 'steel'].includes(main.kind))
+                            throw new Error('Dual wielding requires paired swords.');
+                        c.offhand = c.offhand === item.id ? null : item.id;
+                    } else if (def.type === 'weapon') {
+                        c.weapon = c.weapon === item.id ? null : item.id;
+                        c.offhand = null;
+                    } else if (def.type === 'armor') c.armor = c.armor === item.id ? null : item.id;
                     else throw new Error('This item cannot be equipped.');
                     break;
                 }
@@ -501,7 +595,10 @@ export function reduceCommand(
                         c[def.resource] + def.restore!,
                     );
                     consume(c.inventory, item.id);
-                    if (s.checkpoint.screen === 'Battle') enemiesAct(c);
+                    if (s.checkpoint.screen === 'Battle') {
+                        endPlayerActivation(c);
+                        finishActivation(s, c);
+                    }
                     break;
                 }
                 case 'REPAIR': {
@@ -536,7 +633,10 @@ export function reduceCommand(
                         target = cmd.deposit ? c.bank : c.inventory,
                         item = source.find((i) => i.id === cmd.id);
                     if (!item) throw new Error('Item not found.');
-                    if (cmd.deposit && (c.weapon === item.id || c.armor === item.id))
+                    if (
+                        cmd.deposit &&
+                        (c.weapon === item.id || c.offhand === item.id || c.armor === item.id)
+                    )
                         throw new Error('Unequip this item first.');
                     addItem(target, { ...item, id: operationId }, cmd.deposit ? 60 : 30);
                     source.splice(source.indexOf(item), 1);
@@ -545,6 +645,9 @@ export function reduceCommand(
             }
             if (c.hp <= 0) {
                 c.run = null;
+                c.effects = {};
+                c.cooldowns = {};
+                refreshStats(c);
                 c.battle = null;
                 c.reward = null;
                 c.hp = c.stats.hp;
@@ -552,8 +655,10 @@ export function reduceCommand(
                 c.stamina = c.stats.stamina;
                 s.checkpoint = { version: 1, screen: 'Town1', phase: 'exploring' };
             }
+            refreshStats(c);
             c.checkpoint = s.checkpoint.phase;
         }
+        for (const hero of s.data.characters) refreshStats(hero);
         s.data.revision++;
         s.data.operations.push(operationId);
         if (s.data.operations.length > 256) s.data.operations.shift();

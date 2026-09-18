@@ -53,12 +53,11 @@ describe('dice', () => {
             'Five of a kind': 6,
             'Four of a kind': 150,
             'Full house': 300,
-            'Large straight': 240,
-            'Small straight': 960,
+            Straight: 240,
             'Three of a kind': 1200,
             'Two pairs': 1800,
-            Pair: 2880,
-            Chance: 240,
+            Pair: 3600,
+            Chance: 480,
         });
     });
     it('holds dice and rejects bad hands', () => {
@@ -140,6 +139,7 @@ it('transactions handle equipment, bank, purchases, selling and capacity atomica
 });
 it('complete dungeon, prevent duplicate loot/chests, and resume battle', () => {
     const g = game();
+    g.doIt({ type: 'LEARN', skill: 'smash' });
     g.doIt({ type: 'ENTER', seed: 42 });
     expect(() => g.doIt({ type: 'ENCOUNTER', room: 6 })).toThrow('three');
     for (const room of [1, 2, 3, 6]) {
@@ -208,7 +208,8 @@ it('progression uses wiki XP and local Saturday noon aging', () => {
     ).toThrow();
     g.doIt({ type: 'REBIRTH', id: 'rowan', talent: 'Magic', age: 10, now: Date.UTC(2026, 8, 20) });
     expect(g.c.talent).toBe('Magic');
-    expect(g.c.skills).toContain('ice');
+    expect(g.c.skills.ice).toBeUndefined();
+    expect(g.c.skills.normal).toBeDefined();
 });
 it('machine commits only successful durable writes', async () => {
     const storage = new MemoryPersistence();

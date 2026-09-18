@@ -41,3 +41,9 @@ Fetched through Firecrawl; HeroUI docs retrieved through its MCP server. Source 
 - [rex-fadeoutdestroy](rex-fadeoutdestroy.md) — saved
 - [rex-fadevolume](rex-fadevolume.md) — saved
 - [HeroUI components](heroui-components.md) — saved through HeroUI MCP
+
+- [Mabinogi skill training](mabinogi-skills.md) — Firecrawl, September 18, 2026 UTC
+- [Mabinogi Critical Hit](mabinogi-critical-hit.md) — Firecrawl, September 18, 2026 UTC
+
+- [Oxlint configuration](oxlint-config.md) — official docs saved with Firecrawl
+- [Oxlint ESLint migration](oxlint-migration.md) — official docs saved with Firecrawl

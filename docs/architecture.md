@@ -6,7 +6,7 @@ This prevents spending currency without receiving an item, awarding battle rewar
 
 Phaser rebuilds scene presentation from committed data and owns transient movement, targets, hit effects, and control bounds. Movement checkpoints are periodic, rather than per frame. React local state contains only form input and presentation choices. XState enemy actors produce damage decisions; dialogue and tutorial actors describe behavior. Domain snapshots remain plain serializable data.
 
-The current storage schema is version 1. Unsupported versions fail explicitly. A malformed current snapshot falls back to the previous validated snapshot. A second tab is read-only while another tab holds the writer lock.
+The current storage schema is version 2. Version 1 migrates learned skill IDs to ranked records and reconstructs pending actions without rerolling. A retained legacy backup accompanies the first durable write. Unsupported versions fail explicitly. A malformed current snapshot falls back to the previous validated snapshot. A second tab is read-only while another tab holds the writer lock.
 
 ## Reference decisions
 
@@ -14,3 +14,7 @@ The current storage schema is version 1. Unsupported versions fail explicitly. A
 - Weekly aging uses Saturday noon in America/Los_Angeles, including DST, and processes missed boundaries once.
 - Dicero informs five-dice combat presentation. Damage multipliers, shared reroll rounds, costs, and loot are the explicit Rebirth Dungeon design, not claimed as a verbatim Dicero ruleset.
 - The Rex documentation URL retains the historical `phaser3-rex-notes` name; the installed package and integration target Phaser 4.
+
+## Ranked skills
+
+`skillCatalog.ts` owns rank content; `skillSystem.ts` owns acquisition, advancement, derived stats and equipment eligibility; `combat.ts` owns committed outcomes and training. Every run freezes profile ranks/stats/loadout; every first roll freezes its action inputs, resource reservation and target set. Temporary effects and cooldowns tick only on defined activation boundaries. The React skill journal and Phaser combat controls use these same domain definitions. See [accepted rules](gameplay/skills-implementation.md).

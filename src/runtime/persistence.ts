@@ -1,3 +1,5 @@
+import { migrateSave } from '../domain/migration';
+import { ranks, skills, skillRank } from '../domain/skillCatalog';
 import type { Immutable } from 'immer';
 import type { SaveData } from '../domain/model';
 export interface Persistence {
@@ -8,8 +10,8 @@ export function validateSave(value: unknown): asserts value is SaveData {
     const s = value as SaveData;
     if (
         !s ||
-        s.version !== 1 ||
-        s.data?.version !== 1 ||
+        s.version !== 2 ||
+        s.data?.version !== 2 ||
         s.checkpoint?.version !== 1 ||
         !Array.isArray(s.data.characters) ||
         s.data.characters.length > 20 ||
@@ -30,6 +32,91 @@ export function validateSave(value: unknown): asserts value is SaveData {
             ![c.hp, c.mana, c.stamina, c.gold, c.level].every(Number.isFinite)
         )
             throw new Error('This character save is damaged.');
+        if (
+            !c.skills ||
+            Array.isArray(c.skills) ||
+            !c.skills.normal ||
+            !Array.isArray(c.collection) ||
+            new Set(c.collection).size !== c.collection.length ||
+            c.collection.some((p) => !Number.isInteger(p) || p < 1 || p > 5) ||
+            !c.effects ||
+            !c.cooldowns
+        )
+            throw new Error('Invalid skill progression.');
+        for (const [id, p] of Object.entries(c.skills)) {
+            if (!skills[id] || !ranks.includes(p.rank) || !p.counts)
+                throw new Error('Invalid skill rank.');
+            for (const [oid, count] of Object.entries(p.counts)) {
+                const objective = skillRank(id, p).objectives.find((o) => o.id === oid);
+                if (!objective || !Number.isInteger(count) || count < 0 || count > objective.cap)
+                    throw new Error('Invalid training count.');
+            }
+        }
+        if (Object.values(c.cooldowns).some((n) => !Number.isInteger(n) || n < 0))
+            throw new Error('Invalid cooldown.');
+        if (
+            c.battle?.dice.length &&
+            (!c.battle.action ||
+                c.battle.dice.length !== 5 ||
+                c.battle.dice.some((n) => !Number.isInteger(n) || n < 1 || n > 6))
+        )
+            throw new Error('Invalid saved action.');
+        if (
+            c.run &&
+            (!c.run.baseline ||
+                c.run.baseline.contentVersion !== 2 ||
+                !c.run.baseline.skills.normal)
+        )
+            throw new Error('Invalid run snapshot.');
+        if (
+            c.effects.final &&
+            (!Number.isFinite(c.effects.final.magnitude) ||
+                c.effects.final.magnitude < 0 ||
+                !Number.isInteger(c.effects.final.remaining) ||
+                c.effects.final.remaining < 1)
+        )
+            throw new Error('Invalid Final Hit status.');
+        if (
+            c.effects.counter &&
+            (!Number.isFinite(c.effects.counter.power) ||
+                c.effects.counter.power < 0 ||
+                !Number.isFinite(c.effects.counter.multiplier) ||
+                c.effects.counter.multiplier <= 0)
+        )
+            throw new Error('Invalid Counterattack status.');
+        if (c.battle?.action) {
+            const a = c.battle.action;
+            if (
+                a.combatVersion !== 2 ||
+                !skills[a.skill] ||
+                skills[a.skill].type !== 'active' ||
+                !ranks.includes(a.rank?.rank) ||
+                !Number.isFinite(a.attack) ||
+                a.attack < 0 ||
+                !Array.isArray(a.targets) ||
+                new Set(a.targets.map((t) => t.id)).size !== a.targets.length ||
+                a.targets.some(
+                    (t) =>
+                        !c.battle!.enemies.some((e) => e.id === t.id) ||
+                        !Number.isFinite(t.defense) ||
+                        !Number.isFinite(t.protection),
+                ) ||
+                !a.costs ||
+                Object.values(a.costs).some((n) => !Number.isSafeInteger(n) || n < 0) ||
+                ['hp', 'mana', 'stamina'].some(
+                    (k) => typeof a.costs[k as keyof typeof a.costs] !== 'number',
+                ) ||
+                !Number.isInteger(a.criticalChance) ||
+                a.criticalChance < 0 ||
+                a.criticalChance > 10000 ||
+                !Number.isFinite(a.criticalBonus) ||
+                a.criticalBonus < 0 ||
+                a.rank.weights.length !== 6 ||
+                a.rank.weights.some((n) => !Number.isSafeInteger(n) || n < 0) ||
+                !a.rank.weights.some((n) => n > 0)
+            )
+                throw new Error('Invalid action snapshot.');
+        }
         ids.add(c.id);
     }
     if (
@@ -47,6 +134,7 @@ export function validateSave(value: unknown): asserts value is SaveData {
 }
 export class IndexedDBPersistence implements Persistence {
     private db?: Promise<IDBDatabase>;
+    private legacySource?: unknown;
     private open() {
         return (this.db ??= new Promise<IDBDatabase>((resolve, reject) => {
             const r = indexedDB.open('rebirth-dungeon', 1);
@@ -67,14 +155,18 @@ export class IndexedDBPersistence implements Persistence {
                     return;
                 }
                 try {
-                    validateSave(r.result);
-                    resolve(r.result);
+                    const migrated = migrateSave(r.result);
+                    validateSave(migrated);
+                    if (r.result.version === 1) this.legacySource = r.result;
+                    resolve(migrated);
                 } catch {
                     const previous = store.get('previous');
                     previous.onsuccess = () => {
                         try {
-                            validateSave(previous.result);
-                            resolve(previous.result);
+                            const migrated = migrateSave(previous.result);
+                            validateSave(migrated);
+                            if (previous.result.version === 1) this.legacySource = previous.result;
+                            resolve(migrated);
                         } catch (e) {
                             reject(e);
                         }
@@ -92,10 +184,27 @@ export class IndexedDBPersistence implements Persistence {
                 store = tx.objectStore('saves');
             const r = store.get('current');
             r.onsuccess = () => {
-                if (r.result) store.put(r.result, 'previous');
+                if (r.result) {
+                    try {
+                        validateSave(migrateSave(r.result));
+                        store.put(r.result, 'previous');
+                    } catch {
+                        /* Keep the last valid fallback. */
+                    }
+                    if (this.legacySource || r.result.version === 1) {
+                        const original = store.get('legacy-v1');
+                        original.onsuccess = () => {
+                            if (!original.result)
+                                store.put(this.legacySource ?? r.result, 'legacy-v1');
+                        };
+                    }
+                }
                 store.put(JSON.parse(JSON.stringify(save)), 'current');
             };
-            tx.oncomplete = () => resolve();
+            tx.oncomplete = () => {
+                this.legacySource = undefined;
+                resolve();
+            };
             tx.onerror = () => reject(tx.error || new Error('Unable to save.'));
             tx.onabort = () => reject(tx.error || new Error('Saving was interrupted.'));
         });
@@ -105,7 +214,9 @@ export class MemoryPersistence implements Persistence {
     value: SaveData | null = null;
     fail = false;
     async load() {
-        return this.value;
+        const value = this.value && migrateSave(this.value);
+        if (value) validateSave(value);
+        return value;
     }
     async save(s: Immutable<SaveData>) {
         if (this.fail) throw new Error('Storage unavailable');

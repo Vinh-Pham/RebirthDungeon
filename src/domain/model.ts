@@ -1,3 +1,4 @@
+import type { SkillProgress, RankDefinition } from './skillCatalog';
 export type Race = 'Human' | 'Elf' | 'Giant';
 export type Talent = 'Close Combat' | 'Archery' | 'Magic' | 'Dual Gun';
 export type Screen =
@@ -23,13 +24,18 @@ export interface Item {
 export interface ItemDefinition {
     name: string;
     icon: string;
-    type: 'weapon' | 'armor' | 'consumable' | 'material';
+    type:
+        'weapon' | 'armor' | 'shield' | 'consumable' | 'material' | 'book' | 'page' | 'collection';
     price: number;
     power?: number;
     talent?: Talent;
     resource?: Resource;
     restore?: number;
     defense?: number;
+    magicDefense?: number;
+    armorCategory?: 'light' | 'heavy';
+    skill?: string;
+    page?: number;
 }
 export interface Enemy {
     id: string;
@@ -39,6 +45,11 @@ export interface Enemy {
     attack: number;
     defense: number;
     boss: boolean;
+    magicDefense?: number;
+    protection?: number;
+    magicProtection?: number;
+    shield?: number;
+    attackType?: 'melee' | 'ranged' | 'magic';
 }
 export interface Battle {
     room: number;
@@ -50,6 +61,8 @@ export interface Battle {
     target: string;
     turn: number;
     log: string[];
+    action?: ActionSnapshot;
+    criticalResults?: Record<string, boolean>;
 }
 export interface Reward {
     id: string;
@@ -77,6 +90,8 @@ export interface Dungeon {
     y: number;
     chests: Reward[];
     chosen: number | null;
+    baseline?: RunBaseline;
+    pageRewards?: number;
 }
 export interface Character {
     id: string;
@@ -100,7 +115,11 @@ export interface Character {
     bank: Item[];
     weapon: string | null;
     armor: string | null;
-    skills: string[];
+    skills: Record<string, SkillProgress>;
+    offhand: string | null;
+    collection: number[];
+    cooldowns: Record<string, number>;
+    effects: CombatEffects;
     createdAt: number;
     rebornAt: number;
     agedAt: number;
@@ -110,6 +129,37 @@ export interface Character {
     checkpoint: Phase;
     tutorial: number;
 }
+export interface RunBaseline {
+    contentVersion: 2;
+    skills: Record<string, SkillProgress>;
+    stats: Stats;
+    weapon: string | null;
+    offhand: string | null;
+    armor: string | null;
+}
+export interface CombatEffects {
+    final?: { magnitude: number; remaining: number };
+    counter?: {
+        power: number;
+        multiplier: number;
+        source: Pick<ActionSnapshot, 'skill' | 'melee' | 'sword' | 'dual'>;
+    };
+    shield?: number;
+}
+export interface ActionSnapshot {
+    id: string;
+    combatVersion: 2;
+    skill: string;
+    rank: RankDefinition;
+    attack: number;
+    melee: boolean;
+    sword: boolean;
+    dual: boolean;
+    targets: { id: string; defense: number; protection: number }[];
+    criticalChance: number;
+    criticalBonus: number;
+    costs: { hp: number; mana: number; stamina: number };
+}
 export interface Settings {
     music: number;
     effects: number;
@@ -117,7 +167,7 @@ export interface Settings {
     hudScale: number;
 }
 export interface GameData {
-    version: 1;
+    version: 2;
     revision: number;
     rng: number;
     activeId: string | null;
@@ -131,7 +181,8 @@ export interface Checkpoint {
     phase: Phase;
 }
 export interface SaveData {
-    version: 1;
+    version: 2;
+    migrationNotice?: boolean;
     data: GameData;
     checkpoint: Checkpoint;
 }
@@ -154,7 +205,7 @@ export const zeroStats = (): Stats => ({
     luck: 0,
 });
 export const initialData = (): GameData => ({
-    version: 1,
+    version: 2,
     revision: 0,
     rng: 0x7c813ea,
     activeId: null,

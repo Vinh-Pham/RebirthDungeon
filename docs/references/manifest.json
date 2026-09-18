@@ -226,5 +226,29 @@
     "url": "https://rexrainbow.github.io/phaser3-rex-notes/docs/site/fadevolume/",
     "status": "saved",
     "retrieved": "2026-09-18T01:58:25.928532+00:00"
+  },
+  {
+    "name": "mabinogi-skills",
+    "url": "https://wiki.mabinogiworld.com/view/Category:Skills",
+    "status": "saved",
+    "retrieved": "2026-09-18T03:40:06.142392+00:00"
+  },
+  {
+    "name": "mabinogi-critical-hit",
+    "url": "https://wiki.mabinogiworld.com/view/Critical_Hit",
+    "status": "saved",
+    "retrieved": "2026-09-18T03:40:06.142551+00:00"
+  },
+  {
+    "name": "oxlint-config",
+    "url": "https://oxc.rs/docs/guide/usage/linter/config.html",
+    "status": "saved",
+    "retrieved": "2026-09-18T03:54:39.028753+00:00"
+  },
+  {
+    "name": "oxlint-migration",
+    "url": "https://oxc.rs/docs/guide/usage/linter/migrate-from-eslint.html",
+    "status": "saved",
+    "retrieved": "2026-09-18T03:54:39.028901+00:00"
   }
 ]
