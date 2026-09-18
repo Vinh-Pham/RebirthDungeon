@@ -871,12 +871,16 @@ function App() {
                 </div>
             )}
             <footer className="absolute bottom-0 left-0 flex h-[108px] w-[calc(100%/var(--hudscale,1))] origin-bottom-left scale-[var(--hudscale,1)] items-center gap-5 border-t border-[#8db6a169] bg-[linear-gradient(#203638,#101e25)] px-[25px] py-[10px] shadow-[0_-10px_40px_#13242144] compact:gap-[10px] compact:p-2 narrow:h-[100px]">
-                <Button
-                    className="flex h-[73px] w-14 flex-col p-[5px]! text-[30px]! text-[#5cc8c1] narrow:w-9"
-                    onPress={() => setPanel('menu')}
-                >
-                    ♧<small className="text-[9px]">MENU</small>
-                </Button>
+                <Tooltip>
+                    <Button
+                        aria-label="MENU"
+                        className="flex h-[73px] w-14 p-[5px]! text-[30px]! text-[#5cc8c1] narrow:w-9"
+                        onPress={() => setPanel('menu')}
+                    >
+                        <span aria-hidden="true">♧</span>
+                    </Button>
+                    <Tooltip.Content>Menu</Tooltip.Content>
+                </Tooltip>
                 <div className="flex w-[180px] shrink-0 flex-col gap-1 compact:w-[120px] narrow:w-[90px]">
                     {(['hp', 'mana', 'stamina'] as const).map((key) => (
                         <ResourceMeter
@@ -908,10 +912,9 @@ function App() {
                                         if (name === 'Skills' && c) setPanel('skills');
                                     }}
                                 >
-                                    <span className="text-[25px] leading-[27px]">{icon}</span>
-                                    <small className="text-[9px] text-[#91b7ac] narrow:text-[7px]">
-                                        {name}
-                                    </small>
+                                    <span aria-hidden="true" className="text-[25px] leading-[27px]">
+                                        {icon}
+                                    </span>
                                 </Button>
                                 <Tooltip.Content>
                                     {name === 'Skills'

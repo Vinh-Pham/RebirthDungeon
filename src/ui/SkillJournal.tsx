@@ -16,7 +16,14 @@ export function SkillJournal({
     trainer?: boolean;
     send: (command: Command) => void;
 }) {
-    const [selected, setSelected] = useState('smash');
+    const [selection, setSelected] = useState('smash');
+    const visibleSkills = Object.entries(skills).filter(([id]) => trainer || !!c.skills[id]);
+    const selected = visibleSkills.some(([id]) => id === selection)
+        ? selection
+        : visibleSkills[0]?.[0];
+    if (!selected) {
+        return <section aria-label="Skill journal">No skills learned yet.</section>;
+    }
     const skill = skills[selected],
         progress = c.skills[selected],
         rank = skillRank(selected, progress),
@@ -50,7 +57,7 @@ export function SkillJournal({
                     aria-label="Skills"
                     className="flex max-h-96 flex-col gap-1 overflow-auto narrow:max-h-40"
                 >
-                    {Object.entries(skills).map(([id, s]) => (
+                    {visibleSkills.map(([id, s]) => (
                         <Button
                             key={id}
                             variant={id === selected ? 'primary' : 'secondary'}
@@ -61,7 +68,6 @@ export function SkillJournal({
                             <span>{id === 'normal' ? 'Basic' : (c.skills[id]?.rank ?? '—')}</span>
                         </Button>
                     ))}
-                    <p className="p-2 text-xs opacity-60">Charge · unavailable pending redesign</p>
                 </nav>
                 <div className="space-y-3" data-testid="skill-detail">
                     <h3>
