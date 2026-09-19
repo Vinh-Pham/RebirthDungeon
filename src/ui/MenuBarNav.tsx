@@ -1,6 +1,7 @@
 import { Button, ProgressBar } from '@heroui/react';
 import type { Immutable } from 'immer';
 import type { Character } from '../domain/model';
+import { windowShortcuts } from './useWindowHotkeys';
 import { xpNeeded } from '../domain/progression';
 
 export function MenuBarNav({
@@ -22,6 +23,11 @@ export function MenuBarNav({
                 {(['character', 'skills', 'quests', 'inventory', 'menu'] as const).map((panel) => (
                     <Button
                         key={panel}
+                        aria-keyshortcuts={
+                            Object.entries(windowShortcuts).find(
+                                ([, window]) => window === panel,
+                            )?.[0]
+                        }
                         variant="secondary"
                         isDisabled={!c && panel !== 'menu'}
                         onPress={(event) => onOpen(panel, event.target)}

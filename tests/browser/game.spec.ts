@@ -65,7 +65,7 @@ async function moveToRoom(page: Page, id: number) {
                 dy = p.y * 32 + 16 - current.position.y;
             if (Math.abs(dx) < 10 && Math.abs(dy) < 10) break;
             const horizontal = Math.abs(dx) >= Math.abs(dy),
-                key = horizontal ? (dx > 0 ? 'd' : 'a') : dy > 0 ? 's' : 'w';
+                key = horizontal ? (dx > 0 ? 'd' : 'a') : dy > 0 ? 'ArrowDown' : 'w';
             await page.keyboard.down(key);
             await page.waitForTimeout(Math.min(150, (Math.abs(horizontal ? dx : dy) / 180) * 1000));
             await page.keyboard.up(key);
@@ -198,7 +198,7 @@ test('town shopping, inventory, bank and settings use accessible panels', async 
                     dy = p.y * 32 + 16 - current.position.y;
                 if (Math.abs(dx) < 10 && Math.abs(dy) < 10) break;
                 const horizontal = Math.abs(dx) >= Math.abs(dy);
-                const key = horizontal ? (dx > 0 ? 'd' : 'a') : dy > 0 ? 's' : 'w';
+                const key = horizontal ? (dx > 0 ? 'd' : 'a') : dy > 0 ? 'ArrowDown' : 'w';
                 await page.keyboard.down(key);
                 await page.waitForTimeout(
                     Math.min(150, (Math.abs(horizontal ? dx : dy) / 180) * 1000),

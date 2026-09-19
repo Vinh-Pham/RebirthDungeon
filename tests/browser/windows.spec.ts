@@ -169,3 +169,62 @@ test('scene transitions close windows and confirmations keep priority', async ({
     await page.getByRole('button', { name: 'Inventory', exact: true }).click();
     await expect(page.getByRole('dialog', { name: 'Your belongings' })).toBeVisible();
 });
+
+test('window shortcuts toggle panels without moving, repeating, or interrupting text and dialogs', async ({
+    page,
+}) => {
+    await createCharacter(page, 'Shortcuts');
+    await page.locator('#game-container').focus();
+    const before = await position(page);
+    for (const [key, title] of [
+        ['c', 'Character Info'],
+        ['z', 'Skill catalog'],
+        ['q', 'Quests'],
+        ['i', 'Your belongings'],
+    ]) {
+        await page.keyboard.down(key);
+        const dialog = page.getByRole('dialog', { name: title, exact: true });
+        await expect(dialog).toBeVisible();
+        await page.keyboard.down(key); // repeated keydown while held must not close it
+        await expect(dialog).toBeVisible();
+        await page.keyboard.up(key);
+        await page.keyboard.press(key);
+        await expect(dialog).toHaveCount(0);
+    }
+    expect(await position(page)).toEqual(before);
+    await page.keyboard.press('c');
+    await page.keyboard.press('q');
+    await page.keyboard.press('c');
+    await expect(page.getByRole('dialog', { name: 'Character Info', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('dialog', { name: 'Quests', exact: true })).toBeVisible();
+    await page.keyboard.press('q');
+    await page.getByRole('button', { name: 'Menu', exact: true }).click();
+    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    const volume = page.getByRole('spinbutton', { name: 'Music volume (0–100)' });
+    await volume.focus();
+    await page.keyboard.press('i');
+    await expect(page.getByRole('dialog', { name: 'Your belongings', exact: true })).toHaveCount(0);
+    await page.keyboard.press('Escape');
+    await page.keyboard.press('Escape');
+    await page.locator('#game-container').focus();
+    await page.keyboard.press('i');
+    const inventory = page.getByRole('dialog', { name: 'Your belongings', exact: true });
+    await inventory.getByRole('button', { name: /^Health potion ×/ }).click({ button: 'right' });
+    await expect(page.getByRole('menu')).toBeVisible();
+    await page.keyboard.press('q');
+    await expect(page.getByRole('dialog', { name: 'Quests', exact: true })).toHaveCount(0);
+    await page.getByRole('menuitem', { name: 'Drop', exact: true }).click();
+    await expect(page.getByRole('alertdialog')).toBeVisible();
+    await page.keyboard.press('i');
+    await expect(inventory).toBeVisible();
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await page.keyboard.press('Escape'); // dismiss any restored item hover before closing inventory
+    await page.locator('#game-container').focus();
+    if (await inventory.count()) await page.keyboard.press('i');
+    await page.locator('#game-container').focus();
+    const y = (await position(page)).y;
+    await page.keyboard.down('s');
+    await expect.poll(async () => (await position(page)).y).toBeGreaterThan(y + 10);
+    await page.keyboard.up('s');
+    await expect(page.getByRole('dialog', { name: 'Skill catalog', exact: true })).toHaveCount(0);
+});

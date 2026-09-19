@@ -6,6 +6,24 @@ Browser tests use real input and inspect a read-only test-mode snapshot. Chromiu
 
 Local Firefox launch currently fails with “Could not find profile folder” before navigation, including when using an explicitly created profile directory. This is a host/browser-launch limitation; the Firefox project remains enabled in CI. Do not report Firefox as verified until that launch succeeds.
 
+## Skills shortcut rebound to Z — September 19, 2026 UTC
+
+- Z now toggles Skills; S again moves down alongside Down Arrow. Updated settings, accessibility shortcut metadata (from the shared map), documentation and regression checks.
+- Lint, TypeScript, three focused hook tests, build and whitespace checks passed. Chromium and WebKit shortcut journeys passed, including Z toggling and S moving without opening Skills. Earlier C/S/Q/I results below describe the superseded binding.
+
+## Window keyboard shortcuts — September 19, 2026 UTC
+
+- Integrated the installed `react-hotkeys-hook` 5.3.3 with the existing window manager for C/S/Q/I toggles. Checked the [official useHotkeys API](https://react-hotkeys-hook.vercel.app/docs/api/use-hotkeys) through Firecrawl; the local reference is `.firecrawl/react-hotkeys-use-hotkeys.md`. Existing package/lockfile changes were preserved.
+- Shortcuts ignore typing, modifiers, composition, held-key repeats, menus, confirmations and gestures. Logical letter keys are used for keyboard-layout compatibility. S opens Skills; Down Arrow handles downward movement, and controls reminders/browser movement helpers were updated.
+- Lint, TypeScript, all 145 unit/React tests, build, formatting and whitespace checks passed. All five enabled window journeys passed across Chromium/WebKit (three existing WebKit-specific skips): toggle/repeat behavior, independent window closing, input and menu/confirmation isolation, unchanged character position, arrow movement, window gestures/focus and scene transitions.
+- No gameplay/persistence rules changed. Full coverage and Firefox were not rerun for this UI/input change.
+
+## Entrance goddess statue — September 19, 2026 UTC
+
+- Added an original SVG goddess statue to dungeon entrances with pointer and nearby E interaction. Both request the existing React confirmation and typed exit transaction; no persisted fields or exit rules changed. The request listener unsubscribes with React lifecycle cleanup.
+- Lint, TypeScript, all 142 unit/React tests, build and whitespace checks passed. Chromium and WebKit checks passed for clicking the statue, cancelling without leaving, reopening with E, confirming town return and reloading the saved exit. The entrance screenshot was visually inspected.
+- Coverage and Firefox were not rerun for this interaction follow-up.
+
 ## Battle skill icons — September 19, 2026 UTC
 
 - Battle skill buttons preload and display their existing catalog artwork, retaining catalog glyphs for skills without raster icons. Labels, costs, disabled reasons and button actions remain present. The skill list uses one column below 430px, with paging controls kept inside the panel.

@@ -74,3 +74,18 @@ actor.subscribe((s) => {
 export function openService(service: string) {
     if (!busy()) dialogue.send({ type: 'OPEN', service });
 }
+
+// A scene may request the existing React exit confirmation without mutating the save.
+const dungeonExitListeners = new Set<() => void>();
+export function onDungeonExitRequested(listener: () => void) {
+    dungeonExitListeners.add(listener);
+    return () => {
+        dungeonExitListeners.delete(listener);
+    };
+}
+export function requestDungeonExit() {
+    const checkpoint = getSave().checkpoint;
+    if (readOnly || busy() || checkpoint.screen !== 'Alby' || checkpoint.phase !== 'exploring')
+        return;
+    for (const listener of dungeonExitListeners) listener();
+}

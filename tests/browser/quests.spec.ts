@@ -86,7 +86,7 @@ async function walk(page: Page, x: number, y: number) {
             dy = y - s.position.y;
         if (Math.hypot(dx, dy) < 28) return;
         const horizontal = Math.abs(dx) > Math.abs(dy);
-        const key = horizontal ? (dx > 0 ? 'd' : 'a') : dy > 0 ? 's' : 'w';
+        const key = horizontal ? (dx > 0 ? 'd' : 'a') : dy > 0 ? 'ArrowDown' : 'w';
         await page.keyboard.down(key);
         await page.waitForTimeout(Math.min(180, (Math.abs(horizontal ? dx : dy) / 180) * 1000));
         await page.keyboard.up(key);

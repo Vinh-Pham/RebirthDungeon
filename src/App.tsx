@@ -22,12 +22,14 @@ import {
     getHero,
     send,
     startRuntime,
+    onDungeonExitRequested,
     readOnly,
     busy,
 } from './runtime/game';
 import { setBlockingOverlay } from './game/inputState';
 import { shops } from './domain/catalog';
 import { races, talents, type CreateInput } from './domain/model';
+import { useWindowHotkeys } from './ui/useWindowHotkeys';
 import { MenuBar } from './ui/MenuBar';
 import { rebirthCooldown } from './domain/progression';
 import { GameWindow } from './ui/windows/GameWindow';
@@ -71,7 +73,7 @@ function App() {
 
 function Game() {
     const snapshot = useSyncExternalStore(subscribe, () => actor.getSnapshot());
-    const { closeAllWindows, focusWindow } = useWindows();
+    const { closeAllWindows, focusWindow, closeWindow, wm } = useWindows();
     const save = snapshot.context.save,
         c = getCharacter(),
         hero = getHero(),
@@ -80,6 +82,7 @@ function Game() {
     const [panels, setPanels] = useState(CLOSED_PANELS);
     const [selectedQuest, setSelectedQuest] = useState<string | null>(null);
     const [confirm, setConfirm] = useState<Confirmation | ''>('');
+    useEffect(() => onDungeonExitRequested(() => setConfirm('abandon')), []);
     const [rebirthId, setRebirthId] = useState('');
     const [service, setService] = useState('');
     const [input, setInput] = useState<CreateInput>({
@@ -140,6 +143,13 @@ function Game() {
         setPanels((previous) => ({ ...previous, [panel]: false }));
         if (panel === 'quests') setSelectedQuest(null);
     };
+    useWindowHotkeys(
+        !!c && ['Town1', 'Alby', 'Battle', 'TreasureRoom'].includes(screen),
+        (panel) => {
+            if (wm.get(panel)) closeWindow(panel);
+            else openPanel(panel, document.activeElement);
+        },
+    );
     const getOpener = (panel: PanelId) => () => openers.current[panel] ?? null;
     const apFooter = c ? (
         <div className="flex w-full items-center justify-between gap-4 text-sm">
@@ -379,7 +389,7 @@ function Game() {
                                     ? `Turn ${c.battle?.turn} · Aren’s borrowed abilities`
                                     : `${c.run?.cleared.length ?? 0} / 2 chambers cleared · E to investigate or exit`
                                 : screen === 'Town1'
-                                  ? 'Walk with WASD or click · E to interact'
+                                  ? 'WASD / arrows or click to walk · E to interact'
                                   : screen === 'Alby'
                                     ? `${c.run?.rooms.filter((r) => r.kind === 'encounter' && c.run?.cleared.includes(r.id)).length ?? 0} / ${c.run?.rooms.filter((r) => r.kind === 'encounter').length ?? 0} enemy rooms cleared · E to investigate`
                                     : screen === 'Battle'

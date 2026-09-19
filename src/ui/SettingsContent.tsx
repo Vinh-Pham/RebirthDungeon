@@ -64,6 +64,8 @@ export function SettingsContent({
             <p>
                 WASD / arrows: walk · Click: move or select
                 <br />
+                C: Character · Z: Skills · Q: Quests · I: Inventory
+                <br />
                 E: interact · Hold dice, then reroll up to twice.
             </p>
             {action(`Reduced motion: ${save.data.settings.reducedMotion ? 'On' : 'Off'}`, () =>

@@ -14,6 +14,7 @@ import {
     openService,
     busy,
     workflowPhase,
+    requestDungeonExit,
 } from '../runtime/game';
 import { locations, townGrid } from './world';
 import { skills } from '../domain/Skills';
@@ -38,6 +39,7 @@ class Preloader extends Phaser.Scene {
         super('Preloader');
     }
     preload() {
+        this.load.svg('goddess-statue', 'assets/game/goddess-statue.svg');
         for (const [id, skill] of Object.entries(skills))
             if (skill.type === 'active' && skill.icon.startsWith('/'))
                 this.load.image(`skill:${id}`, skill.icon);
@@ -52,6 +54,7 @@ class Preloader extends Phaser.Scene {
 }
 class World extends Phaser.Scene {
     player!: Phaser.GameObjects.Image;
+    statue?: Phaser.GameObjects.Image;
     movement?: EightDirection;
     grid: number[][] = [];
     path: { x: number; y: number }[] = [];
@@ -145,6 +148,7 @@ class World extends Phaser.Scene {
         if (wasHit && this.cache.audio.exists('hit'))
             this.sound.play('hit', { volume: save.data.settings.effects });
         this.children.removeAll(true);
+        this.statue = undefined;
         this.path = [];
         this.markers = [];
         this.controls = [];
@@ -214,6 +218,23 @@ class World extends Phaser.Scene {
                 }
             }
             for (const r of c.run.rooms) {
+                if (r.kind === 'entry') {
+                    this.statue = this.add
+                        .image(r.x * 32 - 64, r.y * 32 + 16, 'goddess-statue')
+                        .setDisplaySize(64, 90)
+                        .setInteractive({ useHandCursor: true });
+                    new Button(this.statue).on('click', () => {
+                        if (!canvasBlocked() && !busy()) this.useStatue();
+                    });
+                    this.add
+                        .text(this.statue.x, this.statue.y + 52, 'Goddess · Exit (E)', {
+                            fontSize: '12px',
+                            color: '#e5d69d',
+                            backgroundColor: '#172c2b',
+                            padding: { x: 5, y: 3 },
+                        })
+                        .setOrigin(0.5);
+                }
                 const cleared = c.run.cleared.includes(r.id);
                 this.add
                     .text(
@@ -399,8 +420,24 @@ class World extends Phaser.Scene {
             SoundFade.fadeIn(sound, 500, save.data.settings.music, 0);
         }
     }
+    useStatue() {
+        if (
+            !this.statue ||
+            Phaser.Math.Distance.Between(
+                this.player.x,
+                this.player.y,
+                this.statue.x,
+                this.statue.y,
+            ) >= 150
+        )
+            return false;
+        this.path = [];
+        requestDungeonExit();
+        return true;
+    }
     interact() {
         if (worldKeysBlocked() || busy() || !this.player?.active) return;
+        if (this.screen === 'Alby' && this.useStatue()) return;
         if (this.screen === 'Town1') {
             const l = [...locations]
                 .sort(

@@ -16,7 +16,7 @@ Open http://127.0.0.1:8080. Build with `pnpm build`; deploy the `dist/` director
 ## Play
 
 - Create up to 20 characters: Human, Elf, or Giant; ages 10–17; four combat talents. Giants cannot choose Archery.
-- Move with WASD, arrow keys, or click a walkable destination. Approach a named building and press **E** or click its sign to interact.
+- Move with WASD, arrow keys, or click a walkable destination. Press **C**, **Z**, **Q**, or **I** to toggle Character, Skills, Quests, or Inventory. Approach a named building and press **E** or click its sign to interact.
 - Enter Alby through the northern gate. The floor map marks rooms and the boss. Investigate spiders, chests, or switches with **E**.
 - Learn talent attacks from Aren beside the Blacksmith; new characters start with Normal Attack. Train to 100 points and spend AP in the Skills journal to advance from F through 1. Critical Hit comes from a book; Final Hit from a five-page manual.
 - Select a target and skill. Click dice to hold them, reroll unheld dice at most twice, and attack. The strongest combination determines the damage multiplier. Skills consume stamina or mana; Recover restores both but gives enemies a turn.

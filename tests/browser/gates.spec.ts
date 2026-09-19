@@ -27,7 +27,7 @@ function fixture(roomId: number, unlocked = false) {
         run.y = (gate.y + dy) * 32 + 16;
         if (unlocked) run.cleared = [1, 2, 3, 4];
     });
-    return { save, key: dx > 0 ? 'a' : dx < 0 ? 'd' : dy > 0 ? 'w' : 's' };
+    return { save, key: dx > 0 ? 'a' : dx < 0 ? 'd' : dy > 0 ? 'w' : 'ArrowDown' };
 }
 async function state(page: Page) {
     return page.evaluate(() => (window as any).__GAME__);
@@ -126,4 +126,36 @@ test('boss gate blocks movement until every non-boss enemy room is cleared', asy
     await walk(page, unlocked.key);
     await expect(page.getByRole('heading', { name: 'A tangled encounter' })).toBeVisible();
     expect((await state(page)).save.data.characters[0].battle.room).toBe(6);
+});
+
+test('entrance goddess offers a cancellable exit and returns the player to town', async ({
+    page,
+}, info) => {
+    const save = produce(fixture(1).save, (draft) => {
+        const run = draft.data.characters[0].run!;
+        run.x = run.rooms[0].x * 32 + 16;
+        run.y = run.rooms[0].y * 32 + 16;
+    });
+    await seed(page, save);
+    const entrance = save.data.characters[0].run!.rooms[0];
+    const snapshot = await state(page);
+    await page.mouse.click(
+        entrance.x * 32 - 64 - snapshot.camera.x,
+        entrance.y * 32 + 16 - snapshot.camera.y,
+    );
+    const confirm = page.getByRole('dialog', { name: 'Leave this chapter?' });
+    await expect(confirm).toBeVisible();
+    expect((await state(page)).save.data.characters[0].run).not.toBeNull();
+    await page.keyboard.press('Escape');
+    await expect(confirm).toHaveCount(0);
+    expect((await state(page)).save.checkpoint.screen).toBe('Alby');
+    await page.screenshot({ path: `test-results/goddess-statue-${info.project.name}.png` });
+    await page.locator('#game-container').focus();
+    await page.keyboard.press('e');
+    await expect(confirm).toBeVisible();
+    await confirm.getByRole('button', { name: 'Leave', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Town1', exact: true })).toBeVisible();
+    expect((await state(page)).save.data.characters[0].run).toBeNull();
+    await page.reload();
+    await expect(page.getByRole('heading', { name: 'Town1', exact: true })).toBeVisible();
 });
