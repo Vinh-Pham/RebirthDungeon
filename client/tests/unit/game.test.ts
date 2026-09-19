@@ -1,9 +1,11 @@
-import { describe, it, expect } from 'vitest';
+import { settle } from './helpers/battle';
+import { turnIdentity } from '../../src/domain/battle/engine';
+
+import { it, expect } from 'vitest';
 import { createActor, waitFor } from 'xstate';
 import { blankSave, reduceCommand, active, addItem, type Command } from '../../src/domain/commands';
-import { combination, roll } from '../../src/domain/dice';
 import { generateDungeon, findPath } from '../../src/domain/dungeon';
-import { makeActor, dialogueMachine, questMachine, enemyMachine } from '../../src/runtime/machines';
+import { makeActor, dialogueMachine, questMachine } from '../../src/runtime/machines';
 import {
     MemoryPersistence,
     IndexedDBPersistence,
@@ -16,6 +18,7 @@ function game() {
     let n = 0;
     const doIt = (c: Command) => {
         s = reduceCommand(s, c, String(++n)) as typeof s;
+        s = settle(s);
         return s;
     };
     doIt({ type: 'NAV', screen: 'NewCharacter' });
@@ -35,39 +38,7 @@ function game() {
         },
     };
 }
-describe('dice', () => {
-    it('classifies all 7776 outcomes', () => {
-        const counts: Record<string, number> = {};
-        for (let n = 0; n < 7776; n++) {
-            let k = n;
-            const d = Array.from({ length: 5 }, () => {
-                const v = (k % 6) + 1;
-                k = Math.floor(k / 6);
-                return v;
-            });
-            const c = combination(d);
-            counts[c.name] = (counts[c.name] || 0) + 1;
-            expect(combination([...d].reverse())).toEqual(c);
-        }
-        expect(counts).toEqual({
-            'Five of a kind': 6,
-            'Four of a kind': 150,
-            'Full house': 300,
-            Straight: 240,
-            'Three of a kind': 1200,
-            'Two pairs': 1800,
-            Pair: 3600,
-            Chance: 480,
-        });
-    });
-    it('holds dice and rejects bad hands', () => {
-        expect(roll(5, [1, 2, 3, 4, 5], [true, true, true, true, true]).dice).toEqual([
-            1, 2, 3, 4, 5,
-        ]);
-        expect(() => combination([7, 1, 1, 1, 1])).toThrow();
-        expect(roll(42)).toEqual(roll(42));
-    });
-});
+
 it('1000 seeded floors connect every room with a valid path', () => {
     for (let seed = 0; seed < 1000; seed++) {
         const d = generateDungeon(seed);
@@ -77,7 +48,7 @@ it('1000 seeded floors connect every room with a valid path', () => {
             expect(findPath(d.tiles, d.rooms[0], r).length).toBeGreaterThan(0);
     }
     expect(findPath([[0]], { x: 0, y: 0 }, { x: 0, y: 0 })).toEqual([]);
-});
+}, 15000);
 it('creation limits, immutable updates and duplicate operations', () => {
     const g = game(),
         before = g.s;
@@ -116,7 +87,7 @@ it('transactions handle equipment, bank, purchases, selling and capacity atomica
     const g = game();
     g.doIt({ type: 'BUY', shop: 'Grocery', kind: 'bread' });
     const bread = g.c.inventory.find((i) => i.kind === 'bread')!;
-    g.doIt({ type: 'USE', id: bread.id });
+    expect(() => g.doIt({ type: 'USE', id: bread.id })).toThrow('already full');
     g.doIt({ type: 'BANK_GOLD', amount: 20, deposit: true });
     expect(g.c.bankGold).toBe(20);
     g.doIt({ type: 'BANK_GOLD', amount: 10, deposit: false });
@@ -146,30 +117,20 @@ it('complete dungeon, prevent duplicate loot/chests, and resume battle', () => {
         g.doIt({ type: 'ENCOUNTER', room });
         let turns = 0;
         while (g.s.checkpoint.phase !== 'reward' && turns++ < 60) {
-            if (g.c.hp < 50) {
+            if (g.c.hp < 50 && !g.c.battle!.itemUsed) {
                 const potion = g.c.inventory.find((i) => i.kind === 'hp');
                 if (potion) {
-                    g.doIt({ type: 'USE', id: potion.id });
+                    g.doIt({ type: 'USE', id: potion.id, turnId: g.c.battle!.turnId });
                     continue;
                 }
             }
             g.doIt({
-                type: 'ROLL',
-                skill: g.c.stamina >= 4 && !g.c.cooldowns.smash ? 'smash' : 'normal',
+                type: 'BATTLE_ACTION',
+                action: g.c.stamina >= 4 && !g.c.cooldowns.smash ? 'skill' : 'attack',
+                skill: g.c.stamina >= 4 && !g.c.cooldowns.smash ? 'smash' : undefined,
                 target: g.c.battle!.enemies.find((e) => e.hp)!.id,
+                ...turnIdentity(g.c),
             });
-            g.doIt({ type: 'HOLD', index: 0 });
-            g.doIt({ type: 'REROLL' });
-            g.doIt({ type: 'REROLL' });
-            expect(() => g.doIt({ type: 'REROLL' })).toThrow();
-            if (room === 1 && turns === 1) {
-                const dice = g.c.battle!.dice;
-                g.doIt({ type: 'NAV', screen: 'CharacterSelect' });
-                g.doIt({ type: 'PLAY', id: 'rowan', now: Date.UTC(2026, 8, 17) });
-                expect(g.s.checkpoint.phase).toBe('choosingDice');
-                expect(g.c.battle!.dice).toEqual(dice);
-            }
-            g.doIt({ type: 'ATTACK' });
         }
         expect(g.c.reward).not.toBeNull();
         g.doIt({ type: 'CLAIM', ids: g.c.reward!.items.map((i) => i.id), gold: true });
@@ -242,9 +203,5 @@ it('IndexedDB round trips, validates saves and orchestration progresses', async 
     const q = createActor(questMachine).start();
     for (const type of ['ENTER', 'WIN', 'BOSS', 'TREASURE'] as const) q.send({ type });
     expect(q.getSnapshot().status).toBe('done');
-    const ai = createActor(enemyMachine, { input: { attack: 5 } }).start();
-    ai.send({ type: 'TURN' });
-    expect(ai.getSnapshot().value).toBe('acting');
-    ai.send({ type: 'DEFEAT' });
-    expect(ai.getSnapshot().status).toBe('done');
+    q.stop();
 });

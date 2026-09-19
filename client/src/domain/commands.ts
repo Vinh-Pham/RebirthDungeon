@@ -1,3 +1,4 @@
+import { validateBattleContent } from './battle/content';
 import {
     acceptQuest,
     bankRunQuests,
@@ -24,27 +25,27 @@ import {
 } from './inventory';
 export { addItem } from './inventory';
 import { createStatSnapshot } from './stats/resolve';
-import { applyStatus, removeStatuses, restorePool } from './stats/statuses';
 import {
     learn,
     advance,
     refreshStats,
     progressionStats,
-    snapshotAction,
     requirementReason,
     train,
     useOutsideBattle,
 } from './skillSystem';
 import {
-    commitAbility,
-    payReservation,
-    endPlayerActivation,
-    enemiesAct,
-    clearHand,
-} from './combat';
+    applyBattleCommand,
+    encounterBattle,
+    playerTurn,
+    turnIdentity,
+    type BattleCommand,
+} from './battle/engine';
+import { consumeItem } from './battle/items';
+import { enemyProfile } from './battle/profiles';
 import { produce, type Immutable } from 'immer';
 import { items, skills, shops, talentWeapon } from './catalog';
-import { nextRandom, roll } from './dice';
+import { nextRandom } from './rng';
 import { generateDungeon, bossUnlocked, dungeonGrid, pendingEncounter } from './dungeon';
 import { applyAging, gainXp, rebirth, startingStats } from './progression';
 import {
@@ -62,6 +63,7 @@ import {
     type Settings,
 } from './model';
 export type Command =
+    | BattleCommand
     | { type: 'ACCEPT_QUEST'; quest: string; npc: QuestNpc }
     | { type: 'QUEST_INTERACT'; quest: string; step: string; npc: QuestNpc }
     | { type: 'COMPLETE_QUEST'; quest: string; npc?: QuestNpc }
@@ -75,18 +77,12 @@ export type Command =
     | { type: 'ENTER'; seed: number }
     | { type: 'ENCOUNTER'; room: number; x?: number; y?: number }
     | { type: 'POSITION'; x: number; y: number }
-    | { type: 'ROLL'; skill: string; target: string }
-    | { type: 'HOLD'; index: number; actionId?: string }
-    | { type: 'REROLL'; indices?: number[]; actionId?: string }
-    | { type: 'PASS'; actionId?: string }
     | { type: 'LEARN'; skill: string }
     | { type: 'RANK_UP'; skill: string }
     | { type: 'USE_SKILL'; skill: string }
     | { type: 'READ'; id: string }
     | { type: 'INSERT_PAGE'; id: string }
     | { type: 'DISMISS_MIGRATION' }
-    | { type: 'ATTACK'; actionId?: string }
-    | { type: 'RECOVER' }
     | { type: 'CLAIM'; ids: string[]; gold: boolean; advance?: boolean }
     | { type: 'LEAVE_REWARD' }
     | { type: 'CHEST'; index: number }
@@ -99,7 +95,7 @@ export type Command =
     | { type: 'MOVE_ITEM'; id: string; anchor: InventoryAnchor }
     | { type: 'DROP_ITEM'; id: string; quantity: number }
     | { type: 'WITHDRAW_RECOVERY'; id: string }
-    | { type: 'USE'; id: string }
+    | { type: 'USE'; id: string; turnId?: string }
     | { type: 'REPAIR'; id: string }
     | { type: 'HEAL' }
     | { type: 'BANK_GOLD'; amount: number; deposit: boolean }
@@ -107,7 +103,7 @@ export type Command =
     | { type: 'REBIRTH'; id: string; talent: CreateInput['talent']; age: number; now: number }
     | { type: 'SETTINGS'; settings: Partial<Settings> };
 export const blankSave = (): SaveData => ({
-    version: 4,
+    version: 5,
     data: initialData(),
     checkpoint: { version: 1, screen: 'Title', phase: 'exploring' },
 });
@@ -163,11 +159,9 @@ function finishRun(s: SaveData, c: Character, completed: boolean) {
 }
 function finishActivation(s: SaveData, c: Character) {
     const b = c.battle!;
-    if (c.hp > 0 && b.enemies.some((e) => e.hp > 0)) enemiesAct(c);
     recordDefeats(c);
     if (c.role && c.hp > 0 && b.enemies.every((e) => e.hp === 0)) {
         c.run!.cleared.push(b.room);
-        clearHand(c);
         c.battle = null;
         c.effects = {};
         s.checkpoint = { version: 1, screen: 'Alby', phase: 'exploring' };
@@ -201,8 +195,7 @@ function finishActivation(s: SaveData, c: Character) {
         delete c.effects.manaShield;
         c.tutorial = Math.max(c.tutorial, boss ? 3 : 2);
         s.checkpoint.phase = 'reward';
-    } else s.checkpoint.phase = 'selecting';
-    clearHand(c);
+    } else s.checkpoint.phase = b.started ? 'selecting' : 'turnStart';
 }
 export function allowed(save: Immutable<SaveData>, cmd: Command): boolean {
     const screen = save.checkpoint.screen,
@@ -219,12 +212,10 @@ export function allowed(save: Immutable<SaveData>, cmd: Command): boolean {
             'PLAY',
             'POSITION',
             'ENCOUNTER',
-            'ROLL',
-            'HOLD',
-            'REROLL',
-            'ATTACK',
-            'PASS',
-            'RECOVER',
+            'BATTLE_ACTION',
+            'BATTLE_ITEM',
+            'BEGIN_TURN',
+            'ENEMY_TURN',
             'USE',
             'USE_SKILL',
             'MOVE_ITEM',
@@ -252,10 +243,14 @@ export function allowed(save: Immutable<SaveData>, cmd: Command): boolean {
     if (cmd.type === 'CHEST') return screen === 'TreasureRoom' && phase === 'treasure';
     if (cmd.type === 'CONTINUE') return screen === 'TreasureRoom' && phase === 'reward';
     if (cmd.type === 'CLAIM' || cmd.type === 'LEAVE_REWARD') return phase === 'reward';
-    if (cmd.type === 'ROLL' || cmd.type === 'RECOVER')
-        return screen === 'Battle' && phase === 'selecting';
-    if (['HOLD', 'REROLL', 'ATTACK'].includes(cmd.type))
-        return screen === 'Battle' && phase === 'choosingDice';
+    if (['BATTLE_ACTION', 'BATTLE_ITEM', 'BEGIN_TURN', 'ENEMY_TURN'].includes(cmd.type)) {
+        const c = controlledCharacter(save);
+        if (screen !== 'Battle' || !c?.battle || c.battle.winner) return false;
+        if (cmd.type === 'BEGIN_TURN') return !c.battle.started;
+        if (cmd.type === 'ENEMY_TURN')
+            return c.battle.started && c.battle.order[c.battle.cursor] !== c.id;
+        return playerTurn(c);
+    }
     if (['MOVE_ITEM', 'DROP_ITEM'].includes(cmd.type))
         return (
             (['Town1', 'Alby'].includes(screen) && phase === 'exploring') ||
@@ -264,13 +259,16 @@ export function allowed(save: Immutable<SaveData>, cmd: Command): boolean {
     if (['UNEQUIP', 'WITHDRAW_RECOVERY'].includes(cmd.type))
         return screen === 'Town1' && !active(save)?.run && !active(save)?.rp;
     if (cmd.type === 'USE')
-        return ['Town1', 'Alby'].includes(screen) || (screen === 'Battle' && phase === 'selecting');
+        return (
+            ['Town1', 'Alby'].includes(screen) ||
+            (screen === 'Battle' &&
+                !!controlledCharacter(save) &&
+                playerTurn(controlledCharacter(save)!))
+        );
     if (cmd.type === 'USE_SKILL')
         return ['Town1', 'Alby'].includes(screen) && phase === 'exploring';
     if (['EQUIP', 'LEARN', 'RANK_UP', 'READ', 'INSERT_PAGE'].includes(cmd.type))
         return screen === 'Town1' && !active(save)?.run;
-    if (cmd.type === 'PASS')
-        return screen === 'Battle' && ['selecting', 'choosingDice'].includes(phase);
     return screen === 'Town1';
 }
 export function reduceCommand(
@@ -278,14 +276,10 @@ export function reduceCommand(
     cmd: Command,
     operationId: string,
 ): Immutable<SaveData> {
+    validateBattleContent();
+    if (!operationId) throw new Error('Missing operation identity.');
     if (save.data.operations.includes(operationId)) return save;
     if (!allowed(save, cmd)) throw new Error('That action is not available right now.');
-    if (
-        'actionId' in cmd &&
-        cmd.actionId !== undefined &&
-        controlledCharacter(save)?.battle?.action?.id !== cmd.actionId
-    )
-        throw new Error('This action has already ended.');
     if (cmd.type === 'POSITION') {
         const character = controlledCharacter(save);
         const room = character?.run && pendingEncounter(character.run, cmd.x, cmd.y);
@@ -335,11 +329,12 @@ export function reduceCommand(
                     },
                 };
                 const next = reduceCommand(simulation, cmd, operationId);
+                s.battleEvents = JSON.parse(JSON.stringify(next.battleEvents ?? []));
                 const npc = next.data.characters[0];
                 if (!npc.run) owner.rp = null;
                 else {
                     rp.actor = JSON.parse(JSON.stringify(npc));
-                    rp.rng = next.data.rng;
+                    rp.rng = JSON.parse(JSON.stringify(next.data.rng));
                 }
                 s.checkpoint = { ...next.checkpoint };
                 owner.checkpoint = next.checkpoint.phase;
@@ -415,7 +410,11 @@ export function reduceCommand(
                 equipment: { ...emptyEquipment(), main: `${cmd.id}-weapon` },
                 placements: {},
                 inventoryRecovery: [],
-                skills: { normal: { rank: 'F', counts: {} } },
+                skills: {
+                    normal: { rank: 'F', counts: {} },
+                    combatMastery: { rank: 'F', counts: {} },
+                    defense: { rank: 'F', counts: {} },
+                },
                 collection: [],
                 cooldowns: {},
                 effects: {},
@@ -431,6 +430,10 @@ export function reduceCommand(
                 titleModifiers: {},
             };
             initializeInventory(c);
+            refreshStats(c);
+            c.hp = c.stats.hp;
+            c.mana = c.stats.mana;
+            c.stamina = c.stats.stamina;
             s.data.characters.push(c);
             s.data.activeId = c.id;
             s.checkpoint = { version: 1, screen: 'Town1', phase: 'exploring' };
@@ -558,87 +561,35 @@ export function reduceCommand(
                         break;
                     }
                     const count = r.kind === 'boss' ? 3 : r.id === 1 ? 1 : r.id === 2 ? 2 : 3;
-                    c.battle = {
-                        room: r.id,
-                        enemies: Array.from({ length: count }, (_, i) => {
-                            const boss = r.kind === 'boss' && i === 0;
-                            return {
-                                id: `enemy-${i}`,
-                                species: 'spider',
-                                inflicts: boss ? ['armorBreak'] : r.id > 2 ? ['poison'] : [],
-                                name: boss
-                                    ? 'Giant Spider'
-                                    : r.id > 2
-                                      ? 'Red Spider'
-                                      : 'White Spider',
-                                hp: boss ? 115 : r.id > 2 ? 30 : 24,
-                                maxHp: boss ? 115 : r.id > 2 ? 30 : 24,
-                                attack: boss ? 9 : 4,
-                                defense: boss ? 2 : 0,
+                    const enemies = Array.from({ length: count }, (_, i) => {
+                        const boss = r.kind === 'boss' && i === 0;
+                        return {
+                            id: `enemy-${i}`,
+                            species: 'spider' as const,
+                            name: boss ? 'Giant Spider' : r.id > 2 ? 'Red Spider' : 'White Spider',
+                            hp: boss ? 115 : r.id > 2 ? 30 : 24,
+                            maxHp: boss ? 115 : r.id > 2 ? 30 : 24,
+                            attack: boss ? 9 : 4,
+                            defense: boss ? 2 : 0,
+                            boss,
+                            ...enemyProfile({
+                                name: r.id > 2 ? 'Red Spider' : 'White Spider',
                                 boss,
-                            };
-                        }),
-                        dice: [],
-                        held: Array(5).fill(false),
-                        rerolls: 2,
-                        skill: '',
-                        target: 'enemy-0',
-                        turn: 1,
-                        log: ['Choose a skill to roll your dice.'],
-                    };
-                    s.checkpoint = { version: 1, screen: 'Battle', phase: 'selecting' };
+                            }),
+                        };
+                    });
+                    s.data.rng = encounterBattle(c, r.id, enemies, s.data.rng);
+                    s.checkpoint = { version: 1, screen: 'Battle', phase: 'turnStart' };
                     break;
                 }
-                case 'ROLL': {
-                    const b = c.battle!;
-                    b.action = snapshotAction(c, cmd.skill, cmd.target);
-                    const rolled = roll(s.data.rng, [], [], b.action.rank.weights);
-                    s.data.rng = rolled.seed;
-                    b.dice = rolled.dice;
-                    b.skill = cmd.skill;
-                    b.target = cmd.target;
-                    b.rerolls = 2;
-                    b.held = Array(5).fill(false);
-                    s.checkpoint.phase = 'choosingDice';
-                    break;
-                }
-                case 'HOLD':
-                    if (!Number.isInteger(cmd.index) || cmd.index < 0 || cmd.index > 4)
-                        throw new Error('Invalid die.');
-                    c.battle!.held[cmd.index] = !c.battle!.held[cmd.index];
-                    break;
-                case 'REROLL': {
-                    const b = c.battle!;
-                    if (b.rerolls <= 0 || (!cmd.indices && b.held.every(Boolean)))
-                        throw new Error('No dice available to reroll.');
-                    if (cmd.indices) {
-                        if (
-                            !cmd.indices.length ||
-                            new Set(cmd.indices).size !== cmd.indices.length ||
-                            cmd.indices.some((i) => !Number.isInteger(i) || i < 0 || i > 4)
-                        )
-                            throw new Error('Choose valid die indices.');
-                        b.held = Array.from({ length: 5 }, (_, i) => !cmd.indices!.includes(i));
-                    }
-                    const rolled = roll(s.data.rng, b.dice, b.held, b.action!.rank.weights);
-                    s.data.rng = rolled.seed;
-                    b.dice = rolled.dice;
-                    b.rerolls--;
-                    break;
-                }
-                case 'ATTACK':
-                    commitAbility(s, c);
-                    finishActivation(s, c);
-                    break;
-                case 'PASS':
-                    if (c.battle!.action) payReservation(c);
-                    endPlayerActivation(c);
-                    finishActivation(s, c);
-                    break;
-                case 'RECOVER':
-                    c.mana = Math.min(c.stats.mana, c.mana + 10);
-                    c.stamina = Math.min(c.stats.stamina, c.stamina + 20);
-                    endPlayerActivation(c);
+                case 'BEGIN_TURN':
+                case 'ENEMY_TURN':
+                case 'BATTLE_ACTION':
+                case 'BATTLE_ITEM':
+                    applyBattleCommand(c, cmd, operationId);
+                    s.battleEvents = c.battle!.events.filter(
+                        (event) => event.operationId === operationId,
+                    );
                     finishActivation(s, c);
                     break;
                 case 'LEARN':
@@ -769,39 +720,18 @@ export function reduceCommand(
                     break;
                 }
                 case 'USE': {
-                    const item = c.inventory.find((i) => i.id === cmd.id),
-                        def = item && items[item.kind];
-                    if (!item || !def || (!def.resource && !def.statuses && !def.cleanse))
-                        throw new Error('Choose a consumable.');
-                    if (c.hp <= 0) throw new Error('Cannot restore a defeated character.');
-                    if (def.requiresRun && !c.run)
-                        throw new Error('Use this during a dungeon run.');
-                    if (def.cleanse) {
-                        if (
-                            !c.statuses.some(
-                                (status) =>
-                                    status.definition.removable &&
-                                    status.definition.tags.includes(def.cleanse!),
-                            )
-                        )
-                            throw new Error('No matching effect to remove.');
-                        c.statuses = removeStatuses(c, def.cleanse).statuses;
-                    }
-                    if (def.resource)
-                        c[def.resource] = restorePool(c, def.resource, def.restore!)[def.resource];
-                    for (const id of def.statuses ?? [])
-                        c.statuses = applyStatus(
-                            c,
-                            id,
-                            { id: item.id, name: def.name },
-                            s.checkpoint.screen === 'Battle',
-                        ).statuses;
-                    refreshStats(c);
-                    consumeInventoryItem(c, item.id);
                     if (s.checkpoint.screen === 'Battle') {
-                        endPlayerActivation(c);
-                        finishActivation(s, c);
-                    }
+                        if (cmd.turnId !== c.battle!.turnId)
+                            throw new Error('This turn has already ended.');
+                        applyBattleCommand(
+                            c,
+                            { type: 'BATTLE_ITEM', id: cmd.id, ...turnIdentity(c) },
+                            operationId,
+                        );
+                        s.battleEvents = c.battle!.events.filter(
+                            (event) => event.operationId === operationId,
+                        );
+                    } else consumeItem(c, cmd.id);
                     break;
                 }
                 case 'REPAIR': {
@@ -878,4 +808,13 @@ export function reduceCommand(
         s.data.operations.push(operationId);
         if (s.data.operations.length > 256) s.data.operations.shift();
     });
+}
+/** Headless entry point uses the complete transaction, including rewards and RP ownership. */
+export function executeBattleCommand(
+    save: Immutable<SaveData>,
+    command: BattleCommand,
+    operationId: string,
+) {
+    const state = reduceCommand(save, command, operationId);
+    return { state, events: state === save ? [] : (state.battleEvents ?? []) };
 }

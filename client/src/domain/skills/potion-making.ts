@@ -3,7 +3,7 @@ import { withWiki } from './wiki';
 import wiki from './potion-making.wiki.json';
 
 export default withWiki(
-    define('Potion Making', 'any', 0, 0, 0, 0, {
+    define('Potion Making', 'any', 0, 0, 0, {
         description: 'Combine herbs and bottles to produce restorative potions.',
         effect: 'passive',
         category: 'Life',

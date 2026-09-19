@@ -307,9 +307,14 @@ export function enemyStats(enemy: Immutable<Enemy>) {
             modifiers,
         ),
         hp: modifiedStat('hp', enemy.maxHp, modifiers),
-        defense: modifiedStat('defense', enemy.defense, modifiers),
+        defense: modifiedStat('defense', enemy.defense + (enemy.guarding ? 2 : 0), modifiers),
         magicDefense: modifiedStat('magicDefense', enemy.magicDefense ?? 0, modifiers),
-        protection: modifiedStat('protection', (enemy.protection ?? 0) * 100, modifiers) / 100,
+        protection:
+            modifiedStat(
+                'protection',
+                (enemy.protection ?? 0) * 100 + (enemy.guarding ? 5 : 0),
+                modifiers,
+            ) / 100,
         magicProtection:
             modifiedStat('magicProtection', (enemy.magicProtection ?? 0) * 100, modifiers) / 100,
     };

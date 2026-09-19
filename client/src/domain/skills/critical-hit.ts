@@ -3,7 +3,7 @@ import { withWiki } from './wiki';
 import wiki from './critical-hit.wiki.json';
 
 export default withWiki(
-    define('Critical Hit', 'any', 0, 0, 0, 0, {
+    define('Critical Hit', 'any', 0, 0, 0, {
         training: [
             { id: 'critical', label: 'Critical actions', points: 5, cap: 20 },
             { id: 'criticalKill', label: 'Critical defeats', points: 10, cap: 5 },

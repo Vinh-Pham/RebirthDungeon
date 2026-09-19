@@ -1,8 +1,9 @@
-import { nextRandom } from './dice';
+import { nextRandom, seedRng } from './rng';
 import type { Immutable } from 'immer';
 import type { Character, Dungeon, Room } from './model';
 export const TILE = 32;
 export function generateDungeon(seed: number): Dungeon {
+    let rng = seedRng(seed);
     const original = seed;
     const cells: { x: number; y: number }[] = [];
     const seen = new Set<string>();
@@ -25,7 +26,7 @@ export function generateDungeon(seed: number): Dungeon {
                 (c) => c.x >= 0 && c.x < 5 && c.y >= 0 && c.y < 5 && !seen.has(`${c.x},${c.y}`),
             );
         let n;
-        [seed, n] = nextRandom(seed);
+        [rng, n] = nextRandom(rng);
         const pick = candidates[Math.floor(n * candidates.length)];
         cells.push(pick);
         seen.add(`${pick.x},${pick.y}`);

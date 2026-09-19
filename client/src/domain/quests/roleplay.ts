@@ -1,3 +1,4 @@
+import { seedRng } from '../rng';
 import { initializeInventory } from '../inventory';
 import { emptyEquipment } from '../model';
 import type { Immutable } from 'immer';
@@ -42,6 +43,8 @@ export function createMemory(attemptId: string): RpSession {
         inventoryRecovery: [],
         skills: {
             normal: { rank: 'F', counts: {} },
+            combatMastery: { rank: 'F', counts: {} },
+            defense: { rank: 'F', counts: {} },
             smash: { rank: 'F', counts: {} },
             counter: { rank: 'F', counts: {} },
         },
@@ -63,6 +66,9 @@ export function createMemory(attemptId: string): RpSession {
     };
     initializeInventory(actor);
     refreshStats(actor);
+    actor.hp = actor.stats.hp;
+    actor.mana = actor.stats.mana;
+    actor.stamina = actor.stats.stamina;
     const rooms = [
         { id: 0, x: 6, y: 8, kind: 'entry' as const, required: false, trigger: 'spider' as const },
         {
@@ -107,5 +113,5 @@ export function createMemory(attemptId: string): RpSession {
             statSnapshot: createStatSnapshot(actor),
         },
     };
-    return { version: 1, scenario: 'aren-memory', attemptId, rng: 7319, actor };
+    return { version: 1, scenario: 'aren-memory', attemptId, rng: seedRng(7319), actor };
 }

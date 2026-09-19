@@ -1,5 +1,5 @@
 import { define } from './define';
-const skill = define('Dual Wield Mastery', 'dual', 1, 1, 0, 0, {
+const skill = define('Dual Wield Mastery', 'dual', 1, 1, 0, {
     type: 'passive',
     effect: 'passive',
 });

@@ -3,7 +3,7 @@ import { withWiki } from './wiki';
 import wiki from './range-attack.wiki.json';
 
 export default withWiki(
-    define('Ranged Attack', 'bow', 0, 0, 0.2, 0, {
+    define('Ranged Attack', 'bow', 0, 0, 0, {
         description: 'Attack with a bow. Human and Elf rank values are tracked separately.',
         effect: 'attack',
         category: 'Combat',
@@ -16,6 +16,6 @@ export default withWiki(
     {
         slug: 'range-attack',
         category: 'Combat',
-        note: 'Wiki rank costs and effects; six seconds per turn. Dice and training use Rebirth Dungeon rules.',
+        note: 'Wiki rank costs and effects; six seconds per turn. Turns and training use Rebirth Dungeon rules.',
     },
 );

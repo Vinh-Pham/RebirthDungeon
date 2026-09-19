@@ -1,43 +1,30 @@
-import { setup, assign, createActor } from 'xstate';
-/** A short-lived actor decides a monster's action; only the resulting number is saved. */
-export const enemyMachine = setup({
-    types: {
-        context: {} as { attack: number; defense: number; hp: number; damage: number },
-        input: {} as { attack: number; defense?: number; hp?: number },
-        events: {} as { type: 'TURN' } | { type: 'DEFEAT' },
-    },
-}).createMachine({
-    id: 'enemy',
-    context: ({ input }) => ({
-        ...input,
-        defense: input.defense ?? 0,
-        hp: input.hp ?? 1,
-        damage: 0,
-    }),
-    initial: 'waiting',
-    states: {
-        waiting: {
-            on: {
-                TURN: [
-                    { guard: ({ context }) => context.hp <= 0, target: 'defeated' },
-                    {
-                        target: 'acting',
-                        actions: assign({
-                            damage: ({ context }) => Math.max(0, context.attack - context.defense),
-                        }),
-                    },
-                ],
-                DEFEAT: 'defeated',
-            },
-        },
-        acting: { on: { TURN: 'waiting', DEFEAT: 'defeated' } },
-        defeated: { type: 'final' },
-    },
-});
-export function enemyDamage(attack: number, defense: number, hp: number) {
-    const ai = createActor(enemyMachine, { input: { attack, defense, hp } }).start();
-    ai.send({ type: 'TURN' });
-    const damage = ai.getSnapshot().context.damage;
-    ai.stop();
-    return damage;
+import type { Immutable } from 'immer';
+import type { Character } from './model';
+import type { BattleCommand } from './battle/engine';
+import { enemySkills, type EnemySkillId } from './battle/profiles';
+import { consumableReason } from './battle/items';
+/** AI selects ordinary commands. Spending and effects belong to the shared engine. */
+export function chooseEnemyCommand(c: Immutable<Character>): BattleCommand {
+    const b = c.battle!;
+    const e = b.enemies.find((enemy) => enemy.id === b.order[b.cursor])!;
+    const identity = { actorId: e.id, turnId: b.turnId };
+    const potion =
+        !b.itemUsed && e.allowsItems && e.hp <= e.maxHp * 0.35
+            ? e.consumables.find((item) => !consumableReason(e, item.id))
+            : undefined;
+    if (potion) return { ...identity, type: 'BATTLE_ITEM', id: potion.id };
+    const action = (kind: 'attack' | 'defend' | 'wait'): BattleCommand => ({
+        ...identity,
+        type: 'BATTLE_ACTION',
+        action: kind,
+    });
+    if (e.hp <= e.maxHp * 0.25 && !e.defendedLastTurn && e.stamina >= 1) return action('defend');
+    const skill = e.skills.find(
+        (id) =>
+            enemySkills[id as EnemySkillId] &&
+            !(e.cooldowns[id] > 0) &&
+            e.stamina >= enemySkills[id as EnemySkillId].cost,
+    );
+    if (skill) return { ...identity, type: 'BATTLE_ACTION', action: 'skill', skill };
+    return action(e.stamina >= 2 ? 'attack' : e.stamina >= 1 ? 'defend' : 'wait');
 }

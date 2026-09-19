@@ -3,7 +3,7 @@ import { withWiki } from './wiki';
 import wiki from './campfire.wiki.json';
 
 export default withWiki(
-    define('Campfire', 'any', 0, 0, 0, 0, {
+    define('Campfire', 'any', 0, 0, 0, {
         description: 'Build a temporary fire that improves nearby resting recovery.',
         effect: 'passive',
         category: 'Life',

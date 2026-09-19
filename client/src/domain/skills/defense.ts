@@ -3,7 +3,7 @@ import { withWiki } from './wiki';
 import wiki from './defense.wiki.json';
 
 export default withWiki(
-    define('Defense', 'any', 0, 0, 0, 0, {
+    define('Defense', 'any', 0, 0, 0, {
         description: 'Brace against incoming attacks with additional defense and protection.',
         effect: 'defend',
         category: 'Combat',
@@ -15,7 +15,7 @@ export default withWiki(
     {
         slug: 'defense',
         category: 'Combat',
-        note: 'Wiki rank costs and effects; six seconds per turn. Dice and training use Rebirth Dungeon rules. Defense and protection bonuses last through the next enemy response.',
+        note: 'Wiki rank costs and effects; six seconds per turn. Turns and training use Rebirth Dungeon rules. Defense and protection bonuses last until the next owner turn begins.',
         power: 'Defense Bonus',
     },
 );

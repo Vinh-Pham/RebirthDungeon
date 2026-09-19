@@ -34,7 +34,7 @@ export function ItemDetails({
     const description =
         def.description ??
         (def.type === 'weapon'
-            ? `A ${def.talent?.toLowerCase() ?? 'combat'} weapon. Its power contributes to attack damage; skills, dice and enemy defenses determine the final hit.`
+            ? `A ${def.talent?.toLowerCase() ?? 'combat'} weapon. Its power contributes to attack damage; skills, stats and enemy defenses determine the final hit.`
             : def.type === 'consumable'
               ? 'A consumable supply. Use it from the item menu when its effects are needed.'
               : def.type === 'book'

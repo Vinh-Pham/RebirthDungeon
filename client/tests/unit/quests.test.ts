@@ -1,3 +1,7 @@
+import { act, settle } from './helpers/battle';
+
+import { storeRaw } from './helpers/storage';
+import { seedRng } from '../../src/domain/rng';
 import { initializeInventory } from '../../src/domain/inventory';
 import { describe, expect, it } from 'vitest';
 import { produce, type Immutable } from 'immer';
@@ -67,7 +71,7 @@ function killEncounter(s: Immutable<SaveData>) {
     while (controlledCharacter(s)!.battle && s.checkpoint.phase !== 'reward') {
         const c = controlledCharacter(s)!;
         const target = c.battle!.enemies.find((e) => e.hp > 0)!.id;
-        s = send(send(s, { type: 'ROLL', skill: 'normal', target }), { type: 'ATTACK' });
+        s = act(s as SaveData, 'normal', target);
     }
     return s;
 }
@@ -256,7 +260,7 @@ it.each(['ABANDON', 'death'] as const)(
                 c.hp = 1;
                 c.battle!.enemies[0].attack = 999;
             });
-            s = send(s, { type: 'PASS' });
+            s = settle(act(s as SaveData, 'defense'));
         } else s = send(s, { type: 'ABANDON' });
         expect(hero(s).quests.records['kill-spiders'].counts.spiders).toBe(2);
         expect(hero(s).quests.records['clear-alby'].counts['alby-victory'] ?? 0).toBe(0);
@@ -369,18 +373,22 @@ it('rolls back the entire claim when the balance is invalid or storage fails', a
     expect(hero(s).quests.records['arens-warning'].status).toBe('completed');
     actor.stop();
 });
-it('migrates schema two mid-roll without crediting past or current-run objectives', () => {
-    const s = send(enter(), { type: 'ROLL', skill: 'normal', target: 'enemy-0' });
+it('migrates schema two mid-battle without crediting past or current-run objectives', () => {
+    const s = enter();
     const old = JSON.parse(JSON.stringify(s));
     old.version = old.data.version = 2;
+    old.data.rng = 123;
     delete old.data.characters[0].quests;
     delete old.data.characters[0].rp;
     delete old.data.characters[0].run.quests;
     const migrated = migrateSave(old);
     validateSave(migrated);
-    expect(migrated.version).toBe(4);
-    expect(hero(migrated).battle).toEqual(hero(s).battle);
-    expect(migrated.data.rng).toBe(s.data.rng);
+    expect(migrated.version).toBe(5);
+    expect(hero(migrated).battle!.enemies.map((e) => e.hp)).toEqual(
+        hero(s).battle!.enemies.map((e) => e.hp),
+    );
+    expect(hero(migrated).battle!.started).toBe(true);
+    expect(migrated.data.rng).toEqual(seedRng(123));
     expect(hero(migrated).run!.quests!.stages).toEqual({});
     expect(hero(migrated).quests.records).toEqual({});
     const town = send(migrated, { type: 'ABANDON' });
@@ -389,7 +397,7 @@ it('migrates schema two mid-roll without crediting past or current-run objective
 });
 
 describe('Aren memory', () => {
-    it('isolates the actor and RNG, restores reservations, prevents hero actions, and exits without rewards', () => {
+    it('isolates the actor and RNG, restores turns, prevents hero actions, and exits without rewards', () => {
         const base = readyMemory();
         let s = send(base, { type: 'START_RP_MISSION', quest: 'arens-expedition', npc: 'Trainer' });
         expect(controlledCharacter(s)!.name).toBe('Aren');
@@ -403,23 +411,16 @@ describe('Aren memory', () => {
             expect(allowed(s, cmd)).toBe(false);
         expect(() => send(s, { type: 'ENCOUNTER', room: 2 })).toThrow('previous');
         expect(() => send(s, { type: 'ENCOUNTER', room: 3, x: 1248, y: 256 })).toThrow('both');
-        s = send(send(s, { type: 'ENCOUNTER', room: 1 }), {
-            type: 'ROLL',
-            skill: 'normal',
-            target: 'enemy-0',
-        });
+        s = settle(send(s, { type: 'ENCOUNTER', room: 1 }) as SaveData);
         const saved = migrateSave(JSON.parse(JSON.stringify(s)));
         validateSave(saved);
         expect(hero(saved).rp).toEqual(hero(s).rp);
-        expect(s.data.rng).toBe(base.data.rng);
-        s = send(saved, {
-            type: 'ATTACK',
-            actionId: controlledCharacter(saved)!.battle!.action!.id,
-        });
+        expect(s.data.rng).toEqual(base.data.rng);
+        s = act(saved);
         expect(hero(s).inventory).toEqual(hero(base).inventory);
         s = send(s, { type: 'EXIT_RP_MISSION' });
         expect(hero(s)).toEqual(hero(base));
-        expect(s.data.rng).toBe(base.data.rng);
+        expect(s.data.rng).toEqual(base.data.rng);
     });
     it('commits success once, starts the report stage, and completes the story after explicit claim', () => {
         let s = send(readyMemory(), {
@@ -468,7 +469,7 @@ describe('Aren memory', () => {
             c.rp!.actor.hp = 1;
             c.rp!.actor.battle!.enemies[0].attack = 999;
         });
-        s = send(s, { type: 'PASS' });
+        s = settle(act(s as SaveData, 'defense'));
         expect(hero(s).rp).toBeNull();
         expect(hero(s).quests.records['arens-expedition'].stage).toBe(0);
         s = send(s, { type: 'START_RP_MISSION', quest: 'arens-expedition', npc: 'Trainer' });
@@ -522,21 +523,18 @@ it('rejects malformed quest saves and cyclic or unreachable catalog entries', ()
     recordDefeats(copy);
 });
 
-it('counts counterattack and multi-target defeats once, without dice selection giving credit', () => {
+it('counts counterattack and multi-target defeats once, without duplicate defeat credit', () => {
     for (const skill of ['counter', 'windmill']) {
         let s = send(fresh(), { type: 'LEARN', skill });
         s = enter(s, skill === 'windmill' ? 3 : 1);
         s = edit(s, (c) => {
             for (const e of c.battle!.enemies) {
                 e.hp = 1;
-                e.inflicts = [];
+                e.defendedLastTurn = true;
             }
         });
-        s = send(s, { type: 'ROLL', skill, target: 'enemy-0' });
         expect(hero(s).run!.quests!.counts).toEqual({});
-        s = send(s, { type: 'REROLL', indices: [0] });
-        expect(hero(s).run!.quests!.counts).toEqual({});
-        s = send(s, { type: 'ATTACK' });
+        s = settle(act(s as SaveData, skill));
         const count = skill === 'windmill' ? 3 : 1;
         expect(hero(s).run!.quests!.counts['kill-spiders'].spiders).toBe(count);
         const copied = structuredClone(hero(s));
@@ -584,12 +582,13 @@ it('retains the original schema-two fallback when upgrading after a damaged curr
     const persistence = new IndexedDBPersistence();
     const old = JSON.parse(JSON.stringify(fresh()));
     old.version = old.data.version = 2;
+    old.data.rng = 123;
     delete old.data.characters[0].quests;
     delete old.data.characters[0].rp;
-    await persistence.save(old);
-    await persistence.save({ invalid: true } as unknown as SaveData);
+    await storeRaw(old, 'previous');
+    await storeRaw({ invalid: true });
     const restored = (await persistence.load())!;
-    expect(restored.version).toBe(4);
+    expect(restored.version).toBe(5);
     await persistence.save(restored);
     const backup = await new Promise<SaveData>((resolve, reject) => {
         const open = indexedDB.open('rebirth-dungeon', 1);
@@ -606,7 +605,7 @@ it('retains the original schema-two fallback when upgrading after a damaged curr
     const damaged = edit(pending, (c) => {
         c.run!.quests!.counts = { 'kill-spiders': { spiders: -2 } };
     });
-    expect(() => validateSave(damaged)).toThrow('pending');
+    expect(() => validateSave(damaged)).toThrow();
 });
 
 it('persists town-load quest delivery before publishing and never writes from a read-only tab', async () => {

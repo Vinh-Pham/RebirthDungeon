@@ -36,9 +36,9 @@ export const getSave = () => actor.getSnapshot().context.save;
 export const getCharacter = () => controlledCharacter(getSave());
 export const getHero = () => active(getSave());
 export const busy = () =>
-    ['committing', 'loading', 'rolling', 'resolvingPlayer', 'resolvingEnemies', 'failure'].some(
-        (state) => actor.getSnapshot().matches(state as 'committing'),
-    );
+    ['committing', 'loading', 'failure'].some((state) =>
+        actor.getSnapshot().matches(state as 'committing'),
+    ) || actor.getSnapshot().matches({ Battle: 'advancing' });
 export const workflowPhase = () => actor.getSnapshot().value;
 export function send(command: Command) {
     if (readOnly || busy()) return;

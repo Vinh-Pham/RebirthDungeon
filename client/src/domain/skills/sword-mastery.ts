@@ -3,7 +3,7 @@ import { withWiki } from './wiki';
 import wiki from './sword-mastery.wiki.json';
 
 export default withWiki(
-    define('Sword Mastery', 'sword', 0, 0, 0, 0, {
+    define('Sword Mastery', 'sword', 0, 0, 0, {
         description: 'Increase minimum and maximum sword damage and balance.',
         effect: 'passive',
         category: 'Combat',
@@ -15,6 +15,6 @@ export default withWiki(
     {
         slug: 'sword-mastery',
         category: 'Combat',
-        note: 'Wiki rank costs and effects; six seconds per turn. Dice and training use Rebirth Dungeon rules.',
+        note: 'Wiki rank costs and effects; six seconds per turn. Turns and training use Rebirth Dungeon rules.',
     },
 );

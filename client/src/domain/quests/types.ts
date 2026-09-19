@@ -1,3 +1,4 @@
+import type { RngState } from '../rng';
 import type { Character, Item, Talent } from '../model';
 import type { Rank } from '../skills/types';
 
@@ -74,7 +75,7 @@ export interface RpSession {
     version: 1;
     scenario: 'aren-memory';
     attemptId: string;
-    rng: number;
+    rng: RngState;
     actor: Character;
 }
 export const emptyJournal = (): QuestJournal => ({

@@ -1,5 +1,5 @@
 import { define } from './define';
-const skill = define('Blood Strike', 'melee', 8, 2, 0.4, 3, {
+const skill = define('Blood Strike', 'melee', 8, 2, 3, {
     description:
         'Pay 4 HP and 3 SP to strike one enemy. The HP payment bypasses shields and must leave at least 1 HP.',
     talent: 'Close Combat',

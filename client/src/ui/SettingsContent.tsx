@@ -66,7 +66,7 @@ export function SettingsContent({
                 <br />
                 C: Character · Z: Skills · Q: Quests · I: Inventory
                 <br />
-                E: interact · Hold dice, then reroll up to twice.
+                E: interact · In battle, optionally use an item, then choose a main action.
             </p>
             {action(`Reduced motion: ${save.data.settings.reducedMotion ? 'On' : 'Off'}`, () =>
                 send({

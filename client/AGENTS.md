@@ -4,7 +4,7 @@ This guide applies to the repository. Follow more specific `AGENTS.md` files whe
 
 ## Project overview
 
-Rebirth Dungeon is a local, single-player browser RPG with town exploration, generated dungeons, five-dice combat, character progression, and persistent saves. It is an independent game inspired by Mabinogi and Dicero, with explicit adaptations rather than a complete reproduction of either game.
+Rebirth Dungeon is a local, single-player browser RPG with town exploration, generated dungeons, individual-turn combat, character progression, and persistent saves. It is an independent game inspired by Mabinogi and Dicero, with explicit adaptations rather than a complete reproduction of either game.
 
 - **Toolchain:** Node 24, pnpm 12, TypeScript, Vite.
 - **Presentation:** React 19, HeroUI 3, Tailwind CSS 4, Phaser 4, and individual Rex plugins.
@@ -37,7 +37,8 @@ src/
     model.ts              Serializable state and shared game types
     commands.ts           Typed commands, phase guards, and immutable transactions
     combat.ts             Damage, committed abilities, enemy responses, and training
-    dice.ts               Seeded rolls and combination rules
+    rng.ts                Serializable pure-rand world and battle streams
+    battle/               Turn order, commands, events, schemas, items, and enemy profiles
     dungeon.ts            Dungeon generation and pathfinding
     progression.ts        Character creation stats, XP, aging, and rebirth
     behavior.ts           Enemy behavior
@@ -46,7 +47,7 @@ src/
     skillSystem.ts        Learning, ranking, equipment eligibility, and derived stats
     stats/                Versioned stat resolution, costs, statuses, and save validation
     skills/               One module per skill; separate *.wiki.json source stats
-    migration.ts          Save upgrades and reconstruction of legacy actions
+    migration.ts          Save upgrades and conversion of legacy battles
     xp-table.json         Extracted XP data
   runtime/
     game.ts               Shared runtime access, command dispatch, and writer lock
@@ -54,7 +55,7 @@ src/
     persistence.ts        Save validation, IndexedDB, backups, and test persistence
   game/
     main.ts               Active Phaser boot, preload, world, and scene registration
-    battleView.ts         Canvas battle controls, skill paging, and treasure selection
+    battleView.ts         Canvas treasure selection; React BattlePanel owns battle controls
     world.ts              Town layout and service locations
     inputState.ts         Modal/input coordination
     scenes/               Template scene files; verify registration before editing
@@ -79,8 +80,8 @@ vite/                     Development and production Vite configuration
 2. **Keep domain rules shared.** Combat previews, button eligibility, resource costs, and final outcomes should use the same domain functions. React owns form and presentation state; Phaser owns transient world input and visuals. Neither should duplicate authoritative game rules.
 3. **Keep state serializable and deterministic.** Store plain data, never Phaser objects, DOM nodes, or actors. Pass randomness and time explicitly through the existing seeded RNG and timestamp inputs; do not introduce hidden `Math.random()` or wall-clock reads into domain calculations.
 4. **Preserve durable boundaries.** Operation IDs, reward claim IDs, chest choices, and phase guards prevent duplicate spending and rewards. Storage failure must leave the last committed state intact. Respect busy/read-only state and the browser writer lock.
-5. **Protect save compatibility.** Skill IDs are persisted identifiers, even where they differ from filenames (`ice`, `counter`, `heavyMastery`, etc.). Add explicit migrations and validation when changing persisted shapes. Preserve pending dice, reservations, target sets, and committed outcomes across reloads. Never reset saves as a shortcut for a content change.
-6. **Respect snapshots and activation timing.** Run entry freezes ranks, profile stats, and loadout; the first roll reserves action inputs and costs. Pay once on commitment or a paid pass. Cooldowns and temporary effects advance at the defined activation boundaries, not animation frames. Increased resource maxima do not refill current pools.
+5. **Protect save compatibility.** Skill IDs are persisted identifiers, even where they differ from filenames (`ice`, `counter`, `heavyMastery`, etc.). Add explicit migrations and validation when changing persisted shapes. Preserve fixed order, turn identity, item allowance, RNG continuation, and committed outcomes across reloads. Never reset saves as a shortcut for a content change.
+6. **Respect snapshots and activation timing.** Run entry freezes ranks, profile stats, and loadout. Each actor turn permits one optional item followed by a main action; pay once in its committed transaction. Cooldowns and temporary effects advance at the defined activation boundaries, not animation frames. Increased resource maxima do not refill current pools.
 
 For a new gameplay action, follow the existing path through command typing/guards, domain resolution, runtime orchestration where needed, presentation, persistence validation, and focused tests.
 
@@ -119,7 +120,7 @@ For a new gameplay action, follow the existing path through command typing/guard
 | `pnpm check`                       | Lint, typecheck, coverage, build, and browser checks                |
 
 - Run focused tests during development. For completed gameplay or persistence changes, run lint, typecheck, relevant tests/coverage, and build; run affected browser journeys for UI or end-to-end behavior changes. CI runs the full sequence. Documentation-only edits need link/content and whitespace checks rather than a full game test run.
-- Test outcomes and invariants: costs paid once, race/equipment restrictions, deterministic rolls, rank transitions, effect expiration, reloads, and failed writes. Do not weaken coverage thresholds or change assertions simply to hide regressions; update balance expectations when the intended rule changes and verify them against its source.
+- Test outcomes and invariants: costs paid once, race/equipment restrictions, deterministic turns, rank transitions, effect expiration, reloads, and failed writes. Do not weaken coverage thresholds or change assertions simply to hide regressions; update balance expectations when the intended rule changes and verify them against its source.
 - Browser tests use actual mouse/keyboard input and the read-only `window.__GAME__` bridge, available only in Vite `e2e` mode. The test server runs on port 8081. Do not add production-accessible mutation/debug shortcuts to make tests pass.
 - Check `docs/verification.md` for recorded browser-launch limitations. Report exactly what ran and any current failures; earlier results are not evidence of a fresh successful run.
 - Update affected implementation/reference documentation with behavioral changes. Finish by summarizing the change, validation performed, and material limitations. Do not commit, push, or deploy unless requested.

@@ -1,3 +1,5 @@
+import { act, settle } from './helpers/battle';
+
 import { readdirSync, existsSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { produce } from 'immer';
@@ -34,7 +36,8 @@ function fixture(talent: 'Magic' | 'Archery' | 'Close Combat' = 'Magic') {
     });
 }
 function battle(id: string, talent: 'Magic' | 'Archery' | 'Close Combat' = 'Magic') {
-    let save = run(fixture(talent), { type: 'LEARN', skill: id });
+    let save = fixture(talent);
+    if (!active(save)!.skills[id]) save = run(save, { type: 'LEARN', skill: id });
     save = run(save, { type: 'ENTER', seed: 42 });
     save = run(save, { type: 'ENCOUNTER', room: 1 });
     return produce(save, (draft) => {
@@ -44,7 +47,7 @@ function battle(id: string, talent: 'Magic' | 'Archery' | 'Close Combat' = 'Magi
     });
 }
 function cast(save: SaveData, id: string) {
-    return run(run(save, { type: 'ROLL', skill: id, target: 'enemy-0' }), { type: 'ATTACK' });
+    return act(save, id);
 }
 
 describe('wiki-backed catalog', () => {
@@ -152,24 +155,24 @@ describe('additional combat skills', () => {
         const action = snapshotAction(active(save)!, 'shockwave', 'enemy-0');
         expect(action.costs.mana).toBe(Math.ceil(effectiveStats(active(save)!).mana * 0.01));
     });
-    it('Defense protects one response and Mana Shield drains mana before health', () => {
+    it('Defense protects until next owner turn and Mana Shield drains mana before health', () => {
         let defense = produce(battle('defense', 'Close Combat'), (draft) => {
             draft.data.characters[0].battle!.enemies[0].attack = 15;
         });
         const hp = active(defense)!.hp;
-        defense = cast(defense, 'defense');
+        defense = settle(cast(defense, 'defense'));
         expect(active(defense)!.hp).toBe(hp);
         expect(active(defense)!.effects.defense).toBeUndefined();
         let shield = produce(battle('manaShield'), (draft) => {
             draft.data.characters[0].battle!.enemies[0].attack = 15;
         });
         const before = active(shield)!;
-        shield = cast(shield, 'manaShield');
+        shield = settle(cast(shield, 'manaShield'));
         expect(active(shield)!.hp).toBe(before.hp);
         expect(active(shield)!.mana).toBeLessThan(before.mana - 4);
         expect(active(shield)!.effects.manaShield?.remaining).toBe(2);
         validateSave(JSON.parse(JSON.stringify(shield)));
-        shield = run(run(shield, { type: 'PASS' }), { type: 'PASS' });
+        shield = settle(act(settle(act(shield))));
         expect(active(shield)!.effects.manaShield).toBeUndefined();
     });
     it('all playable wiki ranks have finite costs, AP, and modifiers', () => {

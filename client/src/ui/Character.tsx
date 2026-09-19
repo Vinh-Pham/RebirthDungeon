@@ -1,3 +1,4 @@
+import { speed } from '../domain/skillSystem';
 import { useState, type ReactNode } from 'react';
 import { Button, Card, Tabs } from '@heroui/react';
 import { xpNeeded } from '../domain/progression';
@@ -76,6 +77,7 @@ export function Character({ c }: { c: Immutable<CharacterModel> }) {
                             </p>
                         </div>
                         <dl className="grid grid-cols-2 gap-4 wnarrow:grid-cols-1 wnarrow:gap-2">
+                            <InfoRow label="Speed" value={speed(c)} />
                             <InfoRow label="Title" value={c.titleModifiers.first?.name ?? 'None'} />
                             <InfoRow
                                 label="Second Title"

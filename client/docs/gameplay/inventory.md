@@ -14,7 +14,7 @@ Hovering or keyboard-focusing an inventory/equipment item opens a HeroUI Pro Hov
 
 Every item has Drop; equipped items must first be unequipped. HeroUI AlertDialog requests a quantity (default one) and explicit Discard confirmation. Cancel/Escape changes nothing; a failed write leaves the dialog and committed inventory intact. Discard destroys items, without a world pickup or refund.
 
-Move and Drop are available in town/exploration and combat selection before rolling, without advancing turns or RNG. Equipment changes and recovery withdrawals require town. Pending dice, reward phases, writer-lock read-only state and busy writes block mutations. Existing Use costs and activation timing apply.
+Move and Drop are available in town/exploration and during the player’s action-selection turn without advancing turns or RNG. Equipment changes and recovery withdrawals require town. Enemy turns, reward phases, writer-lock read-only state and busy writes block mutations. Consumables share one persisted item allowance between Inventory and the battle menu, followed by a main action. Failed use preserves the allowance; using an item does not tick cooldowns or effects.
 
 ### Capacity and equipment
 

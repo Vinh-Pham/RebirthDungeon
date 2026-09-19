@@ -1,3 +1,4 @@
+import { attack, readyTurn } from './helpers/battle';
 import { expect, test, type Page } from '@playwright/test';
 import { blankSave, reduceCommand, type Command } from '../../src/domain/commands';
 import type { SaveData } from '../../src/domain/model';
@@ -41,23 +42,13 @@ async function seed(page: Page, value: Immutable<SaveData>) {
     await page.reload();
     await snapshot(page);
 }
-async function control(page: Page, name: string) {
-    await expect
-        .poll(async () => (await snapshot(page)).controls.some((c: any) => c.name === name))
-        .toBeTruthy();
-    const before = await snapshot(page),
-        bounds = before.controls.find((c: any) => c.name === name);
-    await page.mouse.click(bounds.x, bounds.y, { delay: 60 });
-    await expect
-        .poll(async () => (await snapshot(page)).save.data.revision)
-        .toBeGreaterThan(before.save.data.revision);
-}
 async function battle(page: Page, memory = false) {
     for (let turns = 0; turns < 40; turns++) {
         const s = await snapshot(page);
         if (s.save.checkpoint.screen !== 'Battle' || s.save.checkpoint.phase === 'reward') return;
+        await readyTurn(page);
         const c = memory ? s.save.data.characters[0].rp.actor : s.save.data.characters[0];
-        if (c.hp < 50 && c.inventory.some((i: any) => i.kind === 'hp')) {
+        if (c.hp < 50 && !c.battle.itemUsed && c.inventory.some((i: any) => i.kind === 'hp')) {
             await page.getByRole('button', { name: 'Inventory', exact: true }).click();
             await page.getByRole('button', { name: /^Health potion ×/ }).click({ button: 'right' });
             await page.getByRole('menuitem', { name: 'Use', exact: true }).click();
@@ -67,12 +58,7 @@ async function battle(page: Page, memory = false) {
                 .click();
             continue;
         }
-        if (c.stamina < 4) {
-            await control(page, 'recover');
-            continue;
-        }
-        await control(page, 'normal');
-        await control(page, 'attack');
+        await attack(page);
     }
     throw new Error('Battle did not finish');
 }
@@ -226,7 +212,7 @@ test('hunting quest banks combat progress and claims once after reload', async (
     expect(saved.save.data.characters[0].quests.records['kill-spiders'].status).toBe('completed');
 });
 
-test('Aren memory plays with borrowed skills, restores a rolled hand, and reports success', async ({
+test('Aren memory plays with borrowed skills, restores a pending turn, and reports success', async ({
     page,
 }) => {
     test.setTimeout(180000);
@@ -251,12 +237,12 @@ test('Aren memory plays with borrowed skills, restores a rolled hand, and report
     await expect(page.getByRole('heading', { name: 'Aren’s memory', exact: true })).toBeVisible();
     await walk(page, 544, 256);
     await page.keyboard.press('e');
-    await control(page, 'normal');
-    const rolled = (await snapshot(page)).save.data.characters[0].rp.actor.battle;
+    await readyTurn(page);
+    const pending = (await snapshot(page)).save.data.characters[0].rp.actor.battle;
     await page.reload();
     const restored = await snapshot(page);
-    expect(restored.save.data.characters[0].rp.actor.battle.dice).toEqual(rolled.dice);
-    await control(page, 'attack');
+    expect(restored.save.data.characters[0].rp.actor.battle).toEqual(pending);
+    await attack(page);
     await battle(page, true);
     await walk(page, 896, 256);
     await page.keyboard.press('e');

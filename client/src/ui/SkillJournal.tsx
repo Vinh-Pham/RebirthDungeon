@@ -71,7 +71,7 @@ export function SkillJournal({
         );
     };
     const row = ([id, s]: [string, Skill]) => {
-        const progress = c.skills[id],
+        const progress = c.skills[id === 'normal' ? 'combatMastery' : id],
             rank = skillRank(id, progress, c.race),
             points = progress ? trainingPoints(id, progress) : 0;
         const trainable = !!progress && id !== 'normal' && ranks.indexOf(rank.rank) < 14;
@@ -127,7 +127,7 @@ export function SkillJournal({
                 <div className="flex w-32 shrink-0 flex-col items-end gap-2 text-xs tabular-nums wnarrow:ml-auto">
                     <span>
                         {id === 'normal'
-                            ? 'Basic'
+                            ? `Rank ${c.skills.combatMastery?.rank ?? 'F'} · Combat Mastery`
                             : progress
                               ? `Rank ${progress.rank}`
                               : 'Not learned'}
@@ -230,7 +230,7 @@ function SkillDetails({
     const [inspectedRank, setInspectedRank] = useState('F');
     const town = !c.run;
     const skill = skills[selected],
-        progress = c.skills[selected],
+        progress = c.skills[selected === 'normal' ? 'combatMastery' : selected],
         rank = skillRank(selected, progress, c.race),
         index = ranks.indexOf(rank.rank);
     const points = progress ? trainingPoints(selected, progress) : 0,
@@ -239,21 +239,27 @@ function SkillDetails({
         const value = skillRank(selected, { rank: ranks[r] }, c.race);
         const costs = actionCosts(c, selected, value);
         if (skill.route === 'reference') return skill.adaptation;
-        if (skill.type === 'passive') return passiveDescription(c, selected, r);
+        if (skill.type === 'passive')
+            return (
+                passiveDescription(c, selected, r) +
+                (selected === 'combatMastery'
+                    ? ` · Attack ${(20 + r) / 10} SP · Recover ${(Math.floor(r / 3) + 1) * 0.5} SP at turn start`
+                    : '')
+            );
         const power =
             skill.effect === 'status'
                 ? skill.description
                 : skill.effect === 'attack' || skill.effect === 'counter'
-                  ? `${value.attackMultiplier !== undefined ? `${(value.attackMultiplier * 100).toFixed(1)}% attack · ` : ''}Base ${value.base} + ${value.pip} per pip`
+                  ? `${value.attackMultiplier !== undefined ? `${(value.attackMultiplier * 100).toFixed(1)}% attack · ` : ''}Base ${value.base}`
                   : skill.effect === 'heal'
-                    ? `Restore at least ${value.base * 5} HP, multiplied by the dice combination`
+                    ? `Restore ${Math.floor(value.base * 5)} HP`
                     : skill.effect === 'restoreMana'
                       ? `Restore ${value.base}% maximum mana`
                       : skill.effect === 'defend'
-                        ? `+${value.base} defense for the next enemy response`
+                        ? `+${value.base} defense until your next turn`
                         : skill.effect === 'manaShield'
-                          ? `${value.base} damage absorbed per MP · 3 enemy responses`
-                          : `Buff base ${value.base} + ${value.pip} per pip · ${value.duration} activations`;
+                          ? `${value.base} damage absorbed per MP · until the third subsequent turn`
+                          : `Buff base ${value.base} · ${value.duration} activations`;
         return `${power} · ${costDescription(costs)} · cooldown ${value.cooldown} turns`;
     };
     const status =
@@ -401,18 +407,6 @@ function SkillDetails({
                         {selected === 'combatMastery' && reason
                             ? 'Max HP active; melee attack requires a melee action'
                             : reason || 'Active for eligible actions'}
-                    </p>
-                )}
-                {skill.type === 'active' && skill.route !== 'reference' && (
-                    <p className="text-xs">
-                        Faces 1–6:{' '}
-                        {rank.weights
-                            .map(
-                                (w) =>
-                                    `${((100 * w) / rank.weights.reduce((a, b) => a + b, 0)).toFixed(1)}%`,
-                            )
-                            .join(' / ')}
-                        . {reason}
                     </p>
                 )}
                 <p className="text-sm">

@@ -3,7 +3,7 @@ import { withWiki } from './wiki';
 import wiki from './carpentry.wiki.json';
 
 export default withWiki(
-    define('Carpentry', 'any', 0, 0, 0, 0, {
+    define('Carpentry', 'any', 0, 0, 0, {
         description: 'Gather wood and craft bows, with better success and quality at higher ranks.',
         effect: 'passive',
         category: 'Life',

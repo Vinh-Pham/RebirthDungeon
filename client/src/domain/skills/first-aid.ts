@@ -3,7 +3,7 @@ import { withWiki } from './wiki';
 import wiki from './first-aid.wiki.json';
 
 export default withWiki(
-    define('First Aid', 'any', 0, 0, 0, 0, {
+    define('First Aid', 'any', 0, 0, 0, {
         description: 'Treat wounds with bandages and restore a portion of wounded health.',
         effect: 'passive',
         category: 'Life',

@@ -1,5 +1,5 @@
 import { define } from './define';
-const skill = define('Final Hit', 'melee', 2, 1, 0.1, 8, {
+const skill = define('Final Hit', 'melee', 2, 1, 8, {
     effect: 'buff',
     target: 'self',
     route: 'collection',

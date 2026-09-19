@@ -370,7 +370,7 @@ export function InventoryPanel({
                 : def.type === 'page'
                   ? { type: 'INSERT_PAGE', id: item.id }
                   : def.type === 'consumable'
-                    ? { type: 'USE', id: item.id }
+                    ? { type: 'USE', id: item.id, turnId: c.battle?.turnId }
                     : null;
         const actions: Action[] = [];
         if (use) {

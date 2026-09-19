@@ -61,7 +61,7 @@ it('entering an enemy room starts one persistent encounter; gates open only afte
     const c = save.data.characters[0];
     expect(save.checkpoint.screen).toBe('Battle');
     expect(c.battle!.room).toBe(2);
-    expect(save.data.rng).toBe(before.data.rng);
+    expect(save.data.rng).not.toEqual(before.data.rng);
     expect(gateClosed(c, room)).toBe(true);
     expect(reduceCommand(save, { type: 'POSITION', x: room.x * 32, y: room.y * 32 }, 'walk')).toBe(
         save,

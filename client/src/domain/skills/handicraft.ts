@@ -3,7 +3,7 @@ import { withWiki } from './wiki';
 import wiki from './handicraft.wiki.json';
 
 export default withWiki(
-    define('Handicraft', 'any', 0, 0, 0, 0, {
+    define('Handicraft', 'any', 0, 0, 0, {
         description: 'Use a handicraft kit and materials to create useful items.',
         effect: 'passive',
         category: 'Life',

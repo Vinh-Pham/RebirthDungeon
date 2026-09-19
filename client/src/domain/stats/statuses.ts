@@ -127,14 +127,21 @@ export function completeStatusActivation<T extends Actor>(
                         log.push(
                             `${status.definition.name} deals ${damage} damage to ${draft.name}.`,
                         );
-                    } else if ('stats' in draft)
-                        draft[effect.pool] = Math.max(0, draft[effect.pool] - effect.amount);
+                    } else draft[effect.pool] = Math.max(0, draft[effect.pool] - effect.amount);
                 } else if ('stats' in draft) {
                     const maximum = resolveStats(draft as Character).primary[effect.pool];
                     draft[effect.pool] = Math.min(maximum, draft[effect.pool] + effect.amount);
                     log.push(`${status.definition.name} restores ${effect.amount} ${effect.pool}.`);
-                } else if (effect.pool === 'hp')
-                    draft.hp = Math.min(enemyStats(draft as Enemy).hp, draft.hp + effect.amount);
+                } else {
+                    const enemy = draft as Enemy;
+                    const maximum =
+                        effect.pool === 'hp'
+                            ? enemyStats(enemy).hp
+                            : effect.pool === 'mana'
+                              ? enemy.maxMana
+                              : enemy.maxStamina;
+                    enemy[effect.pool] = Math.min(maximum, enemy[effect.pool] + effect.amount);
+                }
             }
             status.remaining--;
         }

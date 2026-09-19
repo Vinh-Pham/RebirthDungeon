@@ -1,9 +1,21 @@
+import { rngSchema } from '../rng';
 import { createMemory } from './roleplay';
 import type { Character } from '../model';
 import { items, skills } from '../catalog';
 import { quests } from './catalog';
 import { questCategories, questNpcs, type QuestDefinition } from './types';
 import { ranks } from '../Skills';
+
+// Object insertion order and modifier-source ordering have no gameplay meaning.
+function canonical(value: unknown): string {
+    return JSON.stringify(value, (key, item) => {
+        if (Array.isArray(item))
+            return key === 'sources' ? [...item].sort((a, b) => a.id.localeCompare(b.id)) : item;
+        return item && typeof item === 'object'
+            ? Object.fromEntries(Object.entries(item).sort(([a], [b]) => a.localeCompare(b)))
+            : item;
+    });
+}
 
 export function validateQuestCatalog(catalog: Record<string, QuestDefinition> = quests) {
     const visited = new Set<string>(),
@@ -199,7 +211,7 @@ export function validateQuests(c: Character) {
             c.rp.version !== 1 ||
             c.rp.scenario !== 'aren-memory' ||
             !c.rp.attemptId ||
-            !Number.isInteger(c.rp.rng) ||
+            !rngSchema.safeParse(c.rp.rng).success ||
             c.rp.actor?.role !== 'aren' ||
             c.rp.actor.rp ||
             !c.rp.actor.run ||
@@ -227,15 +239,14 @@ export function validateQuests(c: Character) {
             actor.equipment.body ||
             actor.bank.length ||
             Object.keys(actor.quests.records).length ||
-            JSON.stringify(actor.skills) !== JSON.stringify(template.skills) ||
-            JSON.stringify(actor.base) !== JSON.stringify(template.base) ||
+            canonical(actor.skills) !== canonical(template.skills) ||
+            canonical(actor.base) !== canonical(template.base) ||
             (['contentVersion', 'skills', 'stats', 'statSnapshot', 'equipment'] as const).some(
                 (key) =>
-                    JSON.stringify(run.baseline?.[key]) !==
-                    JSON.stringify(template.run!.baseline?.[key]),
+                    canonical(run.baseline?.[key]) !== canonical(template.run!.baseline?.[key]),
             ) ||
-            JSON.stringify(run.rooms) !== JSON.stringify(template.run!.rooms) ||
-            JSON.stringify(run.tiles) !== JSON.stringify(template.run!.tiles) ||
+            canonical(run.rooms) !== canonical(template.run!.rooms) ||
+            canonical(run.tiles) !== canonical(template.run!.tiles) ||
             run.id !== template.run!.id ||
             run.chests.length ||
             run.chosen !== null ||

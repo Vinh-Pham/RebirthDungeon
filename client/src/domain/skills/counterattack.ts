@@ -3,7 +3,7 @@ import { withWiki } from './wiki';
 import wiki from './counterattack.wiki.json';
 
 export default withWiki(
-    define('Counterattack', 'melee', 0, 0, 0, 0, {
+    define('Counterattack', 'melee', 0, 0, 0, {
         description:
             'Prepare a retaliation against the next melee attack, using both combatants’ attack power.',
         effect: 'counter',
@@ -16,7 +16,7 @@ export default withWiki(
     {
         slug: 'counterattack',
         category: 'Combat',
-        note: 'Wiki rank costs and effects; six seconds per turn. Dice and training use Rebirth Dungeon rules. Retaliates once against melee; opponent damage uses the wiki counter multiplier.',
+        note: 'Wiki rank costs and effects; six seconds per turn. Turns and training use Rebirth Dungeon rules. Retaliates once against melee; opponent damage uses the wiki counter multiplier.',
         damage: ['Damage From Self [%]'],
     },
 );

@@ -18,15 +18,13 @@ export function define(
     requirement: Skill['requirement'],
     base: number,
     growth: number,
-    pip: number,
     cost: number,
     options: Partial<Omit<Skill, 'ranks'>> & {
         cooldown?: number;
-        rankWeights?: (index: number) => number[];
         training?: Objective[];
     } = {},
 ): Skill {
-    const { rankWeights, training, ...definition } = options;
+    const { training, ...definition } = options;
     const effect = options.effect ?? 'attack';
     const objectives =
         training ??
@@ -60,14 +58,12 @@ export function define(
         ranks: ranks.map((rank, r) => ({
             rank,
             base: base + growth * r,
-            pip,
             costs: {
                 hp: 0,
                 mana: options.resource === 'mana' ? cost : 0,
                 stamina: options.resource === 'mana' ? 0 : cost,
             },
             cooldown: options.cooldown ?? 0,
-            weights: rankWeights?.(r) ?? [1, 1, 1, 1, 1, 1],
             ap: r === 14 ? 0 : 2 + r,
             duration: 2 + Math.floor(r / 5),
             objectives:

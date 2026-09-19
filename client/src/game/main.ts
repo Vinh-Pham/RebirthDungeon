@@ -1,5 +1,6 @@
+import { getBattleTarget, onBattleTarget } from './battleTarget';
 import Phaser from 'phaser';
-import { battleView, treasureView, type ControlBounds } from './battleView';
+import { treasureView, type ControlBounds } from './battleView';
 import Button from 'phaser4-rex-plugins/plugins/button.js';
 import Anchor from 'phaser4-rex-plugins/plugins/anchor.js';
 import FadeOutDestroy from 'phaser4-rex-plugins/plugins/fade-out-destroy.js';
@@ -60,9 +61,8 @@ class World extends Phaser.Scene {
     path: { x: number; y: number }[] = [];
     keys!: Record<string, Phaser.Input.Keyboard.Key>;
     lastEnemyHealth = 0;
+    lastEvent = 0;
     controls: ControlBounds[] = [];
-    selectedEnemy = 'enemy-0';
-    skillPage = 0;
     screen = '';
     signature = '';
     unsubscribe?: () => void;
@@ -75,12 +75,14 @@ class World extends Phaser.Scene {
 
     create() {
         this.screen = '';
+        this.lastEvent = getCharacter()?.battle?.eventSequence ?? 0;
         this.keys = this.input.keyboard!.addKeys(
             'W,A,S,D,UP,DOWN,LEFT,RIGHT,E',
             false,
         ) as typeof this.keys;
         this.input.keyboard!.on('keydown-E', () => this.interact());
         this.unsubscribe = subscribe(() => this.sync());
+        const unsubscribeTarget = onBattleTarget(() => this.sync(true));
         this.unsubscribeOwnership = onOwnershipChange(() => {
             // Input ownership moved between the game, windows, the HUD, or a gesture:
             // drop held keys and any click path so nothing keeps walking underneath.
@@ -89,6 +91,7 @@ class World extends Phaser.Scene {
         });
         this.events.once('shutdown', () => {
             this.unsubscribe?.();
+            unsubscribeTarget();
             this.unsubscribeOwnership?.();
             this.input.removeAllListeners();
             this.input.keyboard?.removeAllListeners();
@@ -143,7 +146,12 @@ class World extends Phaser.Scene {
         this.signature = signature;
         this.screen = screen;
         const enemyHealth = c?.battle?.enemies.reduce((sum, e) => sum + e.hp, 0) || 0;
-        const wasHit = enemyHealth < this.lastEnemyHealth && screen === 'Battle';
+        const hits =
+            c?.battle?.events.filter(
+                (e) => e.sequence > this.lastEvent && (e.type === 'damage' || e.type === 'counter'),
+            ) ?? [];
+        const wasHit = hits.length > 0 && screen === 'Battle';
+        this.lastEvent = c?.battle?.eventSequence ?? 0;
         this.lastEnemyHealth = enemyHealth;
         if (wasHit && this.cache.audio.exists('hit'))
             this.sound.play('hit', { volume: save.data.settings.effects });
@@ -334,7 +342,11 @@ class World extends Phaser.Scene {
                             e.boss ? 'boss' : e.name === 'Red Spider' ? 'redspider' : 'spider',
                         )
                         .setDisplaySize(e.boss ? 220 : 130, e.boss ? 170 : 100);
-                    if (wasHit && !save.data.settings.reducedMotion)
+                    if (getBattleTarget() === e.id && e.hp > 0) img.setTint(0xd5efb2);
+                    if (
+                        hits.some((event) => event.targetId === e.id) &&
+                        !save.data.settings.reducedMotion
+                    )
                         new ShakePosition(img, { duration: 200, magnitude: 3 }).shake();
                     if (e.hp === 0) FadeOutDestroy(img, save.data.settings.reducedMotion ? 0 : 250);
                 });
@@ -343,21 +355,6 @@ class World extends Phaser.Scene {
                 for (let i = 0; i < 5; i++)
                     this.add.image((w * (i + 1)) / 6, h * 0.4, 'chest').setDisplaySize(110, 92);
         }
-        if (screen === 'Battle' && c?.battle)
-            this.controls = battleView(
-                this,
-                c,
-                this.selectedEnemy,
-                (id) => {
-                    this.selectedEnemy = id;
-                    this.sync(true);
-                },
-                this.skillPage,
-                (page) => {
-                    this.skillPage = page;
-                    this.sync(true);
-                },
-            );
         if (screen === 'TreasureRoom' && save.checkpoint.phase === 'treasure')
             this.controls = treasureView(this);
         if (['Town1', 'Alby'].includes(screen)) {

@@ -3,7 +3,7 @@ import { withWiki } from './wiki';
 import wiki from './heavy-armor-mastery.wiki.json';
 
 export default withWiki(
-    define('Heavy Armor Mastery', 'heavy', 0, 0, 0, 0, {
+    define('Heavy Armor Mastery', 'heavy', 0, 0, 0, {
         description: 'Improve physical and magical defenses while wearing heavy armor.',
         effect: 'passive',
         category: 'Combat',
@@ -15,6 +15,6 @@ export default withWiki(
     {
         slug: 'heavy-armor-mastery',
         category: 'Combat',
-        note: 'Wiki rank costs and effects; six seconds per turn. Dice and training use Rebirth Dungeon rules.',
+        note: 'Wiki rank costs and effects; six seconds per turn. Turns and training use Rebirth Dungeon rules.',
     },
 );

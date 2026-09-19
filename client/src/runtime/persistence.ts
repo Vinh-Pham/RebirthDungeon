@@ -1,3 +1,4 @@
+import { saveSchema, validateTurn } from '../domain/battle/schemas';
 import { validateInventory } from '../domain/inventory';
 import { validateQuests } from '../domain/quests/validate';
 import { validateActorStats } from '../domain/stats/validate';
@@ -10,22 +11,23 @@ export interface Persistence {
     save(save: Immutable<SaveData>): Promise<void>;
 }
 export function validateSave(value: unknown): asserts value is SaveData {
+    saveSchema.parse(value);
     const s = value as SaveData;
     if (
         !s ||
-        s.version !== 4 ||
-        s.data?.version !== 4 ||
+        s.version !== 5 ||
+        s.data?.version !== 5 ||
         s.data.statsVersion !== 1 ||
         s.checkpoint?.version !== 1 ||
         !Array.isArray(s.data.characters) ||
         s.data.characters.length > 20 ||
-        !Number.isFinite(s.data.rng) ||
         !Number.isSafeInteger(s.data.revision) ||
         !Array.isArray(s.data.operations)
     )
         throw new Error('This save is damaged or from an unsupported version.');
     const ids = new Set<string>();
     for (const c of s.data.characters) {
+        validateTurn(c);
         validateInventory(c);
         validateQuests(c);
         if (c.rp) {
@@ -74,13 +76,6 @@ export function validateSave(value: unknown): asserts value is SaveData {
         if (Object.values(c.cooldowns).some((n) => !Number.isInteger(n) || n < 0))
             throw new Error('Invalid cooldown.');
         if (
-            c.battle?.dice.length &&
-            (!c.battle.action ||
-                c.battle.dice.length !== 5 ||
-                c.battle.dice.some((n) => !Number.isInteger(n) || n < 1 || n > 6))
-        )
-            throw new Error('Invalid saved action.');
-        if (
             c.run &&
             (!c.run.baseline ||
                 c.run.baseline.contentVersion !== 2 ||
@@ -101,9 +96,7 @@ export function validateSave(value: unknown): asserts value is SaveData {
                 c.effects.counter.power < 0 ||
                 (c.effects.counter.opponentMultiplier !== undefined &&
                     (!Number.isFinite(c.effects.counter.opponentMultiplier) ||
-                        c.effects.counter.opponentMultiplier < 0)) ||
-                !Number.isFinite(c.effects.counter.multiplier) ||
-                c.effects.counter.multiplier <= 0)
+                        c.effects.counter.opponentMultiplier < 0)))
         )
             throw new Error('Invalid Counterattack status.');
         if (
@@ -123,44 +116,6 @@ export function validateSave(value: unknown): asserts value is SaveData {
                 c.effects.manaShield.upkeep < 0)
         )
             throw new Error('Invalid Mana Shield status.');
-        if (c.battle?.action) {
-            const a = c.battle.action;
-            if (
-                a.combatVersion !== 2 ||
-                (a.statsVersion !== undefined && a.statsVersion !== 1) ||
-                !skills[a.skill] ||
-                skills[a.skill].type !== 'active' ||
-                !ranks.includes(a.rank?.rank) ||
-                !Number.isFinite(a.attack) ||
-                a.attack < 0 ||
-                !Array.isArray(a.targets) ||
-                new Set(a.targets.map((t) => t.id)).size !== a.targets.length ||
-                a.targets.some(
-                    (t) =>
-                        !c.battle!.enemies.some((e) => e.id === t.id) ||
-                        !Number.isFinite(t.defense) ||
-                        !Number.isFinite(t.protection),
-                ) ||
-                !a.costs ||
-                Object.values(a.costs).some((n) => !Number.isSafeInteger(n) || n < 0) ||
-                ['hp', 'mana', 'stamina'].some(
-                    (k) => typeof a.costs[k as keyof typeof a.costs] !== 'number',
-                ) ||
-                !Number.isInteger(a.criticalChance) ||
-                a.criticalChance < 0 ||
-                a.criticalChance > 10000 ||
-                !Number.isFinite(a.criticalBonus) ||
-                a.criticalBonus < 0 ||
-                (a.rank.attackMultiplier !== undefined &&
-                    (!Number.isFinite(a.rank.attackMultiplier) || a.rank.attackMultiplier < 0)) ||
-                (a.rank.counterMultiplier !== undefined &&
-                    (!Number.isFinite(a.rank.counterMultiplier) || a.rank.counterMultiplier < 0)) ||
-                a.rank.weights.length !== 6 ||
-                a.rank.weights.some((n) => !Number.isSafeInteger(n) || n < 0) ||
-                !a.rank.weights.some((n) => n > 0)
-            )
-                throw new Error('Invalid action snapshot.');
-        }
         ids.add(c.id);
     }
     if (
@@ -181,6 +136,7 @@ export class IndexedDBPersistence implements Persistence {
     private legacySource?: unknown;
     private legacyV2Source?: unknown;
     private legacyV3Source?: unknown;
+    private legacyV4Source?: unknown;
     private open() {
         return (this.db ??= new Promise<IDBDatabase>((resolve, reject) => {
             const r = indexedDB.open('rebirth-dungeon', 1);
@@ -206,6 +162,7 @@ export class IndexedDBPersistence implements Persistence {
                     if (r.result.version === 1) this.legacySource = r.result;
                     if (r.result.version === 2) this.legacyV2Source = r.result;
                     if (r.result.version === 3) this.legacyV3Source = r.result;
+                    if (r.result.version === 4) this.legacyV4Source = r.result;
                     resolve(migrated);
                 } catch {
                     const previous = store.get('previous');
@@ -218,6 +175,8 @@ export class IndexedDBPersistence implements Persistence {
                                 this.legacyV2Source = previous.result;
                             if (previous.result.version === 3)
                                 this.legacyV3Source = previous.result;
+                            if (previous.result.version === 4)
+                                this.legacyV4Source = previous.result;
                             resolve(migrated);
                         } catch (e) {
                             reject(e);
@@ -230,6 +189,7 @@ export class IndexedDBPersistence implements Persistence {
         });
     }
     async save(save: Immutable<SaveData>) {
+        validateSave(save);
         const db = await this.open();
         return new Promise<void>((resolve, reject) => {
             const tx = db.transaction('saves', 'readwrite'),
@@ -265,12 +225,20 @@ export class IndexedDBPersistence implements Persistence {
                             store.put(this.legacyV3Source ?? r.result, 'legacy-v3');
                     };
                 }
+                if (this.legacyV4Source || r.result?.version === 4) {
+                    const original = store.get('legacy-v4');
+                    original.onsuccess = () => {
+                        if (!original.result)
+                            store.put(this.legacyV4Source ?? r.result, 'legacy-v4');
+                    };
+                }
                 store.put(JSON.parse(JSON.stringify(save)), 'current');
             };
             tx.oncomplete = () => {
                 this.legacySource = undefined;
                 this.legacyV2Source = undefined;
                 this.legacyV3Source = undefined;
+                this.legacyV4Source = undefined;
                 resolve();
             };
             tx.onerror = () => reject(tx.error || new Error('Unable to save.'));
@@ -288,6 +256,7 @@ export class MemoryPersistence implements Persistence {
     }
     async save(s: Immutable<SaveData>) {
         if (this.fail) throw new Error('Storage unavailable');
+        validateSave(s);
         this.value = JSON.parse(JSON.stringify(s));
     }
 }

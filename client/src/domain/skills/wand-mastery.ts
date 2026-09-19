@@ -1,6 +1,6 @@
 import { define } from './define';
 
-export default define('Wand Mastery', 'magic', 0, 0, 0, 0, {
+export default define('Wand Mastery', 'magic', 0, 0, 0, {
     icon: '/assets/game/skills/wand-mastery.webp',
     category: 'Magic',
     type: 'passive',

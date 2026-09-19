@@ -1,3 +1,5 @@
+import { seedRng, type RngState } from './rng';
+import type { BattleEvent } from './battle/events';
 import type { QuestJournal, RunQuests, RpSession } from './quests/types';
 import type {
     StatModifier,
@@ -17,7 +19,7 @@ export type Screen =
     | 'Alby'
     | 'Battle'
     | 'TreasureRoom';
-export type Phase = 'selecting' | 'choosingDice' | 'reward' | 'treasure' | 'exploring';
+export type Phase = 'selecting' | 'turnStart' | 'reward' | 'treasure' | 'exploring';
 export type Resource = 'hp' | 'mana' | 'stamina';
 export interface Stats {
     hp: number;
@@ -98,7 +100,7 @@ export interface ItemDefinition {
     description?: string;
 }
 export interface Enemy {
-    species?: 'spider';
+    species?: 'spider' | 'human';
     id: string;
     name: string;
     hp: number;
@@ -112,20 +114,37 @@ export interface Enemy {
     shield?: number;
     attackType?: 'melee' | 'ranged' | 'magic';
     statuses?: StatusInstance[];
-    inflicts?: string[];
+    speed: number;
+    stamina: number;
+    maxStamina: number;
+    mana: number;
+    maxMana: number;
+    skills: string[];
+    cooldowns: Record<string, number>;
+    consumables: Item[];
+    allowsItems: boolean;
+    defendedLastTurn: boolean;
+    guarding: boolean;
 }
 export interface Battle {
     room: number;
     enemies: Enemy[];
-    dice: number[];
-    held: boolean[];
-    rerolls: number;
-    skill: string;
-    target: string;
+    id: string;
+    rulesVersion: 1;
+    contentVersion: 1;
+    order: string[];
+    speeds: Record<string, number>;
+    cursor: number;
+    round: number;
     turn: number;
+    turnId: string;
+    started: boolean;
+    itemUsed: boolean;
+    rng: RngState;
+    winner: 'player' | 'enemy' | null;
+    events: BattleEvent[];
+    eventSequence: number;
     log: string[];
-    action?: ActionSnapshot;
-    criticalResults?: Record<string, boolean>;
 }
 export interface Reward {
     id: string;
@@ -212,7 +231,6 @@ export interface CombatEffects {
     counter?: {
         power: number;
         opponentMultiplier?: number;
-        multiplier: number;
         source: Pick<ActionSnapshot, 'skill' | 'melee' | 'sword' | 'dual'>;
     };
     shield?: number;
@@ -239,10 +257,10 @@ export interface Settings {
     hudScale: number;
 }
 export interface GameData {
-    version: 4;
+    version: 5;
     statsVersion: 1;
     revision: number;
-    rng: number;
+    rng: RngState;
     activeId: string | null;
     characters: Character[];
     settings: Settings;
@@ -254,7 +272,8 @@ export interface Checkpoint {
     phase: Phase;
 }
 export interface SaveData {
-    version: 4;
+    battleEvents?: BattleEvent[];
+    version: 5;
     migrationNotice?: boolean;
     data: GameData;
     checkpoint: Checkpoint;
@@ -278,10 +297,10 @@ export const zeroStats = (): Stats => ({
     luck: 0,
 });
 export const initialData = (): GameData => ({
-    version: 4,
+    version: 5,
     statsVersion: 1,
     revision: 0,
-    rng: 0x7c813ea,
+    rng: seedRng(0x7c813ea),
     activeId: null,
     characters: [],
     settings: { music: 0.25, effects: 0.4, reducedMotion: false, hudScale: 1 },

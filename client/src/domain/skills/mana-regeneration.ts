@@ -3,7 +3,7 @@ import { withWiki } from './wiki';
 import wiki from './mana-regeneration.wiki.json';
 
 const skill = withWiki(
-    define('Mana Recovery', 'magic', 0, 0, 0, 0, {
+    define('Mana Recovery', 'magic', 0, 0, 0, {
         description: 'Channel magic to restore a percentage of maximum mana.',
         effect: 'restoreMana',
         category: 'Magic',
@@ -15,7 +15,7 @@ const skill = withWiki(
     {
         slug: 'mana-regeneration',
         category: 'Magic',
-        note: 'Wiki rank costs and effects; six seconds per turn. Dice and training use Rebirth Dungeon rules. Restores the wiki percentage instantly; channeling is one action.',
+        note: 'Wiki rank costs and effects; six seconds per turn. Turns and training use Rebirth Dungeon rules. Restores the wiki percentage instantly; channeling is one action.',
         power: 'Mana Recovery',
     },
 );

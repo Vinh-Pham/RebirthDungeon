@@ -23,7 +23,14 @@ export function effectiveCosts(
             const bp = scoped.reduce((sum, modifier) => sum + (modifier.percentBp ?? 0), 0);
             draft[pool] = Math.min(
                 statRules.maxAmount,
-                Math.max(1, Math.ceil(((base + flat) * Math.max(0, 10000 + bp)) / 10000)),
+                Math.max(
+                    skill === 'normal' ? 0.1 : 1,
+                    Math.ceil(
+                        (((base + flat) * Math.max(0, 10000 + bp)) / 10000) *
+                            (skill === 'normal' ? 10 : 1) -
+                            1e-9,
+                    ) / (skill === 'normal' ? 10 : 1),
+                ),
             );
         }
         if (!pools.some((pool) => draft[pool] > 0))
@@ -31,7 +38,7 @@ export function effectiveCosts(
     });
 }
 export function resourceState(c: Immutable<Character>, pool: Resource) {
-    const reserved = c.battle?.action?.costs[pool] ?? 0;
+    const reserved = 0;
     return {
         current: c[pool],
         maximum: resolveStats(c).primary[pool],

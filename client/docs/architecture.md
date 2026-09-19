@@ -4,7 +4,7 @@ A user action reaches the session actor as a typed domain command and operation 
 
 This prevents spending currency without receiving an item, awarding battle rewards twice, repeating a turn after reload, or opening two treasure chests. A bounded operation-ID ledger protects retries; reward claim IDs and the persisted chest choice provide permanent reward protection.
 
-Phaser rebuilds scene presentation from committed data and owns transient movement, targets, hit effects, and control bounds. Movement checkpoints are periodic, rather than per frame. React local state contains only form input and presentation choices. XState enemy actors produce damage decisions; dialogue and tutorial actors describe behavior. Domain snapshots remain plain serializable data.
+Phaser rebuilds scene presentation from committed data and owns transient movement, targets, hit effects, and control bounds. Movement checkpoints are periodic, rather than per frame. React local state contains only form input and presentation choices. The XState session schedules begin-turn and enemy-turn commands; enemy policies select ordinary actions; dialogue and tutorial actors describe behavior. Domain snapshots remain plain serializable data.
 
 ## Window layer
 
@@ -16,18 +16,20 @@ Input ownership is presentation state in `src/game/inputState.ts`: blocking over
 
 Window toggles use `react-hotkeys-hook`: C for Character, Z for Skills, Q for Quests and I for Inventory. The hook delegates to the existing window manager, retaining window geometry, close callbacks and focus handling. Typing, composition, held-key repeats, open menus, blocking dialogs and gestures do not toggle windows. WASD and arrow keys remain available for movement.
 
-The current storage schema is version 4. Version 3 upgrades to persisted backpack anchors, a nine-slot equipment map and migration-only recovery storage, including isolated RP actors. Frozen run sources and pending dice remain intact. Version 2 upgrades to a persistent quest journal and isolated RP session support; migrated active runs receive empty quest snapshots. Town-load reconciliation saves newly received quests before publishing, and respects the writer lock. Version 1 migrates learned skill IDs to ranked records and reconstructs pending actions without rerolling. A retained legacy backup accompanies the first durable write. Unsupported versions fail explicitly. A malformed current snapshot falls back to the previous validated snapshot. A second tab is read-only while another tab holds the writer lock.
+The current storage schema is version 5. Versions 1–4 migrate through the existing skill, stat, quest, and inventory conversions, then gain fixed turn order, fractional stamina support, starter mastery/defense records, and pure-rand world/RP/battle states. Migration preserves frozen sources and already-spent resources; it discards unfinished dice without charging or granting turn-start recovery. The original save remains in its `legacy-vN` backup. Zod validates supported shapes before domain integrity checks, and invalid current saves fall back to a validated previous snapshot. Migration and town quest reconciliation are saved before publication when this tab holds the writer lock. A second tab stays read-only.
 
 ## Reference decisions
 
 - The Mabinogi Level page's current Character Growth section takes precedence over older race/age overview text. Base/talent bonuses and XP thresholds are transcribed into domain data.
 - Weekly aging uses Saturday noon in America/Los_Angeles, including DST, and processes missed boundaries once.
-- Dicero informs five-dice combat presentation. Damage multipliers, shared reroll rounds, costs, and loot are the explicit Rebirth Dungeon design, not claimed as a verbatim Dicero ruleset.
+- Battles use individual turns with fixed Speed order and one optional item before a main action. These are explicit Rebirth Dungeon adaptations. See [the battle contract](turn-based-plan.md).
 - The Rex documentation URL retains the historical `phaser3-rex-notes` name; the installed package and integration target Phaser 4.
 
 ## Ranked skills
 
-`Skills.ts` owns rank content; `skillSystem.ts` owns acquisition, advancement, derived stats and equipment eligibility; `combat.ts` owns committed outcomes and training. Every run freezes profile ranks/stats/loadout; every first roll freezes its action inputs, resource reservation and target set. Temporary effects and cooldowns tick only on defined activation boundaries. The React skill journal and Phaser combat controls use these same domain definitions. See [accepted rules](gameplay/skills-implementation.md).
+`Skills.ts` owns rank content; `skillSystem.ts` owns acquisition, advancement, derived stats and eligibility; `combat.ts` owns shared damage and training. `battle/engine.ts` resolves one actor command inside the enclosing save producer. `commands.ts` exposes the complete headless `{ state, events }` transaction, including rewards and RP ownership. Runs freeze profile ranks/stats/loadout; commands validate and pay current costs atomically with no reservations. Cooldowns/statuses advance at owner boundaries. React/HeroUI uses these same selectors for previews and controls; Phaser highlights the selected target and consumes committed event sequences. Battle history is bounded to 100 events; the latest batch also survives terminal battle cleanup in the save envelope.
+
+`rng.ts` wraps pure-rand Xoroshiro128+ using an algorithm/version tag and four signed state words. World and RP streams initialize independent battle streams; initiative ties consume draws once and critical outcomes continue that saved battle stream. Previews and rejected commands consume no randomness. `battle/schemas.ts` supplies strict Zod save schemas plus legacy envelopes; `battle/content.ts` validates executable skills, statuses and consumables without replacing retained data with stripped schema output.
 
 ## Quests and controlled actors
 

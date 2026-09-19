@@ -32,10 +32,8 @@ export interface RankDefinition {
     base: number;
     attackMultiplier?: number;
     counterMultiplier?: number;
-    pip: number;
     costs: { hp: number; mana: number; stamina: number };
     cooldown: number;
-    weights: number[];
     ap: number;
     duration: number;
     objectives: Objective[];

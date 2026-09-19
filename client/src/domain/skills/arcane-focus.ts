@@ -1,5 +1,5 @@
 import { define } from './define';
-export default define('Arcane Focus', 'magic', 0, 0, 0, 6, {
+export default define('Arcane Focus', 'magic', 0, 0, 6, {
     description:
         'Spend 6 MP to gain +6 Magic Attack for three subsequent activations. Reapplying refreshes duration without stacking.',
     resource: 'mana',

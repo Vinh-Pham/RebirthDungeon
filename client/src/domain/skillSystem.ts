@@ -74,7 +74,7 @@ export function usableReason(c: Immutable<Character>, id: string): string {
     if (reason) return reason;
     if (c.cooldowns[id] > 0) return `Cooldown: ${c.cooldowns[id]} activation(s)`;
     if (id === 'final' && c.effects.final) return 'Final Hit is already active';
-    const rank = skillRank(id, learned(c)[id], c.race);
+    const rank = actionRank(c, id);
     const costs = actionCosts(c, id, rank);
     return affordability(c, costs);
 }
@@ -97,7 +97,7 @@ export function outsideBattleReason(c: Immutable<Character>, id: string): string
 export function useOutsideBattle(c: Character, id: string) {
     const reason = outsideBattleReason(c, id);
     if (reason) throw new Error(reason);
-    const rank = skillRank(id, learned(c)[id], c.race);
+    const rank = actionRank(c, id);
     const costs = actionCosts(c, id, rank);
     for (const pool of pools) c[pool] -= costs[pool];
     if (skills[id].effect === 'heal') {
@@ -121,7 +121,7 @@ export function snapshotAction(
         if (reason) throw new Error(reason);
     }
     const s = skills[id],
-        rank = skillRank(id, learned(c)[id], c.race),
+        rank = actionRank(c, id),
         inputs = attackInputs(c, id);
     const enemies = c.battle!.enemies.filter(
         (e) => e.hp > 0 && (s.target === 'all' || e.id === target),
@@ -138,7 +138,7 @@ export function snapshotAction(
             s.target === 'self'
                 ? []
                 : enemies
-                      .sort((a, b) => a.id.localeCompare(b.id))
+                      .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
                       .map((e) => ({
                           id: e.id,
                           defense: inputs.magic
@@ -209,12 +209,9 @@ export function passiveDescription(c: Immutable<Character>, id: string, rank = r
     return '';
 }
 
-export function actionCosts(
-    c: Immutable<Character>,
-    id: string,
-    rank = skillRank(id, learned(c)[id], c.race),
-) {
+export function actionCosts(c: Immutable<Character>, id: string, rank = actionRank(c, id)) {
     const costs = { ...rank.costs };
+    if (id === 'normal') costs.stamina = (20 + Math.max(0, rankIndex(c, 'combatMastery'))) / 10;
     if (id === 'shockwave')
         costs.mana = Math.ceil(
             (effectiveStats(c).mana *
@@ -225,3 +222,10 @@ export function actionCosts(
         ? effectiveCosts(c, id, costs)
         : costs;
 }
+export function actionRank(c: Immutable<Character>, id: string) {
+    return skillRank(id, learned(c)[id === 'normal' ? 'combatMastery' : id], c.race);
+}
+export function turnRecovery(c: Immutable<Character>) {
+    return (Math.floor(Math.max(0, rankIndex(c, 'combatMastery')) / 3) + 1) * 0.5;
+}
+export const speed = (c: Immutable<Character>) => 10 + Math.floor(effectiveStats(c).dex / 10);

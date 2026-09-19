@@ -1,3 +1,4 @@
+import { BattlePanel } from './ui/BattlePanel';
 import { QuestJournal, NpcQuests, QuestTracker } from './ui/QuestJournal';
 import { Character } from './ui/Character';
 import { RewardModal } from './ui/RewardModal';
@@ -163,6 +164,9 @@ function Game() {
             style={{ '--hudscale': save.data.settings.hudScale } as CSSProperties}
         >
             <PhaserGame />
+            {screen === 'Battle' && c?.battle && phase !== 'reward' && (
+                <BattlePanel key={c.battle.id} c={c} disabled={disabled} send={send} />
+            )}
             <div className="pointer-events-none absolute inset-x-0 top-0 bottom-[calc(108px*var(--hudscale,1))] shadow-[inset_0_0_180px_#081b2866]" />
             {snapshot.matches('loading') ? (
                 <div className="center panel">
@@ -198,7 +202,7 @@ function Game() {
                     <p className="mt-[25px] mb-8 text-[#e4e8d2]">
                         Beyond a quiet town, a thousand stories await.
                         <br />
-                        Your next one begins with a roll of the dice.
+                        Your next one begins with a choice.
                     </p>
                     {action(
                         'Begin your journey',
@@ -206,7 +210,7 @@ function Game() {
                         { className: 'primary px-[38px] py-[17px] text-[15px]' },
                     )}
                     <span className="mt-[25px] block text-[12px] tracking-[4px] text-[#9eb7ad]">
-                        EXPLORE · ROLL · REBIRTH
+                        EXPLORE · BATTLE · REBIRTH
                     </span>
                 </section>
             )}
@@ -637,8 +641,9 @@ function Game() {
                     role="status"
                     className="absolute top-4 left-1/2 z-50 w-[min(90vw,600px)] -translate-x-1/2 rounded border bg-[#203638] p-4 text-sm"
                 >
-                    Your skills are now Rank F. Saved dice and possessions were preserved; pending
-                    attacks use the revised combat rules.
+                    Your possessions, skill ranks and dungeon progress were preserved. Unfinished
+                    dice selections were cleared without spending resources. Battles now use
+                    individual turns.
                     <Button
                         className="ml-3"
                         isDisabled={disabled}
@@ -650,14 +655,16 @@ function Game() {
             )}
             {hero && ['Town1', 'Alby', 'Battle', 'TreasureRoom'].includes(screen) && (
                 <>
-                    <QuestTracker
-                        character={hero}
-                        onOpen={(id) => {
-                            setSelectedQuest(id);
-                            openPanel('quests');
-                        }}
-                    />
-                    {hero.quests.notices.length > 0 && (
+                    {screen !== 'Battle' && (
+                        <QuestTracker
+                            character={hero}
+                            onOpen={(id) => {
+                                setSelectedQuest(id);
+                                openPanel('quests');
+                            }}
+                        />
+                    )}
+                    {screen !== 'Battle' && hero.quests.notices.length > 0 && (
                         <div
                             role="status"
                             aria-live="polite"

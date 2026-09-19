@@ -1,3 +1,4 @@
+import { attack, readyTurn, battlePanel } from './helpers/battle';
 import { test, expect, type Page } from '@playwright/test';
 import { findPath } from '../../src/domain/dungeon';
 import { townGrid } from '../../src/game/world';
@@ -33,6 +34,7 @@ async function control(page: Page, name: string) {
 }
 
 async function moveToRoom(page: Page, id: number) {
+    await page.locator('#game-container').focus();
     // React publishes the new phase before Phaser finishes creating the exploration scene.
     await expect
         .poll(async () => {
@@ -107,36 +109,23 @@ test('create, explore, fight, resume, defeat the boss and return with treasure',
         await expect(page.getByRole('heading', { name: 'A tangled encounter' })).toBeVisible();
         let turns = 0;
         while ((await state(page)).save.checkpoint.phase !== 'reward' && turns++ < 30) {
+            await readyTurn(page);
             const c = (await state(page)).save.data.characters[0];
-            if (c.hp < 50 && c.inventory.some((i: any) => i.kind === 'hp')) {
-                await page.getByRole('button', { name: 'Inventory', exact: true }).click();
-                await page
+            if (c.hp < 50 && !c.battle.itemUsed && c.inventory.some((i: any) => i.kind === 'hp')) {
+                await battlePanel(page).getByRole('button', { name: 'items', exact: true }).click();
+                await battlePanel(page)
                     .getByRole('button', { name: /^Health potion ×/ })
-                    .click({ button: 'right' });
-                await page.getByRole('menuitem', { name: 'Use', exact: true }).click();
-                await page.getByRole('button', { name: 'Close', exact: true }).click();
+                    .click();
+                await expect(battlePanel(page)).toContainText('Item used');
             }
-            await control(
-                page,
-                c.skills.smash && c.stamina >= 4 && !c.cooldowns.smash ? 'smash' : 'normal',
-            );
             if (room === 1 && turns === 1) {
-                await control(page, 'die-0');
-                await control(page, 'reroll');
                 const before = (await state(page)).save.data.characters[0].battle;
                 await page.reload();
-                await expect
-                    .poll(async () =>
-                        (await state(page))?.controls.some((c: any) => c.name === 'attack'),
-                    )
-                    .toBeTruthy();
-                const after = (await state(page)).save.data.characters[0].battle;
-                expect(after.dice).toEqual(before.dice);
-                expect(after.held).toEqual(before.held);
-                expect(after.rerolls).toEqual(before.rerolls);
+                await readyTurn(page);
+                expect((await state(page)).save.data.characters[0].battle).toEqual(before);
                 await page.screenshot({ path: 'test-results/battle.png' });
             }
-            await control(page, 'attack');
+            await attack(page);
         }
         await expect(page.getByRole('button', { name: 'Take all', exact: true })).toBeVisible();
         await page.getByRole('button', { name: 'Take all', exact: true }).click();
@@ -551,48 +540,29 @@ test('catalog icons, life references, and a full spellbook remain usable on a sm
     fixture = reduceCommand(fixture, { type: 'ENCOUNTER', room: 1 }, 'catalog-battle');
     await page.evaluate(store, fixture);
     await page.reload();
-    await expect
-        .poll(async () => (await state(page)).controls.some((c: any) => c.name === 'next-skills'))
-        .toBe(true);
-    const before = (await state(page)).controls;
-    for (const button of before.filter((c: any) => skills[c.name]))
-        expect(button.icon).toBe(skills[button.name].icon);
-    await page.screenshot({ path: 'test-results/battle-skill-icons.png' });
-    const next = before.find((c: any) => c.name === 'next-skills');
-    await page.mouse.move(next.x, next.y);
-    await page.mouse.down();
-    await page.waitForTimeout(50);
-    await page.mouse.up();
-    await expect
-        .poll(async () => (await state(page)).controls.some((c: any) => c.name === 'pass'))
-        .toBe(true);
-    const controls = (await state(page)).controls;
-    expect(controls.some((c: any) => c.name === 'previous-skills')).toBe(true);
-    expect(controls.every((c: any) => c.y + c.height / 2 <= 800)).toBe(true);
-    await page.screenshot({ path: 'test-results/skill-catalog-spellbook-mobile.png' });
-    for (const button of controls.filter((c: any) => skills[c.name]))
-        expect(button.icon).toBe(skills[button.name].icon);
-    await page.setViewportSize({ width: 320, height: 800 });
-    await expect
-        .poll(async () => (await state(page)).controls.filter((c: any) => skills[c.name]).length)
-        .toBe(3);
-    const narrowControls = (await state(page)).controls;
-    for (const button of narrowControls.filter((c: any) => c.name.endsWith('-skills'))) {
-        expect(button.x - button.width / 2).toBeGreaterThanOrEqual(0);
-        expect(button.x + button.width / 2).toBeLessThanOrEqual(320);
+    await readyTurn(page);
+    const panel = battlePanel(page);
+    await panel.getByRole('button', { name: 'skills', exact: true }).click();
+    const spellbook = panel.getByLabel('Learned battle skills');
+    expect(await spellbook.getByRole('button').count()).toBeGreaterThan(5);
+    for (const width of [600, 320]) {
+        await page.setViewportSize({ width, height: 800 });
+        const bounds = await panel.boundingBox();
+        expect(bounds!.x).toBeGreaterThanOrEqual(0);
+        expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
+        expect(bounds!.y).toBeGreaterThanOrEqual(0);
+        expect(await panel.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+        await spellbook.getByRole('button', { name: /Icebolt ·/ }).click();
+        await expect(panel.getByRole('button', { name: 'Use Skill', exact: true })).toBeEnabled();
+        await page.screenshot({ path: `test-results/battle-skills-${width}.png` });
     }
-    const narrow = (await state(page)).controls.filter((c: any) => skills[c.name]);
-    expect(narrow.every((c: any) => c.x - c.width / 2 >= 0 && c.x + c.width / 2 <= 320)).toBe(true);
-    expect(new Set(narrow.map((c: any) => c.x)).size).toBe(1);
-    await page.screenshot({ path: 'test-results/battle-skill-icons-narrow.png' });
-    await page.setViewportSize({ width: 600, height: 800 });
-    const previous = (await state(page)).controls.find((c: any) => c.name === 'previous-skills');
-    await page.mouse.click(previous.x, previous.y, { delay: 60 });
-    await control(page, 'ice');
-    expect((await state(page)).save.data.characters[0].battle.skill).toBe('ice');
+    const before = (await state(page)).save.data.revision;
+    await panel.getByRole('button', { name: 'Use Skill', exact: true }).focus();
+    await page.keyboard.press('Enter');
+    await expect.poll(async () => (await state(page)).save.data.revision).toBeGreaterThan(before);
 });
 
-test('character stats, potion side effects and mixed reservations survive reload', async ({
+test('character stats, potion side effects and mixed action costs survive reload', async ({
     page,
 }, info) => {
     if (info.project.name !== 'chromium') return;
@@ -663,9 +633,13 @@ test('character stats, potion side effects and mixed reservations survive reload
     await page.getByRole('button', { name: 'Close', exact: true }).click();
     await page.reload();
     expect((await state(page)).save.data.characters[0].statuses[0].remaining).toBe(3);
-    await control(page, 'bloodStrike');
+    await readyTurn(page);
+    await battlePanel(page).getByRole('button', { name: 'skills', exact: true }).click();
+    await battlePanel(page)
+        .getByRole('button', { name: /Blood Strike ·/ })
+        .click();
     await page.getByRole('button', { name: 'Character', exact: true }).click();
-    await expect(page.getByRole('region', { name: 'Character stats' })).toContainText('4 reserved');
+    await expect(page.getByRole('region', { name: 'Character stats' })).toContainText('130 / 130');
     await expect(
         page.getByRole('region', { name: 'Character stats' }).getByRole('progressbar'),
     ).toHaveCount(4);
@@ -697,16 +671,20 @@ test('character stats, potion side effects and mixed reservations survive reload
     await page.getByRole('button', { name: 'Close', exact: true }).click();
     const before = (await state(page)).save.data.characters[0];
     await page.reload();
-    expect((await state(page)).save.data.characters[0].battle.action.costs).toEqual({
-        hp: 4,
-        mana: 0,
-        stamina: 3,
-    });
-    await control(page, 'pass');
+    await readyTurn(page);
+    expect((await state(page)).save.data.characters[0].battle.itemUsed).toBe(true);
+    await battlePanel(page).getByRole('button', { name: 'skills', exact: true }).click();
+    await battlePanel(page)
+        .getByRole('button', { name: /Blood Strike ·/ })
+        .click();
+    await expect(battlePanel(page)).toContainText('4 HP');
+    await battlePanel(page).getByRole('button', { name: 'Use Skill', exact: true }).click();
+    await readyTurn(page);
     const after = (await state(page)).save.data.characters[0];
-    expect(after.stamina).toBe(before.stamina - 3);
+    expect(after.stamina).toBe(before.stamina - 3 + 0.5);
     expect(after.hp).toBeLessThanOrEqual(before.hp - 4);
-    expect(after.statuses[0].remaining).toBe(2);
+    expect(after.statuses[0].remaining).toBe(3);
+    expect(after.statuses[0].skipNext).toBe(false);
 });
 
 test('HeroUI HUD keeps identity, resources and navigation usable at narrow sizes and larger scale', async ({
@@ -724,7 +702,7 @@ test('HeroUI HUD keeps identity, resources and navigation usable at narrow sizes
     await expect(hud.getByText('Human · Close Combat')).toBeVisible();
     await expect(hud.getByRole('progressbar', { name: 'HP', exact: true })).toHaveAttribute(
         'aria-valuenow',
-        '118',
+        '130',
     );
     await expect(hud.getByRole('progressbar', { name: 'Experience' })).toHaveAttribute(
         'aria-valuenow',

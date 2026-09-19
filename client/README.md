@@ -1,6 +1,6 @@
 # Rebirth Dungeon
 
-A local, single-player fantasy RPG: create an adventurer, explore Town1, descend into Alby, roll five dice in battle, defeat the Giant Spider, and select one treasure chest.
+A local, single-player fantasy RPG: create an adventurer, explore Town1, descend into Alby, fight in fixed Speed order, defeat the Giant Spider, and select one treasure chest.
 
 ## Run
 
@@ -18,9 +18,9 @@ Open http://127.0.0.1:8080. Build with `pnpm build`; deploy the `dist/` director
 - Create up to 20 characters: Human, Elf, or Giant; ages 10–17; four combat talents. Giants cannot choose Archery.
 - Move with WASD, arrow keys, or click a walkable destination. Press **C**, **Z**, **Q**, or **I** to toggle Character, Skills, Quests, or Inventory. Approach a named building and press **E** or click its sign to interact.
 - Enter Alby through the northern gate. The floor map marks rooms and the boss. Investigate spiders, chests, or switches with **E**.
-- Learn talent attacks from Aren beside the Blacksmith; new characters start with Normal Attack. Train to 100 points and spend AP in the Skills journal to advance from F through 1. Critical Hit comes from a book; Final Hit from a five-page manual.
-- Select a target and skill. Click dice to hold them, reroll unheld dice at most twice, and attack. The strongest combination determines the damage multiplier. Skills consume stamina or mana; Recover restores both but gives enemies a turn.
-- Inventory combines nine equipment slots with a 6 × 10 backpack. Drag items to organize or equip, or select an item and choose a destination. Hover or keyboard-focus items for detailed HeroUI cards; selecting an item also shows its details. Right-click/long-press for Use or quantity-based Drop (requires confirmation). Equipment changes require town; potions also consume a turn in combat. Layouts persist, and older saves retain items that do not fit in a visible recovery list.
+- Learn talent attacks from Aren beside the Blacksmith; new characters start with Normal Attack, Combat Mastery F, and Defense F. Train to 100 points and spend AP in the Skills journal to advance from F through 1. Critical Hit comes from a book; Final Hit from a five-page manual.
+- Each turn allows one optional item, then Attack, Skill, or Defend. Confirming a main action ends the turn. Speed fixes initiative for the battle; defeated actors are skipped. Combat Mastery determines fractional Attack costs and turn-start stamina recovery. Wait is available only when no main action is affordable.
+- Inventory combines nine equipment slots with a 6 × 10 backpack. Drag items to organize or equip, or select an item and choose a destination. Hover or keyboard-focus items for detailed HeroUI cards; selecting an item also shows its details. Right-click/long-press for Use or quantity-based Drop (requires confirmation). Equipment changes require town; combat potions share the one-item allowance and leave the main action available. Layouts persist, and older saves retain items that do not fit in a visible recovery list.
 - Enemy rooms seal their gates on entry and reopen after the last enemy falls. Empty rooms have no gates. Defeat every non-boss enemy before entering the boss room. Take selected loot or everything that fits. Choose exactly one treasure chest, then return home.
 - Town services offer healing, food, banking, equipment, potions, selling, and repairs. Equipped items must be unequipped before selling or banking.
 - Character, Skills, Inventory, Menu, and Settings open as independent, draggable, resizable windows above the world. Reopening a window restores its session position and size; scene or character changes close every window. Uncovered world areas stay playable while windows are open; clicking a window or the HUD keeps movement keys in the interface, and clicking the canvas hands them back. **F6** / **Shift+F6** cycle open windows and the game; **Escape** closes only the active window behind owned popups and confirmations; arrow keys nudge the focused window (Shift resizes, Alt fine-tunes). Rebirth and leaving confirmations remain blocking dialogs.
@@ -31,11 +31,12 @@ Open http://127.0.0.1:8080. Build with `pnpm build`; deploy the `dist/` director
 
 - **Phaser 4.2.1:** Boot, Preloader, Title, CharacterSelect, NewCharacter, Town1, Alby, Battle, and TreasureRoom scenes. World input, collision-aware pathfinding, canvas controls, and original SVG/audio presentation.
 - **Rex 4.2.0:** EightDirection, Button, Anchor, ShakePosition, FadeOutDestroy, and SoundFade, imported individually.
-- **React 19 / HeroUI 3:** character forms, inventory, reward selection, and persistent HUD. Browsing panels render as wmkit windows above the canvas; rebirth and leave confirmations remain HeroUI dialogs.
+- **React 19 / HeroUI 3:** character forms, Tailwind battle controls, inventory, reward selection, and persistent HUD. Browsing panels render as wmkit windows above the canvas; rebirth and leave confirmations remain HeroUI dialogs.
 - **wmkit 0.11.1:** one React-owned window manager and desktop (`src/ui/windows`). Windows use custom game styling, session-scoped geometry memory, and scoped keyboard handling; wmkit's snapping, grouping, minimization, history, and keyboard layers stay disabled.
 - **XState 5:** session routing, combat checkpoints, serialized asynchronous commits, enemy decisions, dialogue transactions, and tutorial progression.
-- **Immer 11:** immutable character, inventory, economy, dungeon, dice, reward, settings, and progression updates. Random seeds and timestamps are explicit inputs.
-- **IndexedDB:** versioned data and workflow checkpoints committed atomically before publication; previous snapshot recovery and a single-writer browser lock. Reload resumes committed dice, rewards, and chest choices. Saves are local to this browser and origin.
+- **Immer 11:** immutable character, inventory, economy, dungeon, battle, reward, settings, and progression updates. Random seeds and timestamps are explicit inputs.
+- **pure-rand / Zod 4:** serializable world and battle RNG streams; strict save/content schemas and explicit migrations. Vitest and fast-check verify turn, economy, reload, and retry invariants.
+- **IndexedDB:** versioned data and workflow checkpoints committed atomically before publication; previous snapshot recovery and a single-writer browser lock. Reload resumes individual turns, item allowances, rewards, and chest choices. Saves are local to this browser and origin.
 
 `src/domain` contains rules and content. `src/runtime` owns actors and persistence. `src/game` owns Phaser presentation. `src/App.tsx` owns the HeroUI shell. No Phaser object or actor is serialized.
 

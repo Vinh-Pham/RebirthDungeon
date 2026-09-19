@@ -1,3 +1,5 @@
+import { controlledCharacter } from '../domain/quests/roleplay';
+import { turnIdentity } from '../domain/battle/engine';
 import { setup, assign, createActor, fromPromise } from 'xstate';
 import type { Immutable } from 'immer';
 import { freeze, produce } from 'immer';
@@ -5,7 +7,6 @@ import { reconcileQuests } from '../domain/quests/system';
 import { allowed, blankSave, reduceCommand, type Command } from '../domain/commands';
 import type { SaveData } from '../domain/model';
 import type { Persistence } from './persistence';
-export { enemyMachine } from '../domain/behavior';
 export const dialogueMachine = setup({
     types: {
         context: {} as { service: string },
@@ -71,6 +72,7 @@ export function sessionMachine(persistence: Persistence, canWrite: () => boolean
         actors: {
             load: fromPromise(async () => {
                 const loaded = (await persistence.load()) || blankSave();
+                if (canWrite() && loaded.migrationNotice) await persistence.save(loaded);
                 if (!canWrite() || loaded.checkpoint.screen !== 'Town1')
                     return freeze(loaded, true);
                 const reconciled = produce(loaded, (draft) => {
@@ -81,18 +83,18 @@ export function sessionMachine(persistence: Persistence, canWrite: () => boolean
                 return freeze(reconciled, true);
             }),
             commit: fromPromise(async ({ input }: { input: Context }) => {
+                if (!canWrite()) throw new Error('This tab is read-only.');
                 const next = reduceCommand(input.save, input.pending!, input.operationId);
                 await persistence.save(next);
                 return next;
             }),
         },
         delays: {
-            diceDelay: ({ context }) => (context.save.data.settings.reducedMotion ? 0 : 240),
             impactDelay: ({ context }) => (context.save.data.settings.reducedMotion ? 0 : 160),
         },
         guards: {
             allowed: ({ context, event }) =>
-                event.type === 'COMMAND' && allowed(context.save, event.command),
+                canWrite() && event.type === 'COMMAND' && allowed(context.save, event.command),
         },
         actions: {
             stage: assign(({ event }) =>
@@ -100,6 +102,16 @@ export function sessionMachine(persistence: Persistence, canWrite: () => boolean
                     ? { pending: event.command, operationId: event.operationId, error: '' }
                     : {},
             ),
+            stageTurn: assign(({ context }) => {
+                const c = controlledCharacter(context.save)!;
+                const b = c.battle!;
+                const type = b.started ? ('ENEMY_TURN' as const) : ('BEGIN_TURN' as const);
+                return {
+                    pending: { type, ...turnIdentity(c) },
+                    operationId: `${b.turnId}:${type}:${b.itemUsed}`,
+                    error: '',
+                };
+            }),
             clearError: assign({ error: '' }),
         },
     }).createMachine({
@@ -148,19 +160,33 @@ export function sessionMachine(persistence: Persistence, canWrite: () => boolean
                     route: {
                         always: [
                             {
-                                guard: ({ context }) =>
-                                    context.save.checkpoint.phase === 'choosingDice',
-                                target: 'choosingDice',
-                            },
-                            {
                                 guard: ({ context }) => context.save.checkpoint.phase === 'reward',
                                 target: 'reward',
+                            },
+                            {
+                                guard: ({ context }) => {
+                                    const c = controlledCharacter(context.save);
+                                    return (
+                                        canWrite() &&
+                                        !context.error &&
+                                        !!c?.battle &&
+                                        !c.battle.winner &&
+                                        (!c.battle.started ||
+                                            c.battle.order[c.battle.cursor] !== c.id)
+                                    );
+                                },
+                                target: 'advancing',
                             },
                             { target: 'selecting' },
                         ],
                     },
+                    advancing: {
+                        after: {
+                            impactDelay: { target: '#session.committing', actions: 'stageTurn' },
+                        },
+                        on: { COMMAND: {} },
+                    },
                     selecting: {},
-                    choosingDice: {},
                     reward: {},
                 },
             },
@@ -180,9 +206,6 @@ export function sessionMachine(persistence: Persistence, canWrite: () => boolean
                     collecting: {},
                 },
             },
-            rolling: { after: { diceDelay: 'committing' }, on: { COMMAND: {} } },
-            resolvingPlayer: { after: { impactDelay: 'resolvingEnemies' }, on: { COMMAND: {} } },
-            resolvingEnemies: { after: { impactDelay: 'committing' }, on: { COMMAND: {} } },
             committing: {
                 invoke: {
                     src: 'commit',
@@ -213,26 +236,8 @@ export function sessionMachine(persistence: Persistence, canWrite: () => boolean
             },
         },
         on: {
-            COMMAND: [
-                {
-                    guard: ({ context, event }) =>
-                        event.type === 'COMMAND' &&
-                        ['ROLL', 'REROLL'].includes(event.command.type) &&
-                        allowed(context.save, event.command),
-                    target: '.rolling',
-                    actions: 'stage',
-                },
-                {
-                    guard: ({ context, event }) =>
-                        event.type === 'COMMAND' &&
-                        event.command.type === 'ATTACK' &&
-                        allowed(context.save, event.command),
-                    target: '.resolvingPlayer',
-                    actions: 'stage',
-                },
-                { guard: 'allowed', target: '.committing', actions: 'stage' },
-            ],
-            DISMISS: { actions: 'clearError' },
+            COMMAND: [{ guard: 'allowed', target: '.committing', actions: 'stage' }],
+            DISMISS: { target: '.routing', actions: 'clearError' },
         },
     });
 }

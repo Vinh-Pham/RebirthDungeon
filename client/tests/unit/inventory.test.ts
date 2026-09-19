@@ -1,3 +1,7 @@
+import { act, settle } from './helpers/battle';
+
+import { storeRaw } from './helpers/storage';
+import { seedRng } from '../../src/domain/rng';
 import { describe, expect, it } from 'vitest';
 import { produce } from 'immer';
 import { waitFor } from 'xstate';
@@ -63,6 +67,7 @@ function full(s: SaveData) {
 function legacy(s: SaveData, version = 3) {
     const old = JSON.parse(JSON.stringify(s));
     old.version = old.data.version = version;
+    old.data.rng = 123;
     for (const c of old.data.characters) {
         const convert = (v: typeof c) => {
             v.weapon = v.equipment.main;
@@ -75,6 +80,7 @@ function legacy(s: SaveData, version = 3) {
         convert(c);
         if (c.run?.baseline) convert(c.run.baseline);
         if (c.rp) {
+            c.rp.rng = 7319;
             convert(c.rp.actor);
             convert(c.rp.actor.run.baseline);
         }
@@ -134,10 +140,10 @@ describe('backpack transactions', () => {
         expect(s.data.rng).toBe(before.data.rng);
         expect(() => run(s, { type: 'DROP_ITEM', id: potion, quantity: 1 })).toThrow('not found');
     });
-    it('allows organization before a roll without a turn, blocks during pending dice, and freezes equipment', () => {
+    it('allows organization on a player turn, blocks between turns, and freezes equipment', () => {
         let s = run(fresh(), { type: 'ENTER', seed: 42 });
         s = run(s, { type: 'MOVE_ITEM', id: id(s, 'hp'), anchor: { column: 5, row: 9 } });
-        s = run(s, { type: 'ENCOUNTER', room: 1 });
+        s = settle(run(s, { type: 'ENCOUNTER', room: 1 }));
         const turn = hero(s).battle!.turn;
         s = run(s, { type: 'DROP_ITEM', id: id(s, 'hp'), quantity: 1 });
         expect(hero(s).battle!.turn).toBe(turn);
@@ -145,7 +151,7 @@ describe('backpack transactions', () => {
         expect(() =>
             run(s, { type: 'MOVE_ITEM', id: 'hero-weapon', anchor: { column: 2, row: 2 } }),
         ).toThrow('Unequip');
-        s = run(s, { type: 'ROLL', skill: 'normal', target: 'enemy-0' });
+        s = act(s, 'defense');
         for (const cmd of [
             { type: 'MOVE_ITEM', id: id(s, 'hp'), anchor: { column: 2, row: 2 } },
             { type: 'DROP_ITEM', id: id(s, 'hp'), quantity: 1 },
@@ -238,7 +244,7 @@ describe('save compatibility', () => {
         );
         const s = migrateSave(old);
         validateSave(s);
-        expect(s.version).toBe(4);
+        expect(s.version).toBe(5);
         expect(hero(s).inventoryRecovery.length).toBeGreaterThan(0);
         expect(hero(s).inventory.length + hero(s).inventoryRecovery.length).toBe(32);
         expect(hero(s).equipment.main).toBe('hero-weapon');
@@ -257,19 +263,20 @@ describe('save compatibility', () => {
             'not found',
         );
     });
-    it('migrates a pending roll without replacing its action or frozen stat sources', () => {
-        const s = run(
+    it('migrates a battle while preserving HP and frozen stat sources', () => {
+        const s = settle(
             run(run(fresh(), { type: 'ENTER', seed: 42 }), { type: 'ENCOUNTER', room: 1 }),
-            { type: 'ROLL', skill: 'normal', target: 'enemy-0' },
         );
         const old = legacy(s);
         const migrated = migrateSave(old);
         validateSave(migrated);
-        expect(hero(migrated).battle).toEqual(hero(s).battle);
+        expect(hero(migrated).battle!.enemies.map((e) => e.hp)).toEqual(
+            hero(s).battle!.enemies.map((e) => e.hp),
+        );
         expect(hero(migrated).run!.baseline!.statSnapshot).toEqual(
             hero(s).run!.baseline!.statSnapshot,
         );
-        expect(migrated.data.rng).toBe(s.data.rng);
+        expect(migrated.data.rng).toEqual(seedRng(123));
     });
     it('migrates isolated RP inventory without changing the borrowed loadout or simulation', () => {
         const s = produce(fresh(), (d) => {
@@ -280,7 +287,7 @@ describe('save compatibility', () => {
         const migrated = migrateSave(legacy(s));
         validateSave(migrated);
         expect(hero(migrated).rp!.actor.equipment).toEqual(hero(s).rp!.actor.equipment);
-        expect(hero(migrated).rp!.rng).toBe(hero(s).rp!.rng);
+        expect(hero(migrated).rp!.rng).toEqual(seedRng(7319));
         expect(hero(migrated).inventory).toEqual(hero(s).inventory);
     });
     it('rejects overlapping, missing and orphaned placements, duplicate ownership and invalid loadouts', () => {
@@ -353,7 +360,7 @@ describe('save compatibility', () => {
     it('retains a version-three backup while saving the migrated bundle', async () => {
         const p = new IndexedDBPersistence();
         const old = legacy(fresh());
-        await p.save(old);
+        await storeRaw(old);
         const s = (await p.load())!;
         await p.save(s);
         const backup = await new Promise<unknown>((resolve) => {

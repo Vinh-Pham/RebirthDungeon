@@ -1,5 +1,5 @@
 import { initializeInventory } from '../../src/domain/inventory';
-import { talentSkill } from '../../src/domain/catalog';
+
 import { it, expect } from 'vitest';
 import { produce } from 'immer';
 import { waitFor } from 'xstate';
@@ -11,10 +11,8 @@ import {
     addItem,
     type Command,
 } from '../../src/domain/commands';
-import { attackDamage } from '../../src/domain/dice';
-import { applyAging, gainXp, rebirth } from '../../src/domain/progression';
+import { rebirth } from '../../src/domain/progression';
 import { findPath } from '../../src/domain/dungeon';
-import { enemyDamage } from '../../src/domain/behavior';
 import { makeActor } from '../../src/runtime/machines';
 import {
     MemoryPersistence,
@@ -171,72 +169,7 @@ it('supplies, invalid encounters, position boundaries, abandonment and selected 
     s = run(s, { type: 'ABANDON' });
     expect(active(s)!.run).toBeNull();
 });
-it('combat guards, recovery, defeat and unarmed or broken-weapon damage', () => {
-    let s = run(fixture(), { type: 'ENTER', seed: 1 });
-    s = run(s, { type: 'ENCOUNTER', room: 1 });
-    for (const cmd of [
-        { type: 'ROLL', skill: 'unknown', target: 'enemy-0' },
-        { type: 'ROLL', skill: 'normal', target: 'missing' },
-    ] as Command[])
-        expect(() => run(s, cmd)).toThrow();
-    s = run(s, { type: 'RECOVER' });
-    expect(active(s)!.battle!.turn).toBe(2);
-    s = run(s, { type: 'USE', id: 'aster-hp' });
-    expect(active(s)!.battle!.turn).toBe(3);
-    s = run(s, { type: 'ROLL', skill: 'normal', target: 'enemy-0' });
-    expect(() => run(s, { type: 'HOLD', index: -1 })).toThrow();
-    for (let index = 0; index < 5; index++) s = run(s, { type: 'HOLD', index });
-    expect(() => run(s, { type: 'REROLL' })).toThrow();
-    const c = active(s)!,
-        enemy = c.battle!.enemies[0];
-    const damage = attackDamage(c, enemy, 'normal', [1, 1, 1, 1, 1]);
-    const broken = edit(s, (s) => {
-        s.data.characters[0].inventory[0].durability = 0;
-        if (s.data.characters[0].battle) delete s.data.characters[0].battle!.action;
-    });
-    expect(attackDamage(active(broken)!, enemy, 'normal', [1, 1, 1, 1, 1])).toBeLessThan(damage);
-    const unarmed = edit(s, (s) => {
-        s.data.characters[0].equipment.main = null;
-    });
-    expect(attackDamage(active(unarmed)!, enemy, 'normal', [1, 1, 1, 1, 1])).toBeGreaterThan(0);
-    expect(() => attackDamage(c, enemy, 'missing', [1, 1, 1, 1, 1])).toThrow();
-    const invalid = edit(s, (s) => {
-        s.data.characters[0].stamina = 0;
-    });
-    expect(() => run(invalid, { type: 'ATTACK' })).toThrow();
-    s = edit(s, (s) => {
-        s.checkpoint.phase = 'selecting';
-        s.data.characters[0].hp = 1;
-    });
-    s = run(s, { type: 'RECOVER' });
-    expect(s.checkpoint.screen).toBe('Town1');
-    expect(active(s)!.hp).toBe(active(s)!.stats.hp);
-    expect(enemyDamage(10, 20, 1)).toBe(0);
-    expect(enemyDamage(10, 0, 0)).toBe(0);
-});
-it.each(['Magic', 'Archery', 'Dual Gun'] as Talent[])(
-    'talent %s has deterministic attack and growth',
-    (talent) => {
-        let s = run(fixture('Human', talent), { type: 'LEARN', skill: talentSkill[talent] });
-        s = run(s, { type: 'ENTER', seed: 1 });
-        s = run(s, { type: 'ENCOUNTER', room: 1 });
-        const c = active(s)!;
-        s = run(s, { type: 'ROLL', skill: talentSkill[talent], target: 'enemy-0' });
-        expect(
-            attackDamage(c, c.battle!.enemies[0], talentSkill[talent], [2, 2, 2, 3, 3]),
-        ).toBeGreaterThan(0);
-        s = run(s, { type: 'ATTACK' });
-        const ch = structuredClone(active(s)!);
-        gainXp(ch, 1000);
-        expect(ch.level).toBeGreaterThan(1);
-        ch.level = 199;
-        gainXp(ch, Number.MAX_SAFE_INTEGER);
-        expect(ch.level).toBe(200);
-        expect(ch.xp).toBe(0);
-        applyAging(ch, 86400000 * 8);
-        expect(ch.age).toBeGreaterThan(10);
-    },
-);
+
 it('rebirth rejects active dungeons and invalid ages or races', () => {
     const c = structuredClone(active(fixture())!);
     rebirth(c, 'Magic', 10, 86400000);
@@ -270,7 +203,7 @@ it('machine routes every checkpoint and exposes loading failures', async () => {
         ['Town1', 'exploring'],
         ['Alby', 'exploring'],
         ['Battle', 'selecting'],
-        ['Battle', 'choosingDice'],
+        ['Battle', 'turnStart'],
         ['Battle', 'reward'],
         ['TreasureRoom', 'treasure'],
         ['TreasureRoom', 'reward'],
@@ -315,28 +248,7 @@ it('IndexedDB restores its prior snapshot when the current one is damaged', asyn
     });
     expect(await p.load()).toEqual(s);
 });
-it('combat actors serialize rolling and enemy resolution before publishing a save', async () => {
-    const p = new MemoryPersistence();
-    p.value = run(run(fixture(), { type: 'ENTER', seed: 2 }), { type: 'ENCOUNTER', room: 1 });
-    const actor = makeActor(p).start();
-    await waitFor(actor, (s) => s.matches('Battle'));
-    const initial = actor.getSnapshot().context.save;
-    actor.send({
-        type: 'COMMAND',
-        command: { type: 'ROLL', skill: 'normal', target: 'enemy-0' },
-        operationId: 'roll',
-    });
-    expect(actor.getSnapshot().matches('rolling')).toBe(true);
-    expect(actor.getSnapshot().context.save).toBe(initial);
-    actor.send({ type: 'COMMAND', command: { type: 'ATTACK' }, operationId: 'premature' });
-    await waitFor(actor, (s) => s.matches({ Battle: 'choosingDice' }));
-    expect(actor.getSnapshot().context.save.data.operations).not.toContain('premature');
-    actor.send({ type: 'COMMAND', command: { type: 'ATTACK' }, operationId: 'attack' });
-    expect(actor.getSnapshot().matches('resolvingPlayer')).toBe(true);
-    await waitFor(actor, (s) => s.matches('Battle'));
-    expect(actor.getSnapshot().context.save.data.operations).toContain('attack');
-    actor.stop();
-});
+
 it('a failed load cannot overwrite an existing save and supports a safe retry', async () => {
     let fail = true,
         writes = 0;

@@ -36,7 +36,7 @@ interface Adaptation {
     note: string;
 }
 
-/** Wiki seconds become six-second turns; resource fractions round up. Dice/training remain game rules. */
+/** Wiki seconds become six-second turns; resource fractions round up. Turns/training remain game rules. */
 export function withWiki(skill: Skill, wiki: WikiReference, config: Adaptation): Skill {
     skill.icon = `/assets/game/skills/${config.slug}.webp`;
     skill.category = config.category;

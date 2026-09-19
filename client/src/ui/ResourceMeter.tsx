@@ -24,7 +24,7 @@ export function ResourceMeter({
             valueLabel={
                 empty
                     ? 'No character selected'
-                    : `${Math.ceil(value)} of ${max}${reserved ? `, ${reserved} held` : ''}`
+                    : `${Number(value.toFixed(1))} of ${max}${reserved ? `, ${reserved} held` : ''}`
             }
         >
             <span className="text-muted [grid-area:label]">{label}</span>
@@ -32,7 +32,7 @@ export function ResourceMeter({
                 <ProgressBar.Fill />
             </ProgressBar.Track>
             <ProgressBar.Output className="text-right text-[10px] leading-none text-muted">
-                {empty ? '—' : `${Math.ceil(value)} / ${max}`}
+                {empty ? '—' : `${Number(value.toFixed(1))} / ${max}`}
             </ProgressBar.Output>
         </ProgressBar>
     );

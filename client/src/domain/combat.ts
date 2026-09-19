@@ -3,10 +3,11 @@ import { applyStatus, completeStatusActivation } from './stats/statuses';
 import { enemyStats } from './stats/resolve';
 import { affordability } from './stats/resources';
 import type { Immutable } from 'immer';
-import type { ActionSnapshot, Character, Enemy, SaveData } from './model';
+import type { ActionSnapshot, Character, Enemy } from './model';
 import { wikiValue } from './skills/wiki';
 import { skills, ranks } from './Skills';
-import { combination, nextRandom } from './dice';
+import { createRng } from './rng';
+import { emit } from './battle/events';
 import {
     defenses,
     snapshotAction,
@@ -16,7 +17,7 @@ import {
     equipment,
     refreshStats,
 } from './skillSystem';
-import { enemyDamage } from './behavior';
+
 export function damageAmount(
     power: number,
     multiplier: number,
@@ -24,48 +25,41 @@ export function damageAmount(
     protection: number,
     criticalBonus = 0,
 ) {
-    const combo = Math.floor(Math.max(0, power - defense) * multiplier);
+    const mitigated = Math.floor(Math.max(0, power - defense) * multiplier);
     return Math.floor(
-        Math.floor(combo * (1 + criticalBonus)) * (1 - Math.max(0, Math.min(1, protection))),
+        Math.floor(mitigated * (1 + criticalBonus)) * (1 - Math.max(0, Math.min(1, protection))),
     );
 }
-export function handPower(a: Immutable<ActionSnapshot>, dice: readonly number[]) {
+export function actionPower(a: Immutable<ActionSnapshot>) {
     return (
         a.rank.base +
         (a.attack * (a.rank.attackMultiplier ?? 1)) /
-            (a.skill === 'arrowRevolver' ? 1 : skills[a.skill].hits) +
-        a.rank.pip * dice.reduce((x, y) => x + y, 0)
+            (a.skill === 'arrowRevolver' ? 1 : skills[a.skill].hits)
     );
 }
 export function previewDamage(
     c: Immutable<Character>,
     enemy: Immutable<Enemy>,
     id: string,
-    dice: readonly number[],
     critical = false,
 ): number {
-    const a = c.battle?.action ?? snapshotAction(c, id, enemy.id, false);
+    const a = snapshotAction(c, id, enemy.id, false);
     if (skills[id].effect !== 'attack') return 0;
     const t = a.targets.find((t) => t.id === enemy.id);
     if (!t) return 0;
     const damage =
-        damageAmount(
-            handPower(a, dice),
-            combination(dice).multiplier,
-            t.defense,
-            t.protection,
-            critical ? a.criticalBonus : 0,
-        ) * skills[id].hits;
-    return Math.max(0, damage - (enemy.shield ?? 0));
+        damageAmount(actionPower(a), 1, t.defense, t.protection, critical ? a.criticalBonus : 0) *
+        skills[id].hits;
+    return Math.min(enemy.hp, Math.max(0, damage - (enemy.shield ?? 0)));
 }
-function hitEnemy(enemy: Enemy, amount: number) {
+export function hitEnemy(enemy: Enemy, amount: number) {
     const absorbed = Math.min(enemy.shield ?? 0, amount);
     enemy.shield = (enemy.shield ?? 0) - absorbed;
     const before = enemy.hp;
     enemy.hp = Math.max(0, enemy.hp - (amount - absorbed));
     return before - enemy.hp;
 }
-function trainOffense(
+export function trainOffense(
     c: Character,
     a: Immutable<Pick<ActionSnapshot, 'skill' | 'melee' | 'sword' | 'dual'>>,
     hit: boolean,
@@ -75,7 +69,7 @@ function trainOffense(
 ) {
     for (const id of [
         a.skill,
-        ...(a.melee ? ['combatMastery'] : []),
+        ...(a.melee || a.skill === 'normal' ? ['combatMastery'] : []),
         ...(a.sword ? ['swordMastery'] : []),
         ...(a.dual ? ['dualMastery'] : []),
         ...((skills[a.skill].talent ?? equipment(c).weapon?.talent) === 'Magic'
@@ -92,26 +86,16 @@ function trainOffense(
     if (criticalHit) train(c, 'critical', 'critical');
     if (criticalKills) train(c, 'critical', 'criticalKill', criticalKills);
 }
-export function payReservation(c: Character) {
-    const a = c.battle!.action;
-    if (!a) throw new Error('No reserved action.');
+export function commitAbility(c: Character, a: ActionSnapshot, operationId: string) {
+    const b = c.battle!;
+    const skill = skills[a.skill];
     const reason = affordability(c, a.costs, false);
     if (reason) throw new Error(reason);
-    for (const pool of ['hp', 'mana', 'stamina'] as const) {
-        c[pool] -= a.costs[pool];
-    }
-}
-export function commitAbility(s: SaveData, c: Character) {
-    const b = c.battle!,
-        a = b.action;
-    if (!a) throw new Error('No reserved action.');
-    const skill = skills[a.skill],
-        multiplier = combination(b.dice).multiplier;
-    payReservation(c);
+    for (const pool of ['hp', 'mana', 'stamina'] as const)
+        c[pool] = Math.round((c[pool] - a.costs[pool]) * 1e10) / 1e10;
     if (skill.effect === 'counter') {
         c.effects.counter = {
-            power: handPower(a, b.dice),
-            multiplier,
+            power: actionPower(a),
             opponentMultiplier: a.rank.counterMultiplier ?? 0,
             source: { skill: a.skill, melee: a.melee, sword: a.sword, dual: a.dual },
         };
@@ -119,15 +103,13 @@ export function commitAbility(s: SaveData, c: Character) {
         b.log.push('Counterattack prepared.');
     } else if (skill.effect === 'buff') {
         c.effects.final = {
-            magnitude: Math.floor(
-                (a.rank.base + a.rank.pip * b.dice.reduce((x, y) => x + y, 0)) * multiplier,
-            ),
+            magnitude: a.rank.base,
             remaining: a.rank.duration,
         };
         train(c, 'final', 'use');
         b.log.push(`Final Hit grants +${c.effects.final.magnitude} melee attack.`);
     } else if (skill.effect === 'heal') {
-        const amount = Math.floor(a.rank.base * 5 * multiplier);
+        const amount = Math.floor(a.rank.base * 5);
         const before = c.hp;
         c.hp = Math.min(effectiveStats(c).hp, c.hp + amount);
         train(c, a.skill, 'use');
@@ -156,7 +138,7 @@ export function commitAbility(s: SaveData, c: Character) {
             ],
         }).statuses;
         train(c, a.skill, 'use');
-        b.log.push('Defense prepared for the next enemy response.');
+        b.log.push('Defense prepared until your next turn.');
     } else if (skill.effect === 'manaShield') {
         c.effects.manaShield = {
             efficiency: wikiValue(
@@ -171,7 +153,7 @@ export function commitAbility(s: SaveData, c: Character) {
             remaining: 3,
         };
         train(c, a.skill, 'use');
-        b.log.push('Mana Shield active for three enemy responses.');
+        b.log.push('Mana Shield active until your third subsequent turn.');
     } else if (skill.effect === 'status') {
         train(c, a.skill, 'use');
     } else {
@@ -179,26 +161,32 @@ export function commitAbility(s: SaveData, c: Character) {
             kills = 0,
             criticalHit = false,
             criticalKills = 0;
-        b.criticalResults = {};
+        const rng = createRng(b.rng);
         for (const t of a.targets) {
             const enemy = b.enemies.find((e) => e.id === t.id && e.hp > 0);
             if (!enemy) continue;
-            let critical = false;
-            if (a.criticalChance > 0) {
-                let value;
-                [s.data.rng, value] = nextRandom(s.data.rng);
-                critical = Math.floor(value * 10000) < a.criticalChance;
-            }
-            b.criticalResults[t.id] = critical;
+            const critical = rng.chance(a.criticalChance / 10000);
             const amount = damageAmount(
-                handPower(a, b.dice),
-                multiplier,
+                actionPower(a),
+                1,
                 t.defense,
                 t.protection,
                 critical ? a.criticalBonus : 0,
             );
             let damage = 0;
-            for (let i = 0; i < skill.hits && enemy.hp > 0; i++) damage += hitEnemy(enemy, amount);
+            for (let i = 0; i < skill.hits && enemy.hp > 0; i++) {
+                const dealt = hitEnemy(enemy, amount);
+                damage += dealt;
+                emit(c.battle!, operationId, {
+                    type: 'damage',
+                    actorId: c.id,
+                    targetId: enemy.id,
+                    amount: dealt,
+                    critical,
+                    hitIndex: i,
+                    text: `${skill.name}${critical ? ' critical' : ''} hits ${enemy.name} for ${dealt}.`,
+                });
+            }
             hit ||= damage > 0;
             criticalHit ||= critical && damage > 0;
             if (!enemy.hp) {
@@ -209,6 +197,7 @@ export function commitAbility(s: SaveData, c: Character) {
                 `${skill.name}${critical ? ' critical' : ''} hits ${enemy.name} for ${damage}.`,
             );
         }
+        b.rng = rng.snapshot();
         trainOffense(c, a, hit, kills, criticalHit, criticalKills);
         for (const id of [c.equipment.main, ...(a.dual ? [c.equipment.offhand] : [])]) {
             const item = c.inventory.find((i) => i.id === id);
@@ -236,7 +225,6 @@ export function commitAbility(s: SaveData, c: Character) {
             }
     }
     c.cooldowns[a.skill] = a.rank.cooldown;
-    endPlayerActivation(c, a.skill);
 }
 export function endPlayerActivation(c: Character, cast?: string) {
     for (const id of Object.keys(c.cooldowns))
@@ -250,68 +238,63 @@ export function endPlayerActivation(c: Character, cast?: string) {
     c.effects = completed.actor.effects;
     c.battle?.log.push(...completed.log);
 }
-export function enemiesAct(c: Character) {
+export function enemyHit(
+    c: Character,
+    e: Enemy,
+    power: number,
+    status: string | undefined,
+    operationId: string,
+) {
     const b = c.battle!;
-    for (const e of [...b.enemies].sort((a, b) => a.id.localeCompare(b.id))) {
-        if (e.hp <= 0) continue;
-        if (c.effects.counter && (!e.attackType || e.attackType === 'melee')) {
-            const stance = c.effects.counter;
-            delete c.effects.counter;
-            const damage = hitEnemy(
-                e,
-                damageAmount(
-                    stance.power + enemyStats(e).attack * (stance.opponentMultiplier ?? 0),
-                    stance.multiplier,
-                    enemyStats(e).defense,
-                    enemyStats(e).protection,
-                ),
-            );
-            train(c, 'counter', 'counter');
-            trainOffense(c, stance.source, damage > 0, e.hp === 0 ? 1 : 0);
-            b.log.push(`Counterattack negates ${e.name}'s hit and deals ${damage}.`);
-        } else {
-            const d = defenses(c, e.attackType === 'magic');
-            const raw = Math.floor(
-                enemyDamage(enemyStats(e).attack, d.defense, e.hp) * (1 - d.protection),
-            );
-            const absorbed = Math.min(c.effects.shield ?? 0, raw);
-            c.effects.shield = (c.effects.shield ?? 0) - absorbed;
-            let damage = raw - absorbed;
-            const manaShield = c.effects.manaShield;
-            if (manaShield) {
-                const blocked = Math.min(damage, Math.floor(c.mana * manaShield.efficiency));
-                c.mana -= Math.ceil(blocked / manaShield.efficiency);
-                damage -= blocked;
-            }
-            c.hp = Math.max(0, c.hp - damage);
-            for (const id of ['shieldMastery', 'lightMastery', 'heavyMastery'])
-                if (!requirementReason(c, id)) train(c, id, 'incoming');
-            b.log.push(`${e.name} deals ${damage} damage.`);
-            if (c.hp > 0)
-                for (const id of e.inflicts ?? [])
-                    c.statuses = applyStatus(c, id, { id: e.id, name: e.name }, false).statuses;
-            refreshStats(c);
-        }
-        const completed = completeStatusActivation(e);
-        Object.assign(e, completed.actor);
-        b.log.push(...completed.log);
-        if (!c.hp) break;
+    if (c.effects.counter && (!e.attackType || e.attackType === 'melee')) {
+        const stance = c.effects.counter;
+        delete c.effects.counter;
+        const damage = hitEnemy(
+            e,
+            damageAmount(
+                stance.power + enemyStats(e).attack * (stance.opponentMultiplier ?? 0),
+                1,
+                enemyStats(e).defense,
+                enemyStats(e).protection,
+            ),
+        );
+        train(c, 'counter', 'counter');
+        trainOffense(c, stance.source, damage > 0, e.hp === 0 ? 1 : 0);
+        emit(b, operationId, {
+            type: 'counter',
+            actorId: c.id,
+            targetId: e.id,
+            amount: damage,
+            text: `Counterattack negates ${e.name}'s hit and deals ${damage}.`,
+        });
+        return;
     }
-    delete c.effects.defense;
-    if (c.effects.manaShield) {
-        c.mana = Math.max(0, c.mana - c.effects.manaShield.upkeep);
-        if (--c.effects.manaShield.remaining <= 0 || !c.mana) delete c.effects.manaShield;
+    const d = defenses(c, e.attackType === 'magic');
+    const raw = damageAmount(enemyStats(e).attack * power, 1, d.defense, d.protection);
+    const absorbed = Math.min(c.effects.shield ?? 0, raw);
+    c.effects.shield = (c.effects.shield ?? 0) - absorbed;
+    let damage = raw - absorbed;
+    const manaShield = c.effects.manaShield;
+    if (manaShield) {
+        const blocked = Math.min(damage, Math.floor(Math.floor(c.mana) * manaShield.efficiency));
+        c.mana -= Math.ceil(blocked / manaShield.efficiency);
+        damage -= blocked;
     }
-    // The next player activation starts immediately after all surviving enemies act.
-    delete c.effects.counter;
-}
-export function clearHand(c: Character) {
-    const b = c.battle!;
-    b.turn++;
-    b.dice = [];
-    b.held = Array(5).fill(false);
-    b.rerolls = 2;
-    b.skill = '';
-    delete b.action;
-    b.log = b.log.slice(-5);
+    damage = Math.min(c.hp, damage);
+    c.hp -= damage;
+    for (const id of ['shieldMastery', 'lightMastery', 'heavyMastery'])
+        if (!requirementReason(c, id)) train(c, id, 'incoming');
+    if (c.effects.defense) train(c, 'defense', 'use');
+    emit(b, operationId, {
+        type: 'damage',
+        actorId: e.id,
+        targetId: c.id,
+        amount: damage,
+        critical: false,
+        hitIndex: 0,
+        text: `${e.name} deals ${damage} damage.`,
+    });
+    if (c.hp > 0 && status)
+        c.statuses = applyStatus(c, status, { id: e.id, name: e.name }, false).statuses;
+    refreshStats(c);
 }

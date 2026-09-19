@@ -3,7 +3,7 @@ import { withWiki } from './wiki';
 import wiki from './fishing.wiki.json';
 
 export default withWiki(
-    define('Fishing', 'any', 0, 0, 0, 0, {
+    define('Fishing', 'any', 0, 0, 0, {
         description: 'Catch fish and items; higher ranks improve automatic fishing and catch size.',
         effect: 'passive',
         category: 'Life',
