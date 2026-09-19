@@ -113,6 +113,13 @@ export function WindowProvider({ children }: { children: ReactNode }) {
             }
             const size = WINDOW_SIZES[id];
             const meta = { icon, iconTestId, hasFooter: !!hasFooter };
+            const companion =
+                id === 'service'
+                    ? wm.get('inventory')
+                    : id === 'inventory'
+                      ? wm.get('service')
+                      : undefined;
+
             const saved = sessionGeometry.get(id);
             // Clamp both restored and newly opened windows before wmkit positions them.
             // A window reopened after a viewport change otherwise retains desktop dimensions.
@@ -125,26 +132,42 @@ export function WindowProvider({ children }: { children: ReactNode }) {
                 oldViewport?.height === viewport.height;
             const width = Math.min(saved?.width ?? size.width, viewport.width || size.width);
             const height = Math.min(saved?.height ?? size.height, viewport.height || size.height);
+            const paired = companion && viewport.width >= 1200;
+            const pairWidth = Math.min(680, (viewport.width - 48) / 2);
+            if (paired) {
+                wm.resize(companion.id, { width: pairWidth, height: companion.bounds.height });
+                wm.move(
+                    companion.id,
+                    companion.id === 'service' ? 16 : viewport.width - pairWidth - 16,
+                    24,
+                );
+            }
             wm.open({
                 id,
                 title,
                 meta,
-                width,
+                width: paired ? pairWidth : width,
                 height,
                 minWidth: Math.min(MIN_SIZE.width, width),
                 minHeight: Math.min(MIN_SIZE.height, height),
-                x: sameViewport
-                    ? saved.x
-                    : Math.min(
-                          Math.max(0, saved?.x ?? (viewport.width - width) / 2 + offset),
-                          Math.max(0, viewport.width - width),
-                      ),
-                y: sameViewport
-                    ? saved.y
-                    : Math.min(
-                          Math.max(0, saved?.y ?? (viewport.height - height) / 2 + offset),
-                          Math.max(0, viewport.height - height),
-                      ),
+                x: paired
+                    ? id === 'service'
+                        ? 16
+                        : viewport.width - pairWidth - 16
+                    : sameViewport
+                      ? saved.x
+                      : Math.min(
+                            Math.max(0, saved?.x ?? (viewport.width - width) / 2 + offset),
+                            Math.max(0, viewport.width - width),
+                        ),
+                y: paired
+                    ? 24
+                    : sameViewport
+                      ? saved.y
+                      : Math.min(
+                            Math.max(0, saved?.y ?? (viewport.height - height) / 2 + offset),
+                            Math.max(0, viewport.height - height),
+                        ),
             });
         },
         [wm],

@@ -19,7 +19,7 @@ import {
 } from 'react';
 import type { Immutable } from 'immer';
 import { allowed, reduceCommand, type Command } from '../domain/commands';
-import { items } from '../domain/catalog';
+import { items, shops } from '../domain/catalog';
 import {
     backpack,
     equippedSlot,
@@ -249,12 +249,14 @@ function DropConfirmation({
 }
 export function InventoryPanel({
     character: c,
+    service = '',
     save,
     disabled,
     error,
     send,
 }: {
     character: Immutable<Character>;
+    service?: string;
     save: Immutable<SaveData>;
     disabled: boolean;
     error: string;
@@ -387,6 +389,33 @@ export function InventoryPanel({
                       : ''),
             run: () => handleDrop(item),
         });
+        if (shops[service]) {
+            const trade = (command: Command) => {
+                let reason = busyReason;
+                if (!reason) {
+                    try {
+                        reduceCommand(save, command, `preview:${save.data.revision}`);
+                    } catch (error) {
+                        reason = error instanceof Error ? error.message : 'Unavailable.';
+                    }
+                }
+                return reason;
+            };
+            const sell: Command = { type: 'SELL', id: item.id };
+            actions.push({
+                label: `Sell · ${Math.floor(def.price / 4)}g`,
+                reason: trade(sell),
+                run: () => send(sell),
+            });
+            if (service === 'Blacksmith' && item.durability !== undefined) {
+                const repair: Command = { type: 'REPAIR', id: item.id };
+                actions.push({
+                    label: `Repair · ${20 - item.durability}g`,
+                    reason: trade(repair),
+                    run: () => send(repair),
+                });
+            }
+        }
         return actions;
     };
     const handleGrab = (

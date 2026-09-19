@@ -26,6 +26,7 @@ import {
     busy,
 } from './runtime/game';
 import { setBlockingOverlay } from './game/inputState';
+import { shops } from './domain/catalog';
 import { races, talents, type CreateInput } from './domain/model';
 import { MenuBar } from './ui/MenuBar';
 import { rebirthCooldown } from './domain/progression';
@@ -70,7 +71,7 @@ function App() {
 
 function Game() {
     const snapshot = useSyncExternalStore(subscribe, () => actor.getSnapshot());
-    const { closeAllWindows } = useWindows();
+    const { closeAllWindows, focusWindow } = useWindows();
     const save = snapshot.context.save,
         c = getCharacter(),
         hero = getHero(),
@@ -90,9 +91,11 @@ function Game() {
     const openers = useRef<Partial<Record<WindowId, HTMLElement | null>>>({});
     useEffect(() => {
         startRuntime();
-        const sub = dialogue.subscribe((s) =>
-            setService(s.matches('closed') ? '' : s.context.service),
-        );
+        const sub = dialogue.subscribe((s) => {
+            const next = s.matches('closed') ? '' : s.context.service;
+            if (shops[next]) setPanels((current) => ({ ...current, inventory: true }));
+            setService(next);
+        });
         return () => sub.unsubscribe();
     }, []);
     useEffect(() => {
@@ -129,6 +132,7 @@ function Game() {
     };
     const rebirthCharacter = save.data.characters.find((ch) => ch.id === rebirthId);
     const openPanel = (panel: PanelId, opener?: EventTarget | null) => {
+        focusWindow(panel);
         openers.current[panel] = (opener as HTMLElement) ?? null;
         setPanels((previous) => ({ ...previous, [panel]: true }));
     };
@@ -473,6 +477,7 @@ function Game() {
                     >
                         <InventoryPanel
                             character={c}
+                            service={service}
                             save={save}
                             disabled={disabled}
                             error={snapshot.context.error}
@@ -511,11 +516,14 @@ function Game() {
                     onClose={() => dialogue.send({ type: 'CLOSE' })}
                     footer={service === 'Trainer' ? apFooter : undefined}
                 >
-                    <NpcQuests character={c} disabled={disabled} send={send} npc={service} />
+                    {!shops[service] && (
+                        <NpcQuests character={c} disabled={disabled} send={send} npc={service} />
+                    )}
                     {service === 'Trainer' ? (
                         <SkillJournal character={c} disabled={disabled} trainer send={send} />
                     ) : (
                         <ServiceContent
+                            onOpenInventory={() => openPanel('inventory')}
                             service={service}
                             character={c}
                             disabled={disabled}

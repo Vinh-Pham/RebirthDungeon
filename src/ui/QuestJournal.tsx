@@ -292,8 +292,15 @@ export function QuestJournal({
     );
 }
 
-export function NpcQuests({ character: c, disabled, send, npc }: Props & { npc: string }) {
-    if (!(npc in questNpcs)) return null;
+export function NpcQuests({
+    character: c,
+    disabled,
+    send,
+    npc,
+    emptyMessage,
+}: Props & { npc: string; emptyMessage?: string }) {
+    if (!(npc in questNpcs))
+        return emptyMessage ? <p className="text-sm text-muted">{emptyMessage}</p> : null;
     const npcId = npc as QuestNpc;
     const entries = Object.values(quests).filter((q) => {
         const r = c.quests.records[q.id];
@@ -308,7 +315,8 @@ export function NpcQuests({ character: c, disabled, send, npc }: Props & { npc: 
                   ))
         );
     });
-    if (!entries.length) return null;
+    if (!entries.length)
+        return emptyMessage ? <p className="text-sm text-muted">{emptyMessage}</p> : null;
     return (
         <section aria-label="NPC quests" className="mb-5 space-y-3 border-b pb-4">
             <h3>Quests</h3>

@@ -145,6 +145,7 @@ test('quest journal, details, NPC delivery, tracking and scaled mobile layout', 
     await walk(page, 335, 860);
     await page.keyboard.press('e');
     const smith = page.getByRole('dialog', { name: 'Blacksmith', exact: true });
+    await smith.getByRole('tab', { name: 'Quests', exact: true }).click();
     await smith.getByRole('button', { name: 'Accept Supplies for the Forge' }).click();
     await smith.getByRole('button', { name: 'Complete Supplies for the Forge' }).click();
     await expect

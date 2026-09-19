@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { findPath } from '../../src/domain/dungeon';
+import { townGrid } from '../../src/game/world';
 async function state(page: Page) {
     // React can render the restored HUD before Phaser finishes preloading after a reload.
     const snapshot = await page.waitForFunction(() => (window as any).__GAME__, undefined, {
@@ -154,10 +155,9 @@ test('create, explore, fight, resume, defeat the boss and return with treasure',
     expect(errors).toEqual([]);
 });
 
-test('town shopping, inventory, bank and settings use accessible panels', async ({
-    page,
-}, info) => {
-    test.skip(info.project.name !== 'chromium', 'Service coverage runs in Chromium');
+test('town shopping, inventory, bank and settings use accessible panels', async ({ page }) => {
+    test.setTimeout(180000);
+    await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto('/');
     await page.getByRole('button', { name: 'Begin your journey' }).click();
     await page.getByRole('button', { name: 'Create a character' }).click();
@@ -177,16 +177,38 @@ test('town shopping, inventory, bank and settings use accessible panels', async 
     async function approach(id: string) {
         const s = await state(page),
             l = s.locations.find((l: any) => l.id === id);
-        await page.mouse.click(l.x - s.camera.x, l.y - s.camera.y);
-        await expect
-            .poll(
-                async () => {
-                    const s = await state(page);
-                    return Math.hypot(s.position.x - l.x, s.position.y - l.y);
-                },
-                { timeout: 15000, intervals: [100] },
-            )
-            .toBeLessThan(90);
+        await page.locator('#game-container').focus();
+        const route = findPath(
+            townGrid(),
+            { x: Math.floor(s.position.x / 32), y: Math.floor(s.position.y / 32) },
+            { x: Math.floor(l.x / 32), y: Math.floor(l.y / 32) },
+        );
+        const corners = route.filter(
+            (p, i) =>
+                i === route.length - 1 ||
+                (i > 0 &&
+                    (p.x - route[i - 1].x !== route[i + 1].x - p.x ||
+                        p.y - route[i - 1].y !== route[i + 1].y - p.y)),
+        );
+        for (const p of corners) {
+            for (let step = 0; step < 100; step++) {
+                const current = await state(page);
+                const dx = p.x * 32 + 16 - current.position.x,
+                    dy = p.y * 32 + 16 - current.position.y;
+                if (Math.abs(dx) < 10 && Math.abs(dy) < 10) break;
+                const horizontal = Math.abs(dx) >= Math.abs(dy);
+                const key = horizontal ? (dx > 0 ? 'd' : 'a') : dy > 0 ? 's' : 'w';
+                await page.keyboard.down(key);
+                await page.waitForTimeout(
+                    Math.min(150, (Math.abs(horizontal ? dx : dy) / 180) * 1000),
+                );
+                await page.keyboard.up(key);
+                if (step === 99)
+                    throw new Error(
+                        `Could not reach ${id} waypoint ${JSON.stringify(p)} from ${JSON.stringify((await state(page)).position)}`,
+                    );
+            }
+        }
         await page.keyboard.press('e', { delay: 40 });
         await expect(page.getByRole('dialog', { name: serviceTitles[id] })).toBeVisible();
     }
@@ -197,8 +219,69 @@ test('town shopping, inventory, bank and settings use accessible panels', async 
         .filter({ hasText: 'Health potion' })
         .getByRole('button', { name: 'Buy · 10g' })
         .click();
-    await expect(page.getByText('Health potion ×4')).toBeVisible();
-    await page.getByRole('button', { name: 'Close', exact: true }).click();
+    const inventory = page.getByRole('dialog', { name: 'Your belongings' });
+    await expect(inventory).toBeVisible();
+    await inventory.getByRole('button', { name: 'Health potion ×4', exact: true }).click();
+    await inventory.getByRole('button', { name: 'Sell · 2g', exact: true }).click();
+    await expect(
+        inventory.getByRole('button', { name: 'Health potion ×3', exact: true }),
+    ).toBeVisible();
+    for (const vendor of ['General', 'Grocery', 'Blacksmith']) {
+        if (vendor !== 'General') await approach(vendor);
+        const dialog = page.getByRole('dialog', { name: serviceTitles[vendor], exact: true });
+        await expect(dialog.getByRole('tab', { name: 'Shop', exact: true })).toHaveAttribute(
+            'aria-selected',
+            'true',
+        );
+        const images = dialog.locator('[data-testid="shop-catalog"] img');
+        expect(await images.count()).toBeGreaterThan(0);
+        await expect
+            .poll(() =>
+                images.evaluateAll((elements) =>
+                    elements.every(
+                        (el) =>
+                            (el as HTMLImageElement).complete &&
+                            (el as HTMLImageElement).naturalWidth > 0,
+                    ),
+                ),
+            )
+            .toBe(true);
+        await dialog.getByRole('tab', { name: 'Quests', exact: true }).click();
+        await expect(dialog.getByTestId('shop-catalog')).toHaveCount(0);
+        if (vendor === 'Grocery')
+            await expect(dialog.getByText('No quests available here right now.')).toBeVisible();
+        await dialog.getByRole('tab', { name: 'Shop', exact: true }).click();
+        if (vendor === 'Blacksmith') {
+            await inventory.getByRole('button', { name: 'Ashwood sword ×1', exact: true }).click();
+            await expect(
+                inventory.getByRole('button', { name: 'Sell · 10g', exact: true }),
+            ).toBeDisabled();
+            await expect(
+                inventory.getByRole('button', { name: 'Repair · 0g', exact: true }),
+            ).toBeVisible();
+        }
+        await page.screenshot({
+            path: `test-results/shop-${vendor}-${test.info().project.name}.png`,
+        });
+        if (vendor === 'Blacksmith') {
+            await dialog.getByRole('button', { name: 'Your inventory', exact: true }).click();
+            await dialog.getByRole('tab', { name: 'Shop', exact: true }).click();
+            await page.setViewportSize({ width: 320, height: 900 });
+            await dialog.getByRole('tab', { name: 'Quests', exact: true }).click();
+            await page.screenshot({
+                path: `test-results/shop-mobile-${test.info().project.name}.png`,
+            });
+        }
+        await dialog.getByRole('button', { name: 'Close', exact: true }).click();
+        await expect(inventory.getByRole('button', { name: /^Sell ·/ })).toHaveCount(0);
+        await page
+            .getByRole('navigation', { name: 'Game navigation' })
+            .getByRole('button', { name: 'Inventory', exact: true })
+            .click();
+        await expect(inventory).toHaveAttribute('data-wm-focused', '');
+        await inventory.getByRole('button', { name: 'Close', exact: true }).click();
+        await page.setViewportSize({ width: 1440, height: 1000 });
+    }
     await approach('Bank');
     await page.getByRole('button', { name: 'Deposit gold', exact: true }).click();
     await expect(page.getByText(/Stored gold: 10/)).toBeVisible();

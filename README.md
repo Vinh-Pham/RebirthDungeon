@@ -69,6 +69,8 @@ See [lint configuration and exceptions](docs/linting.md). Prettier remains the f
 
 ## Quests
 
+Shops share **Shop** and **Quests** tabs. Visiting General, Grocery, or Blacksmith opens your inventory alongside the NPC stock, with images for each stock item. Select or right-click an inventory item to **Sell** one unit; equipped gear must be unequipped first. Blacksmith visits also expose **Repair** in inventory. **Your inventory** brings the inventory forward on small screens.
+
 Dungeon rewards appear as illustrated selectable cards. Click a card to toggle its highlighted border. **Take all** collects every available reward and continues; **Take selected** collects the selection and continues, leaving unselected rewards behind. Collection and continuation save together, so a full backpack or failed write keeps the reward dialog open. Closing the dialog without collecting still confirms leaving unclaimed loot.
 
 Open **Quests** in the menu bar to browse six categories, inspect quest notes and rewards, and track up to three objectives. Accept NPC offers in town, then use **Complete** when ready to claim rewards. Item deliveries are completed with the named NPC. Kill progress is banked when a dungeon run ends, including defeat or an early return; Clear Alby requires victory. Quests and claims survive reload and rebirth. The beginner story includes a playable memory as Aren with separate equipment and supplies.

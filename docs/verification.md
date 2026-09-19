@@ -6,6 +6,14 @@ Browser tests use real input and inspect a read-only test-mode snapshot. Chromiu
 
 Local Firefox launch currently fails with “Could not find profile folder” before navigation, including when using an explicitly created profile directory. This is a host/browser-launch limitation; the Firefox project remains enabled in CI. Do not report Firefox as verified until that launch succeeds.
 
+## Shared NPC shop tabs — September 19, 2026 UTC
+
+- Every catalog-backed shop uses the same HeroUI Shop/Quests tabs, verified against HeroUI MCP documentation. Empty quest tabs show an explicit message. Shop items use original category SVG illustrations and the existing resource-potion art.
+- Visiting a shop opens the player inventory. Wide screens arrange service/inventory windows alongside one another. The shop's Your inventory button and inventory navigation bring an open inventory forward. Selling and blacksmith repairs use existing domain commands from inventory selection/context actions; equipped-item and busy/read-only restrictions remain enforced. Bank and healer services retain their existing interfaces.
+- Lint, TypeScript, all 136 unit/React tests, production build, formatting and whitespace checks passed. No domain or persistence rules changed; coverage was not rerun.
+- Chromium and WebKit trading journeys passed: all three vendors, purchase and inventory sale, equipped-sale rejection, repair availability, tab switching, empty Grocery quests, all shop images loading, closing-shop removal of Sell, bank operations, and 320px inventory focus. Both NPC quest journeys and the Chromium window movement/resize/scene-transition journeys also passed. The expanded trading test now routes real keyboard movement around town buildings rather than clicking off-screen NPCs or walking through blocked tiles.
+- Desktop and narrow screenshots were visually inspected. Firefox was not rerun for this presentation change.
+
 ## Reward collection and automatic continuation — September 19, 2026 UTC
 
 - `RewardModal.tsx` uses HeroUI Pro CheckboxButtonGroup without visible indicators, original reward SVGs, and border-only selection. It has no Continue button. Take all collects everything available and advances; Take selected collects only selected rewards, leaves the rest, and advances. Closing without collection retains the leave confirmation.
