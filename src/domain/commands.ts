@@ -45,7 +45,7 @@ import {
 import { produce, type Immutable } from 'immer';
 import { items, skills, shops, talentWeapon } from './catalog';
 import { nextRandom, roll } from './dice';
-import { generateDungeon } from './dungeon';
+import { generateDungeon, bossUnlocked, dungeonGrid, pendingEncounter } from './dungeon';
 import { applyAging, gainXp, rebirth, startingStats } from './progression';
 import {
     initialData,
@@ -286,6 +286,11 @@ export function reduceCommand(
         controlledCharacter(save)?.battle?.action?.id !== cmd.actionId
     )
         throw new Error('This action has already ended.');
+    if (cmd.type === 'POSITION') {
+        const character = controlledCharacter(save);
+        const room = character?.run && pendingEncounter(character.run, cmd.x, cmd.y);
+        if (room) cmd = { type: 'ENCOUNTER', room: room.id, x: cmd.x, y: cmd.y };
+    }
     return produce(save, (d) => {
         const s = d as SaveData;
         const owner = s.data.characters.find((c) => c.id === s.data.activeId);
@@ -513,7 +518,7 @@ export function reduceCommand(
                         c.run &&
                         Number.isFinite(cmd.x) &&
                         Number.isFinite(cmd.y) &&
-                        c.run.tiles[Math.floor(cmd.y / 32)]?.[Math.floor(cmd.x / 32)]
+                        dungeonGrid(c)[Math.floor(cmd.y / 32)]?.[Math.floor(cmd.x / 32)]
                     ) {
                         c.run.x = cmd.x;
                         c.run.y = cmd.y;
@@ -524,7 +529,7 @@ export function reduceCommand(
                         c.run &&
                         cmd.x !== undefined &&
                         cmd.y !== undefined &&
-                        c.run.tiles[Math.floor(cmd.y / 32)]?.[Math.floor(cmd.x / 32)]
+                        dungeonGrid(c)[Math.floor(cmd.y / 32)]?.[Math.floor(cmd.x / 32)]
                     ) {
                         c.run.x = cmd.x;
                         c.run.y = cmd.y;
@@ -532,12 +537,9 @@ export function reduceCommand(
                     const r = c.run?.rooms.find((r) => r.id === cmd.room);
                     if (!r || r.kind === 'entry' || c.run!.cleared.includes(r.id))
                         throw new Error('This room is already clear.');
-                    if (
-                        r.kind === 'boss' &&
-                        c.run!.rooms.some((r) => r.required && !c.run!.cleared.includes(r.id))
-                    )
+                    if (r.kind === 'boss' && !bossUnlocked(c.run!))
                         throw new Error(
-                            'Clear the three sealed rooms before opening the boss gate.',
+                            'Defeat all enemies in non-boss rooms before opening the boss gate.',
                         );
                     if (
                         c.role &&

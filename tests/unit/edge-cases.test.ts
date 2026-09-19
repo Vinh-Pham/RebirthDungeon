@@ -158,7 +158,7 @@ it('supplies, invalid encounters, position boundaries, abandonment and selected 
     const pos = active(s)!.run!.x;
     s = run(s, { type: 'POSITION', x: 0, y: 0 });
     expect(active(s)!.run!.x).toBe(pos);
-    const r = active(s)!.run!.rooms[1];
+    const r = active(s)!.run!.rooms[0];
     s = run(s, { type: 'POSITION', x: r.x * 32, y: r.y * 32 });
     expect(active(s)!.run!.x).toBe(r.x * 32);
     for (const room of [0, 99]) expect(() => run(s, { type: 'ENCOUNTER', room })).toThrow();

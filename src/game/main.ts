@@ -16,7 +16,14 @@ import {
     workflowPhase,
 } from '../runtime/game';
 import { locations, townGrid } from './world';
-import { findPath } from '../domain/dungeon';
+import { skills } from '../domain/Skills';
+import {
+    findPath,
+    dungeonGrid,
+    dungeonGates,
+    pendingEncounter,
+    bossUnlocked,
+} from '../domain/dungeon';
 import { canvasBlocked, worldKeysBlocked, onOwnershipChange } from './inputState';
 class Boot extends Phaser.Scene {
     constructor() {
@@ -31,6 +38,9 @@ class Preloader extends Phaser.Scene {
         super('Preloader');
     }
     preload() {
+        for (const [id, skill] of Object.entries(skills))
+            if (skill.type === 'active' && skill.icon.startsWith('/'))
+                this.load.image(`skill:${id}`, skill.icon);
         for (const key of ['town', 'human', 'elf', 'giant', 'spider', 'redspider', 'boss', 'chest'])
             this.load.svg(key, `assets/game/${key}.svg`);
         for (const key of ['town', 'dungeon', 'battle', 'hit'])
@@ -100,6 +110,7 @@ class World extends Phaser.Scene {
                     position: { x: this.player?.x, y: this.player?.y },
                     camera: { x: this.cameras.main.scrollX, y: this.cameras.main.scrollY },
                     controls: this.controls,
+                    gates: getCharacter() ? dungeonGates(getCharacter()!) : [],
                     locations,
                 }),
             });
@@ -178,13 +189,30 @@ class World extends Phaser.Scene {
             else this.cameras.main.setZoom(Math.max(w / 1600, h / 1000));
         } else if (screen === 'Alby' && c?.run) {
             this.cameras.main.setZoom(1);
-            this.grid = c.run.tiles.map((r) => [...r]);
+            this.grid = dungeonGrid(c);
             const g = this.add.graphics();
             for (let y = 0; y < this.grid.length; y++)
                 for (let x = 0; x < this.grid[y].length; x++) {
-                    g.fillStyle(this.grid[y][x] ? ((x + y) % 2 ? 0x333d43 : 0x39454b) : 0x131d24);
+                    g.fillStyle(c.run.tiles[y][x] ? ((x + y) % 2 ? 0x333d43 : 0x39454b) : 0x131d24);
                     g.fillRect(x * 32, y * 32, 31, 31);
                 }
+            for (const gate of dungeonGates(c)) {
+                const x = gate.x * 32,
+                    y = gate.y * 32;
+                g.lineStyle(gate.closed ? 4 : 2, gate.closed ? 0xd9a565 : 0x86b795, 1);
+                if (gate.closed) {
+                    for (const offset of [5, 16, 27])
+                        g.lineBetween(
+                            x + (gate.vertical ? 8 : offset),
+                            y + (gate.vertical ? offset : 8),
+                            x + (gate.vertical ? 24 : offset),
+                            y + (gate.vertical ? offset : 24),
+                        );
+                } else {
+                    g.lineBetween(x + 3, y + 3, x + 8, y + 8);
+                    g.lineBetween(x + 24, y + 24, x + 29, y + 29);
+                }
+            }
             for (const r of c.run.rooms) {
                 const cleared = c.run.cleared.includes(r.id);
                 this.add
@@ -198,10 +226,12 @@ class World extends Phaser.Scene {
                                   ? 'AREN’S MEMORY • ENTRANCE'
                                   : 'ALBY • ENTRANCE'
                               : r.kind === 'boss'
-                                ? 'THE BROODMOTHER'
+                                ? bossUnlocked(c.run)
+                                    ? 'THE BROODMOTHER · GATE OPEN'
+                                    : 'BOSS GATE LOCKED · CLEAR ALL ENEMIES'
                                 : r.kind === 'supplies'
                                   ? 'FORGOTTEN CACHE'
-                                  : `CHAMBER ${r.id}${cleared ? ' · CLEARED' : r.trigger === 'switch' ? ' · ACTIVATE SWITCH' : r.trigger === 'chest' ? ' · OPEN CHEST' : ' · SPIDERS'}`,
+                                  : `CHAMBER ${r.id}${cleared ? ' · GATES OPEN' : ' · ENEMIES'}`,
                         { fontSize: '13px', color: '#b3c6be' },
                     )
                     .setOrigin(0.5);
@@ -214,7 +244,7 @@ class World extends Phaser.Scene {
                                 ? 'chest'
                                 : r.kind === 'boss'
                                   ? 'boss'
-                                  : r.trigger === 'chest' || r.kind === 'supplies'
+                                  : r.kind === 'supplies'
                                     ? 'chest'
                                     : 'spider',
                         )
@@ -238,12 +268,12 @@ class World extends Phaser.Scene {
                     });
                 }
             }
+            let position = previousPosition ?? { x: c.run.x, y: c.run.y };
+            // A legacy checkpoint may be inside the newly locked boss room.
+            if (!this.grid[Math.floor(position.y / 32)]?.[Math.floor(position.x / 32)])
+                position = { x: c.run.rooms[0].x * 32 + 16, y: c.run.rooms[0].y * 32 + 16 };
             this.player = this.add
-                .image(
-                    previousPosition?.x ?? c.run.x,
-                    previousPosition?.y ?? c.run.y,
-                    c.race.toLowerCase(),
-                )
+                .image(position.x, position.y, c.race.toLowerCase())
                 .setDisplaySize(40, 50);
             this.cameras.main
                 .setBounds(0, 0, this.grid[0].length * 32, this.grid.length * 32)
@@ -258,6 +288,23 @@ class World extends Phaser.Scene {
                 g.strokeEllipse(w / 2, h * 0.5, 200 + i * 110, 80 + i * 45);
             }
             if (screen === 'Battle' && c?.battle) {
+                const closed = c.battle.enemies.some((enemy) => enemy.hp > 0);
+                const gateX = w / 2 - 65,
+                    gateY = h * 0.14;
+                g.lineStyle(5, closed ? 0xd9a565 : 0x86b795);
+                g.strokeRect(gateX, gateY, 130, 70);
+                if (closed)
+                    for (let x = gateX + 13; x < gateX + 130; x += 13)
+                        g.lineBetween(x, gateY, x, gateY + 70);
+                this.add
+                    .text(
+                        w / 2,
+                        gateY - 22,
+                        closed ? 'GATES CLOSED · DEFEAT ALL ENEMIES' : 'GATES OPEN',
+                        { fontSize: '12px', color: closed ? '#d9a565' : '#86b795' },
+                    )
+                    .setOrigin(0.5);
+
                 c.battle.enemies.forEach((e, i) => {
                     const img = this.add
                         .image(
@@ -420,6 +467,12 @@ class World extends Phaser.Scene {
                 this.player.setAngle(Math.sin(time / 85) * 3);
         }
 
+        const run = getCharacter()?.run;
+        if (this.screen === 'Alby' && run && pendingEncounter(run, this.player.x, this.player.y)) {
+            this.path = [];
+            send({ type: 'POSITION', x: this.player.x, y: this.player.y });
+            return;
+        }
         if (this.screen === 'Alby' && time - this.lastSave > 1200 && length) {
             this.lastSave = time;
             send({ type: 'POSITION', x: this.player.x, y: this.player.y });

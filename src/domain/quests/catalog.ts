@@ -39,7 +39,7 @@ export const quests: Record<string, QuestDefinition> = Object.fromEntries(
                 id: 'clear-alby',
                 title: 'Clear Alby Dungeon',
                 description: 'Break the seals and defeat the Giant Spider.',
-                notes: 'Enter Alby at the north gate. Clear the three sealed chambers, defeat the Giant Spider, choose a treasure chest, and return home. Leaving early does not clear the dungeon.',
+                notes: 'Enter Alby at the north gate. Defeat all enemies in the non-boss chambers, defeat the Giant Spider, choose a treasure chest, and return home. Leaving early does not clear the dungeon.',
                 category: 'Mainstream Quests',
                 ...story,
                 prerequisites: [{ kind: 'claimed', quest: 'arens-warning' }],

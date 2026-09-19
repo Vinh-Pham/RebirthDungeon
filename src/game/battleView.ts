@@ -14,6 +14,7 @@ export interface ControlBounds {
     y: number;
     width: number;
     height: number;
+    icon?: string;
 }
 export function battleView(
     scene: Phaser.Scene,
@@ -37,6 +38,7 @@ export function battleView(
         callback: () => void,
         enabled = true,
         highlight = false,
+        skillId?: string,
     ) {
         const container = scene.add.container(x, y).setDepth(10000);
         const box = scene.add
@@ -44,10 +46,10 @@ export function battleView(
             .setStrokeStyle(1, highlight ? 0xd1e8af : 0x638578)
             .setOrigin(0.5);
         const text = scene.add
-            .text(0, 0, label, {
+            .text(skillId ? 18 : 0, 0, label, {
                 fontFamily: 'Arial',
                 fontSize: '12px',
-                wordWrap: { width: width - 10 },
+                wordWrap: { width: width - (skillId ? 50 : 10) },
                 color: highlight ? '#203a2b' : '#e1ece2',
                 align: 'center',
             })
@@ -56,10 +58,32 @@ export function battleView(
             .add([box, text])
             .setSize(width, 44)
             .setAlpha(enabled && !busy() ? 1 : 0.5);
+        let icon: string | undefined;
+        if (skillId) {
+            const definition = skills[skillId];
+            const texture = `skill:${skillId}`;
+            const iconX = -width / 2 + 23;
+            if (definition.icon.startsWith('/') && scene.textures.exists(texture)) {
+                container.add(scene.add.image(iconX, 0, texture).setDisplaySize(30, 30));
+                icon = definition.icon;
+            } else {
+                icon = definition.icon.startsWith('/') ? '✧' : definition.icon;
+                container.add(
+                    scene.add
+                        .text(iconX, 0, icon, {
+                            fontSize: '24px',
+                            color: highlight ? '#203a2b' : '#e1ece2',
+                        })
+                        .setOrigin(0.5),
+                );
+            }
+            // Keep long cost/restriction labels inside the existing hit area.
+            if (text.height > 36) text.setScale(36 / text.height);
+        }
         new Button(container, { mode: 'release', threshold: 8 }).on('click', () => {
             if (enabled && !busy()) callback();
         });
-        bounds.push({ name, x, y, width, height: 44 });
+        bounds.push({ name, x, y, width, height: 44, ...(icon ? { icon } : {}) });
         return container;
     }
     const target =
@@ -112,7 +136,7 @@ export function battleView(
             'recover',
             'pass',
         ];
-        const columns = w < 650 ? 3 : 4,
+        const columns = w < 430 ? 1 : w < 650 ? 3 : 4,
             width = (panelWidth - 40) / columns - 8;
         const pageSize = columns * 3;
         const pages = Math.ceil(list.length / pageSize);
@@ -138,23 +162,25 @@ export function battleView(
                           : send({ type: 'ROLL', skill: id, target: target!.id }),
                 !reason,
                 id !== 'recover' && id !== 'pass',
+                skills[id] ? id : undefined,
             );
         });
         if (pages > 1) {
+            const pagingWidth = Math.min(150, (panelWidth - 70) / 2);
             button(
                 'previous-skills',
-                w / 2 - 125,
+                w / 2 - 25 - pagingWidth / 2,
                 top + 251,
-                150,
+                pagingWidth,
                 'Previous skills',
                 () => changePage(page - 1),
                 page > 0,
             );
             button(
                 'next-skills',
-                w / 2 + 125,
+                w / 2 + 25 + pagingWidth / 2,
                 top + 251,
-                150,
+                pagingWidth,
                 'Next skills',
                 () => changePage(page + 1),
                 page < pages - 1,

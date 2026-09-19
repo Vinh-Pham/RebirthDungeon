@@ -1,5 +1,6 @@
 import { nextRandom } from './dice';
-import type { Dungeon, Room } from './model';
+import type { Immutable } from 'immer';
+import type { Character, Dungeon, Room } from './model';
 export const TILE = 32;
 export function generateDungeon(seed: number): Dungeon {
     const original = seed;
@@ -36,7 +37,7 @@ export function generateDungeon(seed: number): Dungeon {
         y: c.y * 13 + 6,
         kind: id === 0 ? 'entry' : id === 6 ? 'boss' : id === 5 ? 'supplies' : 'encounter',
         trigger: id === 2 ? 'chest' : id === 3 ? 'switch' : 'spider',
-        required: id > 0 && id < 4,
+        required: id > 0 && id < 5,
     }));
     for (const room of rooms) {
         for (let yy = room.y - 4; yy <= room.y + 4; yy++)
@@ -110,4 +111,60 @@ export function findPath(
         }
     }
     return [];
+}
+
+export function hasEnemies(room: Immutable<Room>): boolean {
+    return room.kind === 'encounter' || room.kind === 'boss';
+}
+export function bossUnlocked(run: Immutable<Dungeon>): boolean {
+    return run.rooms.every((room) => room.kind !== 'encounter' || run.cleared.includes(room.id));
+}
+export function roomAt(run: Immutable<Dungeon>, x: number, y: number) {
+    const tx = Math.floor(x / TILE),
+        ty = Math.floor(y / TILE);
+    return run.rooms.find((room) => Math.abs(tx - room.x) <= 4 && Math.abs(ty - room.y) <= 4);
+}
+export function pendingEncounter(run: Immutable<Dungeon>, x: number, y: number) {
+    const room = roomAt(run, x, y);
+    return room && hasEnemies(room) && !run.cleared.includes(room.id) ? room : undefined;
+}
+export function gateClosed(c: Immutable<Character>, room: Immutable<Room>): boolean {
+    return (
+        !!c.run &&
+        hasEnemies(room) &&
+        ((room.kind === 'boss' && !bossUnlocked(c.run)) ||
+            (c.battle?.room === room.id && c.battle.enemies.some((enemy) => enemy.hp > 0)))
+    );
+}
+/** Doorway cells are floor cells at a room edge with floor immediately outside it. */
+export function dungeonGates(c: Immutable<Character>) {
+    const run = c.run;
+    if (!run) return [];
+    return run.rooms.filter(hasEnemies).flatMap((room) => {
+        const gates: { room: number; x: number; y: number; vertical: boolean; closed: boolean }[] =
+            [];
+        for (const side of [-1, 1])
+            for (let offset = -4; offset <= 4; offset++) {
+                for (const vertical of [false, true]) {
+                    const x = room.x + (vertical ? side * 4 : offset);
+                    const y = room.y + (vertical ? offset : side * 4);
+                    const outsideX = x + (vertical ? side : 0);
+                    const outsideY = y + (vertical ? 0 : side);
+                    if (run.tiles[y]?.[x] && run.tiles[outsideY]?.[outsideX])
+                        gates.push({ room: room.id, x, y, vertical, closed: gateClosed(c, room) });
+                }
+            }
+        return gates;
+    });
+}
+export function dungeonGrid(c: Immutable<Character>): number[][] {
+    if (!c.run) return [];
+    const grid = c.run.tiles.map((row) => [...row]);
+    for (const gate of dungeonGates(c)) if (gate.closed) grid[gate.y][gate.x] = 0;
+    // Also reject checkpoints inside the locked boss room, including legacy layouts.
+    if (!bossUnlocked(c.run))
+        for (const room of c.run.rooms.filter((r) => r.kind === 'boss'))
+            for (let y = room.y - 4; y <= room.y + 4; y++)
+                for (let x = room.x - 4; x <= room.x + 4; x++) if (grid[y]?.[x]) grid[y][x] = 0;
+    return grid;
 }

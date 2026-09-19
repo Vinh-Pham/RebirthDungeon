@@ -6,6 +6,20 @@ Browser tests use real input and inspect a read-only test-mode snapshot. Chromiu
 
 Local Firefox launch currently fails with “Could not find profile folder” before navigation, including when using an explicitly created profile directory. This is a host/browser-launch limitation; the Firefox project remains enabled in CI. Do not report Firefox as verified until that launch succeeds.
 
+## Battle skill icons — September 19, 2026 UTC
+
+- Battle skill buttons preload and display their existing catalog artwork, retaining catalog glyphs for skills without raster icons. Labels, costs, disabled reasons and button actions remain present. The skill list uses one column below 430px, with paging controls kept inside the panel.
+- Lint, TypeScript, production build, formatting and whitespace checks passed. The expanded Chromium spellbook journey passed: icon references on both pages, actual Icebolt selection, three single-column skills at 320px, and paging bounds. Screenshots at 600px and 320px were inspected.
+- No domain or persistence changes for this follow-up. Unit coverage, WebKit and Firefox were not rerun for the icon presentation change.
+
+## Dungeon gates — September 19, 2026 UTC
+
+- Enemy-room entry now starts the persisted encounter automatically. Doorway gates close during combat, reopen after all enemies die, and are absent from entry/supplies/exit rooms. The boss requires every non-boss encounter, including the former optional fourth chamber. Shared domain helpers drive collision, pathfinding and command validation; existing saves retain their schema and battle state.
+- Lint, TypeScript, all 142 unit/React tests, production build and whitespace checks passed. Coverage gates passed: 96.45% statements, 93.92% branches, 97.90% functions and 97.90% lines. Added checks cover legacy optional-room flags, empty rooms, blocked boss entry, automatic encounters, unchanged entry RNG, idempotency, save validation and last-enemy gate opening.
+- Chromium's complete dungeon/treasure/reload journey passed with all four encounter rooms. WebKit's existing shorter creation/entry journey passed. Aren's full memory journey passed in both browsers. Four focused gate checks passed across Chromium/WebKit: real movement into rooms, closed gates after reload, reopening after victory, blocked boss movement and boss access after all non-boss enemies are cleared. The final focused rerun also checks the corrected four-room HUD counter.
+- Visually inspected closed battle gates, open room gates and the locked boss doorway. Initial checks exposed stale test expectations for three required rooms and a new browser helper reading before actions committed; these were updated. One full-journey attempt was interrupted by a development-server reload during source editing; its clean rerun passed.
+- Firefox was attempted for the boss-gate journey and failed before navigation with “Could not find profile folder.” It remains unverified on this host.
+
 ## Inventory hover dismissal while dragging — September 19, 2026 UTC
 
 - Reproduced the old behavior with an immediate pointer-down assertion: the closed card remained mounted during its exit. Hover content now unmounts immediately when closed or suppressed, preventing an exiting card from repositioning as its item moves.

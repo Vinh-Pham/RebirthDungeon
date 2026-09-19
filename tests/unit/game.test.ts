@@ -72,7 +72,7 @@ it('1000 seeded floors connect every room with a valid path', () => {
     for (let seed = 0; seed < 1000; seed++) {
         const d = generateDungeon(seed);
         expect(d.rooms).toHaveLength(7);
-        expect(d.rooms.filter((r) => r.required)).toHaveLength(3);
+        expect(d.rooms.filter((r) => r.required)).toHaveLength(4);
         for (const r of d.rooms.slice(1))
             expect(findPath(d.tiles, d.rooms[0], r).length).toBeGreaterThan(0);
     }
@@ -141,8 +141,8 @@ it('complete dungeon, prevent duplicate loot/chests, and resume battle', () => {
     const g = game();
     g.doIt({ type: 'LEARN', skill: 'smash' });
     g.doIt({ type: 'ENTER', seed: 42 });
-    expect(() => g.doIt({ type: 'ENCOUNTER', room: 6 })).toThrow('three');
-    for (const room of [1, 2, 3, 6]) {
+    expect(() => g.doIt({ type: 'ENCOUNTER', room: 6 })).toThrow('non-boss');
+    for (const room of [1, 2, 3, 4, 6]) {
         g.doIt({ type: 'ENCOUNTER', room });
         let turns = 0;
         while (g.s.checkpoint.phase !== 'reward' && turns++ < 60) {

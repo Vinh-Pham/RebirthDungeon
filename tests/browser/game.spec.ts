@@ -60,6 +60,7 @@ async function moveToRoom(page: Page, id: number) {
     for (const p of corners) {
         for (let tries = 0; tries < 100; tries++) {
             const current = await state(page);
+            if (current.save.checkpoint.screen === 'Battle') return;
             const dx = p.x * 32 + 16 - current.position.x,
                 dy = p.y * 32 + 16 - current.position.y;
             if (Math.abs(dx) < 10 && Math.abs(dy) < 10) break;
@@ -101,7 +102,7 @@ test('create, explore, fight, resume, defeat the boss and return with treasure',
     await expect(page.getByRole('heading', { name: 'Alby', exact: true })).toBeVisible();
     expect(errors).toEqual([]);
     if (info.project.name !== 'chromium') return;
-    for (const room of [1, 2, 3, 6]) {
+    for (const room of [1, 2, 3, 4, 6]) {
         await moveToRoom(page, room);
         await expect(page.getByRole('heading', { name: 'A tangled encounter' })).toBeVisible();
         let turns = 0;
@@ -554,6 +555,9 @@ test('catalog icons, life references, and a full spellbook remain usable on a sm
         .poll(async () => (await state(page)).controls.some((c: any) => c.name === 'next-skills'))
         .toBe(true);
     const before = (await state(page)).controls;
+    for (const button of before.filter((c: any) => skills[c.name]))
+        expect(button.icon).toBe(skills[button.name].icon);
+    await page.screenshot({ path: 'test-results/battle-skill-icons.png' });
     const next = before.find((c: any) => c.name === 'next-skills');
     await page.mouse.move(next.x, next.y);
     await page.mouse.down();
@@ -566,6 +570,26 @@ test('catalog icons, life references, and a full spellbook remain usable on a sm
     expect(controls.some((c: any) => c.name === 'previous-skills')).toBe(true);
     expect(controls.every((c: any) => c.y + c.height / 2 <= 800)).toBe(true);
     await page.screenshot({ path: 'test-results/skill-catalog-spellbook-mobile.png' });
+    for (const button of controls.filter((c: any) => skills[c.name]))
+        expect(button.icon).toBe(skills[button.name].icon);
+    await page.setViewportSize({ width: 320, height: 800 });
+    await expect
+        .poll(async () => (await state(page)).controls.filter((c: any) => skills[c.name]).length)
+        .toBe(3);
+    const narrowControls = (await state(page)).controls;
+    for (const button of narrowControls.filter((c: any) => c.name.endsWith('-skills'))) {
+        expect(button.x - button.width / 2).toBeGreaterThanOrEqual(0);
+        expect(button.x + button.width / 2).toBeLessThanOrEqual(320);
+    }
+    const narrow = (await state(page)).controls.filter((c: any) => skills[c.name]);
+    expect(narrow.every((c: any) => c.x - c.width / 2 >= 0 && c.x + c.width / 2 <= 320)).toBe(true);
+    expect(new Set(narrow.map((c: any) => c.x)).size).toBe(1);
+    await page.screenshot({ path: 'test-results/battle-skill-icons-narrow.png' });
+    await page.setViewportSize({ width: 600, height: 800 });
+    const previous = (await state(page)).controls.find((c: any) => c.name === 'previous-skills');
+    await page.mouse.click(previous.x, previous.y, { delay: 60 });
+    await control(page, 'ice');
+    expect((await state(page)).save.data.characters[0].battle.skill).toBe('ice');
 });
 
 test('character stats, potion side effects and mixed reservations survive reload', async ({

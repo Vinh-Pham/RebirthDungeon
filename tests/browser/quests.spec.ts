@@ -80,8 +80,9 @@ async function walk(page: Page, x: number, y: number) {
     // Real keyboard movement; the read-only bridge supplies position only.
     await page.locator('#game-container').focus();
     for (let attempts = 0; attempts < 100; attempts++) {
-        const s = await snapshot(page),
-            dx = x - s.position.x,
+        const s = await snapshot(page);
+        if (s.save.checkpoint.screen === 'Battle') return;
+        const dx = x - s.position.x,
             dy = y - s.position.y;
         if (Math.hypot(dx, dy) < 28) return;
         const horizontal = Math.abs(dx) > Math.abs(dy);

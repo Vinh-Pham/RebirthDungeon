@@ -270,7 +270,7 @@ it('credits every distinct target across encounters and quests, and clears only 
     s = send(s, { type: 'HEAL' });
     s = send(s, { type: 'ACCEPT_QUEST', quest: 'patience-before-power', npc: 'Trainer' });
     s = send(s, { type: 'ENTER', seed: 9 });
-    for (const room of [1, 2, 3, 6]) {
+    for (const room of [1, 2, 3, 4, 6]) {
         s = killEncounter(send(s, { type: 'ENCOUNTER', room }));
         s = send(s, { type: 'LEAVE_REWARD' });
     }

@@ -381,7 +381,7 @@ function Game() {
                                 : screen === 'Town1'
                                   ? 'Walk with WASD or click · E to interact'
                                   : screen === 'Alby'
-                                    ? `${c.run?.cleared.filter((id) => c.run?.rooms.find((r) => r.id === id)?.required).length} / 3 seals broken · E to investigate`
+                                    ? `${c.run?.rooms.filter((r) => r.kind === 'encounter' && c.run?.cleared.includes(r.id)).length ?? 0} / ${c.run?.rooms.filter((r) => r.kind === 'encounter').length ?? 0} enemy rooms cleared · E to investigate`
                                     : screen === 'Battle'
                                       ? `Turn ${c.battle?.turn} · Choose your moment`
                                       : 'Five possibilities. One reward.'}
@@ -401,7 +401,7 @@ function Game() {
                                 {c.tutorial === 0
                                     ? 'Find Alby Dungeon at the north gate.'
                                     : c.tutorial < 3
-                                      ? 'Explore the chambers, break three seals, and defeat the Giant Spider.'
+                                      ? 'Defeat every chamber’s enemies to unlock the boss gate, then defeat the Giant Spider.'
                                       : 'Open one treasure chest and return home.'}
                             </p>
                             <span className="text-[13px] text-[#ebce7c]">
