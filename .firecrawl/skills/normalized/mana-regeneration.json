@@ -1,0 +1,293 @@
+{
+  "url": "https://wiki.mabinogiworld.com/view/Mana_Recovery",
+  "retrievedAt": "2026-09-18",
+  "rows": [
+    {
+      "label": "AP Cost",
+      "values": [
+        "2",
+        "4",
+        "6",
+        "6",
+        "6",
+        "6",
+        "8",
+        "8",
+        "8",
+        "10",
+        "10",
+        "10",
+        "12",
+        "14",
+        "16"
+      ]
+    },
+    {
+      "label": "AP Cost (Total)",
+      "values": [
+        "2",
+        "6",
+        "12",
+        "18",
+        "24",
+        "30",
+        "38",
+        "46",
+        "54",
+        "64",
+        "74",
+        "84",
+        "96",
+        "110",
+        "126"
+      ]
+    },
+    {
+      "label": "Additional Mana",
+      "values": [
+        "1",
+        "2",
+        "2",
+        "3",
+        "3",
+        "3",
+        "4",
+        "4",
+        "4",
+        "5",
+        "5",
+        "5",
+        "6",
+        "6",
+        "7"
+      ]
+    },
+    {
+      "label": "Additional Mana (Total)",
+      "values": [
+        "1",
+        "3",
+        "5",
+        "8",
+        "11",
+        "14",
+        "18",
+        "22",
+        "26",
+        "31",
+        "36",
+        "41",
+        "47",
+        "53",
+        "60"
+      ]
+    },
+    {
+      "label": "Mana Recovery (%)*",
+      "values": [
+        "20",
+        "20",
+        "20",
+        "25",
+        "25",
+        "25",
+        "30",
+        "30",
+        "35",
+        "35",
+        "40",
+        "40",
+        "45",
+        "45",
+        "50"
+      ]
+    },
+    {
+      "label": "Load Time [sec]",
+      "values": [
+        "0",
+        "0",
+        "0",
+        "0",
+        "0",
+        "0",
+        "0",
+        "0",
+        "0",
+        "0",
+        "0",
+        "0",
+        "0",
+        "0",
+        "0"
+      ]
+    },
+    {
+      "label": "Channeling Time [sec]",
+      "values": [
+        "2",
+        "2",
+        "2",
+        "2",
+        "2",
+        "2",
+        "2",
+        "2",
+        "2",
+        "2",
+        "2",
+        "2",
+        "2",
+        "2",
+        "2"
+      ]
+    },
+    {
+      "label": "Cooldown Time [sec]",
+      "values": [
+        "300",
+        "295",
+        "290",
+        "285",
+        "280",
+        "275",
+        "270",
+        "260",
+        "250",
+        "240",
+        "230",
+        "220",
+        "210",
+        "200",
+        "180"
+      ]
+    },
+    {
+      "label": "Cooldown Time [min]",
+      "values": [
+        "5",
+        "4.92",
+        "4.83",
+        "4.75",
+        "4.67",
+        "4.58",
+        "4.5",
+        "4.33",
+        "4.17",
+        "4",
+        "3.83",
+        "3.67",
+        "3.5",
+        "3.33",
+        "3"
+      ]
+    },
+    {
+      "label": "Stat CP (Total)",
+      "values": [
+        "0.5",
+        "1.5",
+        "2.5",
+        "4",
+        "5.5",
+        "7",
+        "9",
+        "11",
+        "13",
+        "15.5",
+        "18",
+        "20.5",
+        "23.5",
+        "26.5",
+        "30"
+      ]
+    },
+    {
+      "label": "Magic Talent EXP",
+      "values": [
+        "2,400",
+        "3,600",
+        "5,200",
+        "6,500",
+        "8,500",
+        "10,200",
+        "12,000",
+        "14,000",
+        "16,000",
+        "18,000",
+        "20,000",
+        "24,000",
+        "28,000",
+        "32,000",
+        "36,000"
+      ]
+    },
+    {
+      "label": "Magic Talent EXP (Total)",
+      "values": [
+        "2,400",
+        "6,000",
+        "11,200",
+        "17,700",
+        "26,200",
+        "36,200",
+        "48,200",
+        "62,200",
+        "78,200",
+        "96,200",
+        "116,200",
+        "140,200",
+        "168,200",
+        "200,200",
+        "236,200"
+      ]
+    }
+  ],
+  "effects": {
+    "F": [
+      "Recovers up to 20% of Maximum Mana, Cooldown time of 5 Minutes"
+    ],
+    "E": [
+      "Recovers up to 20% of Maximum Mana, Cooldown time of 4 Minutes 55 Seconds"
+    ],
+    "D": [
+      "Recovers up to 20% of Maximum Mana, Cooldown time of 4 Minutes 50 Seconds"
+    ],
+    "C": [
+      "Recovers up to 25% of Maximum Mana, Cooldown time of 4 Minutes 45 Seconds"
+    ],
+    "B": [
+      "Recovers up to 25% of Maximum Mana, Cooldown time of 4 Minutes 40 Seconds"
+    ],
+    "A": [
+      "Recovers up to 25% of Maximum Mana, Cooldown time of 4 Minutes 35 Seconds"
+    ],
+    "9": [
+      "Recovers up to 30% of Maximum Mana, Cooldown time of 4 Minutes 30 Seconds"
+    ],
+    "8": [
+      "Recovers up to 30% of Maximum Mana, Cooldown time of 4 Minutes 20 Seconds"
+    ],
+    "7": [
+      "Recovers up to 35% of Maximum Mana, Cooldown time of 4 Minutes 10 Seconds"
+    ],
+    "6": [
+      "Recovers up to 35% of Maximum Mana, Cooldown time of 4 Minutes"
+    ],
+    "5": [
+      "Recovers up to 40% of Maximum Mana, Cooldown time of 3 Minutes 50 Seconds"
+    ],
+    "4": [
+      "Recovers up to 40% of Maximum Mana, Cooldown time of 3 Minutes 40 Seconds"
+    ],
+    "3": [
+      "Recovers up to 45% of Maximum Mana, Cooldown time of 3 Minutes 30 Seconds"
+    ],
+    "2": [
+      "Recovers up to 45% of Maximum Mana, Cooldown time of 3 Minutes 20 Seconds"
+    ],
+    "1": [
+      "Recovers up to 50% of Maximum Mana, Cooldown time of 3 Minutes"
+    ]
+  }
+}

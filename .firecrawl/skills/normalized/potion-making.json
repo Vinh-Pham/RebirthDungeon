@@ -1,0 +1,193 @@
+{
+  "url": "https://wiki.mabinogiworld.com/view/Potion_Making",
+  "retrievedAt": "2026-09-18",
+  "rows": [
+    {
+      "label": "Required AP",
+      "values": [
+        "1",
+        "1",
+        "1",
+        "1",
+        "1",
+        "1",
+        "2",
+        "2",
+        "2",
+        "2",
+        "3",
+        "3",
+        "3",
+        "3",
+        "3"
+      ]
+    },
+    {
+      "label": "Required AP (Total)",
+      "values": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "8",
+        "10",
+        "12",
+        "14",
+        "17",
+        "20",
+        "23",
+        "26",
+        "29"
+      ]
+    },
+    {
+      "label": "Additional Int",
+      "values": [
+        "+2",
+        "+2",
+        "+2",
+        "+2",
+        "+2",
+        "+2",
+        "+3",
+        "+3",
+        "+3",
+        "+3",
+        "+3",
+        "+2",
+        "+2",
+        "+2",
+        "+2"
+      ]
+    },
+    {
+      "label": "Additional Int (Total)",
+      "values": [
+        "+2",
+        "+4",
+        "+6",
+        "+8",
+        "+10",
+        "+12",
+        "+15",
+        "+18",
+        "+21",
+        "+24",
+        "+27",
+        "+29",
+        "+31",
+        "+33",
+        "+35"
+      ]
+    },
+    {
+      "label": "Additional Dex",
+      "values": [
+        "-",
+        "-",
+        "-",
+        "-",
+        "-",
+        "-",
+        "-",
+        "-",
+        "-",
+        "-",
+        "-",
+        "+2",
+        "+2",
+        "+2",
+        "+2"
+      ]
+    },
+    {
+      "label": "Additional Dex (Total)",
+      "values": [
+        "-",
+        "-",
+        "-",
+        "-",
+        "-",
+        "-",
+        "-",
+        "-",
+        "-",
+        "-",
+        "-",
+        "+2",
+        "+4",
+        "+6",
+        "+8"
+      ]
+    },
+    {
+      "label": "Stat CP *",
+      "values": [
+        "0.4",
+        "0.8",
+        "1.2",
+        "1.6",
+        "2.0",
+        "2.4",
+        "3.0",
+        "3.6",
+        "4.2",
+        "4.8",
+        "5.4",
+        "6.0",
+        "6.6",
+        "7.2",
+        "7.8"
+      ]
+    }
+  ],
+  "effects": {
+    "F": [
+      "It is possible to make potions."
+    ],
+    "E": [
+      "It is possible to make potions."
+    ],
+    "D": [
+      "It is now possible to make Cooking Potions ."
+    ],
+    "C": [
+      "It is now possible to make Likeability Potions ."
+    ],
+    "B": [
+      "It is possible to make potions."
+    ],
+    "A": [
+      "It is possible to make potions."
+    ],
+    "9": [
+      "It is possible to make potions."
+    ],
+    "8": [
+      "It is possible to make potions."
+    ],
+    "7": [
+      "It is possible to make potions."
+    ],
+    "6": [
+      "It is possible to make potions."
+    ],
+    "5": [
+      "It is now possible to make Antidote Potions ."
+    ],
+    "4": [
+      "It is possible to make potions."
+    ],
+    "3": [
+      "It is now possible to make Poison Potions ."
+    ],
+    "2": [
+      "It is possible to make potions."
+    ],
+    "1": [
+      "It is possible to make potions."
+    ]
+  }
+}

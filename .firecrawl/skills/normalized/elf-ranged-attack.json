@@ -1,0 +1,333 @@
+{
+  "url": "https://wiki.mabinogiworld.com/view/Elf_Ranged_Attack",
+  "retrievedAt": "2026-09-18",
+  "rows": [
+    {
+      "label": "Required AP",
+      "values": [
+        "0",
+        "3",
+        "6",
+        "9",
+        "12",
+        "15",
+        "18",
+        "19",
+        "20",
+        "21",
+        "22",
+        "23",
+        "24",
+        "25",
+        "30"
+      ]
+    },
+    {
+      "label": "Required AP (Total)",
+      "values": [
+        "0",
+        "3",
+        "9",
+        "18",
+        "30",
+        "45",
+        "63",
+        "82",
+        "102",
+        "123",
+        "145",
+        "168",
+        "192",
+        "217",
+        "247"
+      ]
+    },
+    {
+      "label": "Additional Dex (Total)",
+      "values": [
+        "+1",
+        "+2",
+        "+3",
+        "+4",
+        "+5",
+        "+6",
+        "+8",
+        "+10",
+        "+12",
+        "+13",
+        "+14",
+        "+15",
+        "+16",
+        "+17",
+        "+22"
+      ]
+    },
+    {
+      "label": "Additional Str (Total)",
+      "values": [
+        "-",
+        "-",
+        "-",
+        "-",
+        "-",
+        "-",
+        "-",
+        "-",
+        "-",
+        "+1",
+        "+2",
+        "+3",
+        "+4",
+        "+5",
+        "+10"
+      ]
+    },
+    {
+      "label": "Additional Min Damage",
+      "values": [
+        "-",
+        "-",
+        "-",
+        "-",
+        "-",
+        "-",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "10"
+      ]
+    },
+    {
+      "label": "Additional Max Damage",
+      "values": [
+        "-",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "15"
+      ]
+    },
+    {
+      "label": "Min Aim Rate [%]",
+      "values": [
+        "+0",
+        "+1",
+        "+2",
+        "+3",
+        "+4",
+        "+5",
+        "+6",
+        "+8",
+        "+9",
+        "+10",
+        "+12",
+        "+14",
+        "+16",
+        "+18",
+        "+20"
+      ]
+    },
+    {
+      "label": "Additional Balance [%]",
+      "values": [
+        "+1",
+        "+2",
+        "+3",
+        "+4",
+        "+5",
+        "+6",
+        "+7",
+        "+8",
+        "+9",
+        "+10",
+        "+11",
+        "+12",
+        "+13",
+        "+14",
+        "+15"
+      ]
+    },
+    {
+      "label": "Aim Speed [%]",
+      "values": [
+        "100",
+        "105",
+        "110",
+        "115",
+        "120",
+        "125",
+        "135",
+        "140",
+        "145",
+        "150",
+        "160",
+        "170",
+        "180",
+        "190",
+        "200"
+      ]
+    },
+    {
+      "label": "Stamina Use",
+      "values": [
+        "1",
+        "1",
+        "2",
+        "2",
+        "2",
+        "2",
+        "3",
+        "3",
+        "3",
+        "3",
+        "4",
+        "4",
+        "4",
+        "4",
+        "5"
+      ]
+    },
+    {
+      "label": "Load Time [sec]",
+      "values": [
+        "0",
+        "0",
+        "0",
+        "0",
+        "0",
+        "0",
+        "0",
+        "0",
+        "0",
+        "0",
+        "0",
+        "0",
+        "0",
+        "0",
+        "0"
+      ]
+    },
+    {
+      "label": "Cooldown Time [sec]",
+      "values": [
+        "0.1",
+        "0.1",
+        "0.1",
+        "0.1",
+        "0.1",
+        "0.1",
+        "0.1",
+        "0.1",
+        "0.1",
+        "0.1",
+        "0.1",
+        "0.1",
+        "0.1",
+        "0.1",
+        "0.1"
+      ]
+    },
+    {
+      "label": "Skill CP (Total)",
+      "values": [
+        "0",
+        "10",
+        "20",
+        "40",
+        "80",
+        "120",
+        "160",
+        "200",
+        "240",
+        "250",
+        "260",
+        "270",
+        "280",
+        "290",
+        "300"
+      ]
+    },
+    {
+      "label": "Stat CP (Total)",
+      "values": [
+        "0.1",
+        "0.2",
+        "0.3",
+        "0.4",
+        "0.5",
+        "0.6",
+        "0.8",
+        "1.0",
+        "1.2",
+        "2.3",
+        "3.4",
+        "4.5",
+        "5.6",
+        "6.7",
+        "12.2"
+      ]
+    }
+  ],
+  "effects": {
+    "F": [
+      "none"
+    ],
+    "E": [
+      "Total Ranged Max Damage +1, Aim Speed 105%"
+    ],
+    "D": [
+      "Total Ranged Max Damage +2, Aim Speed 110%"
+    ],
+    "C": [
+      "Total Ranged Max Damage +3, Aim Speed 115%"
+    ],
+    "B": [
+      "Total Ranged Max Damage +4, Aim Speed 120%"
+    ],
+    "A": [
+      "Total Ranged Max Damage +5, Aim Speed 125%"
+    ],
+    "9": [
+      "Total Ranged Max Damage +6, Total Ranged Min Damage +1, Aim Speed 135%"
+    ],
+    "8": [
+      "Total Ranged Max Damage +7, Total Ranged Min Damage +2, Aim Speed 140%"
+    ],
+    "7": [
+      "Total Ranged Max Damage +8, Total Ranged Min Damage +3, Aim Speed 145%"
+    ],
+    "6": [
+      "Total Ranged Max Damage +9, Total Ranged Min Damage +4, Aim Speed 150%"
+    ],
+    "5": [
+      "Total Ranged Max Damage +10, Total Ranged Min Damage +5, Aim Speed 160%"
+    ],
+    "4": [
+      "Total Ranged Max Damage +11, Total Ranged Min Damage +6, Aim Speed 170%"
+    ],
+    "3": [
+      "Total Ranged Max Damage +12, Total Ranged Min Damage +7, Aim Speed 180%"
+    ],
+    "2": [
+      "Total Ranged Max Damage +13, Total Ranged Min Damage +8, Aim Speed 190%"
+    ],
+    "1": [
+      "Total Ranged Max Damage +15, Total Ranged Min Damage +10, Aim Speed 200%"
+    ]
+  }
+}

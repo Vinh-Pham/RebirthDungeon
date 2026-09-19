@@ -1,0 +1,1 @@
+Original SVG reward illustrations authored for Rebirth Dungeon, distributed under the project MIT license. Gold, silk, gem, and resource potion art is independent of external game assets.

@@ -1,0 +1,309 @@
+# Theming
+
+wmkit never styles anything by class name. It writes `data-wm-*` attributes and inline geometry, and a theme is just CSS that reacts to those attributes. Sixteen themes ship with the package; replacing them with your own removes every CSS requirement the library has.
+
+```js
+import '@surdeddd/wmkit/themes/glass.css'  // dark translucent, the default look
+import '@surdeddd/wmkit/themes/light.css'  // light translucent
+```
+
+| File | Look |
+| --- | --- |
+| `glass.css` | dark translucent, the default |
+| `light.css` | light translucent |
+| `retro.css` | Win98 bevels, no blur |
+| `terminal.css` | monospace, phosphor green, square controls |
+| `paper.css` | warm off-white, serif titles, ink offset shadow |
+| `neon.css` | deep indigo with a magenta and cyan glow |
+| `aqua.css` | glossy pinstriped titlebar, centred title |
+| `frost.css` | pale frosted glass, heavy blur, round corners |
+| `candy.css` | pastel gradient titlebar, very round, springy |
+| `carbon.css` | flat industrial dark, square, blue focus rail |
+| `brutalist.css` | 2px black frame, hard offset shadow, caps mono |
+| `blueprint.css` | navy drafting grid, dashed snap preview |
+| `amber.css` | amber CRT with scanlines and glow |
+| `noir.css` | pure black and white hairlines |
+| `forest.css` | dark olive with serif titles |
+| `synth.css` | sunset gradient titlebar over deep purple |
+
+Every one of them ships the same contract: 24px pointer targets on the window
+controls, a `prefers-reduced-motion` block that drops the transitions, and a
+`forced-colors` block that swaps the controls for labelled glyphs.
+
+## One window at a time
+
+A theme dresses every window. When one window needs to look different, give it a
+variant: the desktop mirrors it to `data-wm-variant` and your CSS overrides the
+tokens from there.
+
+```js
+wm.open({ id: 'log', meta: { variant: 'ghost' } })
+```
+
+```css
+[data-wm-window][data-wm-variant="ghost"] {
+  --wm-shadow: none;
+  opacity: 0.88;
+}
+```
+
+By default the variant is read from `meta.variant`. Pass `windowVariant` to
+`attachDesktop` to derive it from anything else instead:
+
+```js
+attachDesktop(wm, root, {
+  windowVariant: (win) => (win.layer === 'modal' ? 'sheet' : null),
+})
+```
+
+## The attribute contract
+
+### Written by you, read by the library
+
+| Attribute | On | Meaning |
+| --- | --- | --- |
+| `data-wm-drag` | any descendant | drag handle; double click toggles maximize; right click or long press fires `onTitlebarContextMenu` |
+| `data-wm-title` | any descendant, shadow root included | title node; its text follows the state, and it is linked as `aria-labelledby` only from the same root |
+| `data-wm-content` | any descendant | scrollable content area (styling only) |
+| `data-wm-controls` | any descendant | control group (styling only) |
+| `data-wm-close` | button | closes when `closable` |
+| `data-wm-minimize` | button | minimizes when `minimizable` |
+| `data-wm-maximize` | button | toggles maximize when `maximizable` |
+
+Controls work through delegation, so they can be nested anywhere inside the window.
+
+### Written by the library, read by your CSS
+
+| Attribute | On | Values |
+| --- | --- | --- |
+| `data-wm-desktop` | desktop element | present |
+| `data-wm-window` | window element | the window id |
+| `data-wm-stage` | window | `normal`, `minimized`, `maximized`, `snapped` |
+| `data-wm-layer` | window | `normal`, `floating`, `modal` |
+| `data-wm-workspace` | window | workspace index |
+| `data-wm-focused` | window | present on the focused window |
+| `data-wm-dragging` | window | present during a drag |
+| `data-wm-resizing` | window | the direction: `n`, `se`, … |
+| `data-wm-pinching` | window | present while two fingers are resizing it |
+| `data-wm-variant` | window | the variant name, when the window has one |
+| `data-wm-flash` | window | present for one animation after a blocked modal interaction |
+| `data-wm-resize` | injected handles | the direction |
+| `data-wm-snap-preview` | injected preview | present |
+| `data-wm-announcer` | injected live region | present |
+| `hidden` | window | minimized, or on another workspace |
+
+Geometry is inline `transform: translate3d()`, `width`, `height` and `z-index`. Never fight it with `left`/`top` in CSS — position through the manager instead.
+
+## CSS variables
+
+`glass.css` and `light.css` expose the same set on `[data-wm-desktop]`:
+
+| Variable | Used for |
+| --- | --- |
+| `--wm-radius` | window and titlebar corner radius |
+| `--wm-bg`, `--wm-bg-focused` | window background |
+| `--wm-border`, `--wm-border-focused` | window border |
+| `--wm-shadow`, `--wm-shadow-focused` | window shadow |
+| `--wm-titlebar-bg` | titlebar fill |
+| `--wm-text`, `--wm-text-dim` | content and secondary text |
+| `--wm-accent` | focus rings, borders and the snap preview |
+| `--wm-accent-ink` | the accent where it has to be *read* — see below |
+| `--wm-blur` | backdrop blur radius |
+| `--wm-transition` | move and resize easing |
+
+### Why the accent comes in two
+
+`--wm-accent` is picked to sing against the window: a vivid border, a focus ring, a snap preview. The same colour set as small text is often unreadable — `frost`'s sky blue scores 1.4:1 on its own surface, and `candy`'s pink 2.1:1, both far below the 4.5:1 that WCAG AA asks of body text.
+
+So every theme also ships `--wm-accent-ink`: the same hue, walked toward the readable side until it clears 4.5:1 on that theme's window background. On dark themes the two are usually identical. Colour text with it and keep `--wm-accent` for everything that is not read:
+
+```css
+.my-value { color: var(--wm-accent-ink, var(--wm-accent)); }
+.my-chip  { border-color: var(--wm-accent); }
+```
+
+The fallback matters: a hand-written theme that predates the token still works, it just loses the guarantee.
+
+### Translucency has a floor
+
+A theme with a see-through window composites against whatever is behind it. `frost` used to sit at 48% white, which is a bright frosted pane on a light page and a flat mid-grey on a dark one — and mid-grey defeats every text colour a light theme owns. The shipped translucent themes are now solid enough that their surface stays recognisable on any desktop; the blur is what sells the frosted look, not the alpha.
+
+If you write your own translucent theme, check it against a dark backdrop before shipping it. `tests/e2e/theme-contrast.spec.ts` measures the rendered pixels of the demo under all sixteen shipped themes and fails below 4.5:1.
+
+`retro.css` is a different visual system and exposes `--wm-face`, `--wm-face-light`, `--wm-face-dark`, `--wm-face-darker`, `--wm-title-active-a`, `--wm-title-active-b`, `--wm-title-inactive`, `--wm-title-text`, plus the shared `--wm-text`, `--wm-text-dim` and `--wm-accent`.
+
+Retuning a shipped theme is a scoped override:
+
+```css
+[data-wm-desktop] {
+  --wm-radius: 3px;
+  --wm-accent: #d3ff4e;
+  --wm-bg: rgba(12, 15, 19, 0.7);
+  --wm-blur: 18px;
+}
+```
+
+## Switching themes at runtime
+
+Theme files all target `[data-wm-desktop]`, so importing two at once means the last one wins. To switch live, load them as URLs and swap a `<link>`:
+
+```js
+import glassUrl from '@surdeddd/wmkit/themes/glass.css?url'
+import lightUrl from '@surdeddd/wmkit/themes/light.css?url'
+import retroUrl from '@surdeddd/wmkit/themes/retro.css?url'
+
+const link = document.createElement('link')
+link.rel = 'stylesheet'
+document.head.append(link)
+
+export function setTheme(name) {
+  link.href = { glass: glassUrl, light: lightUrl, retro: retroUrl }[name]
+  desktopEl.dataset.theme = name
+}
+```
+
+The `data-theme` attribute lets you scope your own overrides to one theme without leaking into the others — that is exactly how the demo does it.
+
+## Theme, variant, skin
+
+Three layers, from the widest to the narrowest:
+
+| layer | reaches | changes |
+| --- | --- | --- |
+| theme | every window on the desktop | the tokens |
+| variant | one window | the tokens, through `data-wm-variant` |
+| skin | one window | the markup itself |
+
+A theme and a variant repaint what is already there. A skin replaces it: different elements, different buttons, a different titlebar. Reach for a skin when the window's *structure* differs, and for a variant when only its colours do.
+
+```js
+import { skin } from '@surdeddd/wmkit/chrome'
+
+const desktop = attachDesktop(wm, root, {
+  skins: {
+    plain: skin({ template: PLAIN }),
+    compact: skin({ template: COMPACT }),
+  },
+})
+
+desktop.mountWindow('notes', 'plain')
+wm.update('notes', { meta: { skin: 'compact' } })  // rebuilt in place
+```
+
+## Themes as text
+
+A stylesheet loaded into `document.head` cannot reach inside a shadow root, so a skin built with `shadow: true` never sees it. For that case the same sixteen themes ship as strings:
+
+```js
+import { themeNames, themeStyle } from '@surdeddd/wmkit/themes'
+
+const dressed = skin({
+  name: 'dressed',
+  shadow: true,
+  styles: themeStyle('carbon', { shadow: true }),
+  template: '<section><header data-wm-drag><span data-wm-title>{{title}}</span></header><div data-wm-content></div></section>',
+})
+```
+
+`{ shadow: true }` is not optional here, and the reason is worth knowing. Custom properties inherit through a shadow boundary, so the tokens reach in on their own — but the rules that use them are written as `[data-wm-window] [data-wm-drag]`, and inside a shadow root there is no ancestor carrying `data-wm-window`: that attribute lives on the host, outside. Adopt the plain text and you get the colours defined and nothing painted with them.
+
+The shadow flavour is the same stylesheet re-anchored: the window selector becomes `:host`, its qualifiers become `:host([data-wm-focused])`, descendants lose the prefix they can no longer match, and the desktop block is reduced to the tokens it defines. It is generated, never rewritten at runtime — `themeCss` stays byte-for-byte identical to the `.css` files, and `themeShadowCss` sits beside it.
+
+`themeNames` is the full list, in the same order the folder holds them. Both flavours come out of `pnpm themes`; a test regenerates them and fails if anyone edits a stylesheet without rerunning the generator.
+
+Importing this entry costs the weight of all sixteen stylesheets twice over, so reach for it only when you need the text. Loading a theme the ordinary way, as a `.css` import, stays the cheaper path.
+
+
+## Writing a theme from scratch
+
+A minimal but complete theme is about thirty lines. The only structural requirements are that the window is a block box with an explicit height, and that a minimized window stops taking space.
+
+```css
+[data-wm-desktop] {
+  position: relative;
+  overflow: hidden;
+}
+
+[data-wm-window] {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  background: #14161c;
+  color: #e7eaf0;
+  border: 1px solid #2a2f3a;
+  transition:
+    transform 240ms cubic-bezier(0.32, 0.72, 0, 1),
+    width 240ms cubic-bezier(0.32, 0.72, 0, 1),
+    height 240ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+[data-wm-window][hidden] {
+  display: none;                 /* [hidden] loses to display:flex — restate it */
+}
+
+[data-wm-window][data-wm-focused] {
+  border-color: #5b6472;
+}
+
+[data-wm-window][data-wm-dragging],
+[data-wm-window][data-wm-resizing] {
+  transition: none;              /* never animate against the pointer */
+  user-select: none;
+}
+
+[data-wm-window] [data-wm-drag] {
+  flex-shrink: 0;
+  cursor: default;
+  user-select: none;
+}
+
+[data-wm-window] [data-wm-content] {
+  flex: 1;
+  overflow: auto;
+}
+
+[data-wm-snap-preview] {
+  background: rgba(211, 255, 78, 0.18);
+  border: 1.5px solid rgba(211, 255, 78, 0.55);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-wm-window],
+  [data-wm-snap-preview] {
+    transition: none;
+    animation: none;
+  }
+}
+```
+
+Four rules are easy to get wrong:
+
+1. **`[hidden]` needs `display: none` restated.** `display: flex` beats the UA `[hidden]` rule, so a minimized window would stay visible.
+2. **Kill transitions while dragging.** A transition on `transform` during a drag makes the window lag behind the cursor.
+3. **Do not put `overflow: hidden` on the window itself** unless you also want to clip the resize handles, which sit slightly outside the border box.
+4. **Never write a bare `section { }` rule** in the surrounding page. If your windows are `<section>` elements it will hit them; this exact bug shipped once already.
+
+## Resize handles
+
+`createResizeHandles` injects eight absolutely positioned divs with `data-wm-resize`. They are transparent, sized by `hitAreas`, and carry the correct `cursor`. Style them only if you want visible grips:
+
+```css
+[data-wm-resize] { background: transparent; }
+[data-wm-window][data-wm-focused] [data-wm-resize='se'] {
+  background: linear-gradient(135deg, transparent 50%, #5b6472 50%);
+}
+```
+
+They are hidden automatically when the window is not resizable, and when its stage is neither `normal` nor `snapped`.
+
+## Motion and accessibility
+
+Every shipped theme drops its animations under `prefers-reduced-motion: reduce`, and `flipToTarget`/`flipFromTarget` opt out at the JS level as well. The whole minimize animation can also be turned off or retimed from the controller with `animation: false` or `animation: { duration, easing }`. Keep focus visible — the library gives the window `tabindex="-1"` and focuses it, so a `:focus-visible` outline on `[data-wm-window]` is worth having. Check contrast for `--wm-text-dim` if you retune it: it is used for the inactive titlebar text, which still has to be readable.
+
+### Pointer targets
+
+The window controls are small on purpose, so every theme grows their hit area with a transparent pseudo-element instead of growing the dot itself. Each control ends up at least 24×24 CSS pixels and neighbouring targets never overlap, which is what WCAG 2.5.8 asks for. If you restyle the controls, keep both halves of that deal: shrink the dot as much as you like, but re-check the pseudo-element inset and the `gap` on `[data-wm-controls]` so the targets stay 24px apart.
+
+### Windows high contrast
+
+Under `forced-colors: active` the platform throws away your colours, which would otherwise leave the three traffic lights as three identical circles. Every shipped theme redraws them in that mode as bordered buttons carrying `✕`, `–` and `□`, repaints the frame with `Canvas`/`CanvasText`, marks the focused window with `Highlight`, and turns the snap preview into a solid `Highlight` outline. A custom theme should do the same — colour alone is never enough to tell the controls apart.

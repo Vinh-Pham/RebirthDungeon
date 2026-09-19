@@ -1,0 +1,535 @@
+@import 'tailwindcss';
+@import '@heroui/styles';
+@import '@heroui-pro/react/css/components/context-menu.css';
+@import '@heroui-pro/react/css/components/hover-card.css';
+@import '@heroui-pro/react/css/components/checkbox-button-group.css';
+
+/* Keep the original inclusive responsive breakpoints. */
+@custom-variant compact (@media (max-width: 850px));
+@custom-variant narrow (@media (max-width: 600px));
+/* Window-container breakpoints: a window resized narrow must stack its content
+   even on a wide monitor, so window bodies query their own inline size. */
+@custom-variant wcompact (@container (max-width: 850px));
+@custom-variant wnarrow (@container (max-width: 600px));
+
+@layer base {
+    :root {
+        @apply bg-[#142930] font-[Arial,sans-serif] text-[#f1efdb] [font-synthesis:none];
+        --hud-height: 132px;
+        --accent: #50b8a4;
+    }
+    * {
+        @apply box-border;
+    }
+    body {
+        @apply m-0;
+    }
+    button {
+        @apply cursor-pointer;
+    }
+    canvas {
+        @apply block;
+    }
+    h1,
+    h2,
+    h3,
+    p {
+        @apply m-0;
+    }
+    h1,
+    h2,
+    h3 {
+        @apply font-[Georgia,serif];
+    }
+    h1 {
+        @apply text-[42px] leading-[1.1];
+    }
+    h2 {
+        @apply text-[26px];
+    }
+    h3 {
+        @apply text-[19px];
+    }
+    p {
+        @apply my-[14px] leading-[1.6] text-[#bdccc3];
+    }
+    small {
+        @apply text-[12px] text-[#9eb7ad];
+    }
+    input[type='checkbox'] {
+        @apply size-[18px] accent-[#8ecba1];
+    }
+}
+
+/* Shared game components. Utilities on an element can override these defaults. */
+@layer components {
+    .eyebrow {
+        @apply mb-3 text-[10px] font-bold tracking-[3px] text-[#78d1b9];
+    }
+    .button:not(:where(.game-modal *, .game-hud *)) {
+        @apply min-h-10 cursor-pointer rounded-[6px] border border-[#63857866] bg-[#29463f] px-[17px] py-[10px] text-[13px] text-[#e1ece2];
+    }
+    .button:not(:where(.game-modal *, .game-hud *)):hover {
+        @apply bg-[#3d6355];
+    }
+    .button:not(:where(.game-modal *, .game-hud *)):disabled {
+        @apply opacity-40;
+    }
+    .button.primary {
+        @apply border-[#d1e8af] bg-[#b9d79a] font-bold text-[#203a2b];
+    }
+    .button.subtle {
+        @apply border-transparent bg-transparent text-[#b8cabe];
+    }
+    .button.selected {
+        @apply border-[#a6d792] bg-[#48674e];
+    }
+    .panel {
+        @apply rounded-[12px] border border-[#7b9c7555] bg-[#172c2bef] p-[30px] shadow-[0_20px_90px_#03141270] backdrop-blur-[18px];
+    }
+    .center {
+        @apply absolute top-[calc(50%-54px)] left-1/2 max-h-[calc(100dvh-150px)] w-[min(880px,94vw)] -translate-x-1/2 -translate-y-1/2 overflow-auto;
+    }
+    .choices {
+        @apply my-[10px] flex flex-wrap gap-2;
+    }
+    .stack {
+        @apply flex flex-col gap-4;
+    }
+    .input {
+        @apply w-full rounded-[6px] border border-[#66827566] bg-[#0c2223] px-3 py-[10px] text-[#eaf0db];
+        @apply [--field-hover:#0c2223] [--field-focus:#0c2223] [--field-border-hover:#66827566] [--field-border-focus:#66827566];
+    }
+    .label {
+        @apply text-[12px] text-[#c5d3be];
+    }
+    .modal__dialog .input {
+        @apply min-h-[42px];
+    }
+    .item {
+        @apply flex items-center gap-3 rounded-[5px] border border-[#6c967644] bg-[#213c35] p-[10px] text-[12px];
+    }
+    .item .button {
+        @apply min-h-7 px-[9px] py-[6px] text-[11px];
+    }
+    .notice {
+        @apply absolute top-[5px] left-1/2 z-50 -translate-x-1/2 rounded-[8px] border border-[#8faa73] bg-[#213e37] px-5 py-3 text-[13px];
+    }
+}
+
+@layer components {
+    :is(.game-hud, .character-stats) [data-resource='HP'] {
+        --progress-bar-fill: var(--color-red-400);
+    }
+    :is(.game-hud, .character-stats) [data-resource='MP'] {
+        --progress-bar-fill: var(--color-blue-400);
+    }
+    :is(.game-hud, .character-stats) [data-resource='SP'] {
+        --progress-bar-fill: var(--color-yellow-400);
+    }
+    :is(.game-hud, .character-stats) [data-resource='XP'] {
+        --progress-bar-fill: var(--color-sky-300);
+    }
+    .game-modal p {
+        @apply m-0 text-muted;
+    }
+    .game-modal .modal__heading {
+        @apply font-sans text-xl font-semibold tracking-tight;
+    }
+    .game-modal .skill-card {
+        @apply shadow-none;
+    }
+}
+
+/*
+ * wmkit window theme (custom CSS instead of a shipped theme).
+ * wmkit writes data-wm-* attributes and inline geometry; this layer supplies the
+ * game's dark HeroUI surface: same border, radius, shadow, and blur as `.panel`,
+ * with a 40px close control and no backdrop or outside-click dismissal.
+ */
+@layer components {
+    /* Transparent desktop above the canvas and the scaled HUD boundary. Empty space
+       passes pointer input through; windows receive input normally. */
+    .wm-desktop {
+        @apply pointer-events-none absolute inset-x-0 top-0 z-30;
+        bottom: calc(var(--hud-height) * var(--hudscale, 1));
+    }
+    .wm-desktop[data-blocked] [data-wm-window] {
+        pointer-events: none;
+    }
+    [data-wm-window] {
+        @apply pointer-events-auto absolute flex flex-col overflow-visible rounded-[12px] border border-[#7b9c7555] bg-[#172c2bef] text-[#f1efdb] shadow-[0_20px_90px_#03141270] backdrop-blur-[18px];
+    }
+    /* A minimized window must stay hidden even against display:flex. */
+    [data-wm-window][hidden] {
+        display: none;
+    }
+    [data-wm-window][data-wm-focused] {
+        @apply border-[#a6d792aa];
+    }
+    [data-wm-window]:focus-visible {
+        @apply outline-2 outline-offset-2 outline-[var(--accent)];
+    }
+    /* Never animate against the pointer. */
+    [data-wm-window][data-wm-dragging],
+    [data-wm-window][data-wm-resizing] {
+        transition: none;
+        user-select: none;
+    }
+    [data-wm-window] [data-wm-drag] {
+        @apply flex shrink-0 cursor-default items-center gap-3 border-b border-[#7b9c7544] py-2.5 pl-[18px] pr-3 font-sans text-xl font-semibold tracking-tight select-none;
+        touch-action: none;
+    }
+    .game-window-title {
+        /* Overrides the base h2 rules to match the game-modal heading. */
+        @apply min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap font-sans text-xl font-semibold tracking-tight;
+    }
+    .game-window-controls {
+        @apply flex items-center gap-1;
+    }
+    .game-window-close {
+        @apply flex size-10 items-center justify-center rounded-[6px] text-lg text-[#b8cabe] hover:bg-[#29463f] hover:text-[#e1ece2];
+    }
+    .game-window-close svg {
+        @apply size-3.5;
+    }
+    /* The body scrolls; header and footer stay visible. */
+    [data-wm-window] [data-wm-content] {
+        @apply flex-1 overflow-auto p-[30px] wnarrow:px-4 wnarrow:py-4;
+        container-type: inline-size;
+    }
+    .game-window-footer {
+        @apply shrink-0 border-t border-[#7b9c7544] px-[30px] py-3.5;
+    }
+    .game-window-footer:empty {
+        display: none;
+    }
+    /* Window content shares the game-modal reading rules. */
+    [data-wm-window] [data-wm-content] p {
+        @apply m-0 text-muted;
+    }
+    [data-wm-window] .skill-card {
+        @apply shadow-none;
+    }
+    /* Resize handles sit slightly outside the border box and stay invisible. */
+    [data-wm-resize] {
+        background: transparent;
+        touch-action: none;
+    }
+    @media (prefers-reduced-motion: reduce) {
+        [data-wm-window],
+        [data-wm-window] * {
+            transition: none !important;
+            animation: none !important;
+        }
+    }
+}
+
+.quest-tracker {
+    position: absolute;
+    top: 240px;
+    right: 28px;
+    width: 250px;
+    max-height: calc(100dvh - 420px);
+    overflow: auto;
+    z-index: 10;
+}
+.quest-notice {
+    position: absolute;
+    bottom: calc(var(--hud-height) * var(--hudscale, 1) + 8px);
+    left: 180px;
+    right: 16px;
+    text-align: right;
+    z-index: 12;
+}
+.memory-exit {
+    position: absolute;
+    top: 120px;
+    left: 32px;
+    z-index: 12;
+}
+@media (max-width: 640px) {
+    :root {
+        --hud-height: 164px;
+    }
+    .quest-tracker {
+        top: auto;
+        bottom: calc(var(--hud-height) * var(--hudscale, 1) + 24px);
+        right: 8px;
+        width: min(230px, 65vw);
+        max-height: 160px;
+        font-size: 11px;
+    }
+    .quest-notice {
+        left: 8px;
+        font-size: 10px;
+    }
+}
+
+/* Inventory uses the existing window palette and scales with its container. */
+@layer components {
+    .inventory-panel {
+        color: #f1efdb;
+    }
+    .inventory-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 24px;
+        align-items: start;
+    }
+    .inventory-layout h3 {
+        margin-bottom: 10px;
+        font-size: 14px;
+        color: #c3d6b7;
+    }
+    .inventory-equipment {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 5px;
+    }
+    .inventory-equipment-slot {
+        position: relative;
+        height: 88px;
+        border: 1px solid #819e7c66;
+        background: #152b30;
+        border-radius: 5px;
+    }
+    .inventory-equipment-slot[data-slot='main'],
+    .inventory-equipment-slot[data-slot='body'],
+    .inventory-equipment-slot[data-slot='offhand'] {
+        height: 132px;
+    }
+    .inventory-slot-target {
+        width: 100%;
+        height: 100%;
+        padding: 4px;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        white-space: normal;
+        color: #bacfb9;
+    }
+    .inventory-slot-target > span {
+        margin: auto;
+        opacity: 0.4;
+        font-size: 34px;
+    }
+    .inventory-slot-target svg {
+        width: 36px;
+        height: 36px;
+    }
+    .inventory-item-icon svg {
+        width: 24px;
+        height: 24px;
+    }
+    .inventory-slot-target small {
+        font-size: 10px;
+    }
+    .inventory-equipment-slot > .inventory-item-wrap {
+        position: absolute;
+        inset: 2px 2px 21px;
+    }
+    .inventory-equipment-slot[data-valid='true'] {
+        outline: 2px solid #62c7a9;
+    }
+    .inventory-equipment-slot[data-valid='false'] {
+        border-color: #be7972;
+    }
+    .inventory-grid {
+        max-width: 264px;
+        position: relative;
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        grid-template-rows: repeat(10, minmax(0, 1fr));
+        aspect-ratio: 6 / 10;
+        isolation: isolate;
+    }
+    .inventory-cell {
+        min-width: 0;
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        padding: 0;
+        border: 1px solid #819e7c44;
+        border-radius: 0;
+        background: #10272c;
+    }
+    .inventory-cell:focus-visible {
+        z-index: 3;
+        outline: 2px solid #f2d585;
+        outline-offset: -3px;
+    }
+    .inventory-item-wrap {
+        min-width: 0;
+        min-height: 0;
+        z-index: 1;
+        padding: 2px;
+    }
+    .inventory-item-wrap[data-dragging] {
+        opacity: 0.65;
+        z-index: 4;
+    }
+    .inventory-menu-trigger {
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+    .inventory-tile {
+        width: 100%;
+        height: 100%;
+        min-width: 0;
+        min-height: 0;
+        position: relative;
+        padding: 3px;
+        border: 1px solid #9cad7588;
+        border-radius: 3px;
+        background: #314540;
+        color: #f1efdb;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 2px;
+        white-space: normal;
+        overflow: hidden;
+        touch-action: pan-y;
+    }
+    .inventory-tile[aria-pressed='true'] {
+        outline: 2px solid #f2d585;
+        outline-offset: -2px;
+    }
+    .inventory-item-icon {
+        font-size: clamp(14px, 3cqw, 28px);
+        line-height: 1;
+    }
+    .inventory-item-name {
+        font-size: 9px;
+        line-height: 1.05;
+        overflow-wrap: anywhere;
+    }
+    .inventory-grid .inventory-item-name {
+        display: none;
+    }
+    .inventory-quantity {
+        position: absolute;
+        bottom: 1px;
+        right: 3px;
+        font-size: 10px;
+        text-shadow: 0 1px #000;
+    }
+    .inventory-preview {
+        position: absolute;
+        pointer-events: none;
+        z-index: 5;
+        border: 2px solid #73d5b8;
+        background: #73d5b833;
+    }
+    .inventory-preview[data-valid='false'] {
+        border-color: #ed9b91;
+        background: #ed9b9133;
+    }
+    .inventory-gold {
+        margin-top: 14px;
+        display: flex;
+        justify-content: space-between;
+        border-top: 1px solid #819e7c44;
+        padding-top: 10px;
+        font-size: 13px;
+    }
+    .inventory-hint {
+        font-size: 12px;
+        margin: 12px 0;
+        min-height: 2em;
+    }
+    .inventory-details {
+        border-top: 1px solid #819e7c44;
+        padding-top: 12px;
+        font-size: 12px;
+    }
+    .inventory-details p {
+        margin: 5px 0;
+    }
+    .inventory-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+    }
+    .inventory-actions > span {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        max-width: 180px;
+    }
+    .inventory-context-menu {
+        z-index: 90;
+        max-width: min(300px, 90vw);
+    }
+    .inventory-context-menu [role='menuitem'] {
+        display: flex;
+        flex-direction: column;
+        align-items: start;
+    }
+    .inventory-confirmation {
+        z-index: 100;
+    }
+    @container (max-width: 480px) {
+        .inventory-layout {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 16px;
+        }
+        .inventory-equipment-slot {
+            height: 76px;
+        }
+        .inventory-equipment-slot[data-slot='main'],
+        .inventory-equipment-slot[data-slot='body'],
+        .inventory-equipment-slot[data-slot='offhand'] {
+            height: 100px;
+        }
+        .inventory-grid {
+            max-width: 330px;
+        }
+    }
+}
+
+.reward-choices {
+    grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
+    margin-block: 16px;
+}
+.reward-choices .reward-choice {
+    height: 100%;
+    border: 2px solid var(--border);
+    padding: 16px 12px;
+    background: var(--surface);
+    box-shadow: none;
+}
+.reward-choices .reward-choice[data-selected='true'] {
+    border-color: var(--accent);
+}
+.reward-choices .reward-choice[data-focus-visible='true'] {
+    outline: 2px solid var(--focus);
+    outline-offset: 3px;
+}
+.reward-choice .checkbox-button-group__item-content {
+    align-items: center;
+    gap: 8px;
+    text-align: center;
+}
+.reward-image {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+}
+
+.inventory-hover-trigger {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+.inventory-hover-card {
+    width: min(340px, calc(100vw - 24px));
+    max-height: min(640px, calc(100dvh - 32px));
+    overflow-y: auto;
+    padding: 16px;
+    z-index: 65;
+}

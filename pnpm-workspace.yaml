@@ -1,10 +1,17 @@
+packages:
+  - client
+  - server
+
 minimumReleaseAge: 1440
 # These exact versions are intentional in the lockfile and have passed project checks.
 # Keep the release-age delay for every other version and dependency.
 minimumReleaseAgeExclude:
   - '@heroui/react@3.2.6'
   - '@heroui/styles@3.2.6'
-  - 'prettier@3.9.8'
+
+onlyBuiltDependencies:
+  - esbuild
+  - workerd
 
 allowBuilds:
   '@heroui-pro/react': true
@@ -12,3 +19,4 @@ allowBuilds:
   esbuild: true
   heroui-native-pro: true
   heroui-pro: true
+  workerd: true

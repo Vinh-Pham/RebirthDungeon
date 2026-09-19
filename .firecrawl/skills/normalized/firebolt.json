@@ -1,0 +1,383 @@
+{
+  "url": "https://wiki.mabinogiworld.com/view/Firebolt",
+  "retrievedAt": "2026-09-18",
+  "rows": [
+    {
+      "label": "Required AP ( Human / Giant )",
+      "values": [
+        "3",
+        "3",
+        "3",
+        "3",
+        "3",
+        "3",
+        "7",
+        "7",
+        "7",
+        "7",
+        "12",
+        "12",
+        "12",
+        "12",
+        "15"
+      ]
+    },
+    {
+      "label": "Required AP ( Human / Giant Total)",
+      "values": [
+        "3",
+        "6",
+        "9",
+        "12",
+        "15",
+        "18",
+        "25",
+        "32",
+        "39",
+        "46",
+        "58",
+        "70",
+        "82",
+        "94",
+        "109"
+      ]
+    },
+    {
+      "label": "Required AP ( Elf )",
+      "values": [
+        "4",
+        "4",
+        "4",
+        "4",
+        "4",
+        "4",
+        "10",
+        "10",
+        "10",
+        "10",
+        "16",
+        "16",
+        "16",
+        "16",
+        "20"
+      ]
+    },
+    {
+      "label": "Required AP ( Elf Total)",
+      "values": [
+        "4",
+        "8",
+        "12",
+        "16",
+        "20",
+        "24",
+        "34",
+        "44",
+        "54",
+        "64",
+        "80",
+        "96",
+        "112",
+        "128",
+        "148"
+      ]
+    },
+    {
+      "label": "Additional Int",
+      "values": [
+        "+1",
+        "+2",
+        "+2",
+        "+2",
+        "+3",
+        "+3",
+        "+3",
+        "+4",
+        "+4",
+        "+4",
+        "+4",
+        "+5",
+        "+5",
+        "+5",
+        "+5"
+      ]
+    },
+    {
+      "label": "Additional Int (Total)",
+      "values": [
+        "+1",
+        "+3",
+        "+5",
+        "+7",
+        "+10",
+        "+13",
+        "+16",
+        "+20",
+        "+24",
+        "+28",
+        "+32",
+        "+37",
+        "+42",
+        "+47",
+        "+52"
+      ]
+    },
+    {
+      "label": "Minimum Magic Attack Modifier",
+      "values": [
+        "10.6%",
+        "11.2%",
+        "11.8%",
+        "12.4%",
+        "13%",
+        "13.6%",
+        "14.2%",
+        "14.8%",
+        "15.4%",
+        "16%",
+        "16.6%",
+        "17.2%",
+        "17.8%",
+        "18.4%",
+        "19%"
+      ]
+    },
+    {
+      "label": "Maximum Magic Attack Modifier",
+      "values": [
+        "16.3%",
+        "17.1%",
+        "17.9%",
+        "18.7%",
+        "19.5%",
+        "20.3%",
+        "21.1%",
+        "21.9%",
+        "22.7%",
+        "23.5%",
+        "24.3%",
+        "25.1%",
+        "25.9%",
+        "26.7%",
+        "27.5%"
+      ]
+    },
+    {
+      "label": "Mana Use ( Human )*",
+      "values": [
+        "1.5",
+        "1.5",
+        "1.5",
+        "2",
+        "2",
+        "2",
+        "3",
+        "3",
+        "3",
+        "3",
+        "4",
+        "4",
+        "4",
+        "4",
+        "5"
+      ]
+    },
+    {
+      "label": "Mana Use ( Elf )*",
+      "values": [
+        "1.5",
+        "1.5",
+        "2",
+        "2",
+        "2",
+        "2",
+        "3",
+        "3",
+        "3",
+        "3",
+        "4",
+        "4",
+        "4",
+        "4",
+        "5"
+      ]
+    },
+    {
+      "label": "Mana Use ( Giant )*",
+      "values": [
+        "2",
+        "2",
+        "2",
+        "3",
+        "3",
+        "3",
+        "4",
+        "4",
+        "4",
+        "4",
+        "5",
+        "5",
+        "5",
+        "5",
+        "6"
+      ]
+    },
+    {
+      "label": "Range",
+      "values": [
+        "1200 (1400 with Fire Wands )",
+        "1200 (1400 with Fire Wands )",
+        "1200 (1400 with Fire Wands )",
+        "1200 (1400 with Fire Wands )",
+        "1200 (1400 with Fire Wands )",
+        "1200 (1400 with Fire Wands )",
+        "1200 (1400 with Fire Wands )",
+        "1200 (1400 with Fire Wands )",
+        "1200 (1400 with Fire Wands )",
+        "1200 (1400 with Fire Wands )",
+        "1200 (1400 with Fire Wands )",
+        "1200 (1400 with Fire Wands )",
+        "1200 (1400 with Fire Wands )",
+        "1200 (1400 with Fire Wands )",
+        "1200 (1400 with Fire Wands )"
+      ]
+    },
+    {
+      "label": "Load Time [sec]",
+      "values": [
+        "1.8",
+        "1.8",
+        "1.8",
+        "1.8",
+        "1.8",
+        "1.8",
+        "1.7",
+        "1.7",
+        "1.7",
+        "1.7",
+        "1.5",
+        "1.5",
+        "1.5",
+        "1.5",
+        "1.5"
+      ]
+    },
+    {
+      "label": "Skill CP (Total)",
+      "values": [
+        "-",
+        "10",
+        "30",
+        "60",
+        "120",
+        "180",
+        "220",
+        "230",
+        "240",
+        "250",
+        "260",
+        "270",
+        "280",
+        "290",
+        "300"
+      ]
+    },
+    {
+      "label": "Stat CP (Total)",
+      "values": [
+        "0.2",
+        "0.6",
+        "1.0",
+        "1.4",
+        "2.0",
+        "2.6",
+        "3.2",
+        "4.0",
+        "4.8",
+        "5.6",
+        "6.4",
+        "7.4",
+        "8.4",
+        "9.4",
+        "10.4"
+      ]
+    }
+  ],
+  "effects": {
+    "F": [
+      "Human: 7 - 25 Fire Damage",
+      "Elf: 7 - 25 Fire Damage",
+      "Giant: 7 - 25 Fire Damage"
+    ],
+    "E": [
+      "Human: 8 - 27 Fire Damage",
+      "Elf: 8 - 27 Fire Damage",
+      "Giant: 8 - 27 Fire Damage"
+    ],
+    "D": [
+      "Human: 9 - 28 Fire Damage",
+      "Elf: 9 - 28 Fire Damage",
+      "Giant: 9 - 28 Fire Damage"
+    ],
+    "C": [
+      "Human: 11 - 30 Fire Damage",
+      "Elf: 11 - 30 Fire Damage",
+      "Giant: 11 - 30 Fire Damage"
+    ],
+    "B": [
+      "Human: 13 - 35 Fire Damage",
+      "Elf: 13 - 35 Fire Damage",
+      "Giant: 13 - 35 Fire Damage"
+    ],
+    "A": [
+      "Human: 15 - 40 Fire Damage",
+      "Elf: 15 - 40 Fire Damage",
+      "Giant: 15 - 40 Fire Damage"
+    ],
+    "9": [
+      "Human: 18 - 45 Fire Damage",
+      "Elf: 18 - 45 Fire Damage",
+      "Giant: 18 - 45 Fire Damage"
+    ],
+    "8": [
+      "Human: 21 - 50 Fire Damage",
+      "Elf: 21 - 50 Fire Damage",
+      "Giant: 21 - 50 Fire Damage"
+    ],
+    "7": [
+      "Human: 25 - 55 Fire Damage",
+      "Elf: 25 - 55 Fire Damage",
+      "Giant: 25 - 55 Fire Damage"
+    ],
+    "6": [
+      "Human: 29 - 60 Fire Damage",
+      "Elf: 29 - 60 Fire Damage",
+      "Giant: 29 - 60 Fire Damage"
+    ],
+    "5": [
+      "Human: 40 - 80 Fire Damage",
+      "Elf: 40 - 80 Fire Damage",
+      "Giant: 40 - 80 Fire Damage"
+    ],
+    "4": [
+      "Human: 45 - 85 Fire Damage",
+      "Elf: 45 - 85 Fire Damage",
+      "Giant: 45 - 85 Fire Damage"
+    ],
+    "3": [
+      "Human: 50 - 90 Fire Damage",
+      "Elf: 50 - 90 Fire Damage",
+      "Giant: 50 - 90 Fire Damage"
+    ],
+    "2": [
+      "Human: 55 - 95 Fire Damage",
+      "Elf: 55 - 95 Fire Damage",
+      "Giant: 55 - 95 Fire Damage"
+    ],
+    "1": [
+      "Human: 60 - 120 Fire Damage",
+      "Elf: 60 - 120 Fire Damage",
+      "Giant: 60 - 120 Fire Damage"
+    ]
+  }
+}
