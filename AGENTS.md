@@ -56,6 +56,9 @@ All commands are run from the repository root through Turborepo. Always work ins
 | `pnpm test:e2e`                | Playwright browser journeys (client; needs `playwright install` first) |
 | `pnpm deploy`                  | Deploy the server with `wrangler deploy` (typechecks first)            |
 | `pnpm cf-typegen`              | Regenerate Cloudflare binding types for the server                     |
+| `pnpm db:generate`             | Generate SQL migrations from `server/src/db/schema.ts` (drizzle-kit)   |
+| `pnpm db:migrate:local`        | Apply pending migrations to the local D1 (for `wrangler dev`)          |
+| `pnpm db:migrate`              | Apply pending migrations to the remote D1                              |
 
 Notes:
 

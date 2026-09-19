@@ -29,6 +29,9 @@ playwright/.cache/
 npm-debug.log*
 pnpm-debug.log*
 
+# Firecrawl
+.firecrawl/
+
 # OS / Editor
 .DS_Store
 .idea/

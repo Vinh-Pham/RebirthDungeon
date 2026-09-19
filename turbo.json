@@ -38,6 +38,15 @@
     },
     "cf-typegen": {
       "cache": false
+    },
+    "db:generate": {
+      "cache": false
+    },
+    "db:migrate:local": {
+      "cache": false
+    },
+    "db:migrate": {
+      "cache": false
     }
   }
 }
