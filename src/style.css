@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 @import '@heroui/styles';
 @import '@heroui-pro/react/css/components/context-menu.css';
+@import '@heroui-pro/react/css/components/checkbox-button-group.css';
 
 /* Keep the original inclusive responsive breakpoints. */
 @custom-variant compact (@media (max-width: 850px));
@@ -112,9 +113,6 @@
     }
     .notice {
         @apply absolute top-[5px] left-1/2 z-50 -translate-x-1/2 rounded-[8px] border border-[#8faa73] bg-[#213e37] px-5 py-3 text-[13px];
-    }
-    .reward-option {
-        @apply flex items-center gap-[15px] border-b border-[#82a08a33] py-[13px];
     }
 }
 
@@ -491,4 +489,33 @@
             max-width: 330px;
         }
     }
+}
+
+.reward-choices {
+    grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
+    margin-block: 16px;
+}
+.reward-choices .reward-choice {
+    height: 100%;
+    border: 2px solid var(--border);
+    padding: 16px 12px;
+    background: var(--surface);
+    box-shadow: none;
+}
+.reward-choices .reward-choice[data-selected='true'] {
+    border-color: var(--accent);
+}
+.reward-choices .reward-choice[data-focus-visible='true'] {
+    outline: 2px solid var(--focus);
+    outline-offset: 3px;
+}
+.reward-choice .checkbox-button-group__item-content {
+    align-items: center;
+    gap: 8px;
+    text-align: center;
+}
+.reward-image {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
 }

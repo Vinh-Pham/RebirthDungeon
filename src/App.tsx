@@ -1,5 +1,6 @@
 import { QuestJournal, NpcQuests, QuestTracker } from './ui/QuestJournal';
 import { Character } from './ui/Character';
+import { RewardModal } from './ui/RewardModal';
 import { GameModal } from './ui/GameModal';
 import { SkillJournal } from './ui/SkillJournal';
 import {
@@ -11,7 +12,7 @@ import {
     type ComponentProps,
     type Key,
 } from 'react';
-import { Button, Input, Label, TextField, Checkbox } from '@heroui/react';
+import { Button, Input, Label, TextField } from '@heroui/react';
 import { PhaserGame } from './PhaserGame';
 import {
     actor,
@@ -25,7 +26,6 @@ import {
     busy,
 } from './runtime/game';
 import { setBlockingOverlay } from './game/inputState';
-import { items } from './domain/catalog';
 import { races, talents, type CreateInput } from './domain/model';
 import { MenuBar } from './ui/MenuBar';
 import { rebirthCooldown } from './domain/progression';
@@ -87,8 +87,6 @@ function Game() {
         age: 17,
         talent: 'Close Combat',
     });
-    const [selected, setSelected] = useState<string[]>([]);
-    const [gold, setGold] = useState(true);
     const openers = useRef<Partial<Record<WindowId, HTMLElement | null>>>({});
     useEffect(() => {
         startRuntime();
@@ -116,15 +114,6 @@ function Game() {
         setConfirm('');
         dialogue.send({ type: 'CLOSE' });
     }, [screen, characterId, closeAllWindows]);
-    useEffect(() => {
-        setSelected(
-            c?.reward?.items.filter((i) => !c.reward!.claimed.includes(i.id)).map((i) => i.id) ||
-                [],
-        );
-        setGold(true);
-        // Initialize once per reward; claims must not reset the player's remaining loot choices.
-        // oxlint-disable-next-line react-hooks/exhaustive-deps
-    }, [c?.reward?.id]);
     const disabled = readOnly || busy();
     const action = (
         label: string,
@@ -423,71 +412,19 @@ function Game() {
                 </>
             )}
             {phase === 'reward' && c?.reward && (
-                <section className="center panel z-40 w-[460px]">
-                    <div className="eyebrow">
-                        {c.reward.boss ? 'VICTORY IS YOURS' : 'SPOILS OF ADVENTURE'}
-                    </div>
-                    <h1>A little richer.</h1>
-                    <p>Choose what to carry with you.</p>
-                    <Checkbox
-                        className="my-4"
-                        isSelected={gold}
-                        onChange={setGold}
-                        isDisabled={c.reward.claimed.includes('gold')}
-                    >
-                        <Checkbox.Content className="reward-option">
-                            <Checkbox.Control>
-                                <Checkbox.Indicator />
-                            </Checkbox.Control>
-                            ◈ {c.reward.gold} gold{' '}
-                            {c.reward.claimed.includes('gold') ? '· Collected' : ''}
-                        </Checkbox.Content>
-                    </Checkbox>
-                    {c.reward.items.map((i) => (
-                        <Checkbox
-                            className="my-4"
-                            key={i.id}
-                            isDisabled={c.reward!.claimed.includes(i.id)}
-                            isSelected={selected.includes(i.id)}
-                            onChange={(checked) =>
-                                setSelected(
-                                    checked
-                                        ? [...selected, i.id]
-                                        : selected.filter((id) => id !== i.id),
-                                )
-                            }
-                        >
-                            <Checkbox.Content className="reward-option">
-                                <Checkbox.Control>
-                                    <Checkbox.Indicator />
-                                </Checkbox.Control>
-                                {items[i.kind].icon} {items[i.kind].name} × {i.count}{' '}
-                                {c.reward!.claimed.includes(i.id) ? '· Collected' : ''}
-                            </Checkbox.Content>
-                        </Checkbox>
-                    ))}
-                    <div className="choices">
-                        {action('Take selected', () =>
-                            send({ type: 'CLAIM', ids: selected, gold }),
-                        )}
-                        {action(
-                            'Take all',
-                            () =>
-                                send({
-                                    type: 'CLAIM',
-                                    ids: c.reward!.items.map((i) => i.id),
-                                    gold: true,
-                                }),
-                            { className: 'primary' },
-                        )}
-                    </div>
-                    {action(screen === 'TreasureRoom' ? 'Return to town' : 'Continue', () => {
+                <RewardModal
+                    key={c.reward.id}
+                    reward={c.reward}
+                    error={snapshot.context.error}
+                    disabled={disabled}
+                    onClaim={(ids, gold) => send({ type: 'CLAIM', ids, gold, advance: true })}
+                    onContinue={() => {
                         if (c.reward!.claimed.length < c.reward!.items.length + 1)
                             setConfirm('leaveLoot');
                         else
                             send({ type: screen === 'TreasureRoom' ? 'CONTINUE' : 'LEAVE_REWARD' });
-                    })}
-                </section>
+                    }}
+                />
             )}
             {c && (
                 <>

@@ -6,6 +6,14 @@ Browser tests use real input and inspect a read-only test-mode snapshot. Chromiu
 
 Local Firefox launch currently fails with “Could not find profile folder” before navigation, including when using an explicitly created profile directory. This is a host/browser-launch limitation; the Firefox project remains enabled in CI. Do not report Firefox as verified until that launch succeeds.
 
+## Reward collection and automatic continuation — September 19, 2026 UTC
+
+- `RewardModal.tsx` uses HeroUI Pro CheckboxButtonGroup without visible indicators, original reward SVGs, and border-only selection. It has no Continue button. Take all collects everything available and advances; Take selected collects only selected rewards, leaves the rest, and advances. Closing without collection retains the leave confirmation.
+- Collection and continuation share one `CLAIM` transaction with `advance: true`. Ordinary loot returns to exploration, boss loot opens chest choices, and chosen-chest loot completes the run and returns to town. Capacity or persistence failure leaves the last committed reward state intact.
+- Lint, TypeScript, all 136 unit/React tests, production build, formatting, and whitespace checks passed. Coverage: 96.28% statements, 93.66% branches, 97.83% functions, 97.75% lines; all 90% gates pass. Added tests cover selected-only grants, duplicate operations, boss/chest destinations, full inventory, and failed-write rollback/retry.
+- Eight affected browser scenarios passed across the combined run and focused rerun: both buttons and hunting-quest claims in Chromium/WebKit, the complete Chromium dungeon/boss/chest/town journey, and WebKit's shorter entry flow. The first full journey read positions before Phaser finished changing scenes; waiting for a valid exploration position fixed the test timing, and the complete journey passed. Button checks cover keyboard selection, images, absent indicators/Continue button, automatic advancement, and saved outcomes after reload.
+- Desktop and 320px reward layouts were visually inspected; the updated 320px capture shows both collection actions without a footer. Firefox was not rerun for this change.
+
 ## Inventory grid release — September 19, 2026 UTC
 
 - Lint, TypeScript, production build, touched-file formatting, and whitespace checks passed.

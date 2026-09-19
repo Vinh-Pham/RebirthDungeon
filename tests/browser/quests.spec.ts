@@ -201,7 +201,6 @@ test('hunting quest banks combat progress and claims once after reload', async (
     await seed(page, run);
     await battle(page);
     await page.getByRole('button', { name: 'Take all', exact: true }).click();
-    await page.getByRole('button', { name: 'Continue', exact: true }).click();
     await expect(page.locator('.quest-tracker')).toContainText('(+2 this run)');
     await page.reload();
     await snapshot(page);

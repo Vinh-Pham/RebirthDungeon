@@ -32,6 +32,15 @@ async function control(page: Page, name: string) {
 }
 
 async function moveToRoom(page: Page, id: number) {
+    // React publishes the new phase before Phaser finishes creating the exploration scene.
+    await expect
+        .poll(async () => {
+            const current = await state(page);
+            return !!current.save.data.characters[0].run?.tiles[
+                Math.floor(current.position.y / 32)
+            ]?.[Math.floor(current.position.x / 32)];
+        })
+        .toBe(true);
     const s = await state(page),
         run = s.save.data.characters[0].run,
         r = run.rooms[id];
@@ -129,8 +138,6 @@ test('create, explore, fight, resume, defeat the boss and return with treasure',
         }
         await expect(page.getByRole('button', { name: 'Take all', exact: true })).toBeVisible();
         await page.getByRole('button', { name: 'Take all', exact: true }).click();
-        await expect(page.getByText('· Collected').first()).toBeVisible();
-        await page.getByRole('button', { name: 'Continue', exact: true }).click();
         await expect(
             page.getByRole('heading', {
                 name: room === 6 ? 'The treasure chamber' : 'Alby',
@@ -140,12 +147,9 @@ test('create, explore, fight, resume, defeat the boss and return with treasure',
     }
     await control(page, 'chest-2');
     await page.getByRole('button', { name: 'Take all', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Town1', exact: true })).toBeVisible();
     await page.reload();
-    await expect(
-        page.getByRole('button', { name: 'Return to town', exact: true }).last(),
-    ).toBeVisible();
-    expect((await state(page)).save.data.characters[0].run.chosen).toBe(2);
-    await page.getByRole('button', { name: 'Return to town', exact: true }).last().click();
+    expect((await state(page)).save.data.characters[0].run).toBeNull();
     await expect(page.getByRole('heading', { name: 'Town1', exact: true })).toBeVisible();
     expect(errors).toEqual([]);
 });

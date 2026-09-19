@@ -87,7 +87,7 @@ export type Command =
     | { type: 'DISMISS_MIGRATION' }
     | { type: 'ATTACK'; actionId?: string }
     | { type: 'RECOVER' }
-    | { type: 'CLAIM'; ids: string[]; gold: boolean }
+    | { type: 'CLAIM'; ids: string[]; gold: boolean; advance?: boolean }
     | { type: 'LEAVE_REWARD' }
     | { type: 'CHEST'; index: number }
     | { type: 'CONTINUE' }
@@ -136,6 +136,30 @@ function makeReward(s: SaveData, id: string, boss = false): Reward {
             },
         ],
     };
+}
+
+function leaveReward(s: SaveData, c: Character) {
+    if (!c.reward) throw new Error('No reward to leave.');
+    const boss = c.reward.boss;
+    c.reward = null;
+    c.battle = null;
+    if (boss) {
+        c.run!.chests = Array.from({ length: 5 }, (_, i) =>
+            makeReward(s, `${c.run!.id}-chest-${i}`, true),
+        );
+        s.checkpoint = { version: 1, screen: 'TreasureRoom', phase: 'treasure' };
+    } else s.checkpoint = { version: 1, screen: 'Alby', phase: 'exploring' };
+}
+
+function finishRun(s: SaveData, c: Character, completed: boolean) {
+    bankRunQuests(c, completed);
+    c.run = null;
+    c.effects = {};
+    c.statuses = [];
+    c.cooldowns = {};
+    c.battle = null;
+    c.reward = null;
+    s.checkpoint = { version: 1, screen: 'Town1', phase: 'exploring' };
 }
 function finishActivation(s: SaveData, c: Character) {
     const b = c.battle!;
@@ -662,19 +686,14 @@ export function reduceCommand(
                         c.gold += r.gold;
                         r.claimed.push('gold');
                     }
+                    if (cmd.advance) {
+                        if (s.checkpoint.screen === 'TreasureRoom') finishRun(s, c, true);
+                        else leaveReward(s, c);
+                    }
                     break;
                 }
                 case 'LEAVE_REWARD': {
-                    if (!c.reward) throw new Error('No reward to leave.');
-                    const boss = c.reward.boss;
-                    c.reward = null;
-                    c.battle = null;
-                    if (boss) {
-                        c.run!.chests = Array.from({ length: 5 }, (_, i) =>
-                            makeReward(s, `${c.run!.id}-chest-${i}`, true),
-                        );
-                        s.checkpoint = { version: 1, screen: 'TreasureRoom', phase: 'treasure' };
-                    } else s.checkpoint = { version: 1, screen: 'Alby', phase: 'exploring' };
+                    leaveReward(s, c);
                     break;
                 }
                 case 'CHEST':
@@ -697,14 +716,7 @@ export function reduceCommand(
                     break;
                 case 'CONTINUE':
                 case 'ABANDON':
-                    bankRunQuests(c, cmd.type === 'CONTINUE');
-                    c.run = null;
-                    c.effects = {};
-                    c.statuses = [];
-                    c.cooldowns = {};
-                    c.battle = null;
-                    c.reward = null;
-                    s.checkpoint = { version: 1, screen: 'Town1', phase: 'exploring' };
+                    finishRun(s, c, cmd.type === 'CONTINUE');
                     break;
                 case 'BUY': {
                     const def = items[cmd.kind];
