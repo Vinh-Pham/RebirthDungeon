@@ -11,7 +11,7 @@ export function MenuBar({
 }: {
     character: Immutable<Character> | undefined;
     onOpen: (
-        panel: 'character' | 'skills' | 'inventory' | 'menu',
+        panel: 'character' | 'skills' | 'quests' | 'inventory' | 'menu',
         opener?: EventTarget | null,
     ) => void;
 }) {

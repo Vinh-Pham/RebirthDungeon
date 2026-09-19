@@ -1,3 +1,5 @@
+import { validateInventory } from '../domain/inventory';
+import { validateQuests } from '../domain/quests/validate';
 import { validateActorStats } from '../domain/stats/validate';
 import { migrateSave } from '../domain/migration';
 import { ranks, skills, skillRank } from '../domain/Skills';
@@ -11,8 +13,8 @@ export function validateSave(value: unknown): asserts value is SaveData {
     const s = value as SaveData;
     if (
         !s ||
-        s.version !== 2 ||
-        s.data?.version !== 2 ||
+        s.version !== 4 ||
+        s.data?.version !== 4 ||
         s.data.statsVersion !== 1 ||
         s.checkpoint?.version !== 1 ||
         !Array.isArray(s.data.characters) ||
@@ -24,6 +26,19 @@ export function validateSave(value: unknown): asserts value is SaveData {
         throw new Error('This save is damaged or from an unsupported version.');
     const ids = new Set<string>();
     for (const c of s.data.characters) {
+        validateInventory(c);
+        validateQuests(c);
+        if (c.rp) {
+            validateSave({
+                ...s,
+                data: {
+                    ...s.data,
+                    activeId: c.rp.actor.id,
+                    characters: [c.rp.actor],
+                    rng: c.rp.rng,
+                },
+            });
+        }
         validateActorStats(c);
         for (const enemy of c.battle?.enemies ?? []) validateActorStats(enemy);
         if (
@@ -164,6 +179,8 @@ export function validateSave(value: unknown): asserts value is SaveData {
 export class IndexedDBPersistence implements Persistence {
     private db?: Promise<IDBDatabase>;
     private legacySource?: unknown;
+    private legacyV2Source?: unknown;
+    private legacyV3Source?: unknown;
     private open() {
         return (this.db ??= new Promise<IDBDatabase>((resolve, reject) => {
             const r = indexedDB.open('rebirth-dungeon', 1);
@@ -187,6 +204,8 @@ export class IndexedDBPersistence implements Persistence {
                     const migrated = migrateSave(r.result);
                     validateSave(migrated);
                     if (r.result.version === 1) this.legacySource = r.result;
+                    if (r.result.version === 2) this.legacyV2Source = r.result;
+                    if (r.result.version === 3) this.legacyV3Source = r.result;
                     resolve(migrated);
                 } catch {
                     const previous = store.get('previous');
@@ -195,6 +214,10 @@ export class IndexedDBPersistence implements Persistence {
                             const migrated = migrateSave(previous.result);
                             validateSave(migrated);
                             if (previous.result.version === 1) this.legacySource = previous.result;
+                            if (previous.result.version === 2)
+                                this.legacyV2Source = previous.result;
+                            if (previous.result.version === 3)
+                                this.legacyV3Source = previous.result;
                             resolve(migrated);
                         } catch (e) {
                             reject(e);
@@ -228,10 +251,26 @@ export class IndexedDBPersistence implements Persistence {
                         };
                     }
                 }
+                if (this.legacyV2Source || r.result?.version === 2) {
+                    const original = store.get('legacy-v2');
+                    original.onsuccess = () => {
+                        if (!original.result)
+                            store.put(this.legacyV2Source ?? r.result, 'legacy-v2');
+                    };
+                }
+                if (this.legacyV3Source || r.result?.version === 3) {
+                    const original = store.get('legacy-v3');
+                    original.onsuccess = () => {
+                        if (!original.result)
+                            store.put(this.legacyV3Source ?? r.result, 'legacy-v3');
+                    };
+                }
                 store.put(JSON.parse(JSON.stringify(save)), 'current');
             };
             tx.oncomplete = () => {
                 this.legacySource = undefined;
+                this.legacyV2Source = undefined;
+                this.legacyV3Source = undefined;
                 resolve();
             };
             tx.onerror = () => reject(tx.error || new Error('Unable to save.'));

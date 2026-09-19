@@ -210,7 +210,7 @@ export function commitAbility(s: SaveData, c: Character) {
             );
         }
         trainOffense(c, a, hit, kills, criticalHit, criticalKills);
-        for (const id of [c.weapon, ...(a.dual ? [c.offhand] : [])]) {
+        for (const id of [c.equipment.main, ...(a.dual ? [c.equipment.offhand] : [])]) {
             const item = c.inventory.find((i) => i.id === id);
             if (item) item.durability = Math.max(0, (item.durability ?? 20) - 1);
         }

@@ -2,6 +2,7 @@ import { Button, Input, Label, TextField } from '@heroui/react';
 import { useState, type ComponentProps, type Key } from 'react';
 import type { Immutable } from 'immer';
 import type { Character } from '../domain/model';
+import { raceReason } from '../domain/inventory';
 import { items, shops } from '../domain/catalog';
 import type { Command } from '../domain/commands';
 import { InventoryList } from './InventoryList';
@@ -66,6 +67,11 @@ export function ServiceContent({
                                                   ? `Restores ${items[kind].restore} ${items[kind].resource}`
                                                   : `${items[kind].defense ?? 0} defense`)}
                                     </small>
+                                    {raceReason(c, kind) && (
+                                        <p className="text-xs text-warning">
+                                            Equip: {raceReason(c, kind)}
+                                        </p>
+                                    )}
                                 </div>
                                 {action(`Buy · ${items[kind].price}g`, () =>
                                     send({ type: 'BUY', shop: service, kind }),

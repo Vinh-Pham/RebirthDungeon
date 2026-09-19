@@ -1,5 +1,6 @@
 import { produce, type Immutable } from 'immer';
 import type { Character, Enemy, Stats } from '../model';
+import { equipmentSlots } from '../model';
 import { items } from '../catalog';
 import { ranks, skills } from '../Skills';
 import { wikiValue } from '../skills/wiki';
@@ -15,9 +16,9 @@ import {
 
 export function equipment(c: Immutable<Character>) {
     const loadout = c.run?.baseline ?? c;
-    const main = c.inventory.find((i) => i.id === loadout.weapon);
-    const off = c.inventory.find((i) => i.id === loadout.offhand);
-    const body = c.inventory.find((i) => i.id === loadout.armor);
+    const main = c.inventory.find((i) => i.id === loadout.equipment.main);
+    const off = c.inventory.find((i) => i.id === loadout.equipment.offhand);
+    const body = c.inventory.find((i) => i.id === loadout.equipment.body);
     const weapon = main && items[main.kind],
         offDef = off && items[off.kind],
         armor = body && items[body.kind];
@@ -123,15 +124,11 @@ export function createStatSnapshot(c: Immutable<Character>): StatSnapshot {
             if (modifiers.length)
                 add({ id: `skill:${id}`, name: skill.name, kind: 'skill', modifiers });
         }
-        for (const [item, definition, slot] of [
-            [e.main, e.weapon, 'main'],
-            [e.off, e.offDef, 'offhand'],
-            [
-                c.inventory.find((i) => i.id === (c.run?.baseline?.armor ?? c.armor)),
-                e.armor,
-                'armor',
-            ],
-        ] as const) {
+        for (const equipmentSlot of equipmentSlots) {
+            const slot = equipmentSlot === 'body' ? 'armor' : equipmentSlot;
+            const id = (c.run?.baseline ?? c).equipment[equipmentSlot];
+            const item = c.inventory.find((i) => i.id === id);
+            const definition = item && items[item.kind];
             if (!item || !definition) continue;
             const modifiers: StatModifier[] = structuredClone(definition.modifiers ?? []);
             if (definition.power && (slot === 'main' || e.dual)) {

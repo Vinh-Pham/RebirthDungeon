@@ -259,3 +259,94 @@ shops.General.push(
     'vigorCoat',
 );
 shops.Blacksmith.push('focusWand');
+
+// Inventory metadata and starter gear are authored game adaptations.
+Object.assign(items, {
+    clothCap: {
+        name: 'Cloth cap',
+        icon: '♧',
+        type: 'gear',
+        price: 25,
+        defense: 1,
+        slots: ['head'],
+        footprint: { width: 2, height: 1 },
+    },
+    clothGloves: {
+        name: 'Cloth gloves',
+        icon: '♧',
+        type: 'gear',
+        price: 25,
+        defense: 1,
+        slots: ['gloves'],
+        footprint: { width: 2, height: 1 },
+    },
+    travelerBoots: {
+        name: 'Traveler boots',
+        icon: '♧',
+        type: 'gear',
+        price: 25,
+        defense: 1,
+        slots: ['boots'],
+        footprint: { width: 2, height: 2 },
+    },
+    travelerRobe: {
+        name: 'Traveler robe',
+        icon: '♜',
+        type: 'gear',
+        price: 40,
+        magicDefense: 1,
+        slots: ['robe'],
+        footprint: { width: 2, height: 3 },
+    },
+    copperCharm: {
+        name: 'Copper charm',
+        icon: '◇',
+        type: 'gear',
+        price: 30,
+        slots: ['accessory1', 'accessory2'],
+        modifiers: [{ stat: 'luck', flat: 1 }],
+    },
+    woodlandCharm: {
+        name: 'Woodland charm',
+        icon: '❋',
+        type: 'gear',
+        price: 30,
+        slots: ['accessory1', 'accessory2'],
+        races: ['Elf'],
+        modifiers: [{ stat: 'dex', flat: 1 }],
+    },
+});
+shops.General.push(
+    'clothCap',
+    'clothGloves',
+    'travelerBoots',
+    'travelerRobe',
+    'copperCharm',
+    'woodlandCharm',
+);
+for (const [kind, def] of Object.entries(items)) {
+    if (def.type === 'weapon') {
+        def.hand = ['sword', 'steel'].includes(kind)
+            ? 'sword'
+            : def.talent === 'Close Combat'
+              ? 'melee'
+              : def.talent === 'Magic'
+                ? 'magic'
+                : 'ranged';
+        def.slots = def.hand === 'sword' ? ['main', 'offhand'] : ['main'];
+        if (def.talent === 'Archery') def.races = ['Human', 'Elf'];
+    } else if (def.type === 'shield') {
+        def.slots = ['offhand'];
+        def.hand = 'shield';
+    } else if (def.type === 'armor') def.slots = ['body'];
+    def.footprint ??=
+        def.type === 'weapon'
+            ? def.talent === 'Dual Gun'
+                ? { width: 2, height: 2 }
+                : { width: 1, height: 3 }
+            : def.type === 'armor'
+              ? { width: 2, height: 3 }
+              : ['shield', 'book', 'collection'].includes(def.type)
+                ? { width: 2, height: 2 }
+                : { width: 1, height: 1 };
+}

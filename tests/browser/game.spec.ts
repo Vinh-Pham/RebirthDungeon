@@ -99,8 +99,10 @@ test('create, explore, fight, resume, defeat the boss and return with treasure',
             const c = (await state(page)).save.data.characters[0];
             if (c.hp < 50 && c.inventory.some((i: any) => i.kind === 'hp')) {
                 await page.getByRole('button', { name: 'Inventory', exact: true }).click();
-                const row = page.locator('.item').filter({ hasText: 'Health potion' });
-                await row.getByRole('button', { name: 'Use', exact: true }).click();
+                await page
+                    .getByRole('button', { name: /^Health potion ×/ })
+                    .click({ button: 'right' });
+                await page.getByRole('menuitem', { name: 'Use', exact: true }).click();
                 await page.getByRole('button', { name: 'Close', exact: true }).click();
             }
             await control(
@@ -283,7 +285,10 @@ test('books, page assembly, equipment and AP advancement use saved UI transactio
             'shield',
         ].map((kind) => ({ id: kind, kind, count: 1 })),
     );
+    const { initializeInventory } = await import('../../src/domain/inventory');
+    initializeInventory(c);
     await page.goto('/');
+    await state(page);
     await expect(page.getByRole('button', { name: 'Begin your journey' })).toBeEnabled();
     await page.evaluate(async (save) => {
         await new Promise<void>((resolve, reject) => {
@@ -303,30 +308,21 @@ test('books, page assembly, equipment and AP advancement use saved UI transactio
     }, fixture);
     await page.reload();
     await page.getByRole('button', { name: 'Inventory', exact: true }).click();
-    await page
-        .locator('.item')
-        .filter({ hasText: 'Critical Hit manual' })
-        .getByRole('button', { name: 'Read', exact: true })
-        .click();
+    const useItem = async (name: string) => {
+        await page
+            .getByRole('button', { name: `${name} ×1`, exact: true })
+            .click({ button: 'right' });
+        await page.getByRole('menuitem', { name: 'Use', exact: true }).click();
+    };
+    await useItem('Critical Hit manual');
     await expect
         .poll(async () => (await state(page)).save.data.characters[0].skills.critical?.rank)
         .toBe('F');
-    for (const number of [5, 2, 4, 1, 3])
-        await page
-            .locator('.item')
-            .filter({ hasText: `Final Hit page ${number}` })
-            .getByRole('button', { name: 'Insert page', exact: true })
-            .click();
-    await page
-        .locator('.item')
-        .filter({ hasText: 'Final Hit manual' })
-        .getByRole('button', { name: 'Read', exact: true })
-        .click();
-    await page
-        .locator('.item')
-        .filter({ hasText: 'Round shield' })
-        .getByRole('button', { name: 'Equip', exact: true })
-        .click();
+    for (const number of [5, 2, 4, 1, 3]) await useItem(`Final Hit page ${number}`);
+    await useItem('Final Hit manual');
+    await page.getByRole('button', { name: 'Round shield ×1', exact: true }).click();
+    await page.getByRole('button', { name: 'Equip', exact: true }).click();
+    await page.getByRole('button', { name: 'Choose Left hand', exact: true }).click();
     await page.getByRole('button', { name: 'Close', exact: true }).click();
     await page.getByRole('button', { name: 'Skills', exact: true }).click();
     await page.getByRole('button', { name: 'Smash', exact: true }).click();
@@ -341,7 +337,7 @@ test('books, page assembly, equipment and AP advancement use saved UI transactio
     expect(saved.skills.critical.rank).toBe('F');
     expect(saved.skills.smash.rank).toBe('E');
     expect(saved.ap).toBe(1);
-    expect(saved.offhand).toBe('shield');
+    expect(saved.equipment.offhand).toBe('shield');
     await page.setViewportSize({ width: 600, height: 800 });
     await page.getByRole('button', { name: 'Smash', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Smash · Rank E' })).toBeVisible();
@@ -530,10 +526,9 @@ test('character stats, potion side effects and mixed reservations survive reload
     await page.reload();
     await page.getByRole('button', { name: 'Inventory', exact: true }).click();
     await page
-        .locator('.item')
-        .filter({ hasText: 'Unstable Elixir' })
-        .getByRole('button', { name: 'Use', exact: true })
-        .click();
+        .getByRole('button', { name: 'Unstable elixir ×1', exact: true })
+        .click({ button: 'right' });
+    await page.getByRole('menuitem', { name: 'Use', exact: true }).click();
     await expect
         .poll(async () => (await state(page)).save.data.characters[0].statuses.length)
         .toBe(1);
@@ -648,7 +643,7 @@ test('HeroUI HUD keeps identity, resources and navigation usable at narrow sizes
             .getByRole('progressbar', { name: 'SP', exact: true })
             .boundingBox();
         expect(stamina!.y + stamina!.height).toBeLessThanOrEqual(800);
-        for (const name of ['Character', 'Skills', 'Inventory', 'Menu']) {
+        for (const name of ['Character', 'Skills', 'Quests', 'Inventory', 'Menu']) {
             const button = hud.getByRole('button', { name, exact: true });
             await expect(button).toBeVisible();
             const bounds = await button.boundingBox();

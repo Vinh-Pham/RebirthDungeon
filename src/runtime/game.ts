@@ -1,8 +1,9 @@
+import { controlledCharacter } from '../domain/quests/roleplay';
 import { createActor } from 'xstate';
 import { makeActor, dialogueMachine, questMachine } from './machines';
 import { IndexedDBPersistence } from './persistence';
 import { active, type Command } from '../domain/commands';
-export const actor = makeActor(new IndexedDBPersistence());
+export const actor = makeActor(new IndexedDBPersistence(), () => !readOnly);
 export const dialogue = createActor(dialogueMachine).start();
 export let quest = createActor(questMachine).start();
 export let readOnly = false;
@@ -32,7 +33,8 @@ export const startRuntime = () => {
     window.addEventListener('pagehide', () => unlock?.(), { once: true });
 };
 export const getSave = () => actor.getSnapshot().context.save;
-export const getCharacter = () => active(getSave());
+export const getCharacter = () => controlledCharacter(getSave());
+export const getHero = () => active(getSave());
 export const busy = () =>
     ['committing', 'loading', 'rolling', 'resolvingPlayer', 'resolvingEnemies', 'failure'].some(
         (state) => actor.getSnapshot().matches(state as 'committing'),

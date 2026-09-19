@@ -29,11 +29,13 @@ import {
 
 /** Default sizes from the wmkit integration plan. */
 const WINDOW_SIZES: Record<WindowId, Size> = {
+    quests: { width: 640, height: 560 },
+    'quests-detail': { width: 440, height: 520 },
     character: { width: 680, height: 620 },
     skills: { width: 680, height: 640 },
     'skills-detail': { width: 680, height: 640 },
     'trainer-detail': { width: 680, height: 640 },
-    inventory: { width: 680, height: 560 },
+    inventory: { width: 680, height: 660 },
     service: { width: 680, height: 560 },
     menu: { width: 360, height: 280 },
     settings: { width: 480, height: 440 },
@@ -42,6 +44,7 @@ const MIN_SIZE = { width: 320, height: 240 };
 
 /** Bounds survive close/reopen for the page session only and never enter character saves. */
 const sessionGeometry = new Map() as Map<WindowId, Bounds>;
+const sessionViewports = new Map<WindowId, Size>();
 let sessionOpens = 0;
 
 export function WindowProvider({ children }: { children: ReactNode }) {
@@ -93,6 +96,7 @@ export function WindowProvider({ children }: { children: ReactNode }) {
         () =>
             wm.on('close', ({ window }) => {
                 void sessionGeometry.set(window.id as WindowId, window.bounds);
+                sessionViewports.set(window.id as WindowId, wm.getState().viewport);
                 const active = document.activeElement;
                 if (active instanceof HTMLElement && active.closest(`[data-wm-id="${window.id}"]`))
                     active.blur();
@@ -110,30 +114,37 @@ export function WindowProvider({ children }: { children: ReactNode }) {
             const size = WINDOW_SIZES[id];
             const meta = { icon, iconTestId, hasFooter: !!hasFooter };
             const saved = sessionGeometry.get(id);
-            if (saved) {
-                wm.open({
-                    id,
-                    title,
-                    meta,
-                    minWidth: MIN_SIZE.width,
-                    minHeight: MIN_SIZE.height,
-                    ...saved,
-                });
-                return;
-            }
-            // Center the first window of the session and offset later ones by 32px.
-            const offset = (sessionOpens++ % 6) * 32;
+            // Clamp both restored and newly opened windows before wmkit positions them.
+            // A window reopened after a viewport change otherwise retains desktop dimensions.
+            const offset = saved ? 0 : (sessionOpens++ % 6) * 32;
             const viewport = wm.getState().viewport;
+            const oldViewport = sessionViewports.get(id);
+            const sameViewport =
+                saved &&
+                oldViewport?.width === viewport.width &&
+                oldViewport?.height === viewport.height;
+            const width = Math.min(saved?.width ?? size.width, viewport.width || size.width);
+            const height = Math.min(saved?.height ?? size.height, viewport.height || size.height);
             wm.open({
                 id,
                 title,
                 meta,
-                width: size.width,
-                height: size.height,
-                minWidth: MIN_SIZE.width,
-                minHeight: MIN_SIZE.height,
-                x: Math.max(0, (viewport.width - size.width) / 2) + offset,
-                y: Math.max(0, (viewport.height - size.height) / 2) + offset,
+                width,
+                height,
+                minWidth: Math.min(MIN_SIZE.width, width),
+                minHeight: Math.min(MIN_SIZE.height, height),
+                x: sameViewport
+                    ? saved.x
+                    : Math.min(
+                          Math.max(0, saved?.x ?? (viewport.width - width) / 2 + offset),
+                          Math.max(0, viewport.width - width),
+                      ),
+                y: sameViewport
+                    ? saved.y
+                    : Math.min(
+                          Math.max(0, saved?.y ?? (viewport.height - height) / 2 + offset),
+                          Math.max(0, viewport.height - height),
+                      ),
             });
         },
         [wm],

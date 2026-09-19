@@ -93,7 +93,7 @@ it('restores session geometry after closing and reopening', () => {
     const wm = () => view.wm();
     wm().setViewport({ width: 1200, height: 800 });
     fireEvent.click(screen.getByRole('button', { name: 'toggle character' }));
-    wm().moveBy('character', 40, 25);
+    wm().move('character', 200, 100);
     const moved = wm().get('character')!.bounds;
     expect(moved.x).toBeGreaterThan(0);
     // Closing through wmkit's own close control records the bounds for the session.
@@ -242,6 +242,7 @@ it('escape closes only the active window, behind confirmations and owned popups'
 it('moves the focused frame with the keyboard', () => {
     const view = renderWithWindows(windows({ id: 'menu', title: 'Adventure menu' }));
     view.wm().setViewport({ width: 1200, height: 800 });
+    view.wm().move('menu', 100, 100);
     const before = view.wm().get('menu')!.bounds;
     const frame = screen.getByRole('dialog', { name: 'Adventure menu' });
     frame.focus();
@@ -260,4 +261,33 @@ it('cleans up windows exactly once under Strict Mode', () => {
     expect(Object.keys(view.wm().getState().windows)).toEqual(['menu']);
     view.unmount();
     expect(view.wm().getState().windows).toEqual({});
+});
+
+it('clamps a quest detail reopened after the viewport becomes narrow', () => {
+    function Toggle() {
+        const [open, setOpen] = useState(false);
+        return (
+            <>
+                <button onClick={() => setOpen(true)}>open detail</button>
+                <GameWindow
+                    id="quests-detail"
+                    title="Quest detail"
+                    open={open}
+                    onClose={() => setOpen(false)}
+                >
+                    <p>Notes and rewards</p>
+                </GameWindow>
+            </>
+        );
+    }
+    const view = renderWithWindows(<Toggle />);
+    view.wm().setViewport({ width: 1200, height: 800 });
+    fireEvent.click(screen.getByRole('button', { name: 'open detail' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    view.wm().setViewport({ width: 320, height: 600 });
+    fireEvent.click(screen.getByRole('button', { name: 'open detail' }));
+    const bounds = view.wm().get('quests-detail')!.bounds;
+    expect(bounds.x).toBeGreaterThanOrEqual(0);
+    expect(bounds.x + bounds.width).toBeLessThanOrEqual(320);
+    expect(bounds.y + bounds.height).toBeLessThanOrEqual(600);
 });

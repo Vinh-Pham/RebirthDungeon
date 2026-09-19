@@ -158,6 +158,7 @@ export function snapshotAction(
     };
 }
 export function train(c: Character, id: string, objective: string, amount = 1) {
+    if (c.role) return;
     const p = c.skills[id];
     if (!p || id === 'normal' || p.rank === '1') return;
     const rule = skillRank(id, p).objectives.find((o) => o.id === objective);

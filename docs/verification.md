@@ -6,6 +6,28 @@ Browser tests use real input and inspect a read-only test-mode snapshot. Chromiu
 
 Local Firefox launch currently fails with “Could not find profile folder” before navigation, including when using an explicitly created profile directory. This is a host/browser-launch limitation; the Firefox project remains enabled in CI. Do not report Firefox as verified until that launch succeeds.
 
+## Inventory grid release — September 19, 2026 UTC
+
+- Lint, TypeScript, production build, touched-file formatting, and whitespace checks passed.
+- Vitest: all 132 unit/React tests passed. Coverage: 96.27% statements, 93.65% branches, 97.82% functions, 97.74% lines; all 90% gates pass.
+- Added domain/persistence checks cover rectangle boundaries and fragmentation, deterministic packing, atomic grants and equipment replacement, race/slot restrictions, both accessories, no-refill stats, quantity discard, unchanged organization RNG/turns, schema-3 backups, crowded-save recovery, pending dice and RP migration, malformed layouts, duplicate operations, and failed-write rollback. React checks cover the nine slots/60 cells, manual movement, and discard cancellation/failure/success.
+- Across the broad run and focused reruns, all 16 Chromium and nine enabled WebKit scenarios passed; seven existing project-specific scenarios remain skipped under WebKit. The six new inventory scenarios cover real dragging with a grabbed-cell offset, invalid destinations, race restrictions, context-menu Use, quantity discard/cancellation, persisted reload, keyboard menu dismissal and movement, touch selection, narrow layout, and enlarged HUD scale. Existing combat, shop/bank, books/pages, stat reservations, quest/RP, and window journeys also passed. WebKit's existing game scenarios retain their shorter flow.
+- The first broad run exposed two stale inventory assertions/selectors, a titlebar click obscured by the larger inventory window, and a keyboard context-menu dismissal issue. Updated tests use the new item controls/model and an exposed titlebar point; the menu now explicitly owns Escape and restores item focus. Focused reruns passed. An earlier overlapping browser run collided on output artifacts; those interrupted results were not counted.
+- Firefox inventory verification was attempted and failed before navigation at browser launch with “Could not find profile folder.” Firefox remains unverified on this host.
+- Desktop and 320px screenshots were visually inspected (`test-results/inventory-desktop.png`, `test-results/inventory-mobile.png`), including larger slot silhouettes, the requested equipment arrangement, and the scrollable stacked backpack. Touch selection also passed at 130% HUD scale.
+
+## Quest system release — September 19, 2026 UTC
+
+- Lint, TypeScript, production build, touched-code Prettier checks, and whitespace checks passed.
+- Vitest: all 116 unit/React tests passed. Coverage: 96.02% statements, 93.52% branches, 97.59% functions, 97.62% lines; all existing 90% gates pass.
+- Quest tests cover automatic/NPC delivery, rank order, equipment/rebirth evidence, ordered dialogue, exactly-once claims after ledger eviction, three-quest tracking, backpack consumption and readiness loss, saved overflow, failed-write rollback, retained kills after death/abandonment, multi-target and counterattack credit, victory-only clear credit, schema-1/schema-2 compatibility, migration backups/fallback, and town-load reconciliation with a read-only writer-lock guard.
+- RP tests cover fixed borrowed skills/equipment, independent RNG, frozen reservations after reload, no hero loot/training/ordinary quest credit, sequential encounters, success/report/claim, death/retry, explicit exit, and malformed mission saves.
+- Chromium: all 13 journeys verified across the full run and focused rerun. The full run passed 12 and found a window-position restoration regression; after its fix, all six quest/window journeys passed together. The seven existing gameplay/HUD journeys passed in the full run. Tests include real NPC acceptance and hand-in, skill reward, saved hunting progress and claim, Aren’s memory through both battles and exit, detail-window focus, 320px layout, and 130% HUD scale.
+- WebKit: all three new quest journeys passed together in the final run. An earlier fixture reload interrupted the initial lazy Phaser import; the trace located the error at that reload. Waiting for the initial read-only game bridge before installing/reloading a fixture fixed it without suppressing page errors. Existing Chromium-only window gesture tests remain skipped under WebKit.
+- Firefox: the new journal journey was attempted and failed before navigation at `browserType.launch` with “Could not find profile folder.” This remains the documented host limitation; Firefox is not verified.
+- Desktop and 320px quest screenshots were visually inspected (`test-results/quests-desktop.png`, `test-results/quests-mobile.png`). The detail content scrolls internally; the wmkit resize handles intentionally extend beyond the frame. New windows clamp on narrow viewports, while session geometry remains exact when the viewport is unchanged.
+- Quest, architecture, and README documentation now describe the implemented TypeScript system. Repeatable jobs, quest abandonment, personal notes, and rewarded RP replay remain deferred by scope.
+
 ## Latest local results — September 18, 2026 UTC (wmkit game windows)
 
 - Lint (Oxlint, deny-warnings), TypeScript, and the production build passed.

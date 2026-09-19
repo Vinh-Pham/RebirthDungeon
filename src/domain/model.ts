@@ -1,3 +1,4 @@
+import type { QuestJournal, RunQuests, RpSession } from './quests/types';
 import type {
     StatModifier,
     CostModifier,
@@ -22,6 +23,34 @@ export interface Stats {
     will: number;
     luck: number;
 }
+export const equipmentSlots = [
+    'accessory1',
+    'head',
+    'accessory2',
+    'main',
+    'body',
+    'offhand',
+    'gloves',
+    'boots',
+    'robe',
+] as const;
+export type EquipmentSlot = (typeof equipmentSlots)[number];
+export type EquipmentLoadout = Record<EquipmentSlot, string | null>;
+export interface InventoryAnchor {
+    column: number;
+    row: number;
+}
+export const emptyEquipment = (): EquipmentLoadout => ({
+    accessory1: null,
+    head: null,
+    accessory2: null,
+    main: null,
+    body: null,
+    offhand: null,
+    gloves: null,
+    boots: null,
+    robe: null,
+});
 export interface Item {
     id: string;
     kind: string;
@@ -32,7 +61,19 @@ export interface ItemDefinition {
     name: string;
     icon: string;
     type:
-        'weapon' | 'armor' | 'shield' | 'consumable' | 'material' | 'book' | 'page' | 'collection';
+        | 'weapon'
+        | 'armor'
+        | 'shield'
+        | 'gear'
+        | 'consumable'
+        | 'material'
+        | 'book'
+        | 'page'
+        | 'collection';
+    footprint?: { width: number; height: number };
+    slots?: EquipmentSlot[];
+    races?: Race[];
+    hand?: 'sword' | 'melee' | 'ranged' | 'magic' | 'shield';
     price: number;
     power?: number;
     talent?: Talent;
@@ -51,6 +92,7 @@ export interface ItemDefinition {
     description?: string;
 }
 export interface Enemy {
+    species?: 'spider';
     id: string;
     name: string;
     hp: number;
@@ -90,11 +132,12 @@ export interface Room {
     id: number;
     x: number;
     y: number;
-    kind: 'entry' | 'encounter' | 'boss' | 'supplies';
+    kind: 'entry' | 'encounter' | 'boss' | 'supplies' | 'exit';
     trigger: 'spider' | 'chest' | 'switch';
     required: boolean;
 }
 export interface Dungeon {
+    quests?: RunQuests;
     id: string;
     seed: number;
     tiles: number[][];
@@ -109,6 +152,9 @@ export interface Dungeon {
     pageRewards?: number;
 }
 export interface Character {
+    quests: QuestJournal;
+    rp: RpSession | null;
+    role?: 'aren';
     id: string;
     name: string;
     race: Race;
@@ -128,10 +174,10 @@ export interface Character {
     bankGold: number;
     inventory: Item[];
     bank: Item[];
-    weapon: string | null;
-    armor: string | null;
+    equipment: EquipmentLoadout;
+    placements: Record<string, InventoryAnchor>;
+    inventoryRecovery: Item[];
     skills: Record<string, SkillProgress>;
-    offhand: string | null;
     collection: number[];
     cooldowns: Record<string, number>;
     effects: CombatEffects;
@@ -151,9 +197,7 @@ export interface RunBaseline {
     statSnapshot?: StatSnapshot;
     skills: Record<string, SkillProgress>;
     stats: Stats;
-    weapon: string | null;
-    offhand: string | null;
-    armor: string | null;
+    equipment: EquipmentLoadout;
 }
 export interface CombatEffects {
     defense?: { defense: number; protection: number };
@@ -189,7 +233,7 @@ export interface Settings {
     hudScale: number;
 }
 export interface GameData {
-    version: 2;
+    version: 4;
     statsVersion: 1;
     revision: number;
     rng: number;
@@ -204,7 +248,7 @@ export interface Checkpoint {
     phase: Phase;
 }
 export interface SaveData {
-    version: 2;
+    version: 4;
     migrationNotice?: boolean;
     data: GameData;
     checkpoint: Checkpoint;
@@ -228,7 +272,7 @@ export const zeroStats = (): Stats => ({
     luck: 0,
 });
 export const initialData = (): GameData => ({
-    version: 2,
+    version: 4,
     statsVersion: 1,
     revision: 0,
     rng: 0x7c813ea,

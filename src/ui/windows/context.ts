@@ -4,6 +4,8 @@ import type { Bounds, DesktopBinder, WindowManager } from '@surdeddd/wmkit';
 /** Stable identifiers: one per main panel, the single service window, and each journal detail. */
 export type WindowId =
     | 'character'
+    | 'quests'
+    | 'quests-detail'
     | 'skills'
     | 'inventory'
     | 'menu'

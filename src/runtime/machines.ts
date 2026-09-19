@@ -1,6 +1,7 @@
 import { setup, assign, createActor, fromPromise } from 'xstate';
 import type { Immutable } from 'immer';
-import { freeze } from 'immer';
+import { freeze, produce } from 'immer';
+import { reconcileQuests } from '../domain/quests/system';
 import { allowed, blankSave, reduceCommand, type Command } from '../domain/commands';
 import type { SaveData } from '../domain/model';
 import type { Persistence } from './persistence';
@@ -64,11 +65,21 @@ type Event =
     | { type: 'COMMAND'; command: Command; operationId: string }
     | { type: 'DISMISS' }
     | { type: 'RETRY' };
-export function sessionMachine(persistence: Persistence) {
+export function sessionMachine(persistence: Persistence, canWrite: () => boolean = () => true) {
     return setup({
         types: { context: {} as Context, events: {} as Event },
         actors: {
-            load: fromPromise(async () => freeze((await persistence.load()) || blankSave(), true)),
+            load: fromPromise(async () => {
+                const loaded = (await persistence.load()) || blankSave();
+                if (!canWrite() || loaded.checkpoint.screen !== 'Town1')
+                    return freeze(loaded, true);
+                const reconciled = produce(loaded, (draft) => {
+                    const hero = draft.data.characters.find((c) => c.id === draft.data.activeId);
+                    if (hero) reconcileQuests(hero);
+                });
+                if (reconciled !== loaded) await persistence.save(reconciled);
+                return freeze(reconciled, true);
+            }),
             commit: fromPromise(async ({ input }: { input: Context }) => {
                 const next = reduceCommand(input.save, input.pending!, input.operationId);
                 await persistence.save(next);
@@ -225,4 +236,5 @@ export function sessionMachine(persistence: Persistence) {
         },
     });
 }
-export const makeActor = (persistence: Persistence) => createActor(sessionMachine(persistence));
+export const makeActor = (persistence: Persistence, canWrite?: () => boolean) =>
+    createActor(sessionMachine(persistence, canWrite));

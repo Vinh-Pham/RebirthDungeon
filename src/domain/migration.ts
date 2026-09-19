@@ -1,3 +1,6 @@
+import { migrateInventory } from './inventory';
+import { emptyEquipment } from './model';
+import { emptyJournal, emptyRunQuests } from './quests/types';
 import { produce } from 'immer';
 import { createStatSnapshot } from './stats/resolve';
 import type { SaveData, Character } from './model';
@@ -35,12 +38,15 @@ function migrateLegacy(value: unknown): SaveData {
                 contentVersion: 2,
                 skills: JSON.parse(JSON.stringify(c.skills)),
                 stats: progressionStats(c),
-                weapon: c.weapon,
-                offhand: null,
-                armor: c.armor,
+                equipment: {
+                    ...emptyEquipment(),
+                    main: raw.weapon ?? raw.equipment?.main ?? null,
+                    body: raw.armor ?? raw.equipment?.body ?? null,
+                },
             };
             c.run.pageRewards = 0;
         }
+        migrateInventory(c);
         refreshStats(c);
         if (c.battle?.dice.length === 5)
             c.battle.action = snapshotAction(c, c.battle.skill, c.battle.target, false);
@@ -48,18 +54,44 @@ function migrateLegacy(value: unknown): SaveData {
     return save as SaveData;
 }
 
-export function migrateSave(value: unknown): SaveData {
+function migrateStats(value: unknown): SaveData {
     const source = migrateLegacy(value);
-    if (!source?.data || source.version !== 2) return source;
+    if (!source?.data || (source as { version: number }).version !== 2) return source;
     if (source.data.statsVersion === 1) return source;
     if (source.data.statsVersion !== undefined) throw new Error('Unsupported stats version.');
     return produce(source, (draft) => {
         draft.data.statsVersion = 1;
         for (const c of draft.data.characters) {
+            migrateInventory(c);
             c.statuses = [];
             c.titleModifiers = {};
             if (c.run?.baseline) c.run.baseline.statSnapshot = createStatSnapshot(c);
             refreshStats(c);
         }
+    });
+}
+
+function migrateQuests(value: unknown): SaveData {
+    const source = migrateStats(value);
+    if (!source?.data || (source as { version: number }).version !== 2) return source;
+    return produce(source, (draft) => {
+        Object.assign(draft, { version: 3 });
+        Object.assign(draft.data, { version: 3 });
+        for (const c of draft.data.characters) {
+            c.quests = emptyJournal();
+            c.rp = null;
+            if (c.run) c.run.quests = emptyRunQuests();
+            for (const e of c.battle?.enemies ?? []) e.species = 'spider';
+        }
+    });
+}
+
+export function migrateSave(value: unknown): SaveData {
+    const source = migrateQuests(value);
+    if (!source?.data || (source as { version: number }).version !== 3) return source;
+    return produce(source, (draft) => {
+        draft.version = 4;
+        draft.data.version = 4;
+        for (const c of draft.data.characters) migrateInventory(c);
     });
 }

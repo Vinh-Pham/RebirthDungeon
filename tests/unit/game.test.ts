@@ -123,13 +123,13 @@ it('transactions handle equipment, bank, purchases, selling and capacity atomica
     expect(g.c.bankGold).toBe(10);
     expect(() => g.doIt({ type: 'BANK_GOLD', amount: 1000, deposit: true })).toThrow();
     expect(() => g.doIt({ type: 'BANK_GOLD', amount: -1, deposit: true })).toThrow();
-    expect(() => g.doIt({ type: 'SELL', id: g.c.weapon! })).toThrow();
-    g.doIt({ type: 'EQUIP', id: g.c.weapon! });
+    expect(() => g.doIt({ type: 'SELL', id: g.c.equipment.main! })).toThrow();
+    g.doIt({ type: 'UNEQUIP', id: g.c.equipment.main! });
     const weapon = g.c.inventory[0];
     g.doIt({ type: 'BANK_ITEM', id: weapon.id, deposit: true });
     g.doIt({ type: 'BANK_ITEM', id: g.c.bank[0].id, deposit: false });
     g.doIt({ type: 'EQUIP', id: g.c.inventory.at(-1)!.id });
-    g.doIt({ type: 'REPAIR', id: g.c.weapon! });
+    g.doIt({ type: 'REPAIR', id: g.c.equipment.main! });
     g.doIt({ type: 'HEAL' });
     expect(() => g.doIt({ type: 'BUY', shop: 'Grocery', kind: 'steel' })).toThrow();
     const rows: any[] = [];

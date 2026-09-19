@@ -20,7 +20,7 @@ Open http://127.0.0.1:8080. Build with `pnpm build`; deploy the `dist/` director
 - Enter Alby through the northern gate. The floor map marks rooms and the boss. Investigate spiders, chests, or switches with **E**.
 - Learn talent attacks from Aren beside the Blacksmith; new characters start with Normal Attack. Train to 100 points and spend AP in the Skills journal to advance from F through 1. Critical Hit comes from a book; Final Hit from a five-page manual.
 - Select a target and skill. Click dice to hold them, reroll unheld dice at most twice, and attack. The strongest combination determines the damage multiplier. Skills consume stamina or mana; Recover restores both but gives enemies a turn.
-- Use Inventory for equipment and potions. Potions also consume a turn in combat.
+- Inventory combines nine equipment slots with a 6 × 10 backpack. Drag items to organize or equip, or select an item and choose a destination. Right-click/long-press for Use or quantity-based Drop (requires confirmation). Equipment changes require town; potions also consume a turn in combat. Layouts persist, and older saves retain items that do not fit in a visible recovery list.
 - Clear three seals before fighting the boss. Take selected loot or everything that fits. Choose exactly one treasure chest, then return home.
 - Town services offer healing, food, banking, equipment, potions, selling, and repairs. Equipped items must be unequipped before selling or banking.
 - Character, Skills, Inventory, Menu, and Settings open as independent, draggable, resizable windows above the world. Reopening a window restores its session position and size; scene or character changes close every window. Uncovered world areas stay playable while windows are open; clicking a window or the HUD keeps movement keys in the interface, and clicking the canvas hands them back. **F6** / **Shift+F6** cycle open windows and the game; **Escape** closes only the active window behind owned popups and confirmations; arrow keys nudge the focused window (Shift resizes, Alt fine-tunes). Rebirth and leaving confirmations remain blocking dialogs.
@@ -66,3 +66,9 @@ See [implemented skill rules](docs/gameplay/skills-implementation.md) for acquis
 - `pnpm check` runs linting before type checking, coverage, build, and browser tests. CI also runs lint first.
 
 See [lint configuration and exceptions](docs/linting.md). Prettier remains the formatter and `pnpm typecheck` remains the TypeScript check.
+
+## Quests
+
+Open **Quests** in the menu bar to browse six categories, inspect quest notes and rewards, and track up to three objectives. Accept NPC offers in town, then use **Complete** when ready to claim rewards. Item deliveries are completed with the named NPC. Kill progress is banked when a dungeon run ends, including defeat or an early return; Clear Alby requires victory. Quests and claims survive reload and rebirth. The beginner story includes a playable memory as Aren with separate equipment and supplies.
+
+See [the quest implementation contract](docs/gameplay/quests.md#current-implementation-contract) for the starter catalog and persistence rules.

@@ -47,7 +47,7 @@ const status = (c: Character, id: string, own = false) => applyStatus(c, id, ori
 function battle(magic = false) {
     let s = fixture();
     s = run(s, { type: 'LEARN', skill: 'bloodStrike' });
-    const sword = hero(s).weapon!;
+    const sword = hero(s).equipment.main!;
     s = run(s, { type: 'BUY', shop: 'Blacksmith', kind: 'wand' });
     s = run(s, { type: 'EQUIP', id: hero(s).inventory.find((i) => i.kind === 'wand')!.id });
     for (const skill of ['arcaneFocus', 'firebolt']) s = run(s, { type: 'LEARN', skill });
@@ -388,6 +388,8 @@ it('skill buffs skip casting expiration and enemy afflictions affect the next ac
 it('migrates old version-two saves without changing pending actions or resources', () => {
     const s = run(battle(), { type: 'ROLL', skill: 'normal', target: 'enemy-0' });
     const old = JSON.parse(JSON.stringify(s));
+    old.version = 2;
+    old.data.version = 2;
     delete old.data.statsVersion;
     delete old.data.characters[0].statuses;
     delete old.data.characters[0].titleModifiers;
@@ -397,7 +399,9 @@ it('migrates old version-two saves without changing pending actions or resources
     expect(hero(upgraded).stamina).toBe(hero(s).stamina);
     expect(old.data.statsVersion).toBeUndefined();
     validateSave(upgraded);
-    expect(() => migrateSave({ ...s, data: { ...s.data, statsVersion: 99 } })).toThrow();
+    expect(() =>
+        migrateSave({ ...s, version: 2, data: { ...s.data, version: 2, statsVersion: 99 } }),
+    ).toThrow();
 });
 it('rejects malformed saved modifiers, duplicate sources, status groups, and resource bounds', () => {
     const c = status(hero(), 'poison');

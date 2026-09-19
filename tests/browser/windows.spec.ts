@@ -133,7 +133,7 @@ test('scene transitions close windows and confirmations keep priority', async ({
     // Raise the background window first, as a real pointer user would.
     const characterWindow = page.getByRole('dialog', { name: 'Character Info' });
     const characterBox = await characterWindow.boundingBox();
-    await page.mouse.click(characterBox!.x + 120, characterBox!.y + 14);
+    await page.mouse.click(characterBox!.x + 14, characterBox!.y + 14);
     await expect(characterWindow).toHaveAttribute('data-wm-focused', '');
     await characterWindow.getByRole('button', { name: 'Close' }).click();
     await expect(page.getByRole('dialog', { name: 'Character Info' })).toHaveCount(0);

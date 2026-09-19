@@ -1,3 +1,28 @@
+import {
+    acceptQuest,
+    bankRunQuests,
+    completeQuest,
+    currentObjectives,
+    interactQuest,
+    reconcileQuests,
+    recordDefeats,
+    refreshQuests,
+    snapshotQuests,
+    trackQuest,
+    withdrawQuestReward,
+} from './quests/system';
+import { emptyJournal, type QuestNpc } from './quests/types';
+import { createMemory, controlledCharacter } from './quests/roleplay';
+import {
+    addItem,
+    addInventoryItem,
+    consumeInventoryItem,
+    initializeInventory,
+    equippedSlot,
+    equipItem,
+    moveItem,
+} from './inventory';
+export { addItem } from './inventory';
 import { createStatSnapshot } from './stats/resolve';
 import { applyStatus, removeStatuses, restorePool } from './stats/statuses';
 import {
@@ -24,17 +49,26 @@ import { generateDungeon } from './dungeon';
 import { applyAging, gainXp, rebirth, startingStats } from './progression';
 import {
     initialData,
+    emptyEquipment,
+    type EquipmentSlot,
+    type InventoryAnchor,
     races,
     talents,
     zeroStats,
     type Character,
     type CreateInput,
-    type Item,
     type Reward,
     type SaveData,
     type Settings,
 } from './model';
 export type Command =
+    | { type: 'ACCEPT_QUEST'; quest: string; npc: QuestNpc }
+    | { type: 'QUEST_INTERACT'; quest: string; step: string; npc: QuestNpc }
+    | { type: 'COMPLETE_QUEST'; quest: string; npc?: QuestNpc }
+    | { type: 'TRACK_QUEST'; quest: string; tracked: boolean }
+    | { type: 'WITHDRAW_QUEST_REWARD'; id: string }
+    | { type: 'START_RP_MISSION'; quest: string; npc: QuestNpc }
+    | { type: 'EXIT_RP_MISSION' }
     | { type: 'NAV'; screen: 'Title' | 'CharacterSelect' | 'NewCharacter' }
     | { type: 'CREATE'; input: CreateInput; id: string; now: number }
     | { type: 'PLAY'; id: string; now: number }
@@ -60,7 +94,11 @@ export type Command =
     | { type: 'ABANDON' }
     | { type: 'BUY'; shop: string; kind: string }
     | { type: 'SELL'; id: string }
-    | { type: 'EQUIP'; id: string; slot?: 'main' | 'offhand' }
+    | { type: 'EQUIP'; id: string; slot?: EquipmentSlot }
+    | { type: 'UNEQUIP'; id: string; anchor?: InventoryAnchor }
+    | { type: 'MOVE_ITEM'; id: string; anchor: InventoryAnchor }
+    | { type: 'DROP_ITEM'; id: string; quantity: number }
+    | { type: 'WITHDRAW_RECOVERY'; id: string }
     | { type: 'USE'; id: string }
     | { type: 'REPAIR'; id: string }
     | { type: 'HEAL' }
@@ -69,42 +107,12 @@ export type Command =
     | { type: 'REBIRTH'; id: string; talent: CreateInput['talent']; age: number; now: number }
     | { type: 'SETTINGS'; settings: Partial<Settings> };
 export const blankSave = (): SaveData => ({
-    version: 2,
+    version: 4,
     data: initialData(),
     checkpoint: { version: 1, screen: 'Title', phase: 'exploring' },
 });
 export function active(save: Immutable<SaveData>): Immutable<Character> | undefined {
     return save.data.characters.find((c) => c.id === save.data.activeId);
-}
-export function addItem(list: Item[], item: Item, limit: number) {
-    const def = items[item.kind];
-    if (!def || !Number.isInteger(item.count) || item.count < 1) throw new Error('Invalid item.');
-    let remaining = item.count;
-    if (def.type === 'weapon' || def.type === 'armor' || def.type === 'shield') {
-        if (list.length + remaining > limit) throw new Error('Not enough inventory space.');
-        for (let i = 0; i < remaining; i++)
-            list.push({ ...item, id: i ? `${item.id}-${i}` : item.id, count: 1 });
-        return;
-    }
-    for (const row of list.filter((i) => i.kind === item.kind)) {
-        const n = Math.min(99 - row.count, remaining);
-        row.count += n;
-        remaining -= n;
-    }
-    while (remaining > 0) {
-        if (list.length >= limit) throw new Error('Not enough inventory space.');
-        const n = Math.min(99, remaining);
-        list.push({ ...item, id: `${item.id}-${remaining}`, count: n });
-        remaining -= n;
-    }
-}
-function consume(list: Item[], id: string) {
-    const i = list.findIndex((i) => i.id === id);
-    if (i < 0) throw new Error('Item not found.');
-    if (--list[i].count === 0) list.splice(i, 1);
-}
-function compatible(c: Character, kind: string) {
-    return !(c.race === 'Giant' && items[kind].talent === 'Archery');
 }
 function requireCharacter(s: SaveData): Character {
     const c = s.data.characters.find((c) => c.id === s.data.activeId);
@@ -132,6 +140,15 @@ function makeReward(s: SaveData, id: string, boss = false): Reward {
 function finishActivation(s: SaveData, c: Character) {
     const b = c.battle!;
     if (c.hp > 0 && b.enemies.some((e) => e.hp > 0)) enemiesAct(c);
+    recordDefeats(c);
+    if (c.role && c.hp > 0 && b.enemies.every((e) => e.hp === 0)) {
+        c.run!.cleared.push(b.room);
+        clearHand(c);
+        c.battle = null;
+        c.effects = {};
+        s.checkpoint = { version: 1, screen: 'Alby', phase: 'exploring' };
+        return;
+    }
     if (c.hp > 0 && b.enemies.every((e) => e.hp === 0)) {
         const boss = b.enemies.some((e) => e.boss);
         if (!c.run!.cleared.includes(b.room)) {
@@ -168,6 +185,41 @@ export function allowed(save: Immutable<SaveData>, cmd: Command): boolean {
         phase = save.checkpoint.phase;
     if (cmd.type === 'NAV' || cmd.type === 'SETTINGS' || cmd.type === 'DISMISS_MIGRATION')
         return true;
+    const hero = active(save);
+    if (cmd.type === 'TRACK_QUEST')
+        return !!hero && ['Town1', 'Alby', 'Battle', 'TreasureRoom'].includes(screen);
+    if (cmd.type === 'EXIT_RP_MISSION') return !!hero?.rp;
+    if (
+        hero?.rp &&
+        ![
+            'PLAY',
+            'POSITION',
+            'ENCOUNTER',
+            'ROLL',
+            'HOLD',
+            'REROLL',
+            'ATTACK',
+            'PASS',
+            'RECOVER',
+            'USE',
+            'USE_SKILL',
+            'MOVE_ITEM',
+            'DROP_ITEM',
+        ].includes(cmd.type)
+    )
+        return false;
+    if (
+        [
+            'ACCEPT_QUEST',
+            'QUEST_INTERACT',
+            'COMPLETE_QUEST',
+            'WITHDRAW_QUEST_REWARD',
+            'START_RP_MISSION',
+        ].includes(cmd.type)
+    )
+        return screen === 'Town1' && !!hero && !hero.run && !hero.rp;
+    if (cmd.type === 'REBIRTH' && save.data.characters.find((c) => c.id === cmd.id)?.rp)
+        return false;
     if (cmd.type === 'CREATE') return screen === 'NewCharacter';
     if (cmd.type === 'PLAY' || cmd.type === 'REBIRTH') return screen === 'CharacterSelect';
     if (cmd.type === 'ENTER') return screen === 'Town1';
@@ -180,6 +232,13 @@ export function allowed(save: Immutable<SaveData>, cmd: Command): boolean {
         return screen === 'Battle' && phase === 'selecting';
     if (['HOLD', 'REROLL', 'ATTACK'].includes(cmd.type))
         return screen === 'Battle' && phase === 'choosingDice';
+    if (['MOVE_ITEM', 'DROP_ITEM'].includes(cmd.type))
+        return (
+            (['Town1', 'Alby'].includes(screen) && phase === 'exploring') ||
+            (screen === 'Battle' && phase === 'selecting')
+        );
+    if (['UNEQUIP', 'WITHDRAW_RECOVERY'].includes(cmd.type))
+        return screen === 'Town1' && !active(save)?.run && !active(save)?.rp;
     if (cmd.type === 'USE')
         return ['Town1', 'Alby'].includes(screen) || (screen === 'Battle' && phase === 'selecting');
     if (cmd.type === 'USE_SKILL')
@@ -200,12 +259,63 @@ export function reduceCommand(
     if (
         'actionId' in cmd &&
         cmd.actionId !== undefined &&
-        active(save)?.battle?.action?.id !== cmd.actionId
+        controlledCharacter(save)?.battle?.action?.id !== cmd.actionId
     )
         throw new Error('This action has already ended.');
     return produce(save, (d) => {
         const s = d as SaveData;
-        if (cmd.type === 'DISMISS_MIGRATION') {
+        const owner = s.data.characters.find((c) => c.id === s.data.activeId);
+        if (
+            owner?.rp &&
+            !['NAV', 'SETTINGS', 'DISMISS_MIGRATION', 'PLAY', 'TRACK_QUEST'].includes(cmd.type)
+        ) {
+            const rp = owner.rp;
+            const room =
+                cmd.type === 'ENCOUNTER'
+                    ? rp.actor.run?.rooms.find((r) => r.id === cmd.room)
+                    : undefined;
+            if (cmd.type === 'EXIT_RP_MISSION') {
+                owner.rp = null;
+                owner.checkpoint = 'exploring';
+                s.checkpoint = { version: 1, screen: 'Town1', phase: 'exploring' };
+            } else if (room?.kind === 'exit') {
+                const run = rp.actor.run!;
+                const x = cmd.type === 'ENCOUNTER' ? (cmd.x ?? run.x) : run.x;
+                const y = cmd.type === 'ENCOUNTER' ? (cmd.y ?? run.y) : run.y;
+                if (
+                    !Number.isFinite(x) ||
+                    !Number.isFinite(y) ||
+                    Math.hypot(x - room.x * 32, y - room.y * 32) >= 150 ||
+                    run.rooms.some((r) => r.required && !run.cleared.includes(r.id))
+                )
+                    throw new Error('Clear both chambers and reach the memory exit.');
+                owner.quests.records['arens-expedition'].counts['aren-memory'] = 1;
+                owner.rp = null;
+                owner.checkpoint = 'exploring';
+                s.checkpoint = { version: 1, screen: 'Town1', phase: 'exploring' };
+                refreshQuests(owner);
+            } else {
+                const simulation: SaveData = {
+                    ...s,
+                    data: {
+                        ...s.data,
+                        rng: rp.rng,
+                        activeId: rp.actor.id,
+                        characters: [rp.actor],
+                        operations: [],
+                    },
+                };
+                const next = reduceCommand(simulation, cmd, operationId);
+                const npc = next.data.characters[0];
+                if (!npc.run) owner.rp = null;
+                else {
+                    rp.actor = JSON.parse(JSON.stringify(npc));
+                    rp.rng = next.data.rng;
+                }
+                s.checkpoint = { ...next.checkpoint };
+                owner.checkpoint = next.checkpoint.phase;
+            }
+        } else if (cmd.type === 'DISMISS_MIGRATION') {
             s.migrationNotice = false;
         } else if (cmd.type === 'NAV') {
             s.checkpoint.screen = cmd.screen;
@@ -249,6 +359,8 @@ export function reduceCommand(
                 talent === 'Close Combat' && race === 'Elf' ? 'mace' : talentWeapon[talent];
             const c: Character = {
                 id: cmd.id,
+                quests: emptyJournal(),
+                rp: null,
                 name,
                 race,
                 talent,
@@ -271,10 +383,10 @@ export function reduceCommand(
                     { id: `${cmd.id}-stamina`, kind: 'stamina', count: 3 },
                 ],
                 bank: [],
-                weapon: `${cmd.id}-weapon`,
-                armor: null,
+                equipment: { ...emptyEquipment(), main: `${cmd.id}-weapon` },
+                placements: {},
+                inventoryRecovery: [],
                 skills: { normal: { rank: 'F', counts: {} } },
-                offhand: null,
                 collection: [],
                 cooldowns: {},
                 effects: {},
@@ -289,6 +401,7 @@ export function reduceCommand(
                 statuses: [],
                 titleModifiers: {},
             };
+            initializeInventory(c);
             s.data.characters.push(c);
             s.data.activeId = c.id;
             s.checkpoint = { version: 1, screen: 'Town1', phase: 'exploring' };
@@ -299,27 +412,58 @@ export function reduceCommand(
             if (cmd.type === 'REBIRTH') {
                 if (!talents.includes(cmd.talent)) throw new Error('Unknown talent.');
                 rebirth(c, cmd.talent, cmd.age, cmd.now);
+                c.quests.rebirths.push({ id: operationId, talent: cmd.talent });
                 refreshStats(c);
             } else {
                 applyAging(c, cmd.now);
+                const played = c.rp?.actor ?? c;
                 s.checkpoint = {
                     version: 1,
                     screen:
-                        c.run?.chosen !== null && c.run?.chests.length
+                        played.run?.chosen !== null && played.run?.chests.length
                             ? 'TreasureRoom'
-                            : c.checkpoint === 'treasure'
+                            : played.checkpoint === 'treasure'
                               ? 'TreasureRoom'
-                              : c.battle
+                              : played.battle
                                 ? 'Battle'
-                                : c.run
+                                : played.run
                                   ? 'Alby'
                                   : 'Town1',
-                    phase: c.checkpoint,
+                    phase: played.checkpoint,
                 };
             }
         } else {
             const c = requireCharacter(s);
             switch (cmd.type) {
+                case 'ACCEPT_QUEST':
+                    acceptQuest(c, cmd.quest, cmd.npc);
+                    break;
+                case 'QUEST_INTERACT':
+                    interactQuest(c, cmd.quest, cmd.step, cmd.npc);
+                    break;
+                case 'COMPLETE_QUEST':
+                    completeQuest(c, cmd.quest, cmd.npc);
+                    break;
+                case 'TRACK_QUEST':
+                    trackQuest(c, cmd.quest, cmd.tracked);
+                    break;
+                case 'WITHDRAW_QUEST_REWARD':
+                    withdrawQuestReward(c, cmd.id);
+                    break;
+                case 'START_RP_MISSION': {
+                    if (
+                        cmd.npc !== 'Trainer' ||
+                        cmd.quest !== 'arens-expedition' ||
+                        c.quests.records[cmd.quest]?.status !== 'active' ||
+                        !currentObjectives(c, cmd.quest).some((o) => o.kind === 'rp')
+                    )
+                        throw new Error('This memory is not available.');
+                    c.rp = createMemory(operationId);
+                    s.checkpoint = { version: 1, screen: 'Alby', phase: 'exploring' };
+                    break;
+                }
+                case 'EXIT_RP_MISSION':
+                    throw new Error('No memory is active.');
                 case 'ENTER':
                     c.run = generateDungeon(cmd.seed);
                     c.run.id = `${c.run.id}-${operationId}`;
@@ -327,12 +471,11 @@ export function reduceCommand(
                         contentVersion: 2,
                         skills: JSON.parse(JSON.stringify(c.skills)),
                         stats: progressionStats(c),
-                        weapon: c.weapon,
-                        offhand: c.offhand,
-                        armor: c.armor,
+                        equipment: { ...c.equipment },
                     };
                     c.run.baseline.statSnapshot = createStatSnapshot(c);
                     c.run.pageRewards = 0;
+                    c.run.quests = snapshotQuests(c);
                     c.effects = {};
                     c.statuses = [];
                     c.cooldowns = {};
@@ -372,6 +515,16 @@ export function reduceCommand(
                         throw new Error(
                             'Clear the three sealed rooms before opening the boss gate.',
                         );
+                    if (
+                        c.role &&
+                        c.run!.rooms.some(
+                            (room) =>
+                                room.required &&
+                                room.id < r.id &&
+                                !c.run!.cleared.includes(room.id),
+                        )
+                    )
+                        throw new Error('Clear the previous chamber first.');
                     if (r.kind === 'supplies') {
                         c.run!.cleared.push(r.id);
                         c.reward = makeReward(s, `${c.run!.id}-supplies`);
@@ -385,6 +538,7 @@ export function reduceCommand(
                             const boss = r.kind === 'boss' && i === 0;
                             return {
                                 id: `enemy-${i}`,
+                                species: 'spider',
                                 inflicts: boss ? ['armorBreak'] : r.id > 2 ? ['poison'] : [],
                                 name: boss
                                     ? 'Giant Spider'
@@ -477,7 +631,7 @@ export function reduceCommand(
                         def = item && items[item.kind];
                     if (!def?.skill) throw new Error('Choose a complete skill book.');
                     learn(c, def.skill);
-                    consume(c.inventory, cmd.id);
+                    consumeInventoryItem(c, cmd.id);
                     break;
                 }
                 case 'INSERT_PAGE': {
@@ -488,10 +642,10 @@ export function reduceCommand(
                         throw new Error('Requires an incomplete book and a missing page.');
                     c.collection.push(page);
                     c.collection.sort();
-                    consume(c.inventory, cmd.id);
+                    consumeInventoryItem(c, cmd.id);
                     if (c.collection.length === 5) {
-                        consume(c.inventory, book.id);
-                        addItem(c.inventory, { id: operationId, kind: 'finalBook', count: 1 }, 30);
+                        consumeInventoryItem(c, book.id);
+                        addInventoryItem(c, { id: operationId, kind: 'finalBook', count: 1 });
                     }
                     break;
                 }
@@ -501,7 +655,7 @@ export function reduceCommand(
                     for (const id of new Set(cmd.ids)) {
                         const item = r.items.find((i) => i.id === id);
                         if (!item || r.claimed.includes(id)) continue;
-                        addItem(c.inventory, { ...item }, 30);
+                        addInventoryItem(c, { ...item });
                         r.claimed.push(id);
                     }
                     if (cmd.gold && !r.claimed.includes('gold')) {
@@ -543,6 +697,7 @@ export function reduceCommand(
                     break;
                 case 'CONTINUE':
                 case 'ABANDON':
+                    bankRunQuests(c, cmd.type === 'CONTINUE');
                     c.run = null;
                     c.effects = {};
                     c.statuses = [];
@@ -553,54 +708,50 @@ export function reduceCommand(
                     break;
                 case 'BUY': {
                     const def = items[cmd.kind];
-                    if (!def || !shops[cmd.shop]?.includes(cmd.kind) || !compatible(c, cmd.kind))
+                    if (!def || !shops[cmd.shop]?.includes(cmd.kind))
                         throw new Error('This item is not available.');
                     if (c.gold < def.price) throw new Error('Not enough gold.');
-                    addItem(
-                        c.inventory,
-                        {
-                            id: operationId,
-                            kind: cmd.kind,
-                            count: 1,
-                            ...(def.type === 'weapon' ? { durability: 20 } : {}),
-                        },
-                        30,
-                    );
+                    addInventoryItem(c, {
+                        id: operationId,
+                        kind: cmd.kind,
+                        count: 1,
+                        ...(def.type === 'weapon' ? { durability: 20 } : {}),
+                    });
                     c.gold -= def.price;
                     break;
                 }
                 case 'SELL': {
                     const item = c.inventory.find((i) => i.id === cmd.id);
                     if (!item) throw new Error('Item not found.');
-                    if (c.weapon === item.id || c.offhand === item.id || c.armor === item.id)
+                    if (equippedSlot(c, item.id))
                         throw new Error('Unequip the item before selling.');
                     c.gold += Math.floor(items[item.kind].price / 4);
-                    consume(c.inventory, item.id);
+                    consumeInventoryItem(c, item.id);
                     break;
                 }
                 case 'EQUIP': {
                     const item = c.inventory.find((i) => i.id === cmd.id);
-                    if (!item || !compatible(c, item.kind))
-                        throw new Error('You cannot equip this item.');
-                    const def = items[item.kind];
-                    if (def.type === 'shield' || cmd.slot === 'offhand') {
-                        const main = c.inventory.find((i) => i.id === c.weapon);
-                        if (def.type !== 'shield' && !['sword', 'steel'].includes(item.kind))
-                            throw new Error('Off-hand requires a shield or sword.');
-                        if (
-                            !main ||
-                            items[main.kind].talent !== 'Close Combat' ||
-                            main.id === item.id
-                        )
-                            throw new Error('Equip a distinct one-handed melee weapon first.');
-                        if (def.type === 'weapon' && !['sword', 'steel'].includes(main.kind))
-                            throw new Error('Dual wielding requires paired swords.');
-                        c.offhand = c.offhand === item.id ? null : item.id;
-                    } else if (def.type === 'weapon') {
-                        c.weapon = c.weapon === item.id ? null : item.id;
-                        c.offhand = null;
-                    } else if (def.type === 'armor') c.armor = c.armor === item.id ? null : item.id;
-                    else throw new Error('This item cannot be equipped.');
+                    const slot = cmd.slot ?? (item && items[item.kind].slots?.[0]);
+                    if (!slot) throw new Error('This item cannot be equipped.');
+                    equipItem(c, cmd.id, slot);
+                    break;
+                }
+                case 'UNEQUIP':
+                    if (!equippedSlot(c, cmd.id)) throw new Error('This item is not equipped.');
+                    moveItem(c, cmd.id, cmd.anchor);
+                    break;
+                case 'MOVE_ITEM':
+                    if (equippedSlot(c, cmd.id)) throw new Error('Use Unequip in town first.');
+                    moveItem(c, cmd.id, cmd.anchor);
+                    break;
+                case 'DROP_ITEM':
+                    consumeInventoryItem(c, cmd.id, cmd.quantity);
+                    break;
+                case 'WITHDRAW_RECOVERY': {
+                    const item = c.inventoryRecovery.find((i) => i.id === cmd.id);
+                    if (!item) throw new Error('Recovery item not found.');
+                    addInventoryItem(c, { ...item });
+                    c.inventoryRecovery.splice(c.inventoryRecovery.indexOf(item), 1);
                     break;
                 }
                 case 'USE': {
@@ -632,7 +783,7 @@ export function reduceCommand(
                             s.checkpoint.screen === 'Battle',
                         ).statuses;
                     refreshStats(c);
-                    consume(c.inventory, item.id);
+                    consumeInventoryItem(c, item.id);
                     if (s.checkpoint.screen === 'Battle') {
                         endPlayerActivation(c);
                         finishActivation(s, c);
@@ -671,17 +822,18 @@ export function reduceCommand(
                         target = cmd.deposit ? c.bank : c.inventory,
                         item = source.find((i) => i.id === cmd.id);
                     if (!item) throw new Error('Item not found.');
-                    if (
-                        cmd.deposit &&
-                        (c.weapon === item.id || c.offhand === item.id || c.armor === item.id)
-                    )
+                    if (cmd.deposit && equippedSlot(c, item.id))
                         throw new Error('Unequip this item first.');
-                    addItem(target, { ...item, id: operationId }, cmd.deposit ? 60 : 30);
+                    if (cmd.deposit) addItem(target, { ...item }, 60);
+                    else addInventoryItem(c, { ...item });
                     source.splice(source.indexOf(item), 1);
+                    if (cmd.deposit) delete c.placements[item.id];
                     break;
                 }
             }
+            recordDefeats(c);
             if (c.hp <= 0) {
+                bankRunQuests(c, false);
                 c.run = null;
                 c.effects = {};
                 c.statuses = [];
@@ -697,7 +849,17 @@ export function reduceCommand(
             refreshStats(c);
             c.checkpoint = s.checkpoint.phase;
         }
-        for (const hero of s.data.characters) refreshStats(hero);
+        for (const hero of s.data.characters) {
+            refreshStats(hero);
+            if (
+                !hero.role &&
+                !hero.run &&
+                !hero.rp &&
+                s.checkpoint.screen === 'Town1' &&
+                hero.id === s.data.activeId
+            )
+                reconcileQuests(hero);
+        }
         s.data.revision++;
         s.data.operations.push(operationId);
         if (s.data.operations.length > 256) s.data.operations.shift();

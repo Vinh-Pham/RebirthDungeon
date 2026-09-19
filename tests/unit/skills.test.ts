@@ -337,7 +337,7 @@ describe('migration and durable state', () => {
         delete legacy.data.characters[0].battle.action;
         const s = migrateSave(legacy);
         validateSave(s);
-        expect(s.version).toBe(2);
+        expect(s.version).toBe(4);
         expect(s.migrationNotice).toBe(true);
         expect(active(s)!.skills.smash.rank).toBe('F');
         expect(active(s)!.battle!.dice).toEqual(legacy.data.characters[0].battle.dice);
@@ -441,7 +441,7 @@ it('retains a legacy backup and restores the last valid save after corruption', 
     legacy.data.characters[0].skills = ['normal', 'smash'];
     await p.save(legacy);
     const migrated = (await p.load())!;
-    expect(migrated.version).toBe(2);
+    expect(migrated.version).toBe(4);
     await p.save(migrated);
     const backup = await new Promise<any>((resolve, reject) => {
         const open = indexedDB.open('rebirth-dungeon', 1);

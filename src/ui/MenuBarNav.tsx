@@ -9,7 +9,7 @@ export function MenuBarNav({
 }: {
     character: Immutable<Character> | undefined;
     onOpen: (
-        panel: 'character' | 'skills' | 'inventory' | 'menu',
+        panel: 'character' | 'skills' | 'quests' | 'inventory' | 'menu',
         opener?: EventTarget | null,
     ) => void;
 }) {
@@ -17,15 +17,15 @@ export function MenuBarNav({
         <div className="flex min-w-0 flex-col gap-3 narrow:gap-2">
             <nav
                 aria-label="Game navigation"
-                className="grid grid-cols-4 gap-2 narrow:grid-cols-2 narrow:gap-1"
+                className="grid grid-cols-5 gap-2 narrow:grid-cols-2 narrow:gap-1"
             >
-                {(['character', 'skills', 'inventory', 'menu'] as const).map((panel) => (
+                {(['character', 'skills', 'quests', 'inventory', 'menu'] as const).map((panel) => (
                     <Button
                         key={panel}
                         variant="secondary"
                         isDisabled={!c && panel !== 'menu'}
                         onPress={(event) => onOpen(panel, event.target)}
-                        className="w-full min-w-0 px-3 narrow:h-8 narrow:px-1 narrow:text-[11px]"
+                        className="w-full min-w-0 px-3 narrow:h-7 narrow:px-1 narrow:text-[11px]"
                     >
                         {panel.charAt(0).toUpperCase() + panel.slice(1)}
                     </Button>

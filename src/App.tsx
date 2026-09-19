@@ -1,3 +1,4 @@
+import { QuestJournal, NpcQuests, QuestTracker } from './ui/QuestJournal';
 import { Character } from './ui/Character';
 import { GameModal } from './ui/GameModal';
 import { SkillJournal } from './ui/SkillJournal';
@@ -17,6 +18,7 @@ import {
     dialogue,
     subscribe,
     getCharacter,
+    getHero,
     send,
     startRuntime,
     readOnly,
@@ -33,10 +35,10 @@ import { useWindows, type WindowId } from './ui/windows/context';
 import { MenuContent } from './ui/MenuContent';
 import { SettingsContent } from './ui/SettingsContent';
 import { ServiceContent } from './ui/ServiceContent';
-import { InventoryList } from './ui/InventoryList';
+import { InventoryPanel } from './ui/InventoryPanel';
 import './style.css';
 
-type PanelId = 'character' | 'skills' | 'inventory' | 'menu' | 'settings';
+type PanelId = 'character' | 'skills' | 'quests' | 'inventory' | 'menu' | 'settings';
 type Confirmation = 'rebirth' | 'abandon' | 'leaveLoot';
 
 const SERVICE_TITLES: Record<string, string> = {
@@ -51,6 +53,7 @@ const SERVICE_TITLES: Record<string, string> = {
 const CLOSED_PANELS: Record<PanelId, boolean> = {
     character: false,
     skills: false,
+    quests: false,
     inventory: false,
     menu: false,
     settings: false,
@@ -70,9 +73,11 @@ function Game() {
     const { closeAllWindows } = useWindows();
     const save = snapshot.context.save,
         c = getCharacter(),
+        hero = getHero(),
         screen = save.checkpoint.screen,
         phase = save.checkpoint.phase;
     const [panels, setPanels] = useState(CLOSED_PANELS);
+    const [selectedQuest, setSelectedQuest] = useState<string | null>(null);
     const [confirm, setConfirm] = useState<Confirmation | ''>('');
     const [rebirthId, setRebirthId] = useState('');
     const [service, setService] = useState('');
@@ -107,6 +112,7 @@ function Game() {
         // survives so reopening in the new scene restores size and position.
         closeAllWindows();
         setPanels(CLOSED_PANELS);
+        setSelectedQuest(null);
         setConfirm('');
         dialogue.send({ type: 'CLOSE' });
     }, [screen, characterId, closeAllWindows]);
@@ -137,8 +143,10 @@ function Game() {
         openers.current[panel] = (opener as HTMLElement) ?? null;
         setPanels((previous) => ({ ...previous, [panel]: true }));
     };
-    const closePanel = (panel: PanelId) =>
+    const closePanel = (panel: PanelId) => {
         setPanels((previous) => ({ ...previous, [panel]: false }));
+        if (panel === 'quests') setSelectedQuest(null);
+    };
     const getOpener = (panel: PanelId) => () => openers.current[panel] ?? null;
     const apFooter = c ? (
         <div className="flex w-full items-center justify-between gap-4 text-sm">
@@ -221,7 +229,7 @@ function Game() {
                                 <p className="my-[7px] text-[12px]">
                                     Age {ch.age} · Total level {ch.totalLevel}
                                 </p>
-                                {action(ch.run ? 'Resume adventure' : 'Enter Town1', () =>
+                                {action(ch.run || ch.rp ? 'Resume adventure' : 'Enter Town1', () =>
                                     send({ type: 'PLAY', id: ch.id, now: Date.now() }),
                                 )}
                                 {action(
@@ -353,55 +361,65 @@ function Game() {
                 <>
                     <header className="pointer-events-none absolute top-[30px] left-8 [text-shadow:0_2px_5px_#112927]">
                         <div className="eyebrow">
-                            {screen === 'Town1'
-                                ? 'ULADH · A QUIET BEGINNING'
-                                : screen === 'Alby'
-                                  ? 'BEGINNER DUNGEON · FLOOR 1'
-                                  : 'ALBY DUNGEON'}
+                            {hero?.rp
+                                ? 'ROLE-PLAYING MISSION · AREN'
+                                : screen === 'Town1'
+                                  ? 'ULADH · A QUIET BEGINNING'
+                                  : screen === 'Alby'
+                                    ? 'BEGINNER DUNGEON · FLOOR 1'
+                                    : 'ALBY DUNGEON'}
                         </div>
                         <h2>
-                            {screen === 'Town1'
-                                ? 'Town1'
-                                : screen === 'Battle'
-                                  ? 'A tangled encounter'
-                                  : screen === 'TreasureRoom'
-                                    ? 'The treasure chamber'
-                                    : 'Alby'}
+                            {hero?.rp
+                                ? 'Aren’s memory'
+                                : screen === 'Town1'
+                                  ? 'Town1'
+                                  : screen === 'Battle'
+                                    ? 'A tangled encounter'
+                                    : screen === 'TreasureRoom'
+                                      ? 'The treasure chamber'
+                                      : 'Alby'}
                         </h2>
                         <p className="text-[12px]">
-                            {screen === 'Town1'
-                                ? 'Walk with WASD or click · E to interact'
-                                : screen === 'Alby'
-                                  ? `${c.run?.cleared.filter((id) => c.run?.rooms.find((r) => r.id === id)?.required).length} / 3 seals broken · E to investigate`
-                                  : screen === 'Battle'
-                                    ? `Turn ${c.battle?.turn} · Choose your moment`
-                                    : 'Five possibilities. One reward.'}
+                            {hero?.rp
+                                ? screen === 'Battle'
+                                    ? `Turn ${c.battle?.turn} · Aren’s borrowed abilities`
+                                    : `${c.run?.cleared.length ?? 0} / 2 chambers cleared · E to investigate or exit`
+                                : screen === 'Town1'
+                                  ? 'Walk with WASD or click · E to interact'
+                                  : screen === 'Alby'
+                                    ? `${c.run?.cleared.filter((id) => c.run?.rooms.find((r) => r.id === id)?.required).length} / 3 seals broken · E to investigate`
+                                    : screen === 'Battle'
+                                      ? `Turn ${c.battle?.turn} · Choose your moment`
+                                      : 'Five possibilities. One reward.'}
                         </p>
                     </header>
-                    <aside className="absolute top-[30px] right-7 w-[230px] rounded-r-[8px] border-l-2 border-[#abc58e] bg-[#162c2cdd] p-5 compact:right-[15px] compact:w-[180px] narrow:hidden">
-                        <span className="eyebrow">FIRST STEPS</span>
-                        <h3>
-                            {c.tutorial === 0
-                                ? 'Beneath the village'
-                                : c.tutorial < 3
-                                  ? 'Unravel the web'
-                                  : 'A well-earned reward'}
-                        </h3>
-                        <p className="text-[12px]">
-                            {c.tutorial === 0
-                                ? 'Find Alby Dungeon at the north gate.'
-                                : c.tutorial < 3
-                                  ? 'Explore the chambers, break three seals, and defeat the Giant Spider.'
-                                  : 'Open one treasure chest and return home.'}
-                        </p>
-                        <span className="text-[13px] text-[#ebce7c]">
-                            ◈ {c.gold.toLocaleString()} gold
-                        </span>
-                        {c.run &&
-                            action('Return to town', () => setConfirm('abandon'), {
-                                className: 'subtle',
-                            })}
-                    </aside>
+                    {!hero?.rp && (
+                        <aside className="absolute top-[30px] right-7 w-[230px] rounded-r-[8px] border-l-2 border-[#abc58e] bg-[#162c2cdd] p-5 compact:right-[15px] compact:w-[180px] narrow:hidden">
+                            <span className="eyebrow">FIRST STEPS</span>
+                            <h3>
+                                {c.tutorial === 0
+                                    ? 'Beneath the village'
+                                    : c.tutorial < 3
+                                      ? 'Unravel the web'
+                                      : 'A well-earned reward'}
+                            </h3>
+                            <p className="text-[12px]">
+                                {c.tutorial === 0
+                                    ? 'Find Alby Dungeon at the north gate.'
+                                    : c.tutorial < 3
+                                      ? 'Explore the chambers, break three seals, and defeat the Giant Spider.'
+                                      : 'Open one treasure chest and return home.'}
+                            </p>
+                            <span className="text-[13px] text-[#ebce7c]">
+                                ◈ {c.gold.toLocaleString()} gold
+                            </span>
+                            {c.run &&
+                                action('Return to town', () => setConfirm('abandon'), {
+                                    className: 'subtle',
+                                })}
+                        </aside>
+                    )}
                 </>
             )}
             {phase === 'reward' && c?.reward && (
@@ -492,6 +510,23 @@ function Game() {
                     >
                         <SkillJournal character={c} disabled={disabled} send={send} />
                     </GameWindow>
+                    {hero && (
+                        <GameWindow
+                            id="quests"
+                            title="Quests"
+                            open={panels.quests}
+                            onClose={() => closePanel('quests')}
+                            getOpener={getOpener('quests')}
+                        >
+                            <QuestJournal
+                                character={hero}
+                                disabled={disabled}
+                                send={send}
+                                selected={selectedQuest}
+                                onSelect={setSelectedQuest}
+                            />
+                        </GameWindow>
+                    )}
                     <GameWindow
                         id="inventory"
                         title="Your belongings"
@@ -499,7 +534,13 @@ function Game() {
                         onClose={() => closePanel('inventory')}
                         getOpener={getOpener('inventory')}
                     >
-                        <InventoryList character={c} disabled={disabled} send={send} />
+                        <InventoryPanel
+                            character={c}
+                            save={save}
+                            disabled={disabled}
+                            error={snapshot.context.error}
+                            send={send}
+                        />
                     </GameWindow>
                     <GameWindow
                         id="menu"
@@ -525,7 +566,7 @@ function Game() {
                     </GameWindow>
                 </>
             )}
-            {!!service && c && (
+            {!!service && c && !hero?.rp && (
                 <GameWindow
                     id="service"
                     title={SERVICE_TITLES[service] ?? service}
@@ -533,6 +574,7 @@ function Game() {
                     onClose={() => dialogue.send({ type: 'CLOSE' })}
                     footer={service === 'Trainer' ? apFooter : undefined}
                 >
+                    <NpcQuests character={c} disabled={disabled} send={send} npc={service} />
                     {service === 'Trainer' ? (
                         <SkillJournal character={c} disabled={disabled} trainer send={send} />
                     ) : (
@@ -598,6 +640,7 @@ function Game() {
                                 isDisabled:
                                     disabled ||
                                     !!rebirthCharacter.run ||
+                                    !!rebirthCharacter.rp ||
                                     Date.now() <
                                         rebirthCharacter.rebornAt +
                                             rebirthCooldown(rebirthCharacter.totalLevel),
@@ -620,7 +663,9 @@ function Game() {
                                 send({
                                     type:
                                         confirm === 'abandon'
-                                            ? 'ABANDON'
+                                            ? hero?.rp
+                                                ? 'EXIT_RP_MISSION'
+                                                : 'ABANDON'
                                             : screen === 'TreasureRoom'
                                               ? 'CONTINUE'
                                               : 'LEAVE_REWARD',
@@ -647,6 +692,35 @@ function Game() {
                         Got it
                     </Button>
                 </div>
+            )}
+            {hero && ['Town1', 'Alby', 'Battle', 'TreasureRoom'].includes(screen) && (
+                <>
+                    <QuestTracker
+                        character={hero}
+                        onOpen={(id) => {
+                            setSelectedQuest(id);
+                            openPanel('quests');
+                        }}
+                    />
+                    {hero.quests.notices.length > 0 && (
+                        <div
+                            role="status"
+                            aria-live="polite"
+                            className="quest-notice pointer-events-none text-xs"
+                        >
+                            {hero.quests.notices[hero.quests.notices.length - 1]?.text}
+                        </div>
+                    )}
+                    {hero.rp && (
+                        <Button
+                            className="memory-exit game-hud"
+                            isDisabled={disabled}
+                            onPress={() => setConfirm('abandon')}
+                        >
+                            Exit memory
+                        </Button>
+                    )}
+                </>
             )}
             <MenuBar character={c} onOpen={openPanel} />
         </main>

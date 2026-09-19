@@ -191,13 +191,17 @@ class World extends Phaser.Scene {
                     .text(
                         r.x * 32,
                         r.y * 32 - 75,
-                        r.kind === 'entry'
-                            ? 'ALBY • ENTRANCE'
-                            : r.kind === 'boss'
-                              ? 'THE BROODMOTHER'
-                              : r.kind === 'supplies'
-                                ? 'FORGOTTEN CACHE'
-                                : `CHAMBER ${r.id}${cleared ? ' · CLEARED' : r.trigger === 'switch' ? ' · ACTIVATE SWITCH' : r.trigger === 'chest' ? ' · OPEN CHEST' : ' · SPIDERS'}`,
+                        r.kind === 'exit'
+                            ? 'MEMORY • EXIT'
+                            : r.kind === 'entry'
+                              ? c.role
+                                  ? 'AREN’S MEMORY • ENTRANCE'
+                                  : 'ALBY • ENTRANCE'
+                              : r.kind === 'boss'
+                                ? 'THE BROODMOTHER'
+                                : r.kind === 'supplies'
+                                  ? 'FORGOTTEN CACHE'
+                                  : `CHAMBER ${r.id}${cleared ? ' · CLEARED' : r.trigger === 'switch' ? ' · ACTIVATE SWITCH' : r.trigger === 'chest' ? ' · OPEN CHEST' : ' · SPIDERS'}`,
                         { fontSize: '13px', color: '#b3c6be' },
                     )
                     .setOrigin(0.5);
@@ -206,11 +210,13 @@ class World extends Phaser.Scene {
                         .image(
                             r.x * 32,
                             r.y * 32,
-                            r.kind === 'boss'
-                                ? 'boss'
-                                : r.trigger === 'chest' || r.kind === 'supplies'
-                                  ? 'chest'
-                                  : 'spider',
+                            r.kind === 'exit'
+                                ? 'chest'
+                                : r.kind === 'boss'
+                                  ? 'boss'
+                                  : r.trigger === 'chest' || r.kind === 'supplies'
+                                    ? 'chest'
+                                    : 'spider',
                         )
                         .setDisplaySize(64, 52);
                     new Button(icon).on('click', () => {

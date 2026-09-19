@@ -14,6 +14,17 @@
  */
 const ownership = { blockingOverlay: false, uiFocus: false, gesture: false };
 let epoch = 0;
+let overlayOwners = 0;
+export function acquireBlockingOverlay() {
+    overlayOwners++;
+    epoch++;
+    for (const listener of listeners) listener();
+    return () => {
+        overlayOwners--;
+        epoch++;
+        for (const listener of listeners) listener();
+    };
+}
 const listeners = new Set<() => void>();
 function set(flag: keyof typeof ownership, value: boolean) {
     if (ownership[flag] === value) return;
@@ -30,12 +41,11 @@ export function setUiFocus(value: boolean) {
 export function setGesture(value: boolean) {
     set('gesture', value);
 }
-export const blockingOverlay = () => ownership.blockingOverlay;
+export const blockingOverlay = () => ownership.blockingOverlay || overlayOwners > 0;
 /** Movement and interaction keys are suppressed whenever the interface owns input. */
-export const worldKeysBlocked = () =>
-    ownership.blockingOverlay || ownership.uiFocus || ownership.gesture;
+export const worldKeysBlocked = () => blockingOverlay() || ownership.uiFocus || ownership.gesture;
 /** Canvas pointers stay playable under plain window browsing; confirmations and gestures do not. */
-export const canvasBlocked = () => ownership.blockingOverlay || ownership.gesture;
+export const canvasBlocked = () => blockingOverlay() || ownership.gesture;
 /** Changes on every ownership transition, so scenes can drop stale held-key state. */
 export const ownershipEpoch = () => epoch;
 export function onOwnershipChange(listener: () => void) {

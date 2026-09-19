@@ -1,3 +1,4 @@
+import { initializeInventory } from '../../src/domain/inventory';
 import { talentSkill } from '../../src/domain/catalog';
 import { it, expect } from 'vitest';
 import { produce } from 'immer';
@@ -106,8 +107,8 @@ it('transactions reject insufficient funds, unknown items and equipped bank depo
     s = run(s, { type: 'BUY', shop: 'General', kind: 'armor' });
     const armor = active(s)!.inventory.find((i) => i.kind === 'armor')!;
     s = run(s, { type: 'EQUIP', id: armor.id });
-    expect(active(s)!.armor).toBe(armor.id);
-    s = run(s, { type: 'EQUIP', id: armor.id });
+    expect(active(s)!.equipment.body).toBe(armor.id);
+    s = run(s, { type: 'UNEQUIP', id: armor.id });
     s = run(s, { type: 'SELL', id: armor.id });
     expect(active(s)!.inventory.some((i) => i.kind === 'armor')).toBe(false);
     s = edit(s, (s) => {
@@ -118,7 +119,13 @@ it('transactions reject insufficient funds, unknown items and equipped bank depo
     expect(() => run(s, { type: 'HEAL' })).toThrow();
     expect(() => run(s, { type: 'REPAIR', id: 'aster-weapon' })).toThrow();
     const giant = fixture('Giant');
-    expect(() => run(giant, { type: 'BUY', shop: 'Blacksmith', kind: 'bow' })).toThrow();
+    const ownsBow = run(giant, { type: 'BUY', shop: 'Blacksmith', kind: 'bow' });
+    expect(() =>
+        run(ownsBow, {
+            type: 'EQUIP',
+            id: active(ownsBow)!.inventory.find((i) => i.kind === 'bow')!.id,
+        }),
+    ).toThrow('Requires');
     expect(active(fixture('Elf'))!.inventory[0].kind).toBe('mace');
 });
 it('stack limits fail atomically and banks preserve item quantities', () => {
@@ -133,12 +140,13 @@ it('stack limits fail atomically and banks preserve item quantities', () => {
     s = run(s, { type: 'BANK_ITEM', id: active(s)!.bank[0].id, deposit: false });
     expect(active(s)!.inventory.find((i) => i.kind === 'hp')!.count).toBe(3);
     s = edit(s, (s) => {
-        s.data.characters[0].inventory = Array.from({ length: 30 }, (_, i) => ({
+        s.data.characters[0].inventory = Array.from({ length: 60 }, (_, i) => ({
             id: String(i),
-            kind: 'sword',
-            count: 1,
-            durability: 20,
+            kind: 'gem',
+            count: 99,
         }));
+        s.data.characters[0].equipment.main = null;
+        initializeInventory(s.data.characters[0]);
     });
     const original = s;
     expect(() => run(s, { type: 'BUY', shop: 'Grocery', kind: 'bread' })).toThrow('space');
@@ -188,7 +196,7 @@ it('combat guards, recovery, defeat and unarmed or broken-weapon damage', () => 
     });
     expect(attackDamage(active(broken)!, enemy, 'normal', [1, 1, 1, 1, 1])).toBeLessThan(damage);
     const unarmed = edit(s, (s) => {
-        s.data.characters[0].weapon = null;
+        s.data.characters[0].equipment.main = null;
     });
     expect(attackDamage(active(unarmed)!, enemy, 'normal', [1, 1, 1, 1, 1])).toBeGreaterThan(0);
     expect(() => attackDamage(c, enemy, 'missing', [1, 1, 1, 1, 1])).toThrow();

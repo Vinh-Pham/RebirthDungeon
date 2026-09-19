@@ -31,7 +31,7 @@ export function MenuContent({
             <div className="mt-2 space-y-2">
                 <span className="text-xs text-muted">Coming Later</span>
                 <div className="flex flex-wrap gap-2">
-                    {['Talent', 'Quests', 'Pets'].map((name) => (
+                    {['Talent', 'Pets'].map((name) => (
                         <Button key={name} variant="secondary" isDisabled>
                             {name}
                         </Button>
