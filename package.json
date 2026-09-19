@@ -35,7 +35,7 @@
   },
   "dependencies": {
     "@dnd-kit/react": "^0.5.0",
-    "@heroui-pro/react": "1.0.0-beta.9",
+    "@heroui-pro/react": "1.0.0-beta.10",
     "@heroui/react": "^3.2.6",
     "@heroui/styles": "^3.2.6",
     "@react-aria/interactions": "^3.28.1",
