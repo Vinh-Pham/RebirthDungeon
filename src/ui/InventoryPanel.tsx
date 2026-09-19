@@ -1,3 +1,5 @@
+import { HoverCard } from '@heroui-pro/react/hover-card';
+import { ItemDetails } from './ItemDetails';
 import { InventorySlotIcon } from './InventorySlotIcon';
 import { ContextMenu } from '@heroui-pro/react/context-menu';
 import { AlertDialog, Button, Input, Label, TextField } from '@heroui/react';
@@ -49,6 +51,8 @@ const inventorySensors = [
 type Action = { label: string; reason?: string; run: () => void };
 function ItemTile({
     item,
+    character,
+    suppressHover,
     style,
     disabled,
     selected,
@@ -57,6 +61,8 @@ function ItemTile({
     onGrab,
 }: {
     item: Immutable<Item>;
+    character: Immutable<Character>;
+    suppressHover: boolean;
     style?: CSSProperties;
     disabled: boolean;
     selected: boolean;
@@ -67,14 +73,25 @@ function ItemTile({
     const { ref, isDragging } = useDraggable({ id: item.id, disabled, data: { kind: item.kind } });
     const def = items[item.kind];
     const [menuOpen, setMenuOpen] = useState(false);
+    const [hoverOpen, setHoverOpen] = useState(false);
+    const showHover = hoverOpen && !menuOpen && !isDragging && !suppressHover;
     return (
         <div
             style={style}
             className="inventory-item-wrap"
             data-item-id={item.id}
             data-dragging={isDragging || undefined}
-            onPointerDownCapture={onGrab}
+            onPointerDownCapture={(event) => {
+                setHoverOpen(false);
+                onGrab(event);
+            }}
             onKeyDownCapture={(event) => {
+                if (!menuOpen && hoverOpen && event.key === 'Escape') {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setHoverOpen(false);
+                    return;
+                }
                 if (menuOpen && event.key === 'Escape') {
                     event.preventDefault();
                     event.stopPropagation();
@@ -96,24 +113,47 @@ function ItemTile({
         >
             <ContextMenu open={menuOpen} onOpenChange={setMenuOpen}>
                 <ContextMenu.Trigger tabIndex={-1} className="inventory-menu-trigger">
-                    <Button
-                        ref={ref}
-                        className="inventory-tile"
-                        variant="ghost"
-                        aria-label={`${def.name} ×${item.count}`}
-                        aria-pressed={selected}
-                        onPress={onSelect}
+                    <HoverCard
+                        openDelay={450}
+                        closeDelay={150}
+                        open={showHover}
+                        onOpenChange={setHoverOpen}
+                        isDisabled={menuOpen || isDragging || suppressHover}
                     >
-                        <span aria-hidden="true" className="inventory-item-icon">
-                            {def.type === 'gear' && def.slots ? (
-                                <InventorySlotIcon slot={def.slots[0]} />
-                            ) : (
-                                def.icon
-                            )}
-                        </span>
-                        <span className="inventory-item-name">{def.name}</span>
-                        {item.count > 1 && <span className="inventory-quantity">{item.count}</span>}
-                    </Button>
+                        <HoverCard.Trigger className="inventory-hover-trigger">
+                            <Button
+                                ref={ref}
+                                className="inventory-tile"
+                                variant="ghost"
+                                aria-label={`${def.name} ×${item.count}`}
+                                aria-pressed={selected}
+                                onPress={onSelect}
+                            >
+                                <span aria-hidden="true" className="inventory-item-icon">
+                                    {def.type === 'gear' && def.slots ? (
+                                        <InventorySlotIcon slot={def.slots[0]} />
+                                    ) : (
+                                        def.icon
+                                    )}
+                                </span>
+                                <span className="inventory-item-name">{def.name}</span>
+                                {item.count > 1 && (
+                                    <span className="inventory-quantity">{item.count}</span>
+                                )}
+                            </Button>
+                        </HoverCard.Trigger>
+                        {/* Unmount immediately: an exiting popover can lose its dragged anchor. */}
+                        {showHover && (
+                            <HoverCard.Content
+                                aria-label={`${def.name} details`}
+                                placement="top"
+                                isNonModal
+                                className="dark inventory-hover-card"
+                            >
+                                <ItemDetails item={item} character={character} />
+                            </HoverCard.Content>
+                        )}
+                    </HoverCard>
                 </ContextMenu.Trigger>
                 <ContextMenu.Popover isNonModal className="dark inventory-context-menu">
                     <ContextMenu.Menu autoFocus="first" aria-label={`${def.name} actions`}>
@@ -445,6 +485,8 @@ export function InventoryPanel({
             <ItemTile
                 key={item.id}
                 item={item}
+                character={c}
+                suppressHover={!!dragging || !!moving || dropOpen}
                 selected={selected === item.id}
                 disabled={
                     disabled ||
@@ -649,38 +691,7 @@ export function InventoryPanel({
             )}
             {selectedItem && (
                 <section className="inventory-details" aria-label="Item details">
-                    <h3>{items[selectedItem.kind].name}</h3>
-                    <p>
-                        {footprint(selectedItem.kind).width} × {footprint(selectedItem.kind).height}{' '}
-                        cells · Quantity {selectedItem.count}
-                        {selectedItem.durability !== undefined
-                            ? ` · Durability ${selectedItem.durability}/20`
-                            : ''}
-                    </p>
-                    <p>{items[selectedItem.kind].description}</p>
-                    <p>
-                        {items[selectedItem.kind].defense
-                            ? `+${items[selectedItem.kind].defense} Defense. `
-                            : ''}
-                        {items[selectedItem.kind].magicDefense
-                            ? `+${items[selectedItem.kind].magicDefense} Magic Defense. `
-                            : ''}
-                        {items[selectedItem.kind].power
-                            ? `${items[selectedItem.kind].power} Power. `
-                            : ''}
-                        {items[selectedItem.kind].modifiers
-                            ?.map((m) => `${(m.flat ?? 0) >= 0 ? '+' : ''}${m.flat ?? 0} ${m.stat}`)
-                            .join(', ')}
-                    </p>
-                    {items[selectedItem.kind].slots && (
-                        <p>
-                            Fits:{' '}
-                            {items[selectedItem.kind]
-                                .slots!.map((slot) => slotLabels[slot])
-                                .join(', ')}
-                            . Races: {items[selectedItem.kind].races?.join(', ') ?? 'All'}.
-                        </p>
-                    )}
+                    <ItemDetails item={selectedItem} character={c} />
                     <div className="inventory-actions">
                         {actionsFor(selectedItem).map((action) => (
                             <span key={action.label}>

@@ -182,3 +182,67 @@ test.describe('touch inventory', () => {
         await page.screenshot({ path: `test-results/inventory-touch.png`, animations: 'disabled' });
     });
 });
+
+test('inventory hover cards show weapon and consumable details without blocking item actions', async ({
+    page,
+}) => {
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await seed(page);
+    const sword = page.getByRole('button', { name: 'Steel sword ×1', exact: true });
+    await sword.hover();
+    const details = page.getByRole('dialog', { name: 'Steel sword details', exact: true });
+    await expect(details).toBeVisible();
+    await expect(details.getByRole('heading', { name: 'Steel sword', exact: true })).toBeVisible();
+    await expect(details).toContainText('Base weapon power15');
+    await expect(details).toContainText('Critical rate (character)0%');
+    await expect(details).toContainText('Durability20 / 20');
+    await expect(details).toContainText('Sell value40 gold each');
+    await page.screenshot({ path: `test-results/inventory-hover-${test.info().project.name}.png` });
+    await page.keyboard.press('Escape');
+    await expect(details).toHaveCount(0);
+    await expect(page.getByRole('dialog', { name: 'Your belongings' })).toBeVisible();
+    await sword.click({ button: 'right' });
+    await expect(page.getByRole('menu')).toBeVisible();
+    await expect(details).toHaveCount(0);
+    await page.keyboard.press('Escape');
+    await page.setViewportSize({ width: 320, height: 900 });
+    const potion = page.getByRole('button', { name: 'Health potion ×3', exact: true });
+    await potion.scrollIntoViewIfNeeded();
+    await potion.focus();
+    const potionDetails = page.getByRole('dialog', { name: 'Health potion details', exact: true });
+    await expect(potionDetails).toBeVisible();
+    await expect(potionDetails).toContainText('Restores30 HP');
+    const box = await potionDetails.boundingBox();
+    expect(box!.x).toBeGreaterThanOrEqual(0);
+    expect(box!.x + box!.width).toBeLessThanOrEqual(320);
+    await page.screenshot({
+        path: `test-results/inventory-hover-mobile-${test.info().project.name}.png`,
+    });
+});
+
+test('dragging removes an open inventory hover card until the drag ends', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await seed(page);
+    const sword = page.getByRole('button', { name: 'Steel sword ×1', exact: true });
+    await sword.hover();
+    await expect(
+        page.getByRole('dialog', { name: 'Steel sword details', exact: true }),
+    ).toBeVisible();
+    const from = (await sword.boundingBox())!;
+    await page.mouse.down();
+    expect(await page.locator('[data-slot="hover-card-content"]').count()).toBe(0);
+    await page.mouse.move(from.x + from.width + 20, from.y + 20, { steps: 8 });
+    await expect(page.locator('[data-item-id][data-dragging]')).toHaveCount(1);
+    await expect(page.locator('[data-slot="hover-card-content"]')).toHaveCount(0);
+    // Stay over the grid beyond the hover delay to catch focus/timer-driven reopening.
+    await page.waitForTimeout(700);
+    await expect(page.locator('[data-slot="hover-card-content"]')).toHaveCount(0);
+    await page.keyboard.press('Escape');
+    await page.mouse.up();
+    await expect(page.locator('[data-item-id][data-dragging]')).toHaveCount(0);
+    await page.mouse.move(0, 0);
+    await sword.hover();
+    await expect(
+        page.getByRole('dialog', { name: 'Steel sword details', exact: true }),
+    ).toBeVisible();
+});

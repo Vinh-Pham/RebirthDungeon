@@ -127,7 +127,6 @@ export function snapshotAction(
         (e) => e.hp > 0 && (s.target === 'all' || e.id === target),
     );
     if (s.target !== 'self' && !enemies.length) throw new Error('Choose a living enemy.');
-    const critical = rankIndex(c, 'critical');
     return {
         id: `${c.run?.id}:${c.battle!.room}:${c.battle!.turn}`,
         combatVersion: 2,
@@ -149,12 +148,19 @@ export function snapshotAction(
                               ? enemyStats(e).magicProtection
                               : enemyStats(e).protection,
                       })),
+        ...criticalStats(c),
+        costs: actionCosts(c, id, rank),
+    };
+}
+/** Shared character critical values, including the frozen run skill ranks. */
+export function criticalStats(c: Immutable<Character>) {
+    const critical = rankIndex(c, 'critical');
+    return {
         criticalChance: critical >= 0 ? 1000 : 0,
         criticalBonus:
             critical >= 0
                 ? wikiValue(skills.critical.wiki, 'Additional Damage', critical, c.race) / 100
                 : 0,
-        costs: actionCosts(c, id, rank),
     };
 }
 export function train(c: Character, id: string, objective: string, amount = 1) {

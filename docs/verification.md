@@ -6,6 +6,19 @@ Browser tests use real input and inspect a read-only test-mode snapshot. Chromiu
 
 Local Firefox launch currently fails with “Could not find profile folder” before navigation, including when using an explicitly created profile directory. This is a host/browser-launch limitation; the Firefox project remains enabled in CI. Do not report Firefox as verified until that launch succeeds.
 
+## Inventory hover dismissal while dragging — September 19, 2026 UTC
+
+- Reproduced the old behavior with an immediate pointer-down assertion: the closed card remained mounted during its exit. Hover content now unmounts immediately when closed or suppressed, preventing an exiting card from repositioning as its item moves.
+- The new regression check verifies immediate removal, absence throughout a held drag, and hover reopening after cancellation. All ten inventory checks passed across Chromium and WebKit. Five focused React tests, lint, TypeScript, build and whitespace checks passed.
+- The previously recorded ResizeObserver notification still occurs in the separate hover-layout scenario. Firefox and full coverage were not rerun for this focused fix.
+
+## Inventory hover cards — September 19, 2026 UTC
+
+- HeroUI Pro HoverCard usage was verified against HeroUI MCP documentation. Cards show centered names, descriptions and catalog-backed details. Weapon critical values are explicitly character/skill values, shared with combat rather than invented per-weapon stats. Selected items expose the same details for touch users.
+- Lint, TypeScript, all 139 unit/React tests, coverage gates, production build, formatting and whitespace checks passed. Coverage: 96.28% statements, 93.66% branches, 97.83% functions and 97.75% lines.
+- All eight inventory browser checks passed across Chromium and WebKit, covering dragging, equipment, use/discard, keyboard actions, touch at enlarged HUD scale, hover contents, Escape/menu precedence and 320px card bounds. Desktop and narrow-screen captures were visually inspected.
+- The hover scenario logs `ResizeObserver loop completed with undelivered notifications` in both browsers. Its assertions pass and no visible layout failure remained; the notification's underlying cause is unresolved. Firefox was not rerun; its previously recorded launch limitation is not a fresh result for this change.
+
 ## Shared NPC shop tabs — September 19, 2026 UTC
 
 - Every catalog-backed shop uses the same HeroUI Shop/Quests tabs, verified against HeroUI MCP documentation. Empty quest tabs show an explicit message. Shop items use original category SVG illustrations and the existing resource-potion art.

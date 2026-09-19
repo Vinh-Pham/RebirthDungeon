@@ -257,7 +257,7 @@ export function WindowProvider({ children }: { children: ReactNode }) {
         const ownsTarget = (target: EventTarget | null) =>
             !!(target instanceof Element) &&
             !!target.closest(
-                '[data-wm-window], .game-hud, .game-modal, [role="listbox"], [role="menu"], [role="tooltip"]',
+                '[data-wm-window], .game-hud, .game-modal, [role="listbox"], [role="menu"], [role="tooltip"], [data-slot="hover-card-content"]',
             );
         const pointerDown = (event: PointerEvent) => setUiFocus(ownsTarget(event.target));
         const focusIn = (event: FocusEvent) => setUiFocus(ownsTarget(event.target));
@@ -316,7 +316,12 @@ export function WindowProvider({ children }: { children: ReactNode }) {
             }
             if (blockingOverlay()) return; // retained confirmations own Escape
             // An owned popup (listbox/menu) dismisses itself first.
-            if (document.querySelector('[role="listbox"], [role="menu"]')) return;
+            if (
+                document.querySelector(
+                    '[role="listbox"], [role="menu"], [data-slot="hover-card-content"]',
+                )
+            )
+                return;
             if (!focusedId || !wm.get(focusedId)) return;
             // A gesture owns the pointer; never close its window underneath it.
             if (document.querySelector('[data-wm-dragging], [data-wm-resizing]')) {
