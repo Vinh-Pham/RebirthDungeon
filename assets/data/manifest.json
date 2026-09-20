@@ -1,7 +1,7 @@
 {
-  "schemaVersion": 2,
-  "contentVersion": 3,
-  "rulesVersion": 2,
+  "schemaVersion": 3,
+  "contentVersion": 4,
+  "rulesVersion": 3,
   "rules": "starter.json",
   "visuals": "visuals.json"
 }

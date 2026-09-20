@@ -8,7 +8,8 @@ import cloud.vinh.rebirthdungeon.game.turns.SchedulerState
 data class ActorState(val id: EntityId, val definition: ContentId, val player: Boolean, val hp: Int, val maxHp: Int)
 class BattleRestore(val runId: String, val seed: Long, val version: ContentVersion, val nextEntityId: Long,
     val commandCount: Long, val turnCount: Long, val eventCount: Long, actors: List<ActorState>,
-    val scheduler: SchedulerState, random: Map<RandomStream, RandomState>, val combat: CombatRestore) {
+    val scheduler: SchedulerState, random: Map<RandomStream, RandomState>, val combat: CombatRestore, history: List<OrderedEvent> = emptyList(), val historyTruncated: Boolean = false) {
+    val history = frozenList(history)
     val actors = frozenList(actors.sortedBy { it.id.value }); val random = frozenMap(random)
 }
 class BattleObservation(val runId: String, val commandCount: Long, val turnCount: Long,

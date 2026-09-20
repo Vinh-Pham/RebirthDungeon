@@ -39,7 +39,7 @@ class JacksonContentRepository(private val source: ContentSource) : ContentRepos
     }
     private fun resources(value: ResourcesDto?, path: String): ResourceVector {
         val d = required(value, path)
-        return ResourceVector(number(d.hp, "$path.hp"), number(d.mp, "$path.mp"), number(d.sp, "$path.sp"))
+        return ResourceVector(number(d.hp, "$path.hp"), number(d.mp, "$path.mp"), number(d.spTenths, "$path.spTenths"))
     }
     private fun path(value: String?, field: String): String = text(value, field).also {
         checkAt(it.matches(Regex("[a-zA-Z0-9_-]+(/[a-zA-Z0-9_-]+)*[.]json")), field, "expected relative JSON path without traversal")
@@ -59,13 +59,13 @@ class JacksonContentRepository(private val source: ContentSource) : ContentRepos
     override fun load(): ContentBundle {
         val manifest = read("manifest.json", ManifestDto::class.java)
         val version = ContentVersion(
-            number(manifest.schemaVersion, "manifest.json.schemaVersion", 2, 2),
-            number(manifest.contentVersion, "manifest.json.contentVersion", 1),
-            number(manifest.rulesVersion, "manifest.json.rulesVersion", 2, 2)
+            number(manifest.schemaVersion, "manifest.json.schemaVersion", 3, 3),
+            number(manifest.contentVersion, "manifest.json.contentVersion", 4, 4),
+            number(manifest.rulesVersion, "manifest.json.rulesVersion", 3, 3)
         )
         val file = path(manifest.rules, "manifest.json.rules")
         val d = read(file, CatalogDto::class.java)
-        number(d.schemaVersion, "$file.schemaVersion", 2, 2)
+        number(d.schemaVersion, "$file.schemaVersion", 3, 3)
         // Global uniqueness prevents references from accidentally changing category.
         val seen = HashSet<ContentId>()
         fun unique(raw: String?, p: String): ContentId = id(raw, "$p.id").also {
@@ -80,28 +80,18 @@ class JacksonContentRepository(private val source: ContentSource) : ContentRepos
                 required(s.terms, "$p.terms").mapIndexed { i, t -> StatTerm(id(t.stat, "$p.terms[$i].stat"),
                     number(t.numerator, "$p.terms[$i].numerator"), number(t.denominator, "$p.terms[$i].denominator", 1)) })
         }
-        val scoring = convert(d.scoring, "scoring") { s, p ->
-            val multipliers = rows(s.multipliers, "$p.multipliers").mapIndexed { i, m ->
-                required(m.combination, "$p.multipliers[$i].combination") to StatRatio(
-                    number(m.numerator, "$p.multipliers[$i].numerator", 1), number(m.denominator, "$p.multipliers[$i].denominator", 1))
-            }
-            checkAt(multipliers.size == 8 && multipliers.map { it.first }.toSet() == Combination.entries.toSet(), "$p.multipliers", "each of the eight combinations must occur exactly once")
-            DiceScoring(unique(s.id, p), number(s.diceCount, "$p.diceCount", 5, 5), number(s.rerolls, "$p.rerolls", 2, 2), multipliers.toMap())
-        }
         val skills = convert(d.skills, "skills") { s, p ->
             val ranks = rows(s.ranks, "$p.ranks").mapIndexed { i, r ->
                 val rp = "$p.ranks[$i]"
-                val weights = required(r.weights, "$rp.weights")
-                checkAt(weights.size == 6 && weights.all { it >= 0 } && weights.sumOf { it.toLong() } in 1..Int.MAX_VALUE.toLong(), "$rp.weights", "expected six nonnegative weights with positive total <= Int.MAX_VALUE")
                 val cost = resources(r.cost, "$rp.cost")
-                checkAt(cost.hp + cost.mp + cost.sp > 0, "$rp.cost", "active skills require a positive HP/MP/SP cost")
+                checkAt(cost.hp + cost.mp + cost.spTenths > 0, "$rp.cost", "active skills require a positive HP/MP/SP cost")
                 SkillRank(text(r.rank, "$rp.rank"), number(r.order, "$rp.order", i, i), number(r.basePower, "$rp.basePower"),
-                    number(r.pipScale, "$rp.pipScale"), cost, weights)
+                    cost)
             }
             checkAt(ranks.map { it.rank }.distinct().size == ranks.size, "$p.ranks", "duplicate rank")
             val cap = text(s.prototypeCap, "$p.prototypeCap")
             checkAt(cap == ranks.last().rank, "$p.prototypeCap", "must equal last authored rank")
-            SkillDefinition(unique(s.id, p), text(s.name, "$p.name"), cap, id(s.scoring, "$p.scoring"), id(s.attackStat, "$p.attackStat"), ranks,
+            SkillDefinition(unique(s.id, p), text(s.name, "$p.name"), cap, id(s.attackStat, "$p.attackStat"), ranks,
                 required(s.effect, "$p.effect"), required(s.target, "$p.target"), text(s.requiredEquipment, "$p.requiredEquipment").also {
                     checkAt(it in listOf("none", "sword"), "$p.requiredEquipment", "unsupported equipment")
                 }, number(s.cooldown, "$p.cooldown", 0, 1000),
@@ -111,7 +101,7 @@ class JacksonContentRepository(private val source: ContentSource) : ContentRepos
             val pools = resources(a.resources, "$p.resources")
             checkAt(pools.hp > 0, "$p.resources.hp", "living actor requires positive HP")
             val baseline = required(a.stats, "$p.stats").map { (key, value) -> id(key, "$p.stats.$key") to number(value, "$p.stats.$key") }.toMap()
-            ActorDefinition(unique(a.id, p), required(a.kind, "$p.kind"), pools, id(a.skill, "$p.skill"), text(a.rank, "$p.rank"), baseline)
+            ActorDefinition(unique(a.id, p), required(a.kind, "$p.kind"), pools, id(a.skill, "$p.skill"), text(a.rank, "$p.rank"), baseline, number(a.speed, "$p.speed", 1, 10000), required(a.items, "$p.items").map { (key, value) -> id(key, "$p.items.$key") to number(value, "$p.items.$key", 0, 999) }.toMap())
         }
         checkAt(actors.any { it.kind == ActorKind.HERO } && actors.any { it.kind == ActorKind.ENEMY }, "$file.actors", "requires hero and enemy")
         val statuses = convert(d.statuses, "statuses") { s, p ->
@@ -121,7 +111,7 @@ class JacksonContentRepository(private val source: ContentSource) : ContentRepos
             number(s.periodicDamage, "$p.periodicDamage"), resources(s.recovery, "$p.recovery")) }
         val potions = convert(d.potions, "potions") { s, p ->
             val recovery = resources(s.recovery, "$p.recovery")
-            checkAt(recovery.hp + recovery.mp + recovery.sp > 0 || s.status != null, p, "potion must have an effect")
+            checkAt(recovery.hp + recovery.mp + recovery.spTenths > 0 || s.status != null, p, "potion must have an effect")
             PotionDefinition(unique(s.id, p), text(s.name, "$p.name"), recovery, s.status?.let { id(it, "$p.status") })
         }
         val encounters = convert(d.encounters, "encounters") { e, p -> EncounterDefinition(unique(e.id, p), id(e.enemy, "$p.enemy"), id(e.loot, "$p.loot")) }
@@ -137,7 +127,7 @@ class JacksonContentRepository(private val source: ContentSource) : ContentRepos
                 thresholds.zipWithNext().all { (a, b) -> a < b }, "$p.thresholds", "cumulative XP must start at zero and strictly increase (at least two levels)")
             ProgressionCurve(unique(c.id, p), thresholds)
         }
-        val catalog = ContentCatalog(version, actors, scoring, skills, stats, statuses, potions, encounters, loot, progression)
+        val catalog = ContentCatalog(version, actors, skills, stats, statuses, potions, encounters, loot, progression)
         validateReferences(catalog, file)
         checkAt(catalog.actors[ContentId("actor.hero")]?.kind == ActorKind.HERO, "$file.actors", "missing prototype hero actor.hero")
         val visualFile = path(manifest.visuals, "manifest.json.visuals")
@@ -168,11 +158,10 @@ class JacksonContentRepository(private val source: ContentSource) : ContentRepos
                 "defense", "magic_defense", "protection", "magic_protection", "regen_hp", "regen_mp", "regen_sp").forEach {
                 ref(ContentId("stat.$it"), c.stats.keys, "stats.required")
             }
-            listOf("sword", "fortify", "focus", "spark", "blood").forEach { ref(ContentId("skill.$it"), c.skills.keys, "skills.required") }
+            listOf("normal", "defend", "sword", "fortify", "focus", "spark", "blood").forEach { ref(ContentId("skill.$it"), c.skills.keys, "skills.required") }
             checkAt(c.stats.getValue(ContentId("stat.max_hp")).minimum >= 1, "$file.stats.max_hp.minimum", "HP capacity must be positive")
         }
         c.skills.values.forEach { s ->
-            ref(s.scoring, c.scoring.keys, "skills[${s.id.value}].scoring")
             ref(s.attackStat, c.stats.keys, "skills[${s.id.value}].attackStat")
             s.status?.let { ref(it, c.statuses.keys, "skills[${s.id.value}].status") }
             checkAt(if (s.effect == SkillEffect.DAMAGE) s.target == TargetKind.HOSTILE
@@ -186,9 +175,11 @@ class JacksonContentRepository(private val source: ContentSource) : ContentRepos
             checkAt(c.skills.getValue(a.skill).ranks.any { it.rank == a.rank }, "$file.$p.rank", "unknown skill rank ${a.rank}")
             if (c.version.content >= 2 && a.kind == ActorKind.ENEMY) {
                 val skill = c.skills.getValue(a.skill)
-                checkAt(skill.effect == SkillEffect.DAMAGE && skill.requiredEquipment == "none" && skill.ranks.all { it.pipScale == 0 },
-                    "$file.$p.skill", "starter enemy requires an equipment-free damage skill without dice scaling")
+                checkAt(skill.effect == SkillEffect.DAMAGE && skill.requiredEquipment == "none",
+                    "$file.$p.skill", "starter enemy requires an equipment-free damage skill with direct damage")
             }
+            checkAt(a.kind != ActorKind.HERO || a.items.isEmpty(), "$file.$p.items", "hero supplies belong to session")
+            a.items.keys.forEach { ref(it, c.potions.keys, "$p.items") }
             a.stats.forEach { (id, value) ->
                 ref(id, c.stats.keys, "$p.stats")
                 val stat = c.stats.getValue(id)

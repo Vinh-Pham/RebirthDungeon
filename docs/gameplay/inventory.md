@@ -1,20 +1,73 @@
+> **Kotlin runtime scope (2026-09-19):** [Battle](battle.md) and [Kotlin architecture](../kotlin-architecture.md) supersede dice/reservation/full-action-potion rules and browser implementation claims below. This file retains broader design/reference material. The current slice has exact-tenths SP, one optional item before a main action, prototype skills and bounded supplies; full progression, equipment and browser UI systems are not implemented here. See [the implementation tracker](../turn-based-plan.md).
+
 # Rebirth Dungeon: Inventory and Equipment
+
+## Current implementation contract — September 19, 2026 UTC
+
+This TypeScript/React contract supersedes the historical proposals below for the current inventory slice. It includes robes and does not depend on the historical Godot or Phase 8 designs.
+
+### Window and actions
+
+The existing inventory window shows equipment alongside a 6-column × 10-row backpack, in the current game theme. Narrow windows stack the sections. Equipment is arranged as accessory 1/headgear/accessory 2, right hand/body/left hand, and gloves/boots/robe. Gold remains separate. Unsupported cosmetic, subscription and currency tabs are omitted.
+
+Each item or stack occupies a fixed rectangular footprint. Dragging preserves the grabbed-cell offset and previews valid/invalid destinations. Drops onto occupied cells do not swap or merge stacks. Select an item and choose Move, Equip, or Unequip to use keyboard/touch destination selection instead. Escape cancels selection. Right-click or long-press opens HeroUI Pro ContextMenu; usable potions, food, books and pages expose Use, with unavailable actions explained. Item details show size, quantity, durability, bonuses, slot and race restrictions.
+
+Hovering or keyboard-focusing an inventory/equipment item opens a HeroUI Pro HoverCard with its centered name, description, footprint, quantity, value, durability, bonuses, effects and applicable restrictions. Weapons show base power and the character’s Critical Hit chance/bonus using the same calculation as combat; the game does not define separate weapon critical rates or fixed final-hit damage. Selection exposes the same details for touch users. Cards yield to dragging, context menus and discard dialogs, and Escape dismisses the card before the inventory window. Cards fit narrow screens and scroll when necessary.
+
+Every item has Drop; equipped items must first be unequipped. HeroUI AlertDialog requests a quantity (default one) and explicit Discard confirmation. Cancel/Escape changes nothing; a failed write leaves the dialog and committed inventory intact. Discard destroys items, without a world pickup or refund.
+
+Move and Drop are available in town/exploration and during the player’s action-selection turn without advancing turns or RNG. Equipment changes and recovery withdrawals require town. Enemy turns, reward phases, writer-lock read-only state and busy writes block mutations. Consumables share one persisted item allowance between Inventory and the battle menu, followed by a main action. Failed use preserves the allowance; using an item does not tick cooldowns or effects.
+
+### Capacity and equipment
+
+| Item                                         | Footprint |
+| -------------------------------------------- | --------- |
+| Potions, food, materials, pages, accessories | 1 × 1     |
+| Weapons except dual guns                     | 1 × 3     |
+| Dual guns, shields, books, collection books  | 2 × 2     |
+| Body armor, robes                            | 2 × 3     |
+| Headgear, gloves                             | 2 × 1     |
+| Boots                                        | 2 × 2     |
+
+Equipment is nonstackable; existing stackable items retain a limit of 99. Incoming items fill compatible stacks before deterministic left-to-right, top-to-bottom placement. Placement never rearranges other items. Purchases, bank withdrawals, assembly and claims validate complete transfers before spending inputs or marking grants claimed. Quest rewards retain their existing saved overflow behavior; the bank retains its 60-row interface.
+
+Slot and race eligibility are catalog metadata and are checked by shared domain functions for both preview and commitment. Giants cannot equip bows; ownership and purchase are allowed with a restriction label. Shields require one-handed melee main equipment; dual wielding requires distinct paired swords. Changing or unequipping a main weapon returns incompatible off-hand gear to the backpack atomically. Replacement gear tries the vacated source area first, then first-fit; insufficient space rejects the whole exchange. Robes are independent from body armor/masteries.
+
+General sells Cloth cap, Cloth gloves and Traveler boots (25g, +1 Defense each); Traveler robe (40g, +1 Magic Defense); Copper charm (30g, +1 Luck); Woodland charm (30g, +1 Dexterity, Elf-only). Charms fit either accessory slot; two distinct Copper charms may be worn. These values and footprints are authored game adaptations, not verified wiki values. Equipment contributes once; raising resource maxima does not heal.
+
+### Ownership and compatibility
+
+Schema 4 stores item records once in `inventory`, backpack anchors in `placements`, nine assignments in `equipment`, and a withdraw-only `inventoryRecovery` list. Equipped items have no backpack anchor. Run baselines freeze all nine assignments and stat sources. Existing version 1/2/3 saves migrate through their original upgrades, retain legacy backups, and preserve IDs, quantities, durability, pending actions, run sources and RNG. Old inventories are packed deterministically; items that cannot fit enter migration recovery without becoming usable supplies. Current-version invalid placements are rejected rather than silently repacked or deleted.
+
+All inventory changes use typed commands through XState → Immer → persistence → publication. Save validation rejects overlaps, bounds errors, duplicate ownership, orphaned placements, invalid quantities, race/slot violations and changed run loadouts. RP actors use the same rules with isolated ownership.
+
+Bags, sorting, manual split/merge, locks, cosmetic slots, alternate loadouts, ground drops and new economy/run-retention rules remain deferred. Existing quest overflow is separate from migration recovery.
+
+HeroUI APIs were checked through the HeroUI MCP: [ContextMenu](https://heroui.pro/docs/react/components/context-menu) and [AlertDialog](https://www.heroui.com/docs/react/components/alert-dialog).
+
+---
+
+The following material is retained as historical design/reference, not an instruction to implement additional features.
+
+# Historical inventory proposals
 
 Inventory is a **grid of carried items with different footprints**, expanded through bags and supported by stacking, sorting, and search. Equipment occupies dedicated slots and supplies the character's active item bonuses. Capacity should create choices about what to bring into a dungeon and what loot to keep, while making ownership and item movement clear.
 
 This is a design specification for planned gameplay, based on **Mabinogi**. It complements the [game plan](../game-plan.md), [project phases](../project-phases.md), [stats.md](stats.md), [skills.md](skills.md), [enchants.md](enchants.md), [character.md](character.md), and [battle.md](battle.md). It does not claim inventory is implemented. The rules below are proposed Rebirth Dungeon defaults; final capacity, economy, and defeat/abandonment carry-over remain balance and progression decisions.
 
+The full inventory design begins in **Phase 8**. Before then, [the first playable loop](../free-exploration.md) uses bounded potion counts and a temporary single gold balance; bags and banking below do not apply to that smaller slice.
+
 ## 1. Mabinogi reference
 
-| Reference mechanic | Mabinogi behavior |
-| --- | --- |
-| Basic inventory | Unequipped items occupy a 6-column by 10-row grid. Item footprints vary. |
-| Equipment | Gear has body, hand, and accessory slots. Only the active weapon set supplies its effects. Style equipment primarily changes appearance. |
-| Stacks | Players can divide stacks and gather compatible items together. |
-| Bags | Bags add space, reside in the main inventory, and support sorting tags and pickup priority. |
-| Special storage | The Me tab restricts its contents; VIP and other storage have separate access rules. |
-| Search | Inventory search supports names, categories, size, and favorites. |
-| Overflow | Certain incoming items enter Temporary Inventory when space is unavailable; droppable items fall to the ground after five minutes of logged-in time. |
+| Reference mechanic | Mabinogi behavior                                                                                                                                    |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Basic inventory    | Unequipped items occupy a 6-column by 10-row grid. Item footprints vary.                                                                             |
+| Equipment          | Gear has body, hand, and accessory slots. Only the active weapon set supplies its effects. Style equipment primarily changes appearance.             |
+| Stacks             | Players can divide stacks and gather compatible items together.                                                                                      |
+| Bags               | Bags add space, reside in the main inventory, and support sorting tags and pickup priority.                                                          |
+| Special storage    | The Me tab restricts its contents; VIP and other storage have separate access rules.                                                                 |
+| Search             | Inventory search supports names, categories, size, and favorites.                                                                                    |
+| Overflow           | Certain incoming items enter Temporary Inventory when space is unavailable; droppable items fall to the ground after five minutes of logged-in time. |
 
 Sources: [Inventory and equipment](https://wiki.mabinogiworld.com/view/Inventory#Equipment), [Basic inventory and tabs](https://wiki.mabinogiworld.com/view/Inventory#Tabs), [Bags](https://wiki.mabinogiworld.com/view/Inventory#Bags), [Search](https://wiki.mabinogiworld.com/view/Inventory#Inventory_Search), [Temporary Inventory](https://wiki.mabinogiworld.com/view/Inventory#Temporary_Inventory).
 
@@ -22,13 +75,13 @@ Rebirth Dungeon adopts the grid, item sizes, bags, equipment separation, and org
 
 ## 2. Inventory spaces and ownership
 
-| Space | Proposed role | Gameplay boundary |
-| --- | --- | --- |
-| Backpack | Main 6 × 10 grid for carried items and bag items | Starting dimensions are provisional |
-| Bag contents | Additional grids supplied by bags in the backpack | Accessible carried storage, subject to bag restrictions |
-| Equipment | Items assigned to valid gear slots | Only equipped items contribute equipment effects |
-| Quest record | Nonphysical quest flags, keys, and recorded page progress | Not a general storage grid |
-| Run inventory | The run's carried equipment, supplies, bags, and collected loot | Separate simulation state while the run is active |
+| Space           | Proposed role                                                   | Gameplay boundary                                                |
+| --------------- | --------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Backpack        | Main 6 × 10 grid for carried items and bag items                | Starting dimensions are provisional                              |
+| Bag contents    | Additional grids supplied by bags in the backpack               | Accessible carried storage, subject to bag restrictions          |
+| Equipment       | Items assigned to valid gear slots                              | Only equipped items contribute equipment effects                 |
+| Quest record    | Nonphysical quest flags, keys, and recorded page progress       | Not a general storage grid                                       |
+| Run inventory   | The run's carried equipment, supplies, bags, and collected loot | Separate simulation state while the run is active                |
 | Reward overflow | Saved items awarded at a durable grant boundary that do not fit | Withdraw-only holding area, unavailable as equipment or supplies |
 
 Use hero-owned inventory for the initial offline design, consistent with the proposed hero-owned skills and AP. An item instance has one authoritative location within its ownership context: backpack, one bag, one equipment assignment, pending reward, or a world pickup. A drag cursor and search result are views of an item, never additional locations or ownership copies.
@@ -43,17 +96,17 @@ Each item definition declares a positive integer `width`, `height`, and maximum 
 
 Illustrative dimensions and stack limits, not Mabinogi item data or final balance:
 
-| Item | Grid footprint | Maximum stack |
-| --- | --- | --- |
-| Small potion | 1 × 1 | 20 |
-| Magic powder or mana herb | 1 × 1 | 20 of the same material |
-| Skill page | 1 × 1 | 10 copies of the same page |
-| Enchant scroll | 1 × 2 | 1 |
-| Skill book | 2 × 2 | 1 |
-| One-handed sword | 1 × 3 | 1 |
-| Shield | 2 × 2 | 1 |
-| Body armor | 2 × 3 | 1 |
-| Small bag | 1 × 2 in the backpack | 1; supplies a separate 3 × 4 grid |
+| Item                      | Grid footprint        | Maximum stack                     |
+| ------------------------- | --------------------- | --------------------------------- |
+| Small potion              | 1 × 1                 | 20                                |
+| Magic powder or mana herb | 1 × 1                 | 20 of the same material           |
+| Skill page                | 1 × 1                 | 10 copies of the same page        |
+| Enchant scroll            | 1 × 2                 | 1                                 |
+| Skill book                | 2 × 2                 | 1                                 |
+| One-handed sword          | 1 × 3                 | 1                                 |
+| Shield                    | 2 × 2                 | 1                                 |
+| Body armor                | 2 × 3                 | 1                                 |
+| Small bag                 | 1 × 2 in the backpack | 1; supplies a separate 3 × 4 grid |
 
 Stack quantity does not enlarge its rectangle. Initial item orientation is fixed; rotation and weight/encumbrance are deferred. Equipment is removed from its former grid placement when equipped, so it frees those cells. Unequipping requires a legal destination rectangle, not just an empty equipment slot.
 
@@ -94,15 +147,15 @@ Nonphysical quest records cannot be discarded. Physical quest-critical items fol
 
 ## 6. Equipment and loadout validation
 
-| Slot | Proposed initial rule |
-| --- | --- |
-| Main hand | Compatible one-handed or two-handed weapon |
-| Off hand | Shield or a compatible one-handed weapon; blocked by a two-handed main weapon |
-| Head | One eligible headgear item |
-| Body | One clothing, light-armor, or heavy-armor item with exactly one body category |
-| Hands | One pair of gloves or eligible hand armor |
-| Feet | One pair of boots or eligible footwear |
-| Accessory 1 / 2 | Two separate accessory assignments, subject to authored item restrictions |
+| Slot            | Proposed initial rule                                                         |
+| --------------- | ----------------------------------------------------------------------------- |
+| Main hand       | Compatible one-handed or two-handed weapon                                    |
+| Off hand        | Shield or a compatible one-handed weapon; blocked by a two-handed main weapon |
+| Head            | One eligible headgear item                                                    |
+| Body            | One clothing, light-armor, or heavy-armor item with exactly one body category |
+| Hands           | One pair of gloves or eligible hand armor                                     |
+| Feet            | One pair of boots or eligible footwear                                        |
+| Accessory 1 / 2 | Two separate accessory assignments, subject to authored item restrictions     |
 
 These slots are a proposed subset of the reference. Start with one active weapon set. Robes, cosmetic Style slots, alternate weapon sets, automatic loadout switching, and mastery-based accessory-slot unlocks are deferred. Equipping a visual or inactive-set item must never grant gameplay bonuses if those features are later introduced.
 
@@ -114,19 +167,19 @@ Apply new equipment, remove old contributions, and recompute stats in one transi
 
 ## 7. Inventory actions and simulation time
 
-| Action | Town | During a run |
-| --- | --- | --- |
-| Inspect, search, filter, compare, open bags | No gameplay time | No simulation time |
-| Move within carried grids, split/merge, gather, sort | Validated layout transaction | No initiative cost; changes layout only; unavailable during a locked dice activation |
-| Equip, unequip, change hand configuration | Validated equipment transaction | Deferred in the first battle slice; later a full action before rolling |
-| Use a consumable | Only where its definition permits | When enabled, one full action before rolling under battle.md |
-| Pick up world loot | Not applicable to ordinary town menus | When enabled, one full action from the actor's cell or an adjacent reachable pickup |
-| Read/assemble skill books, enchant, burn, sell | Between-run operations with their own validation | Unavailable |
-| Destroy unwanted items | Explicit quantity/item selection and final destruction confirmation | Unavailable initially; capacity is managed through pickup choices |
+| Action                                               | Town                                                                | During a run                                                                                       |
+| ---------------------------------------------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Inspect, search, filter, compare, open bags          | No gameplay time                                                    | No simulation time                                                                                 |
+| Move within carried grids, split/merge, gather, sort | Validated layout transaction                                        | No battle activation cost; changes layout only; unavailable during a locked dice activation        |
+| Equip, unequip, change hand configuration            | Validated equipment transaction                                     | Unavailable during a run; equipment changes are town-only                                          |
+| Use a consumable                                     | Only where its definition permits                                   | When enabled, one full action before rolling under battle.md                                       |
+| Pick up world loot                                   | Not applicable to ordinary town menus                               | When enabled, a validated exploration interaction at a reachable pickup; no battle activation cost |
+| Read/assemble skill books, enchant, burn, sell       | Between-run operations with their own validation                    | Unavailable                                                                                        |
+| Destroy unwanted items                               | Explicit quantity/item selection and final destruction confirmation | Unavailable initially; capacity is managed through pickup choices                                  |
 
-The proposed pickup rule requires no blocking wall between the actor and an adjacent pickup and uses the same quantity/fit validation as other transfers. Accepted pickup ends one activation; rejected pickup spends no turn. Opening a loot preview is free. Authored automatic quest grants use reward transactions instead of pretending that a menu click is a world pickup.
+Pickup requires reaching the authored interaction point/radius with an unobstructed approach, then validating quantity, ownership and fit in one saved transaction. World pickup is unavailable in the separate battle scene and never ticks combat statuses or regeneration. Opening a loot preview is free. Authored automatic quest grants use reward transactions instead of pretending a menu click is a pickup.
 
-No inventory action may consume items, swap equipment, change a reserved stack, or alter frozen combat inputs between the first dice roll and commit/pass. Reading an item tooltip during that window remains safe. A future drop-to-ground action must define ground persistence, ownership, and its turn cost before becoming available.
+No inventory action may consume items, swap equipment, change a reserved stack, or alter frozen combat inputs between the first dice roll and commit/pass. Reading an item tooltip during that window remains safe. A future drop-to-ground action must define ground persistence, ownership, and its allowed exploration context before becoming available.
 
 Quick-use buttons are references to eligible items in the current context. A run shortcut cannot consume a town potion. Resolve a stack by a stable instance reference, or by a documented deterministic matching rule, and validate again on use. A stale shortcut to an exhausted stack does not create an item or trigger a free action.
 
@@ -150,7 +203,7 @@ Keep origin references on brought item quantities and an operation ledger for co
 
 At victory, defeat, or abandonment, one result transaction reconciles the run under the authored outcome policy: account for spent/destroyed brought items, return or forfeit remaining brought items, grant retained new loot/currency, release reservations, and mark the result committed. Retained quantities cannot include supplies already consumed in the run. Return items through validated placement, using reward overflow for retained items that do not fit. Preserve equipment IDs and rolled values instead of granting replacement copies.
 
-The **exact loss and retention policy remains a Phase 7 decision**. The game must specify each outcome before inventory-backed runs ship; this document does not guarantee that every weapon or loot item survives defeat. Never clear an active run merely because the app closes, and never release its reservations without completing its result or an explicit recovery/migration operation.
+The **exact loss and retention policy remains a Phase 8 decision**. The game must specify each outcome before inventory-backed runs ship; this document does not guarantee that every weapon or loot item survives defeat. Never clear an active run merely because the app closes, and never release its reservations without completing its result or an explicit recovery/migration operation.
 
 Under character.md's proposed rebirth rules, committed inventory and installed enchants remain. Rebirth can change equipment eligibility or enchant conditions; preview those effects. If rebirth makes an equipped item illegal, move it into carried storage or reward overflow atomically and remove its equipment effects. Rebirth does not duplicate possessions or empty pending dungeon rewards into permanent inventory.
 
@@ -187,6 +240,12 @@ Future implementation acceptance checks should cover:
 - Inspection not advancing time, inventory mutations blocked during dice resolution, one turn per enabled pickup/consumable/equipment action, and touch/desktop parity.
 
 Still open: final sizes and stack limits, bag acquisition/capacity progression, legal weapon pairings, equipment values, gold limits, and run loss/carry-over. Shared account banks, trading/mail, paid storage, item weight, rotation, alternate weapon sets, cosmetic slots, durability/repair, auto-looting pets, timed items, and manual ground drops remain outside the first slice.
+
+## Godot inventory integration
+
+**Godot reset: 2026-09-10. Status: planned; not implemented.** ItemDefinition Resources describe type/footprint/effects; runtime item instances store stable IDs, quantities, variants, containers and equipment slots. GDScript placement rules validate full transactions before UI signals confirm them. Control-based inventory views support dragging and a tap-select alternative without owning item state. Phase 8 replaces the temporary gold/potion slice and defines its save transition and complete outcome-retention policy. Inventory cells are storage coordinates, never world navigation cells.
+
+See [Godot architecture](../game-plan.md), [project layout](../directory.md) and [official engine sources](../references.md#godot-engine-sources).
 
 ## Research notes
 

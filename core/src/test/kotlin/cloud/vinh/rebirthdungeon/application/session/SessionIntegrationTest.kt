@@ -36,14 +36,16 @@ class SessionIntegrationTest {
         val enemy = area.objects.single { it.room == room && it.service == Service.ENEMY }
         assertTrue(s.command(MoveTo(enemy.position)))
         repeat(600) { if (s.battle == null) s.step() }
-        assertEquals(SessionMode.BATTLE, s.mode)
+        if (!s.blocked) assertEquals(SessionMode.BATTLE, s.mode)
     }
     private fun send(s: SessionCoordinator, command: RunCommand) { val b = s.battle!!; assertTrue(s.battleCommand(command, b.token, b.observe().commandCount)); s.finishBattleIfReady() }
+    private fun turn(s: SessionCoordinator) = s.battle!!.battleView().turn
+    private fun strike(s: SessionCoordinator) = UseSkillCommand(turn(s), ContentId("skill.spark"), s.battle!!.observe().actors.single { !it.player }.id)
     private fun win(s: SessionCoordinator) {
         var guard = 0
-        while (s.battle != null) {
+        while (s.battle != null && !s.blocked) {
             check(guard++ < 20)
-            send(s, SelectAbilityCommand(ContentId("skill.sword"), s.battle!!.observe().actors.single { !it.player }.id)); send(s, RollDiceCommand); send(s, UseAbilityCommand)
+            send(s, strike(s))
         }
     }
     @Test fun purchaseFailureRetryAndReloadNeverDuplicateGoldOrPotion() {
@@ -56,14 +58,14 @@ class SessionIntegrationTest {
         val resumed = create(storage); assertEquals(1, resumed.count(id)); assertEquals(15, resumed.gold)
         resumed.close(); s.close()
     }
-    @Test fun completeDungeonLoopAndResumeLockedHandPreservesExactlyOneReward() {
+    @Test fun completeDungeonLoopAndResumeTurnPreservesExactlyOneReward() {
         val storage = Storage(); var s = create(storage)
         enter(s); encounter(s, 1)
-        send(s, SelectAbilityCommand(ContentId("skill.sword"), s.battle!!.observe().actors.single { !it.player }.id)); send(s, RollDiceCommand)
-        val hand = s.heroObservation().faces; val rng = s.export().random
+        send(s, strike(s))
+        val savedTurn = turn(s); val rng = s.export().random
         s.close(); s = create(storage)
-        assertEquals(hand, s.heroObservation().faces); assertEquals(rng, s.export().random)
-        send(s, UseAbilityCommand)
+        assertEquals(savedTurn, turn(s)); assertEquals(rng, s.export().random)
+        send(s, strike(s))
         if (s.battle != null) win(s)
         assertEquals(10, s.pendingReward()); assertEquals(20, s.gold)
         val point = s.exploration.position
@@ -73,21 +75,25 @@ class SessionIntegrationTest {
         assertEquals(50, s.gold); assertTrue(s.exploration.area.town)
         s.close(); val restored = create(storage); assertEquals(50, restored.gold); assertEquals(0, restored.pendingReward()); restored.close()
     }
-    @Test fun potionIsAtomicFullActionAndForbiddenAfterRoll() {
-        val storage = Storage(); val s = create(storage); val id = ContentId("potion.health")
-        interact(s, "vendor"); assertTrue(s.buy(id, s.operation)); s.dismiss(); enter(s); encounter(s, 1)
-        send(s, SelectAbilityCommand(ContentId("skill.sword"), s.battle!!.observe().actors.single { !it.player }.id)); send(s, RollDiceCommand)
-        val b = s.battle!!; val faces = s.heroObservation().faces
-        assertFalse(s.battleCommand(DrinkPotionCommand(id), b.token, b.observe().commandCount)); assertEquals(1, s.count(id)); assertEquals(faces, s.heroObservation().faces)
-        send(s, EndTurnCommand)
-        val turns = s.battle!!.observe().turnCount
-        send(s, DrinkPotionCommand(id)); assertEquals(0, s.count(id)); assertTrue(s.battle!!.observe().turnCount > turns)
-        val resumed = create(storage); assertEquals(0, resumed.count(id)); resumed.close(); s.close()
+    @Test fun potionAllowanceAndStockSurviveFailureAndReloadWithoutEndingTurn() {
+        val storage = Storage(); var s = create(storage); val id = ContentId("potion.health")
+        interact(s, "vendor"); assertTrue(s.buy(id, s.operation)); assertTrue(s.buy(id, s.operation)); s.dismiss(); enter(s); encounter(s, 1)
+        val b = s.battle!!
+        assertFalse(s.battleCommand(DrinkPotionCommand(turn(s), id), b.token, b.observe().commandCount)); assertEquals(2, s.count(id))
+        send(s, strike(s)); val before = s.battle!!.observe().turnCount; val t = turn(s)
+        storage.fail = true
+        send(s, DrinkPotionCommand(t, id)); assertTrue(s.blocked); assertEquals(1, s.count(id))
+        assertFalse(s.heroObservation().current.hp == s.heroObservation().maximum.hp)
+        assertFalse(s.retrySave()); storage.fail = false; assertTrue(s.retrySave())
+        assertEquals(before, s.battle!!.observe().turnCount); assertEquals(t, turn(s)); s.close(); s = create(storage)
+        assertEquals(1, s.count(id)); val c = s.battle!!
+        assertFalse(s.battleCommand(DrinkPotionCommand(turn(s), id), c.token, c.observe().commandCount)); assertEquals(1, s.count(id))
+        send(s, strike(s)); s.close()
     }
     @Test fun defeatLosesPendingRewardsAndFreeRecoveryIsAvailable() {
         val storage = Storage(); val s = create(storage); enter(s); encounter(s, 1); win(s); encounter(s, 2)
         var guard = 0
-        while (s.battle != null) { check(guard++ < 50); send(s, EndTurnCommand) }
+        while (s.battle != null && !s.blocked) { check(guard++ < 50); send(s, DefendCommand(turn(s))) }
         assertTrue(s.exploration.area.town); assertEquals(0, s.pendingReward()); assertEquals(20, s.gold); assertEquals(0, s.heroObservation().current.hp)
         interact(s, "healer"); assertTrue(s.recover(s.operation)); assertEquals(s.heroObservation().maximum, s.heroObservation().current)
         assertTrue(s.heroObservation().statuses.isEmpty()); s.close()
@@ -97,12 +103,11 @@ class SessionIntegrationTest {
         storage.reject = { text -> SessionCodec().decode(cloud.vinh.rebirthdungeon.data.save.codec.CheckpointCodec().open(text).second).battle != null }
         encounter(s, 1)
         assertTrue(s.blocked)
-        val position = s.exploration.position; val encounter = s.export().encounter
-        val b = s.battle!!
-        assertFalse(s.battleCommand(EndTurnCommand, b.token, b.observe().commandCount))
+        val position = s.exploration.position
+        assertEquals(SessionMode.EXPLORATION, s.mode); assertNull(s.battle)
         storage.reject = { false }; assertTrue(s.retrySave())
         val restored = create(storage)
-        assertEquals(encounter, restored.export().encounter); assertEquals(position, restored.exploration.position)
+        assertEquals(s.export().encounter, restored.export().encounter); assertEquals(position, restored.exploration.position)
         assertEquals(s.export().battle!!.random, restored.export().battle!!.random)
         restored.close(); s.close()
     }
@@ -113,7 +118,7 @@ class SessionIntegrationTest {
             state.battle == null && state.pendingGold > 0
         }
         win(s)
-        assertTrue(s.blocked); assertEquals(10, s.pendingReward())
+        assertTrue(s.blocked); assertEquals(0, s.pendingReward()); assertNotNull(s.battle)
         storage.reject = { false }
         // Simulate abrupt termination: restore the terminal battle from the last durable slot.
         val resumed = create(storage); resumed.finishBattleIfReady(); assertEquals(10, resumed.pendingReward())
@@ -135,4 +140,32 @@ class SessionIntegrationTest {
         storage.slots.keys.toList().forEach { storage.slots[it] = "invalid" }
         assertThrows(IllegalStateException::class.java) { repo(storage).load() }
     }
+    @Test fun incompatibleSlotsArePreservedRatherThanRecoveredAsFresh() {
+        val storage = Storage(); val s = create(storage); s.checkpoint()
+        val envelope = cloud.vinh.rebirthdungeon.data.save.codec.CheckpointCodec()
+        val key = storage.slots.keys.first()
+        val payload = envelope.open(storage.slots.getValue(key)).second
+        val tree = com.fasterxml.jackson.databind.ObjectMapper().readTree(payload) as com.fasterxml.jackson.databind.node.ArrayNode
+        tree.set(0, com.fasterxml.jackson.databind.node.IntNode(3)); tree.remove(18)
+        storage.slots[key] = envelope.envelope(99, tree.toString())
+        val before = storage.slots.toMap()
+        assertThrows(cloud.vinh.rebirthdungeon.data.save.codec.UnsupportedCheckpoint::class.java) { repo(storage).load() }
+        assertEquals(before, storage.slots)
+    }
+
+    @Test fun partialWriteReadBackFailureKeepsCompatiblePreviousSlotAndRetryDoesNotDuplicatePurchase() {
+        val memory = Storage(); var partial = false
+        val storage = object : CheckpointStorage {
+            override fun read(slot: String) = memory.read(slot)
+            override fun write(slot: String, text: String) = memory.write(slot, if (partial) text.take(text.length / 2) else text)
+        }
+        val repository = AlternatingSessionRepository(storage) { SessionCoordinator.validate(it, bundle.catalog, bundle.world) }
+        val s = SessionCoordinator(bundle.catalog, bundle.world, repository, 71); s.start(); interact(s, "vendor"); s.checkpoint()
+        val previous = SessionCodec().encode(repository.load()!!)
+        partial = true; assertFalse(s.buy(ContentId("potion.health"), s.operation)); assertTrue(s.blocked)
+        assertEquals(previous, SessionCodec().encode(repository.load()!!))
+        partial = false; assertTrue(s.retrySave()); assertEquals(1, repository.load()!!.supplies.getValue(ContentId("potion.health")))
+        assertEquals(15, repository.load()!!.gold); s.close()
+    }
+
 }

@@ -25,37 +25,32 @@ internal class BattleWorld(val session: BattleSession) {
     fun reject(reason: CommandResult.Reason) { pending.result = CommandResult.rejected(reason) }
     fun validate() {
         if (session.defeated || session.encounterOutcome != null) return reject(CommandResult.Reason.TERMINAL)
-        val active = scheduler.active ?: return reject(CommandResult.Reason.NOT_PLAYER_TURN)
+        val active = scheduler.active
+        if (actor(active).hp <= 0) return reject(CommandResult.Reason.NOT_PLAYER_TURN)
         pending.actor = active
-        val automatic = pending.command == AutomaticCommand
-        if (isPlayer(active) == automatic) return reject(CommandResult.Reason.NOT_PLAYER_TURN)
-        if (automatic) { pending.result = CommandResult.ACCEPTED; return }
         combat.validate(active, checkNotNull(pending.command))
     }
-    fun enemyIntent() {
-        if (pending.accepted() && pending.command == AutomaticCommand) pending.hostile = player()
-    }
     fun emit(event: DomainEvent, observed: Boolean) {
-        val ordered = OrderedEvent(++session.eventCount, event)
+        val ordered = OrderedEvent(Math.addExact(session.eventCount, 1L), event, scheduler.round, scheduler.sequence, Math.addExact(session.commandCount, 1L), session.runId)
+        session.eventCount = ordered.sequence
         pending.events.add(ordered); if (observed) pending.observedEvents.add(ordered)
     }
     fun cleanup() {
         if (!pending.accepted()) return
-        val dead = entities.keys.map(::EntityId).filter { actor(it).hp <= 0 }
-        for (id in dead) {
-            if (isPlayer(id)) { session.defeated = true; continue }
-            emit(ActorRemoved(id), true); world.delete(entity(id)); entities.remove(id.value)
-        }
-        scheduler.removeAll(dead.toSet())
+        pending.events.mapNotNull { (it.event as? DamageDealt)?.target }.distinct().filter { actor(it).hp == 0 }.forEach { emit(ActorRemoved(it), true) }
     }
     fun finalizeTurn() {
         if (!pending.accepted()) return
-        session.commandCount++
-        if (!pending.finishesActivation) return
-        session.turnCount++
-        emit(ActivationEnded(checkNotNull(pending.actor)), true)
-        combat.evaluateOutcome()
-        if (scheduler.active == pending.actor) scheduler.finish()
-        pending.command = null
+        if (pending.finishesActivation) {
+            session.turnCount = Math.addExact(session.turnCount, 1L)
+            emit(ActivationEnded(checkNotNull(pending.actor)), true)
+            if (session.encounterOutcome == null) scheduler.finish(entities.keys.map(::EntityId).filter { actor(it).hp > 0 }.toSet())
+        }
+        session.commandCount = Math.addExact(session.commandCount, 1L)
+        session.history.addAll(pending.events)
+        while (session.history.size > 100) {
+            val operation = session.history.first().operation
+            session.history.removeAll { it.operation == operation }; session.historyTruncated = true
+        }
     }
 }

@@ -22,13 +22,12 @@ import kotlin.math.sqrt
 
 /** Title screen mirroring the Penpot board "Title Screen" (1280x720): navy
  * gradient, edge vignette, torch glow, the gold Press Start 2P title with a
- * hard pixel shadow, the five-dice divider, and the bottom-center Start Game
+ * hard pixel shadow, a gold divider, and the bottom-center Start Game
  * button that enters [ExplorationScreen]. This is the menu hub the dungeon's Menu
  * action returns to.
  *
  * The FitViewport pins the design space, so every actor sits at the board's
- * exact coordinates (converted to GL bottom-up y). Background layers, dice
- * strip and button patches are procedurally generated Pixmaps owned and
+ * exact coordinates (converted to GL bottom-up y). Background layers, divider and button patches are procedurally generated Pixmaps owned and
  * disposed by this screen; the title fonts are managed assets. */
 class TitleScreen(private val game: RebirthDungeon) : KtxScreen {
     private var stage: Stage? = null
@@ -43,7 +42,7 @@ class TitleScreen(private val game: RebirthDungeon) : KtxScreen {
         stage.addActor(Image(ownedTexture(gradientPixmap())).apply { setBounds(0f, 0f, DESIGN_WIDTH, DESIGN_HEIGHT) })
         stage.addActor(Image(ownedTexture(vignettePixmap())).apply { setBounds(0f, 0f, DESIGN_WIDTH, DESIGN_HEIGHT) })
         stage.addActor(Image(ownedTexture(glowPixmap())).apply { setBounds(180f, topToGl(50f, 300f), 920f, 300f) })
-        stage.addActor(Image(ownedTexture(diceStripPixmap())).apply { setBounds(529f, topToGl(292f, 30f), 222f, 30f) })
+        stage.addActor(Image(ownedTexture(dividerPixmap())).apply { setBounds(529f, topToGl(292f, 30f), 222f, 30f) })
 
         // The board title's hard pixel shadow is a second label offset 5px
         // down; Label has no shadow of its own.
@@ -168,36 +167,13 @@ class TitleScreen(private val game: RebirthDungeon) : KtxScreen {
         return pixmap
     }
 
-    /** The five dice (faces 1..5) as one strip, drawn at 2x and displayed at
-     * the board's 222x30 so pips stay crisp on scaled viewports. Pips sit at
-     * the board's diagonal/centre slots. */
-    private fun diceStripPixmap(): Pixmap {
-        val die = 60; val gap = 36
-        val pixmap = Pixmap(5 * die + 4 * gap, die, Pixmap.Format.RGBA8888)
-        // Per die: centre pip plus the four diagonal slots (2x coordinates).
-        val faces = arrayOf(
-            intArrayOf(0),
-            intArrayOf(-1, 1),
-            intArrayOf(-1, 0, 1),
-            intArrayOf(-1, 1, -2, 2),
-            intArrayOf(-1, 1, 0, -2, 2))
-        for (d in faces.indices) {
-            val x = d * (die + gap)
-            pixmap.setColor(Color.valueOf(DIE_BORDER))
-            drawRoundedFill(pixmap, x, 0, die, die, 8)
-            pixmap.setColor(Color.valueOf(DIE_FILL))
-            drawRoundedFill(pixmap, x + 4, 4, die - 8, die - 8, 6)
-            pixmap.setColor(Color.valueOf(TITLE_GOLD))
-            for (pip in faces[d]) {
-                when (pip) {
-                    0 -> pixmap.fillCircle(x + die / 2, die / 2, 6)
-                    -1 -> pixmap.fillCircle(x + 18, 18, 6)
-                    1 -> pixmap.fillCircle(x + die - 18, die - 18, 6)
-                    -2 -> pixmap.fillCircle(x + 18, die - 18, 6)
-                    2 -> pixmap.fillCircle(x + die - 18, 18, 6)
-                }
-            }
-        }
+    /** Neutral pixel ornament shared with the title's gold palette. */
+    private fun dividerPixmap(): Pixmap {
+        val pixmap = Pixmap(222, 30, Pixmap.Format.RGBA8888)
+        pixmap.setColor(Color.valueOf(TITLE_GOLD))
+        pixmap.fillRectangle(0, 14, 90, 2); pixmap.fillRectangle(132, 14, 90, 2)
+        pixmap.fillTriangle(101, 15, 111, 5, 121, 15)
+        pixmap.fillTriangle(101, 15, 111, 25, 121, 15)
         return pixmap
     }
 
@@ -232,8 +208,6 @@ class TitleScreen(private val game: RebirthDungeon) : KtxScreen {
         private const val BG_TOP = "273052"
         private const val BG_BOTTOM = "0B0E1A"
         private const val TITLE_GOLD = "EFC75E"
-        private const val DIE_FILL = "121724"
-        private const val DIE_BORDER = "C9A227"
         private const val BUTTON_FILL = "131829"
         private const val BORDER_GOLD = "C9A227"
         private const val BORDER_BRIGHT = "EFC75E"

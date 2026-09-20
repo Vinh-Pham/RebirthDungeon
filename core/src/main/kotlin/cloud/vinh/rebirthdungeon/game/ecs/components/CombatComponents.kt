@@ -7,24 +7,20 @@ import cloud.vinh.rebirthdungeon.game.identity.*
 import cloud.vinh.rebirthdungeon.game.combat.statuses.ActiveStatus
 import com.artemis.Component
 
-class DiceHand : Component() {
-    var open = false
-    var selection: Selection? = null
-    var locked: LockedAbility? = null
-    val faces = IntArray(5)
-    val kept = BooleanArray(5)
-    var rerolls = 2
-    fun clear() { open = false; selection = null; locked = null; faces.fill(0); kept.fill(false); rerolls = 2 }
+class TurnMemory : Component() {
+    var defending = false
+    var previousAction = ""
+    var masteryRank = "F"
+    var items: Map<ContentId, Int> = emptyMap()
 }
-/** Health owns HP current/max; these fields own MP/SP and all reservations, avoiding duplicate HP. */
+/** Health owns HP current/max; these fields own MP/SP, avoiding duplicate HP. */
 class ResourcePools : Component() {
     var mp = 0
-    var sp = 0
+    var spTenths = 0
     var maxMp = 0
-    var maxSp = 0
-    var reserved = ResourceVector(0, 0, 0)
+    var maxSpTenths = 0
     var costFlat = ResourceVector(0, 0, 0)
-    var costPercent = ResourceVector(0, 0, 0)
+    var costPercent = CostPercent()
 }
 class Stats : Component() {
     var baseline: Map<ContentId, Int> = emptyMap()

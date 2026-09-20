@@ -246,7 +246,7 @@
         144
       ],
       "service": "TALK",
-      "text": "Click the ground to run. Doorways reveal the next room. Sentinels start dice battles. Defeat them and leave through the exit to keep your rewards."
+      "text": "Click the ground to run. Doorways reveal the next room. Sentinels start turn-based battles. Use one optional item, then Attack, Skill or Defend. Defeat them and leave through the exit to keep your rewards."
     },
     {
       "id": "vendor",
@@ -260,7 +260,7 @@
         144
       ],
       "service": "SHOP",
-      "text": "Stock up before entering the dungeon. Potions take a full action in battle and cannot be used after rolling."
+      "text": "Stock up before entering the dungeon. Use one potion before your main action each battle turn. Potion use does not end the turn."
     },
     {
       "id": "healer",

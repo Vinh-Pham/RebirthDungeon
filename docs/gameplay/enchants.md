@@ -6,20 +6,20 @@ This is a design specification for planned gameplay, based on **Mabinogi**. It c
 
 ## 1. Mabinogi reference
 
-The supplied [Enchant page](https://wiki.mabinogiworld.com/view/Enchant) describes the trainable skill. Its linked [Enchant (System) page](https://wiki.mabinogiworld.com/view/Enchant_(System)) describes applying and extracting equipment enchantments.
+The supplied [Enchant page](https://wiki.mabinogiworld.com/view/Enchant) describes the trainable skill. Its linked [Enchant (System) page](<https://wiki.mabinogiworld.com/view/Enchant_(System)>) describes applying and extracting equipment enchantments.
 
-| Reference mechanic | Mabinogi behavior |
-| --- | --- |
-| Slots | Most equipment accepts one prefix and one suffix; applying to an occupied slot replaces that enchant. |
-| Materials | Application uses a scroll, magic powder, and mana. Success consumes the scroll. |
+| Reference mechanic | Mabinogi behavior                                                                                                                                                                  |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Slots              | Most equipment accepts one prefix and one suffix; applying to an occupied slot replaces that enchant.                                                                              |
+| Materials          | Application uses a scroll, magic powder, and mana. Success consumes the scroll.                                                                                                    |
 | Application chance | Depends on scroll rank, INT, powder, and applicable bonuses. Skill rank does not directly improve this chance; the listed cap is 90%, with INT capped at 200 for this calculation. |
-| Protection choice | Protect Equipment destroys the scroll on failure. Protect Scroll reduces scroll durability and risks equipment penalties unless protected separately. |
-| Skill progression | Higher Enchant skill ranks reduce failed-scroll durability loss and improve extraction; Rank 5 or better is required for Rank 5-or-better scrolls. |
-| Burning | Destroys equipment to attempt scroll extraction. Prefix and suffix recovery are independent; skill rank, campfire, and materials affect the odds. |
+| Protection choice  | Protect Equipment destroys the scroll on failure. Protect Scroll reduces scroll durability and risks equipment penalties unless protected separately.                              |
+| Skill progression  | Higher Enchant skill ranks reduce failed-scroll durability loss and improve extraction; Rank 5 or better is required for Rank 5-or-better scrolls.                                 |
+| Burning            | Destroys equipment to attempt scroll extraction. Prefix and suffix recovery are independent; skill rank, campfire, and materials affect the odds.                                  |
 
-Sources: [Application, protection, success, and burning](https://wiki.mabinogiworld.com/view/Enchant_(System)), [Enchant skill rank effects](https://wiki.mabinogiworld.com/view/Enchant#Summary).
+Sources: [Application, protection, success, and burning](<https://wiki.mabinogiworld.com/view/Enchant_(System)>), [Enchant skill rank effects](https://wiki.mabinogiworld.com/view/Enchant#Summary).
 
-The wiki identifies sequential rank prerequisites as a **former rule**. Its current failure description includes an inability to enchant again for unprotected high-rank failures. Do not import older guides' chaining or item-destruction rules as current behavior. [Failure rules](https://wiki.mabinogiworld.com/view/Enchant_(System)#Failing_an_Enchantment), [Historical changes](https://wiki.mabinogiworld.com/view/Enchant_(System)#Trivia).
+The wiki identifies sequential rank prerequisites as a **former rule**. Its current failure description includes an inability to enchant again for unprotected high-rank failures. Do not import older guides' chaining or item-destruction rules as current behavior. [Failure rules](<https://wiki.mabinogiworld.com/view/Enchant_(System)#Failing_an_Enchantment>), [Historical changes](<https://wiki.mabinogiworld.com/view/Enchant_(System)#Trivia>).
 
 ## 2. Player loop and ownership
 
@@ -30,19 +30,19 @@ The wiki identifies sequential rank prerequisites as a **former rule**. Its curr
 5. Equip the result for a future run, or burn unwanted enchanted equipment to try to recover its enchants.
 6. Train Enchant through qualifying outcomes, reach at least 100 training points, and spend AP to advance.
 
-Enchanting and burning are **between-run actions** in the initial design. Only committed inventory can be used; pending dungeon rewards must pass the existing run-outcome transaction first. Neither action is available while a run is active, and neither uses the five combat dice or advances dungeon initiative.
+Enchanting and burning are **between-run actions** in the initial design. Only committed inventory can be used; pending dungeon rewards must pass the existing run-outcome transaction first. Neither action is available while a run is active, and neither uses the five combat dice or advances battle initiative.
 
 An installed enchant belongs to the equipment instance. Moving that item between inventory and an equipment slot preserves its enchants. Bonuses apply only while the item is equipped and the relevant conditions are met. Inventory ownership, trading, and binding follow future item-system decisions; enchanting does not introduce multiplayer entrusting or account-wide sharing.
 
 ## 3. Slots, ranks, and compatibility
 
-| Term | Proposed meaning |
-| --- | --- |
-| Enchant definition | Stable ID, name, prefix/suffix slot, rank, item restrictions, and effect clauses |
-| Enchant scroll | Consumable inventory instance referring to one enchant definition |
-| Installed enchant | Enchant ID and resolved effect values stored on one equipment instance |
-| Enchant skill rank | The character's learned proficiency, training, and AP progression |
-| Enchant rank | The scroll's difficulty tier; independent of the character's skill rank and the item's rarity |
+| Term               | Proposed meaning                                                                              |
+| ------------------ | --------------------------------------------------------------------------------------------- |
+| Enchant definition | Stable ID, name, prefix/suffix slot, rank, item restrictions, and effect clauses              |
+| Enchant scroll     | Consumable inventory instance referring to one enchant definition                             |
+| Installed enchant  | Enchant ID and resolved effect values stored on one equipment instance                        |
+| Enchant skill rank | The character's learned proficiency, training, and AP progression                             |
+| Enchant rank       | The scroll's difficulty tier; independent of the character's skill rank and the item's rarity |
 
 Use the same explicit weakest-to-strongest order for both rank tracks:
 
@@ -68,12 +68,12 @@ Avoid conditions on final equipment-modified stats in the first slice. For examp
 
 Illustrative Rebirth Dungeon content, not copied Mabinogi enchants or final balance:
 
-| Enchant | Slot / rank | Equipment | Effects |
-| --- | --- | --- | --- |
-| Keen | Prefix / F | Swords | Physical Attack +2 |
-| Studious | Prefix / E | Weapons | Magic Attack +3 when Icebolt is Rank E or better; unconditional Max SP -2 |
-| of Vigor | Suffix / F | Armor | Max HP +5 |
-| of the Veteran | Suffix / D | Weapons | Physical Attack +2–4 when cumulative level is at least 20 |
+| Enchant        | Slot / rank | Equipment | Effects                                                                   |
+| -------------- | ----------- | --------- | ------------------------------------------------------------------------- |
+| Keen           | Prefix / F  | Swords    | Physical Attack +2                                                        |
+| Studious       | Prefix / E  | Weapons   | Magic Attack +3 when Icebolt is Rank E or better; unconditional Max SP -2 |
+| of Vigor       | Suffix / F  | Armor     | Max HP +5                                                                 |
+| of the Veteran | Suffix / D  | Weapons   | Physical Attack +2–4 when cumulative level is at least 20                 |
 
 For a variable clause, roll a value once on successful installation using its authored inclusive integer range. Roll clauses in stable definition order, even if their conditions are currently inactive. Persist the chosen values: equipping, loading, rebirth, and later meeting a condition never reroll them. Fixed-value clauses consume no random draws.
 
@@ -102,11 +102,11 @@ Illustrative tuning: base chance 6,000, INT 40, cap 200, 10 basis points per INT
 
 The first slice uses **Protect Equipment** for every attempt:
 
-| Outcome | Materials and MP | Target equipment | Training |
-| --- | --- | --- | --- |
-| Invalid or cancelled before commit | Nothing spent | Unchanged | None |
-| Success | Consume the full recipe once | Install the new enchant in its slot; discard any replaced enchant | Count qualifying success objectives once |
-| Failure | Consume the full recipe once | Preserve the item and both existing enchants | Count qualifying failure objectives once, if authored |
+| Outcome                            | Materials and MP             | Target equipment                                                  | Training                                              |
+| ---------------------------------- | ---------------------------- | ----------------------------------------------------------------- | ----------------------------------------------------- |
+| Invalid or cancelled before commit | Nothing spent                | Unchanged                                                         | None                                                  |
+| Success                            | Consume the full recipe once | Install the new enchant in its slot; discard any replaced enchant | Count qualifying success objectives once              |
+| Failure                            | Consume the full recipe once | Preserve the item and both existing enchants                      | Count qualifying failure objectives once, if authored |
 
 This consumes the scroll on failure instead of retaining a partially damaged scroll. Scroll integrity, gear durability damage, and protection potions are deferred together. A future **Protect Scroll** mode must define remaining scroll integrity, rank-based integrity loss, equipment failure penalties, recovery, protection consumption, and UI previews before becoming selectable. It must not quietly add destructive outcomes to Protect Equipment.
 
@@ -143,13 +143,13 @@ Installed enchants and their rolled values persist with committed equipment. Und
 
 A new run snapshots the loadout, installed enchant values, and relevant progression conditions. Pending XP, elapsed town aging, and profile edits do not change that active run. Effective combat stats still respond to live buffs and debuffs through stats.md. If in-run equipment swaps are added later, use the run's equipment instances and progression snapshot at an explicit legal command boundary; never alter the stats already frozen for a dice activation.
 
-Defeat and abandonment do not independently decide enchant ownership. Newly found scrolls and equipment follow the unresolved Phase 7 carry-over policy; this document does not guarantee their retention. Existing committed items continue to follow the game's eventual item-loss rules.
+Defeat and abandonment do not independently decide enchant ownership. Newly found scrolls and equipment follow the unresolved Phase 8 carry-over policy; this document does not guarantee their retention. Existing committed items continue to follow the game's eventual item-loss rules.
 
 Content definitions need stable enchant/clause IDs, rank ordering, equipment restrictions, condition types, modifier units and ranges, powder recipes, success tables, training objectives, and costs. Saved state needs equipment instance IDs, both installed slots and resolved values, scroll inventory, learned skill progression, town resources, transaction results, and pinned content/rules versions. Effective stat totals are reconstructed from these sources.
 
 Add a dedicated persisted enchanting RNG stream for application checks, variable values, and burn recovery. Keep it separate from dungeon combat, loot, and cosmetic streams. Record its algorithm/version and all state words using the game plan's RNG contract. UI previews consume no randomness; rejected commands leave the stream unchanged.
 
-One accepted operation atomically records costs, equipment changes, recovered scrolls, training, its unique operation ID, and the resulting RNG state in the versioned profile/run bundle. Retry of the same operation returns its recorded result without charging or rolling again. Use the existing save checkpoint gate before revealing success or allowing another operation; a failed save must not enable a fresh free roll. This supports consistent local recovery, not protection against deliberate save-file editing.
+One accepted operation atomically records costs, equipment changes, recovered scrolls, training, its unique operation ID, and the resulting RNG state in the versioned profile/run bundle. Retry of the same operation returns its recorded result without charging or rolling again. Use the planned save checkpoint gate before revealing success or allowing another operation; a failed save must not enable a fresh free roll. This supports consistent local recovery, not protection against deliberate save-file editing.
 
 ## 9. Enchant screen and initial scope
 
@@ -169,11 +169,17 @@ Future implementation acceptance checks should cover:
 
 Still open: loot and shop availability, rank/powder chance tables, variable ranges, MP and recovery costs, training/AP pacing, item ownership and carry-over. Protect Scroll, equipment durability and repair, protection consumables, scroll expiration, elemental enchants, binding/personalization, multiplayer entrusting, and calendar/event bonuses remain outside the first slice.
 
+## Godot enchant integration
+
+**Godot reset: 2026-09-10. Status: planned; not implemented.** EnchantDefinition Resources author slot/rank restrictions, effects, material costs and chances. Runtime equipment stores the selected definitions and resolved roll values. Phase 9 implements application/burning as saved application transactions with a dedicated profile RNG stream; failed saves retry the same outcome. Control panels preview costs and destructive burning. Visual effects cannot perform a second roll or change a saved item.
+
+See [Godot architecture](../game-plan.md), [project layout](../directory.md) and [official engine sources](../references.md#godot-engine-sources).
+
 ## Research notes
 
 Mabinogi Wiki pages were retrieved with Firecrawl and inspected on **September 5, 2026**. Source behavior is summarized in section 1; the subsequent rules are proposed Rebirth Dungeon adaptations. Raw source caches stay in the gitignored `.firecrawl/` directory.
 
-| Reference | Local cache |
-| --- | --- |
-| [Enchant skill, ranks, and acquisition](https://wiki.mabinogiworld.com/view/Enchant) | `.firecrawl/mabinogiworld-enchant.md` |
-| [Enchant system, application, protection, and burning](https://wiki.mabinogiworld.com/view/Enchant_(System)) | `.firecrawl/mabinogiworld-enchant-system.md` |
+| Reference                                                                                                      | Local cache                                  |
+| -------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| [Enchant skill, ranks, and acquisition](https://wiki.mabinogiworld.com/view/Enchant)                           | `.firecrawl/mabinogiworld-enchant.md`        |
+| [Enchant system, application, protection, and burning](<https://wiki.mabinogiworld.com/view/Enchant_(System)>) | `.firecrawl/mabinogiworld-enchant-system.md` |

@@ -8,21 +8,22 @@ import com.badlogic.gdx.utils.JsonReader
 import java.security.MessageDigest
 class UnsupportedCheckpoint(message: String) : IllegalArgumentException(message)
 class CheckpointCodec {
-    fun encode(s: BattleRestore): String = jsonText(listOf(2, s.runId, s.seed, listOf(s.version.schema, s.version.content, s.version.rules),
+    fun encode(s: BattleRestore): String = jsonText(listOf(3, s.runId, s.seed, listOf(s.version.schema, s.version.content, s.version.rules),
         s.nextEntityId, s.commandCount, s.turnCount, s.eventCount,
         s.actors.map { listOf(it.id.value, it.definition.value, it.player, it.hp, it.maxHp) },
-        listOf(s.scheduler.tick, s.scheduler.active?.value, s.scheduler.nextSequence, s.scheduler.queue.map { listOf(it.actor.value, it.dueTick, it.insertionSequence) }),
-        random(s.random), CombatCheckpointCodec.encode(s.combat)))
+        listOf(s.scheduler.order.map { listOf(it.actor.value, it.speed) }, s.scheduler.cursor, s.scheduler.round, s.scheduler.sequence, s.scheduler.started, s.scheduler.itemUsed),
+        random(s.random), CombatCheckpointCodec.encode(s.combat), s.history.map(BattleEventCodec::encode), s.historyTruncated))
     fun decode(text: String): BattleRestore {
-        val r = JsonReader().parse(text).record(12)
-        if (r[0].int() != 2) throw UnsupportedCheckpoint("Unsupported battle version")
-        val v = r[3].record(3); val t = r[9].record(4)
-        if (v[0].int() != 2 || v[2].int() != 2) throw UnsupportedCheckpoint("Unsupported content/rules version")
+        val r = JsonReader().parse(text)
+        require(r.isArray && r.size > 0)
+        if (r[0].int() != 3) throw UnsupportedCheckpoint("Unsupported battle version")
+        r.record(14)
+        val v = r[3].record(3); val t = r[9].record(6)
+        if (v[0].int() != 3 || v[1].int() != 4 || v[2].int() != 3) throw UnsupportedCheckpoint("Unsupported content/rules version")
         return BattleRestore(r[1].text(), r[2].long(), ContentVersion(v[0].int(), v[1].int(), v[2].int()), r[4].long(), r[5].long(), r[6].long(), r[7].long(),
             r[8].rows().map { a -> a.record(5); ActorState(EntityId(a[0].long()), ContentId(a[1].text()), a[2].bool(), a[3].int(), a[4].int()) },
-            SchedulerState(t[0].long(), if (t[1].isNull) null else EntityId(t[1].long()), t[2].long(), t[3].rows().map { q ->
-                q.record(3); TurnEntry(EntityId(q[0].long()), q[1].long(), q[2].long()) }),
-            readRandom(r[10]), checkNotNull(CombatCheckpointCodec.decode(r[11].text())))
+            SchedulerState(t[0].rows().map { q -> q.record(2); TurnEntry(EntityId(q[0].long()), q[1].int()) }, t[1].int(), t[2].long(), t[3].long(), t[4].bool(), t[5].bool()),
+            readRandom(r[10]), checkNotNull(CombatCheckpointCodec.decode(r[11].text())), r[12].rows().map(BattleEventCodec::decode), r[13].bool())
     }
     fun envelope(revision: Long, payload: String) = jsonText(listOf(2, revision, checksum(payload), payload))
     fun open(text: String): Pair<Long, String> {

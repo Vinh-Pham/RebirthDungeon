@@ -14,7 +14,7 @@ class GameBar(private val skin: Skin, button: (String, () -> Unit) -> TextButton
     pets: () -> Unit, inspect: () -> Unit, options: () -> Unit, menu: () -> Unit) : Table() {
     private val hp = Meter(skin, "HP", Color.valueOf("c34985"))
     private val mp = Meter(skin, "MP", Color.valueOf("527ac8"))
-    private val sp = Meter(skin, "SP", Color.valueOf("d1ad39"))
+    private val spTenths = Meter(skin, "SP", Color.valueOf("d1ad39"))
     private val resources = Table()
     private val center = Table()
     private val toolbar = Table()
@@ -25,7 +25,7 @@ class GameBar(private val skin: Skin, button: (String, () -> Unit) -> TextButton
     init {
         background = HudFrame(skin.getDrawable("white"))
         pad(6f)
-        listOf(hp, mp, sp).forEach { resources.add(it).height(18f).growX().row() }
+        listOf(hp, mp, spTenths).forEach { resources.add(it).height(18f).growX().row() }
         val destinations = listOf(
             Triple("Character", "0011100/0100010/0100010/0011100/0001000/0111110/1000001", character),
             Triple("Skills", "0001000/0011100/0001000/1111111/0011100/0101010/1000001", skills),
@@ -79,9 +79,9 @@ class GameBar(private val skin: Skin, button: (String, () -> Unit) -> TextButton
         }
     }
     fun bind(hero: CombatActorObservation?) {
-        hp.bind(hero?.current?.hp, hero?.maximum?.hp, hero?.reserved?.hp ?: 0)
-        mp.bind(hero?.current?.mp, hero?.maximum?.mp, hero?.reserved?.mp ?: 0)
-        sp.bind(hero?.current?.sp, hero?.maximum?.sp, hero?.reserved?.sp ?: 0)
+        hp.bind(hero?.current?.hp, hero?.maximum?.hp)
+        mp.bind(hero?.current?.mp, hero?.maximum?.mp)
+        spTenths.bind(hero?.current?.spTenths, hero?.maximum?.spTenths)
     }
 }
 
@@ -113,7 +113,6 @@ private class PixelIcon(private val pixel: Drawable, pattern: String) : BaseDraw
 private class Meter(skin: Skin, private val name: String, private val fill: Color, private val segmented: Boolean = false) : Stack() {
     private val pixel = skin.getDrawable("white")
     private var fraction = 0f
-    private var reserved = 0f
     private val label = Label("$name -- / --", skin).apply { setAlignment(com.badlogic.gdx.utils.Align.center) }
     var caption: String
         get() = label.text.toString()
@@ -127,8 +126,6 @@ private class Meter(skin: Skin, private val name: String, private val fill: Colo
                 val w = (width - 4).coerceAtLeast(0f)
                 batch.setColor(fill.r, fill.g, fill.b, parentAlpha); pixel.draw(batch, x + 2, y + 2, w * fraction, height - 4)
                 batch.setColor(1f, 1f, 1f, 0.22f * parentAlpha); pixel.draw(batch, x + 2, y + height - 5, w * fraction, 2f)
-                batch.setColor(1f, 0.85f, 0.65f, 0.7f * parentAlpha)
-                pixel.draw(batch, x + 2 + w * (fraction - reserved), y + 2, w * reserved, 3f)
                 if (segmented) {
                     batch.setColor(0.42f, 0.55f, 0.54f, parentAlpha)
                     for (i in 1..9) pixel.draw(batch, x + w * i / 10, y + 1, 1f, height - 2)
@@ -138,9 +135,8 @@ private class Meter(skin: Skin, private val name: String, private val fill: Colo
         })
         add(label)
     }
-    fun bind(current: Int?, maximum: Int?, cost: Int) {
+    fun bind(current: Int?, maximum: Int?) {
         fraction = if (current != null && maximum != null && maximum > 0) (current.toFloat() / maximum).coerceIn(0f, 1f) else 0f
-        reserved = if (maximum != null && maximum > 0) (cost.toFloat() / maximum).coerceIn(0f, fraction) else 0f
-        caption = if (current == null || maximum == null) "$name -- / --" else "$name $current / $maximum"
+        caption = if (current == null || maximum == null) "$name -- / --" else if (name == "SP") "$name ${cloud.vinh.rebirthdungeon.game.combat.stats.StaminaRules.format(current)} / ${cloud.vinh.rebirthdungeon.game.combat.stats.StaminaRules.format(maximum)}" else "$name $current / $maximum"
     }
 }

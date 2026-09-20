@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "actors": [
     {
       "id": "actor.hero",
@@ -7,7 +7,7 @@
       "resources": {
         "hp": 90,
         "mp": 40,
-        "sp": 40
+        "spTenths": 400
       },
       "skill": "skill.sword",
       "rank": "F",
@@ -17,7 +17,9 @@
         "stat.dex": 10,
         "stat.wil": 10,
         "stat.luk": 10
-      }
+      },
+      "speed": 11,
+      "items": {}
     },
     {
       "id": "actor.enemy",
@@ -25,7 +27,7 @@
       "resources": {
         "hp": 60,
         "mp": 40,
-        "sp": 40
+        "spTenths": 400
       },
       "skill": "skill.enemy_strike",
       "rank": "F",
@@ -35,56 +37,9 @@
         "stat.dex": 10,
         "stat.wil": 10,
         "stat.luk": 10
-      }
-    }
-  ],
-  "scoring": [
-    {
-      "id": "scoring.five_dice",
-      "diceCount": 5,
-      "rerolls": 2,
-      "multipliers": [
-        {
-          "combination": "FIVE_OF_A_KIND",
-          "numerator": 10,
-          "denominator": 1
-        },
-        {
-          "combination": "FOUR_OF_A_KIND",
-          "numerator": 5,
-          "denominator": 1
-        },
-        {
-          "combination": "FULL_HOUSE",
-          "numerator": 7,
-          "denominator": 2
-        },
-        {
-          "combination": "STRAIGHT",
-          "numerator": 3,
-          "denominator": 1
-        },
-        {
-          "combination": "THREE_OF_A_KIND",
-          "numerator": 5,
-          "denominator": 2
-        },
-        {
-          "combination": "TWO_PAIRS",
-          "numerator": 2,
-          "denominator": 1
-        },
-        {
-          "combination": "ONE_PAIR",
-          "numerator": 3,
-          "denominator": 2
-        },
-        {
-          "combination": "NONE",
-          "numerator": 1,
-          "denominator": 1
-        }
-      ]
+      },
+      "speed": 9,
+      "items": {}
     }
   ],
   "skills": [
@@ -92,46 +47,27 @@
       "id": "skill.sword",
       "name": "Sword Attack (prototype)",
       "prototypeCap": "E",
-      "scoring": "scoring.five_dice",
       "attackStat": "stat.physical_attack",
       "ranks": [
         {
           "rank": "F",
           "order": 0,
-          "basePower": 2,
-          "pipScale": 1,
+          "basePower": 16,
           "cost": {
             "hp": 0,
             "mp": 0,
-            "sp": 5
-          },
-          "weights": [
-            1,
-            1,
-            1,
-            1,
-            1,
-            1
-          ]
+            "spTenths": 50
+          }
         },
         {
           "rank": "E",
           "order": 1,
-          "basePower": 4,
-          "pipScale": 1,
+          "basePower": 20,
           "cost": {
             "hp": 0,
             "mp": 0,
-            "sp": 5
-          },
-          "weights": [
-            1,
-            1,
-            1,
-            1,
-            2,
-            2
-          ]
+            "spTenths": 50
+          }
         }
       ],
       "effect": "DAMAGE",
@@ -144,27 +80,17 @@
       "id": "skill.fortify",
       "name": "fortify (prototype)",
       "prototypeCap": "F",
-      "scoring": "scoring.five_dice",
       "attackStat": "stat.physical_attack",
       "ranks": [
         {
           "rank": "F",
           "order": 0,
-          "basePower": 2,
-          "pipScale": 1,
+          "basePower": 14,
           "cost": {
             "hp": 0,
             "mp": 0,
-            "sp": 4
-          },
-          "weights": [
-            1,
-            1,
-            1,
-            1,
-            1,
-            1
-          ]
+            "spTenths": 40
+          }
         }
       ],
       "effect": "SHIELD",
@@ -177,27 +103,17 @@
       "id": "skill.focus",
       "name": "focus (prototype)",
       "prototypeCap": "F",
-      "scoring": "scoring.five_dice",
       "attackStat": "stat.physical_attack",
       "ranks": [
         {
           "rank": "F",
           "order": 0,
           "basePower": 0,
-          "pipScale": 0,
           "cost": {
             "hp": 0,
             "mp": 3,
-            "sp": 0
-          },
-          "weights": [
-            1,
-            1,
-            1,
-            1,
-            1,
-            1
-          ]
+            "spTenths": 0
+          }
         }
       ],
       "effect": "BUFF",
@@ -211,27 +127,17 @@
       "id": "skill.spark",
       "name": "spark (prototype)",
       "prototypeCap": "F",
-      "scoring": "scoring.five_dice",
       "attackStat": "stat.magic_attack",
       "ranks": [
         {
           "rank": "F",
           "order": 0,
-          "basePower": 2,
-          "pipScale": 1,
+          "basePower": 18,
           "cost": {
             "hp": 0,
             "mp": 5,
-            "sp": 0
-          },
-          "weights": [
-            1,
-            1,
-            1,
-            1,
-            1,
-            1
-          ]
+            "spTenths": 0
+          }
         }
       ],
       "effect": "DAMAGE",
@@ -244,27 +150,17 @@
       "id": "skill.blood",
       "name": "blood (prototype)",
       "prototypeCap": "F",
-      "scoring": "scoring.five_dice",
       "attackStat": "stat.physical_attack",
       "ranks": [
         {
           "rank": "F",
           "order": 0,
-          "basePower": 2,
-          "pipScale": 1,
+          "basePower": 24,
           "cost": {
             "hp": 4,
             "mp": 2,
-            "sp": 2
-          },
-          "weights": [
-            1,
-            1,
-            1,
-            1,
-            1,
-            1
-          ]
+            "spTenths": 20
+          }
         }
       ],
       "effect": "DAMAGE",
@@ -277,35 +173,71 @@
       "id": "skill.enemy_strike",
       "name": "enemy_strike (prototype)",
       "prototypeCap": "F",
-      "scoring": "scoring.five_dice",
       "attackStat": "stat.physical_attack",
       "ranks": [
         {
           "rank": "F",
           "order": 0,
           "basePower": 4,
-          "pipScale": 0,
           "cost": {
             "hp": 0,
             "mp": 0,
-            "sp": 3
-          },
-          "weights": [
-            1,
-            1,
-            1,
-            1,
-            1,
-            1
-          ]
+            "spTenths": 30
+          }
+        }
+      ],
+      "effect": "DAMAGE",
+      "target": "HOSTILE",
+      "requiredEquipment": "none",
+      "cooldown": 2,
+      "shieldDuration": 0,
+      "status": "status.weakened"
+    },
+    {
+      "id": "skill.normal",
+      "name": "Normal",
+      "prototypeCap": "F",
+      "attackStat": "stat.physical_attack",
+      "ranks": [
+        {
+          "rank": "F",
+          "order": 0,
+          "basePower": 6,
+          "cost": {
+            "hp": 0,
+            "mp": 0,
+            "spTenths": 20
+          }
         }
       ],
       "effect": "DAMAGE",
       "target": "HOSTILE",
       "requiredEquipment": "none",
       "cooldown": 0,
-      "shieldDuration": 0,
-      "status": "status.weakened"
+      "shieldDuration": 0
+    },
+    {
+      "id": "skill.defend",
+      "name": "Defend",
+      "prototypeCap": "F",
+      "attackStat": "stat.physical_attack",
+      "ranks": [
+        {
+          "rank": "F",
+          "order": 0,
+          "basePower": 0,
+          "cost": {
+            "hp": 0,
+            "mp": 0,
+            "spTenths": 10
+          }
+        }
+      ],
+      "effect": "DEFEND",
+      "target": "SELF",
+      "requiredEquipment": "none",
+      "cooldown": 0,
+      "shieldDuration": 0
     }
   ],
   "stats": [
@@ -482,7 +414,7 @@
     {
       "id": "stat.regen_sp",
       "stage": "DERIVED",
-      "base": 2,
+      "base": 0,
       "minimum": 0,
       "maximum": 9999,
       "terms": []
@@ -502,7 +434,7 @@
       "recovery": {
         "hp": 0,
         "mp": 0,
-        "sp": 0
+        "spTenths": 0
       }
     },
     {
@@ -518,7 +450,7 @@
       "recovery": {
         "hp": 0,
         "mp": 0,
-        "sp": 0
+        "spTenths": 0
       }
     },
     {
@@ -534,7 +466,7 @@
       "recovery": {
         "hp": 0,
         "mp": 0,
-        "sp": 0
+        "spTenths": 0
       }
     }
   ],
@@ -545,7 +477,7 @@
       "recovery": {
         "hp": 20,
         "mp": 0,
-        "sp": 0
+        "spTenths": 0
       }
     },
     {
@@ -554,7 +486,7 @@
       "recovery": {
         "hp": 0,
         "mp": 20,
-        "sp": 0
+        "spTenths": 0
       },
       "status": "status.elixir_penalty"
     }

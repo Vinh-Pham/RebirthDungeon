@@ -14,7 +14,6 @@ class ManifestDto {
 class CatalogDto {
     var schemaVersion: Int? = null
     var actors: List<ActorDto>? = null
-    var scoring: List<ScoringDto>? = null
     var skills: List<SkillDto>? = null
     var stats: List<StatDto>? = null
     var statuses: List<StatusDto>? = null
@@ -27,29 +26,18 @@ class CatalogDto {
 class ResourcesDto {
     var hp: Int? = null
     var mp: Int? = null
-    var sp: Int? = null
+    var spTenths: Int? = null
 }
 
 class ActorDto {
+    var items: Map<String, Int>? = null
+    var speed: Int? = null
     var id: String? = null
     var kind: ActorKind? = null
     var resources: ResourcesDto? = null
     var skill: String? = null
     var rank: String? = null
     var stats: Map<String, Int>? = null
-}
-
-class ScoringDto {
-    var id: String? = null
-    var diceCount: Int? = null
-    var rerolls: Int? = null
-    var multipliers: List<MultiplierDto>? = null
-}
-
-class MultiplierDto {
-    var combination: Combination? = null
-    var numerator: Int? = null
-    var denominator: Int? = null
 }
 
 class SkillDto {
@@ -62,7 +50,6 @@ class SkillDto {
     var id: String? = null
     var name: String? = null
     var prototypeCap: String? = null
-    var scoring: String? = null
     var attackStat: String? = null
     var ranks: List<RankDto>? = null
 }
@@ -71,9 +58,7 @@ class RankDto {
     var rank: String? = null
     var order: Int? = null
     var basePower: Int? = null
-    var pipScale: Int? = null
     var cost: ResourcesDto? = null
-    var weights: List<Int>? = null
 }
 
 class StatDto {

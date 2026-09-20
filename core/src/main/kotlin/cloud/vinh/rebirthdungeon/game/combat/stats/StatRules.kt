@@ -44,16 +44,30 @@ private class Fraction(val n: BigInteger, val d: BigInteger) {
     fun floor(): BigInteger = n.divideAndRemainder(d).let { if (n.signum() < 0 && it[1].signum() != 0) it[0] - BigInteger.ONE else it[0] }
 }
 
-data class DamageInputs(val base: Int, val attack: Int, val pipScale: Int, val defense: Int, val protection: Int)
-data class DamageResult(val comboDamage: Long, val afterResistance: Long, val shieldAbsorbed: Int, val hpDamage: Int, val remainingHp: Int)
+data class DamageInputs(val base: Int, val attack: Int, val defense: Int, val protection: Int)
+data class DamageResult(val postDefense: Long, val afterResistance: Long, val shieldAbsorbed: Int, val hpDamage: Int, val remainingHp: Int)
 object DamageRules {
-    fun resolve(inputs: DamageInputs, pips: Int, multiplier: StatRatio, shield: Int, hp: Int): DamageResult {
-        require(pips >= 0 && shield >= 0 && hp >= 0 && multiplier.numerator > 0 && multiplier.denominator > 0)
-        val raw = (inputs.base.toLong() + inputs.attack + inputs.pipScale.toLong() * pips - inputs.defense).coerceAtLeast(0)
-        val combo = Math.multiplyExact(raw, multiplier.numerator.toLong()) / multiplier.denominator
-        val after = Math.multiplyExact(combo, (100 - inputs.protection.coerceIn(0, 100)).toLong()) / 100
+    fun resolve(inputs: DamageInputs, shield: Int, hp: Int): DamageResult {
+        require(shield >= 0 && hp >= 0)
+        val raw = (inputs.base.toLong() + inputs.attack - inputs.defense).coerceAtLeast(0)
+        val after = Math.multiplyExact(raw, (100 - inputs.protection.coerceIn(0, 100)).toLong()) / 100
         val absorbed = minOf(after, shield.toLong()).toInt()
         val damage = minOf(after - absorbed, hp.toLong()).toInt()
-        return DamageResult(combo, after, absorbed, damage, hp - damage)
+        return DamageResult(raw, after, absorbed, damage, hp - damage)
     }
+}
+
+object StaminaRules {
+    val ranks = listOf("F", "E", "D", "C", "B", "A", "9", "8", "7", "6", "5", "4", "3", "2", "1")
+    fun index(rank: String) = ranks.indexOf(rank).also { require(it >= 0) }
+    fun attack(rank: String) = 20 + index(rank)
+    fun recovery(rank: String) = 5 * (index(rank) / 3 + 1)
+    fun cost(tenths: Int, flat: Int, percent: Int, attack: Boolean): Int {
+        if (tenths == 0) return 0
+        val quantum = if (attack) 1L else 10L
+        val product = Math.multiplyExact(tenths.toLong() + flat, (10000L + percent).coerceAtLeast(0)).coerceAtLeast(0)
+        val result = ((product + quantum * 10000 - 1) / (quantum * 10000) * quantum).coerceAtLeast(quantum)
+        return Math.toIntExact(result)
+    }
+    fun format(tenths: Int) = "${tenths / 10}.${kotlin.math.abs(tenths % 10)}"
 }

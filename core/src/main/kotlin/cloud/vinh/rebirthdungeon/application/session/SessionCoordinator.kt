@@ -29,6 +29,8 @@ class SessionCoordinator(val catalog: ContentCatalog, val world: WorldContent, p
     private val pendingSupplies = sortedMapOf<ContentId, Int>(compareBy { it.value }).apply { putAll(restored?.pendingSupplies ?: emptyMap()) }
     var notice = restored?.notice ?: "Welcome. Talk to Liora, visit the potion shop, or enter the dungeon."; private set
     var failure: String? = null; private set
+    private var pendingTransition: SessionRestore? = null
+    private var lastBattleEvents = restored?.lastBattleEvents ?: emptyList()
     private var pendingSave = false
     private var closed = false
     val mode get() = if (battle == null) SessionMode.EXPLORATION else SessionMode.BATTLE
@@ -44,7 +46,7 @@ class SessionCoordinator(val catalog: ContentCatalog, val world: WorldContent, p
         }
     }
     private fun checkOwner() = check(Thread.currentThread() === owner && !closed)
-    fun start() { checkOwner(); if (battle != null) battle!!.startOrResume() else persist() }
+    fun start() { checkOwner(); if (battle != null) battle!!.startOrResume(deferEnemy = true) else persist() }
     fun count(id: ContentId) = supplies[id] ?: 0
     fun pendingReward() = pendingGold
     fun heroObservation() = battle?.combatObservation()?.actors?.single { it.id == EntityId(1) } ?: checkNotNull(hero)
@@ -52,8 +54,8 @@ class SessionCoordinator(val catalog: ContentCatalog, val world: WorldContent, p
         battle = BattleController(simulation, object : CheckpointRepository {
             override fun load(): BattleRestore? = error("Session repository owns restore")
             override fun save(state: BattleRestore) {
-                random = RunRandomStreams.restore(state.random)
-                repository.save(export(state)); pendingSave = false; failure = null
+                repository.save(export(state))
+                random = RunRandomStreams.restore(state.random); pendingSave = false; failure = null
             }
         }, operation + 1)
     }
@@ -67,14 +69,31 @@ class SessionCoordinator(val catalog: ContentCatalog, val world: WorldContent, p
         exploration.encounter?.let { enterBattle(it); return }
         if (exploration.tick % 120 == 0L) persist()
     }
+    private fun commitTransition(candidate: SessionRestore): Boolean {
+        pendingTransition = candidate
+        try { repository.save(candidate) }
+        catch (e: Exception) { failure = e.message ?: "Save failed"; return false }
+        battle?.close(); battle = null
+        exploration = ExplorationSimulation(AreaBuilder.build(world, candidate.placements, candidate.town), candidate.exploration)
+        hero = candidate.hero; random = RunRandomStreams.restore(candidate.random)
+        encounterId = candidate.encounter; operation = candidate.operation; expedition = candidate.expedition
+        gold = candidate.gold; supplies.clear(); supplies.putAll(candidate.supplies)
+        pendingGold = candidate.pendingGold; pendingSupplies.clear(); pendingSupplies.putAll(candidate.pendingSupplies)
+        notice = candidate.notice; lastBattleEvents = candidate.lastBattleEvents
+        pendingTransition = null; pendingSave = false; failure = null
+        candidate.battle?.let { installBattle(BattleSimulation.restore(it, catalog)); battle!!.startOrResume(deferEnemy = true) }
+        return !blocked
+    }
     private fun enterBattle(obj: WorldObject) {
         val encounter = catalog.encounters.getValue(checkNotNull(obj.encounter))
         val enemy = catalog.actors.getValue(encounter.enemy)
-        exploration.stop(); encounterId = obj.id; operation++
-        val sim = BattleSimulation.create(BattleSession(seed, catalog, random, "expedition.$expedition.${obj.id}"),
-            listOf(ActorState(EntityId(Math.addExact(operation, 2L)), enemy.id, false, enemy.resources.hp, enemy.resources.hp)), checkNotNull(hero))
-        hero = null
-        installBattle(sim); battle!!.startOrResume()
+        exploration.stop()
+        val nextOperation = Math.addExact(operation, 1L)
+        val sim = BattleSimulation.create(BattleSession(seed, catalog, RunRandomStreams.restore(random.capture()), "expedition.$expedition.${obj.id}"),
+            listOf(ActorState(EntityId(Math.addExact(nextOperation, 2L)), enemy.id, false, enemy.resources.hp, enemy.resources.hp)), checkNotNull(hero))
+        val state = try { sim.restoreExport() } finally { sim.dispose() }
+        commitTransition(SessionRestore(catalog.version, world.version, seed, expedition, nextOperation, exploration.area.town, exploration.area.placements,
+            exploration.restoreExport(), gold, supplies, pendingGold, pendingSupplies, null, state, obj.id, state.random, notice, emptyList()))
     }
     fun battleCommand(command: RunCommand, token: Long, revision: Long): Boolean {
         checkOwner(); val controller = battle ?: return false
@@ -88,26 +107,32 @@ class SessionCoordinator(val catalog: ContentCatalog, val world: WorldContent, p
     }
     fun finishBattleIfReady() {
         checkOwner(); val controller = battle ?: return
-        if (controller.failure != null || failure != null) return
-        val outcome = controller.combatObservation()?.outcome ?: return
+        if (blocked) return
+        val outcome = controller.combatObservation().outcome ?: return
         val state = controller.restoreExport()
-        hero = state.combat.actors.single { it.id == EntityId(1) }
-        random = RunRandomStreams.restore(state.random)
-        controller.close(); battle = null
+        val resultHero = state.combat.actors.single { it.id == EntityId(1) }
+        val resultRandom = RunRandomStreams.restore(state.random)
+        val resultExploration = ExplorationSimulation(exploration.area, exploration.restoreExport())
+        var reward = pendingGold
+        val lootSupplies = pendingSupplies.toMutableMap()
+        val message: String
+        val destination: ExplorationSimulation
         if (outcome == EncounterOutcome.VICTORY) {
             val obj = exploration.area.objects.single { it.id == encounterId }
-            exploration.defeated(obj.id)
-            pendingGold = Math.addExact(pendingGold, world.reward)
+            resultExploration.defeated(obj.id)
+            reward = Math.addExact(reward, world.reward)
             val loot = catalog.loot.getValue(catalog.encounters.getValue(checkNotNull(obj.encounter)).loot)
-            val draw = random[RandomStream.LOOT].nextInt(10000); var total = 0
+            val draw = resultRandom[RandomStream.LOOT].nextInt(10000); var total = 0
             val entry = loot.entries.first { total += it.probability; draw < total }
-            pendingSupplies[entry.potion] = Math.addExact(pendingSupplies[entry.potion] ?: 0, entry.quantity)
-            notice = "Victory! Rewards pending: $pendingGold gold. Find the dungeon exit."
+            lootSupplies[entry.potion] = Math.addExact(lootSupplies[entry.potion] ?: 0, entry.quantity)
+            message = "Victory! Rewards pending: $reward gold. Find the dungeon exit."
+            destination = resultExploration
         } else {
-            pendingGold = 0; pendingSupplies.clear(); exploration = ExplorationSimulation(AreaBuilder.town(world))
-            notice = "Defeated. Pending rewards were lost. Visit the healing spring for free recovery."
+            reward = 0; lootSupplies.clear(); destination = ExplorationSimulation(AreaBuilder.town(world))
+            message = "Defeated. Pending rewards were lost. Visit the healing spring for free recovery."
         }
-        encounterId = null; operation++; persist()
+        commitTransition(SessionRestore(catalog.version, world.version, seed, expedition, Math.addExact(operation, 1L), destination.area.town, destination.area.placements,
+            destination.restoreExport(), gold, supplies, reward, lootSupplies, resultHero, null, null, resultRandom.capture(), message, state.history))
     }
     fun dismiss() { checkOwner(); exploration.dismiss() }
     private fun service(expected: Service): Boolean = !blocked && battle == null && exploration.reachedInteraction?.service == expected
@@ -151,7 +176,7 @@ class SessionCoordinator(val catalog: ContentCatalog, val world: WorldContent, p
         checkOwner(); if (blocked || battle != null || expectedOperation != operation || count(id) <= 0 || heroObservation().current.hp == 0) return false
         exploration.stop(); editHero { it.potion(id) }; supplies[id] = count(id) - 1; operation++; return persist()
     }
-    fun checkpoint(): Boolean { checkOwner(); exploration.stop(); return if (battle != null) battle!!.checkpoint() else persist() }
+    fun checkpoint(): Boolean { checkOwner(); exploration.stop(); pendingTransition?.let { return commitTransition(it) }; return if (battle != null) battle!!.checkpoint() else persist() }
     private fun persist(): Boolean {
         pendingSave = true
         return try { repository.save(export()); pendingSave = false; failure = null; true }
@@ -159,6 +184,7 @@ class SessionCoordinator(val catalog: ContentCatalog, val world: WorldContent, p
     }
     fun retrySave(): Boolean {
         checkOwner()
+        pendingTransition?.let { return commitTransition(it) }
         val result = battle?.retrySave() ?: persist()
         if (result) { failure = null; finishBattleIfReady() }
         return result
@@ -167,11 +193,12 @@ class SessionCoordinator(val catalog: ContentCatalog, val world: WorldContent, p
         val b = overrideBattle ?: battle?.restoreExport()
         return SessionRestore(catalog.version, world.version, seed, expedition, operation, exploration.area.town, exploration.area.placements,
             exploration.restoreExport(), gold, supplies, pendingGold, pendingSupplies, if (b == null) hero else null, b, encounterId,
-            b?.random ?: random.capture(), notice)
+            b?.random ?: random.capture(), notice, lastBattleEvents)
     }
     fun close() { if (!closed) { checkpoint(); battle?.close(); closed = true } }
     companion object {
         fun validate(s: SessionRestore, catalog: ContentCatalog, world: WorldContent) {
+            require(s.lastBattleEvents.size <= 100 && s.lastBattleEvents.zipWithNext().all { it.first.sequence < it.second.sequence })
             require(s.version == catalog.version && s.worldVersion == world.version && s.expedition >= 0 && s.operation >= 0 && s.gold >= 0 && s.pendingGold >= 0)
             require((s.hero == null) == (s.battle != null) && (s.encounter == null) == (s.battle == null))
             require(s.supplies.keys == world.offers.map { it.potion }.toSet())
@@ -185,7 +212,7 @@ class SessionCoordinator(val catalog: ContentCatalog, val world: WorldContent, p
                 BattleSimulation.validateRestore(s.battle, catalog)
                 require(s.battle.random == s.random)
             } else {
-                val h = checkNotNull(s.hero); require(h.id == EntityId(1) && !h.open && h.locked == null && h.reserved == ResourceVector(0, 0, 0))
+                val h = checkNotNull(s.hero); require(h.id == EntityId(1))
                 val sim = BattleSimulation.create(BattleSession(s.seed, catalog), hero = h)
                 try { val export = sim.restoreExport(); BattleSimulation.validateRestore(export, catalog) } finally { sim.dispose() }
             }

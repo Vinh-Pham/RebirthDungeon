@@ -2,13 +2,13 @@
 
 Guidance for AI assistants working in this repository.
 
-## Active architecture migration
+## Active combat rework
 
-Implement `docs/free-exploration.md`: continuous polygon navigation, fixed 60 Hz exploration, and a separate command-driven battle World per active encounter. This supersedes grid movement and one-World-per-run guidance below. Preserve the Gdx-free game boundary and historical unmet native gates. New saves only; no compatibility engine.
+Implement and track `docs/turn-based-plan.md`. Fixed Speed order and one optional item before Attack/Skill/Defend replace five-dice combat. `docs/kotlin-architecture.md` is the current architecture and placement contract. Preserve continuous polygon navigation, fixed 60 Hz exploration, one command-driven battle World per encounter, the Gdx-free game boundary, and historical unmet native gates. New saves only; no compatibility engine. The old architecture/tracker files were removed by the user; do not restore them as part of this work.
 
 ## What this project is
 
-**RebirthDungeon** (JVM package `cloud.vinh.rebirthdungeon`) is a 2D pixel-art roguelike with continuous exploration and turn-based encounter battles with **five-dice dice combat**, loot, progression, and a later gacha meta-game. It is built in **Kotlin** with **libGDX** (project scaffolded with gdx-liftoff in Java, fully ported to Kotlin after Phase 1). Combat is inspired by Dicero (roll five dice, keep, reroll, commit a hand); progression, inventory, skills, enchants, quests, and titles are inspired by Mabinogi. The references are design inspiration, not literal requirements.
+**RebirthDungeon** (JVM package `cloud.vinh.rebirthdungeon`) is a 2D pixel-art roguelike with continuous exploration and turn-based encounter battles with **individual turns in fixed Speed order**, loot, progression, and a later gacha meta-game. It is built in **Kotlin** with **libGDX** (project scaffolded with gdx-liftoff in Java, fully ported to Kotlin after Phase 1). Combat now uses Attack, Skill, Defend and one optional item; progression, inventory, skills, enchants, quests, and titles are inspired by Mabinogi. The references are design inspiration, not literal requirements.
 
 Two principles shape everything:
 
@@ -17,22 +17,19 @@ Two principles shape everything:
 
 ## Documentation map (read before designing anything)
 
-| Document                               | Role                                                                                                                                                                                                                                  |
-|----------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `docs/game-plan.md`                    | **The architecture contract.** Dependency audit, system ownership, threading model, artemis-odb world model, ordered rule pipeline, exploration/dice/combat contracts, persistence, target package structure, validation matrix, milestones. |
-| [docs/directory.md](docs/directory.md) | **The directory and package placement guide.** Follow its responsibility boundaries, feature ownership, dependency direction, asset/test layout, and incremental adoption guidance when adding or moving files.                       |
-| `docs/project-phases.md`               | **The implementation tracker.** 17 phases (0–16) with task/exit checkboxes, tracking rules, Current Focus, Completion Log, and Work Notes.                                                                                            |
-| `docs/gameplay/*.md`                   | Nine gameplay specs: `battle`, `stats`, `skills`, `character`, `inventory`, `enchants`, `quests`, `titles`, `towns`. These are **planned designs, not implemented features**; numeric defaults are provisional.                       |
-| `.firecrawl/`                          | Cached web research (artemis-odb wiki, libGDX wiki, Mabinogi wiki, Dicero) used as source material for the plan. Reference only — not project code.                                                                                   |
-| `README.md`                            | Build prerequisites per platform, dependency policy, and platform verification procedures.                                                                                                                                            |
+- `docs/kotlin-architecture.md`: current Kotlin ownership, directory placement, persistence, versions and library boundaries.
+- `docs/turn-based-plan.md`: implementation queue, first-slice scope, deferred features, verification and current focus.
+- `docs/gameplay/battle.md`: current playable combat contract; other gameplay specifications describe later designs. Browser implementation notes in those documents are reference material, not Kotlin implementation evidence.
+- `docs/evidence/turn-based/verification.md`: scoped checks and historical native blockers.
+- `README.md`: build prerequisites and platform procedures.
 
-When gameplay behavior is in question, the gameplay spec owns the rule, `game-plan.md` owns system design, `docs/directory.md` owns directory/package placement, and `project-phases.md` owns implementation order. The directory guide extends game-plan.md section 17; its target paths are not claims of implementation. `gameplay/titles.md` is integrated into game-plan.md (specification index, ownership, save shape, progression and validation coverage, 2026-09-07); project-phases.md folds its implementation into phases 6–9.
+Gameplay specifications own rules, the architecture document owns boundaries, and the turn-based tracker owns current implementation order. Keep provisional balance distinct from requirements.
 
 ## Directory structure
 
 Gradle multi-module project (Gradle wrapper **9.5.1**; daemon JVM is Java 25 via `gradle/gradle-daemon-jvm.properties`, but **shared code is Kotlin pinned to JVM 1.8 bytecode and the Java 8 API surface** — `jvmTarget = 1.8` plus `-Xjdk-release=1.8` in the root `build.gradle.kts`; no newer JDK APIs in `core`, because the Android dexer and the RoboVM iOS compiler do not consume newer bytecode).
 
-Follow [docs/directory.md](docs/directory.md) for the full target tree. This condensed map describes responsibilities; create nested packages only as their features arrive.
+Follow [docs/kotlin-architecture.md](docs/kotlin-architecture.md) for the full target tree. This condensed map describes responsibilities; create nested packages only as their features arrive.
 
 ```text
 core/src/main/kotlin/cloud/vinh/rebirthdungeon/
@@ -53,7 +50,7 @@ core/src/main/kotlin/cloud/vinh/rebirthdungeon/
     ecs/systems/               Explicitly ordered systems delegating feature calculations
     exploration/, algorithms/  Fixed-point navigation, room discovery/generation, RNG interfaces
     squidsquad/, turns/        Library adapters and initiative/activation rules
-    combat/                    dice/, abilities/, stats/, statuses/
+    combat/                    abilities/, stats/, statuses/
     progression/               character/, skills/, talents/, titles/
     inventory/, enchanting/    Item ownership/reconciliation and enchant rules
     quests/missions/           RP rules within the quest feature
@@ -64,7 +61,7 @@ core/src/main/kotlin/cloud/vinh/rebirthdungeon/
   presentation/
     screens/                   Loading/title/town/dungeon/results composition
     dungeon/, town/            World rendering and interaction presentation
-    hud/                       Shared status/menu bar, dice panel, quest tracker
+    hud/                       Shared status/menu bar, battle actions, quest tracker
     windows/                   character/, skills/, inventory/, quests/, services/
     input/, animation/, audio/ Input translation and cosmetic presentation
   platform/                    Shared native capability interfaces
@@ -117,8 +114,8 @@ Keep the existing Gradle modules and one shared production source root. **Do not
 
 ## Working conventions for this repo
 
-- **Follow `docs/project-phases.md` as the work queue.** Complete the earliest unfinished phase by default (currently the user-directed free-exploration migration; Phase 5 native gates remain open). Preserve unmet prerequisites if priorities change, and record the change.
-- Before implementing towns, reconcile the architecture/tracker with `docs/gameplay/towns.md` as described in directory.md section 7, including carried/banked gold, reward capacity, and recovery access. Record phase placement and unresolved rules; directory adoption does not settle balance or authorize skipping prerequisites.
+- **Follow `docs/turn-based-plan.md` as the current work queue.** Finish the earliest unfinished milestone; historical Phase 5 native gates remain open. Preserve unmet prerequisites if priorities change, and record the change.
+- Before implementing towns, reconcile the architecture/tracker with `docs/gameplay/towns.md` under the architecture contract, including carried/banked gold, reward capacity, and recovery access. Record phase placement and unresolved rules; directory adoption does not settle balance or authorize skipping prerequisites.
 - **A checked box means implemented *and* verified.** Record commands, targets/devices, results, and file paths as evidence. A missing device or credential is an unmet gate, not a pass.
 - When finishing a phase, update the phase checklist, Phase Overview, Current Focus, and Completion Log **together**; keep dated blockers and next actions in Work Notes.
 - If a planned feature is intentionally omitted, record its disposition and rationale against that item — never silently skip required behavior or add a library just to close a checkbox.

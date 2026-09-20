@@ -1,10 +1,30 @@
-# Rebirth Dungeon: Battle System
+# RebirthDungeon.Ktx: individual-turn battle contract
 
-> **Active migration (2026-09-10):** [Free exploration and separate battles](../free-exploration.md) supersedes the grid-world, shared dungeon/battle screen, spatial combat, and legacy-save contracts below. Earlier phase evidence is retained as history.
+The Kotlin runtime now uses fixed Speed order and one optional potion before Attack, Skill or Defend. This replaces the historical dice contract below. Implementation and acceptance are tracked in [the turn-based plan](../turn-based-plan.md); [the Kotlin architecture](../kotlin-architecture.md) owns boundaries. Browser implementation claims in retained reference text are not evidence about this project.
+
+- One hero and one enemy per encounter; exploration remains continuous and consumes no turns.
+- Player Speed is `10 + floor(DEX / 10)` at entry; the starter enemy has Speed 9. Descending fixed order uses one combat-stream shuffle for ties and is saved before input.
+- Attack costs `2.0 + 0.1 × mastery rank index` SP; the starter F mastery recovers 0.5 SP at owner start. SP amounts are exact integer tenths. Other skill costs round up to whole SP after modifiers.
+- Defense F costs 1.0 SP and grants +2 Defense/+5 percentage points Protection until the next owner start. Fortify is a separate shield skill.
+- The main action pays costs and resolves once. Item use shares session stock, does not end the turn or tick effects, and is limited to one successful use. Failed/no-op item requests consume nothing.
+- Wait is free and legal only when no main action is affordable. It supplies no special recovery or guard. No ordinary Pass, battle Recover, dice, reservations or rerolls remain.
+- Damage is `floor(max(0, rankBase + allowedAttack - defense) × (100 - protection) / 100)`, then shield absorption and HP-loss clamping. The starter slice has no critical/miss/variance rolls.
+- Turn start expires Defend and recovers SP once; owner-end statuses/cooldowns skip their casting boundary. Periodic deaths never regenerate. Terminal effects stop later effects/boundaries; one turn-end event still finalizes the action.
+- Save all boundaries and item outcomes before dependent actions. Restoring or retrying never repeats recovery, damage, items or RNG. Use new saves only.
+
+Provisional bases: Normal Attack 6; Sword F/E 16/20; Spark 18; Blood 24; Fortify 14 shield; enemy strike 4 with its weakened status and two-turn cooldown. Against the starter 10 attack/5 defense, Sword F deals 21 and Spark 23 before further modifiers. The old average first-roll Sword value was 24.5 before combination multipliers; there is no hidden average-roll replacement. Focus preserves its authored strength status. Balance remains provisional; see recorded automated and native checks.
+
+Full mastery progression/AP/training, weapon categories, reactions, multi-hit/critical skills, advanced enemy families, party combat and RP missions are later work. Frozen F metadata does not implement those systems.
+
+---
+
+## Historical dice and browser reference (superseded for Kotlin runtime)
+
+# Rebirth Dungeon: Battle System
 
 Combat uses **five six-sided dice** and Dicero-style decisions: roll, keep useful dice, reroll the others, and commit a hand whose pips and combination determine the action's strength. Rebirth Dungeon adds an explicit **skill choice before the roll**. The selected skill's rank supplies its base damage and may change the probabilities of rolling particular faces.
 
-The starter battle is implemented; later extensions below remain planned designs. It complements [skills.md](skills.md), [character.md](character.md), [stats.md](stats.md), the [game plan](../game-plan.md), and the [project phases](../project-phases.md). Five dice, skill-dependent rolls, and rank-based base damage are requirements. Reroll limits, scoring values, formulas, and other defaults below are provisional; individual skill designs will refine them later.
+**Implementation status:** Revised dice combat and the supported advanced skills are implemented in Phaser. The [accepted implementation contract](skills-implementation.md) specifies the shipped subset and supersedes provisional numbers and historical engine notes below. It complements [skills.md](skills.md), [character.md](character.md), [stats.md](stats.md), the [game plan](../game-plan.md), and the [project phases](../project-phases.md). Five dice, skill-dependent rolls, and rank-based base damage are requirements. Reroll limits, scoring values, formulas, and other defaults below are provisional; individual skill designs will refine them later.
 
 The [Phase 4 starter contract](../phase4-combat.md) authors the initial skill values, recovery/exhaustion policy, encounter scope and integration boundary for these rules.
 
@@ -26,7 +46,7 @@ We adopt the central **pip score + combination + keep/reroll** loop. We start wi
 ## 2. Core battle rules
 
 | Element      | Proposed rule                                                                        |
-|--------------|--------------------------------------------------------------------------------------|
+| ------------ | ------------------------------------------------------------------------------------ |
 | Dice         | Exactly five dice, each showing a face from 1 through 6                              |
 | Skill        | Select one learned, usable active skill before rolling                               |
 | Skill cost   | Each activation consumes stamina, mana, HP, or an authored combination; see stats.md |
@@ -76,7 +96,7 @@ Committing consumes the hand and deducts the reserved SP/MP/HP once before apply
 
 The player may pass instead. Passing before rolling consumes the turn without a skill cost. Passing after rolling discards the hand and spends the reserved cost, so cancelling is not a free attempt to obtain better dice. Passing grants no skill-use training.
 
-Enemies do not act while the player inspects or rerolls. Only activation completion advances initiative, following the existing command-driven scheduler. There is no real-time deadline for a roll decision.
+Enemies do not act while the player inspects or rerolls. Only activation completion advances initiative, following the planned command-driven scheduler. There is no real-time deadline for a roll decision.
 
 When consumables are enabled, using a potion is an alternative full action before rolling: consume the item, apply its recovery and/or buff/debuff effects, and end the activation. Potions cannot be used between a roll and its commit/pass. Equipment swaps remain outside the initial battle flow. [Consumable timing](stats.md#7-battle-timing-and-consumables).
 
@@ -85,7 +105,7 @@ When consumables are enabled, using a potion is an alternative full action befor
 All five dice contribute to **pip total**, from 5 through 30. Independently classify the final hand using this provisional table, ordered strongest first:
 
 | Combination     | Definition                                         | Example                    | Multiplier |
-|-----------------|----------------------------------------------------|----------------------------|------------|
+| --------------- | -------------------------------------------------- | -------------------------- | ---------- |
 | Five of a kind  | All five faces match                               | `6,6,6,6,6`                | ×10        |
 | Four of a kind  | Exactly four faces match                           | `5,5,5,5,2`                | ×5         |
 | Full house      | Three matching faces and a different matching pair | `4,4,4,2,2`                | ×3.5       |
@@ -148,7 +168,7 @@ At least one weight must be positive. A zero weight makes a face impossible and 
 Example profiles, not assigned to any final skill rank:
 
 | Face      | Fair weight | High-pip-biased weight |
-|-----------|-------------|------------------------|
+| --------- | ----------- | ---------------------- |
 | 1         | 10          | 5                      |
 | 2         | 10          | 7                      |
 | 3         | 10          | 9                      |
@@ -179,10 +199,10 @@ A newly applied buff or debuff affects subsequent actions, not the frozen damage
 
 ## 8. Fit with the existing game plan
 
-This document refines game-plan section 10's general dice-ability design. For this battle mode, **all five dice belong to the selected skill**; per-die assignment across multiple abilities is replaced by keep/reroll selection. The gameplay-specific rules here supersede the older draft's allocation and multi-use assumptions; retain its synchronous commands, save boundaries, and initiative contract.
+The [Phaser implementation contract](skills-implementation.md) implements this contract through typed battle state and synchronous TypeScript rules inside durable Immer transactions. A separate battle scene submits commands and renders observations. All five dice belong to one selected skill; there is no per-die ability assignment.
 
 | Command or intent      | Battle-mode contract                                                                       |
-|------------------------|--------------------------------------------------------------------------------------------|
+| ---------------------- | ------------------------------------------------------------------------------------------ |
 | Select skill/target    | Allowed before the first roll; validates ownership and prerequisites                       |
 | `ROLL_DICE`            | Lock skill/rank/target/stats/profile, reserve SP/MP/HP costs, and commit five results once |
 | Set kept dice          | Change the kept flags without consuming RNG or a turn                                      |
@@ -191,9 +211,9 @@ This document refines game-plan section 10's general dice-ability design. For th
 | `END_TURN`             | Pass under the rules in section 3; never finalize an already-ended activation again        |
 | Use item, when enabled | Before rolling, resolve one consumable as a full action and end activation                 |
 
-The old singular `REROLL_DIE` needs a batch form for a subset; `ASSIGN_DIE` and `UNASSIGN_DIE` are not used in this mode. The game plan's dice-command table and the Phase 4 implementation checklist were aligned to this contract on September 5, 2026 (`REROLL_DICE` batch rerolls, whole-hand `USE_ABILITY`, no assignment commands); the paragraph above retains the historical rationale for the replacement. This documentation does not claim those commands or systems exist in code.
+Use a batch `REROLL_DICE` request with explicit stable die indices. Scene signals carry intents to the session controller; they never resolve damage or generate dice themselves. This table uses design-level command names; the shipped command mappings and supported scope follow the implementation contract.
 
-Persist the activation phase, stable die IDs and faces, kept flags, reroll budget, selected skill/rank/target, locked stat inputs and profile, current resource pools and reservations, active status sources/durations, and gameplay RNG state. Save after each accepted roll/reroll and committed resolution. Loading resumes the same hand, costs, effects, and budget; reopening a panel or retrying a command never rerolls, refills resources, refreshes status durations, or applies damage twice.
+Persist the activation phase, stable die IDs and faces, kept flags, reroll budget, selected skill/rank/target, locked stat inputs and profile, current resource pools and reservations, active status sources/durations, and gameplay RNG state. Save after each accepted roll/reroll, kept-state change and committed resolution. Loading resumes the same hand, costs, effects, and budget; reopening a panel or retrying a command never rerolls, refills resources, refreshes status durations, or applies damage twice.
 
 Use integer weights and exact rational/fixed-point combo arithmetic with the rounding points above. Previews evaluate already-rolled dice without consuming gameplay RNG. Invalid commands leave dice, resources, training, initiative, and RNG unchanged. Pin rules and content versions so replays use the same probabilities and scoring definitions.
 
@@ -224,12 +244,16 @@ The first playable slice should prove one sword skill at two illustrative ranks,
 
 Still open: final reroll allowance, combination multipliers, damage scaling, defense balance, skill costs and cooldowns, defensive/utility scoring, and individual rank probability tables. Rare hands must remain exciting without making ordinary hands ineffective. Exactly five dice and selecting the skill before its roll remain the foundation.
 
+## Phaser battle integration
+
+XState orchestrates command phases; Immer resolves immutable domain transactions and IndexedDB commits before publishing. Phaser displays the saved battle and controls. See [the accepted implementation contract](skills-implementation.md).
+
 ## Research notes
 
 Sources were retrieved through Firecrawl and inspected on **September 5, 2026**. Official store material establishes the game premise; official-support regional FAQs clarify selected rules; gameplay coverage and community references supply the detailed hand/reroll observations. No current game client was directly tested. Local caches are gitignored research artifacts.
 
 | Reference                                                                                                                   | Local cache                            |
-|-----------------------------------------------------------------------------------------------------------------------------|----------------------------------------|
+| --------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
 | [Habby Google Play listing](https://play.google.com/store/apps/details?id=com.bailing.lark.roll.dev&hl=en)                  | `.firecrawl/dicero-google-play.md`     |
 | [March gameplay walkthrough](https://www.youtube.com/watch?v=pn13iUFfrdY)                                                   | `.firecrawl/search-dicero-combat.json` |
 | [July review and combo table](https://nygamecritics.com/2026/07/23/the-insight-dicero-is-so-much-fun-except-for-one-thing/) | `.firecrawl/search-dicero-combat.json` |

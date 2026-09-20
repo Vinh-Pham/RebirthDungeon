@@ -115,7 +115,7 @@ class ExplorationScreen(private val game: RebirthDungeon) : KtxScreen {
         }
         ScreenUtils.clear(Color.valueOf("0d151d"))
         s?.let { drawWorld(it, delta) }
-        stage.viewport.apply(); stage.act(delta.coerceIn(0f, 0.1f)); stage.draw()
+        stage.viewport.apply(); stage.act(delta.coerceIn(0f, 0.1f)); stage.draw(); Screenshots.captureIfRequested("exploration")
     }
     private fun drawWorld(s: SessionCoordinator, delta: Float) {
         val v = s.exploration.observe(); val scale = WorldPoint.SCALE.toFloat()

@@ -2,6 +2,8 @@ package cloud.vinh.rebirthdungeon.presentation.hud
 
 import cloud.vinh.rebirthdungeon.application.run.*
 import cloud.vinh.rebirthdungeon.game.commands.*
+import cloud.vinh.rebirthdungeon.game.combat.abilities.BattleRules
+import cloud.vinh.rebirthdungeon.game.combat.stats.*
 import cloud.vinh.rebirthdungeon.game.content.*
 import cloud.vinh.rebirthdungeon.game.identity.*
 import cloud.vinh.rebirthdungeon.game.projection.*
@@ -26,19 +28,21 @@ class BattleHud(val stage: Stage, private val skin: Skin, private val content: C
     private val summary = Label("", skin)
     private val costs = Label("", skin)
     private val availability = Label("", skin)
-    private val diceRow = Table()
+    private val orderRow = Table()
     private val actionsRow = Table()
     private val navigation = Table()
-    private val dock: GameBar
+    private val party = Label("", skin)
+    private var battleMenu = false
+    private var returnTo: (() -> Unit)? = null
     private val movement = Table()
     private val actions = linkedMapOf<TextButton, () -> Unit>()
     private val statusSummary = button("Statuses: none") { inspect() }
-    private val dice = (0..4).map { id -> button("${id + 1}: -") { model?.let { request(KeepDieCommand(id, !it.hero.kept[id])) } } }
-    private val roll = button("Roll") { request(RollDiceCommand) }
-    private val reroll = button("Reroll unkept") { model?.let { request(RerollDiceCommand(it.unkept)) } }
-    private val use = button("Use Skill") { request(UseAbilityCommand) }
-    private val potion = button("Potions") { potions() }
-    private val pass = button("Pass") { confirmPass() }
+    private val attack = button("Attack") { model?.let { m -> observation?.actors?.firstOrNull { !it.player && it.hp > 0 }?.let { confirmSkill(BattleRules.normal, it.id) } } }
+    private val skillButton = button("Skills") { skills() }
+    private val defend = button("Defend") { model?.let { confirmSkill(BattleRules.defend, it.hero.id) } }
+    private val potion = button("Items") { potions() }
+    private val wait = button("Wait") { model?.let { request(WaitCommand(it.turn)) } }
+    private val orderLabel = Label("", skin)
     private val restart = button("New run", newRun)
     private var model: BattleView? = null
     private var observation: BattleObservation? = null
@@ -75,33 +79,36 @@ class BattleHud(val stage: Stage, private val skin: Skin, private val content: C
         hudLayer.setFillParent(true); hudLayer.touchable = Touchable.childrenOnly
         windowLayer.touchable = Touchable.childrenOnly; modalLayer.touchable = Touchable.childrenOnly
         toastLayer.touchable = Touchable.disabled
-        top.background = HudFrame(skin.getDrawable("white")); bottom.background = HudFrame(skin.getDrawable("white"))
-        dock = GameBar(skin, ::button, ::character, ::skills,
-            { show("Quests", "The quest journal is not implemented yet.") },
-            { show("Inventory", "Inventory and equipment management are not implemented yet.") },
-            { show("Pets", "Pets are not implemented yet.") }, ::inspect, ::options, menu)
-        top.pad(8f); bottom.pad(8f)
-        listOf(title, summary, costs, availability).forEach { it.setFontScale(1.33f) }
-        title.setWrap(true); summary.setWrap(true); costs.setWrap(true); availability.setWrap(true)
+        top.background = BattleFrame(skin.getDrawable("white")); bottom.background = BattleFrame(skin.getDrawable("white"))
+        top.pad(8f); bottom.pad(10f)
+        listOf(title, summary, costs, availability, party).forEach { it.setFontScale(1.25f); it.setWrap(true) }
         top.add(title).growX()
-        top.add(statusSummary).minSize(100f, 48f).padLeft(8f)
+        top.add(button("Log") { showLog(true) }).minSize(56f, 40f).padLeft(8f)
+        top.add(button("Options") { options() }).minSize(80f, 40f).padLeft(4f)
+        top.add(statusSummary).minSize(88f, 40f).padLeft(4f)
         navigation.add(button("Retry save", retry)).minSize(88f, 48f).pad(4f)
         navigation.add(button("Skip", skip)).minSize(56f, 48f).pad(4f)
-        navigation.add(restart).minSize(72f, 48f).pad(4f); restart.isVisible = false
-        dice.forEach { diceRow.add(it).minSize(64f, 48f).pad(4f).growX() }
-        listOf(roll, reroll, use, pass, potion).forEach { actionsRow.add(it).minSize(72f, 48f).pad(4f).growX() }
-        bottom.add(summary).growX().row(); bottom.add(costs).growX().row()
-        bottom.add(diceRow).growX().row(); bottom.add(actionsRow).growX().row(); bottom.add(availability).growX().row()
-        bottom.add(movement).right().row()
-        bottom.add(dock).growX().padTop(6f)
+        navigation.add(button("Title", menu)).minSize(56f, 48f).pad(4f)
+        orderLabel.setWrap(true)
+        listOf(attack, skillButton, potion, defend, wait).forEach {
+            it.label.setAlignment(com.badlogic.gdx.utils.Align.left)
+            actionsRow.add(it).minHeight(40f).growX().row()
+        }
+        val status = Table()
+        status.add(party).growX().left().row()
+        status.add(summary).growX().padTop(10f).row()
+        status.add(orderLabel).growX().padTop(8f)
+        bottom.add(actionsRow).width(160f).top().padRight(18f)
+        bottom.add(status).growX().top()
         hudLayer.top().left(); hudLayer.add(top).growX().row()
+        hudLayer.add(availability).growX().height(32f).pad(4f).row()
         hudLayer.add().expand().row(); hudLayer.add(bottom).growX()
         displayPhase(false, false)
     }
     private fun button(text: String, action: () -> Unit): TextButton = TextButton(text, skin).also { b ->
         b.style = TextButton.TextButtonStyle(b.style).apply {
-            up = HudFrame(skin.getDrawable("white"))
-            over = HudFrame(skin.getDrawable("white"), true)
+            up = BattleFrame(skin.getDrawable("white"))
+            over = BattleFrame(skin.getDrawable("white"), true)
             down = over; focused = over; checked = over
             disabled = up
             disabledFontColor = com.badlogic.gdx.graphics.Color.valueOf("637b7e")
@@ -118,11 +125,11 @@ class BattleHud(val stage: Stage, private val skin: Skin, private val content: C
     }
     fun resize(width: Float, height: Float, left: Float, right: Float, topInset: Float, bottomInset: Float) {
         compact = width - left - right < 760f || height - topInset - bottomInset < 500f
-        dock.arrange(width - left - right < 760f)
-        // Compact mode puts explanatory detail in the inspection sheet, preserving dice/action target sizes.
+        bottom.getCell(actionsRow).width(if (compact) 128f else 160f)
+        // Compact mode puts explanatory detail in the inspection sheet, preserving action target sizes.
         statusSummary.isVisible = !compact
         top.getCell(statusSummary).minWidth(if (compact) 0f else 100f).width(if (compact) 0f else 120f).padLeft(if (compact) 0f else 8f)
-        displayPhase(model?.inBattle == true, model?.pass?.enabled == true)
+        displayPhase(model?.inBattle == true, model?.ready == true)
         hudLayer.invalidateHierarchy()
         hudLayer.pad(topInset + 8f, left + 8f, bottomInset + 8f, right + 8f)
         listOf(windowLayer, modalLayer, toastLayer).forEach { it.setSize(width, height) }
@@ -136,106 +143,112 @@ class BattleHud(val stage: Stage, private val skin: Skin, private val content: C
         restart.isVisible = false
         if (logRun != view.runId) { log.clear(); lastLogEvent = 0; logRun = view.runId }
         view.events.filter { it.sequence > lastLogEvent }.forEach { e ->
-            appendLog(e.event.javaClass.simpleName !in setOf("ActorMoved", "ActivationEnded", "TileExplored"), e.event.toString())
+            appendLog(true, cloud.vinh.rebirthdungeon.presentation.hud.BattleLog.text(e))
             lastLogEvent = e.sequence
         }
         if (c.failure != lastFailure) { c.failure?.let { appendLog(false, "Save failure: $it") }; lastFailure = c.failure }
         if (m == null) {
             title.setText("Battle unavailable")
-            dock.bind(null); displayPhase(false, true); bottom.isVisible = true; return
+            party.setText("No active party"); displayPhase(false, true); bottom.isVisible = true; return
         }
         bottom.isVisible = true
         val h = m.hero
-        dock.bind(h)
+        party.setText("HERO     ${if (m.ready) "Ready" else ""}\nHP  ${h.current.hp} / ${h.maximum.hp}\nMP  ${h.current.mp} / ${h.maximum.mp}\nSP  ${StaminaRules.format(h.current.spTenths)} / ${StaminaRules.format(h.maximum.spTenths)}")
         statusSummary.setText(if (h.statuses.isEmpty()) "Statuses: none" else "[S] ${h.statuses.size} active\n" + h.statuses.joinToString { "${it.remaining} activations" })
-        val selection = h.locked?.selection ?: h.selection
-        val skill = selection?.let { content.skills.getValue(it.skill) }
-        val stateMessage = if (c.failure != null) "Save failed — Options > Retry save" else
-            (c.combatObservation()?.outcome?.let { "$it — " } ?: "") + m.message
-        title.setText("Battle   |   $stateMessage")
-        val target = view.actors.firstOrNull { it.id == selection?.target }
-        summary.setText((skill?.name ?: "Choose a skill") + (selection?.let { " ${it.rank} / ${if (target?.player == true) "Self" else "Enemy"} ${target?.hp ?: "?"}/${target?.maxHp ?: "?"}" } ?: "") +
-            if (h.locked != null) " [LOCKED]" else "")
-        costs.setText("Reserved HP ${h.reserved.hp}, MP ${h.reserved.mp}, SP ${h.reserved.sp}" +
-            (m.score?.let { " | ${it.pips} pips / ${it.combination.name.replace('_', ' ')} " + h.locked!!.let { l -> content.scoring.getValue(l.definition.scoring).multipliers.getValue(it.combination).let { r -> "${r.numerator}/${r.denominator}x" } } } ?: ""))
-        dice.forEachIndexed { i, b ->
-            b.setText("${i + 1}: ${h.faces[i].takeIf { it > 0 } ?: "-"}\n${if (h.kept[i]) "[KEPT]" else "REROLL"}")
-            b.isDisabled = h.locked == null || !m.pass.enabled
-            b.isChecked = h.kept[i]
-        }
-        roll.isDisabled = !m.roll.enabled; reroll.isDisabled = !m.reroll.enabled
-        use.isDisabled = !m.use.enabled; pass.isDisabled = !m.pass.enabled; potion.isDisabled = !m.pass.enabled || h.locked != null
-        reroll.setText("Reroll unkept (${m.unkept.size})\n${h.rerolls} remaining")
-        pass.setText(if (h.locked == null) "Pass" else "Pass (paid)")
-        availability.setText(if (presenting) m.message else when {
-            !m.pass.enabled -> m.pass.reason
-            h.locked != null -> if (!m.reroll.enabled) m.reroll.reason else "Keep 1–5; Use Skill commits. Pass spends reserved costs."
-            else -> m.roll.reason
+        val combat = c.combatObservation()
+        val turn = combat.turn
+        title.setText("Round ${turn.round}  /  ${if (turn.active == h.id) "Hero" else "Enemy"}")
+        summary.setText("${if (turn.itemUsed) "Item used" else "Item available"}")
+        orderLabel.setText(turn.order.joinToString("  >  ") { entry ->
+            val name = if (entry.actor == h.id) "Hero" else "Enemy"
+            val dead = combat.actors.firstOrNull { it.id == entry.actor }?.current?.hp == 0
+            "${if (entry.actor == turn.active) "[" else ""}$name ${entry.speed}${if (dead) " defeated" else ""}${if (entry.actor == turn.active) "]" else ""}"
         })
-        displayPhase(m.inBattle, m.pass.enabled)
+        attack.isDisabled = !m.attack.enabled; defend.isDisabled = !m.defend.enabled
+        skillButton.isDisabled = !m.ready; potion.isDisabled = !m.item.enabled
+        wait.isDisabled = !m.wait.enabled; wait.isVisible = m.wait.enabled
+        actionsRow.getCell(wait).height(if (wait.isVisible) 40f else 0f).minHeight(if (wait.isVisible) 40f else 0f)
+        if (focused == null && m.ready && !hasModal) focus(attack.takeUnless { it.isDisabled } ?: skillButton)
+        availability.setText(if (!m.ready) m.message else view.events.lastOrNull { it.event !is cloud.vinh.rebirthdungeon.game.events.TurnStarted && it.event !is cloud.vinh.rebirthdungeon.game.events.ActivationEnded }?.let { BattleLog.text(it) } ?: m.message)
+        displayPhase(m.inBattle, m.ready)
         bottom.invalidateHierarchy()
     }
     private fun displayPhase(inBattle: Boolean, canMove: Boolean) {
-        movement.isVisible = false
-        bottom.getCell(movement).height(if (movement.isVisible) 56f else 0f)
-        listOf(summary, costs, diceRow, actionsRow, availability).forEach {
-            it.isVisible = inBattle && (it != availability || !compact)
-        }
-        bottom.getCell(summary).height(if (inBattle) summary.prefHeight else 0f)
-        bottom.getCell(costs).height(if (inBattle) costs.prefHeight else 0f)
-        bottom.getCell(diceRow).height(if (inBattle) 56f else 0f)
-        bottom.getCell(actionsRow).height(if (inBattle) 64f else 0f)
-        bottom.getCell(availability).height(if (inBattle && !compact) 32f else 0f)
+        actionsRow.isVisible = inBattle
+        availability.isVisible = true
     }
     private fun appendLog(combat: Boolean, text: String) {
         log.addLast(combat to text); while (log.size > 100) log.removeFirst()
     }
     fun saving() {
         title.setText("Saving — commands are paused until the checkpoint is durable")
-        (dice + listOf(roll, reroll, use, pass, potion)).forEach { it.isDisabled = true }
+        listOf(attack, skillButton, potion, defend, wait).forEach { it.isDisabled = true }
         movement.isVisible = false
     }
     fun systemMessage(text: String) { appendLog(false, text); availability.setText(text); if (model?.inBattle != true) title.setText(text) }
     private fun potions() {
         val m = model ?: return
-        show("Potion supplies", "A potion is a full action before rolling. It cannot be used after a hand is locked.") { d ->
+        show("Items", "One item before your command", battle = true) { d ->
             val choices = Table()
             content.potions.values.forEach { definition ->
                 val count = supplyCount(definition.id)
                 val b = button("${definition.name} ($count)") {
-                    close(); send(DrinkPotionCommand(definition.id), m.token, m.revision)
+                    close(); send(DrinkPotionCommand(m.turn, definition.id), m.token, m.revision)
                 }
-                b.isDisabled = count <= 0 || m.hero.locked != null || !m.pass.enabled
+                b.isDisabled = count <= 0 || !m.item.enabled || !BattleRules.potionUseful(m.hero, definition, content)
                 choices.add(b).growX().minHeight(48f).pad(4f).row()
             }
             d.contentTable.row(); d.contentTable.add(choices).growX()
         }
     }
-    private fun confirmPass() {
+    private fun confirmSkill(id: ContentId, target: EntityId) {
         val m = model ?: return
-        if (m.hero.locked == null) { request(EndTurnCommand); return }
-        val token = m.token; val revision = m.revision; val c = m.hero.reserved
-        show("Pass — discard this hand", "Spend HP ${c.hp}, MP ${c.mp}, SP ${c.sp}. Discard all five dice.\nCancel keeps your hand and rerolls.") { d ->
-            val confirm = button("Spend and Pass") { close(); send(EndTurnCommand, token, revision) }
-            d.buttonTable.add(confirm).minHeight(48f).pad(4f)
+        val targetActor = controller?.combatObservation()?.actors?.firstOrNull { it.id == target } ?: return
+        val definition = content.skills.getValue(id)
+        if (BattleRules.failure(m.hero, targetActor, definition) != null || !m.ready) return
+        val ability = BattleRules.resolve(m.hero, targetActor, definition)
+        val cost = ability.cost
+        val result = if (definition.effect == SkillEffect.DAMAGE) DamageRules.resolve(ability.inputs, targetActor.shield, targetActor.current.hp) else null
+        val effect = result?.let { "${it.hpDamage} HP damage; ${it.shieldAbsorbed} shield absorbed" } ?: when (definition.effect) {
+            SkillEffect.DEFEND -> "+2 Defense, +5 Protection until your next turn"
+            SkillEffect.SHIELD -> "${ability.rank.basePower} shield for ${definition.shieldDuration} owner turns"
+            else -> "Apply ${definition.status?.value}"
+        }
+        show("${definition.name} / ${if (target == m.hero.id) "Hero" else "Enemy"}", "HP ${cost.hp} / MP ${cost.mp} / SP ${StaminaRules.format(cost.spTenths)}\n$effect", battle = true, back = if (id != BattleRules.normal && id != BattleRules.defend) ::skills else null) { d ->
+            d.buttonTable.add(button("Confirm") {
+                close()
+                val command = when (id) {
+                    BattleRules.normal -> AttackCommand(m.turn, target)
+                    BattleRules.defend -> DefendCommand(m.turn)
+                    else -> UseSkillCommand(m.turn, id, target)
+                }
+                send(command, m.token, m.revision)
+            }).minHeight(48f).pad(4f)
         }
     }
-    private fun show(title: String, text: String, extra: (Dialog) -> Unit = {}) {
-        close(); opener = stage.keyboardFocus; onModal()
+    private fun show(title: String, text: String, battle: Boolean = false, back: (() -> Unit)? = null, extra: (Dialog) -> Unit = {}) {
+        close(); opener = stage.keyboardFocus; onModal(); battleMenu = battle; returnTo = back
         val shade = Image(skin.newDrawable("white", com.badlogic.gdx.graphics.Color(0f, 0f, 0f, 0.65f)))
-        shade.setSize(stage.width, stage.height); modalLayer.addActor(shade)
+        shade.setSize(stage.width, stage.height); if (!battle) modalLayer.addActor(shade)
         val d = Dialog(title, skin); dialog = d; d.isModal = true; d.isMovable = false
-        d.style = Window.WindowStyle(d.style).apply { titleFontColor = com.badlogic.gdx.graphics.Color.WHITE; background = HudFrame(skin.getDrawable("white")) }
-        d.padTop(44f); d.titleLabel.setFontScale(1.33f)
+        d.style = Window.WindowStyle(d.style).apply { titleFontColor = com.badlogic.gdx.graphics.Color.WHITE; background = BattleFrame(skin.getDrawable("white")) }
+        d.padTop(if (battle) 32f else 44f); d.titleLabel.setFontScale(1.33f)
         val label = Label(text, skin); label.setFontScale(1.33f); label.setWrap(true)
         val contentTable = Table(); contentTable.add(label).width(minOf(stage.width - 80f, 600f)).growX()
         d.contentTable.add(ScrollPane(contentTable, skin)).grow().minHeight(64f)
-        val close = button("Close / Cancel") { close() }; d.buttonTable.add(close).minHeight(48f).pad(4f)
+        val close = button("Back") { this.back() }; d.buttonTable.add(close).minHeight(48f).pad(4f)
         extra(d)
-        if (d.contentTable.cells.size > 1) d.contentTable.cells.first().expand(1, 0).height(80f)
-        d.show(stage); modalLayer.addActor(d); sizeDialog(d); focus(close)
+        if (d.contentTable.cells.size > 1) d.contentTable.cells.first().expand(1, 0).height(if (battle) 32f else 80f)
+        d.show(stage); modalLayer.addActor(d); sizeDialog(d)
+        focus(if (battle) actions.keys.firstOrNull { it != close && it.isDescendantOf(d) && !it.isDisabled } ?: close else close)
     }
+    private fun back() { val previous = returnTo; close(); previous?.invoke() }
     private fun sizeDialog(d: Dialog) {
+        if (battleMenu) {
+            d.setSize(stage.width - hudLayer.padLeft - hudLayer.padRight, minOf(stage.height - 80f, if (compact) 240f else 290f))
+            d.setPosition(hudLayer.padLeft, hudLayer.padBottom)
+            return
+        }
         d.setSize(minOf(stage.width - 32f, if (compact) stage.width - 32f else 700f), maxOf(100f, minOf(stage.height - 32f, 500f)))
         d.setPosition((stage.width - d.width) / 2, (stage.height - d.height) / 2)
     }
@@ -243,7 +256,7 @@ class BattleHud(val stage: Stage, private val skin: Skin, private val content: C
         val d = dialog ?: return false
         d.remove(); actions.keys.filter { it.isDescendantOf(d) && !it.isDescendantOf(navigation) }.toList().forEach { actions.remove(it) }
         modalLayer.clearChildren()
-        dialog = null; stage.keyboardFocus = opener; focused = opener as? TextButton; opener = null
+        dialog = null; returnTo = null; battleMenu = false; stage.keyboardFocus = opener; focused = opener as? TextButton; opener = null
         return true
     }
     private fun skills() {
@@ -252,18 +265,19 @@ class BattleHud(val stage: Stage, private val skin: Skin, private val content: C
             show("Skills", learnedSkillsText(m) + "\n\nEncounter an enemy to select a battle skill.")
             return
         }
-        show("Skills and targets", if (m.hero.locked != null) "Inputs locked until Use Skill or paid Pass." else "Select a skill and a visible target. Unavailable choices explain why.") { d ->
+        show("Skills", "Choose a skill", battle = true) { d ->
             val choices = Table()
-            m.hero.learned.forEach { (id, rank) ->
+            m.hero.learned.filterKeys { it != BattleRules.normal && it != BattleRules.defend }.forEach { (id, rank) ->
                 val definition = content.skills.getValue(id)
                 val targets = if (definition.target == TargetKind.SELF) listOf(view.player) else view.actors.filter { !it.player && it.hp > 0 }.map { it.id }
                 targets.forEach { target ->
-                    val reason = if (m.hero.locked != null) "Locked" else c.selectionFailure(id, target)
-                    val b = button("${definition.name} $rank / target ${target.value}\n${reason ?: "Select"}") {
-                        close(); send(SelectAbilityCommand(id, target), m.token, m.revision)
+                    val reason = c.selectionFailure(id, target)
+                    val b = button("${definition.name} $rank    ${BattleRules.cost(m.hero, definition).let { "${it.mp} MP / ${StaminaRules.format(it.spTenths)} SP" }}${reason?.let { "  / $it" } ?: ""}") {
+                        close(); confirmSkill(id, target)
                     }
-                    b.isDisabled = reason != null || !m.pass.enabled
-                    choices.add(b).minHeight(48f).growX().pad(4f).row()
+                    b.isDisabled = reason != null || !m.ready
+                    b.label.setAlignment(com.badlogic.gdx.utils.Align.left)
+                    choices.add(b).minHeight(44f).growX().pad(2f).row()
                 }
             }
             d.contentTable.row(); d.contentTable.add(ScrollPane(choices, skin)).grow()
@@ -275,7 +289,7 @@ class BattleHud(val stage: Stage, private val skin: Skin, private val content: C
     private fun character() {
         val h = model?.hero ?: return show("Character", "Character information is unavailable for this checkpoint.")
         show("Character / Active run", buildString {
-            append("VITALS\nHP ${h.current.hp} / ${h.maximum.hp}\nMana ${h.current.mp} / ${h.maximum.mp}\nStamina ${h.current.sp} / ${h.maximum.sp}\n\n")
+            append("VITALS\nHP ${h.current.hp} / ${h.maximum.hp}\nMana ${h.current.mp} / ${h.maximum.mp}\nStamina ${StaminaRules.format(h.current.spTenths)} / ${StaminaRules.format(h.maximum.spTenths)}\n\n")
             append("ATTRIBUTES\n")
             h.stats.forEach { (id, value) -> append("${id.value.removePrefix("stat.").replace('_', ' ')}  $value\n") }
             append("\nLevel and experience progression are not implemented yet.")
@@ -285,42 +299,14 @@ class BattleHud(val stage: Stage, private val skin: Skin, private val content: C
         val m = model ?: return
         if (!m.inBattle) { character(); return }
         val h = m.hero
-        val selection = h.locked?.selection ?: h.selection
-        val definition = selection?.let { content.skills.getValue(it.skill) }
-        val rank = h.locked?.rank ?: selection?.let { s -> definition?.ranks?.single { it.rank == s.rank } }
         val text = buildString {
-            append("Encounter battle\n")
-            append("${m.roll.reason}\nReroll: ${m.reroll.reason}\nUse Skill: ${m.use.reason}\nPass: ${m.pass.reason}\n\n")
-            rank?.let { r ->
-                val total = r.weights.sum().toDouble()
-                append("Face probabilities (rerolls are not guaranteed to improve):\n")
-                r.weights.forEachIndexed { i, weight -> append("${i + 1}: ${"%.1f".format(weight * 100 / total)}%  ") }
-                val cost = h.locked?.cost ?: ResourceVector(
-                    cloud.vinh.rebirthdungeon.game.combat.stats.StatRules.cost(r.cost.hp, h.costFlat.hp, h.costPercent.hp),
-                    cloud.vinh.rebirthdungeon.game.combat.stats.StatRules.cost(r.cost.mp, h.costFlat.mp, h.costPercent.mp),
-                    cloud.vinh.rebirthdungeon.game.combat.stats.StatRules.cost(r.cost.sp, h.costFlat.sp, h.costPercent.sp))
-                append("\nFinal cost: HP ${cost.hp}, MP ${cost.mp}, SP ${cost.sp}\n")
-            }
-            h.locked?.let { append("Frozen inputs: ${it.inputs}\n") }
-            h.locked?.takeIf { it.definition.effect == SkillEffect.SHIELD }?.let {
-                append("Shield preview: ${cloud.vinh.rebirthdungeon.game.combat.abilities.AbilityPreviewRules.shield(it, h.faces, content.scoring.getValue(it.definition.scoring))} for ${it.definition.shieldDuration} owner activations\n")
-            }
-            definition?.status?.let { id -> content.statuses.getValue(id).let { append("Status effect: ${it.stat.value}, flat ${it.flat}, percent ${it.percent}, duration ${it.duration} owner activations\n") } }
-            h.preview?.let { append("Shared preview: ${it.hpDamage} HP damage, ${it.shieldAbsorbed} shield absorbed\n") }
-            run {
-                val scoring = definition?.scoring ?: content.skills.getValue(content.actors.getValue(ContentId("actor.hero")).skill).scoring
-                append("\nCombination reference (single highest match):\n")
-                content.scoring.getValue(scoring).multipliers.forEach { (combo, ratio) -> append("${combo.name.replace('_', ' ')}: ${ratio.numerator}/${ratio.denominator}x\n") }
-            }
-            controller?.combatObservation()?.actors?.firstOrNull { it.id == selection?.target && it.id != h.id }?.let { target ->
-                append("\nObserved target HP ${target.current.hp}/${target.maximum.hp}\n")
-                append("Known defenses: ${target.stats.filterKeys { it.value in setOf("stat.defense", "stat.protection", "stat.magic_defense", "stat.magic_protection") }}\n")
-                append("Target statuses: ${target.statuses.joinToString { "${it.definition.value}: ${it.remaining} activations / source ${it.source.value}" }}\n")
-                append("Future intent: not observed\n")
-            }
-            append("\nShield: ${h.shield} (${h.shieldDuration} owner activations)\n")
-            append("Statuses: ${h.statuses.joinToString { "${it.definition.value}: ${it.remaining} owner activations / source ${it.source.value}" }}\n")
-            append("Cooldowns: ${h.cooldowns}\n\nStat sources:\n${h.baseline}\n${h.modifiers}\nEffective: ${h.stats}")
+            append("${m.message}\nAttack: ${m.attack.reason}\nDefend: ${m.defend.reason}\nItems: ${m.item.reason}\n")
+            append("\nShield: ${h.shield} (${h.shieldDuration} owner turns)\n")
+            append("Statuses: ${h.statuses.joinToString { "${it.definition.value}: ${it.remaining} turns" }}\n")
+            append("Cooldowns: ${h.cooldowns}\n")
+            append("Combat Mastery ${h.masteryRank}: ${StaminaRules.format(StaminaRules.recovery(h.masteryRank))} SP at turn start\n")
+            append("Captured Speed: ${controller?.combatObservation()?.turn?.order?.firstOrNull { it.actor == h.id }?.speed}\n")
+            append("\nAttributes: ${h.stats}\n")
         }
         show("Battle inspection", text) { d ->
             d.buttonTable.add(button("Combat log") { showLog(true) }).minHeight(48f).pad(4f)
@@ -342,9 +328,9 @@ class BattleHud(val stage: Stage, private val skin: Skin, private val content: C
     private fun showLog(combat: Boolean) = show(if (combat) "Combat log" else "System log", log.filter { it.first == combat }.joinToString("\n") { it.second }.ifEmpty { "No events" })
     fun worldBounds(): com.badlogic.gdx.math.Rectangle {
         hudLayer.validate()
-        val y = hudLayer.padBottom + if (bottom.isVisible) bottom.height else 0f
+        val y = if (battleMenu && dialog != null) dialog!!.y + dialog!!.height else hudLayer.padBottom + if (bottom.isVisible) bottom.height else 0f
         return com.badlogic.gdx.math.Rectangle(hudLayer.padLeft, y, maxOf(1f, stage.width - hudLayer.padLeft - hudLayer.padRight),
-            maxOf(1f, stage.height - hudLayer.padTop - top.height - y))
+            maxOf(1f, stage.height - hudLayer.padTop - top.height - 40f - y))
     }
     fun owns(screenX: Int, screenY: Int): Boolean {
         if (hasModal) return true
@@ -366,12 +352,12 @@ class BattleHud(val stage: Stage, private val skin: Skin, private val content: C
         }
     }
     fun key(keycode: Int, shift: Boolean): Boolean {
-        if (keycode == Input.Keys.ESCAPE || keycode == Input.Keys.BACK) { if (!close()) menu(); return true }
-        if (keycode == Input.Keys.TAB) {
-            val available = actions.keys.filter { it.stage != null && it.isVisible && it.ancestorsVisible() && !it.isDisabled && (!hasModal || it.isDescendantOf(dialog)) }
+        if (keycode == Input.Keys.ESCAPE || keycode == Input.Keys.BACK) { if (hasModal) back() else options(); return true }
+        if (keycode == Input.Keys.TAB || keycode == Input.Keys.UP || keycode == Input.Keys.DOWN) {
+            val available = actions.keys.filter { it.stage != null && it.isVisible && it.ancestorsVisible() && !it.isDisabled &&  (if (hasModal) it.isDescendantOf(dialog) else keycode == Input.Keys.TAB || it.isDescendantOf(actionsRow)) }
             if (available.isNotEmpty()) {
                 val index = available.indexOf(focused)
-                focus(available[(index + (if (shift) -1 else 1) + available.size) % available.size])
+                focus(available[(index + (if (shift || keycode == Input.Keys.UP) -1 else 1) + available.size) % available.size])
             }
             return true
         }
@@ -386,9 +372,6 @@ class BattleHud(val stage: Stage, private val skin: Skin, private val content: C
                 Input.Keys.Q -> { show("Quests", "The quest journal is not implemented yet."); return true }
                 Input.Keys.I -> { show("Inventory", "Inventory and equipment management are not implemented yet."); return true }
             }
-        }
-        if (!hasModal && model?.inBattle == true && keycode in Input.Keys.NUM_1..Input.Keys.NUM_5) {
-            val die = dice[keycode - Input.Keys.NUM_1]; if (!die.isDisabled) actions[die]?.invoke(); return true
         }
         return hasModal
     }

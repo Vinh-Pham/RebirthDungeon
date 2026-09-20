@@ -2,7 +2,51 @@
 
 Quests give the player authored goals, story context, and rewards alongside dungeon exploration. **Mainstream Quests** follow the story through **Chapters and Generations**. **Sidequests** develop NPC stories, introduce activities, reward skill training, and let the player experience events as another character.
 
-This is a design specification for planned gameplay, modeled after **Mabinogi**. It complements [skills.md](skills.md), [character.md](character.md), [inventory.md](inventory.md), [battle.md](battle.md), the [game plan](../game-plan.md), and the [project phases](../project-phases.md). The quest categories and acquisition patterns below are requirements; lifecycle, examples, and implementation boundaries are proposed Rebirth Dungeon defaults. This document does not claim quests are implemented.
+The first quest release is implemented in the TypeScript browser game, with a broader design modeled after **Mabinogi**. It complements [skills.md](skills.md), [character.md](character.md), [inventory.md](inventory.md), [battle.md](battle.md), the [game plan](../game-plan.md), and the [project phases](../project-phases.md). The implementation contract below describes shipped behavior. Later sections retain the broader design and reference concepts; unimplemented objective kinds and future scenarios remain proposals.
+
+## Current implementation contract
+
+The **Quests** menu action opens a wmkit journal with native HeroUI tabs: Mainstream Quests, Collecting Quests, Hunting Quests, Part-Time Job, Sidequests, and Skills. Mainstream groups Chapter 1: Beneath the Ruins / G1: The Broken Seal inside its tab. Rows are stacked and scrollable. Selecting a title opens one owned detail window with authored notes, stage objectives, exact reward bullets, tracking, and an explicit Complete action. Current and Completed filters preserve quest history. Geometry is session-only; opening a saved window after a viewport change clamps it to the available desktop.
+
+Up to three quests can be tracked per hero. The HUD distinguishes banked counts from “this run” counts. On narrow screens the tracker collapses next to the menu and expands on demand. Tracking never changes eligibility or consumes a turn. Reward overflow is accessible at the bottom of the journal, with town-only withdrawal.
+
+### Starter catalog
+
+| Quest                      | Category / delivery                               | Objective                                               | Reward                       |
+| -------------------------- | ------------------------------------------------- | ------------------------------------------------------- | ---------------------------- |
+| Aren’s Warning             | Mainstream / automatic                            | Speak with Aren                                         | 50g, 100 EXP                 |
+| Clear Alby Dungeon         | Mainstream / after claiming Aren’s Warning        | Defeat Alby’s boss and return through treasure          | 500g, 900 EXP                |
+| Aren’s First Expedition    | Mainstream / after claiming Clear Alby Dungeon    | Complete Aren’s memory, then report                     | 200g, 400 EXP, 2 AP          |
+| Kill 5 Spiders             | Hunting / automatic                               | Defeat five Alby spiders                                | 100g, 200 EXP                |
+| Silk for Nell              | Collecting / Nell’s offer                         | Deliver three Spider Silk                               | 120g, 150 EXP                |
+| Supplies for the Forge     | Part-Time Job / Bram’s offer                      | Deliver two Fresh Bread                                 | 80g, 100 EXP                 |
+| A Healer’s Welcome         | Sidequests / Elara’s offer                        | Speak with Nell, then return to Elara                   | 50g, 100 EXP, two HP potions |
+| A Steady Blade             | Skills / automatic at Sword Mastery E or better   | Speak with Aren                                         | 2 AP, 150 EXP                |
+| Patience Before Power      | Skills / Aren’s offer at Smash E or better        | Defeat three spiders with a sword equipped, then report | Counterattack F, 200 EXP     |
+| A Swordsman’s First Lesson | Skills / automatic with a legal sword equipped    | Speak with Aren                                         | Sword Mastery F              |
+| The Path of Magic          | Skills / automatic after a recorded Magic rebirth | Speak with Aren                                         | Two mana potions, 1 AP       |
+
+These rewards are authored Rebirth Dungeon balance, not wiki reward tables. Each quest is one-time, without abandonment or expiration. Claiming Aren’s First Expedition completes the Chapter and Generation. Known reward skills keep their existing rank and training; existing trainer lessons remain available.
+
+### Authoritative progress and durable claims
+
+Definitions live in `src/domain/quests/catalog.ts`; shared rules, save types, validation, and the memory template are alongside it. UI dispatches typed commands through the existing XState → Immer → IndexedDB pipeline. The old `questMachine` remains the tutorial workflow, separate from the quest journal.
+
+- Automatic delivery reconciles in town after character creation, rank/equipment changes, rebirth, quest claims, and load. NPC offers require explicit acceptance at the named service. Opening a window or service grants nothing. Load reconciliation is saved before publication; a read-only tab never writes it.
+- Stages contain parallel objectives and advance in order. Events cannot satisfy later stages retroactively. The current catalog implements talk, defeat, clear, item delivery, and RP success objectives. Generic location/skill-use/item-acquisition objectives remain future work.
+- Run entry snapshots active stages. Defeats use stable spider species and run/room/enemy evidence, count distinct enemies once, and include counterattack and multi-target outcomes. Kills bank on victory, death, or early departure. Only successful treasure-room return grants clear credit. Reload preserves pending counts; RP events never credit ordinary quests.
+- Item deliveries inspect current backpack quantities, exclude bank stock, and consume exact quantities at the specified NPC. Previously owned items qualify. Spending or banking items can revoke readiness.
+- Complete revalidates objectives and delivery costs, grants rewards, records a permanent claim ID, and unlocks successors atomically. Duplicate claims never grant twice, even after operation-ledger eviction. Full backpacks place the entire unplaced item grant in durable overflow without partial-stack duplication. Withdrawal grants no additional XP/AP/gold.
+- Quest state, tracking, eligibility evidence, and completion survive rebirth. Current talent alone never proves a Magic rebirth. Increased resource maxima never refill pools.
+- Schema 3 migrates versions 1 and 2, preserving pending actions and RNG. Existing runs receive an empty quest snapshot and no retrospective credit. Eligible quests reconcile on the next town load or return. Original version-1/version-2 backups and validated fallback recovery are retained.
+
+### Aren’s memory
+
+Aren’s First Expedition offers **Enter Aren’s memory** at the trainer. The version-1 scenario uses a fixed corridor, one White Spider, then two White Spiders, and an explicit exit after both encounters. Aren is a Human Close Combat age-17 template with a starter sword, Normal Attack, Smash F, Counterattack F, and two HP potions.
+
+A saved isolated actor, equipment, supplies, run, battle, reservations, RNG, and attempt ID drive the shared movement/combat presentation. Hero state is never replaced with NPC state. Hero economy, progression actions, rebirth, and normal dungeon entry are unavailable during the mission. No RP combat training, XP, or loot reaches the hero. Death or Exit memory discards the attempt and permits retry; reload restores the exact suspended attempt. Success advances the report stage; final rewards still require an explicit claim.
+
+Repeatable jobs, daily timers, quest abandonment, branching exclusions, personal editable notes, generic RP scenario authoring, and rewarded replay remain deferred.
 
 ## 1. Mabinogi reference
 
@@ -12,26 +56,26 @@ Sidequests include NPC stories, talent-related content, and skill acquisition. S
 
 Role-playing quests let players control an NPC; they can also occur within the mainstream story. Mabinogi's quest journal groups quests into tabs and supports a tracker for selected objectives. [Role-Playing Quests](https://wiki.mabinogiworld.com/view/Role-Playing_Quests#Basic_Information), [Quest journal](https://wiki.mabinogiworld.com/view/Category:Quests).
 
-Rebirth Dungeon adopts these concepts with explicit turn-based objectives, town progression boundaries, and saved reward transactions. Mabinogi's delivery delays, multiplayer assistance, individual quest prerequisites, and exact reward tables are not automatically adopted.
+Rebirth Dungeon adopts these concepts with explicit exploration and turn-based battle objectives, town progression boundaries, and saved reward transactions. Mabinogi's delivery delays, multiplayer assistance, individual quest prerequisites, and exact reward tables are not automatically adopted.
 
 ## 2. Quest categories and story structure
 
-| Category or subtype | Purpose | Quest-menu location |
-| --- | --- | --- |
-| Mainstream | Advance the central storyline through authored quest chains | Dedicated storyline tabs, labeled by Chapter and grouped by Generation |
-| Sidequest: NPC | Help an NPC, discover local lore, or unlock a service | Sidequests tab |
-| Sidequest: Skill | Reward training milestones or introduce a skill/talent | Skills tab |
-| Sidequest: Role-playing | Experience an NPC's memories or actions by controlling that NPC | Sidequests tab, marked RP |
+| Category or subtype     | Purpose                                                         | Quest-menu location                                                    |
+| ----------------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Mainstream              | Advance the central storyline through authored quest chains     | Dedicated storyline tabs, labeled by Chapter and grouped by Generation |
+| Sidequest: NPC          | Help an NPC, discover local lore, or unlock a service           | Sidequests tab                                                         |
+| Sidequest: Skill        | Reward training milestones or introduce a skill/talent          | Skills tab                                                             |
+| Sidequest: Role-playing | Experience an NPC's memories or actions by controlling that NPC | Sidequests tab, marked RP                                              |
 
 A Chapter is a story arc containing one or more Generations. A Generation is a named installment containing individual quests and their ordered objectives. Store Chapter, Generation, and quest IDs separately: completing one quest does not necessarily finish its Generation or Chapter.
 
 Illustrative structure, with original placeholder names:
 
-| Chapter | Generation | Quest sequence |
-| --- | --- | --- |
-| Chapter 1: Beneath the Ruins | G1: The Broken Seal | Meet the watch captain → investigate the sealed floor → report the discovery |
+| Chapter                      | Generation                 | Quest sequence                                                                |
+| ---------------------------- | -------------------------- | ----------------------------------------------------------------------------- |
+| Chapter 1: Beneath the Ruins | G1: The Broken Seal        | Meet the watch captain → investigate the sealed floor → report the discovery  |
 | Chapter 1: Beneath the Ruins | G2: The Missing Expedition | Trace the expedition → complete an NPC memory mission → confront the guardian |
-| Chapter 2: Echoes of Rebirth | G3: A Second Beginning | Opens after the authored Chapter 1 completion requirement |
+| Chapter 2: Echoes of Rebirth | G3: A Second Beginning     | Opens after the authored Chapter 1 completion requirement                     |
 
 Mainstream progression uses explicit prerequisite links. The initial default is sequential progression within each Generation; the next Generation unlocks after the previous Generation's required final quest is claimed. Optional sidequests do not block the story unless named as prerequisites. Do not assume numeric Generation order alone determines every unlock.
 
@@ -41,10 +85,10 @@ Role-playing is also a **mission mode** that a mainstream quest can use. Such a 
 
 Every quest defines eligibility separately from how it is received. Eligibility may require completed quests, a learned skill at or above a rank, a committed equipment event, a rebirth into a named talent, or an authored character milestone. Require all mandatory conditions; represent alternatives explicitly instead of treating a list of prerequisites as ambiguous AND/OR logic.
 
-| Delivery mode | Proposed behavior |
-| --- | --- |
-| Automatic | When eligibility is satisfied, create the active quest once and notify the player; no separate acceptance click is required |
-| NPC offer | Eligibility makes the quest available from a named NPC; the player receives it by accepting the appropriate dialogue offer |
+| Delivery mode | Proposed behavior                                                                                                           |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Automatic     | When eligibility is satisfied, create the active quest once and notify the player; no separate acceptance click is required |
+| NPC offer     | Eligibility makes the quest available from a named NPC; the player receives it by accepting the appropriate dialogue offer  |
 
 Evaluate new eligibility after committed rank-ups, equipment changes, rebirths, and quest completions. Process it after the initiating transaction has resolved, in stable quest-ID order. Receiving a quest creates its record; it does not grant its completion reward or complete its objectives merely because the notification appears.
 
@@ -60,13 +104,13 @@ Skill Quests primarily recognize progress in already learned skills. Most should
 
 Illustrative quests and prerequisites, not Mabinogi quest data or final balance:
 
-| Quest | Eligibility and delivery | Objective and reward concept |
-| --- | --- | --- |
-| A Steady Blade | Sword Mastery Rank E or better; automatic | Report to the sword instructor; receive an authored AP/supply reward for training |
-| Patience Before Power | Smash Rank E or better; NPC offer | Complete a defensive lesson; learn Counterattack at Rank F |
-| Holding the Line | Shield Mastery Rank D or better; automatic | Finish an eligible shield combat trial; receive equipment or supplies |
-| A Swordsman's First Lesson | Equip a legal sword; automatic | Visit the instructor; learn Sword Mastery at Rank F if unknown |
-| The Path of Magic | Complete a rebirth into the Magic talent; automatic | Speak to the magic instructor; receive an introductory spell book |
+| Quest                      | Eligibility and delivery                            | Objective and reward concept                                                      |
+| -------------------------- | --------------------------------------------------- | --------------------------------------------------------------------------------- |
+| A Steady Blade             | Sword Mastery Rank E or better; automatic           | Report to the sword instructor; receive an authored AP/supply reward for training |
+| Patience Before Power      | Smash Rank E or better; NPC offer                   | Complete a defensive lesson; learn Counterattack at Rank F                        |
+| Holding the Line           | Shield Mastery Rank D or better; automatic          | Finish an eligible shield combat trial; receive equipment or supplies             |
+| A Swordsman's First Lesson | Equip a legal sword; automatic                      | Visit the instructor; learn Sword Mastery at Rank F if unknown                    |
+| The Path of Magic          | Complete a rebirth into the Magic talent; automatic | Speak to the magic instructor; receive an introductory spell book                 |
 
 The equipment-triggered lesson does not grant Sword Mastery at the moment of equipping. It delivers a quest whose reward uses the instructor acquisition route in skills.md. Likewise, receiving a spell book does not learn its skill until the player reads it through the normal learning action.
 
@@ -78,16 +122,16 @@ If the player learns the reward skill through another route before claiming the 
 
 Each quest has stable objective IDs and one or more ordered stages. The initial default requires all objectives in the current stage; they can progress in parallel. The next stage activates only after the current stage is committed complete. Events from earlier stages do not retroactively satisfy later event objectives.
 
-| Objective kind | Authoritative evidence |
-| --- | --- |
-| Talk | Complete a named dialogue step with the specified NPC |
-| Visit/interact | Reach or interact with an authored location/object in an eligible mission |
-| Defeat | Resolve a qualifying enemy's defeat, with any required skill or equipment context |
-| Use a skill | Resolve the authored skill outcome; selecting it or rerolling dice is insufficient |
-| Obtain an item | Record a qualifying acquisition after the objective activates |
-| Deliver items | Validate and consume the specified committed quantities at the named hand-in |
-| Clear a mission | Commit the required victory/outcome for the specified dungeon or scenario |
-| Complete an RP mission | Commit success from the specified scenario while controlling its assigned NPC |
+| Objective kind         | Authoritative evidence                                                             |
+| ---------------------- | ---------------------------------------------------------------------------------- |
+| Talk                   | Complete a named dialogue step with the specified NPC                              |
+| Visit/interact         | Reach or interact with an authored location/object in an eligible mission          |
+| Defeat                 | Resolve a qualifying enemy's defeat, with any required skill or equipment context  |
+| Use a skill            | Resolve the authored skill outcome; selecting it or rerolling dice is insufficient |
+| Obtain an item         | Record a qualifying acquisition after the objective activates                      |
+| Deliver items          | Validate and consume the specified committed quantities at the named hand-in       |
+| Clear a mission        | Commit the required victory/outcome for the specified dungeon or scenario          |
+| Complete an RP mission | Commit success from the specified scenario while controlling its assigned NPC      |
 
 Event objectives begin counting when their stage becomes active. Rank/state objectives may evaluate existing state only when the definition explicitly permits it. Objectives involving owning or delivering items check current eligible inventory, rather than trusting an old pickup count after those items have been sold or consumed.
 
@@ -99,13 +143,13 @@ Dialogue, map markers, animations, and quest-tracker updates display progress; t
 
 ## 6. Quest lifecycle and rewards
 
-| State | Meaning |
-| --- | --- |
-| Locked | Eligibility has not been met; show only discovered prerequisite information |
-| Available | Eligibility is satisfied and an NPC offer can be accepted |
-| Active | Quest has been received and its current stage can progress |
-| Ready to complete | Final objectives are satisfied; claim or final NPC hand-in remains |
-| Completed | Rewards and completion flags have been committed |
+| State             | Meaning                                                                     |
+| ----------------- | --------------------------------------------------------------------------- |
+| Locked            | Eligibility has not been met; show only discovered prerequisite information |
+| Available         | Eligibility is satisfied and an NPC offer can be accepted                   |
+| Active            | Quest has been received and its current stage can progress                  |
+| Ready to complete | Final objectives are satisfied; claim or final NPC hand-in remains          |
+| Completed         | Rewards and completion flags have been committed                            |
 
 Automatic delivery moves an eligible quest directly into Active. A current-inventory requirement can move Ready back to Active if its required items are no longer available before hand-in. A mission failure normally leaves the quest Active at its last committed checkpoint, with its failed attempt reset as authored.
 
@@ -133,7 +177,7 @@ On success, save the scenario outcome once, return to the hero in town, and adva
 
 Accept and claim quests in town in the initial design. A normal run snapshots the active quest stages eligible for that mission. Progress produced inside the dungeon is pending run progress, shown separately from committed quest progress. It cannot grant a permanent skill, AP, story completion, or a next-generation unlock during an unfinished run.
 
-At the result boundary, apply the authored victory/defeat/abandonment retention policy to quest evidence along with other run rewards. A clear-dungeon objective always requires the specified successful outcome. Whether other evidence, such as enemy defeats, survives a failed run remains a Phase 7 decision. Do not silently preserve all quest progress while discarding the loot that proves a delivery objective.
+At the result boundary, apply the authored victory/defeat/abandonment retention policy to quest evidence along with other run rewards. A clear-dungeon objective always requires the specified successful outcome. The implemented retention policy banks enemy defeats on victory, defeat, and abandonment. Do not silently preserve all quest progress while discarding the loot that proves a delivery objective.
 
 An in-run chain that advances between dungeon objectives needs staged mission-local progress and a defined rollback/checkpoint policy. Until that extension exists, new quest stages requiring fresh gameplay begin after the result is committed in town; accepted quests must be authored so this boundary is playable. Quest rank rewards and auto-delivery never replace the active run's skill snapshot.
 
@@ -145,7 +189,7 @@ Rank-up, equip, rebirth, and quest-completion triggers need persisted event IDs 
 
 ## 9. Quest menu and tracker
 
-Give each discovered storyline a specific tab labeled with its Chapter name, with Generations grouped inside it. Keep completed storylines accessible through a completed filter rather than hiding the history. Provide separate **Sidequests** and **Skills** tabs. An RP badge identifies missions using another character wherever their parent quest belongs.
+The current journal uses a Mainstream Quests tab with Chapter and Generation groups inside it. Separate Chapter-specific tabs remain a possible expansion. Keep completed storylines accessible through a completed filter rather than hiding the history. Provide separate **Sidequests** and **Skills** tabs. An RP badge identifies missions using another character wherever their parent quest belongs.
 
 Show a quest's title, story/NPC context, category, current stage, objective counts, destination, delivery/turn-in NPC, rewards, and completion state. Before an NPC offer is received, show a discovered availability hint and unmet requirements where appropriate; do not reveal later story spoilers through locked objective text.
 
@@ -153,7 +197,7 @@ Allow the player to track a small selected set of quests, with the current actio
 
 Skill Quest entries should name the triggering milestone and the reward type: **Sword Mastery E reached**, **Sword equipped**, or **Rebirthed into Magic**; **learn a new skill** is distinct from **receive a skill book**. Show when a reward skill is already known. The hero's skill journal can link to the quest required to unlock a discovered skill.
 
-## 10. Initial scope and validation
+## 10. Original scope and future validation
 
 The first quest slice should prove one Chapter/Generation containing a short sequential story chain, one NPC sidequest, one automatically delivered rank-milestone Skill Quest, and one NPC-offered skill-unlock quest. Add equipment- and talent-rebirth delivery as those systems become available, then one single-player NPC role-playing scenario. Include the journal tabs, tracker, saved objectives, and exactly-once claim flow.
 
@@ -168,16 +212,20 @@ Future implementation acceptance checks should cover:
 - RP control using NPC stats/gear, no borrowed progression leaking to the hero, retry after failure, and suspended-mission recovery.
 - Pending run evidence under each outcome policy, rebirth preservation, abandonment checkpoints, and interrupted delivery/claim/retry without lost quests or duplicate rewards.
 
-Still open: actual story content, quest/reward pacing, prerequisite ranks, available NPCs, loss/carry-over rules, and RP checkpoints. Repeatable/daily quests, timers, multiplayer quest sharing, escort AI, branching story exclusions, and rewarded Generation replay remain outside the first slice.
+The current implementation contract above resolves starter content, rewards, prerequisites, NPCs, retention rules, and the Aren scenario checkpoints. Future content may extend those rules explicitly. Repeatable/daily quests, timers, multiplayer quest sharing, escort AI, branching story exclusions, and rewarded Generation replay remain outside the first slice.
+
+## Historical engine proposal
+
+An earlier September 10 Godot plan proposed Resource-based quest definitions and Control journals. That proposal is historical: the implemented system uses the repository’s TypeScript domain, XState transactions, React/HeroUI, Phaser, and wmkit. It does not add a Godot runtime or port the game.
 
 ## Research notes
 
 Mabinogi Wiki pages were retrieved with Firecrawl and inspected on **September 5, 2026**. Source concepts are identified in section 1; examples and proposed dungeon rules are Rebirth Dungeon design choices. Raw pages remain in the gitignored `.firecrawl/` directory.
 
-| Reference | Local cache |
-| --- | --- |
-| [Quest overview](https://wiki.mabinogiworld.com/view/Category:Quests) (`Quests` redirects here) | `.firecrawl/mabinogi-quests.md` |
-| [Mainstream Quests](https://wiki.mabinogiworld.com/view/Category:Mainstream_Quests) | `.firecrawl/mabinogi-mainstream-quests.md` |
-| [Sidequests](https://wiki.mabinogiworld.com/view/Category:Sidequests) | `.firecrawl/mabinogi-sidequests.md` |
-| [Skill Quests](https://wiki.mabinogiworld.com/view/Category:Skill_Quests) | `.firecrawl/mabinogi-skill-quests.md` |
-| [Role-Playing Quests](https://wiki.mabinogiworld.com/view/Role-Playing_Quests) | `.firecrawl/mabinogi-role-playing-quests.md` |
+| Reference                                                                                       | Local cache                                  |
+| ----------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| [Quest overview](https://wiki.mabinogiworld.com/view/Category:Quests) (`Quests` redirects here) | `.firecrawl/mabinogi-quests.md`              |
+| [Mainstream Quests](https://wiki.mabinogiworld.com/view/Category:Mainstream_Quests)             | `.firecrawl/mabinogi-mainstream-quests.md`   |
+| [Sidequests](https://wiki.mabinogiworld.com/view/Category:Sidequests)                           | `.firecrawl/mabinogi-sidequests.md`          |
+| [Skill Quests](https://wiki.mabinogiworld.com/view/Category:Skill_Quests)                       | `.firecrawl/mabinogi-skill-quests.md`        |
+| [Role-Playing Quests](https://wiki.mabinogiworld.com/view/Role-Playing_Quests)                  | `.firecrawl/mabinogi-role-playing-quests.md` |

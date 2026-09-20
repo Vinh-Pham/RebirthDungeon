@@ -9,7 +9,8 @@ enum class SessionMode { EXPLORATION, BATTLE }
 class SessionRestore(val version: ContentVersion, val worldVersion: Int, val seed: Long, val expedition: Long, val operation: Long,
     val town: Boolean, placements: List<RoomPlacement>, val exploration: ExplorationRestore,
     val gold: Int, supplies: Map<ContentId, Int>, val pendingGold: Int, pendingSupplies: Map<ContentId, Int>,
-    val hero: CombatActorObservation?, val battle: BattleRestore?, val encounter: String?, random: Map<RandomStream, RandomState>, val notice: String) {
+    val hero: CombatActorObservation?, val battle: BattleRestore?, val encounter: String?, random: Map<RandomStream, RandomState>, val notice: String, lastBattleEvents: List<cloud.vinh.rebirthdungeon.game.events.OrderedEvent> = emptyList()) {
+    val lastBattleEvents = frozenList(lastBattleEvents)
     val mode = if (battle == null) SessionMode.EXPLORATION else SessionMode.BATTLE
     val placements = frozenList(placements); val supplies = frozenMap(supplies); val pendingSupplies = frozenMap(pendingSupplies)
     val random = frozenMap(random)

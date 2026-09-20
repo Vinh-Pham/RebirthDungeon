@@ -40,7 +40,7 @@ class BattleScreen(private val game: RebirthDungeon) : KtxScreen {
     init {
         hud.onModal = { input.cancel() }
     }
-    override fun show() { active = true; Gdx.input.inputProcessor = input; tracks.reducedMotion = game.presentationSettings.reducedMotion }
+    override fun show() { active = true; Gdx.input.inputProcessor = input; tracks.reducedMotion = game.presentationSettings.reducedMotion; session.battle?.let { tracks.accept(it.observe(), false) } }
     override fun render(delta: Float) {
         if (!active || Gdx.graphics.width <= 0 || Gdx.graphics.height <= 0) return
         if (session.mode == SessionMode.EXPLORATION) { game.navigateTo(ExplorationScreen(game)); return }
@@ -51,7 +51,8 @@ class BattleScreen(private val game: RebirthDungeon) : KtxScreen {
         feedback.volume = if (game.presentationSettings.sound) 0.35f else 0f; feedback.haptics = game.presentationSettings.haptics
         tracks.accept(c.observe(), true); tracks.advance(delta)
         hud.bind(c, tracks.playing)
-        ScreenUtils.clear(Color.valueOf("19232e")); viewport.apply(); camera.update(); batch.projectionMatrix = camera.combined
+        ScreenUtils.clear(Color.valueOf("11182c")); stage.viewport.apply(); batch.projectionMatrix = stage.camera.combined
+        val field = hud.worldBounds()
         batch.begin()
         val view = c.combatObservation()
         view?.actors?.forEach { actor ->
@@ -60,11 +61,17 @@ class BattleScreen(private val game: RebirthDungeon) : KtxScreen {
             val region = atlas.findRegion(binding.frames.first())
             val attack = tracks.tracks.any { it.actor == actor.id && it.kind == "attack" }
             val shift = if (attack) (1f - tracks.progress) * (if (player) 12 else -12) else 0f
-            val x = if (player) 160f else 270f
-            batch.draw(region, x + shift, 180f, 32f, 40f)
-            val font = skin.get(Label.LabelStyle::class.java).font; font.draw(batch, "HP ${actor.current.hp}/${actor.maximum.hp}", x - 8, 238f)
+            val size = minOf(72f, field.height * 0.48f).coerceAtLeast(16f)
+            val x = field.x + field.width * (if (player) 0.72f else 0.25f) - size / 2
+            val y = field.y + (field.height - size) / 2
+            batch.draw(region, x + shift, y, size * 0.8f, size)
+            val font = skin.get(Label.LabelStyle::class.java).font
+            font.draw(batch, "${if (player) "Hero" else "Enemy"}  ${actor.current.hp}/${actor.maximum.hp}", x - 8, y + size + 20f)
         }
         batch.end(); stage.viewport.apply(); stage.act(delta.coerceIn(0f, 0.1f)); stage.draw(); Screenshots.captureIfRequested("battle")
+        // The opening order has now been drawn. Route pending enemy commands through
+        // the controller; no animation callback resolves rules.
+        if (c.failure == null && c.combatObservation().outcome == null && c.combatObservation().turn.active != EntityId(1)) c.advanceAutomatic()
         if (!tracks.playing) session.finishBattleIfReady()
     }
     override fun resize(width: Int, height: Int) {

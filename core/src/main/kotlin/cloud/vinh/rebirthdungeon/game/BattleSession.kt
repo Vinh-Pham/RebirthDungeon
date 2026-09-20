@@ -14,6 +14,8 @@ class BattleSession(val seed: Long, val content: ContentCatalog, val random: Run
     internal var commandCount = 0L
     internal var turnCount = 0L
     internal var eventCount = 0L
+    internal val history = arrayListOf<cloud.vinh.rebirthdungeon.game.events.OrderedEvent>()
+    internal var historyTruncated = false
     internal val encounterParticipants = sortedSetOf<Long>()
     internal var encounterOutcome: cloud.vinh.rebirthdungeon.game.combat.abilities.EncounterOutcome? = null
     internal var defeated = false

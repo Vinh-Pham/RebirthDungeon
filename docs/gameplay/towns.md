@@ -1,19 +1,21 @@
 # Rebirth Dungeon: Towns
 
-> **Active migration (2026-09-10):** [Free exploration and separate battles](../free-exploration.md) supersedes the grid-world, shared dungeon/battle screen, spatial combat, and legacy-save contracts below. Earlier phase evidence is retained as history.
-
 Towns are **walkable, safe freely walkable settlements between dungeon runs**, home to service NPCs, instructors, commerce, banking, and recovery. The former abstract "hub" is dissolved: self-service progression lives in a **persistent game UI menu bar**, while town buildings own the NPC-bound half of preparation — learning skills, accepting quests, shopping, banking, healing, resting, and ceremonies.
 
 This is a design specification for planned gameplay, modeled after **Mabinogi**. It complements [skills.md](skills.md), [character.md](character.md), [inventory.md](inventory.md), [battle.md](battle.md), [enchants.md](enchants.md), [quests.md](quests.md), [titles.md](titles.md), [stats.md](stats.md), the [game plan](../game-plan.md), and the [project phases](../project-phases.md). The concepts below are requirements; prices, percentages, footprints, and names are proposed Rebirth Dungeon defaults. This document does not claim towns are implemented.
 
+## Delivery scope
+
+Phase 7 first ships one dialogue NPC, a potion vendor, free full recovery, dungeon access, a temporary single gold balance and bounded potions under [Free exploration](../free-exploration.md). The bank, gold bags, carried-gold defeat penalty, paid healer/Inn, gathering and wider amenity roster below are the **later full-economy design**, introduced from Phase 8 with its retention/migration table. None is required for the first loop. Proposed prices and losses remain unresolved until that consuming phase.
+
 ## 1. Mabinogi reference
 
-| Reference mechanic | Mabinogi behavior |
-| --- | --- |
-| Starter town | Tir Chonaill is the village where newcomers arrive: a self-sufficient farming town with a healer, grocery, blacksmith, general store, bank, school, church, inn, and chief's house, with dungeons (Alby, Ciar) reachable from its outskirts. |
-| Town amenities | A windmill grinds crops into flour; a cooking oven, loom, and spinning wheel provide crafting stations; fields, pastures, the stream, and the graveyard supply gatherable resources. |
-| User interface | A bottom-center gamebar shows HP/MP/Stamina gauges and level/EXP; a menu bar of buttons opens Character, Skills, Quests, Inventory, and system menus from anywhere in the world. |
-| Commerce | NPCs sell goods themed to their shop; the bank stores gold; part-time jobs and NPC favor systems attach repeatable work and relationships to town NPCs. |
+| Reference mechanic | Mabinogi behavior                                                                                                                                                                                                                            |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Starter town       | Tir Chonaill is the village where newcomers arrive: a self-sufficient farming town with a healer, grocery, blacksmith, general store, bank, school, church, inn, and chief's house, with dungeons (Alby, Ciar) reachable from its outskirts. |
+| Town amenities     | A windmill grinds crops into flour; a cooking oven, loom, and spinning wheel provide crafting stations; fields, pastures, the stream, and the graveyard supply gatherable resources.                                                         |
+| User interface     | A bottom-center gamebar shows HP/MP/Stamina gauges and level/EXP; a menu bar of buttons opens Character, Skills, Quests, Inventory, and system menus from anywhere in the world.                                                             |
+| Commerce           | NPCs sell goods themed to their shop; the bank stores gold; part-time jobs and NPC favor systems attach repeatable work and relationships to town NPCs.                                                                                      |
 
 Sources: [Tir Chonaill](https://wiki.mabinogiworld.com/view/Tir_Chonaill), [User Interface](https://wiki.mabinogiworld.com/view/User_Interface), both retrieved and inspected on **September 7, 2026**.
 
@@ -26,13 +28,13 @@ Earlier specifications used an abstract "hub" as the between-runs preparation la
 1. **The game UI menu bar** owns self-service progression from anywhere in town.
 2. **Town points of interest** own NPC-bound services (section 4).
 
-| Menu bar button | Window contents | Follows |
-| --- | --- | --- |
-| Character (C) | Stats, equipment slots, titles, age, talent, cumulative level | [character.md](character.md), [titles.md](titles.md) |
-| Skills (Z) | Learned skills, training progress, Rank Up with AP, talent view | [skills.md](skills.md) |
-| Quests (Q) | Journal with Chapter/Generation tabs, Sidequests, Skills tab, tracker | [quests.md](quests.md) |
-| Inventory (I) | Grid inventory, bags, equipment assignments, gold bags and carried total, overflow withdrawal | [inventory.md](inventory.md) |
-| Menu | Settings, save information, credits | — |
+| Menu bar button | Window contents                                                                               | Follows                                              |
+| --------------- | --------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| Character (C)   | Stats, equipment slots, titles, age, talent, cumulative level                                 | [character.md](character.md), [titles.md](titles.md) |
+| Skills (Z)      | Learned skills, training progress, Rank Up with AP, talent view                               | [skills.md](skills.md)                               |
+| Quests (Q)      | Journal with Chapter/Generation tabs, Sidequests, Skills tab, tracker                         | [quests.md](quests.md)                               |
+| Inventory (I)   | Grid inventory, bags, equipment assignments, gold bags and carried total, overflow withdrawal | [inventory.md](inventory.md)                         |
+| Menu            | Settings, save information, credits                                                           | —                                                    |
 
 A persistent status readout shows current HP/MP/SP, level and XP, and carried gold. Hotkeys above mirror the desktop target; touch equivalents are a later presentation concern.
 
@@ -40,7 +42,7 @@ A persistent status readout shows current HP/MP/SP, level and XP, and carried go
 
 ## 3. Town traversal and layout
 
-- A town uses the same continuous polygon navigation as dungeon exploration, fully visible: **no fog of war, no enemies, no turn consumption**. Towns are safe.
+- A town uses the same continuous Godot 2D navigation as dungeon exploration, fully visible: **no fog of war, no enemies, no turn consumption**. Towns are safe.
 - NPCs stand at their buildings or stations. The player runs to an authored nearby interaction point and interacts.
 - **Dungeon entrances sit on the town's edges.** A run begins by physically walking to an entrance, preserving the prepare → walk out → delve rhythm.
 - Landmarks — stream, graveyard, farmlands, pastures, and an old ruin — double as gathering spots (section 9) and story anchors, not combat zones.
@@ -48,21 +50,21 @@ A persistent status readout shows current HP/MP/SP, level and XP, and carried go
 
 ## 4. Points of interest
 
-| Point of interest | NPC (placeholder) | Services | Spec tie-in |
-| --- | --- | --- | --- |
-| Healer's House | Marla | Paid HP healing; buy potions and bandages | battle.md potions; defeat aftercare |
-| Grocery Store | Iris | Buy cooking ingredients: eggs, milk, wheat, barley, meat | Cooking skill (future spec) |
-| Blacksmith | Bram | Buy and sell weapons and armor | inventory.md selling; repair deferred |
-| General Store | Odd | Utility items: empty bottles, tools, magic powder | Enchant application materials |
-| Bank | Petra | Deposit and withdraw gold; sell gold bags | Section 6 |
-| School | Cole and Wren | Skill instruction: melee and magic instructors | skills.md NPC acquisition |
-| Church | Father Ansel | Buy holy water; donations (flavor-only) | Enchant burning materials |
-| Inn | Bess | Paid rest: full HP/MP/SP recovery | Section 7; audit recovery decision |
-| Chief's House | Chief Aldric | Mainstream quest offers; rebirth ceremony | quests.md, character.md |
-| Windmill | Talla | Grind wheat or barley into flour | Cooking amenity, section 9 |
-| Cooking Oven | — | Cook ingredients into food | Station contract, section 9 |
-| Gathering spots | — | Farmland, pasture, graveyard, stream, shrubs | Section 9 |
-| Quest board | — | One-time sidequest postings | quests.md delivery point |
+| Point of interest | NPC (placeholder) | Services                                                 | Spec tie-in                           |
+| ----------------- | ----------------- | -------------------------------------------------------- | ------------------------------------- |
+| Healer's House    | Marla             | Paid HP healing; buy potions and bandages                | battle.md potions; defeat aftercare   |
+| Grocery Store     | Iris              | Buy cooking ingredients: eggs, milk, wheat, barley, meat | Cooking skill (future spec)           |
+| Blacksmith        | Bram              | Buy and sell weapons and armor                           | inventory.md selling; repair deferred |
+| General Store     | Odd               | Utility items: empty bottles, tools, magic powder        | Enchant application materials         |
+| Bank              | Petra             | Deposit and withdraw gold; sell gold bags                | Section 6                             |
+| School            | Cole and Wren     | Skill instruction: melee and magic instructors           | skills.md NPC acquisition             |
+| Church            | Father Ansel      | Buy holy water; donations (flavor-only)                  | Enchant burning materials             |
+| Inn               | Bess              | Paid rest: full HP/MP/SP recovery                        | Section 7; audit recovery decision    |
+| Chief's House     | Chief Aldric      | Mainstream quest offers; rebirth ceremony                | quests.md, character.md               |
+| Windmill          | Talla             | Grind wheat or barley into flour                         | Cooking amenity, section 9            |
+| Cooking Oven      | —                 | Cook ingredients into food                               | Station contract, section 9           |
+| Gathering spots   | —                 | Farmland, pasture, graveyard, stream, shrubs             | Section 9                             |
+| Quest board       | —                 | One-time sidequest postings                              | quests.md delivery point              |
 
 **Enchant material loop:** the General Store sells magic powder (application) and the Church sells holy water (burning), giving both enchant recipes in [enchants.md](enchants.md) a stable, non-random supply. The Blacksmith sells and buys equipment but offers no repair; a durability system is deferred until separately designed.
 
@@ -85,11 +87,11 @@ Gold exists in exactly two places, amending inventory.md's single-balance curren
 - **Banked balance:** a nonnegative integer held at the Bank. Safe from defeat, no interest, no transaction fees. Deposit and withdraw in exact chosen amounts.
 - **Carried gold:** one aggregate total whose maximum is the **sum of owned gold bag capacities**. Gold bags are nonstackable inventory items (1 × 2 proposed) sold at the Bank:
 
-| Gold bag (placeholder) | Capacity | Notes |
-| --- | --- | --- |
-| Small gold bag | 10,000 | First tier; the only tier in the first slice |
-| Gold pouch | 25,000 | Upgraded tier |
-| Merchant's chest | 50,000 | Largest tier |
+| Gold bag (placeholder) | Capacity | Notes                                                     |
+| ---------------------- | -------- | --------------------------------------------------------- |
+| Small gold bag         | 10,000   | First tier; the only tier in the first full-economy slice |
+| Gold pouch             | 25,000   | Upgraded tier                                             |
+| Merchant's chest       | 50,000   | Largest tier                                              |
 
 Bags **grant capacity** rather than holding separate coin piles: the player never manages gold per-bag, only carries more or less of it. Owning several bags sums their capacities. Selling or otherwise removing a bag is rejected while carried gold exceeds the remaining capacity; validate before committing, as inventory.md requires.
 
@@ -102,13 +104,13 @@ Gold bags are ordinary reservable inventory items: a run snapshot reserves broug
 
 ## 7. Recovery services
 
-| Service | Effect | Proposed pricing |
-| --- | --- | --- |
-| Healer — Heal | Restore HP to full | ~2 gold per missing HP; cheaper per point than potions |
-| Healer — Shop | Buy HP/MP/SP potions and bandages | Authored prices |
-| Inn — Rest | **Full HP/MP/SP recovery** as one explicit action | Level-scaled fee |
+| Service       | Effect                                            | Proposed pricing                                       |
+| ------------- | ------------------------------------------------- | ------------------------------------------------------ |
+| Healer — Heal | Restore HP to full                                | ~2 gold per missing HP; cheaper per point than potions |
+| Healer — Shop | Buy HP/MP/SP potions and bandages                 | Authored prices                                        |
+| Inn — Rest    | **Full HP/MP/SP recovery** as one explicit action | Level-scaled fee                                       |
 
-- Inn rest is the explicit recovery action the [Documentation Audit](../../Documentation%20Audit.md) and enchants.md identify as a prerequisite for enchant operations; this specification settles that open item.
+- Inn rest is the explicit recovery action the [Documentation Audit](../audit.md) and enchants.md identify as a prerequisite for enchant operations; paid rest is a later economy proposal, while the first loop provides explicit free recovery.
 - Rest and healing fill to **current maxima only**; increasing a maximum never refills it (stats.md).
 - In dungeons, potions remain separate full actions before rolling (battle.md); the Healer's service is town-only.
 - Aging reconciliation (character.md) re-anchors from "hub or results boundaries" to **town or results boundaries** — a rename, not a rule change.
@@ -122,13 +124,13 @@ Gold bags are ordinary reservable inventory items: a run snapshot reserves broug
 
 ## 9. Gathering and cooking amenities
 
-| Spot (landmark) | Yields | Requires |
-| --- | --- | --- |
-| Farmland | Wheat, barley | Nothing |
-| Pasture | Wool | Shears (General Store) |
-| Graveyard | Base herbs, cobwebs | Nothing |
-| Stream (Adelia analog) | Bottled water | Empty bottle (General Store) |
-| Shrubs and trees | Berries, apples | Nothing |
+| Spot (landmark)        | Yields              | Requires                     |
+| ---------------------- | ------------------- | ---------------------------- |
+| Farmland               | Wheat, barley       | Nothing                      |
+| Pasture                | Wool                | Shears (General Store)       |
+| Graveyard              | Base herbs, cobwebs | Nothing                      |
+| Stream (Adelia analog) | Bottled water       | Empty bottle (General Store) |
+| Shrubs and trees       | Berries, apples     | Nothing                      |
 
 - Gathering is a free, safe interaction with **deterministic yields** per spot. If a later design varies yields, rolls use a dedicated gathering RNG stream per the game plan's stream discipline; commerce and UI actions never consume gameplay RNG.
 - Spots respawn on **authored cooldown counts reconciled at town-entry or results boundaries** — offline-friendly, never real-time schedules.
@@ -140,17 +142,23 @@ Persisted town state includes: the banked balance; gold bag instances and their 
 
 ## 11. Deferred and out of scope
 
-| Deferred (hook reserved) | Out of scope for the initial design |
-| --- | --- |
+| Deferred (hook reserved)                    | Out of scope for the initial design                                      |
+| ------------------------------------------- | ------------------------------------------------------------------------ |
 | Part-time jobs (Jobs tab, refresh boundary) | MMO social systems: channels, housing, trading post, auction house, pets |
-| NPC favor, gifting, keyword unlocking | Real-time NPC schedules |
-| Weapon repair and durability | Item or XP loss on defeat beyond the gold rule |
-| Fishing, loom, spinning wheel | Weather and seasons |
-| Campfire cooking | Field bosses and combat on town outskirts |
-| Second town content | — |
+| NPC favor, gifting, keyword unlocking       | Real-time NPC schedules                                                  |
+| Weapon repair and durability                | Item or XP loss on defeat beyond the gold rule                           |
+| Fishing, loom, spinning wheel               | Weather and seasons                                                      |
+| Campfire cooking                            | Field bosses and combat on town outskirts                                |
+| Second town content                         | —                                                                        |
 
 ## 12. First slice and open items
 
-The first towns slice: one town map; Healer, Grocery, Blacksmith, General Store, Bank, Inn, and one instructor pair at the School; one gathering spot type (graveyard herbs); the small gold bag only; the five-button menu bar with run-gating states; and NPC dialogue shells with one Talk topic each. Chief's House, windmill, oven, further gathering spots, and the quest board follow as content.
+The expanded town scope after the Phase 7 loop: one town map; Healer, Grocery, Blacksmith, General Store, Bank, Inn, and one instructor pair at the School; one gathering spot type (graveyard herbs); the small gold bag only; the five-button menu bar with run-gating states; and NPC dialogue shells with one Talk topic each. Chief's House, windmill, oven, further gathering spots, and the quest board follow as content.
 
 Open items: final defeat-loss percentage; gold bag prices and the exact sell fraction; Inn and healing fees; the town map layout; the cooking skill specification this document depends on; and the arrival of a second town. Proposed values above are not final balance.
+
+## Godot town integration
+
+**Godot reset: 2026-09-10. Status: planned; not implemented.** Author a Town scene from Node2D art, collision, NavigationRegion2D polygons and stable NPC/entrance markers. The player uses the same CharacterBody2D/NavigationAgent2D integration as the dungeon. Interaction adapters validate proximity and open reusable Control service panels; the application owns all prices, currency and saved transactions. Phase 7 implements the small service loop; Phases 8–9 expand the town with progression/economy consumers.
+
+See [Godot architecture](../game-plan.md), [project layout](../directory.md) and [official engine sources](../references.md#godot-engine-sources).

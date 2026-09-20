@@ -35,7 +35,7 @@ class ContentRepositoryTest {
         bundle.validateVisuals { file, region -> file == "atlases/dungeon.atlas" && region in atlas }
         assertEquals(2, bundle.catalog.skills.getValue(ContentId("skill.sword")).ranks.size)
         assertEquals("E", bundle.catalog.skills.getValue(ContentId("skill.sword")).prototypeCap)
-        assertEquals(8, bundle.catalog.scoring.values.single().multipliers.size)
+        assertEquals(8, bundle.catalog.skills.size)
         assertThrows(IllegalArgumentException::class.java) { bundle.validateVisuals { _, _ -> false } }
     }
 
@@ -44,7 +44,7 @@ class ContentRepositoryTest {
         invalid("surprise") { it.put("surprise", true) }
         invalid("kind") { it.row("actors").put("kind", "ALIEN") }
         invalid("kind") { it.row("actors").put("kind", 0) }
-        invalid("weights") { (it.rank().get("weights") as ArrayNode).addNull() }
+        invalid("cost") { it.rank().putNull("cost") }
         invalid("schemaVersion") { it.put("schemaVersion", 1) }
     }
 
@@ -55,12 +55,12 @@ class ContentRepositoryTest {
         invalid("weights") { it.rank().putArray("weights").apply { repeat(6) { add(0) } } }
         invalid("weights") { it.rank().putArray("weights").apply { add(-1); repeat(5) { add(1) } } }
         invalid("weights") { it.rank().putArray("weights").apply { repeat(6) { add(Int.MAX_VALUE) } } }
-        invalid("cost") { (it.rank().get("cost") as ObjectNode).put("sp", 0) }
+        invalid("cost") { (it.rank().get("cost") as ObjectNode).put("spTenths", 0) }
         invalid("order") { it.rank().put("order", 1) }
         invalid("prototypeCap") { it.row("skills").put("prototypeCap", "D") }
         invalid("probabilities") { (it.row("loot").get("entries")[0] as ObjectNode).put("probability", 1) }
         invalid("thresholds") { it.row("progression").putArray("thresholds").add(0).add(100).add(90) }
-        invalid("multipliers") { (it.row("scoring").get("multipliers") as ArrayNode).remove(0) }
+        invalid("speed") { it.row("actors").put("speed", 0) }
     }
 
     @Test fun rejectsReferencesAndStatCycles() {
@@ -78,9 +78,9 @@ class ContentRepositoryTest {
     }
 
     @Test fun rejectsManifestVersionsPathsAndDuplicateJsonKeys() {
-        listOf(source("manifest.json").replace("\"rulesVersion\": 2", "\"rulesVersion\": 9"),
+        listOf(source("manifest.json").replace("\"rulesVersion\": 3", "\"rulesVersion\": 9"),
             source("manifest.json").replace("starter.json", "../starter.json"),
-            source("manifest.json").replace("\"schemaVersion\": 2", "\"schemaVersion\": 2, \"schemaVersion\": 2")).forEach { json ->
+            source("manifest.json").replace("\"schemaVersion\": 3", "\"schemaVersion\": 3, \"schemaVersion\": 3")).forEach { json ->
             assertThrows(ContentException::class.java) { JacksonContentRepository { if (it == "manifest.json") json else source(it) }.load() }
         }
     }
@@ -108,14 +108,14 @@ class ContentRepositoryTest {
         val catalog = load().catalog
         assertThrows(UnsupportedOperationException::class.java) { (catalog.skills as MutableMap).clear() }
         val rank = catalog.skills.getValue(ContentId("skill.sword")).ranks.first()
-        assertThrows(UnsupportedOperationException::class.java) { (rank.weights as MutableList)[0] = 9 }
+        assertThrows(UnsupportedOperationException::class.java) { (catalog.skills.getValue(ContentId("skill.sword")).ranks as MutableList).clear() }
         assertThrows(UnsupportedOperationException::class.java) { (catalog.actors.values.first().stats as MutableMap).clear() }
         val run = BattleSession(42, catalog)
         val simulation = BattleSimulation.create(run)
         try {
             assertSame(catalog, simulation.session.content)
             val snapshot = simulation.observe()
-            simulation.apply(cloud.vinh.rebirthdungeon.game.commands.EndTurnCommand)
+            simulation.automatic()
             assertEquals(0L, snapshot.commandCount)
             assertTrue(snapshot.events.isEmpty())
         } finally { simulation.dispose() }

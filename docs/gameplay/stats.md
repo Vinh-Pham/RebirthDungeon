@@ -1,24 +1,24 @@
+> **Kotlin runtime scope (2026-09-19):** [Battle](battle.md) and [Kotlin architecture](../kotlin-architecture.md) supersede dice/reservation/full-action-potion rules and browser implementation claims below. This file retains broader design/reference material. The current slice has exact-tenths SP, one optional item before a main action, prototype skills and bounded supplies; full progression, equipment and browser UI systems are not implemented here. See [the implementation tracker](../turn-based-plan.md).
+
 # Rebirth Dungeon: Stats, Resources, and Status Effects
 
 Stats describe a character's resources, attributes, attack power, and defenses. They come from character growth, learned skills, talents, and equipment, and can be changed temporarily by potions, skills, enemies, and other effects. **Activating a skill consumes stamina, mana, HP, or an explicitly authored combination of these resources.**
 
-This is a planned design inspired by [Mabinogi's Stats documentation](https://wiki.mabinogiworld.com/view/Stats). It complements [character.md](character.md), [skills.md](skills.md), and [battle.md](battle.md). The stat sources and resource costs requested above are requirements. Formulas, stacking, durations, and other defaults below are Rebirth Dungeon proposals, not implemented systems or an exact copy of Mabinogi's rules.
-
-The [Phase 4 starter contract](../phase4-combat.md) authors the initial skill values, recovery/exhaustion policy, encounter scope and integration boundary for these rules.
+**Implementation status:** The first playable slice is implemented with Immer transactions, source-tracked stat resolution, resource reservations, timed statuses, consumables, Character-panel breakdowns, and save migration. See [version 1 implementation rules](stats-implementation.md) for numeric values, compatibility, and explicitly deferred features. The sections below retain the original design rationale; the implementation rules resolve their proposed defaults. This is an independent adaptation of [Mabinogi's stats](https://wiki.mabinogiworld.com/view/Stats).
 
 ## 1. Mabinogi reference
 
 Mabinogi distinguishes base stats earned through progression from modifiers provided by equipment and effects. It also separates current resource pools from attributes and derived combat statistics.
 
-| Reference concept | Mabinogi behavior | Rebirth Dungeon direction |
-| --- | --- | --- |
-| Base stats | Skills, age, level, and other progression sources contribute stats; skill gains persist through rebirth while age/level growth is reset. | Track permanent progression and current-life growth separately. |
-| Stat modifiers | Equipment, skill effects, consumables, and conditions can increase or reduce stats. | Keep each modifier attached to its source and remove it when that source ends. |
-| HP / MP / SP | Life sustains the character; magical actions commonly use mana and physical actions commonly use stamina. | Use HP, mana, and stamina as explicit skill-cost pools. |
-| STR / INT / DEX / Will / Luck | Attributes influence damage, defenses, or specialized systems. | Use these names with authored mappings appropriate to dice combat. |
-| Defense / Protection | Defense reduces damage by a flat amount; Protection reduces it by a percentage, with magical counterparts. | Supply the flat defense and resistance terms in battle.md. |
-| Balance | Influences how damage is distributed between low and high outcomes. | Dice faces and skill-specific weights already supply damage variation; defer a second Balance mechanic. |
-| Status effects | Skills and other effects apply temporary conditions. | Model buffs, debuffs, recovery, and damage over time with explicit turn timing. |
+| Reference concept             | Mabinogi behavior                                                                                                                        | Rebirth Dungeon direction                                                                               |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Base stats                    | Skills, age, level, and other progression sources contribute stats; skill gains persist through rebirth while age/level growth is reset. | Track permanent progression and current-life growth separately.                                         |
+| Stat modifiers                | Equipment, skill effects, consumables, and conditions can increase or reduce stats.                                                      | Keep each modifier attached to its source and remove it when that source ends.                          |
+| HP / MP / SP                  | Life sustains the character; magical actions commonly use mana and physical actions commonly use stamina.                                | Use HP, mana, and stamina as explicit skill-cost pools.                                                 |
+| STR / INT / DEX / Will / Luck | Attributes influence damage, defenses, or specialized systems.                                                                           | Use these names with authored mappings appropriate to dice combat.                                      |
+| Defense / Protection          | Defense reduces damage by a flat amount; Protection reduces it by a percentage, with magical counterparts.                               | Supply the flat defense and resistance terms in battle.md.                                              |
+| Balance                       | Influences how damage is distributed between low and high outcomes.                                                                      | Dice faces and skill-specific weights already supply damage variation; defer a second Balance mechanic. |
+| Status effects                | Skills and other effects apply temporary conditions.                                                                                     | Model buffs, debuffs, recovery, and damage over time with explicit turn timing.                         |
 
 Sources: [Base Stats](https://wiki.mabinogiworld.com/view/Stats#Base_Stats), [Stat Modifiers](https://wiki.mabinogiworld.com/view/Stats#Stat_Modifiers), [Mana](https://wiki.mabinogiworld.com/view/Stats#Mana), [Stamina](https://wiki.mabinogiworld.com/view/Stats#Stamina), [Defense/Protection](https://wiki.mabinogiworld.com/view/Stats#Defense.2FProtection), [Balance](https://wiki.mabinogiworld.com/view/Stats#Balance), and [Status Effects](https://wiki.mabinogiworld.com/view/Stats#Status_Effects).
 
@@ -26,11 +26,11 @@ Mabinogi's potion poisoning is a concrete example of consumables causing stat pe
 
 ## 2. Resource pools
 
-| Pool | Current value | Maximum value | Purpose |
-| --- | --- | --- | --- |
-| Health | HP | Max HP | Damage and survival; certain skills pay an HP cost |
-| Mana | MP | Max MP | Magical and other mana-consuming skills |
-| Stamina | SP | Max SP | Physical, defensive, and other stamina-consuming skills |
+| Pool    | Current value | Maximum value | Purpose                                                 |
+| ------- | ------------- | ------------- | ------------------------------------------------------- |
+| Health  | HP            | Max HP        | Damage and survival; certain skills pay an HP cost      |
+| Mana    | MP            | Max MP        | Magical and other mana-consuming skills                 |
+| Stamina | SP            | Max SP        | Physical, defensive, and other stamina-consuming skills |
 
 Keep **current**, **maximum**, and **reserved** amounts distinct. For example, `SP 12/30, 5 reserved` means 12 current stamina, a maximum of 30, and only 7 available for another expenditure. Reserving is not a second resource deduction.
 
@@ -77,24 +77,24 @@ No enemy action, resource drain, potion use, equipment swap, or timed expiration
 
 Use Mabinogi's attribute vocabulary while keeping numeric conversions in versioned content definitions. These are proposed roles; they do not adopt Mabinogi's weapon-specific ratios or caps.
 
-| Attribute | Proposed role | Boundary |
-| --- | --- | --- |
-| Strength (STR) | Melee attack contribution and physical Defense | Conversions must be explicitly authored. |
-| Intelligence (INT) | Magic Attack and Magic Protection | Does not automatically discount MP costs; a cost rule must say so. |
-| Dexterity (DEX) | Ranged/finesse skill scaling and later crafting | Does not introduce a hidden hit roll or change dice odds by default. |
-| Will (WIL) | Magic Defense and selected skill scaling | Does not grant Mabinogi's Deadly survival mechanic. |
-| Luck (LUK) | Reserved for explicitly authored luck-related effects | No global loot bonus, critical roll, or high-pip bias is assumed. |
+| Attribute          | Proposed role                                         | Boundary                                                             |
+| ------------------ | ----------------------------------------------------- | -------------------------------------------------------------------- |
+| Strength (STR)     | Melee attack contribution and physical Defense        | Conversions must be explicitly authored.                             |
+| Intelligence (INT) | Magic Attack and Magic Protection                     | Does not automatically discount MP costs; a cost rule must say so.   |
+| Dexterity (DEX)    | Ranged/finesse skill scaling and later crafting       | Does not introduce a hidden hit roll or change dice odds by default. |
+| Will (WIL)         | Magic Defense and selected skill scaling              | Does not grant Mabinogi's Deadly survival mechanic.                  |
+| Luck (LUK)         | Reserved for explicitly authored luck-related effects | No global loot bonus, critical roll, or high-pip bias is assumed.    |
 
 Source context: [Strength](https://wiki.mabinogiworld.com/view/Stats#Strength), [Intelligence](https://wiki.mabinogiworld.com/view/Stats#Intelligence), [Dexterity](https://wiki.mabinogiworld.com/view/Stats#Dexterity), [Will](https://wiki.mabinogiworld.com/view/Stats#Will), and [Luck](https://wiki.mabinogiworld.com/view/Stats#Luck).
 
-| Combat stat | Role in Rebirth Dungeon |
-| --- | --- |
+| Combat stat                    | Role in Rebirth Dungeon                                                                                           |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
 | Physical Attack / Magic Attack | Derived contributions from appropriate attributes, equipment, and modifiers; selected by the skill's scaling rule |
-| Defense / Magic Defense | Flat reduction for physical / magical damage, supplying `D` in battle.md |
-| Protection / Magic Protection | Direct percentage resistance for physical / magical damage, supplying `resistance` in battle.md |
-| Shield | Remaining absorption points, applied after defense and resistance |
-| Resource regeneration | Authored HP/MP/SP recovery per activation-end boundary |
-| Resource cost modifiers | Scoped increases or reductions to SP/MP/HP costs |
+| Defense / Magic Defense        | Flat reduction for physical / magical damage, supplying `D` in battle.md                                          |
+| Protection / Magic Protection  | Direct percentage resistance for physical / magical damage, supplying `resistance` in battle.md                   |
+| Shield                         | Remaining absorption points, applied after defense and resistance                                                 |
+| Resource regeneration          | Authored HP/MP/SP recovery per activation-end boundary                                                            |
+| Resource cost modifiers        | Scoped increases or reductions to SP/MP/HP costs                                                                  |
 
 For this design, Protection is a direct percentage clamped to 0–100%; it is **the resistance term**, not another reduction multiplied on top. This simplifies Mabinogi's Protection rating and diminishing-return conversion. Elemental resistance, penetration, vulnerabilities, criticals, accuracy/evasion, wounds, hunger, and speed modifiers need later rules. The starter initiative cost remains 100 ticks.
 
@@ -104,17 +104,17 @@ Dice weighting remains skill/rank-driven. A future stat or status may affect a r
 
 ## 5. Sources and calculation order
 
-| Source | Duration or ownership | Example |
-| --- | --- | --- |
-| Starting profile | Character's current life | Starting STR and resource maxima |
-| Level and age growth | Current life; reset according to character.md's proposed rebirth rules | Earned Max HP or INT growth |
-| Learned skills and talent mastery | Persistent progression | Rank-based permanent Defense bonus |
-| Active talent | While selected, with accumulated growth tracked separately | Current talent's base bonus |
-| Equipment | While equipped and its conditions are met | Weapon attack, armor Defense, a cursed ring's penalty |
-| Equipped titles | While equipped; First/Second slots chosen in town and fixed for a run's duration per [titles.md](titles.md) | A First Title's Max HP +10 alongside its authored Max MP -5 penalty |
-| Consumables | Instant effect and/or timed status | Recover MP; gain temporary STR; suffer temporary WIL reduction |
-| Activated skills | Timed effect or explicitly conditional passive | Guard buff, protection spell, weakening curse |
-| Enemies, traps, and environment | Authored hit, area, or condition | Armor-break debuff, poison, stamina drain |
+| Source                            | Duration or ownership                                                                                       | Example                                                             |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Starting profile                  | Character's current life                                                                                    | Starting STR and resource maxima                                    |
+| Level and age growth              | Current life; reset according to character.md's proposed rebirth rules                                      | Earned Max HP or INT growth                                         |
+| Learned skills and talent mastery | Persistent progression                                                                                      | Rank-based permanent Defense bonus                                  |
+| Active talent                     | While selected, with accumulated growth tracked separately                                                  | Current talent's base bonus                                         |
+| Equipment                         | While equipped and its conditions are met                                                                   | Weapon attack, armor Defense, a cursed ring's penalty               |
+| Equipped titles                   | While equipped; First/Second slots chosen in town and fixed for a run's duration per [titles.md](titles.md) | A First Title's Max HP +10 alongside its authored Max MP -5 penalty |
+| Consumables                       | Instant effect and/or timed status                                                                          | Recover MP; gain temporary STR; suffer temporary WIL reduction      |
+| Activated skills                  | Timed effect or explicitly conditional passive                                                              | Guard buff, protection spell, weakening curse                       |
+| Enemies, traps, and environment   | Authored hit, area, or condition                                                                            | Armor-break debuff, poison, stamina drain                           |
 
 Persistent growth follows [character.md](character.md). Age and level changes occur at its existing progression boundaries and do not rewrite active-run stats. Equipped items, the equipped base-title snapshot taken at run start (per titles.md), and passive bonuses are copied into the run's starting state; **live run buffs and debuffs can modify effective stats on top of that baseline**.
 
@@ -146,15 +146,15 @@ A **buff** temporarily improves a stat or supplies a benefit. A **debuff** reduc
 
 Illustrative effects, with all values subject to later content design:
 
-| Effect | Source | Result |
-| --- | --- | --- |
-| Fortify | Stamina-consuming defensive skill | Temporary flat Defense increase |
-| Arcane Focus | Mana-consuming buff skill | Temporary Magic Attack increase |
-| Strength Draught | Potion | Temporary STR bonus |
-| Unstable Elixir | Potion | Immediate MP recovery plus a separate temporary WIL penalty |
-| Armor Break | Enemy skill | Temporary flat Defense penalty |
-| Exhaustion | Enemy or cursed item | Increased stamina costs |
-| Poison | Enemy, trap, or item | Periodic damage, optionally accompanied by a separately authored stat penalty |
+| Effect               | Source                            | Result                                                                         |
+| -------------------- | --------------------------------- | ------------------------------------------------------------------------------ |
+| Guard (illustrative) | Stamina-consuming defensive skill | Temporary flat Defense increase; the starter Fortify instead supplies a shield |
+| Arcane Focus         | Mana-consuming buff skill         | Temporary Magic Attack increase                                                |
+| Strength Draught     | Potion                            | Temporary STR bonus                                                            |
+| Unstable Elixir      | Potion                            | Immediate MP recovery plus a separate temporary WIL penalty                    |
+| Armor Break          | Enemy skill                       | Temporary flat Defense penalty                                                 |
+| Exhaustion           | Enemy or cursed item              | Increased stamina costs                                                        |
+| Poison               | Enemy, trap, or item              | Periodic damage, optionally accompanied by a separately authored stat penalty  |
 
 An instant recovery effect changes a current pool once. A stat modifier changes a computed value while active. Damage over time is a scheduled damage event. These are distinct effects even when one potion or skill applies several of them. Removing a buff does not undo earlier healing, and curing poison does not restore damage it already dealt.
 
@@ -172,13 +172,13 @@ Measure combat durations in **the affected actor's completed activations**, not 
 
 At each eligible activation end: resolve periodic damage or recovery in stable effect order, decrement eligible durations and remove expired statuses, recompute stats and clamp pools, then apply configured regeneration if the actor is alive. Once an actor is defeated, ordinary recovery and regeneration cannot revive it. Expiration happens after the last scheduled tick; a newly applied effect does not tick at the same boundary as its application.
 
-Rolls, kept-die changes, rerolls, and paused menus neither tick nor expire effects. Effects remaining between encounters continue through completed exploration actions. The initial default clears temporary run effects when the run ends; cross-run illnesses, persistent potion toxicity, and real-time timers are deferred. Closing and resuming the same run preserves active effects and their remaining durations.
+Rolls, kept-die changes, rerolls, and paused menus neither tick nor expire effects. Effects remaining between encounters keep their remaining activation counts frozen during exploration; only battle activations advance them. The initial default clears temporary run effects when the run ends; cross-run illnesses, persistent potion toxicity, and real-time timers are deferred. Closing and resuming the same run preserves active effects and their remaining durations.
 
 ## 7. Battle timing and consumables
 
 Before the first roll, derive current effective stats and costs from the run baseline plus active modifiers. Freeze the selected action's attack inputs, target mitigation, costs, and roll profile with the dice activation. A skill's newly applied buff or debuff affects subsequent actions; it does not retroactively improve the roll or damage that applied it. Skills that deliberately debuff before damaging need a later explicit exception to this default.
 
-When in-battle consumables are introduced, **Use Item** is an alternative full action available before rolling. Consume one item, resolve its instant effects and statuses, then end the activation; do not also roll a skill in that activation. Invalid use consumes nothing. Equipment changes remain a town/loadout operation in the initial battle design. This extends the older game plan's deferred item-action scope without claiming item use exists today.
+When in-battle consumables are introduced, **Use Item** is an alternative full action available before rolling. Consume one item, resolve its instant effects and statuses, then end the activation; do not also roll a skill in that activation. Invalid use consumes nothing. Equipment changes remain a town/loadout operation in the initial battle design. This action is implemented for recovery, buffs, side effects, and cleansing.
 
 Show HP, MP, SP, their maxima and reservations, skill costs, effective attack/defense values, and visible buff/debuff icons. Status details show the source, exact modifier, stacking behavior, and remaining target activations. Insufficient-resource messages identify the missing pool. The damage preview must use the same stat resolver as combat.
 
@@ -198,7 +198,7 @@ Still open: actual stat-growth conversions, resource costs and recovery rates, s
 
 Mabinogi Wiki sources were retrieved with Firecrawl and inspected on **September 5, 2026**. Proposed Rebirth Dungeon rules are explicitly separated from reference mechanics. Local caches are gitignored research artifacts.
 
-| Reference | Local cache |
-| --- | --- |
-| [Stats, resource pools, attributes, defenses, and status effects](https://wiki.mabinogiworld.com/view/Stats) | `.firecrawl/mabinogi-stats.md` |
-| [Potion Poisoning](https://wiki.mabinogiworld.com/view/Potion_Poisoning) | `.firecrawl/mabinogi-potion-poisoning.md` |
+| Reference                                                                                                    | Local cache                               |
+| ------------------------------------------------------------------------------------------------------------ | ----------------------------------------- |
+| [Stats, resource pools, attributes, defenses, and status effects](https://wiki.mabinogiworld.com/view/Stats) | `.firecrawl/mabinogi-stats.md`            |
+| [Potion Poisoning](https://wiki.mabinogiworld.com/view/Potion_Poisoning)                                     | `.firecrawl/mabinogi-potion-poisoning.md` |

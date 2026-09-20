@@ -1,8 +1,10 @@
+> **Kotlin runtime scope (2026-09-19):** [Battle](battle.md) and [Kotlin architecture](../kotlin-architecture.md) supersede dice/reservation/full-action-potion rules and browser implementation claims below. This file retains broader design/reference material. The current slice has exact-tenths SP, one optional item before a main action, prototype skills and bounded supplies; full progression, equipment and browser UI systems are not implemented here. See [the implementation tracker](../turn-based-plan.md).
+
 # Rebirth Dungeon: Skills
 
 Skills are learned abilities that grow through practice and investment. Players discover them through NPCs, read skill books, or collect missing pages to assemble a skill book. Once learned, a skill must reach **at least 100 training points at its current rank**, and the player must spend the required **AP (Ability Points)** to advance it.
 
-This is a design specification for planned gameplay, modeled after **Mabinogi, the Korean MMORPG**. It complements the [game plan](../game-plan.md) and [project phases](../project-phases.md); it does not claim that skills are implemented. The three acquisition routes and the training-plus-AP gate are required. Additional rules below are proposed defaults for Rebirth Dungeon, with unresolved economy and persistence choices listed at the end.
+**Implementation status:** The Phaser/React game now implements all eleven supported catalog skills, full F→1 progression, and all three acquisition routes. See [the accepted implementation contract](skills-implementation.md) for authoritative balance values, retention policy, equipment rules and save migration. That contract supersedes provisional examples and open decisions below; Mabinogi reference descriptions remain source context, not engine or architecture instructions.
 
 ## 1. Mabinogi reference
 
@@ -11,9 +13,9 @@ Mabinogi separates learning a skill, training its current rank, and spending AP 
 The acquisition routes have concrete examples:
 
 | Route           | Mabinogi example                                                                                  | Rebirth Dungeon adaptation                                                           |
-|-----------------|---------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
+| --------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
 | NPC instruction | Icebolt can be learned through Lassar's sorcery lessons.                                          | An NPC teaches a skill after dialogue, a lesson, or a quest.                         |
-| Skill book      | Icebolt can also be learned by reading *Icebolt Spell: Origin and Training*.                      | A complete book grants its associated skill when read.                               |
+| Skill book      | Icebolt can also be learned by reading _Icebolt Spell: Origin and Training_.                      | A complete book grants its associated skill when read.                               |
 | Collected pages | Fireball's collection quest asks the player to assemble ten pages and return the book to Stewart. | Collect a skill's required pages, complete its book, and read it to learn the skill. |
 
 Sources: [Icebolt acquisition](https://wiki.mabinogiworld.com/view/Icebolt#Obtaining_the_Skill), [Fireball acquisition](https://wiki.mabinogiworld.com/view/Fireball#Obtaining_the_Skill). Fireball also has another acquisition route; the page quest is an example, not its only unlock method. Its completed collection book is handed in rather than read. Reading the assembled book is our adaptation.
@@ -79,7 +81,7 @@ F → E → D → C → B → A → 9 → 8 → 7 → 6 → 5 → 4 → 3 → 2 
 
 Rank 1 is the initial design's maximum. It has no next-rank AP cost or Rank Up action. Master titles and Dan ranks require a separate future design.
 
-Each rank explicitly defines its effects, training objectives, and AP cost to advance to the next rank. Improvements may include damage, shield strength, range, duration, reliability, or a new tactical effect. Any permanent stat bonus must be authored explicitly and derived from the current rank, so loading a save cannot grant it again.
+Each rank explicitly defines its effects, training objectives, and AP cost to advance to the next rank. Improvements may include damage, shield strength, duration, reliability, or a new tactical effect. Any permanent stat bonus must be authored explicitly and derived from the current rank, so loading a save cannot grant it again.
 
 ## 5. Training points
 
@@ -98,7 +100,7 @@ The player may rank up at **100 points or more**; completing every objective is 
 Illustrative Rank F training for Guard:
 
 | Objective                                          | Points per completion | Maximum completions | Available points |
-|----------------------------------------------------|-----------------------|---------------------|------------------|
+| -------------------------------------------------- | --------------------- | ------------------- | ---------------- |
 | Use Guard successfully in an eligible encounter    | 2                     | 20                  | 40               |
 | Absorb enemy damage with Guard                     | 5                     | 10                  | 50               |
 | Finish an encounter in which Guard absorbed damage | 10                    | 3                   | 30               |
@@ -106,7 +108,7 @@ Illustrative Rank F training for Guard:
 
 Completing the first two rows and one encounter objective earns `40 + 50 + 10 = 100` points and meets the training gate.
 
-Only resolved gameplay outcomes award training. Cancelled or rejected commands, opening the skill panel, assigning dice, and replaying animations do not count. One outcome may satisfy multiple distinct objectives, but contributes to each objective only once. For the Guard example, count successful uses per resolved use, damage absorption per enemy attack that loses damage to Guard, and encounter completion once per eligible encounter. Content must define equivalent counting rules for every objective, including multi-target attacks and ongoing effects.
+Only resolved gameplay outcomes award training. Cancelled or rejected commands, opening the skill panel, toggling kept dice, and replaying animations do not count. One outcome may satisfy multiple distinct objectives, but contributes to each objective only once. For the Guard example, count successful uses per resolved use, damage absorption per enemy attack that loses damage to Guard, and encounter completion once per eligible encounter. Content must define equivalent counting rules for every objective, including multi-target attacks and ongoing effects.
 
 ## 6. AP and advancement
 
@@ -127,7 +129,7 @@ On success, deduct the AP cost once, advance exactly one rank, apply the new ran
 For example, suppose Guard F → E costs **3 AP** (illustrative):
 
 | Training | Available AP | Result                                             |
-|----------|--------------|----------------------------------------------------|
+| -------- | ------------ | -------------------------------------------------- |
 | 99       | 10           | Blocked: more training required                    |
 | 100      | 2            | Blocked: 1 more AP required                        |
 | 100      | 3            | Advance to E; 0 AP remains; E training starts at 0 |
@@ -143,7 +145,7 @@ Using an active combat skill follows [battle.md](battle.md)'s five-dice workflow
 
 The proposed default allows NPC lessons, reading, assembly, and rank-ups between runs. A new run receives the hero's validated skill ranks and loadout. An active run uses that snapshot; menu or profile changes cannot silently alter its abilities. Training earned during a run is recorded as pending progression until the run's defined outcome is committed.
 
-Already committed skills, ranks, AP, training, and inserted pages are persistent progression. What happens to newly earned training, AP, books, and pages on victory, defeat, or abandonment must follow the Phase 7 carry-over decision. This document does not silently settle that open rule. [character.md §6](character.md#6-rebirth-connects-the-systems) proposes the working rebirth behavior — reset current level/XP and life growth while preserving learned ranks, training, unspent AP, and mastery — but its eligibility, cost, and cooldown remain open decisions, and nothing here assumes rebirth exists.
+Already committed skills, ranks, AP, training, and inserted pages are persistent progression. What happens to newly earned training, AP, books, and pages on victory, defeat, or abandonment must follow the Phase 8 carry-over decision. This document does not silently settle that open rule. [character.md §6](character.md#6-rebirth-connects-the-systems) proposes the working rebirth behavior — reset current level/XP and life growth while preserving learned ranks, training, unspent AP, and mastery — but its eligibility, cost, and cooldown remain open decisions, and nothing here assumes rebirth exists.
 
 Future content definitions need stable skill/rank/objective IDs, acquisition prerequisites, book/page mappings, effects, training rules, and AP costs. Saved progression needs the owning hero, learned ranks, objective counts, AP balance, inventory, and inserted page IDs. Keep this within the existing versioned content catalogs and combined profile/run save bundle.
 
@@ -156,12 +158,12 @@ The following twelve skills take their identities from Mabinogi. Each **Referenc
 ### Active and passive distinction
 
 | Skill               | Type                         | Player interaction and role                                                           |
-|---------------------|------------------------------|---------------------------------------------------------------------------------------|
+| ------------------- | ---------------------------- | ------------------------------------------------------------------------------------- |
 | Smash               | Active attack                | Select and roll for a powerful single-target melee strike                             |
 | Counterattack       | Active stance                | Select and roll to prepare one automatic retaliation against an eligible attack       |
 | Final Hit           | Active buff                  | Select and roll to enter a temporary melee damage state                               |
-| Windmill            | Active area attack           | Select and roll to strike nearby enemies around the user                              |
-| Charge              | Active movement attack       | Select a distant enemy and roll to close the gap and strike                           |
+| Windmill            | Active area attack           | Select and roll to strike eligible hostile encounter members                          |
+| Charge              | Deferred redesign            | Unavailable until a non-spatial battle adaptation is authored                         |
 | Combat Mastery      | Passive                      | Learned rank supplies general survivability and melee attack benefits                 |
 | Critical Hit        | Passive, triggered           | Increases damage when an eligible attack scores a critical; no separate attack button |
 | Sword Mastery       | Passive, equipment-dependent | Improves attacks made with a sword                                                    |
@@ -174,22 +176,22 @@ The following twelve skills take their identities from Mabinogi. Each **Referenc
 
 **Passive skills** have no Use button, independent dice roll, per-trigger resource payment, or extra turn. They apply automatically when learned and eligible, while still requiring training and AP to rank up. Equipment passives remain learned while unequipped; their conditional effects become inactive. Critical Hit still needs a qualifying critical event. A passive may coexist with an active skill and train from the same outcome through separate objective IDs.
 
-All twelve begin at Rank F when learned under section 3. Proposed acquisition routes below use instructors, books, or assembled books; equipping an item can reveal a lesson but does not automatically grant mastery in this adaptation. Mabinogi's race restrictions are reference context, not adopted class/race locks. Equipment legality remains required for every hero.
+Each supported skill begins at Rank F when learned under section 3; deferred Charge has no active acquisition route until redesigned. Proposed acquisition routes below use instructors, books, or assembled books; equipping an item can reveal a lesson but does not automatically grant mastery in this adaptation. Mabinogi's race restrictions are reference context, not adopted class/race locks. Equipment legality remains required for every hero.
 
 ### Shared combat rules for this catalog
 
-- Smash, Windmill, and Charge use the physical damage resolver in battle.md, with their own rank-specific base damage `B`, pip coefficient `K`, allowed attack contribution `A`, and face weights. All five pips and the single classified combination multiplier participate. Fair dice are the default until a different rank profile is authored.
+- Smash and Windmill use the physical damage resolver in battle.md, with their own rank-specific base damage `B`, pip coefficient `K`, allowed attack contribution `A`, and face weights. All five pips and the single classified combination multiplier participate. Fair dice are the default until a different rank profile is authored.
 - Counterattack prepares attack inputs from its hand; Final Hit turns its hand into a buff magnitude. Their details below define how those effects differ from immediate damage. Ranking a mastery never silently changes face weights, combination scoring, or reroll allowance.
-- Equipment requirements, costs, cooldown availability, target sets, and movement paths are validated before the first roll. Freeze them with the action. Enemies and equipment swaps cannot interleave the roll and commit.
-- Rank-defined cooldowns use completed activations of the skill owner, including passes and exploration actions. A cooldown begins on successful skill commitment, skips that casting activation's end, then decrements at each subsequent owner activation end. A value of 1 blocks the next activation and becomes available on the following one. A zero value means no cooldown. Rerolls and menus never tick it; passing without using the skill does not start a new cooldown.
+- Equipment requirements, costs, cooldown availability, target sets are validated before the first roll. Freeze them with the action. Enemies and equipment swaps cannot interleave the roll and commit.
+- Rank-defined cooldowns use completed activations of the skill owner, including passes. Exploration movement/interactions do not advance cooldowns. A cooldown begins on successful skill commitment, skips that casting activation's end, then decrements at each subsequent owner activation end. A value of 1 blocks the next activation and becomes available on the following one. A zero value means no cooldown. Rerolls and menus never tick it; passing without using the skill does not start a new cooldown.
 - Passive modifiers enter stats.md's existing source calculation once. Separate permanent rank stat grants from conditional equipment/attack bonuses. A modifier to STR can affect derived attack; do not also add that STR gain as direct attack damage. Resource-max increases never heal or refill a pool.
-- Counters, critical rolls, area targeting, and movement attacks extend features explicitly deferred by battle.md. Their proposed contracts below must be reconciled with battle.md, stats.md, and the implementation tracker when enabled. The first single-target slice stays usable without those extensions.
+- Counters, critical rolls and multi-target attacks extend features explicitly deferred by battle.md. Their proposed contracts below must be reconciled with battle.md, stats.md, and the implementation tracker when enabled. The first single-target slice stays usable without those extensions.
 
 ### 8.1. Smash — active melee attack
 
 **Reference:** Mabinogi's Smash delivers a strong blow, knocks the target back, and bypasses the **Defense skill**. Higher ranks introduce splash damage, and equipment affects additional behavior. Counterattack can repel Smash. Bypassing the Defense skill is distinct from ignoring a target's numerical Defense stat. [Smash](https://wiki.mabinogiworld.com/view/Smash#Details).
 
-**Proposed adaptation:** Require a compatible melee weapon and one hostile in an orthogonally adjacent cell. Resolve one physical hit using Smash's `B`, `A`, `K`, pips, and combination. Give it a stronger authored base than the starter attack, balanced by its SP cost and any cooldown. It is tagged as eligible for Counterattack. Apply ordinary Defense, Protection, and shield absorption; no penetration is implied by the name or source description. Knockback, splash, weapon-specific bleed/daze, and breaking an active Guard effect are later extensions with separate rules.
+**Proposed adaptation:** Require a compatible melee weapon and one living hostile in the current encounter. Resolve one physical hit using Smash's `B`, `A`, `K`, pips, and combination. Give it a stronger authored base than the starter attack, balanced by its SP cost and any cooldown. It is tagged as eligible for Counterattack. Apply ordinary Defense, Protection, and shield absorption; no penetration is implied by the name or source description. Knockback, splash, weapon-specific bleed/daze, and breaking an active Guard effect are later extensions with separate rules.
 
 **Progression:** An instructor teaches Smash after an introductory melee lesson; a complete book can be an alternative unlock. Rank improves base damage and optionally pip scaling or cost efficiency. Training objectives can count a committed hit and a defeat caused by Smash, once per relevant outcome. A blocked/countered attack is not a damaging hit; an explicit use objective may still count its committed use.
 
@@ -199,7 +201,7 @@ All twelve begin at Rank F when learned under section 3. Proposed acquisition ro
 
 **Proposed adaptation:** Require a compatible melee weapon. Target self, pay SP once, and commit a hand to prepare `B + A + K × P` and its combination multiplier `M`. The stance has one charge and expires at the **start of the owner's next activation**, or on defeat or encounter end. This is an explicit reaction-window exception to ordinary activation-end status duration; waiting through menus does not extend gameplay time.
 
-Before the first adjacent hostile's eligible single-target melee hit resolves, consume the stance, negate that hit and its on-hit effects, and resolve one physical retaliation. Use the stored attack power and `M`, with the attacker's current defenses/shield captured at this reaction boundary. This target was unknown when the stance was prepared. The initial adaptation uses the defender's stored power only, without Mabinogi's attacker-damage contribution or continuing stamina drain. Noneligible attacks resolve normally and do not consume the stance.
+Before the first encounter hostile's eligible single-target melee hit resolves, consume the stance, negate that hit and its on-hit effects, and resolve one physical retaliation. Use the stored attack power and `M`, with the attacker's current defenses/shield captured at this reaction boundary. This target was unknown when the stance was prepared. The initial adaptation uses the defender's stored power only, without Mabinogi's attacker-damage contribution or continuing stamina drain. Noneligible attacks resolve normally and do not consume the stance.
 
 The reaction uses no new dice, SP payment, or initiative entry. It cannot trigger another Counterattack or Critical Hit. Resolve it within the attacking action's transaction; if it kills the attacker, finalize that actor's activation once and then evaluate defeat/victory normally. Reactions and multi-hit interruption need explicit event ordering before this skill ships; initially only single-hit melee attacks can trigger it.
 
@@ -219,21 +221,17 @@ While active, qualifying melee attacks read this bonus through `A`; each still u
 
 **Reference:** Mabinogi's Windmill spins through surrounding enemies and knocks them down, with radius improving at rank thresholds. Counterattack does not repel it. Its hitbox, weapon, and AI interactions are specific to Mabinogi's real-time combat. [Windmill](https://wiki.mabinogiworld.com/view/Windmill#Details).
 
-**Proposed adaptation:** Require compatible melee equipment and at least one valid hostile in a self-centered area. Define radius as Manhattan distance on the grid, starting provisionally at 1: the four orthogonally adjacent cells. Require line of sight for larger radii, and exclude allies, walls, and the caster. Freeze eligible targets before rolling. One SP payment and one hand produce a separate physical damage resolution against each target's frozen defenses; do not divide the pips or grant extra turns per target.
+**Proposed adaptation (deferred until multi-enemy battles):** Require compatible melee equipment and at least one living hostile in the encounter. Target all eligible hostile encounter members, excluding allies and the caster; no radius, grid or line-of-sight test applies. Freeze the stable target IDs before rolling. One SP payment and one hand resolve a separate physical hit against each target's frozen defenses; do not divide pips or grant extra turns per target.
 
 Resolve targets by stable actor ID and process the whole action before scheduling another actor or granting encounter completion. Windmill is not counterable. Knockdown, invulnerability frames, AI resets, age-dependent radius, and forced retargeting are deferred. No HP sacrifice is implied; any future HP cost must be explicitly authored under stats.md.
 
-**Progression:** An instructor teaches Windmill after a surrounding-enemies lesson. Rank may increase damage, pip scaling, or radius at explicit thresholds. Train one successful use per action; a distinct multi-target objective counts once when at least two valid enemies are hit. Kill objectives may count distinct defeated targets once each. Do not require multi-target training while only single-enemy encounters exist.
+**Progression:** An instructor teaches Windmill after a surrounding-enemies lesson. Rank may increase damage or pip scaling at explicit thresholds; target-count limits require an explicit later rule. Train one successful use per action; a distinct multi-target objective counts once when at least two valid enemies are hit. Kill objectives may count distinct defeated targets once each. Do not require multi-target training while only single-enemy encounters exist.
 
 ### 8.5. Charge — active movement attack
 
 **Reference:** Mabinogi's Charge rushes a target, damages it, and causes knockback/stun. It has minimum range, ordinarily requires a shield for Humans/Elves, and provides specific protection against archery while charging. Counterattack can repel it. [Charge](https://wiki.mabinogiworld.com/view/Charge#Details).
 
-**Proposed adaptation:** Require a shield and compatible one-handed melee weapon for every hero. Target a hostile on the same row or column at distance 2 through the rank's maximum range. Every intermediate cell must be walkable and empty; the destination is the cell directly before the target. Initially exclude routes containing traps or other on-entry effects until their ordering is supported. An adjacent enemy, blocked lane, or missing equipment rejects the action before SP reservation or dice.
-
-At commit, move to the frozen destination and resolve one physical hit using the same hand and resource payment. Movement and damage form one atomic action and one initiative cost, regardless of distance; animation never moves the authoritative actor incrementally. A target's Counterattack may negate the hit after movement, leaving the charger at the destination. No homing, free basic attack on failure, mid-charge projectile immunity, knockback, or stun is included initially.
-
-**Progression:** Learn from a shield instructor's combat quest. Rank may improve damage, maximum range, cost, or cooldown; minimum range stays explicit. Count successful completed charges or Charge defeats. Charging farther does not create additional use-training events, and a cancelled preview grants nothing.
+**Current battle disposition:** Deferred pending redesign for non-spatial encounter battles. The old row/column path, minimum distance and move-then-hit rules are retired. Do not expose Charge as usable, require it for training/quests or implement world movement inside battle. A future adaptation must specify a compatible-equipment requirement, single-target effect, counter interaction, cost and reachable training goals before Phase 10 can enable it. Approach/rush animation may be cosmetic; it cannot create range, collision or an extra hit.
 
 ### 8.6. Combat Mastery — general passive
 
@@ -320,24 +318,28 @@ Before implementation, settle:
 
 - Whether skills and AP belong to individual heroes or the whole account; this proposal assumes individual heroes.
 - Exact AP rewards, advancement costs, training objectives, effects, and prerequisites.
-- Which pending skill progression and collection items survive defeat or abandonment, aligned with Phase 7.
+- Which pending skill progression and collection items survive defeat or abandonment, aligned with Phase 8.
 - Starting skills, available acquisition NPCs, book prices, page sources, and drop rates.
 - Whether rebirth later affects levels or AP earning, and what progression it preserves: character.md §6's reset/preserve proposal is the working draft, with eligibility, cost, and cooldown still open.
 
 Acceptance checks for the implementation should cover all three acquisition routes; duplicate learning and pages; incomplete books; rank-up rejection below 100 or with insufficient AP; successful advancement at exactly 100 and above; training reset; maximum-rank behavior; and save/retry without duplicate gains or costs. Validate that each trainable rank can actually reach 100 points and that run abilities use the intended rank snapshot.
 
-For the combat catalog, start with Smash and Combat/Sword Mastery, then equipment defenses and Final Hit. Enable Counterattack, Windmill, Charge, and Critical Hit as their reaction, area, movement, and critical-resolution dependencies are completed; dual wielding also needs a validated two-hand equipment model. This sequence does not require all twelve skills in the first battle slice.
+For the combat catalog, start with Smash and Combat/Sword Mastery, then equipment defenses and Final Hit. Enable Counterattack, Windmill and Critical Hit as their reaction, multi-target and critical-resolution dependencies are completed; Charge remains disabled until redesigned for non-spatial battles; dual wielding also needs a validated two-hand equipment model. This sequence does not require all twelve skills in the first battle slice.
 
 Each supported rank still needs actual SP costs, cooldowns, effect values, face weights, AP transition costs, and capped training objectives. Preserve the 100-training-plus-AP gate for both types. Add fixtures for passive activation/removal, one mastery contribution with two weapons, armor exclusivity, no free resource refill, Counterattack consumption/expiry and no reaction loops, Final Hit timing, blocked Charge routes, Windmill target order and training counts, and critical RNG/multiplier order when enabled.
 
-Save cooldown counters, Counterattack's prepared inputs/charge/window, Final Hit's resolved magnitude/duration, fixed area targets or Charge path for an unfinished activation, and critical results/RNG continuation with the existing run state. Outcome IDs must prevent retries or reloads from reapplying damage or training across the selected active skill and multiple passives. Completed rank progression survives under the existing character policy; pending run training still follows Phase 7 carry-over.
+Save cooldown counters, Counterattack's prepared inputs/charge/window, Final Hit's resolved magnitude/duration, fixed encounter target IDs for an unfinished activation, and critical results/RNG continuation with the existing run state. Outcome IDs must prevent retries or reloads from reapplying damage or training across the selected active skill and multiple passives. Completed rank progression survives under the existing character policy; pending run training still follows Phase 8 carry-over.
+
+## Phaser skill integration
+
+Skill definitions are versioned TypeScript content; each character owns rank/training/collection records. XState orchestrates commands and durable saves, Immer computes atomic immutable transitions, Phaser renders combat, and React/HeroUI renders the journal and town interactions. See [the implementation contract](skills-implementation.md). Historical Godot migration notes do not apply to this repository.
 
 ## Research notes
 
 Mabinogi Wiki pages were retrieved with Firecrawl and inspected on **September 5, 2026**. The linked wiki mechanics are reference material; proposed Rebirth Dungeon rules and illustrative numbers are identified above. Local research caches are kept under the gitignored `.firecrawl/` directory:
 
 | Reference                                                                                                        | Local cache                                  |
-|------------------------------------------------------------------------------------------------------------------|----------------------------------------------|
+| ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
 | [Skills overview, ranks, training, and AP training](https://wiki.mabinogiworld.com/view/Category:Skills)         | `.firecrawl/mabinogi-skills.md`              |
 | [Ability Points](https://wiki.mabinogiworld.com/view/Stats#Ability_Points) (`Ability_Points` redirects to Stats) | `.firecrawl/mabinogi-ability-points.md`      |
 | [In-game book catalog](https://wiki.mabinogiworld.com/view/Category:In-game_Books) (`Books` redirects here)      | `.firecrawl/mabinogi-books.md`               |

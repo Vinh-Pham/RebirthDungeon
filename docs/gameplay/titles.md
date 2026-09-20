@@ -6,16 +6,16 @@ This document describes planned gameplay inspired by [Mabinogi's Titles](https:/
 
 ## 1. Mabinogi reference
 
-| Feature | Reference behavior |
-| --- | --- |
-| Acquisition and effects | Requirements unlock titles; effects can include stat bonuses, penalties, skill visuals, or NPC dialogue. |
-| Slots | First and Second Titles coexist with a cosmetic Talent Title. |
-| Discovery | Unknown entries show `???`; known but unavailable entries are gray; earned entries are white. Favorites sort first. |
-| Selection | Normal titles can be changed at any time through Character Info. |
-| Vanity | The Base Title supplies stats; the Vanity Title supplies the displayed cosmetic effects. |
-| Master Titles | Require perfect training at Rank 1, without requiring perfect training at earlier ranks. Skill resets can prevent equipping an earned title until Rank 1 is restored. |
-| Second Titles | Acquired through Second Title Coupons and may supply stats or visual effects. |
-| Talent Titles | Cosmetic selections, separate from normal titles and not necessarily matching the active talent. |
+| Feature                 | Reference behavior                                                                                                                                                    |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Acquisition and effects | Requirements unlock titles; effects can include stat bonuses, penalties, skill visuals, or NPC dialogue.                                                              |
+| Slots                   | First and Second Titles coexist with a cosmetic Talent Title.                                                                                                         |
+| Discovery               | Unknown entries show `???`; known but unavailable entries are gray; earned entries are white. Favorites sort first.                                                   |
+| Selection               | Normal titles can be changed at any time through Character Info.                                                                                                      |
+| Vanity                  | The Base Title supplies stats; the Vanity Title supplies the displayed cosmetic effects.                                                                              |
+| Master Titles           | Require perfect training at Rank 1, without requiring perfect training at earlier ranks. Skill resets can prevent equipping an earned title until Rank 1 is restored. |
+| Second Titles           | Acquired through Second Title Coupons and may supply stats or visual effects.                                                                                         |
+| Talent Titles           | Cosmetic selections, separate from normal titles and not necessarily matching the active talent.                                                                      |
 
 Sources: [Details](https://wiki.mabinogiworld.com/view/Titles#Details), [Vanity Titles](https://wiki.mabinogiworld.com/view/Titles#Vanity_Titles), [Master Titles](https://wiki.mabinogiworld.com/view/Titles#Master_Titles), [Second Titles](https://wiki.mabinogiworld.com/view/Titles#2nd_Titles), and [Talent Titles](https://wiki.mabinogiworld.com/view/Titles#Talent_Titles).
 
@@ -25,11 +25,11 @@ The catalog includes general achievements, mainstream stories, jobs, mastery, ev
 
 The proposed default is **one collection per hero**, matching the progression owner in character.md. Committed title unlocks survive defeat, abandonment, and rebirth. A younger age, lower current level, or different talent after rebirth does not erase an achievement. Account-wide sharing remains a decision before implementation.
 
-| Selection | Purpose | Proposed behavior |
-| --- | --- | --- |
-| First Title | Main achievement title | Equip one earned First Title or leave empty; apply its effects |
-| Second Title | Additional distinction | Equip one earned Second Title or leave empty; apply its effects alongside the First Title |
-| Talent display | Show earned talent standing | Select an eligible talent label or hide it; no additional stats |
+| Selection              | Purpose                          | Proposed behavior                                                                             |
+| ---------------------- | -------------------------------- | --------------------------------------------------------------------------------------------- |
+| First Title            | Main achievement title           | Equip one earned First Title or leave empty; apply its effects                                |
+| Second Title           | Additional distinction           | Equip one earned Second Title or leave empty; apply its effects alongside the First Title     |
+| Talent display         | Show earned talent standing      | Select an eligible talent label or hide it; no additional stats                               |
 | Vanity override, later | Separate appearance from effects | Select an earned title compatible with the corresponding base slot; use its presentation only |
 
 First and Second are slot types. General, Story, Master, and Event are collection categories, not extra equipment slots. A title definition has exactly one base slot type, so the same title cannot occupy both slots. Merely owning or favoriting titles grants no cumulative stat bonus.
@@ -44,11 +44,11 @@ Vanity is deferred from the first slice. When supported, each override replaces 
 
 Track acquisition separately from selection:
 
-| State | Journal presentation | Can equip? |
-| --- | --- | --- |
-| Unknown | `???`, without spoiler text | No |
-| Known | Name, hint, and permitted progress details | No |
-| Earned | Description, effects, and acquisition record | Yes, if any explicit equip condition is met |
+| State   | Journal presentation                         | Can equip?                                  |
+| ------- | -------------------------------------------- | ------------------------------------------- |
+| Unknown | `???`, without spoiler text                  | No                                          |
+| Known   | Name, hint, and permitted progress details   | No                                          |
+| Earned  | Description, effects, and acquisition record | Yes, if any explicit equip condition is met |
 
 Equipped is a marker on an earned title, not a fourth acquisition state. Use text/icons as well as color. Story-sensitive entries may remain entirely hidden until discovery when authored that way.
 
@@ -56,13 +56,13 @@ Each title defines a **hint condition** separately from its **award condition**.
 
 Support these proposed acquisition routes:
 
-| Route | Evidence and award boundary |
-| --- | --- |
-| Combat or exploration achievement | Qualifying resolved events, committed under the run outcome's retention policy |
-| Story or NPC quest | The named quest reward transaction is claimed |
-| Character milestone | A committed level-up, age-up, cumulative milestone, or rebirth event, as authored |
-| Coupon | Consume a compatible title coupon and unlock its title together in town |
-| Skill mastery, later | Complete the skill's authored Rank 1 mastery checklist |
+| Route                             | Evidence and award boundary                                                       |
+| --------------------------------- | --------------------------------------------------------------------------------- |
+| Combat or exploration achievement | Qualifying resolved events, committed under the run outcome's retention policy    |
+| Story or NPC quest                | The named quest reward transaction is claimed                                     |
+| Character milestone               | A committed level-up, age-up, cumulative milestone, or rebirth event, as authored |
+| Coupon                            | Consume a compatible title coupon and unlock its title together in town           |
+| Skill mastery, later              | Complete the skill's authored Rank 1 mastery checklist                            |
 
 Conditions must specify what counts. A boss title names the boss and eligible mission; a clear title requires a successful clear, not merely entering a floor. A survival challenge records qualifying damage or failures throughout the run rather than checking only final HP. An age achievement reads character.md's actual age, not elapsed turns or account age.
 
@@ -103,13 +103,13 @@ Mastery checklists, skill-specific title effects, and any relationship to traini
 
 These are original placeholder titles and proposed values, not Mabinogi rewards. Mission, quest, and NPC references must resolve to authored content before release.
 
-| Title | Category / slot | Discovery | Award condition | Equipped effect |
-| --- | --- | --- | --- | --- |
-| the First Delver | General / First | Enter the introductory dungeon | Commit its first successful clear | Max HP +10 |
-| the Guardian Breaker | Combat / First | Encounter the introductory guardian | Successfully clear its mission with that guardian defeated | Physical Attack +3, Max MP -5 |
-| the Seal's Witness | Story / First | Receive G1: The Broken Seal's final quest | Claim that Generation's final quest reward | Magic Attack +3, Defense -1 |
-| the Seasoned | Character / First | Reach actual age 18 | Reach actual age 20 at a committed age-up | Max SP +10 |
-| Lantern Companion | General / Second | Inspect its coupon reward in a discovered town quest | Consume the earned coupon | Max HP +5 |
+| Title                | Category / slot   | Discovery                                            | Award condition                                            | Equipped effect               |
+| -------------------- | ----------------- | ---------------------------------------------------- | ---------------------------------------------------------- | ----------------------------- |
+| the First Delver     | General / First   | Enter the introductory dungeon                       | Commit its first successful clear                          | Max HP +10                    |
+| the Guardian Breaker | Combat / First    | Encounter the introductory guardian                  | Successfully clear its mission with that guardian defeated | Physical Attack +3, Max MP -5 |
+| the Seal's Witness   | Story / First     | Receive G1: The Broken Seal's final quest            | Claim that Generation's final quest reward                 | Magic Attack +3, Defense -1   |
+| the Seasoned         | Character / First | Reach actual age 18                                  | Reach actual age 20 at a committed age-up                  | Max SP +10                    |
+| Lantern Companion    | General / Second  | Inspect its coupon reward in a discovered town quest | Consume the earned coupon                                  | Max HP +5                     |
 
 The first two entries may unlock from the same successful run; grant both once and let the player choose. Obtaining the Seasoned title remains recorded after rebirth into a younger body. Coupon quest details and the age feature can arrive after the basic achievement slice.
 
@@ -117,19 +117,19 @@ The first two entries may unlock from the same successful run; grant both once a
 
 A normal run snapshots the validated base title IDs, resolved effects, and content version with the character loadout. Title selection stays fixed throughout that run. In-run discoveries and achievement evidence are pending progression, never a mid-run stat upgrade. NPC role-playing missions use their authored NPC template; the player's titles are not inherited unless the mission explicitly includes them.
 
-At the outcome boundary, resolve retained rewards and progression using character.md and quests.md, then evaluate relevant title conditions from the committed facts and retained evidence. A successful-clear condition always requires victory. Retention of other evidence on defeat or abandonment remains the [Phase 7](../project-phases.md) carry-over decision. Pending evidence must not survive by accident through a separately saved title counter.
+At the outcome boundary, resolve retained rewards and progression using character.md and quests.md, then evaluate relevant title conditions from the committed facts and retained evidence. A successful-clear condition always requires victory. Retention of other evidence on defeat or abandonment remains the [Phase 8](../project-phases.md) carry-over decision. Pending evidence must not survive by accident through a separately saved title counter.
 
 Save title awards together with their triggering reward transactions before showing notifications. A quest claim that awards a title and an item commits once; a coupon unlock and its inventory decrement commit together. Duplicate grants of an already-owned title are no-ops without fallback currency or repeated rewards. When multiple awards qualify, process stable title-ID order without using their newly equipped effects to trigger more awards.
 
 Persist the following in the existing versioned profile/run bundle:
 
-| Data | Purpose |
-| --- | --- |
-| Definition IDs and pinned content/rules versions | Stable references for eligibility, effects, and migrations |
-| Discovered and earned title IDs, acquisition source/outcome IDs | Collection state and duplicate prevention |
-| Committed counters and event evidence | Resume progress without reconstructing unrecorded achievements |
-| First/Second selections, talent display, favorites, later vanity selections | Restore the player's choices |
-| Active-run title snapshot and pending discovery/award evidence | Preserve deterministic combat and outcome retention |
+| Data                                                                        | Purpose                                                        |
+| --------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Definition IDs and pinned content/rules versions                            | Stable references for eligibility, effects, and migrations     |
+| Discovered and earned title IDs, acquisition source/outcome IDs             | Collection state and duplicate prevention                      |
+| Committed counters and event evidence                                       | Resume progress without reconstructing unrecorded achievements |
+| First/Second selections, talent display, favorites, later vanity selections | Restore the player's choices                                   |
+| Active-run title snapshot and pending discovery/award evidence              | Preserve deterministic combat and outcome retention            |
 
 Definitions also need slot, category, display text, spoiler policy, hint/award predicates, optional equip conditions, and typed effect bundles. Validate referenced quests, skills, encounters, stats, and coupons. Missing or retired definitions require a migration policy: preserve the achievement record, disable unresolved effects, and explain unavailable selections rather than crashing or substituting another title. Do not silently rewrite an active run under a new title definition.
 
@@ -150,6 +150,12 @@ Before implementation, settle the actual catalog and balance, ownership across h
 - Victory-only awards, retained versus discarded evidence, and distinct attribution in NPC role-playing missions.
 - Collection and selection persistence across save/load and rebirth, plus missing-definition migration.
 - When later enabled: mastery requires the complete Rank 1 checklist; vanity and talent presentation supply no extra stats.
+
+## Godot title integration
+
+**Godot reset: 2026-09-10. Status: planned; not implemented.** TitleDefinition Resources hold slot/category, reveal/award predicates and typed modifiers. Profile state stores earned/discovered IDs, evidence, selections and favorites. Feed equipped effects into the shared stat resolver; never mutate a definition or derive ownership from a UI label. Phase 8 adds basic titles, Phase 9 adds quest/rebirth awards and Phase 10 may add Master Titles. Persist awards with their triggering transaction before cosmetic notifications.
+
+See [Godot architecture](../game-plan.md), [project layout](../directory.md) and [official engine sources](../references.md#godot-engine-sources).
 
 ## Research notes
 

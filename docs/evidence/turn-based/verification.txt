@@ -1,0 +1,29 @@
+JVM suite results, 2026-09-19:
+cloud.vinh.rebirthdungeon.application.session.SessionIntegrationTest: tests=9 failures=0 errors=0
+cloud.vinh.rebirthdungeon.bootstrap.SessionWorkerTest: tests=5 failures=0 errors=0
+cloud.vinh.rebirthdungeon.data.content.ContentRepositoryTest: tests=8 failures=0 errors=0
+cloud.vinh.rebirthdungeon.game.RandomSourceTest: tests=4 failures=0 errors=0
+cloud.vinh.rebirthdungeon.game.combat.CombatCheckpointTest: tests=6 failures=0 errors=0
+cloud.vinh.rebirthdungeon.game.combat.CombatRulesTest: tests=4 failures=0 errors=0
+cloud.vinh.rebirthdungeon.game.combat.CombatSimulationTest: tests=13 failures=0 errors=0
+cloud.vinh.rebirthdungeon.game.exploration.NavigationTest: tests=7 failures=0 errors=0
+cloud.vinh.rebirthdungeon.game.turns.TurnSchedulerTest: tests=3 failures=0 errors=0
+cloud.vinh.rebirthdungeon.presentation.BattlePresentationTest: tests=3 failures=0 errors=0
+cloud.vinh.rebirthdungeon.smoke.AceRandomStateTest: tests=2 failures=0 errors=0
+cloud.vinh.rebirthdungeon.smoke.ArtemisWorldStepTest: tests=2 failures=0 errors=0
+cloud.vinh.rebirthdungeon.smoke.JacksonContentBindingTest: tests=4 failures=0 errors=0
+cloud.vinh.rebirthdungeon.smoke.JdkgdxdsCollectionsTest: tests=2 failures=0 errors=0
+TOTAL: 72 tests, 0 failures, 0 errors
+
+rebirth-turn-tests-final.log
+BUILD SUCCESSFUL in 8s
+8 actionable tasks: 4 executed, 4 up-to-date
+rebirth-turn-final-check.log
+BUILD SUCCESSFUL in 14s
+49 actionable tasks: 18 executed, 31 up-to-date
+rebirth-turn-ios.log
+BUILD SUCCESSFUL in 37s
+7 actionable tasks: 5 executed, 2 up-to-date
+
+iOS launch console excerpt:
+2026-09-19 19:26:14.333 IOSLauncher[8277:8738834] [error] LoadingScreen: platform runtime dependency unavailable

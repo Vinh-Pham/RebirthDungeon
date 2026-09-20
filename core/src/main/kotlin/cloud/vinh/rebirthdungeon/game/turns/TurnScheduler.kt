@@ -1,54 +1,49 @@
 package cloud.vinh.rebirthdungeon.game.turns
 
+import cloud.vinh.rebirthdungeon.game.algorithms.RandomSource
 import cloud.vinh.rebirthdungeon.game.content.frozenList
 import cloud.vinh.rebirthdungeon.game.identity.EntityId
-import java.util.PriorityQueue
 
-data class TurnEntry(val actor: EntityId, val dueTick: Long, val insertionSequence: Long)
-class SchedulerState(val tick: Long, val active: EntityId?, val nextSequence: Long, queue: List<TurnEntry>) {
-    val queue = frozenList(queue)
+data class TurnEntry(val actor: EntityId, val speed: Int)
+class SchedulerState(order: List<TurnEntry>, val cursor: Int, val round: Long, val sequence: Long,
+    val started: Boolean, val itemUsed: Boolean) {
+    val order = frozenList(order)
+    val active get() = order[cursor].actor
 }
-
-/** Active actor is removed from the queue. Ties never depend on ECS iteration. */
+/** Captured order never changes; living membership is supplied by the battle World. */
 class TurnScheduler private constructor(state: SchedulerState) {
-    private val order = compareBy<TurnEntry>({ it.dueTick }, { it.insertionSequence }, { it.actor.value })
-    private val queue = PriorityQueue(order)
-    var tick = state.tick
-        private set
-    var active = state.active
-        private set
-    private var nextSequence = state.nextSequence
+    val order = state.order
+    var cursor = state.cursor; private set
+    var round = state.round; private set
+    var sequence = state.sequence; private set
+    var started = state.started; private set
+    var itemUsed = state.itemUsed; private set
+    val active get() = order[cursor].actor
     init {
-        require(tick >= 0 && nextSequence >= 0)
-        require(state.queue.all { it.dueTick >= tick && it.insertionSequence in 0 until nextSequence })
-        require(state.queue.map { it.actor }.distinct().size == state.queue.size)
-        require(state.queue.map { it.insertionSequence }.distinct().size == state.queue.size)
-        require(state.queue.none { it.actor == active })
-        queue.addAll(state.queue)
+        require(order.isNotEmpty() && order.map { it.actor }.distinct().size == order.size)
+        require(order.all { it.speed > 0 } && order.zipWithNext().all { it.first.speed >= it.second.speed })
+        require(cursor in order.indices && round > 0 && sequence > 0 && (started || !itemUsed))
     }
-    fun finish() {
-        val actor = checkNotNull(active)
-        check(tick <= Long.MAX_VALUE - ACTION_COST && nextSequence < Long.MAX_VALUE) { "Turn counters exhausted" }
-        queue.add(TurnEntry(actor, tick + ACTION_COST, nextSequence++))
-        select()
+    fun begin() { check(!started); started = true; itemUsed = false }
+    fun useItem() { check(started && !itemUsed); itemUsed = true }
+    fun finish(living: Set<EntityId>) {
+        check(started && living.isNotEmpty())
+        do {
+            cursor++
+            if (cursor == order.size) { cursor = 0; round = Math.addExact(round, 1L) }
+        } while (active !in living)
+        sequence = Math.addExact(sequence, 1L); started = false; itemUsed = false
     }
-    fun remove(actor: EntityId) = removeAll(setOf(actor))
-    /** Remove every casualty before selecting, including simultaneous activation-end deaths. */
-    fun removeAll(actors: Set<EntityId>) {
-        queue.removeAll { it.actor in actors }
-        if (active in actors) select()
-    }
-    private fun select() {
-        val next = queue.poll()
-        active = next?.actor
-        if (next != null) tick = next.dueTick
-    }
-    fun capture() = SchedulerState(tick, active, nextSequence, queue.toList().sortedWith(order))
+    fun capture() = SchedulerState(order, cursor, round, sequence, started, itemUsed)
     companion object {
-        const val ACTION_COST = 100L
-        fun create(actors: List<EntityId>): TurnScheduler {
-            require(actors.isNotEmpty() && actors.distinct().size == actors.size)
-            return TurnScheduler(SchedulerState(0, actors.first(), actors.size.toLong(), actors.drop(1).mapIndexed { i, id -> TurnEntry(id, 0, i + 1L) }))
+        fun create(actors: List<TurnEntry>, random: RandomSource): TurnScheduler {
+            require(actors.isNotEmpty() && actors.map { it.actor }.distinct().size == actors.size)
+            val order = actors.groupBy { it.speed }.toSortedMap(reverseOrder()).values.flatMap { group ->
+                val tied = group.sortedBy { it.actor.value }.toMutableList()
+                for (i in tied.lastIndex downTo 1) { val j = random.nextInt(i + 1); val a = tied[i]; tied[i] = tied[j]; tied[j] = a }
+                tied
+            }
+            return TurnScheduler(SchedulerState(order, 0, 1, 1, false, false))
         }
         fun restore(state: SchedulerState) = TurnScheduler(state)
     }

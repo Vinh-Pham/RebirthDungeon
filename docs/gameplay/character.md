@@ -6,15 +6,15 @@ This document describes planned gameplay inspired by **Mabinogi, the Korean MMOR
 
 ## 1. Mabinogi reference
 
-| System | Reference behavior |
-| --- | --- |
-| Current level | Gained through character EXP during the current life; capped at 200. Level-ups grant AP and stats. |
-| Cumulative level | Tracks levels accumulated across lives and survives rebirth; the wiki lists no cumulative cap. |
-| Exploration level | A separate EXP track, capped at 50, with its own cumulative total. |
-| Active talent | Chosen at creation or rebirth; provides specialization benefits such as training and stat bonuses. |
-| Talent mastery | Develops from the ranks of associated skills, without a separate AP payment. Master is level 15; Grandmaster requires additional tests. |
-| Age | Starting/rebirth ages are 10–17. Characters age on a weekly schedule, and age influences character growth and appearance. |
-| Rebirth | Can reset current level and age while retaining progression such as skill ranks and unspent AP. |
+| System            | Reference behavior                                                                                                                      |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Current level     | Gained through character EXP during the current life; capped at 200. Level-ups grant AP and stats.                                      |
+| Cumulative level  | Tracks levels accumulated across lives and survives rebirth; the wiki lists no cumulative cap.                                          |
+| Exploration level | A separate EXP track, capped at 50, with its own cumulative total.                                                                      |
+| Active talent     | Chosen at creation or rebirth; provides specialization benefits such as training and stat bonuses.                                      |
+| Talent mastery    | Develops from the ranks of associated skills, without a separate AP payment. Master is level 15; Grandmaster requires additional tests. |
+| Age               | Starting/rebirth ages are 10–17. Characters age on a weekly schedule, and age influences character growth and appearance.               |
+| Rebirth           | Can reset current level and age while retaining progression such as skill ranks and unspent AP.                                         |
 
 Sources: [Level](https://wiki.mabinogiworld.com/view/Level), [Talent](https://wiki.mabinogiworld.com/view/Category:Talent), [Character age](https://wiki.mabinogiworld.com/view/Character#Age), [Age schedule](https://wiki.mabinogiworld.com/view/Stats#Age), and [Rebirth](https://wiki.mabinogiworld.com/view/Rebirth).
 
@@ -24,15 +24,15 @@ The wiki's details are not fully consistent across pages. The Level page's overv
 
 Use **character** and **hero** for the same playable progression owner. The proposed default follows skills.md: each hero has its own levels, AP, skills, talent mastery, and age. Account-wide sharing remains a decision before implementation.
 
-| Track | Meaning | How it advances |
-| --- | --- | --- |
-| Character XP and current level | Growth during the current life | Committed encounter, quest, and dungeon rewards |
-| Cumulative level | Lifetime record of earned levels | Each actual character level-up |
-| AP | Spendable Ability Points | Level-ups, eligible age-ups, and authored rewards |
-| Skill rank and training | Proficiency in one learned skill | Practice to at least 100 points, then spend AP |
-| Active talent | Selected specialization for this life | Player choice at creation or rebirth |
-| Talent mastery | Achievement within each specialization | Ranks of the talent's associated skills |
-| Age | Years lived in the current body | Scheduled age-ups; reset by rebirth |
+| Track                          | Meaning                                | How it advances                                   |
+| ------------------------------ | -------------------------------------- | ------------------------------------------------- |
+| Character XP and current level | Growth during the current life         | Committed encounter, quest, and dungeon rewards   |
+| Cumulative level               | Lifetime record of earned levels       | Each actual character level-up                    |
+| AP                             | Spendable Ability Points               | Level-ups, eligible age-ups, and authored rewards |
+| Skill rank and training        | Proficiency in one learned skill       | Practice to at least 100 points, then spend AP    |
+| Active talent                  | Selected specialization for this life  | Player choice at creation or rebirth              |
+| Talent mastery                 | Achievement within each specialization | Ranks of the talent's associated skills           |
+| Age                            | Years lived in the current body        | Scheduled age-ups; reset by rebirth               |
 
 A **life** may contain many dungeon runs. Starting a run, completing one, or being defeated does not itself create a new life or trigger rebirth. Character XP, skill training points, and talent experience are different quantities and must have distinct labels in the UI.
 
@@ -85,12 +85,12 @@ A talent expresses the character's current focus without locking them into a cla
 
 Suggested initial talents are:
 
-| Talent | Associated skills | Proposed emphasis |
-| --- | --- | --- |
-| Close Combat | Guard and future melee techniques | Physical offense and durability |
-| Magic | Ember Bolt, Flame Burst, and future spells | Spell effectiveness and magical growth |
-| Adventure, later | Future survival and exploration skills | Dungeon utility |
-| Crafting, later | Future production skills | Item creation and resource use |
+| Talent           | Associated skills                          | Proposed emphasis                      |
+| ---------------- | ------------------------------------------ | -------------------------------------- |
+| Close Combat     | Guard and future melee techniques          | Physical offense and durability        |
+| Magic            | Ember Bolt, Flame Burst, and future spells | Spell effectiveness and magical growth |
+| Adventure, later | Future survival and exploration skills     | Dungeon utility                        |
+| Crafting, later  | Future production skills                   | Item creation and resource use         |
 
 These are Rebirth Dungeon groupings; final names, bonuses, and skill membership are authored content. A skill may contribute to more than one talent. A skill **category** organizes the journal; a **talent** defines specialization benefits and mastery progression, so the two need not map one-to-one.
 
@@ -125,17 +125,17 @@ Mabinogi uses a shared weekly Saturday age-up schedule. Rebirth Dungeon's propos
 
 Age is reconciled in town or at a run's results boundary. Opening menus repeatedly does not trigger age-ups, and an age-up during a dungeon does not silently change the active run's character snapshot. Reconcile each elapsed interval once in chronological order, including intervals missed while offline.
 
-Display actual age directly, such as **Age 26**, instead of copying the wiki's legacy “years past 25” notation. Age continues increasing beyond the growth cutoff; the proposed system has no death from old age. Optional age-based appearance changes must leave grid occupancy, targeting, and input areas unchanged.
+Display actual age directly, such as **Age 26**, instead of copying the wiki's legacy “years past 25” notation. Age continues increasing beyond the growth cutoff; the proposed system has no death from old age. Optional age-based appearance changes must leave collision footprint, encounter targeting, and input areas unchanged.
 
 ### Age rewards and growth limits
 
 Use the following explicit **provisional Rebirth Dungeon schedule** to avoid inheriting the wiki's ambiguous cutoffs:
 
-| Age reached at an age-up | AP reward | Base age-growth bundle | Active talent age-growth bonus |
-| --- | --- | --- | --- |
-| 11–20 | 5 AP | Authored by destination age | Authored by destination age and talent |
-| 21–25 | 5 AP | Authored by destination age | None |
-| 26 and above | None | None | None |
+| Age reached at an age-up | AP reward | Base age-growth bundle      | Active talent age-growth bonus         |
+| ------------------------ | --------- | --------------------------- | -------------------------------------- |
+| 11–20                    | 5 AP      | Authored by destination age | Authored by destination age and talent |
+| 21–25                    | 5 AP      | Authored by destination age | None                                   |
+| 26 and above             | None      | None                        | None                                   |
 
 The 5 AP amount is informed by the Level page; the age-20 talent and age-25 general cutoffs are inspired by the Talent and Stats pages. The table above is our proposal, not a verified unified Mabinogi reward table. [Character Growth](https://wiki.mabinogiworld.com/view/Level#Character_Growth), [Talent aging bonuses](https://wiki.mabinogiworld.com/view/Category:Talent#Basic_Information), [Stats aging rules](https://wiki.mabinogiworld.com/view/Stats#Age).
 
@@ -149,17 +149,17 @@ Rebirth is included here to explain why current level, cumulative level, and age
 
 At an eligible town boundary, preview the following proposed transition before the player commits:
 
-| Character state | Proposed rebirth behavior |
-| --- | --- |
-| Current level and XP | Reset to level 1 and 0 XP |
-| Cumulative level | Preserve; the reset itself adds nothing |
-| Age | Choose an allowed starting age; begin a new aging interval |
-| Active talent | Choose a talent for the new life |
-| Level- and age-growth stats | Remove the old life's accumulated growth and apply the new starting profile |
-| Learned skills, ranks, and training | Preserve |
-| Unspent AP | Preserve; rebirth neither refunds spent AP nor grants level-up AP |
-| All talent mastery and mastery bonuses | Preserve |
-| Committed inventory, page collections, quests, and claimed rewards | Preserve |
+| Character state                                                    | Proposed rebirth behavior                                                   |
+| ------------------------------------------------------------------ | --------------------------------------------------------------------------- |
+| Current level and XP                                               | Reset to level 1 and 0 XP                                                   |
+| Cumulative level                                                   | Preserve; the reset itself adds nothing                                     |
+| Age                                                                | Choose an allowed starting age; begin a new aging interval                  |
+| Active talent                                                      | Choose a talent for the new life                                            |
+| Level- and age-growth stats                                        | Remove the old life's accumulated growth and apply the new starting profile |
+| Learned skills, ranks, and training                                | Preserve                                                                    |
+| Unspent AP                                                         | Preserve; rebirth neither refunds spent AP nor grants level-up AP           |
+| All talent mastery and mastery bonuses                             | Preserve                                                                    |
+| Committed inventory, page collections, quests, and claimed rewards | Preserve                                                                    |
 
 This retains Mabinogi's central pattern of repeatable leveling supported by lasting skills. Mabinogi's own retained/reset state is documented on [Rebirth](https://wiki.mabinogiworld.com/view/Rebirth#What_Stays).
 
@@ -169,7 +169,7 @@ Example: a level-20 character with cumulative level 20, Guard E, and 8 unspent A
 
 ## 7. Run integration and saving
 
-Follow the game plan's boundary between permanent profile progression and the active dungeon simulation. For the initial design, run-earned XP and skill training are pending rewards. Commit the eligible amounts at the outcome boundary, then apply level-ups and mastery changes. Victory, defeat, and abandonment retention remains the Phase 7 decision; this document does not assume every pending reward survives.
+Follow the game plan's boundary between permanent profile progression and the active dungeon simulation. For the initial design, run-earned XP and skill training are pending rewards. Commit the eligible amounts at the outcome boundary, then apply level-ups and mastery changes. Victory, defeat, and abandonment retention remains the Phase 8 decision; this document does not assume every pending reward survives.
 
 For a run outcome, first apply retained XP using the age and talent captured at run start, then apply retained skill training, then reconcile elapsed age intervals. This is an explicit simplification for growth earned during long runs. Skill rank-ups and rebirth happen afterward in town. The next run uses the updated profile.
 
@@ -189,14 +189,20 @@ Before implementation, settle the XP curve, level cap, AP economy, age-based gro
 
 Acceptance checks should cover exact XP thresholds and overflow; one AP grant per earned level; cumulative preservation through rebirth; mastery without a second AP charge; inactive talent mastery; no skill-training shortcut; offline age catch-up and the 20/25 cutoffs; unchanged active-run stats; and save/retry without duplicate rewards or lost retained progression.
 
+## Godot character integration
+
+**Godot reset: 2026-09-10. Status: planned; not implemented.** Keep current-life and persistent mastery fields in explicit profile state, separate from the player CharacterBody2D scene. Progression Resources define XP, talent and growth tables. The application controller snapshots run inputs and performs level-up, age reconciliation and rebirth transactions; a scene reload cannot award growth. Phase 8 implements levels/talents; Phase 9 defines and implements aging/rebirth. Inject clock readings at eligible boundaries rather than reading time inside rules.
+
+See [Godot architecture](../game-plan.md), [project layout](../directory.md) and [official engine sources](../references.md#godot-engine-sources).
+
 ## Research notes
 
 Sources were retrieved with Firecrawl and inspected on **September 5, 2026**. Local caches are under the gitignored `.firecrawl/` directory. Source discrepancies are recorded in section 1; example numbers and Rebirth Dungeon adaptations are identified throughout.
 
-| Reference | Local cache |
-| --- | --- |
-| [Character: Age](https://wiki.mabinogiworld.com/view/Character#Age) | `.firecrawl/mabinogi-character.md` |
-| [Level and Character Growth](https://wiki.mabinogiworld.com/view/Level) | `.firecrawl/mabinogi-level.md` |
-| [Talent](https://wiki.mabinogiworld.com/view/Category:Talent) | `.firecrawl/mabinogi-talent.md` |
+| Reference                                                                      | Local cache                                                                  |
+| ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
+| [Character: Age](https://wiki.mabinogiworld.com/view/Character#Age)            | `.firecrawl/mabinogi-character.md`                                           |
+| [Level and Character Growth](https://wiki.mabinogiworld.com/view/Level)        | `.firecrawl/mabinogi-level.md`                                               |
+| [Talent](https://wiki.mabinogiworld.com/view/Category:Talent)                  | `.firecrawl/mabinogi-talent.md`                                              |
 | [Stats: Age and Ability Points](https://wiki.mabinogiworld.com/view/Stats#Age) | `.firecrawl/mabinogi-ability-points.md` (retrieved for skills.md and reused) |
-| [Rebirth](https://wiki.mabinogiworld.com/view/Rebirth) | `.firecrawl/mabinogi-rebirth.md` |
+| [Rebirth](https://wiki.mabinogiworld.com/view/Rebirth)                         | `.firecrawl/mabinogi-rebirth.md`                                             |
