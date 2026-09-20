@@ -1,0 +1,5 @@
+name: "hud_panel_popup"
+embedded_instances {
+  id: "host"
+  data: ""
+}

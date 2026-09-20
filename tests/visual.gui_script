@@ -1,0 +1,566 @@
+local Controller=require("game.ui.controller")
+local S=require("game.runtime.session")
+local B=require("game.domain.battle")
+local C=require("game.content.catalog")
+local U=require("game.domain.util")
+local Save=require("game.services.save")
+local Stats=require("game.domain.stats")
+local D=require("game.domain.dungeon")
+local function press(self,index)
+    local b=assert(self.buttons[index],"Button not found: "..index)
+    assert(b.enabled,"Button disabled: "..index)
+    local pos=gui.get_screen_position(b.node)
+    -- gui.pick_node expects design-scaled action.x/y, unlike get_screen_position.
+    local width,height=window.get_size();local x,y=pos.x*1280/width,pos.y*720/height
+    assert(gui.pick_node(b.node,x,y),"Button does not pick at its center")
+    Controller.on_input(self,hash("touch"),{x=x,y=y,screen_x=pos.x,screen_y=pos.y,pressed=true,value=1})
+    Controller.on_input(self,hash("touch"),{x=x,y=y,screen_x=pos.x,screen_y=pos.y,released=true,value=0})
+end
+local function button_index(self,label)
+    for index,button in ipairs(self.buttons) do if button.label==label then return index end end
+    error("Button not found: "..label)
+end
+local function press_label(self,label) press(self,button_index(self,label)) end
+local function click_world(self,x,y)
+    local width,height=window.get_size();local scale=math.min(width/1280,height/720)
+    local sx=(x-S.world_position.x+640)*scale+(width-1280*scale)/2
+    local sy=(y-S.world_position.y+360)*scale+(height-720*scale)/2
+    Controller.on_input(self,hash("touch"),{x=sx*1280/width,y=sy*720/height,screen_x=sx,screen_y=sy,pressed=true,value=1})
+    Controller.on_input(self,hash("touch"),{x=sx*1280/width,y=sy*720/height,screen_x=sx,screen_y=sy,released=true,value=0})
+end
+
+local function service_checks(self,p)
+    local model=self.service_data
+    if not model or self.service_pending then return false end
+    local step=self.service_check or 0
+    if step==0 then
+        self.town_baseline=U.copy(p);self.town_position=U.copy(S.world_position)
+        assert(not S.panel("healer") and S.modal=="shop","Remote service must not replace current panel")
+        S.notice=nil;S.refresh()
+        local input=self.service_input;input:set_text("");input:select()
+        Controller.on_input(self,hash("text"),{text="7"});input:unselect();press_label(self,"Set quantity")
+    elseif step==1 then
+        assert(model.header.quantity==7 and model.rows[1].action.enabled)
+        assert(not model.rows[4].action.enabled,"Unaffordable armor must be disabled")
+        assert(U.equal(S.world_position,self.town_position),"Town kept moving under service popup")
+        assert(require("monarch.monarch").top()==hash("town_service_popup"),"Service did not open a Monarch popup")
+        local in_trigger=false
+        for _,marker in ipairs(S.world_labels) do if marker.key=="shop" then in_trigger=marker.near end end
+        assert(in_trigger,"NPC physics trigger did not identify the nearby hero")
+        press_label(self,"Buy 7 · 70 gold")
+    elseif step==2 then
+        assert(p.gold==30 and p.items[2].quantity==7,"Exact purchase failed")
+        local input=self.service_input;input:set_text("");input:select()
+        Controller.on_input(self,hash("text"),{text="3"});input:unselect();press_label(self,"Set quantity")
+    elseif step==3 then
+        local count=0
+        for index,button in ipairs(self.buttons) do
+            if button.label=="Buy 3 · 30 gold" then count=count+1;if count==3 then press(self,index);break end end
+        end
+    elseif step==4 then
+        assert(p.gold==0 and p.items[3].quantity==3,"Stamina purchase failed")
+        assert(not model.rows[1].action.enabled and model.rows[1].action.reason=="Not enough gold")
+        assert(U.equal(p.random,self.town_baseline.random),"Commerce consumed RNG")
+        click_world(self,14*48,4*48);assert(not S.path_target,"Service input clicked through")
+        press_label(self,"Talk")
+    elseif step==5 then
+        if S.modal~="dialogue" or not model.header.dialogue then return false end
+        assert(p.dialogue.shop.version==2 and #model.choices==3)
+        assert(require("monarch.monarch").top()==hash("town_dialogue_popup"),"Conversation must replace service popup")
+        press_label(self,model.choices[1].label)
+    elseif step==6 then
+        assert(#model.choices==0,"Dialogue choice did not advance")
+        local before=U.copy(p);S.reload();assert(U.equal(before,S.snapshot()),"Saved conversation changed after reload")
+        press_label(self,"Back to service")
+    elseif step==7 then
+        if S.modal~="shop" or model.header.dialogue then return false end
+        assert(not self.shop_inventory and model.header.quantity==1,"Service transient state leaked")
+        print("VISUAL PASS service quantity, affordability, atomic buying, NPC arrival, popup pause/replacement, Ink save/reload and no click-through")
+        return true
+    end
+    self.service_check=step+1
+    return false
+end
+
+local function inventory_checks(self,p)
+    local model=self.inventory_data
+    if not model or self.inventory_pending then return false end
+    local step=self.inventory_check or 0
+    if step==0 then
+        self.inventory_baseline=U.copy(p);self.focus=nil
+        Controller.on_input(self,hash("tab"),{pressed=true})
+        Controller.on_input(self,hash("enter"),{pressed=true})
+    elseif step==1 then
+        assert(model.detail and model.detail.name=="Traveler's Sword","Keyboard item selection failed")
+        assert(p.revision==self.inventory_baseline.revision and not S.path_target,"Selection mutated game or clicked through")
+        press_label(self,"Unequip")
+    elseif step==2 then
+        assert(not p.items[1].slot and model.detail.location=="Carried","Unequip message failed")
+        local before=U.copy(p);S.reload();assert(U.equal(before,S.snapshot()))
+        press_label(self,"Equip")
+    elseif step==3 then
+        assert(p.items[1].slot=="weapon","Equip message failed")
+        self.inventory_baseline=U.copy(p)
+        press_label(self,"Health Potion")
+    elseif step==4 then
+        assert(model.detail and model.detail.name=="Health Potion")
+        assert(not self.buttons[button_index(self,"Use one")].enabled,"Full-resource Use must be disabled")
+        press_label(self,"+")
+    elseif step==5 then
+        assert(model.detail.quantity==2,"Exact quantity selection failed")
+        press_label(self,"Discard 2")
+    elseif step==6 then
+        assert(self.inventory_confirmation,"Discard must show confirmation")
+        Controller.on_input(self,hash("escape"),{pressed=true})
+        assert(not self.inventory_confirmation and S.modal=="inventory","Escape must cancel confirmation")
+        assert(U.equal(self.inventory_baseline,S.snapshot()),"Cancelling discard changed state")
+    elseif step==7 then
+        local input=self.inventory_inputs.inventory_quantity
+        input:set_text("");input:select()
+        Controller.on_input(self,hash("text"),{text="3"})
+        input:unselect();press_label(self,"Set")
+    elseif step==8 then
+        assert(model.detail.quantity==3,"Typed quantity did not reach rules presenter")
+        assert(U.equal(self.inventory_baseline,S.snapshot()),"Organization changed state or RNG")
+        print("VISUAL PASS inventory messages, keyboard selection, exact quantity, equipment restart, discard cancellation and no click-through")
+        return true
+    end
+    self.inventory_check=step+1
+    return false
+end
+
+local function skill_checks(self,p)
+    local model=self.skills_data
+    if not model then return false end
+    local step=self.skill_check or 0
+    if step==0 then
+        self.skill_baseline=U.copy(p);press_label(self,"Life")
+    elseif step==1 then
+        assert(#model.rows==0 and model.header.group=="Life","Reference-only life skills must be unavailable")
+        press_label(self,"Combat")
+    elseif step==2 then
+        self.focus=4
+        Controller.on_input(self,hash("tab"),{pressed=true})
+        Controller.on_input(self,hash("enter"),{pressed=true})
+    elseif step==3 then
+        assert(model.detail and model.detail.id=="normal" and model.detail.alias,"Attack must share mastery progression")
+        assert(not model.detail.use.enabled and not model.detail.advance.enabled,"Town cannot execute battle skills or unsupported ranks")
+        press_label(self,"Source / learning")
+    elseif step==4 then
+        assert(self.skills_show_source,"Source details did not open")
+        Controller.on_input(self,hash("escape"),{pressed=true})
+        assert(not self.skills_show_source and self.skills_selected=="normal","Escape must close source details first")
+    elseif step==5 then
+        Controller.on_input(self,hash("escape"),{pressed=true})
+        assert(not self.skills_selected and self.skills_group=="Combat" and self.focus==self.skills_parent_focus,"Journal context was lost")
+    elseif step==6 then
+        press_label(self,"Defend")
+    elseif step==7 then
+        assert(model.detail and #model.objectives==2,"Defense objectives are missing")
+        local before=U.copy(p);S.reload();assert(U.equal(before,S.snapshot()))
+    elseif step==8 then
+        assert(self.skills_group=="Combat" and self.skills_selected=="defense","Reload changed journal selection")
+        assert(U.equal(self.skill_baseline,S.snapshot()),"Journal browsing changed progression or RNG")
+        print("VISUAL PASS skills categories, keyboard details, source view, disabled actions, focus and reload")
+        return true
+    end
+    self.skill_check=step+1
+    return false
+end
+
+local function bank_checks(self,p)
+    local model=self.inventory_data
+    if not model or self.inventory_pending then return false end
+    local step=self.bank_check or 0
+    if step==0 then
+        self.bank_baseline=U.copy(p)
+        local input=self.inventory_inputs.inventory_amount
+        input:set_text("");input:select()
+        Controller.on_input(self,hash("text"),{text="37"})
+        input:unselect();press_label(self,"Set")
+    elseif step==1 then
+        assert(model.header.amount==37,"Typed bank gold amount failed")
+        press_label(self,"Deposit")
+    elseif step==2 then
+        assert(p.bank.gold==37 and p.gold==self.bank_baseline.gold-37,"Exact bank gold deposit failed")
+        press_label(self,"Withdraw")
+    elseif step==3 then
+        assert(p.bank.gold==0 and p.gold==self.bank_baseline.gold,"Gold withdrawal failed")
+        press_label(self,"Spider Silk")
+    elseif step==4 then
+        self.bank_item=model.detail.id
+        press_label(self,"All")
+    elseif step==5 then
+        press_label(self,"Deposit")
+    elseif step==6 then
+        assert(#p.bank.items==1 and p.bank.items[1].id==self.bank_item,"Whole stack identity lost")
+        press_label(self,"Bank 1/60")
+    elseif step==7 then
+        press_label(self,"Spider Silk")
+    elseif step==8 then
+        press_label(self,"All")
+    elseif step==9 then
+        press_label(self,"Withdraw")
+    elseif step==10 then
+        assert(#p.bank.items==0,"Stack withdrawal failed")
+        local before=U.copy(p);S.reload();assert(U.equal(before,S.snapshot()),"Bank restart changed state")
+        print("VISUAL PASS bank exact gold, item transfers, stable IDs and restart")
+        return true
+    end
+    self.bank_check=step+1
+    return false
+end
+
+local function ui_checks(self,p)
+    local step=self.ui_check or 0
+    if step==0 then
+        self.ui_baseline=U.copy(p);press_label(self,"Character");self.ui_opener=self.focus
+    elseif step==1 then
+        assert(S.modal=="character" and self.ui.profile.stats.str>0)
+        press_label(self,"Sources / effects")
+    elseif step==2 then
+        assert(self.character_details and #self.ui.profile.sources==6)
+        Controller.on_input(self,hash("escape"),{pressed=true})
+        assert(not self.character_details and S.modal=="character","Escape must close details before panel")
+    elseif step==3 then Controller.on_input(self,hash("escape"),{pressed=true})
+    elseif step==4 then
+        assert(not S.modal and self.focus==self.ui_opener,"Panel close did not restore opener focus")
+        assert(gui.is_enabled(self.focus_nodes[1]),"Keyboard focus outline is missing")
+        press_label(self,"Menu")
+    elseif step==5 then
+        assert(S.modal=="menu");press_label(self,"Settings")
+    elseif step==6 then
+        assert(S.modal=="settings");press_label(self,"HUD text: 100%")
+    elseif step==7 then
+        assert(S.settings.hud_scale==1.15);press_label(self,"HUD text: 115%")
+    elseif step==8 then
+        assert(S.settings.hud_scale==1.3)
+        for _,button in ipairs(self.buttons) do
+            local pos,size=gui.get_position(button.node),gui.get_size(button.node)
+            assert(pos.x-size.x/2>=-640 and pos.x+size.x/2<=640 and pos.y-size.y/2>=-244 and pos.y+size.y/2<=280,"Control outside safe GUI bounds")
+        end
+        Controller.on_input(self,hash("escape"),{pressed=true})
+    elseif step==9 then
+        assert(S.modal=="menu","Escape from Settings must restore Menu")
+        assert(U.equal(self.ui_baseline,S.snapshot()),"Browsing or settings changed character progression")
+        press_label(self,"Resume")
+    elseif step==10 then
+        assert(not S.modal);press_label(self,"Inventory")
+    elseif step==11 then
+        if not self.inventory_data then return false end
+        local input=self.inventory_inputs.inventory_quantity
+        if not input then press_label(self,"Spider Silk");return false end
+        self.inventory_page_before=self.inventory_page
+        input:select();Controller.on_input(self,hash("quests"),{pressed=true});Controller.on_input(self,hash("up"),{pressed=true})
+        assert(S.modal=="inventory" and not S.controls.up,"Typing leaked a shortcut or movement")
+        Controller.on_input(self,hash("tab"),{pressed=true});assert(not input.is_selected,"Tab must leave text entry")
+        Controller.on_input(self,hash("escape"),{pressed=true})
+    elseif step==12 then
+        assert(U.equal(self.ui_baseline,S.snapshot()),"Input browsing mutated state")
+        print("VISUAL PASS UI message boundary, source details, focus restoration, typing, parent Escape and 130% HUD")
+        return true
+    end
+    self.ui_check=step+1
+    return false
+end
+
+local function log_checks(self,p)
+    local step=self.combat_log_check or 0
+    local log=self.ui.profile.combat_log
+    if step==0 then
+        self.log_baseline=U.copy(p);press_label(self,"View combat log")
+    elseif step==1 then
+        assert(S.modal=="log" and log.available and log.outcome=="Victory")
+        assert(#log.rows<=6 and #log.compact<=3 and #self.nodes<2048)
+        S.update(5);assert(U.equal(self.log_baseline,S.snapshot()),"Log browsing advanced gameplay")
+        if log.earlier then press_label(self,"Earlier actions") else error("Fixture needs more than one log page") end
+    elseif step==2 then
+        assert(not log.following and log.new_entries>0)
+        self.log_reading_anchor=self.log_anchor
+        local row=log.rows[#log.rows]
+        press_label(self,"T"..row.turn.." · "..row.summary)
+    elseif step==3 then
+        assert(log.selected and #log.details>0 and #log.details<=8)
+        assert(self.log_anchor==self.log_reading_anchor,"Expanding details changed reading position")
+        for _,line in ipairs(log.details) do assert(#line<=47,"Detail text escaped its column") end
+        Controller.on_input(self,hash("escape"),{pressed=true})
+    elseif step==4 then
+        assert(S.modal=="log" and not self.log_group,"Escape must collapse details first")
+        press_label(self,"Jump to latest")
+    elseif step==5 then
+        assert(log.following and log.new_entries==0)
+        self.log_preserved=U.copy(p.combat_log);S.reload()
+        assert(U.equal(self.log_preserved,S.snapshot().combat_log),"Restart lost the completed log")
+        Controller.on_input(self,hash("escape"),{pressed=true})
+    elseif step==6 then
+        assert(S.modal=="menu","Combat log did not return to its parent menu")
+        press_label(self,"Resume")
+    elseif step==7 then
+        assert(not S.modal and U.equal(self.log_baseline,S.snapshot()),"Combat log mutated the character")
+        S.read_only=true;S.refresh();S.panel("log")
+    elseif step==8 then
+        assert(S.modal=="log");press_label(self,"Earlier actions")
+    elseif step==9 then
+        assert(not log.following,"Read-only storage disabled log browsing")
+        S.read_only=false;S.panel(nil)
+        print("VISUAL PASS combat log details, bounded pages, anchored browsing, parent Escape, read-only access and restart")
+        return true
+    end
+    self.combat_log_check=step+1
+    return false
+end
+
+function init(self)
+    window.set_size(sys.get_config_int("test.width",1024),sys.get_config_int("test.height",768))
+    local backend=Save.defsave_backend("RebirthDungeonVisualFixtures")
+    assert(backend.lock(),"Visual fixture save lock unavailable")
+    local defsave=require("defsave.defsave")
+    for i=1,20 do for _,suffix in ipairs({"a","b"}) do os.remove(defsave.get_file_path(string.format("profile_%02d_%s",i,suffix))) end end
+    S.init();S.set_setting("hud_scale",1)
+    Controller.init(self);self.capture_seen={};self.step=0;self.elapsed=0;self.next=1;self.room=2;self.timeout=0
+end
+local function route(x,y) S.path_target={x=x,y=y} end
+local function close_panel() if S.modal then S.panel(nil) end end
+local function command(c) assert(S.command(c),S.notice or S.error or "command failed") end
+local function run(self)
+    -- Desktop focus belongs to the tester; fixtures explicitly resume their isolated run.
+    if S.modal=="menu" and not self.ui_check_active then S.panel(nil);return end
+    local p=S.snapshot()
+    if not self.ui.screen or self.ui.screen~=S.screen or self.ui.modal~=S.modal or p and (not self.ui.profile or self.ui.profile.id~=p.id or self.ui.profile.revision~=p.revision) then return end
+    if self.elapsed-(self.trace or 0)>10 then
+        self.trace=self.elapsed;local pos=S.world_position or p and p.position or {}
+        print("VISUAL TRACE",self.step,p and p.phase,self.room,pos.x,pos.y,S.modal)
+    end
+    -- Focus-loss intentionally cancels routes. Resume this fixture's requested travel.
+    if p and S.world_position and self.elapsed-(self.reroute or 0)>2 then
+        self.reroute=self.elapsed
+        if self.step==5 and not self.npc_clicked then route(14,4)
+        elseif self.step==10 then route(14,15)
+        elseif self.step==12 and p.phase=="dungeon" then local r=p.run.map.rooms[self.room];route(r.x,r.y) end
+    end
+    if self.step==0 then
+        local width,height=window.get_size();print("VISUAL WINDOW "..width.."x"..height)
+        assert(math.abs(width/height-sys.get_config_int("test.width",1024)/sys.get_config_int("test.height",768))<.01,"Window aspect mismatch")
+        assert(S.screen=="title");press(self,1);self.step=.1
+    elseif self.step==.1 then
+        assert(S.screen=="characters","Druid Start did not activate");self.step=1;print("VISUAL PASS Druid button hit-test and Title → Characters")
+    elseif self.step==1 then
+        -- Use a fresh fixture name; save directory is isolated from player profiles.
+        local index=#(S.profiles or {})>0 and math.min(6,#S.profiles)+1 or 1
+        press(self,index);self.step=1.1
+    elseif self.step==1.1 then
+        assert(S.screen=="create");self.step=2
+    elseif self.step==2 then
+        assert(self.name_input);self.name_input:select()
+        Controller.on_input(self,hash("text"),{text="QA "..os.time()})
+        assert(self.form.name:match("^QA "),"Druid text entry did not update the form")
+        Controller.on_input(self,hash("inventory"),{pressed=true});Controller.on_input(self,hash("up"),{pressed=true})
+        assert(S.screen=="create" and not S.modal and not S.controls.up,"Name typing leaked shortcuts")
+        self.name_input:unselect()
+        press(self,16);self.step=2.1
+    elseif self.step==2.1 then
+        assert(S.screen=="town",S.notice or "Create button failed");self.step=3
+        print("VISUAL PASS character form and save-before-town")
+    elseif self.step==3 and S.world_position then
+        local width,height=window.get_size()
+        -- Clicking the visual center must target the player's current grid cell.
+        Controller.on_input(self,hash("touch"),{x=640,y=360,screen_x=width/2,screen_y=height/2,pressed=true,value=1})
+        self.step=3.1
+    elseif self.step==3.1 then
+        assert(math.abs(S.world_position.x-14*48)<1 and math.abs(S.world_position.y-9*48)<1,"World pointer transform")
+        route(24,9);self.keyboard_origin=U.copy(S.world_position)
+        Controller.on_input(self,hash("right"),{pressed=true});Controller.on_input(self,hash("up"),{pressed=true});self.step=3.2
+    elseif self.step==3.2 then
+        Controller.on_input(self,hash("right"),{released=true});Controller.on_input(self,hash("up"),{released=true})
+        local dx,dy=S.world_position.x-self.keyboard_origin.x,S.world_position.y-self.keyboard_origin.y
+        assert(dx>0 and math.abs(dx-dy)<1 and dx<40,"Diagonal movement is not normalized")
+        self.keyboard_stopped=U.copy(S.world_position);self.step=3.3
+    elseif self.step==3.3 then
+        assert(U.equal(self.keyboard_stopped,S.world_position),"Keyboard failed to cancel route")
+        assert(S.world_checkpoint());S.panel("map");self.step=4
+        print("VISUAL PASS camera click conversion, normalized diagonals and keyboard route cancellation")
+    elseif self.step==4 then
+        assert(#self.nodes<2048);close_panel();route(14,4);self.step=5
+    elseif self.step==5 then
+        if not self.npc_clicked and (S.world_position.x-14*48)^2+(S.world_position.y-4*48)^2<(48*2.8)^2 then
+            click_world(self,14*48,4*48);self.npc_clicked=true
+        end
+        if S.modal=="shop" then
+            local npc=C.services.shop
+            assert(math.abs(S.world_position.x/48-npc.x)+math.abs(S.world_position.y/48-npc.y)==1,"NPC click did not approach a neighboring tile")
+            self.step=6
+            print("VISUAL PASS native A* NPC approach, proximity checkpoint and automatic service opening")
+        end
+    elseif self.step==6 then
+        if service_checks(self,p) then S.panel("inventory");self.step=8 end
+    elseif self.step==8 then
+        assert(#p.items==3);if inventory_checks(self,p) then S.panel("skills");self.step=9 end
+    elseif self.step==9 then
+        if skill_checks(self,p) then S.panel("settings");self.step=9.5 end
+    elseif self.step==9.5 then
+        S.set_setting("reduced_motion",true);close_panel();route(14,15);self.step=10
+        print("VISUAL PASS shop, Ink dialogue, inventory and settings panels")
+    elseif self.step==10 then
+        if math.abs(S.world_position.y-15*48)<48 then assert(S.world_checkpoint());command({type="enter"});self.step=10.1 end
+    elseif self.step==10.1 and S.world_position and p.phase=="dungeon" then
+        local entrance=p.run.map.rooms[1]
+        if math.abs(S.world_position.x-entrance.x*48)>1 then return end
+        self.exit_run=p.run.id;click_world(self,entrance.x*48,entrance.y*48);self.step=10.2
+    elseif self.step==10.2 and S.modal=="leave_dungeon" then
+        assert(p.run.id==self.exit_run and p.phase=="dungeon")
+        press_label(self,"Cancel");self.step=10.3
+    elseif self.step==10.3 and not S.modal then
+        assert(p.run.id==self.exit_run,"Cancelling ended the run")
+        local entrance=p.run.map.rooms[1];click_world(self,entrance.x*48,entrance.y*48);self.step=10.4
+    elseif self.step==10.4 and S.modal=="leave_dungeon" then
+        press_label(self,"Leave dungeon");self.step=10.5
+    elseif self.step==10.5 and p.phase=="town" and S.world_position then
+        assert(not p.run and p.position.x==C.services.gate.x*48 and p.position.y==(C.services.gate.y-1)*48)
+        S.reload();assert(U.equal(p,S.snapshot()),"Entrance return did not survive reload")
+        command({type="enter"});self.step=10.6
+        print("VISUAL PASS entrance click, cancel, confirmed leave and persisted gate return")
+    elseif self.step==10.6 and S.world_position and p.phase=="dungeon" then
+        local entrance=p.run.map.rooms[1]
+        if math.abs(S.world_position.x-entrance.x*48)>1 then return end
+        local later=p.run.map.rooms[3];route(later.x,later.y);self.step=10.7
+    elseif self.step==10.7 then
+        local entrance=p.run.map.rooms[1]
+        assert(p.phase=="dungeon" and math.abs(S.world_position.x-entrance.x*48)<1,"Click-to-move bypassed a locked room")
+        assert(S.notice and S.notice:find("gates",1,true),"Missing gate blockage explanation")
+        S.notice=nil;S.refresh();self.step=11
+        print("VISUAL PASS locked room prevents click-to-move skipping")
+    elseif self.step==11 and S.world_position and p.phase=="dungeon" then
+        local r=p.run.map.rooms[self.room];route(r.x,r.y);self.step=12
+    elseif self.step==12 then
+        if p.phase=="dungeon" and p.run.cleared.room_5 then self.step=13;return end
+        if p.phase=="dungeon" then
+            local r=p.run.map.rooms[self.room]
+            if math.abs(S.world_position.x-r.x*48)<48 and math.abs(S.world_position.y-r.y*48)<48 then
+                assert(S.world_checkpoint());command({type="encounter",room=r.id})
+            end
+        elseif p.phase=="battle" then
+            if not p.battle.started or not B.active(p).hero then return end
+            if self.last_battle~=p.battle.id then
+                self.last_battle=p.battle.id;local before=U.copy(p);S.reload();assert(U.equal(before,S.snapshot()),"Battle resume changed state")
+                print("VISUAL PASS persisted battle resume "..self.room)
+            end
+            if self.room==2 and not self.skill_battle_done then
+                if not self.skill_battle_stage then
+                    self.skills_group="Combat";self.skills_selected="smash";S.panel("skills");self.skill_battle_stage=1
+                elseif self.skill_battle_stage==1 then
+                    if not self.skills_data or not self.skills_data.detail then return end
+                    assert(self.skills_data.detail.use.enabled,"Legal journal skill is disabled")
+                    self.skill_battle_turn=p.battle.turn
+                    press_label(self,"Use skill");self.skill_battle_stage=2
+                else
+                    assert(p.battle.turn>self.skill_battle_turn and p.skills.smash.training==5,"Journal skill did not commit exactly once")
+                    self.skill_battle_done=true
+                    print("VISUAL PASS guarded journal battle action and persisted training")
+                end
+                return
+            end
+            if not p.battle.item_used then
+                local want=p.pools.hp<85 and "hp_potion" or p.pools.sp<8 and "sp_potion"
+                for _,item in ipairs(p.items) do if item.def==want then
+                    command({type="use_item",item=item.id,actor=p.id,battle=p.battle.id,turn=p.battle.turn});p=S.snapshot();break
+                end end
+            end
+            local target;for _,e in ipairs(p.battle.enemies) do if e.pools.hp>0 and (not target or e.pools.hp<target.pools.hp) then target=e end end
+            local a=B.active(p);local skill=B.eligible(p,a,"smash") and "smash" or B.eligible(p,a,"normal") and "normal" or B.eligible(p,a,"defense") and "defense" or "wait"
+            self.target=target.id;command({type="act",skill=skill,actor=p.id,target=target.id,battle=p.battle.id,turn=p.battle.turn})
+        elseif p.phase=="rewards" then
+            assert(#self.nodes>20);local before=U.copy(p);S.reload();assert(U.equal(before,S.snapshot()))
+            local ids={};for _,e in ipairs(p.pending.entries) do if not e.claimed then ids[#ids+1]=e.id end end
+            command({type="claim",reward=p.pending.id,ids=ids});command({type="leave_rewards"})
+            if self.room<5 then
+                p=S.snapshot();while p.pools.hp<Stats.current(p).hp-5 do
+                    local item;for _,it in ipairs(p.items) do if it.def=="hp_potion" then item=it;break end end
+                    if not item then break end
+                    command({type="use_item",item=item.id});p=S.snapshot()
+                end
+                self.room=self.room+1;self.step=11
+            else self.step=13 end
+        else error("Unexpected journey phase: "..p.phase) end
+    elseif self.step==13 then
+        assert(p.phase=="dungeon" and #p.run.chests==5 and p.run.keys==1 and not p.pending)
+        local room=p.run.map.rooms[8];route(room.x,room.y);self.step=13.1
+    elseif self.step==13.1 and S.world_position then
+        local room=p.run.map.rooms[8]
+        if math.abs(S.world_position.x-room.x*48)>10 then return end
+        local chest=D.treasure_objects(p.run.map)[3];click_world(self,chest.x*48,chest.y*48);self.step=14
+    elseif self.step==14 then
+        if p.phase~="rewards" then return end
+        assert(p.run.keys==0 and p.run.chests[3].opened,"Opening must consume exactly one key")
+        assert(#self.ui.profile.pending.selected.command.ids==#p.pending.entries,"Rewards must start selected")
+        for _,button in ipairs(self.buttons) do assert(button.label~="Continue","Rewards still require Continue") end
+        press_label(self,"Take All");self.step=15
+    elseif self.step==15 then
+        assert(p.phase=="dungeon" and not p.pending,"Take All did not finish rewards")
+        local statue=D.treasure_objects(p.run.map)[6];route(statue.x,statue.y+2);self.step=15.1
+    elseif self.step==15.1 and S.world_position then
+        local statue=D.treasure_objects(p.run.map)[6]
+        if math.abs(S.world_position.y-(statue.y+2)*48)>10 then return end
+        click_world(self,statue.x*48,statue.y*48);self.step=15.2
+    elseif self.step==15.2 and S.modal=="goddess" then
+        press_label(self,"Stay here");self.step=15.3
+    elseif self.step==15.3 and not S.modal then
+        assert(p.phase=="dungeon" and p.run.keys==0)
+        local statue=D.treasure_objects(p.run.map)[6];click_world(self,statue.x*48,statue.y*48);self.step=15.4
+    elseif self.step==15.4 and S.modal=="goddess" then
+        press_label(self,"Return to town");self.step=15.5
+    elseif self.step==15.5 and p.phase=="town" then
+        assert(p.position.x==C.services.gate.x*48 and p.position.y==(C.services.gate.y-1)*48)
+        print("VISUAL PASS physical reward room, boss key, chest click, goddess cancellation and town return")
+        self.step=16
+    elseif self.step==16 then
+        S.panel("quests");for _,q in ipairs(C.quest_order) do command({type="claim_quest",quest=q}) end
+        local before=U.copy(S.snapshot());S.set_screen("title");S.list();assert(S.select(before.id))
+        local after=S.snapshot();assert(after.gold==before.gold and after.level==before.level and U.equal(after.items,before.items) and after.phase=="town" and after.quest_claims.return_home)
+        command({type="checkpoint",x=8*48,y=6*48});S.panel("bank")
+        self.step=17
+    elseif self.step==17 then
+        if bank_checks(self,p) then
+            S.panel(nil);self.ui_check_active=true;self.step=17.5
+        end
+    elseif self.step==17.5 then
+        if ui_checks(self,p) then S.panel("menu");self.step=17.75 end
+    elseif self.step==17.75 then
+        if log_checks(self,p) then self.step=18;print("VISUAL ALL JOURNEY CHECKS PASSED") end
+    elseif self.step==18 then
+        if sys.get_config_int("test.hold",0)==0 then sys.exit(0) else self.next=100000 end
+    end
+end
+local function capture_pause(self)
+    if sys.get_config_int("test.capture",0)==0 then return false end
+    if self.capture_until and self.elapsed<self.capture_until then return true end
+    local ui=self.ui
+    local treasure_ready=self.step==13.1 and S.world_position and ui.profile and ui.profile.run and math.abs(S.world_position.x-94*48)<10
+    local scene=treasure_ready and "treasure" or ui.modal=="log" and ui.profile and ui.profile.combat_log.selected and "log"
+        or ui.modal=="inventory" and self.inventory_data and "inventory"
+        or ui.modal=="dialogue" and self.service_data and self.service_data.header.dialogue and "dialogue"
+        or not ui.modal and (ui.screen=="title" or ui.screen=="create" or ui.screen=="town" or ui.screen=="battle" or ui.screen=="treasure") and ui.screen
+    local requested=sys.get_config_string("test.capture_scene", "")
+    if scene and (requested=="" or requested==scene) and not self.capture_seen[scene] then
+        self.capture_seen[scene]=true;self.capture_until=self.elapsed+sys.get_config_int("test.capture_seconds",12)
+        print("CAPTURE READY "..scene)
+        return true
+    end
+    return false
+end
+
+function update(self,dt)
+    Controller.update(self,dt);self.elapsed=self.elapsed+dt
+    if sys.get_config_int("test.manual",0)==1 then return end
+    if self.elapsed>240 and self.step<18 then print("VISUAL FAILURE timeout at step "..self.step);sys.exit(1);return end
+    if capture_pause(self) then return end
+    if self.elapsed<self.next then return end
+    self.next=self.elapsed+.2
+    local ok,err=pcall(run,self);if not ok then print("VISUAL FAILURE step "..self.step..": "..tostring(err));self.next=100000;sys.exit(1) end
+end
+function on_input(self,id,action)
+    if sys.get_config_int("test.manual",0)==1 and action.pressed then print("MANUAL INPUT",id,self.ui.screen,self.ui.modal) end
+    return Controller.on_input(self,id,action)
+end
+on_message=Controller.on_message
+on_reload=Controller.on_reload
+final=Controller.final

@@ -1,0 +1,50 @@
+-- Executable starter registry. Unknown higher ranks and reference-only subjects stay absent.
+-- F-rank effects retain the authored adaptations recorded in docs/content-data.md.
+local M = {}
+M.order = {"normal", "combat_mastery", "defense", "smash", "power_shot", "double_shot", "icebolt"}
+M.ranks = {"F", "E", "D", "C", "B", "A", "9", "8", "7", "6", "5", "4", "3", "2", "1"}
+M.definitions = {
+    normal = {name = "Attack", kind = "attack", group = "Combat", pool = "sp", cost = 2, multiplier = 1, hits = 1, cooldown = 0,
+        progression = "combat_mastery", target = "hostile", tile = "tile_0104",
+        description = "Attack with your weapon or unarmed melee. Trains Combat Mastery for every damaging weapon category."},
+    combat_mastery = {name = "Combat Mastery", kind = "passive", group = "Combat", hero = true, target = "self", tile = "tile_0104",
+        description = "Raises maximum HP and STR. Its attack bonus applies to melee only. Attack costs 2 SP and owner-start recovery is 0.5 SP at F.",
+        source = "Combat Mastery F snapshot; project melee midpoint and Attack cost/recovery adaptation.",
+        route = "Granted on character creation.",
+        ranks = {{attributes = {hp = 10, str = 1}, giant_attributes = {hp = 10, str = 2}, melee = {Human = 1.5, Elf = 1, Giant = 1},
+            objectives = {{id = "damaging_attack", event = "normal_damage", text = "Deal damage with Attack (any weapon or unarmed)", points = 5, limit = 20}}}}},
+    defense = {name = "Defend", kind = "guard", group = "Combat", hero = true, pool = "sp", cost = 1, cooldown = 0, target = "self", tile = "tile_0090",
+        description = "Guard until your next turn starts. Casting and fully blocking incoming hits train separate objectives.",
+        source = "Defense F snapshot; project guard lasts until next owner start, with no starter cooldown.",
+        route = "Granted on character creation.",
+        ranks = {{attributes = {hp = 2}, defense = {Human = 3, Elf = 1, Giant = 5},
+            guard_defense = {Human = 20, Elf = 20, Giant = 30}, guard_protection = {Human = 5, Elf = 5, Giant = 10},
+            objectives = {
+                {id = "prepare_guard", event = "guard_use", text = "Commit Defend", points = 5, limit = 20},
+                {id = "fully_block", event = "guard_block", text = "Fully mitigate an incoming attack while guarding", points = 5, limit = 20},
+            }}}},
+    smash = {name = "Smash", kind = "attack", group = "Combat", hero = true, category = "melee", pool = "sp", cost = 5, multiplier = 2, giant_multiplier = 3, hits = 1, cooldown = 0, target = "hostile", tile = "tile_0104",
+        description = "One heavy melee strike: 2× melee attack, or 3× for Giants. Costs 5 SP once.",
+        source = "Smash F snapshot; project single-target/no-cooldown adaptation, no source splash or debuff.",
+        route = "Close Combat starter grant, including first rebirth into Close Combat.",
+        ranks = {{attributes = {str = 1, wil = 1}, objectives = {{id = "damaging_skill", event = "skill_damage", text = "Deal damage with Smash", points = 5, limit = 20}}}}},
+    power_shot = {name = "Power Shot", kind = "attack", group = "Combat", hero = true, category = "ranged", no_giant = true, pool = "sp", cost = 6, multiplier = 1.9, hits = 1, cooldown = 0, target = "hostile", tile = "tile_0118",
+        description = "One deliberate shot for 1.9× ranged attack. Requires a bow; Giants cannot use it.",
+        source = "Original Rebirth Dungeon starter action. Not the source game's Ranged Attack.",
+        route = "Archery starter grant for Humans and Elves, including rebirth.",
+        ranks = {{attributes = {}, objectives = {{id = "damaging_skill", event = "skill_damage", text = "Deal damage with Power Shot", points = 5, limit = 20}}}}},
+    double_shot = {name = "Double Shot", kind = "attack", group = "Combat", hero = true, category = "guns", pool = "sp", cost = 6, multiplier = 1.8, hits = 2, cooldown = 0, target = "hostile", tile = "tile_0124",
+        description = "Two hits split 1.8× gun attack. Pay 6 SP once; train once per action. Requires paired guns.",
+        source = "Original Rebirth Dungeon starter action; each hit is mitigated separately.",
+        route = "Dual Gun starter grant, including first rebirth into Dual Gun.",
+        ranks = {{attributes = {}, objectives = {{id = "damaging_skill", event = "skill_damage", text = "Deal damage with Double Shot", points = 5, limit = 20}}}}},
+    icebolt = {name = "Icebolt", kind = "attack", group = "Magic", hero = true, category = "magic", pool = "mp", cost = 1, base = 15, multiplier = 1, hits = 1, cooldown = 0, target = "hostile", tile = "tile_0127",
+        description = "One charge strikes one enemy for 15 + magic attack before mitigation. Requires a wand; costs 1 MP.",
+        source = "Icebolt F INT/MP snapshot; damage is the project's authored starter adaptation.",
+        route = "Magic starter grant, including first rebirth into Magic.",
+        ranks = {{attributes = {int = 1}, objectives = {{id = "damaging_skill", event = "skill_damage", text = "Deal damage with Icebolt", points = 5, limit = 20}}}}},
+    pounce = {name = "Pounce", kind = "attack", pool = "sp", cost = 4, multiplier = 1.25, hits = 1, cooldown = 2},
+    poison_bite = {name = "Poison Bite", kind = "attack", pool = "sp", cost = 4, multiplier = 1, hits = 1, cooldown = 2, status = "poison"},
+    armor_break = {name = "Armor Break", kind = "attack", pool = "sp", cost = 4, multiplier = 1, hits = 1, cooldown = 2, status = "armor_break"},
+}
+return M

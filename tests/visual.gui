@@ -1,0 +1,7 @@
+script: "/tests/visual.gui_script"
+fonts { name: "body" font: "/assets/fonts/body.font" }
+fonts { name: "heading" font: "/assets/fonts/heading.font" }
+textures { name: "tiles" texture: "/assets/tiles.atlas" }
+material: "/builtins/materials/gui.material"
+max_nodes: 2048
+adjust_reference: ADJUST_REFERENCE_PARENT

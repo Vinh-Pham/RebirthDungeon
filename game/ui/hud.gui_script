@@ -1,0 +1,7 @@
+local controller=require("game.ui.controller")
+init=controller.init
+update=controller.update
+on_input=controller.on_input
+on_message=controller.on_message
+on_reload=controller.on_reload
+final=controller.final

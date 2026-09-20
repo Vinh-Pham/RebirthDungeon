@@ -1,0 +1,257 @@
+local S=require("game.runtime.session")
+local D=require("game.domain.dungeon")
+local C=require("game.content.catalog")
+local Town=require("game.content.town")
+local Path=require("game.services.pathfinding")
+local lume=require("vendor.lume")
+local function tile(self,x,y,name,z,scale,tint,kind)
+    local id=factory.create("#"..(kind or "tile"),vmath.vector3(x,y,z or 0),nil,nil,scale or 3)
+    sprite.play_flipbook(msg.url(nil,id,"sprite"),hash(name))
+    if tint then go.set(msg.url(nil,id,"sprite"),"tint",tint) end
+    if kind~="hero" then self.objects[#self.objects+1]=id end;return id
+end
+local function clear(self)
+    for _,id in ipairs(self.objects) do go.delete(id) end
+    self.objects={}
+end
+local function walk(self,x,y)
+    local radius=12
+    for _,dx in ipairs({-radius,radius}) do for _,dy in ipairs({-radius,radius}) do
+        if not D.walkable(self.map,math.floor((x+dx)/48+.5),math.floor((y+dy)/48+.5),self.p.run) then return false end
+    end end
+    return true
+end
+local function checkpoint(self)
+    if not self.p or not self.pos then return true end
+    if math.abs(self.p.position.x-self.pos.x)+math.abs(self.p.position.y-self.pos.y)<.1 then return true end
+    local ok=S.command({type="checkpoint",x=self.pos.x,y=self.pos.y})
+    if ok then self.p=S.snapshot();self.epoch=S.epoch end
+    return ok
+end
+local function near(self,x,y) return (self.pos.x-x*48)^2+(self.pos.y-y*48)^2<=(48*Town.interaction_radius)^2 end
+local function treasure_interact(self,index)
+    if not checkpoint(self) then return end
+    local object=D.treasure_objects(self.map)[index]
+    if not near(self,object.x,object.y) then return end
+    if object.kind=="goddess" then S.panel("goddess") else S.command({type="chest",index=object.index}) end
+end
+local function interact(self)
+    if not checkpoint(self) then return end
+    if self.p.phase=="town" then
+        local closest,distance
+        for _,id in ipairs(C.service_order) do local npc=C.services[id]
+            local squared=(self.pos.x-npc.x*48)^2+(self.pos.y-npc.y*48)^2
+            if near(self,npc.x,npc.y) and (not distance or squared<distance) then closest=id;distance=squared end
+        end
+        if closest then S.panel(closest) else S.notice="Walk closer to a town service";S.refresh() end
+    else
+        if self.p.run.cleared.room_5 then
+            local closest,distance
+            for index,object in ipairs(D.treasure_objects(self.map)) do
+                local squared=(self.pos.x-object.x*48)^2+(self.pos.y-object.y*48)^2
+                if near(self,object.x,object.y) and (not distance or squared<distance) then closest=index;distance=squared end
+            end
+            if closest then treasure_interact(self,closest);return end
+        end
+        for _,r in ipairs(self.map.rooms) do if near(self,r.x,r.y) then
+            if r.kind=="entrance" then S.panel("leave_dungeon")
+            elseif r.kind=="supplies" then S.command({type="supplies"})
+            elseif D.enemies(r) and not self.p.run.cleared[r.id] then S.command({type="encounter",room=r.id}) end
+            return
+        end end
+    end
+end
+local function draw(self)
+    clear(self)
+    local cx=math.floor(self.pos.x/48+.5);local cy=math.floor(self.pos.y/48+.5)
+    self.offset={x=640-self.pos.x,y=360-self.pos.y}
+    local ox,oy=self.offset.x,self.offset.y
+    for y=cy-6,cy+7 do for x=cx-14,cx+14 do
+        local floor=D.walkable(self.map,x,y,self.p.run)
+        local name,tint
+        if self.p.run then
+            name=(floor or D.gate_at(self.map,x,y)) and "tile_0049" or "tile_0040"
+            tint=floor and vmath.vector4(.65,.67,.75,1) or vmath.vector4(.40,.45,.56,1)
+        else
+            local rgba
+            name,rgba=Town.visual(x,y)
+            if rgba then tint=vmath.vector4(unpack(rgba)) end
+        end
+        tile(self,x*48,y*48,name,-.4,3,tint,floor and "tile" or "wall")
+    end end
+    if self.p.run then
+        for _,gate in ipairs(D.gates(self.map)) do
+            if math.abs(gate.x-cx)<=14 and math.abs(gate.y-cy)<=7 then
+                local opened=D.gate_open(self.p.run,gate,self.p.battle)
+                tile(self,gate.x*48,gate.y*48,opened and "tile_0071" or "tile_0070",.05,3,opened and vmath.vector4(.38,.84,.75,1) or vmath.vector4(1,.64,.24,1))
+            end
+        end
+    end
+    self.markers={}
+    if self.p.phase=="town" then
+        for _,id in ipairs(C.service_order) do local n=C.services[id];local x,y=n.x*48+ox,n.y*48+oy
+            tile(self,n.x*48,n.y*48,n.tile,.1,3);self.markers[#self.markers+1]={x=x,y=y,label=n.name.." · "..n.title,key=id,service=true,near=near(self,n.x,n.y)}
+        end
+    else
+        for _,r in ipairs(self.map.rooms) do
+            if r.kind~="treasure" then
+            local done=self.p.run.cleared[r.id] or r.kind=="supplies" and self.p.run.supplies_claimed
+            local name=D.enemies(r) and "tile_0120" or "tile_0090"
+            if r.kind=="chest" then name="tile_0090" end
+            if r.kind=="switch" then name="tile_0066" end
+            if r.kind=="entrance" then name="tile_0071" end
+            if done then name="tile_0091" end
+            local x,y=r.x*48+ox,r.y*48+oy
+            tile(self,r.x*48,r.y*48,name,.1,r.kind=="boss" and 5 or 3)
+            local labels={entrance="Entrance · Leave · E",contact="Spiders",chest="Trapped chest · E",switch="Room switch · E",boss="Giant Spider · E",optional="Side encounter · E",supplies="Supplies · E"}
+            if x>=-100 and x<=1380 and y>=70 and y<=700 then
+                self.markers[#self.markers+1]={x=x,y=y,label=done and "Cleared" or labels[r.kind],key=r.id,near=near(self,r.x,r.y)}
+            end
+            end
+        end
+        for index,object in ipairs(D.treasure_objects(self.map)) do
+            if math.abs(object.x-cx)<=14 and math.abs(object.y-cy)<=7 then
+                local opened=object.kind=="chest" and self.p.run.chests and self.p.run.chests[object.index].opened
+                local label
+                if object.kind=="goddess" then
+                    tile(self,object.x*48,object.y*48-12,"tile_0040",.05,3,vmath.vector4(.6,.65,.75,1))
+                    tile(self,object.x*48,object.y*48+12,"tile_0087",.1,4,vmath.vector4(.7,.82,.95,1))
+                    label="Goddess statue · Return · E"
+                else
+                    tile(self,object.x*48,object.y*48,opened and "tile_0091" or "tile_0090",.1,3)
+                    label="Chest "..object.index..(opened and " · Opened" or " · 1 key")
+                end
+                self.markers[#self.markers+1]={x=object.x*48+ox,y=object.y*48+oy,label=label,key="treasure_"..index,near=near(self,object.x,object.y)}
+            end
+        end
+    end
+    if self.hero then go.set_position(vmath.vector3(self.pos.x,self.pos.y,.2),self.hero)
+    else self.hero=tile(self,self.pos.x,self.pos.y,self.p.race=="Elf" and "tile_0087" or self.p.race=="Giant" and "tile_0096" or "tile_0084",.2,3,nil,"hero") end
+    self.draw_x=self.pos.x;self.draw_y=self.pos.y
+end
+function init(self)
+    self.near_services={};self.triggers={};self.control_epoch=S.control_epoch;self.objects={};self.p=S.snapshot();self.clock=0;self.epoch=S.epoch
+    if not self.p or (S.screen~="town" and S.screen~="dungeon") then return end
+    self.map=self.p.run and self.p.run.map or D.town();self.pos=lume.clone(self.p.position)
+    if self.p.run then
+        self.map.gates=D.gates(self.map)
+        self.gate_state=D.gate_state(self.p.run)
+        local x,y=math.floor(self.pos.x/48+.5),math.floor(self.pos.y/48+.5)
+        if not D.walkable(self.map,x,y,self.p.run) then
+            local gate=D.gate_at(self.map,x,y);local room=D.room(self.map,gate.room)
+            self.pos={x=room.x*48,y=room.y*48}
+        end
+    end
+    self.path_id=Path.create(self.map,self.p.run);draw(self)
+    if self.p.phase=="town" then
+        for _,id in ipairs(C.service_order) do
+            local npc=C.services[id]
+            self.triggers[#self.triggers+1]=factory.create("#service_trigger",vmath.vector3(npc.x*48,npc.y*48,0),nil,{service=hash(id)})
+        end
+    end
+    S.world_checkpoint=function() return checkpoint(self) end
+    S.world_interact=function() interact(self) end
+    S.world_labels=self.markers
+    S.world_click=function(x,y)
+        if S.modal or S.error or S.read_only or S.busy then return end
+        local service,distance,exit,treasure
+        if self.p.phase=="town" then
+            for _,id in ipairs(C.service_order) do
+                local npc=C.services[id];local squared=(x-npc.x*48)^2+(y-npc.y*48)^2
+                if squared<=30^2 and (not distance or squared<distance) then service=id;distance=squared end
+            end
+        end
+        if self.p.phase=="dungeon" then
+            local entrance=self.map.rooms[1]
+            exit=(x-entrance.x*48)^2+(y-entrance.y*48)^2<=30^2
+            if exit then x=entrance.x*48;y=entrance.y*48 end
+            for index,object in ipairs(D.treasure_objects(self.map)) do
+                if (x-object.x*48)^2+(y-object.y*48)^2<=30^2 then treasure=index;x=object.x*48;y=(object.y-1)*48;break end
+            end
+        end
+        S.path_target={x=math.floor(x/48+.5),y=math.floor(y/48+.5),service=service,exit=exit,treasure=treasure}
+    end
+end
+function update(self,dt)
+    if not self.map or S.screen~=self.p.phase then return end
+    if self.epoch~=S.epoch then
+        local previous=self.p;self.p=S.snapshot();self.epoch=S.epoch
+        if self.p.phase~="town" and self.p.phase~="dungeon" then return end
+        if self.p.run and self.gate_state~=D.gate_state(self.p.run) then
+            self.gate_state=D.gate_state(self.p.run);Path.dispose(self.path_id)
+            self.path_id=Path.create(self.map,self.p.run);self.path=nil;self.path_service=nil;self.path_exit=nil;self.path_treasure=nil;S.path_target=nil;draw(self)
+        end
+        if previous.position.x~=self.p.position.x or previous.position.y~=self.p.position.y then
+            self.pos=lume.clone(self.p.position);draw(self)
+        end
+    end
+    if self.control_epoch~=S.control_epoch then self.control_epoch=S.control_epoch;self.path=nil;self.path_service=nil;self.path_exit=nil;self.path_treasure=nil end
+    if S.modal or S.error or S.read_only or S.busy then self.path=nil;self.path_service=nil;self.path_exit=nil;self.path_treasure=nil;return end
+    local k=S.controls;local dx=(k.right and 1 or 0)-(k.left and 1 or 0);local dy=(k.up and 1 or 0)-(k.down and 1 or 0)
+    if dx~=0 or dy~=0 then self.path=nil;self.path_service=nil;self.path_exit=nil;self.path_treasure=nil;S.path_target=nil;local n=math.sqrt(dx*dx+dy*dy);dx=dx/n;dy=dy/n end
+    if S.path_target then
+        local target=S.path_target;S.path_target=nil
+        local sx,sy=math.floor(self.pos.x/48+.5),math.floor(self.pos.y/48+.5)
+        self.path_treasure=self.p.phase=="dungeon" and target.treasure or nil
+        self.path_exit=self.p.phase=="dungeon" and target.exit or nil
+        self.path_service=self.p.phase=="town" and target.service or nil
+        if self.path_service then self.path=Path.to_service(self.path_id,self.map,sx,sy,self.path_service)
+        else self.path=Path.solve(self.path_id,sx,sy,target.x,target.y) end
+        self.step=1
+        if not self.path then self.path_service=nil;self.path_exit=nil;self.path_treasure=nil;S.notice=self.p.run and "No clear route. Defeat every monster in this room to open its gates." or "No clear route to that spot";S.refresh() end
+    end
+    local speed=180;local amount=speed*math.min(dt,.05)
+    if self.path then
+        local node=self.path[self.step]
+        if node then
+            local tx,ty=node.x*48,node.y*48;local vx,vy=tx-self.pos.x,ty-self.pos.y;local distance=math.sqrt(vx*vx+vy*vy)
+            if distance<=amount then self.pos.x=tx;self.pos.y=ty;self.step=self.step+1;dx=0;dy=0 else dx=vx/distance;dy=vy/distance end
+        else
+            self.path=nil
+            local service,exit,treasure=self.path_service,self.path_exit,self.path_treasure;self.path_service=nil;self.path_exit=nil;self.path_treasure=nil
+            if treasure then treasure_interact(self,treasure);return end
+            if exit then interact(self);return end
+            if service and checkpoint(self) then S.panel(service);return end
+        end
+    end
+    if dx~=0 or dy~=0 then
+        local x,y=self.pos.x+dx*amount,self.pos.y+dy*amount
+        if walk(self,x,self.pos.y) then self.pos.x=x end
+        if walk(self,self.pos.x,y) then self.pos.y=y end
+    end
+    if self.draw_x~=self.pos.x or self.draw_y~=self.pos.y then
+        local ox,oy=self.draw_x-self.pos.x,self.draw_y-self.pos.y
+        go.set_position(vmath.vector3(self.pos.x,self.pos.y,.2),self.hero)
+        for _,m in ipairs(self.markers) do m.x=m.x+ox;m.y=m.y+oy end
+        self.draw_x=self.pos.x;self.draw_y=self.pos.y
+        if math.abs(self.offset.x-(640-self.pos.x))>48 or math.abs(self.offset.y-(360-self.pos.y))>48 then draw(self) end
+    end
+    msg.post("@render:","set_view_projection",{id=hash("world"),view=vmath.matrix4_translation(vmath.vector3(640-self.pos.x,360-self.pos.y,0)),projection=vmath.matrix4()})
+    if self.p.phase=="town" then
+        for _,marker in ipairs(self.markers) do
+            local npc=C.services[marker.key]
+            marker.near=self.near_services[hash(marker.key)] and near(self,npc.x,npc.y) or false
+        end
+    end
+    S.world_labels=self.markers;S.world_position=self.pos
+    self.clock=self.clock+dt
+    if self.clock>1 then self.clock=0;checkpoint(self) end
+    if self.p.phase=="dungeon" then
+        for _,room in ipairs(self.map.rooms) do
+            if D.enemies(room) and not self.p.run.cleared[room.id] and D.contains(room,self.pos.x/48,self.pos.y/48) then
+                if checkpoint(self) then S.command({type="encounter",room=room.id}) end
+                return
+            end
+        end
+    end
+end
+function on_message(self,message_id,message,sender)
+    if message_id==hash("service_proximity") then self.near_services[message.service]=message.inside end
+end
+function final(self)
+    if self.map then S.world_checkpoint=nil;S.world_interact=nil;S.world_click=nil;S.world_labels=nil;S.world_position=nil;Path.dispose(self.path_id) end
+    if self.hero then go.delete(self.hero) end
+    for _,id in ipairs(self.triggers) do go.delete(id) end
+    clear(self)
+    msg.post("@render:","set_view_projection",{id=hash("world"),view=vmath.matrix4(),projection=vmath.matrix4()})
+end

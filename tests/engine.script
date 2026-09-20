@@ -1,0 +1,120 @@
+local U=require("game.domain.util")
+local R=require("game.services.rng")
+local D=require("game.domain.dungeon")
+local Path=require("game.services.pathfinding")
+local Save=require("game.services.save")
+local Ch=require("game.domain.character")
+local Dialogue=require("game.services.dialogue")
+local lester=require("tests.vendor.lester")
+require("tests.unit.domain")
+require("tests.unit.inventory")
+require("tests.unit.skills")
+require("tests.unit.towns")
+require("tests.unit.ui")
+require("tests.unit.combat_log")
+local function fixtures()
+    require("tests.combat_log_native").run()
+    local d=R.seed(42,54);local r=R.open(d)
+    for _,expected in ipairs({2707161783,2068313097,3122475824,2211639955,3215226955}) do assert(r:raw()==expected,"Native PCG32 vector mismatch") end
+    local saved=U.copy(d);assert(R.open(saved):raw()==r:raw());print("ENGINE PASS native PCG32 sequence and replay")
+    local map=D.town();local id=Path.create(map)
+    local path=assert(Path.solve(id,14,9,14,15));assert(#path>1)
+    for _,point in ipairs(path) do assert(D.walkable(map,point.x,point.y)) end
+    assert(not Path.solve(id,14,9,12,15));assert(#Path.solve(id,14,9,14,9)==0);Path.dispose(id)
+    print("ENGINE PASS native A* coordinates, blocked goal and same tile")
+    local dungeon=D.generate(R.open(R.seed(72,54)));local run={map=dungeon,cleared={}}
+    for stage=2,5 do
+        local gates_id=Path.create(dungeon,run);local entrance=dungeon.rooms[1]
+        for index=2,5 do
+            local room=dungeon.rooms[index];local route=Path.solve(gates_id,entrance.x,entrance.y,room.x,room.y)
+            assert((route~=nil)==(index<=stage),"Native A* bypassed or retained a room gate")
+            if route then for _,node in ipairs(route) do assert(D.walkable(dungeon,node.x,node.y,run)) end end
+        end
+        local reward=dungeon.rooms[8];assert(not Path.solve(gates_id,entrance.x,entrance.y,reward.x,reward.y),"Reward room accessible before boss victory")
+        Path.dispose(gates_id);run.cleared[dungeon.rooms[stage].id]=true
+    end
+    local reward_id=Path.create(dungeon,run);local boss,reward=dungeon.rooms[5],dungeon.rooms[8]
+    assert(Path.solve(reward_id,boss.x,boss.y,reward.x,reward.y));Path.dispose(reward_id)
+    assert(not run.cleared.room_6);print("ENGINE PASS native room gates block bypasses and reopen after saved clear flags")
+    local C=require("game.content.catalog")
+    local town_id=Path.create(map)
+    for _,service in ipairs(C.service_order) do
+        for _,start in ipairs({{14,9},{8,10},{19,10}}) do
+            local route=assert(Path.to_service(town_id,map,start[1],start[2],service),"Unreachable NPC "..service)
+            local last=route[#route] or {x=start[1],y=start[2]}
+            local npc=C.services[service]
+            assert(math.abs(last.x-npc.x)+math.abs(last.y-npc.y)==1)
+            for index,node in ipairs(route) do
+                assert(D.walkable(map,node.x,node.y))
+                if index>1 then local previous=route[index-1];assert(math.abs(node.x-previous.x)+math.abs(node.y-previous.y)==1) end
+            end
+        end
+    end
+    Path.dispose(town_id);print("ENGINE PASS all NPCs reachable from both riverbanks via cardinal neighbors")
+    for _,service in ipairs(C.service_order) do
+        local initial=Dialogue.advance(nil,nil,service)
+        assert(initial.version==2 and initial.service==service and #initial.choices==3)
+        local restored,intent=Dialogue.advance(initial,nil,service)
+        assert(U.equal(initial,restored) and not intent)
+        for index=1,#initial.choices do
+            local selected,requested=Dialogue.advance(initial,index,service)
+            assert(U.equal(selected,Dialogue.advance(selected,nil,service)))
+            if initial.actions[index]~="" then assert(requested==initial.actions[index]) end
+        end
+    end
+    local Cmd=require("game.domain.commands")
+    local customer=Ch.new("profile_19","Story Fixture","Human",17,"Close Combat",1789920000,42)
+    customer.position={x=8*48,y=11*48};customer.pools.hp=1
+    local env={now=1789920000,dialogue=Dialogue.advance}
+    customer=Cmd.execute(customer,{type="dialogue",service="healer",op="story_open",revision=customer.revision},env)
+    assert(customer.gold==100 and customer.pools.hp==1)
+    customer=Cmd.execute(customer,{type="dialogue",service="healer",choice=2,op="story_heal",revision=customer.revision},env)
+    assert(customer.gold==90 and customer.pools.hp>1)
+    local legacy=Dialogue.advance({version=1,state={input={},randoms={}}},nil,"gate")
+    assert(legacy.version==1 and U.equal(legacy,Dialogue.advance(legacy,nil,"gate")))
+    local renewed=Dialogue.advance(legacy,nil,"gate",true);assert(renewed.version==2)
+    print("ENGINE PASS six authored NPC stories, legacy replay and explicit atomic Ink healing")
+    local state=Dialogue.advance(nil);assert(#state.choices>0)
+    local restored=Dialogue.advance(state);assert(U.equal(state,restored))
+    local next=Dialogue.advance(state,1);assert(#next.paragraphs>0)
+    assert(U.equal(next,Dialogue.advance(next)));print("ENGINE PASS Ink compile, choices and replay")
+    local backend=Save.defsave_backend("RebirthDungeonTestFixtures")
+    assert(backend.lock(),"Test fixture writer lock unavailable")
+    local defsave=require("defsave.defsave")
+    for _,suffix in ipairs({"a","b"}) do os.remove(defsave.get_file_path("profile_20_"..suffix)) end
+    local store=Save.new(backend);local p=Ch.new("profile_20","Native Fixture","Human",17,"Close Combat",1789920000,42);p.revision=1;p.dialogue=U.copy(customer.dialogue)
+    assert(store:commit(p));assert(U.equal(p,store:load(p.id)))
+    p.gold=90;p.revision=2;assert(store:commit(p));assert(U.equal(p,store:load(p.id)))
+    local f=assert(io.open(defsave.get_file_path("profile_20_b"),"wb"));f:write("interrupted write");f:close()
+    local recovered,warning=store:load(p.id);assert(recovered.gold==100 and warning)
+    local legacy=U.copy(recovered);legacy.rules_version=1;legacy.skills.smash.training=35
+    for _,record in pairs(legacy.skills) do record.objectives=nil;record.legacy_training=nil;record.last_training_action=nil end
+    assert(backend.write("profile_20_a",{magic="RebirthDungeon",version=1,generation=legacy.generation,payload=legacy}))
+    local upgraded=assert(store:load(legacy.id))
+    assert(upgraded.rules_version==2 and upgraded.skills.smash.training==35 and upgraded.skills.smash.legacy_training==35)
+    upgraded.revision=upgraded.revision+1;assert(store:commit(upgraded));assert(U.equal(upgraded,store:load(upgraded.id)))
+    backend.release();print("ENGINE PASS real DefSave, A/B reload, interrupted write recovery and skills migration")
+    for _,suffix in ipairs({"a","b"}) do os.remove(defsave.get_file_path("profile_20_"..suffix)) end
+end
+function init(self)
+    local restart=sys.get_config_string("test.restart","")
+    if restart~="" then
+        local ok,err=pcall(require("tests.restart").run,restart)
+        if not ok then print("RESTART FAILURE "..tostring(err)) end
+        sys.exit(ok and 0 or 1);return
+    end
+    local lock_mode=sys.get_config_string("test.lock","")
+    if lock_mode~="" then
+        local backend=Save.defsave_backend("RebirthDungeonLockFixture")
+        local acquired=backend.lock()
+        print("LOCK RESULT "..tostring(acquired))
+        if lock_mode=="hold" and acquired then timer.delay(8,false,function() backend.release();sys.exit(0) end)
+        else backend.release();sys.exit(acquired and 1 or 0) end
+        return
+    end
+    local ok,err=pcall(fixtures)
+    local passed=lester.report()
+    if not ok then print("ENGINE FIXTURE FAILURE: "..tostring(err));sys.exit(1)
+    elseif not passed then sys.exit(1)
+    else print("ENGINE ALL FIXTURES PASSED");sys.exit(0) end
+end

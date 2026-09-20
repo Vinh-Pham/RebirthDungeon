@@ -1,0 +1,4 @@
+sound: "/assets/audio/victory.wav"
+looping: 0
+group: "master"
+gain: 1.0

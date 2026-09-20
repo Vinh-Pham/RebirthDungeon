@@ -1,37 +1,15 @@
-# Dependencies
-node_modules/
-
-# Turborepo
-.turbo/
-
-# Build outputs
-dist/
-coverage/
-
-# Test artifacts
-test-results/
-playwright-report/
-blob-report/
-playwright/.cache/
-
-# Cloudflare / Wrangler
-.wrangler/
-.dev.vars
-.dev.vars.*
-
-# Environment
-.env
-.env.*
-!.env.example
-
-# Logs
-*.log
-npm-debug.log*
-pnpm-debug.log*
-
-# Firecrawl
+/.editor_settings
+/.internal
+/build
+.externalToolBuilders
+.DS_Store
+Thumbs.db
+.lock-wscript
+*.pyc
+.project
+.cproject
+builtins
 .firecrawl/
 
-# OS / Editor
-.DS_Store
-.idea/
+.tools/
+artifacts/

@@ -1,0 +1,80 @@
+[project]
+title = RebirthDungeon
+version = 0.1.0
+custom_resources = /assets/dialogue,/assets/licenses
+dependencies#0 = https://github.com/Insality/druid/archive/95f1ca9c9b6ce1df443e71a2a420892d37971c94.zip
+dependencies#1 = https://github.com/britzl/monarch/archive/954097522e7c2d4a710464dd9e8b48fb309685ab.zip
+dependencies#2 = https://github.com/Insality/defold-event/archive/6c90a543ad2de3e11d23f64de9b095c60b13e00f.zip
+dependencies#3 = https://github.com/alchimystic/defold-rng/archive/297f0b3f0d5d41cf813c39f09ce67151163520ef.zip
+dependencies#4 = https://github.com/selimanac/defold-astar/archive/1471c5445b0c0376bd23c377e8ef8d84e52b43bf.zip
+dependencies#5 = https://github.com/subsoap/defsave/archive/815ff18a0ea64d3879da0ff54ce880796e88b5f9.zip
+dependencies#6 = https://github.com/Insality/defold-tweener/archive/18dc800a115d55bbf89391ba90bba1cd26135a8a.zip
+dependencies#7 = https://github.com/Insality/defold-quest/archive/fc320bf0b927ea9b4cfb786431ef16b95c1b17b2.zip
+dependencies#8 = https://github.com/abadonna/defold-ink/archive/5e871c42f645689e7263d85015fab2b2f2743907.zip
+
+[bootstrap]
+main_collection = /main/main.collectionc
+
+[input]
+game_binding = /input/game.input_bindingc
+use_accelerometer = 0
+
+[display]
+width = 1280
+height = 720
+high_dpi = 1
+
+[script]
+shared_state = 1
+
+[windows]
+app_icon = /assets/app_icons/appicon.ico
+
+[osx]
+app_icon = /assets/app_icons/appicon.icns
+bundle_identifier = games.rebirthdungeon.desktop
+
+[android]
+input_method = HiddenInputField
+
+[physics]
+gravity_y = 0.0
+max_collision_object_count = 1024
+scale = 0.01
+velocity_threshold = 100.0
+
+[html5]
+scale_mode = fit
+
+
+[graphics]
+default_texture_min_filter = nearest
+default_texture_mag_filter = nearest
+
+[collection]
+max_instances = 4096
+
+[gui]
+max_count = 16
+
+[sprite]
+max_count = 4096
+
+[resource]
+max_resources = 2048
+[collection_proxy]
+max_count = 16
+
+[druid]
+input_key_back = escape
+input_key_backspace = backspace
+input_key_enter = enter
+input_key_left = left
+input_key_right = right
+input_key_delete = delete
+input_key_lshift = shift
+input_key_esc = escape
+input_key_up = up
+input_key_down = down
+input_scroll_up = scroll_up
+input_scroll_down = scroll_down

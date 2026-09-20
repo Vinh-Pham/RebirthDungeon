@@ -1,0 +1,66 @@
+{
+  "engine": {
+    "version": "1.13.1",
+    "sha": "574678c7d44be490d874fbed2d0ae6211feec4d9"
+  },
+  "libraries": {
+    "druid": {
+      "repository": "https://github.com/Insality/druid",
+      "commit": "95f1ca9c9b6ce1df443e71a2a420892d37971c94",
+      "archive": "https://github.com/Insality/druid/archive/95f1ca9c9b6ce1df443e71a2a420892d37971c94.zip"
+    },
+    "monarch": {
+      "repository": "https://github.com/britzl/monarch",
+      "commit": "954097522e7c2d4a710464dd9e8b48fb309685ab",
+      "archive": "https://github.com/britzl/monarch/archive/954097522e7c2d4a710464dd9e8b48fb309685ab.zip"
+    },
+    "event": {
+      "repository": "https://github.com/Insality/defold-event",
+      "commit": "6c90a543ad2de3e11d23f64de9b095c60b13e00f",
+      "archive": "https://github.com/Insality/defold-event/archive/6c90a543ad2de3e11d23f64de9b095c60b13e00f.zip"
+    },
+    "rng": {
+      "repository": "https://github.com/alchimystic/defold-rng",
+      "commit": "297f0b3f0d5d41cf813c39f09ce67151163520ef",
+      "archive": "https://github.com/alchimystic/defold-rng/archive/297f0b3f0d5d41cf813c39f09ce67151163520ef.zip"
+    },
+    "astar": {
+      "repository": "https://github.com/selimanac/defold-astar",
+      "commit": "1471c5445b0c0376bd23c377e8ef8d84e52b43bf",
+      "archive": "https://github.com/selimanac/defold-astar/archive/1471c5445b0c0376bd23c377e8ef8d84e52b43bf.zip"
+    },
+    "defsave": {
+      "repository": "https://github.com/subsoap/defsave",
+      "commit": "815ff18a0ea64d3879da0ff54ce880796e88b5f9",
+      "archive": "https://github.com/subsoap/defsave/archive/815ff18a0ea64d3879da0ff54ce880796e88b5f9.zip"
+    },
+    "tweener": {
+      "repository": "https://github.com/Insality/defold-tweener",
+      "commit": "18dc800a115d55bbf89391ba90bba1cd26135a8a",
+      "archive": "https://github.com/Insality/defold-tweener/archive/18dc800a115d55bbf89391ba90bba1cd26135a8a.zip"
+    },
+    "lume": {
+      "repository": "https://github.com/rxi/lume",
+      "commit": "98847e7812cf28d3d64b289b03fad71dc704547d",
+      "archive": "https://github.com/rxi/lume/archive/98847e7812cf28d3d64b289b03fad71dc704547d.zip"
+    },
+    "lester": {
+      "repository": "https://github.com/edubart/lester",
+      "commit": "334482cba6d7938c7f98ade951017e0d9ee7ecec",
+      "archive": "https://github.com/edubart/lester/archive/334482cba6d7938c7f98ade951017e0d9ee7ecec.zip"
+    },
+    "quest": {
+      "repository": "https://github.com/Insality/defold-quest",
+      "commit": "fc320bf0b927ea9b4cfb786431ef16b95c1b17b2",
+      "archive": "https://github.com/Insality/defold-quest/archive/fc320bf0b927ea9b4cfb786431ef16b95c1b17b2.zip"
+    },
+    "ink": {
+      "repository": "https://github.com/abadonna/defold-ink",
+      "commit": "5e871c42f645689e7263d85015fab2b2f2743907",
+      "archive": "https://github.com/abadonna/defold-ink/archive/5e871c42f645689e7263d85015fab2b2f2743907.zip"
+    }
+  },
+  "authoring": {
+    "inkjs": "2.3.2"
+  }
+}
