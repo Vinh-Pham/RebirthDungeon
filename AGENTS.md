@@ -1,6 +1,8 @@
 # Agent Instructions
 
-This repository is a **Defold** game project. The project root is the folder containing `game.project`.
+This repository is a **Defold** game project written primarily in Lua. The project root is this repository, containing `game.project`.
+
+Use **Defold Automation Bridge** for runtime inspection, interaction, screenshots, and gameplay verification. Keep gameplay logic separate from rendering/UI logic when practical; preserve the message-based GUI separation described below.
 
 ## Project map
 
@@ -8,6 +10,8 @@ This repository is a **Defold** game project. The project root is the folder con
 - **Main game content**: `main/` (collections, game objects, scripts)
 - **Assets**: `assets/` (app icons, images)
 - **Dependencies (read-only context)**: `.deps/`
+- **Automation Bridge Python wrapper (installer-managed)**: `automation-bridge-python/`
+- **Project automation scripts**: `tools/` (including `tools/check_automation.py`)
 - **Screens**: `screens/<screen_name>/`
 - **Popups**: `popups/<popup_name>/`
 
@@ -21,6 +25,7 @@ Key Defold settings from `game.project`:
 
 - Use `.deps/` as an include directory for resolving module references and understanding dependency APIs.
 - **NEVER modify any files inside `.deps/`** - these are downloaded dependencies provided strictly as read-only context.
+- **NEVER modify files inside `automation-bridge-python/`** - this directory is managed by the Automation Bridge installer. Keep project automation scripts and customizations outside it, normally in `tools/`.
 
 ## Defold file formats
 
@@ -94,11 +99,81 @@ When writing performance-critical math code or optimizing vector/quaternion/matr
 
 All commands run from the project root (the folder with `game.project`).
 
-- **Build & Run via editor** - use the `defold-project-build` skill. Requires the Defold editor to be running with the project open. Builds the project, returns compilation errors, and launches the game if the build succeeds.
+- **Run Python automation scripts**: `PYTHONPATH=automation-bridge-python python3 <script>`. Use this environment for all Python automation scripts. On Windows, set `$env:PYTHONPATH = "automation-bridge-python"` in PowerShell before running `python3 <script>`.
+- **Check Automation Bridge setup**: `PYTHONPATH=automation-bridge-python python3 tools/check_automation.py`. Run this before diagnosing bridge problems. A failed `engine_connection` check is expected when the game is not running; interpret it alongside the other checks.
+- **Build & Run via Automation Bridge**: connect to the existing editor and call `project.build_and_run()` as shown below. This builds the project, launches the game, and returns a runtime client.
+- **Fallback editor build**: use the `defold-project-build` skill if the bridge cannot build. A successful fallback build does not replace runtime behavior verification for gameplay/UI changes.
+
+## Automation Bridge
+
+The Defold editor should normally already be running with this project open. Prefer connecting to it rather than attempting to launch Defold from a sandboxed agent:
+
+```python
+from automation_bridge import editor
+
+project = editor.open_project(".", start_if_needed=False)
+game = project.build_and_run()
+```
+
+For inspection of an already-running game without rebuilding, use `project.connect_engine()`. Only call `game.close_engine()` when the automation script intentionally owns engine cleanup.
+
+Consult `automation-bridge-python/README.md`, `automation-bridge-python/best_practices.py`, and the wrapper's public docstrings for supported signatures and examples. Use package-root imports such as `from automation_bridge import editor, engine` and prefer named helpers over raw requests.
+
+Useful runtime APIs:
+
+- **Health and screen**: `game.health()`, `game.screen()`.
+- **Element inspection**: `game.elements()`, `game.element()`, `game.maybe_element()`.
+- **Input**: `game.click()`, `game.drag()`, `game.type_text()`, `game.key()`.
+- **Visual evidence**: `game.screenshot(wait=True, resolution_multiplier=0.5)` returns a capture receipt with the saved image path. Inspect the image when verifying appearance.
+- **Runtime errors and diagnostics**: `game.logs`; also inspect the editor console and any build errors returned by the build operation.
+
+Prefer semantic selectors such as `automation_id` over hard-coded screen coordinates. Element objects are snapshots: re-query after UI or scene changes and pass the resulting elements to `click()` and both ends of `drag()` where applicable. If an element is stale, re-query it before retrying. `elements()` is paginated; use `count()` for a complete match count or `elements_page()` to traverse all results.
+
+Use application state/events, command acknowledgements, element waits, or frame waits instead of arbitrary sleeps whenever appropriate synchronization is available. Discover game-specific contracts with `game.application_catalog()`.
+
+### Application API
+
+This project enables the application API with the following setting in `game.project`:
+
+```ini
+[automation_bridge]
+application_api = 1
+```
+
+Prefer semantic automation hooks for important game systems. The Lua APIs include `automation_bridge.publish()`, `automation_bridge.emit()`, `automation_bridge.command()`, and `automation_bridge.annotate()`; consult the installed bridge documentation for their contracts before adding hooks.
+
+- Add stable `automation_id` values to important interactive UI elements when practical.
+- Expose useful semantic state for battles, menus, loading, dialogue, and inventory when it improves automated testing.
+- Keep state publication with the system that owns the state. Automation hooks must preserve the existing separation between gameplay logic and message-driven GUI code.
+
+## Required development workflow
+
+For gameplay or UI changes:
+
+1. Inspect the existing implementation before making changes.
+2. Make the smallest coherent change.
+3. Build and run the game using Automation Bridge.
+4. Check Defold build errors and runtime errors.
+5. Inspect the relevant game elements when useful.
+6. Interact through Automation Bridge when the feature requires input.
+7. Capture and inspect a screenshot when visual verification is relevant.
+8. Verify the requested behavior using observable results instead of assuming the implementation works.
+9. Fix discovered problems and rerun the affected verification.
+
+Do not consider a gameplay/UI task complete merely because the Lua code looks correct. If runtime verification is blocked, report the blocker and what remains unverified.
+
+### Testing philosophy
+
+Prefer deterministic tests and verify actual state transitions and results. For turn-based combat, check the relevant active actor, battle phase, selected action, selected target, damage dealt, current HP, applied status effects, turn number, and battle outcome.
+
+When semantic game state is available, assert against it instead of relying only on screenshots. Use screenshots to verify appearance and layout alongside behavior checks.
 
 ## Validation checklist
 
-- Build via the running editor succeeds (`defold-project-build` skill).
+- Build via the running editor succeeds, using Automation Bridge as the primary workflow.
+- No relevant Defold build or runtime errors remain.
+- For gameplay/UI changes, the requested behavior is verified through runtime inspection and interaction as applicable.
+- Relevant visual changes are verified with an inspected screenshot.
 
 ## Important repo-specific caveats
 
