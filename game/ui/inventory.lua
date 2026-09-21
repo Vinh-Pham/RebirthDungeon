@@ -63,7 +63,7 @@ end
 
 local function quantity_input(self, view, x, y, field, value, maximum)
     local node = view.box(self, x, y,92, 32, view.colors.bg)
-    local text = view.text(self, x, y, value, 16, view.colors.white, nil, false, true)
+    local text = view.plain_text(self, x, y, value, 16, view.colors.white, nil, false, true)
     local input = self.druid:new_input(node, text)
     self.inventory_inputs[field] = input
     input:set_max_length(10)

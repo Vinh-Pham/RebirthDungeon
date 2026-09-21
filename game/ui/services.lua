@@ -69,7 +69,7 @@ function M.render(self, view, context, service, dialogue)
     if #model.rows > 0 then
         view.text(self, 741, 536, "Quantity", 15, c.muted)
         local node = view.box(self, 875, 536, 76, 32, c.bg)
-        local label = view.text(self, 875, 536, self.service_quantity, 17, c.white, nil, false, true)
+        local label = view.plain_text(self, 875, 536, self.service_quantity, 17, c.white, nil, false, true)
         local input = self.druid:new_input(node, label); self.service_input = input
         input:set_max_length(2); input:set_text(self.service_quantity)
         input.on_input_text:subscribe(function(_, entered) self.service_quantity = entered end)

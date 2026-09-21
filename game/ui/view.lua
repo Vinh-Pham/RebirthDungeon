@@ -1,8 +1,11 @@
 local druid=require("druid.druid")
+local richtext=require("richtext.richtext")
 local Bridge=require("game.ui.session")
 local M={}
 M.colors={bg=vmath.vector4(.055,.071,.102,1),panel=vmath.vector4(.085,.11,.15,.98),edge=vmath.vector4(.19,.30,.33,1),teal=vmath.vector4(.38,.84,.75,1),white=vmath.vector4(.9,.93,.94,1),muted=vmath.vector4(.56,.65,.70,1),hp=vmath.vector4(.84,.31,.51,1),mp=vmath.vector4(.28,.57,.89,1),sp=vmath.vector4(.9,.73,.30,1)}
 local c=M.colors
+local RICH_FONTS={body={regular=hash("body"),bold=hash("heading")},heading={regular=hash("heading"),bold=hash("heading")}}
+local function hex(rgb) return string.format("%02x%02x%02x",math.floor(rgb.x*255+.5),math.floor(rgb.y*255+.5),math.floor(rgb.z*255+.5)) end
 local function carried(p) return p.pack end
 local function parent(self,n)
     gui.set_parent(n,self.root,false);gui.set_inherit_alpha(n,false);self.nodes[#self.nodes+1]=n;return n
@@ -11,7 +14,8 @@ function M.box(self,x,y,w,h,color)
     local n=parent(self,gui.new_box_node(vmath.vector3(x-640,y-360,0),vmath.vector3(w,h,0)))
     gui.set_color(n,color or c.panel);return n
 end
-function M.text(self,x,y,text,size,color,width,bold,center)
+-- Plain text node, only for Druid text input fields and other nodes mutated after creation.
+function M.plain_text(self,x,y,text,size,color,width,bold,center)
     local n=parent(self,gui.new_text_node(vmath.vector3(x-640,y-360,0),tostring(text)))
     gui.set_font(n,bold and "heading" or "body");gui.set_color(n,color or c.white)
     gui.set_scale(n,vmath.vector3((size or 18)/40,(size or 18)/40,1))
@@ -19,6 +23,27 @@ function M.text(self,x,y,text,size,color,width,bold,center)
     gui.set_pivot(n,center and gui.PIVOT_CENTER or gui.PIVOT_W)
     if width then gui.set_size(n,vmath.vector3(width*40/(size or 18),100,0));gui.set_line_break(n,true) end
     return n
+end
+-- Rich text (defold-richtext): markup such as <b>, <color=#rrggbb>, <font=heading>, <size=2>.
+-- Same-style words per line combine into one node; the block is centered on x,y like the old pivots.
+local function rich(self,x,y,text,size,color,width,bold,center,reuse)
+    size=size or 18
+    local n=reuse or parent(self,gui.new_text_node(vmath.vector3(x-640,y-360,0),""))
+    text=tostring(text)
+    local words,metrics={},{}
+    if text~="" then
+        words,metrics=richtext.create(text,bold and "heading" or "body",{
+            parent=n,color=color or c.white,size=size/40,width=width,
+            align=center and richtext.ALIGN_CENTER or richtext.ALIGN_LEFT,
+            combine_words=true,fonts=RICH_FONTS,
+        })
+        for _,word in ipairs(words) do gui.set_inherit_alpha(word.node,false) end
+    end
+    gui.set_position(n,vmath.vector3(x-640,y-360+(metrics.height or 0)/2,0))
+    return n,words,metrics
+end
+function M.text(self,x,y,text,size,color,width,bold,center)
+    return (rich(self,x,y,text,size,color,width,bold,center))
 end
 function M.icon(self,x,y,tile,size,tint)
     local n=M.box(self,x,y,size,size,tint or vmath.vector4(1));gui.set_texture(n,"tiles");gui.play_flipbook(n,tile);return n
@@ -49,13 +74,13 @@ end
 local function bar(self,x,y,w,value,max,color,label,size)
     M.box(self,x+w/2,y,w,9,c.bg);local fill=w*math.max(0,math.min(1,value/max))
     if fill>0 then M.box(self,x+fill/2,y,fill,9,color) end
-    M.text(self,x,y+19,label.."  "..string.format("%.1f",value):gsub("%.0$","").." / "..max,size or 13,c.muted)
+    M.text(self,x,y+19,"<color="..hex(color)..">"..label.."</color>  "..string.format("%.1f",value):gsub("%.0$","").." / "..max,size or 13,c.muted)
 end
 local function hud(self,p)
     local S=self.ui
     local scale=S.settings.hud_scale
-    local show_navigation=S.screen~="title" and S.screen~="characters"
-    if show_navigation then M.box(self,640,139,1280,48,c.bg) end
+    if S.screen=="title" or S.screen=="characters" then return end
+    M.box(self,640,139,1280,48,c.bg)
     M.box(self,640,57,1280,114,c.bg);M.box(self,640,114,1280,1,c.edge)
     M.icon(self,42,62,"tile_0084",38,p and c.teal or c.muted)
     M.text(self,74,88,p and p.name or "No character selected",16*scale,p and c.white or c.muted,nil,true)
@@ -71,11 +96,9 @@ local function hud(self,p)
     M.text(self,1020,86,p and "AP "..p.ap.." · Life "..p.life or "AP — · Life —",13*scale,c.teal)
     M.text(self,1020,60,p and (p.level==200 and "Maximum level" or p.xp.." / "..p.xp_next.." EXP") or "EXP — / —",12*scale,c.muted)
     M.text(self,1020,34,p and "Saved · "..p.revision or "Awaiting selection",11,c.muted)
-    if show_navigation then
-        local names={{"Character","character"},{"Skills","skills"},{"Talent","talent"},{"Quests","quests"},{"Inventory","inventory"},{"Pets","pets"},{"Menu","menu"}}
-        for index,entry in ipairs(names) do M.button(self,78+(index-1)*122,139,114,entry[1],function() open(self,entry[2]) end,p~=nil) end
-        M.text(self,1185,139,self.ui_pending and "Saving…" or "Tab · Enter · Esc",12,c.muted,nil,false,true)
-    end
+    local names={{"Character","character"},{"Skills","skills"},{"Talent","talent"},{"Quests","quests"},{"Inventory","inventory"},{"Pets","pets"},{"Menu","menu"}}
+    for index,entry in ipairs(names) do M.button(self,78+(index-1)*122,139,114,entry[1],function() open(self,entry[2]) end,p~=nil) end
+    M.text(self,1185,139,self.ui_pending and "Saving…" or "Tab · Enter · Esc",12,c.muted,nil,false,true)
 end
 local function heading(self,label,detail)
     M.box(self,640,678,1280,84,c.bg);M.box(self,640,636,1280,1,c.edge)
@@ -83,7 +106,7 @@ local function heading(self,label,detail)
 end
 local function title(self)
     local S=self.ui;local C=S.catalog
-    M.box(self,640,420,1280,610,c.bg)
+    M.box(self,640,360,1280,720,c.bg)
     for row=0,7 do for col=0,9 do M.icon(self,845+col*32,270+row*32,(row==0 or row==7 or col==0 or col==9) and "tile_0040" or "tile_0049",32,vmath.vector4(.45,.52,.63,1)) end end
     M.icon(self,986,409,"tile_0084",100);M.icon(self,1077,445,"tile_0120",68);M.icon(self,890,328,"tile_0090",48)
     M.text(self,85,575,"BEGIN AGAIN",15,c.teal,nil,true)
@@ -120,7 +143,7 @@ local function creation(self,p,rebirth)
     self.form=self.form or {name=rebirth and p.name or "",race=rebirth and p.race or "Human",age=17,talent=rebirth and p.talent or "Close Combat"}
     local f=self.form;panel(self,rebirth and "Begin a new life" or "A name for your story",rebirth and "Keep your race, skills, AP and possessions. Reset this life's level and growth." or "Choose a beginning. Rebirth will let you change your path later.")
     M.text(self,108,524,"NAME",13,c.teal,nil,true)
-    local field=M.box(self,345,482,475,44,c.bg);local text=M.text(self,122,482,f.name,22)
+    local field=M.box(self,345,482,475,44,c.bg);local text=M.plain_text(self,122,482,f.name,22)
     if not rebirth then
         local input=self.druid:new_input(field,text);input:set_max_length(24);input:set_text(f.name)
         input.on_input_text:subscribe(function(_,value) f.name=value end);self.name_input=input
@@ -353,11 +376,11 @@ function M.render(self)
     end
     if self.druid then self.druid:final() end
     for _,node in ipairs(self.nodes or {}) do gui.cancel_animations(node);gui.delete_node(node) end
-    self.nodes={};self.buttons={};self.labels={};self.name_input=nil;self.service_input=nil;self.inventory_inputs={};self.druid=druid.new(self)
+    self.nodes={};self.buttons={};self.labels={};self.label_texts={};self.label_words={};self.label_metrics={};self.name_input=nil;self.service_input=nil;self.inventory_inputs={};self.druid=druid.new(self)
     local p=S.snapshot();local screen=S.screen
     local playing=p and screen==p.phase
     if screen=="title" then title(self)
-    elseif screen=="characters" then M.box(self,640,420,1280,610,c.bg);characters(self)
+    elseif screen=="characters" then M.box(self,640,360,1280,720,c.bg);characters(self)
     elseif screen=="create" or screen=="rebirth" then M.box(self,640,420,1280,610,c.bg);creation(self,p,screen=="rebirth")
     elseif screen=="battle" then battle(self,p)
     elseif screen=="rewards" then M.box(self,640,420,1280,610,c.bg);rewards(self,p)
@@ -397,13 +420,21 @@ function M.render(self)
     M.focus(self)
 end
 function M.labels(self)
-    local S=self.ui;local C=S.catalog
+    local S=self.ui
     if S.modal then return end
     for i,node in ipairs(self.labels or {}) do
         local m=(S.world_labels or {})[i]
-        if m and m.x>30 and m.x<1230 and m.y>214 and m.y<569 then
-            gui.set_position(node,vmath.vector3(m.x-640,m.y+37-360,0));gui.set_text(node,m.label..(m.service and m.near and " · E" or ""))
-        else gui.set_text(node,"") end
+        local markup=m and m.x>30 and m.x<1230 and m.y>214 and m.y<569 and m.label..(m.service and m.near and " · <color="..hex(c.teal)..">E</color>" or "") or ""
+        if markup~=self.label_texts[i] then
+            self.label_texts[i]=markup
+            if self.label_words[i] then richtext.remove(self.label_words[i]) end
+            local _,words,metrics=rich(self,m and m.x or -100,m and m.y+37 or -100,markup,13,c.white,nil,true,true,node)
+            self.label_words[i]=words;self.label_metrics[i]=metrics
+        end
+        if m and markup~="" then
+            local height=self.label_metrics[i] and self.label_metrics[i].height or 0
+            gui.set_position(node,vmath.vector3(m.x-640,m.y+37-360+height/2,0))
+        end
     end
 end
 return M
