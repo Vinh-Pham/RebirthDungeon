@@ -57,6 +57,7 @@ When writing performance-critical math code or optimizing vector/quaternion/matr
 ### Lua scripts (.lua, .script, .gui_script, .render_script, .editor_script)
 
 - **Indentation**: 1 tab (4 spaces).
+- **Formatting**: run StyLua on every modified or created Lua file (`stylua <paths>` from the project root). The root `stylua.toml` config applies automatically (tab indentation, 120-column width). Verify with `stylua --check <paths>`. Only format project-owned code - NEVER format third-party/vendored code: `.deps/`, `.tools/`, `.internal/`, `vendor/`, `debugger/`, `tests/vendor/`.
 - **Naming**: `snake_case` for variables, functions, files, and folders. Keep resource paths absolute (`/assets/...`) where Defold expects them.
 - **Comments**:
   - Use **LuaCATS** (`---@...`) annotations for types, module/public API docs.
@@ -152,13 +153,14 @@ For gameplay or UI changes:
 
 1. Inspect the existing implementation before making changes.
 2. Make the smallest coherent change.
-3. Build and run the game using Automation Bridge.
-4. Check Defold build errors and runtime errors.
-5. Inspect the relevant game elements when useful.
-6. Interact through Automation Bridge when the feature requires input.
-7. Capture and inspect a screenshot when visual verification is relevant.
-8. Verify the requested behavior using observable results instead of assuming the implementation works.
-9. Fix discovered problems and rerun the affected verification.
+3. Format all modified or created Lua files with StyLua: `stylua <paths>`.
+4. Build and run the game using Automation Bridge.
+5. Check Defold build errors and runtime errors.
+6. Inspect the relevant game elements when useful.
+7. Interact through Automation Bridge when the feature requires input.
+8. Capture and inspect a screenshot when visual verification is relevant.
+9. Verify the requested behavior using observable results instead of assuming the implementation works.
+10. Fix discovered problems and rerun the affected verification.
 
 Do not consider a gameplay/UI task complete merely because the Lua code looks correct. If runtime verification is blocked, report the blocker and what remains unverified.
 
@@ -170,6 +172,7 @@ When semantic game state is available, assert against it instead of relying only
 
 ## Validation checklist
 
+- Modified or created Lua files are formatted with StyLua (`stylua --check <paths>` passes).
 - Build via the running editor succeeds, using Automation Bridge as the primary workflow.
 - No relevant Defold build or runtime errors remain.
 - For gameplay/UI changes, the requested behavior is verified through runtime inspection and interaction as applicable.

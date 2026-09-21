@@ -1,52 +1,257 @@
 -- Prices and enemy balance are original Rebirth Dungeon content.
 -- Verified F-rank source values and progression provenance: docs/content-data.md.
-local M = {VERSION=1, ranks=require("game.content.skills").ranks}
-M.base={hp=118,mp=98,sp=113,str=55,int=48,dex=58,wil=57,luk=47}
-M.talents={
-    ["Close Combat"]={weapon="sword",skill="smash",base={str=20},growth={str=.5},aging={str=2}},
-    ["Archery"]={weapon="bow",skill="power_shot",base={hp=5,sp=5,dex=10},growth={dex=.5},aging={sp=1,dex=2}},
-    ["Dual Gun"]={weapon="guns",skill="double_shot",base={str=5,int=5,hp=5,mp=5,sp=10},growth={str=.25,int=.25},aging={str=1,int=1}},
-    ["Magic"]={weapon="wand",skill="icebolt",base={int=10,mp=10},growth={int=.5},aging={int=2,mp=1}}
+local M = { VERSION = 1, ranks = require("game.content.skills").ranks }
+M.base = { hp = 118, mp = 98, sp = 113, str = 55, int = 48, dex = 58, wil = 57, luk = 47 }
+M.talents = {
+	["Close Combat"] = {
+		weapon = "sword",
+		skill = "smash",
+		base = { str = 20 },
+		growth = { str = 0.5 },
+		aging = {
+			str = 2,
+		},
+	},
+	["Archery"] = {
+		weapon = "bow",
+		skill = "power_shot",
+		base = { hp = 5, sp = 5, dex = 10 },
+		growth = { dex = 0.5 },
+		aging = {
+			sp = 1,
+			dex = 2,
+		},
+	},
+	["Dual Gun"] = {
+		weapon = "guns",
+		skill = "double_shot",
+		base = { str = 5, int = 5, hp = 5, mp = 5, sp = 10 },
+		growth = { str = 0.25, int = 0.25 },
+		aging = { str = 1, int = 1 },
+	},
+	["Magic"] = {
+		weapon = "wand",
+		skill = "icebolt",
+		base = { int = 10, mp = 10 },
+		growth = { int = 0.5 },
+		aging = {
+			int = 2,
+			mp = 1,
+		},
+	},
 }
-M.talent_order={"Close Combat","Magic","Archery","Dual Gun"}
-M.items={
-    hp_potion={name="Health Potion",price=10,stack=99,pool="hp",restore=30,tile="tile_0115",description="Restores 30 health. One item before your battle action."},
-    mp_potion={name="Mana Potion",price=10,stack=99,pool="mp",restore=30,tile="tile_0116",description="Restores 30 mana."},
-    sp_potion={name="Stamina Potion",price=10,stack=99,pool="sp",restore=30,tile="tile_0114",description="Restores 30 stamina."},
-    bread={name="Fresh Bread",price=5,stack=99,pool="sp",restore=20,tile="tile_0061",description="Restores 20 stamina."},
-    sword={name="Traveler's Sword",price=40,stack=1,slot="weapon",category="melee",power=12,durability=20,tile="tile_0104",description="A reliable one-handed blade."},
-    bow={name="Ashwood Bow",price=40,stack=1,slot="weapon",category="ranged",power=12,durability=20,no_giant=true,tile="tile_0118",description="A light bow. Humans and Elves only."},
-    guns={name="Twin Flintlocks",price=50,stack=1,slot="weapon",category="guns",power=14,durability=20,tile="tile_0124",description="Paired guns occupy both hands. No ammunition required."},
-    wand={name="Apprentice Wand",price=40,stack=1,slot="weapon",category="magic",power=10,durability=20,tile="tile_0127",description="A focus for Icebolt."},
-    armor={name="Leather Coat",price=35,stack=1,slot="body",defense=3,tile="tile_0090",description="Adds 3 Defense. Equip in town."},
-    silk={name="Spider Silk",price=12,stack=99,tile="tile_0062",description="A surprisingly strong thread. Can be sold in town."},
+M.talent_order = { "Close Combat", "Magic", "Archery", "Dual Gun" }
+M.items = {
+	hp_potion = {
+		name = "Health Potion",
+		price = 10,
+		stack = 99,
+		pool = "hp",
+		restore = 30,
+		tile = "tile_0115",
+		description = "Restores 30 health. One item before your battle action.",
+	},
+	mp_potion = {
+		name = "Mana Potion",
+		price = 10,
+		stack = 99,
+		pool = "mp",
+		restore = 30,
+		tile = "tile_0116",
+		description = "Restores 30 mana.",
+	},
+	sp_potion = {
+		name = "Stamina Potion",
+		price = 10,
+		stack = 99,
+		pool = "sp",
+		restore = 30,
+		tile = "tile_0114",
+		description = "Restores 30 stamina.",
+	},
+	bread = {
+		name = "Fresh Bread",
+		price = 5,
+		stack = 99,
+		pool = "sp",
+		restore = 20,
+		tile = "tile_0061",
+		description = "Restores 20 stamina.",
+	},
+	sword = {
+		name = "Traveler's Sword",
+		price = 40,
+		stack = 1,
+		slot = "weapon",
+		category = "melee",
+		power = 12,
+		durability = 20,
+		tile = "tile_0104",
+		description = "A reliable one-handed blade.",
+	},
+	bow = {
+		name = "Ashwood Bow",
+		price = 40,
+		stack = 1,
+		slot = "weapon",
+		category = "ranged",
+		power = 12,
+		durability = 20,
+		no_giant = true,
+		tile = "tile_0118",
+		description = "A light bow. Humans and Elves only.",
+	},
+	guns = {
+		name = "Twin Flintlocks",
+		price = 50,
+		stack = 1,
+		slot = "weapon",
+		category = "guns",
+		power = 14,
+		durability = 20,
+		tile = "tile_0124",
+		description = "Paired guns occupy both hands. No ammunition required.",
+	},
+	wand = {
+		name = "Apprentice Wand",
+		price = 40,
+		stack = 1,
+		slot = "weapon",
+		category = "magic",
+		power = 10,
+		durability = 20,
+		tile = "tile_0127",
+		description = "A focus for Icebolt.",
+	},
+	armor = {
+		name = "Leather Coat",
+		price = 35,
+		stack = 1,
+		slot = "body",
+		defense = 3,
+		tile = "tile_0090",
+		description = "Adds 3 Defense. Equip in town.",
+	},
+	silk = {
+		name = "Spider Silk",
+		price = 12,
+		stack = 99,
+		tile = "tile_0062",
+		description = "A surprisingly strong thread. Can be sold in town.",
+	},
 }
-M.skills=require("game.content.skills").definitions
+M.skills = require("game.content.skills").definitions
 
-M.enemies={
-    white={name="White Spider",hp=42,attack=16,defense=1,speed=9,skill="pounce",xp=120,gold=12,tile="tile_0120"},
-    small={name="Small Spider",hp=28,attack=12,defense=0,speed=9,skill="pounce",xp=80,gold=8,tile="tile_0120"},
-    red={name="Red Spider",hp=65,attack=21,defense=2,speed=12,skill="poison_bite",xp=200,gold=20,tile="tile_0120"},
-    giant={name="Giant Spider",hp=170,attack=22,defense=4,speed=8,skill="armor_break",xp=650,gold=80,tile="tile_0120"},
+M.enemies = {
+	white = {
+		name = "White Spider",
+		hp = 42,
+		attack = 16,
+		defense = 1,
+		speed = 9,
+		skill = "pounce",
+		xp = 120,
+		gold = 12,
+		tile = "tile_0120",
+	},
+	small = {
+		name = "Small Spider",
+		hp = 28,
+		attack = 12,
+		defense = 0,
+		speed = 9,
+		skill = "pounce",
+		xp = 80,
+		gold = 8,
+		tile = "tile_0120",
+	},
+	red = {
+		name = "Red Spider",
+		hp = 65,
+		attack = 21,
+		defense = 2,
+		speed = 12,
+		skill = "poison_bite",
+		xp = 200,
+		gold = 20,
+		tile = "tile_0120",
+	},
+	giant = {
+		name = "Giant Spider",
+		hp = 170,
+		attack = 22,
+		defense = 4,
+		speed = 8,
+		skill = "armor_break",
+		xp = 650,
+		gold = 80,
+		tile = "tile_0120",
+	},
 }
-M.services={
-    healer={name="Elara",title="Healer House",cost=10,x=8,y=11,tile="tile_0088"},
-    grocery={name="Nell",title="Grocery Store",x=19,y=11,tile="tile_0085",stock={"bread"}},
-    bank={name="Petra",title="Bank",x=8,y=6,tile="tile_0087"},
-    blacksmith={name="Bram",title="Blacksmith",repair_per_point=1,x=19,y=6,tile="tile_0086",stock={"sword","bow","guns","wand"}},
-    shop={name="Odd",title="General Shop",x=14,y=4,tile="tile_0084",stock={"hp_potion","mp_potion","sp_potion","armor"}},
-    gate={name="Aren",title="Alby Gate",x=14,y=15,tile="tile_0089"},
+M.services = {
+	healer = { name = "Elara", title = "Healer House", cost = 10, x = 8, y = 11, tile = "tile_0088" },
+	grocery = { name = "Nell", title = "Grocery Store", x = 19, y = 11, tile = "tile_0085", stock = { "bread" } },
+	bank = { name = "Petra", title = "Bank", x = 8, y = 6, tile = "tile_0087" },
+	blacksmith = {
+		name = "Bram",
+		title = "Blacksmith",
+		repair_per_point = 1,
+		x = 19,
+		y = 6,
+		tile = "tile_0086",
+		stock = { "sword", "bow", "guns", "wand" },
+	},
+	shop = {
+		name = "Odd",
+		title = "General Shop",
+		x = 14,
+		y = 4,
+		tile = "tile_0084",
+		stock = { "hp_potion", "mp_potion", "sp_potion", "armor" },
+	},
+	gate = { name = "Aren", title = "Alby Gate", x = 14, y = 15, tile = "tile_0089" },
 }
-M.dialogue_actions={
-    healer={heal={type="heal"}},
-    grocery={bread={type="buy",service="grocery",def="bread",quantity=1}},
+M.dialogue_actions = {
+	healer = { heal = { type = "heal" } },
+	grocery = { bread = { type = "buy", service = "grocery", def = "bread", quantity = 1 } },
 }
-M.service_order={"healer","grocery","bank","blacksmith","shop","gate"}
-M.quests={
-    enter={name="Beyond the gate",text="Enter Alby Dungeon",action="enter",object="alby",gold=15,xp=100},
-    battle={name="First victory",text="Win a battle in Alby",action="win",object="battle",gold=20,xp=120,previous="enter"},
-    boss={name="Break the web",text="Defeat the Giant Spider",action="defeat",object="boss",gold=35,xp=200,previous="battle"},
-    return_home={name="A new beginning",text="Defeat the boss and return with the goddess",action="return",object="town",gold=50,xp=300,previous="boss"},
+M.service_order = { "healer", "grocery", "bank", "blacksmith", "shop", "gate" }
+M.quests = {
+	enter = {
+		name = "Beyond the gate",
+		text = "Enter Alby Dungeon",
+		action = "enter",
+		object = "alby",
+		gold = 15,
+		xp = 100,
+	},
+	battle = {
+		name = "First victory",
+		text = "Win a battle in Alby",
+		action = "win",
+		object = "battle",
+		gold = 20,
+		xp = 120,
+		previous = "enter",
+	},
+	boss = {
+		name = "Break the web",
+		text = "Defeat the Giant Spider",
+		action = "defeat",
+		object = "boss",
+		gold = 35,
+		xp = 200,
+		previous = "battle",
+	},
+	return_home = {
+		name = "A new beginning",
+		text = "Defeat the boss and return with the goddess",
+		action = "return",
+		object = "town",
+		gold = 50,
+		xp = 300,
+		previous = "boss",
+	},
 }
-M.quest_order={"enter","battle","boss","return_home"}
+M.quest_order = { "enter", "battle", "boss", "return_home" }
 return M
