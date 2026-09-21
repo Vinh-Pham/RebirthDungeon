@@ -1,6 +1,9 @@
 -- Service UI consumes only messages; prices and mutations belong to the session.
 local M = {}
 
+-- Shop stock presents as a grid of cells, five per row.
+local STOCK_COLS = 5
+
 local function request(self)
 	self.service_token = (self.service_token or 0) + 1
 	self.service_data = nil
@@ -59,6 +62,45 @@ local function action_button(self, view, x, y, width, action)
 	end, action.enabled and not self.service_pending, true)
 	if action.reason ~= "" then
 		view.text(self, x - width / 2, y - 28, action.reason, 12, view.colors.sp, width)
+	end
+end
+
+local function disabled_reasons(rows)
+	local seen, reasons = {}, {}
+	for _, row in ipairs(rows) do
+		local reason = row.action.reason
+		if reason ~= "" and not seen[reason] then
+			seen[reason] = true
+			reasons[#reasons + 1] = reason
+		end
+	end
+	return table.concat(reasons, " · ")
+end
+
+-- One stock item as a grid cell: icon, name, effect detail and the buy action label.
+local function stock_cell(self, view, row, x, y)
+	local c = view.colors
+	local enabled = row.action.enabled and not self.service_pending
+	local node = view.box(self, x, y, 114, 118, enabled and c.panel or c.bg)
+	view.icon(self, x, y + 32, row.tile, 46, enabled and nil or vmath.vector4(0.45, 0.5, 0.55, 1))
+	view.text(self, x, y + 4, row.name, 12, enabled and c.white or c.muted, nil, false, true)
+	view.text(self, x, y - 16, row.detail, 10, c.muted, 110, false, true)
+	view.text(self, x, y - 48, row.action.label, 12, enabled and c.teal or c.muted, nil, false, true)
+	local fn = function()
+		submit(self, row.action)
+	end
+	self.druid:new_button(node, fn)
+	table.insert(self.buttons, { node = node, fn = fn, enabled = row.action.enabled, label = row.action.label })
+end
+
+local function stock_grid(self, view, rows)
+	for index, row in ipairs(rows) do
+		local col, grid_row = (index - 1) % STOCK_COLS, math.floor((index - 1) / STOCK_COLS)
+		stock_cell(self, view, row, 150 + col * 122, 430 - grid_row * 126)
+	end
+	local reasons = disabled_reasons(rows)
+	if reasons ~= "" then
+		view.text(self, 110, 222, reasons, 12, view.colors.sp, 560)
 	end
 end
 
@@ -137,12 +179,8 @@ function M.render(self, view, context, service, dialogue)
 			end,
 		})
 	end
-	for index, row in ipairs(model.rows) do
-		local y = 468 - (index - 1) * 71
-		view.icon(self, 150, y, row.tile, 42)
-		view.text(self, 192, y + 9, row.name, 20, c.white)
-		view.text(self, 192, y - 15, row.detail, 13, c.muted)
-		action_button(self, view, 947, y, 320, row.action)
+	if #model.rows > 0 then
+		stock_grid(self, view, model.rows)
 	end
 	if h.effect then
 		view.icon(self, 172, 418, h.tile, 90)

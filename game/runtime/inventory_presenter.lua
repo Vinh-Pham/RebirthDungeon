@@ -3,7 +3,21 @@ local I = require("game.domain.inventory")
 local Cmd = require("game.domain.commands")
 local U = require("game.domain.util")
 local M = {}
-local PAGE_SIZE = 6
+-- The panel presents a 6x5 grid of carried or stored items per page.
+local GRID_COLS, GRID_ROWS = 6, 5
+local PAGE_SIZE = GRID_COLS * GRID_ROWS
+-- First-loop equipment layout: only the weapon and body slots can be filled, the rest are placeholders.
+local EQUIPMENT_LAYOUT = {
+	{ slot = "accessory_1", label = "Acc" },
+	{ slot = "head", label = "Head" },
+	{ slot = "accessory_2", label = "Acc" },
+	{ slot = "weapon", label = "Hand R" },
+	{ slot = "body", label = "Body" },
+	{ slot = "hand_left", label = "Hand L" },
+	{ slot = "gloves", label = "Gloves" },
+	{ slot = "boots", label = "Boots" },
+	{ slot = "robe", label = "Robe" },
+}
 
 local function action(p, actions, label, command, locked)
 	command.profile = p.id
@@ -18,7 +32,14 @@ function M.model(p, request, locked)
 	local bank = request.service == "bank"
 	local stored = bank and request.stored == true
 	local source = stored and p.bank.items or p.items
-	local pages = math.max(1, math.ceil(#source / PAGE_SIZE))
+	-- Equipped items are presented in the equipment slots, the grid lists carried items only.
+	local carried = {}
+	for _, item in ipairs(source) do
+		if not item.slot then
+			carried[#carried + 1] = item
+		end
+	end
+	local pages = math.max(1, math.ceil(#carried / PAGE_SIZE))
 	local page = U.integer(request.page, 1, pages) and request.page or 1
 	local model = {
 		header = {
@@ -40,14 +61,28 @@ function M.model(p, request, locked)
 		actions = {},
 		gold_actions = {},
 	}
-	for index = (page - 1) * PAGE_SIZE + 1, math.min(#source, page * PAGE_SIZE) do
-		local item = source[index]
+	if not bank then
+		model.equipment = {}
+		for index, entry in ipairs(EQUIPMENT_LAYOUT) do
+			local item = I.equipped(p, entry.slot)
+			local d = item and C.items[item.def]
+			model.equipment[index] = {
+				slot = entry.slot,
+				label = entry.label,
+				id = item and item.id or "",
+				name = d and d.name or "",
+				tile = d and d.tile or "",
+			}
+		end
+	end
+	for index = (page - 1) * PAGE_SIZE + 1, math.min(#carried, page * PAGE_SIZE) do
+		local item = carried[index]
 		local d = C.items[item.def]
 		model.rows[#model.rows + 1] = {
 			id = item.id,
 			name = d.name,
 			tile = d.tile,
-			summary = item.slot and "Equipped · " .. item.slot or "Quantity " .. item.quantity,
+			summary = "Quantity " .. item.quantity,
 			quantity = item.quantity,
 			durability = item.durability,
 			maximum = d.durability,
@@ -143,6 +178,9 @@ end
 function M.send(p, request, receiver, locked)
 	local model = M.model(p, request, locked)
 	msg.post(receiver, "inventory_begin", { token = request.token, header = model.header })
+	if model.equipment then
+		msg.post(receiver, "inventory_equipment", { token = request.token, slots = model.equipment })
+	end
 	for _, row in ipairs(model.rows) do
 		msg.post(receiver, "inventory_row", { token = request.token, row = row })
 	end
