@@ -142,7 +142,7 @@ function M.render(self, view, context)
 	end, h.page < h.pages)
 	local detail = model.detail
 	if not detail then
-		view.text(self, 556, 468, "Select a learned skill", 24, c.white, nil, true)
+		view.text(self, 556, 468, "Select a skill", 24, c.white, nil, true)
 		view.text(
 			self,
 			556,
@@ -156,7 +156,7 @@ function M.render(self, view, context)
 			self,
 			556,
 			298,
-			"Starter skills support F rank. Broad F–1 advancement, books and instructor lessons arrive in milestone 6.",
+			"Combat lessons are free in town. All eleven combat skills support rank F; higher ranks are not yet available.",
 			17,
 			c.muted,
 			590
@@ -190,7 +190,7 @@ function M.render(self, view, context)
 	if detail.legacy > 0 then
 		view.text(self, 555, 251, "Preserved training from your previous save: " .. detail.legacy, 12, c.teal)
 	end
-	view.button(self, 693, 210, 276, "Advance", function()
+	view.button(self, 693, 210, 276, detail.advance.label, function()
 		submit(self, detail.advance)
 	end, detail.advance.enabled and not self.skills_pending, true)
 	view.button(self, 1007, 210, 276, "Use skill", function()

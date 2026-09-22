@@ -380,7 +380,7 @@ describe("Durable game rules", function()
 		expect.truthy(D.boss_open(p.run))
 		expect.falsy(p.run.cleared.room_6)
 		-- Supply reserves are legitimate items used between encounters.
-		I.add(p, "hp_potion", 3)
+		I.add(p, "hp_potion", 6)
 		while p.pools.hp < S.current(p).hp do
 			local potion
 			for _, item in ipairs(p.items) do

@@ -74,7 +74,7 @@ function M.profile(p)
 			if item.slot then
 				check(
 					location == "items"
-						and d.slot == item.slot
+						and (d.slot == item.slot or item.slot == "hand_left" and d.weapon_type == "sword" and not d.two_handed)
 						and not slots[item.slot]
 						and not (d.no_giant and p.race == "Giant"),
 					"equipment"
@@ -86,6 +86,7 @@ function M.profile(p)
 		end
 		check(carried <= (location == "items" and I.CARRIED_CAPACITY or I.BANK_CAPACITY), "inventory capacity")
 	end
+	check(require("game.domain.combat_equipment").valid(p), "incompatible hands")
 	check(U.integer(p.bank.gold, 0, 1000000000), "bank gold")
 	check(type(p.random) == "table" and R.valid(p.random.world) and R.valid(p.random.reward), "RNG")
 	check(type(p.ledger) == "table" and #p.ledger <= 128 and type(p.claims) == "table", "operation ledger")
@@ -110,6 +111,8 @@ function M.profile(p)
 		local run = p.run
 		local map = run.map
 		local weapon = I.equipped(p, "weapon")
+		local off = I.equipped(p, "hand_left")
+		check(run.baseline.offhand_id == (off and off.id), "frozen off-hand ownership")
 		check(run.baseline and run.baseline.weapon_id == (weapon and weapon.id), "frozen weapon ownership")
 		check(
 			run.baseline and run.baseline.category == (weapon and C.items[weapon.def].category or "melee"),
@@ -119,6 +122,16 @@ function M.profile(p)
 			run.baseline and run.baseline.weapon_power == (weapon and C.items[weapon.def].power or 0),
 			"frozen weapon contribution"
 		)
+		for _, key in ipairs({ "critical_chance", "critical_bonus", "shield_absorption" }) do
+			local value = run.baseline[key]
+			check(value == nil or U.finite(value) and value >= 0 and value <= 1, "frozen combat modifier")
+		end
+		check(
+			run.baseline.offhand_power == nil
+				or U.finite(run.baseline.offhand_power) and run.baseline.offhand_power >= 0,
+			"frozen off-hand power"
+		)
+		check(run.baseline.two_handed == nil or type(run.baseline.two_handed) == "boolean", "frozen weapon class")
 		check(type(run.id) == "string" and type(run.cleared) == "table" and type(run.baseline) == "table", "run state")
 		for _, key in ipairs({
 			"hp",
@@ -275,6 +288,13 @@ function M.profile(p)
 							and effect.protection <= 100,
 						"guard"
 					)
+				elseif kind == "counterattack" then
+					check(
+						effect.reactions == 1 and effect.enemy_share == 0.5 and effect.self_share == 1,
+						"counter reaction"
+					)
+				elseif kind == "downed" then
+					check(actors[effect.source] and U.integer(effect.applied, 1, b.turn), "downed boundary")
 				else
 					check(
 						(kind == "poison" or kind == "armor_break")

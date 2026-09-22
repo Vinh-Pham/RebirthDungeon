@@ -1,5 +1,6 @@
 local U = require("game.domain.util")
 local C = require("game.content.catalog")
+local Equipment = require("game.domain.combat_equipment")
 local M = { CARRIED_CAPACITY = 30, BANK_CAPACITY = 60 }
 
 ---@param p table Character candidate, never the committed envelope.
@@ -73,15 +74,9 @@ function M.remove(p, id, quantity, bank)
 	end
 end
 
-function M.equipped(p, slot)
-	for _, item in ipairs(p.items) do
-		if item.slot == slot then
-			return item
-		end
-	end
-end
+M.equipped = Equipment.equipped
 
-function M.equip(p, id)
+function M.equip(p, id, slot)
 	U.require_ok(p.phase == "town" and not p.run, "Change equipment in town")
 	local item = M.find(p, id)
 	U.require_ok(item, "Item not found")
@@ -93,12 +88,19 @@ function M.equip(p, id)
 		item.slot = nil
 	else
 		-- The selected carried item vacates exactly one slot for the displaced item.
-		local old = M.equipped(p, d.slot)
+		slot = slot or d.slot
+		U.require_ok(
+			slot == d.slot or slot == "hand_left" and d.weapon_type == "sword" and not d.two_handed,
+			"Invalid equipment slot"
+		)
+		local old = M.equipped(p, slot)
 		if old then
 			old.slot = nil
 		end
-		item.slot = d.slot
+		item.slot = slot
 	end
+	local ok, reason = Equipment.valid(p)
+	U.require_ok(ok, reason)
 end
 
 function M.transfer(p, id, quantity, to_bank)

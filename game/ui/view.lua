@@ -471,7 +471,7 @@ local function battle(self, p)
 		local x = index == 1 and 172 or 772
 		local label = C.skills[skill].name .. " · " .. preview.cost .. " " .. preview.pool:upper()
 		if preview.damage then
-			label = label .. " · " .. preview.damage .. " damage"
+			label = label .. " · " .. preview.damage .. "/" .. preview.critical .. " normal/crit"
 		end
 		M.button(self, x, 232, 282, label, function()
 			action(self, skill, self.target)
@@ -718,7 +718,7 @@ local function modal(self, p, name)
 		self,
 		service and service.title or titles[name] or "Menu",
 		service and service.name
-			or name == "skills" and "World paused · F-rank starter skills"
+			or name == "skills" and "World paused · F-rank skills and combat lessons"
 			or "World movement and battle pacing are paused while this panel is open."
 	)
 	if name == "inventory" then

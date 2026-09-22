@@ -95,8 +95,15 @@ describe("Combat log contract", function()
 			p = command(p, B.ai(p))
 		end
 		p = command(p, { type = "begin_turn", battle = p.battle.id, turn = p.battle.turn })
-		expect.equal(p.last_events[1].kind, "status_end")
-		expect.equal(p.last_events[2].kind, "turn_start")
+		expect.falsy(p.battle.statuses[p.id].guard)
+		expect.equal(p.last_events[1].kind, "turn_start")
+		local consumed = false
+		for _, event in ipairs(p.battle.events) do
+			if event.kind == "status_end" and event.status == "guard" then
+				consumed = true
+			end
+		end
+		expect.truthy(consumed)
 	end)
 	it("retains terminal history and latest batch through claims, cleanup and rebirth", function()
 		local p = victorious()

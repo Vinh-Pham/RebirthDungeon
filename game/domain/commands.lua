@@ -229,7 +229,7 @@ local function apply(p, c, env, events)
 		item.durability = d.durability
 		p.last_message = "Weapon repaired"
 	elseif c.type == "equip" then
-		I.equip(p, c.item)
+		I.equip(p, c.item, c.slot)
 		S.clamp(p)
 	elseif c.type == "discard_item" then
 		U.require_ok(p.phase == "town" or p.phase == "dungeon", "Discard items outside battle and rewards")
@@ -353,6 +353,12 @@ local function apply(p, c, env, events)
 		p.gold = p.gold + d.gold
 		Ch.xp(p, d.xp)
 		p.last_message = d.name .. " completed"
+	elseif c.type == "learn_skill" then
+		local ok, reason = Skills.can_learn(p, c.skill)
+		U.require_ok(ok, reason)
+		Skills.learn(p, c.skill)
+		S.clamp(p)
+		p.last_message = "Learned " .. C.skills[c.skill].name .. " at rank F"
 	elseif c.type == "advance_skill" then
 		Skills.advance(p, c.skill, c.rank)
 		S.clamp(p)

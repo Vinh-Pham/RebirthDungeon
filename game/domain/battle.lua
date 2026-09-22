@@ -5,6 +5,8 @@ local S = require("game.domain.stats")
 local R = require("game.services.rng")
 local Skills = require("game.domain.skills")
 local Log = require("game.domain.combat_log")
+local Combat = require("game.domain.combat")
+local CombatContent = require("game.content.skills.combat")
 local M = {}
 function M.actor(p, id)
 	if id == p.id then
@@ -77,12 +79,12 @@ function M.start(p, room, factory, operation)
 end
 function M.cost(p, actor, skill)
 	if skill == "normal" then
-		return "sp", actor.hero and math.ceil((2 + 0.1 * Skills.rank(p, "combat_mastery")) * 10 - 1e-8) / 10 or 2
+		return "sp", actor.hero and CombatContent.attack_cost(Skills.rank(p, "combat_mastery")) or 2
 	end
 	local d = C.skills[skill]
 	return d.pool, math.ceil(d.cost)
 end
-function M.eligible(p, actor, skill)
+function M.eligible(p, actor, skill, target)
 	local d = C.skills[skill]
 	if not d or d.kind == "passive" then
 		return false, "Not an active skill"
@@ -108,6 +110,20 @@ function M.eligible(p, actor, skill)
 	local pool, cost = M.cost(p, actor, skill)
 	if actor.pools[pool] < cost then
 		return false, "Not enough " .. pool:upper()
+	end
+	if d.target_rule == "single_downed_hostile" then
+		local found = false
+		for _, enemy in ipairs(p.battle.enemies) do
+			if enemy.pools.hp > 0 and (p.battle.statuses[enemy.id] or {}).downed then
+				found = true
+			end
+		end
+		if target then
+			found = target.pools.hp > 0 and (p.battle.statuses[target.id] or {}).downed ~= nil
+		end
+		if not found then
+			return false, "Target not downed"
+		end
 	end
 	return true
 end
@@ -143,8 +159,12 @@ function M.begin(p)
 		M.event(p, "status_end", a.name .. " stops defending", { actor = a.id, target = a.id, status = "guard" })
 	end
 	status(p, a.id).guard = nil
+	if status(p, a.id).counterattack then
+		status(p, a.id).counterattack = nil
+		M.event(p, "status_end", a.name .. " stops countering", { target = a.id, status = "counterattack" })
+	end
 	local rank = a.hero and Skills.rank(p, "combat_mastery") or 0
-	local amount = a.hero and (0.5 + 0.5 * math.floor(rank / 3)) or 0.5
+	local amount = a.hero and CombatContent.sp_recovery(rank) or 0.5
 	local maximum = a.hero and S.current(p).sp or 20
 	local recovered = math.min(maximum - a.pools.sp, amount)
 	a.pools.sp = U.round(a.pools.sp + recovered, 4)
@@ -157,35 +177,7 @@ function M.begin(p)
 		{ actor = a.id, target = a.id, amount = recovered, pool = "sp" }
 	)
 end
-function M.preview(p, actor, target, skill)
-	local d = C.skills[skill]
-	local category = actor.hero and (d.category or S.current(p).category) or "melee"
-	local power = actor.hero and S.power(p, category) or C.enemies[actor.def].attack
-	local multiplier = d.multiplier or 1
-	if d.giant_multiplier and p.race == "Giant" and actor.hero then
-		multiplier = d.giant_multiplier
-	end
-	local defense, protection
-	if target.hero then
-		local s = S.current(p)
-		defense = category == "magic" and s.magic_defense or s.defense
-		protection = category == "magic" and s.magic_protection or s.protection
-	else
-		defense = C.enemies[target.def].defense
-		protection = 0
-	end
-	local effects = (p.battle.statuses[target.id] or {})
-	if effects.guard then
-		defense = defense + effects.guard.defense
-		protection = protection + effects.guard.protection
-	end
-	if effects.armor_break then
-		defense = math.max(0, defense - 4)
-	end
-	local hits = d.hits or 1
-	local base = (d.base or 0) + power * multiplier
-	return math.floor(math.floor(math.max(0, base / hits - defense)) * (1 - U.clamp(protection, 0, 100) / 100)), hits
-end
+M.preview = Combat.preview
 local function finish_owner(p, a, cast)
 	local b = p.battle
 	local effects = status(p, a.id)
@@ -218,6 +210,13 @@ local function finish_owner(p, a, cast)
 			end
 		end
 	end
+	for target_id, target_effects in pairs(b.statuses) do
+		local downed = target_effects.downed
+		if downed and downed.source == a.id and downed.applied ~= b.turn then
+			target_effects.downed = nil
+			M.event(p, "status_end", "The follow-up window closes", { target = target_id, status = "downed" })
+		end
+	end
 	for key, n in pairs(b.cooldowns[a.id] or {}) do
 		if key ~= cast then
 			b.cooldowns[a.id][key] = math.max(0, n - 1)
@@ -240,6 +239,8 @@ function M.act(p, command, factory)
 		if d.kind == "attack" then
 			target = M.actor(p, command.target)
 			U.require_ok(target and target.pools.hp > 0 and target.hero ~= a.hero, "Choose a living hostile target")
+			local target_ok, target_reason = M.eligible(p, a, skill, target)
+			U.require_ok(target_ok, target_reason)
 		end
 		local pool, cost = M.cost(p, a, skill)
 		a.pools[pool] = U.round(a.pools[pool] - cost, 4)
@@ -266,62 +267,50 @@ function M.act(p, command, factory)
 			if a.hero then
 				Skills.train(p, { id = b.id .. ":" .. b.turn, skill = skill, damage = 0, hero_action = true })
 			end
+		elseif d.kind == "counter" then
+			local rank = Skills.record(p, skill)
+			status(p, a.id).counterattack =
+				{ reactions = 1, enemy_share = rank.enemy_share, self_share = rank.self_share }
+			M.event(
+				p,
+				"status",
+				a.name .. " prepares Counterattack",
+				{ actor = a.id, target = a.id, status = "counterattack" }
+			)
 		else
-			local damage, hits = M.preview(p, a, target, skill)
-			-- Critical Hit has no executable starter definition; no fabricated chance or RNG draw.
-			local critical = false
-			local dealt = 0
-			for hit = 1, hits do
-				if target.pools.hp <= 0 then
+			local targets = { target }
+			if d.target_rule == "all_living_hostiles" then
+				targets = {}
+				for _, enemy in ipairs(b.enemies) do
+					if enemy.pools.hp > 0 then
+						targets[#targets + 1] = enemy
+					end
+				end
+			end
+			local dealt, critical, defeats = 0, false, 0
+			for _, victim in ipairs(targets) do
+				local damage, crit, defeated = Combat.resolve(p, a, victim, skill, factory)
+				dealt, critical, defeats = dealt + damage, critical or crit and damage > 0, defeats + defeated
+				if M.ended(p) then
 					break
 				end
-				local loss = math.min(target.pools.hp, critical and math.floor(damage * 1.5) or damage)
-				target.pools.hp = target.pools.hp - loss
-				dealt = dealt + loss
-				M.event(
-					p,
-					"damage",
-					target.name .. " takes " .. loss .. " damage" .. (critical and " · Critical" or ""),
-					{
-						actor = a.id,
-						target = target.id,
-						skill = skill,
-						amount = loss,
-						actual = loss,
-						calculated = critical and math.floor(damage * 1.5) or damage,
-						absorbed = 0,
-						hit = hit,
-						hits = hits,
-						critical = critical,
-					}
-				)
 			end
 			if a.hero then
-				local weapon = I.equipped(p, "weapon")
-				if weapon then
-					weapon.durability = math.max(0, weapon.durability - 1)
+				for _, slot in ipairs({ "weapon", "hand_left" }) do
+					local weapon = I.equipped(p, slot)
+					if weapon and weapon.durability then
+						weapon.durability = math.max(0, weapon.durability - 1)
+					end
 				end
-				Skills.train(p, { id = b.id .. ":" .. b.turn, skill = skill, damage = dealt, hero_action = true })
-			elseif target.hero then
-				local guarded = (b.statuses[p.id] or {}).guard ~= nil
 				Skills.train(p, {
 					id = b.id .. ":" .. b.turn,
 					skill = skill,
 					damage = dealt,
-					hero_action = false,
-					guarded = guarded,
+					hero_action = true,
+					critical = critical,
+					defeats = defeats,
+					category = d.category or S.current(p).category,
 				})
-			end
-			if target.pools.hp <= 0 then
-				M.event(p, "defeat", target.name .. " is defeated", { target = target.id })
-			elseif d.status then
-				status(p, target.id)[d.status] = { remaining = d.status == "poison" and 3 or 2, applied = b.turn }
-				M.event(
-					p,
-					"status",
-					target.name .. " is affected by " .. d.status,
-					{ actor = a.id, target = target.id, status = d.status, remaining = d.status == "poison" and 3 or 2 }
-				)
 			end
 		end
 		if d.cooldown > 0 then

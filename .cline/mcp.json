@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "aseprite": {
+      "command": "node",
+      "args": [
+        "/Users/vinhpham/Projects/aseprite-mcp/build/index.js"
+      ],
+      "disabled": false,
+      "autoApprove": []
+    }
+  }
+}

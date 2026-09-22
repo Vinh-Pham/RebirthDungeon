@@ -17,6 +17,9 @@ local function active_action(p, id, target_id)
 	if not b.started or not actor.hero then
 		return false, "Wait for your initialized selection turn"
 	end
+	if Skills.rank(p, id) == nil then
+		return false, "Skill not learned"
+	end
 	local ok, reason = Battle.eligible(p, actor, id)
 	if not ok then
 		return false, reason
@@ -32,6 +35,10 @@ local function active_action(p, id, target_id)
 			return false, "Choose a living hostile target"
 		end
 	end
+	local target_ok, target_reason = Battle.eligible(p, actor, id, target)
+	if not target_ok then
+		return false, target_reason
+	end
 	return true,
 		"",
 		{
@@ -44,7 +51,7 @@ local function active_action(p, id, target_id)
 			revision = p.revision,
 			profile = p.id,
 		},
-		target and target.name or p.name
+		d.target_rule == "all_living_hostiles" and "All living enemies" or target and target.name or p.name
 end
 
 local function bonuses(p, rank)
@@ -75,7 +82,7 @@ function M.model(p, request, locked)
 	local ids = {}
 	for _, id in ipairs(Content.order) do
 		local d = Content.definitions[id]
-		if (id == "normal" or p.skills[id]) and (group == "All" or group == d.group) then
+		if (id == "normal" or p.skills[id] or d.lesson) and (group == "All" or group == d.group) then
 			ids[#ids + 1] = id
 		end
 	end
@@ -102,8 +109,8 @@ function M.model(p, request, locked)
 			id = id,
 			name = d.name,
 			tile = d.tile,
-			rank = Content.ranks[learned.rank + 1],
-			training = learned.training,
+			rank = learned and Content.ranks[learned.rank + 1] or "Unlearned",
+			training = learned and learned.training or 0,
 			kind = d.kind,
 			alias = d.progression ~= nil,
 		}
@@ -116,7 +123,14 @@ function M.model(p, request, locked)
 	local progression = d.progression or id
 	local definition = Content.definitions[progression]
 	local learned, rank = p.skills[progression], Skills.record(p, progression)
-	local can_advance, advance_reason, ap_cost = Skills.can_advance(p, progression)
+	local owned = learned ~= nil
+	local can_advance, advance_reason, ap_cost
+	if owned then
+		can_advance, advance_reason, ap_cost = Skills.can_advance(p, progression)
+	else
+		can_advance, advance_reason = Skills.can_learn(p, progression)
+		learned, rank = { rank = 0, training = 0, legacy_training = 0, objectives = {} }, definition.ranks[1]
+	end
 	local can_use, use_reason, command, target = active_action(p, id, request.target)
 	local cost = "Passive · no action or resource payment"
 	if d.kind ~= "passive" then
@@ -124,28 +138,39 @@ function M.model(p, request, locked)
 		local remaining = p.battle and (p.battle.cooldowns[p.id] or {})[id] or 0
 		cost = amount .. " " .. pool:upper() .. " once · Cooldown " .. remaining .. "/" .. d.cooldown .. " turns"
 	end
+	if can_use and d.kind == "attack" then
+		local previews = {}
+		for _, enemy in ipairs(p.battle.enemies) do
+			if enemy.pools.hp > 0 and (d.target_rule == "all_living_hostiles" or enemy.id == command.target) then
+				local _, _, _, normal, critical = Battle.preview(p, Battle.actor(p, p.id), enemy, id)
+				previews[#previews + 1] = normal .. "/" .. critical
+			end
+		end
+		cost = cost .. " · Normal/crit: " .. table.concat(previews, ", ")
+	end
 	model.detail = {
 		id = id,
 		name = d.name,
-		rank = Content.ranks[learned.rank + 1],
+		rank = owned and Content.ranks[learned.rank + 1] or "Unlearned",
 		training = learned.training,
 		description = d.description,
 		cost = cost,
 		bonuses = bonuses(p, rank),
-		requirement = d.category
-				and ("Requires " .. d.category .. " equipment" .. (d.no_giant and " · Human / Elf only" or ""))
+		requirement = d.requires_equipment and ("Requires " .. d.requires_equipment:gsub("_", " "))
+			or d.category and ("Requires " .. d.category .. " equipment" .. (d.no_giant and " · Human / Elf only" or ""))
 			or "No equipment requirement",
 		route = definition.route,
 		source = definition.source,
 		alias = d.progression ~= nil,
 		legacy = learned.legacy_training,
-		frozen_rank = Content.ranks[Skills.rank(p, progression) + 1],
+		frozen_rank = owned and Content.ranks[Skills.rank(p, progression) + 1] or "Unlearned",
 		advance = {
+			label = owned and "Advance" or "Learn F · Free",
 			enabled = can_advance and not locked,
 			reason = locked or advance_reason or "",
 			cost = ap_cost,
 			command = {
-				type = "advance_skill",
+				type = owned and "advance_skill" or "learn_skill",
 				skill = progression,
 				rank = learned.rank,
 				revision = p.revision,

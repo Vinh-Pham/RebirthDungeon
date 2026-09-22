@@ -1,0 +1,4 @@
+[mcp_servers.aseprite]
+args = ["/Users/vinhpham/Projects/aseprite-mcp/build/index.js"]
+command = "node"
+enabled = true

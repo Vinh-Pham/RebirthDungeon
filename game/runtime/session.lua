@@ -6,6 +6,7 @@ local Q = require("game.services.quests")
 local Save = require("game.services.save")
 local B = require("game.domain.battle")
 local Event = require("event.event")
+local Automation = require("game.runtime.combat_automation")
 local M = {
 	changed = Event.create(),
 	screen = "title",
@@ -25,6 +26,7 @@ local function publish()
 	epoch = epoch + 1
 	M.epoch = epoch
 	M.changed:trigger(M.snapshot())
+	Automation.publish(current, M)
 end
 function M.clear_controls()
 	M.controls = {}
@@ -47,6 +49,7 @@ function M.init()
 	end
 	M.profiles, M.recovery_errors = store:list()
 	M.ready = true
+	Automation.register(M)
 	publish()
 end
 function M.list()

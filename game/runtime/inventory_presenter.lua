@@ -6,7 +6,7 @@ local M = {}
 -- The panel presents a 6x5 grid of carried or stored items per page.
 local GRID_COLS, GRID_ROWS = 6, 5
 local PAGE_SIZE = GRID_COLS * GRID_ROWS
--- First-loop equipment layout: only the weapon and body slots can be filled, the rest are placeholders.
+-- Weapon, left hand and body are supported; remaining slots are placeholders.
 local EQUIPMENT_LAYOUT = {
 	{ slot = "accessory_1", label = "Acc" },
 	{ slot = "head", label = "Head" },
@@ -141,6 +141,15 @@ function M.model(p, request, locked)
 			action(p, model.actions, "Use one", cmd, locked)
 		elseif d.slot then
 			action(p, model.actions, item.slot and "Unequip" or "Equip", { type = "equip", item = item.id }, locked)
+			if not item.slot and d.weapon_type == "sword" and not d.two_handed then
+				action(
+					p,
+					model.actions,
+					"Equip left hand",
+					{ type = "equip", item = item.id, slot = "hand_left" },
+					locked
+				)
+			end
 		end
 		local service = C.services[request.service]
 		if service and service.stock then

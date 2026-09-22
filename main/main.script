@@ -1,200 +1,337 @@
-local session=require("game.runtime.session")
-local monarch=require("monarch.monarch")
-local druid=require("druid.druid")
-local tweener=require("tweener.tweener")
-local inventory=require("game.runtime.inventory_presenter")
-local ui=require("game.runtime.ui_presenter")
-local Time=require("game.domain.time")
-local catalog=require("game.content.catalog")
-local services=require("game.runtime.services_presenter")
-local skills=require("game.runtime.skills_presenter")
-local commands=require("game.domain.commands")
-local function music(self,track)
-    if self.track==track then return end
-    if self.fade then tweener.cancel(self.fade) end
-    if self.track then sound.stop("#"..self.track) end
-    self.track=track;self.gain=0
-    sound.play("#"..track,{gain=0})
-    self.fade=tweener.tween("linear",0,1,session.settings.reduced_motion and 0 or .6,function(value)
-        self.gain=value;sound.set_gain("#"..track,value*session.settings.music)
-    end)
+local session = require("game.runtime.session")
+local monarch = require("monarch.monarch")
+local druid = require("druid.druid")
+local tweener = require("tweener.tweener")
+local inventory = require("game.runtime.inventory_presenter")
+local ui = require("game.runtime.ui_presenter")
+local Time = require("game.domain.time")
+local catalog = require("game.content.catalog")
+local services = require("game.runtime.services_presenter")
+local skills = require("game.runtime.skills_presenter")
+local commands = require("game.domain.commands")
+local function music(self, track)
+	if self.track == track then
+		return
+	end
+	if self.fade then
+		tweener.cancel(self.fade)
+	end
+	if self.track then
+		sound.stop("#" .. self.track)
+	end
+	self.track = track
+	self.gain = 0
+	sound.play("#" .. track, { gain = 0 })
+	self.fade = tweener.tween("linear", 0, 1, session.settings.reduced_motion and 0 or 0.6, function(value)
+		self.gain = value
+		sound.set_gain("#" .. track, value * session.settings.music)
+	end)
 end
 local function send_ui(self)
-    if not self.ui_receiver then return end
-    self.ui_sequence=self.ui_sequence+1
-    ui.send(session.snapshot(),session,self.ui_request,self.ui_receiver,self.ui_sequence)
-    self.ui_epoch=session.epoch
+	if not self.ui_receiver then
+		return
+	end
+	self.ui_sequence = self.ui_sequence + 1
+	ui.send(session.snapshot(), session, self.ui_request, self.ui_receiver, self.ui_sequence)
+	self.ui_epoch = session.epoch
 end
-local function intent(self,message)
-    local p=session.snapshot()
-    if message.kind=="retry" then session.retry();return end
-    if message.kind=="reload" then session.reload();return end
-    if message.kind=="panel" and message.panel=="log" and p then session.panel("log");return end
-    if message.kind=="close" and session.modal=="log" then session.close_panel();return end
-    if session.error or session.busy then return end
-    if message.kind=="list" then session.list()
-    elseif message.kind=="screen" then
-        local screen=message.screen
-        if screen=="title" or screen=="characters" or screen=="create" or p and screen==p.phase then
-            if session.world_checkpoint and not session.world_checkpoint() then return end
-            session.set_screen(screen)
-        elseif screen=="rebirth" and p and not p.run and p.phase=="town" and os.time()>=p.reborn+Time.cooldown(p.cumulative) then session.set_screen(screen) end
-    elseif message.kind=="select" then session.select(message.id)
-    elseif message.kind=="rebirth_profile" then
-        if session.select(message.id) then
-            p=session.snapshot()
-            if p.phase=="town" and not p.run and os.time()>=p.reborn+Time.cooldown(p.cumulative) then session.set_screen("rebirth") end
-        end
-    elseif message.kind=="create" and session.screen=="create" then session.create(message.name,message.race,message.age,message.talent)
-    elseif message.kind=="panel" then
-        if session.world_checkpoint and not session.world_checkpoint() then return end
-        if p or message.panel=="settings" or message.panel=="menu" then session.panel(message.panel) end
-    elseif message.kind=="close" then session.close_panel()
-    elseif message.kind=="dismiss_notice" then session.notice=nil;session.refresh()
-    elseif message.kind=="setting" then
-        local key,value=message.key,message.value
-        if (key=="music" or key=="effects") and type(value)=="number" and value>=0 and value<=1
-            or key=="hud_scale" and type(value)=="number" and value>=1 and value<=1.3
-            or key=="reduced_motion" and type(value)=="boolean" then session.set_setting(key,value) end
-    elseif message.kind=="interact" and not session.modal and session.world_interact then session.world_interact()
-    elseif message.kind=="route" and session.modal=="map" then
-        session.panel(nil);session.path_target={x=message.x,y=message.y,service=message.service}
-    end
+local function intent(self, message)
+	local p = session.snapshot()
+	if message.kind == "retry" then
+		session.retry()
+		return
+	end
+	if message.kind == "reload" then
+		session.reload()
+		return
+	end
+	if message.kind == "panel" and message.panel == "log" and p then
+		session.panel("log")
+		return
+	end
+	if message.kind == "close" and session.modal == "log" then
+		session.close_panel()
+		return
+	end
+	if session.error or session.busy then
+		return
+	end
+	if message.kind == "list" then
+		session.list()
+	elseif message.kind == "screen" then
+		local screen = message.screen
+		if screen == "title" or screen == "characters" or screen == "create" or p and screen == p.phase then
+			if session.world_checkpoint and not session.world_checkpoint() then
+				return
+			end
+			session.set_screen(screen)
+		elseif
+			screen == "rebirth"
+			and p
+			and not p.run
+			and p.phase == "town"
+			and os.time() >= p.reborn + Time.cooldown(p.cumulative)
+		then
+			session.set_screen(screen)
+		end
+	elseif message.kind == "select" then
+		session.select(message.id)
+	elseif message.kind == "rebirth_profile" then
+		if session.select(message.id) then
+			p = session.snapshot()
+			if p.phase == "town" and not p.run and os.time() >= p.reborn + Time.cooldown(p.cumulative) then
+				session.set_screen("rebirth")
+			end
+		end
+	elseif message.kind == "create" and session.screen == "create" then
+		session.create(message.name, message.race, message.age, message.talent)
+	elseif message.kind == "panel" then
+		if session.world_checkpoint and not session.world_checkpoint() then
+			return
+		end
+		if p or message.panel == "settings" or message.panel == "menu" then
+			session.panel(message.panel)
+		end
+	elseif message.kind == "close" then
+		session.close_panel()
+	elseif message.kind == "dismiss_notice" then
+		session.notice = nil
+		session.refresh()
+	elseif message.kind == "setting" then
+		local key, value = message.key, message.value
+		if
+			(key == "music" or key == "effects") and type(value) == "number" and value >= 0 and value <= 1
+			or key == "hud_scale" and type(value) == "number" and value >= 1 and value <= 1.3
+			or key == "reduced_motion" and type(value) == "boolean"
+		then
+			session.set_setting(key, value)
+		end
+	elseif message.kind == "interact" and not session.modal and session.world_interact then
+		session.world_interact()
+	elseif message.kind == "route" and session.modal == "map" then
+		session.panel(nil)
+		session.path_target = { x = message.x, y = message.y, service = message.service }
+	end
 end
 function init(self)
-    msg.post("@render:","use_fixed_fit_projection",{near=-1,far=1})
-    window.set_listener(function(_,event)
-        druid.on_window_callback(event)
-        if event==window.WINDOW_EVENT_FOCUS_LOST or event==window.WINDOW_EVENT_ICONIFIED then
-            if session.world_checkpoint then session.world_checkpoint() end
-            session.clear_controls();if session.snapshot() then session.panel("menu") end
-        end
-    end)
-    self.ui_sequence=0;self.ui_request={};self.label_clock=0;session.init();self.navigation=nil;self.last_event=nil
+	msg.post("@render:", "use_fixed_fit_projection", { near = -1, far = 1 })
+	window.set_listener(function(_, event)
+		druid.on_window_callback(event)
+		if event == window.WINDOW_EVENT_FOCUS_LOST or event == window.WINDOW_EVENT_ICONIFIED then
+			if session.world_checkpoint then
+				session.world_checkpoint()
+			end
+			session.clear_controls()
+			if session.snapshot() then
+				session.panel("menu")
+			end
+		end
+	end)
+	self.ui_sequence = 0
+	self.ui_request = {}
+	self.label_clock = 0
+	session.init()
+	self.navigation = nil
+	self.last_event = nil
 end
-function update(self,dt)
-    session.update(dt)
-    if self.ui_epoch~=session.epoch then send_ui(self) end
-    self.label_clock=self.label_clock+dt
-    if self.ui_receiver and not session.modal and session.world_labels and self.label_clock>=.05 then
-        self.label_clock=0
-        msg.post(self.ui_receiver,"world_labels",{labels=session.world_labels})
-    end
-    if session.screen~=self.navigation and not monarch.is_busy() then
-        self.navigation=session.screen;self.popup_navigation=nil
-        local screen=self.navigation
-        monarch.show(hash(screen),{clear=true},nil,function()
-            -- World proxies have no input handlers: the persistent GUI routes all controls.
-            -- Release Monarch's proxy focus so an empty child stack cannot mask the HUD.
-            msg.post("/"..screen,"release_input_focus")
-            msg.post("/bootstrap#hud","focus")
-        end)
-    end
-    if session.screen==self.navigation and not monarch.is_busy() then
-        local popup=session.modal and (session.modal=="dialogue" and "town_dialogue_popup" or catalog.services[session.modal] and "town_service_popup" or (session.modal=="discard" or session.modal=="abandon" or session.modal=="leave_dungeon" or session.modal=="goddess") and "hud_confirm_popup" or "hud_panel_popup") or nil
-        if self.popup_navigation~=popup then
-            if self.popup_navigation then
-                self.popup_navigation=nil
-                monarch.back(nil,nil,function() msg.post("/bootstrap#hud","focus") end)
-            elseif popup then
-                self.popup_navigation=popup
-                monarch.set_timestep_below_popup(hash(session.screen),0)
-                monarch.show(hash(popup),nil,nil,function() msg.post("/bootstrap#hud","focus") end)
-            end
-        end
-    end
-    if self.epoch~=session.epoch then self.profile=session.snapshot();self.epoch=session.epoch end
-    local p=self.profile
-    music(self,p and p.run and "dungeon" or "town")
-    sound.set_gain("#"..self.track,(self.gain or 0)*session.settings.music)
-    if p then
-        if self.event_profile~=p.id then
-            self.event_profile=p.id
-            local latest=p.last_events[#p.last_events]
-            self.last_sequence=latest and latest.sequence or 0;self.last_battle=latest and latest.battle
-        end
-        for _,e in ipairs(p.last_events) do
-            if e.sequence>(self.last_sequence or 0) or self.last_battle~=e.battle then
-                if e.kind=="damage" then sound.play("#hit",{gain=session.settings.effects}) end
-                if e.kind=="battle_end" and e.outcome=="victory" then sound.play("#victory",{gain=session.settings.effects}) end
-                self.last_sequence=e.sequence;self.last_battle=e.battle
-            end
-        end
-    end
+function update(self, dt)
+	session.update(dt)
+	if self.ui_epoch ~= session.epoch then
+		send_ui(self)
+	end
+	self.label_clock = self.label_clock + dt
+	if self.ui_receiver and not session.modal and session.world_labels and self.label_clock >= 0.05 then
+		self.label_clock = 0
+		msg.post(self.ui_receiver, "world_labels", { labels = session.world_labels })
+	end
+	if session.screen ~= self.navigation and not monarch.is_busy() then
+		self.navigation = session.screen
+		self.popup_navigation = nil
+		local screen = self.navigation
+		monarch.show(hash(screen), { clear = true }, nil, function()
+			-- World proxies have no input handlers: the persistent GUI routes all controls.
+			-- Release Monarch's proxy focus so an empty child stack cannot mask the HUD.
+			msg.post("/" .. screen, "release_input_focus")
+			msg.post("/bootstrap#hud", "focus")
+		end)
+	end
+	if session.screen == self.navigation and not monarch.is_busy() then
+		local popup = session.modal
+				and (session.modal == "dialogue" and "town_dialogue_popup" or catalog.services[session.modal] and "town_service_popup" or (session.modal == "discard" or session.modal == "abandon" or session.modal == "leave_dungeon" or session.modal == "goddess") and "hud_confirm_popup" or "hud_panel_popup")
+			or nil
+		if self.popup_navigation ~= popup then
+			if self.popup_navigation then
+				self.popup_navigation = nil
+				monarch.back(nil, nil, function()
+					msg.post("/bootstrap#hud", "focus")
+				end)
+			elseif popup then
+				self.popup_navigation = popup
+				monarch.set_timestep_below_popup(hash(session.screen), 0)
+				monarch.show(hash(popup), nil, nil, function()
+					msg.post("/bootstrap#hud", "focus")
+				end)
+			end
+		end
+	end
+	if automation_bridge then
+		local ready = not monarch.is_busy() and self.navigation == session.screen and self.navigation or ""
+		if self.automation_ready ~= ready then
+			self.automation_ready = ready
+			automation_bridge.publish("navigation", { ready_screen = ready })
+		end
+	end
+	if self.epoch ~= session.epoch then
+		self.profile = session.snapshot()
+		self.epoch = session.epoch
+	end
+	local p = self.profile
+	music(self, p and p.run and "dungeon" or "town")
+	sound.set_gain("#" .. self.track, (self.gain or 0) * session.settings.music)
+	if p then
+		if self.event_profile ~= p.id then
+			self.event_profile = p.id
+			local latest = p.last_events[#p.last_events]
+			self.last_sequence = latest and latest.sequence or 0
+			self.last_battle = latest and latest.battle
+		end
+		for _, e in ipairs(p.last_events) do
+			if e.sequence > (self.last_sequence or 0) or self.last_battle ~= e.battle then
+				if e.kind == "damage" then
+					sound.play("#hit", { gain = session.settings.effects })
+				end
+				if e.kind == "battle_end" and e.outcome == "victory" then
+					sound.play("#victory", { gain = session.settings.effects })
+				end
+				self.last_sequence = e.sequence
+				self.last_battle = e.battle
+			end
+		end
+	end
 end
-function on_message(self,id,message,sender)
-    if id==hash("ui_click") then
-        sound.play("#click",{gain=session.settings.effects})
-    elseif id==hash("ui_unsubscribe") then
-        if sender==self.ui_receiver then self.ui_receiver=nil end
-    elseif id==hash("ui_request") then
-        self.ui_receiver=sender;self.ui_request=message;send_ui(self)
-    elseif id==hash("ui_intent") then
-        intent(self,message);send_ui(self);msg.post(sender,"ui_result")
-    elseif id==hash("ui_command") then
-        local p=session.snapshot()
-        if p and message.profile==p.id and (session.screen==p.phase or message.type=="rebirth" and session.screen=="rebirth") then session.command(message) end
-        send_ui(self);msg.post(sender,"ui_result")
-    elseif id==hash("world_key") then
-        if not session.modal and not session.error and not session.read_only and not session.busy and (session.screen=="town" or session.screen=="dungeon") then
-            session.controls[message.key]=message.held
-        end
-    elseif id==hash("world_click") then
-        if not session.modal and not session.error and not session.read_only and session.world_click and session.world_position then
-            session.world_click(session.world_position.x+message.x-640,session.world_position.y+message.y-360)
-        end
-    elseif id==hash("service_request") then
-        local p=session.snapshot()
-        if p and require("game.content.catalog").services[message.service] then
-            local locked=session.read_only and "Save storage is read-only" or session.error and "Resolve the save failure first" or session.busy and "Saving…" or session.screen~=p.phase and "Return to your character first"
-            services.send(p,message,sender,locked)
-        end
-    elseif id==hash("service_open") then
-        local p=session.snapshot()
-        if p and session.screen==p.phase and commands.service_available(p,message.service) then
-            if message.dialogue then
-                if session.command({type="dialogue",service=message.service}) then session.panel("dialogue",message.service) end
-            else session.panel(message.service) end
-        end
-        msg.post(sender,"service_result")
-    elseif id==hash("service_command") then
-        local p=session.snapshot()
-        if p and message.profile==p.id and session.screen==p.phase and commands.preview_service(p,message) then
-            local committed=session.command(message)
-            print("Town service",message.type,committed and "committed" or "rejected")
-        end
-        msg.post(sender,"service_result")
-    elseif id==hash("inventory_request") then
-        local p=session.snapshot()
-        if p then
-            local locked=session.read_only and "Save storage is read-only" or session.error and "Resolve the save failure first" or session.busy and "Saving…" or session.screen~=p.phase and "Return to your character first"
-            inventory.send(p,message,sender,locked)
-        end
-    elseif id==hash("skills_request") then
-        local p=session.snapshot()
-        if p then
-            local locked=session.read_only and "Save storage is read-only" or session.error and "Resolve the save failure first" or session.busy and "Saving…" or session.screen~=p.phase and "Return to your character first"
-            skills.send(p,message,sender,locked)
-        end
-    elseif id==hash("skills_command") then
-        local p=session.snapshot()
-        if p and message.profile==p.id and session.screen==p.phase and (message.type=="act" or message.type=="advance_skill") then
-            local committed=session.command(message)
-            print("Skill",message.skill,committed and "committed" or "rejected")
-            if committed and message.type=="act" then session.panel(nil) end
-        end
-        msg.post(sender,"skills_result")
-    elseif id==hash("inventory_command") then
-        local p=session.snapshot()
-        local allowed=p and session.screen==p.phase and commands.preview_inventory(p,message)
-        if allowed then
-            local committed=session.command(message)
-            print("Inventory",message.type,committed and "committed" or "rejected")
-        end
-        msg.post(sender,"inventory_result")
-    else monarch.on_message(id,message,sender) end
+function on_message(self, id, message, sender)
+	if id == hash("ui_click") then
+		sound.play("#click", { gain = session.settings.effects })
+	elseif id == hash("ui_unsubscribe") then
+		if sender == self.ui_receiver then
+			self.ui_receiver = nil
+		end
+	elseif id == hash("ui_request") then
+		self.ui_receiver = sender
+		self.ui_request = message
+		send_ui(self)
+	elseif id == hash("ui_intent") then
+		intent(self, message)
+		send_ui(self)
+		msg.post(sender, "ui_result")
+	elseif id == hash("ui_command") then
+		local p = session.snapshot()
+		if
+			p
+			and message.profile == p.id
+			and (session.screen == p.phase or message.type == "rebirth" and session.screen == "rebirth")
+		then
+			session.command(message)
+		end
+		send_ui(self)
+		msg.post(sender, "ui_result")
+	elseif id == hash("world_key") then
+		if
+			not session.modal
+			and not session.error
+			and not session.read_only
+			and not session.busy
+			and (session.screen == "town" or session.screen == "dungeon")
+		then
+			session.controls[message.key] = message.held
+		end
+	elseif id == hash("world_click") then
+		if
+			not session.modal
+			and not session.error
+			and not session.read_only
+			and session.world_click
+			and session.world_position
+		then
+			session.world_click(session.world_position.x + message.x - 640, session.world_position.y + message.y - 360)
+		end
+	elseif id == hash("service_request") then
+		local p = session.snapshot()
+		if p and require("game.content.catalog").services[message.service] then
+			local locked = session.read_only and "Save storage is read-only"
+				or session.error and "Resolve the save failure first"
+				or session.busy and "Saving…"
+				or session.screen ~= p.phase and "Return to your character first"
+			services.send(p, message, sender, locked)
+		end
+	elseif id == hash("service_open") then
+		local p = session.snapshot()
+		if p and session.screen == p.phase and commands.service_available(p, message.service) then
+			if message.dialogue then
+				if session.command({ type = "dialogue", service = message.service }) then
+					session.panel("dialogue", message.service)
+				end
+			else
+				session.panel(message.service)
+			end
+		end
+		msg.post(sender, "service_result")
+	elseif id == hash("service_command") then
+		local p = session.snapshot()
+		if p and message.profile == p.id and session.screen == p.phase and commands.preview_service(p, message) then
+			local committed = session.command(message)
+			print("Town service", message.type, committed and "committed" or "rejected")
+		end
+		msg.post(sender, "service_result")
+	elseif id == hash("inventory_request") then
+		local p = session.snapshot()
+		if p then
+			local locked = session.read_only and "Save storage is read-only"
+				or session.error and "Resolve the save failure first"
+				or session.busy and "Saving…"
+				or session.screen ~= p.phase and "Return to your character first"
+			inventory.send(p, message, sender, locked)
+		end
+	elseif id == hash("skills_request") then
+		local p = session.snapshot()
+		if p then
+			local locked = session.read_only and "Save storage is read-only"
+				or session.error and "Resolve the save failure first"
+				or session.busy and "Saving…"
+				or session.screen ~= p.phase and "Return to your character first"
+			skills.send(p, message, sender, locked)
+		end
+	elseif id == hash("skills_command") then
+		local p = session.snapshot()
+		if
+			p
+			and message.profile == p.id
+			and session.screen == p.phase
+			and (message.type == "act" or message.type == "advance_skill" or message.type == "learn_skill")
+		then
+			local committed = session.command(message)
+			print("Skill", message.skill, committed and "committed" or "rejected")
+			if committed and message.type == "act" then
+				session.panel(nil)
+			end
+		end
+		msg.post(sender, "skills_result")
+	elseif id == hash("inventory_command") then
+		local p = session.snapshot()
+		local allowed = p and session.screen == p.phase and commands.preview_inventory(p, message)
+		if allowed then
+			local committed = session.command(message)
+			print("Inventory", message.type, committed and "committed" or "rejected")
+		end
+		msg.post(sender, "inventory_result")
+	else
+		monarch.on_message(id, message, sender)
+	end
 end
 function final(self)
-    if self.fade then tweener.cancel(self.fade) end
-    session.finish();window.set_listener(nil)
+	if self.fade then
+		tweener.cancel(self.fade)
+	end
+	session.finish()
+	window.set_listener(nil)
 end

@@ -1,10 +1,10 @@
 # Defold skill implementation contract
 
-**Starter Lua port implemented; expanded ranks/acquisition remain planned.** The executable F-rank registry is `game/content/skills.lua`, the rules module is `game/domain/skills.lua`, and the journal uses `game/runtime/skills_presenter.lua` with the message-only `game/ui/skills.lua`. There is no imported TypeScript registry or normalized wiki JSON. Follow [skills.md](skills.md), the [battle contract](../turn-based-plan.md), and the [game plan](../game-plan.md). Old content-version/schema numbers do not version the new Defold format.
+**Starter Lua port and eleven rank-F combat skills implemented; higher ranks remain planned.** The shared registry is `game/content/skills.lua`, with combat definitions in `game/content/skills/combat.lua`. See [combat implementation](../combat-skills-implementation.md) for executable rules, lessons and the corrected knockdown boundary. The rules module is `game/domain/skills.lua`, and the journal uses `game/runtime/skills_presenter.lua` with the message-only `game/ui/skills.lua`. There is no imported TypeScript registry or normalized wiki JSON. Follow [skills.md](skills.md), the [battle contract](../turn-based-plan.md), and the [game plan](../game-plan.md). Old content-version/schema numbers do not version the new Defold format.
 
 ## Modules and content
 
-Use proposed `game/content/skills/` for definitions and `game/domain/skills/` for acquisition, rank/training, equipment eligibility and derived sources. `game/domain/battle/` resolves commands through the outer session candidate. Maintain one registry keyed by stable IDs; no GUI-local definitions or alternate battle store.
+Use `game/content/skills/` for definitions and `game/domain/skills/` for acquisition, rank/training, equipment eligibility and derived sources. `game/domain/battle/` resolves commands through the outer session candidate. Maintain one registry keyed by stable IDs; no GUI-local definitions or alternate battle store.
 
 Each executable definition needs kind/category, F–1 rank records as supported, target rule, race/equipment restrictions, resource cost vector, cooldown boundary, ordered effects, training objectives, AP-to-next-rank, acquisition routes and source/adaptation provenance. Runtime validation rejects missing references, nonfinite costs, unsupported effect kinds and unreachable rank objectives. Reference-only entries cannot be learned or executed.
 

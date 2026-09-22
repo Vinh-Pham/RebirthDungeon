@@ -68,6 +68,7 @@ function M.model(p, request, locked)
 		local item = C.items[id]
 		local detail = item.power and ("Power +" .. item.power .. " · Durability " .. item.durability)
 			or item.defense and ("Defense +" .. item.defense)
+			or item.shield_size and (item.shield_size .. " shield · left hand")
 			or ("Restores " .. item.restore .. " " .. item.pool:upper() .. " when used")
 		if item.no_giant then
 			detail = detail .. " · Humans / Elves equip"

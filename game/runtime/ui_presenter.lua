@@ -78,7 +78,7 @@ local function battle(p, projected, request, locked)
 		if skill == "wait" then
 			eligible = view.can_wait
 		else
-			eligible, reason = B.eligible(p, hero, skill)
+			eligible, reason = B.eligible(p, hero, skill, target)
 			pool, cost = B.cost(p, hero, skill)
 		end
 		local cooldown = (b.cooldowns[p.id] or {})[skill] or 0
@@ -89,9 +89,10 @@ local function battle(p, projected, request, locked)
 			eligible = false
 			reason = "Wait for your turn"
 		end
-		local damage, hits
+		local damage, hits, critical
 		if skill ~= "wait" and skill ~= "defense" and target then
-			damage, hits = B.preview(p, hero, target, skill)
+			local first, first_critical
+			first, hits, first_critical, damage, critical = B.preview(p, hero, target, skill)
 		end
 		view.actions[skill] = {
 			enabled = eligible and not locked,
@@ -99,6 +100,7 @@ local function battle(p, projected, request, locked)
 			pool = pool,
 			cost = cost,
 			damage = damage,
+			critical = critical,
 			hits = hits,
 			cooldown = cooldown,
 			command = {

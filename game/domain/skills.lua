@@ -1,5 +1,6 @@
 local Content = require("game.content.skills")
 local U = require("game.domain.util")
+local Equipment = require("game.domain.combat_equipment")
 local M = {}
 
 ---@param p table Character candidate
@@ -10,10 +11,29 @@ function M.learn(p, id)
 	local d = Content.definitions[id]
 	U.require_ok(d and d.hero and d.ranks, "This skill cannot be learned")
 	U.require_ok(not (d.no_giant and p.race == "Giant"), "Giants cannot learn this skill")
+	U.require_ok(not (d.no_elf and p.race == "Elf"), "Elves cannot learn this skill")
 	if p.skills[id] then
 		return false
 	end
 	p.skills[id] = { rank = 0, training = 0, objectives = {}, legacy_training = 0 }
+	return true
+end
+
+---@return boolean, string|nil
+function M.can_learn(p, id)
+	local d = Content.definitions[id]
+	if not d or not d.lesson then
+		return false, "No introductory lesson available"
+	end
+	if p.skills[id] then
+		return false, "Already learned"
+	end
+	if p.phase ~= "town" or p.run then
+		return false, "Learn skills in town, outside a run"
+	end
+	if d.no_elf and p.race == "Elf" then
+		return false, "Elves cannot learn this skill"
+	end
 	return true
 end
 
@@ -57,7 +77,7 @@ function M.migrate(p)
 	return p
 end
 
-local function qualifies(id, objective, outcome)
+local function qualifies(p, id, objective, outcome)
 	if objective.event == "normal_damage" then
 		return outcome.skill == "normal" and outcome.damage > 0
 	end
@@ -69,6 +89,27 @@ local function qualifies(id, objective, outcome)
 	end
 	if objective.event == "guard_block" then
 		return outcome.guarded and outcome.damage == 0 and not outcome.counter_negated
+	end
+	if objective.event == "counter_damage" then
+		return outcome.counter and outcome.damage > 0
+	end
+	if objective.event == "critical_damage" then
+		return outcome.critical and outcome.damage > 0
+	end
+	if objective.event == "weapon_damage" then
+		return outcome.hero_action
+			and outcome.category == "melee"
+			and outcome.damage > 0
+			and Equipment.matches(p, Content.definitions[id].requires_equipment)
+	end
+	if objective.event == "shield_block" then
+		return outcome.guarded
+			and outcome.damage == 0
+			and not outcome.counter_negated
+			and Equipment.matches(p, "shield")
+	end
+	if objective.event == "skill_defeat" then
+		return outcome.skill == id and (outcome.defeats or 0) > 0
 	end
 	return false
 end
@@ -84,11 +125,18 @@ function M.train(p, outcome)
 				local count = learned.objectives[objective.id] or 0
 				if
 					count < objective.limit
-					and qualifies(id, objective, outcome)
-					and (outcome.hero_action or objective.event == "guard_block")
+					and qualifies(p, id, objective, outcome)
+					and (
+						outcome.hero_action
+						or objective.event == "guard_block"
+						or objective.event == "shield_block"
+						or objective.event == "counter_damage"
+					)
 				then
-					learned.objectives[objective.id] = count + 1
-					learned.training = math.min(100, learned.training + objective.points)
+					local credits =
+						math.min(objective.limit - count, objective.event == "skill_defeat" and outcome.defeats or 1)
+					learned.objectives[objective.id] = count + credits
+					learned.training = math.min(100, learned.training + objective.points * credits)
 				end
 			end
 			learned.last_training_action = outcome.id
@@ -135,7 +183,10 @@ function M.validate_content(definitions)
 	local defs = definitions or Content.definitions
 	for id, d in pairs(defs) do
 		U.require_ok(type(id) == "string" and type(d.name) == "string", "Invalid skill identity")
-		U.require_ok(d.kind == "attack" or d.kind == "guard" or d.kind == "passive", "Unsupported skill effect")
+		U.require_ok(
+			d.kind == "attack" or d.kind == "guard" or d.kind == "counter" or d.kind == "passive",
+			"Unsupported skill effect"
+		)
 		if d.kind ~= "passive" then
 			U.require_ok((d.pool == "sp" or d.pool == "mp") and U.finite(d.cost) and d.cost >= 0, "Invalid skill cost")
 			U.require_ok(U.integer(d.cooldown, 0, 1000), "Invalid skill cooldown")
@@ -145,6 +196,28 @@ function M.validate_content(definitions)
 			"Invalid equipment category"
 		)
 		U.require_ok(d.status == nil or d.status == "poison" or d.status == "armor_break", "Unsupported status effect")
+		U.require_ok(
+			d.target_rule == nil or U.contains({ "all_living_hostiles", "single_downed_hostile" }, d.target_rule),
+			"Unsupported target rule"
+		)
+		U.require_ok(
+			d.requires_equipment == nil
+				or U.contains({ "sword", "axe", "shield", "paired_swords" }, d.requires_equipment),
+			"Unsupported equipment requirement"
+		)
+		for _, key in ipairs({ "bypass_guard", "bypass_counter", "knockdown" }) do
+			U.require_ok(d[key] == nil or type(d[key]) == "boolean" and d.kind == "attack", "Invalid attack flag")
+		end
+		for _, key in ipairs({ "two_handed_multiplier", "two_handed_critical" }) do
+			U.require_ok(
+				d[key] == nil
+					or d.kind == "attack"
+						and U.finite(d[key])
+						and d[key] > 0
+						and d[key] <= (key == "two_handed_critical" and 1 or 10),
+				"Invalid two-handed effect"
+			)
+		end
 		if d.giant_multiplier then
 			U.require_ok(U.finite(d.giant_multiplier) and d.giant_multiplier > 0, "Invalid racial multiplier")
 		end
@@ -155,6 +228,13 @@ function M.validate_content(definitions)
 			)
 			U.require_ok(d.base == nil or U.finite(d.base) and d.base >= 0, "Invalid base damage")
 		end
+		if d.shield_absorption then
+			U.require_ok(d.kind == "guard", "Shield absorption requires a guard")
+			for _, size in ipairs({ "small", "medium", "large" }) do
+				local value = d.shield_absorption[size]
+				U.require_ok(U.finite(value) and value >= 0 and value <= 1, "Invalid shield absorption")
+			end
+		end
 		if d.progression then
 			U.require_ok(defs[d.progression] and defs[d.progression].hero, "Missing progression skill")
 		end
@@ -162,6 +242,33 @@ function M.validate_content(definitions)
 			U.require_ok(d.group == "Combat" or d.group == "Magic" or d.group == "Life", "Invalid skill category")
 			U.require_ok(type(d.ranks) == "table" and #d.ranks >= 1 and #d.ranks <= 15, "Missing skill rank records")
 			for index, rank in ipairs(d.ranks) do
+				if d.kind == "counter" then
+					U.require_ok(rank.enemy_share == 0.5 and rank.self_share == 1, "Invalid counter shares")
+				end
+				for _, key in ipairs({ "weapon_melee", "critical_chance", "critical_bonus", "critical_add" }) do
+					U.require_ok(
+						rank[key] == nil
+							or U.finite(rank[key])
+								and rank[key] >= 0
+								and rank[key] <= (key == "weapon_melee" and 1000 or 1),
+						"Invalid passive effect"
+					)
+				end
+				if rank.shield then
+					U.require_ok(d.requires_equipment == "shield", "Missing shield requirement")
+					for _, size in ipairs({ "small", "medium", "large" }) do
+						local row = rank.shield[size]
+						U.require_ok(
+							row
+								and U.finite(row.defense)
+								and row.defense >= 0
+								and U.finite(row.protection)
+								and row.protection >= 0
+								and row.protection <= 100,
+							"Invalid shield row"
+						)
+					end
+				end
 				U.require_ok(type(rank.attributes) == "table", "Missing cumulative skill attributes")
 				for key, value in pairs(rank.giant_attributes or {}) do
 					U.require_ok(
@@ -196,7 +303,17 @@ function M.validate_content(definitions)
 						"Duplicate training objective"
 					)
 					U.require_ok(
-						U.contains({ "normal_damage", "skill_damage", "guard_use", "guard_block" }, objective.event),
+						U.contains({
+							"normal_damage",
+							"skill_damage",
+							"guard_use",
+							"guard_block",
+							"counter_damage",
+							"critical_damage",
+							"weapon_damage",
+							"shield_block",
+							"skill_defeat",
+						}, objective.event),
 						"Unsupported training objective"
 					)
 					U.require_ok(
@@ -233,7 +350,10 @@ function M.validate_profile(p)
 	for id, learned in pairs(p.skills) do
 		local d = Content.definitions[id]
 		U.require_ok(d and d.hero and U.integer(learned.rank, 0, #d.ranks - 1), "Invalid learned skill/rank")
-		U.require_ok(not (d.no_giant and p.race == "Giant"), "Invalid racial skill")
+		U.require_ok(
+			not (d.no_giant and p.race == "Giant") and not (d.no_elf and p.race == "Elf"),
+			"Invalid racial skill"
+		)
 		U.require_ok(
 			U.finite(learned.training) and learned.training >= 0 and learned.training <= 100,
 			"Invalid skill training"
