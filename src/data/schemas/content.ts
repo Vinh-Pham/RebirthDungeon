@@ -5,6 +5,13 @@ const id = z.string().trim().min(1);
 const uint = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
 const positive = uint.min(1);
 const probability = z.number().min(0).max(1);
+export const SkillRankSchema = z.enum(['F', 'E', 'D', 'C', 'B', 'A', '9', '8', '7', '6', '5', '4', '3', '2', '1']);
+const SkillReferenceSchema = z.strictObject({
+  url: z.url(), retrievedAt: z.iso.date(),
+  ranks: z.array(SkillRankSchema).length(15),
+  rows: z.array(z.strictObject({ label: id, values: z.array(z.string()).length(15) })),
+  effects: z.record(SkillRankSchema, z.array(z.string())),
+});
 export const SpriteSchema = z.strictObject({ atlas: id, frame: uint, idleFrames: z.array(uint).min(1).optional() });
 export const CombatStatsSchema = z.strictObject({
   attack: uint.max(1000000), defense: uint.max(1000000), speed: uint.max(1000000),
@@ -19,6 +26,11 @@ export const SkillSchema = z.strictObject({
   effect: z.enum(['damage', 'heal', 'buff']).default('damage'),
   statuses: z.array(id).default([]),
   hitChance: probability.default(1), criticalChance: probability.default(0),
+  category: z.enum(['combat', 'magic', 'life']).optional(),
+  kind: z.enum(['active', 'passive', 'life']).optional(),
+  battleUsable: z.boolean().optional(),
+  rank: SkillRankSchema.optional(), description: z.string().optional(),
+  reference: SkillReferenceSchema.optional(),
 }).refine((skill) => skill.effect === 'damage'
   ? ['enemy', 'allEnemies'].includes(skill.target) : ['self', 'ally'].includes(skill.target),
 { message: 'Damage skills target enemies; healing skills target self or allies' });

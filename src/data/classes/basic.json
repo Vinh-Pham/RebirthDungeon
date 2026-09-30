@@ -10,9 +10,10 @@
       "speed": 8
     },
     "skills": [
-      "fireball",
-      "mend",
-      "focus"
+      "firebolt",
+      "icebolt",
+      "lightning-bolt",
+      "healing"
     ],
     "sprite": {
       "atlas": "dungeon",

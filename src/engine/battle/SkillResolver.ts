@@ -7,6 +7,7 @@ export function prepareSkill({ source, targets, skill, random }: {
   source: Entity; targets: readonly Entity[]; skill: Skill; random: GameRandom;
 }) {
   validateCombatEntity(source);
+  if (skill.battleUsable === false) throw new Error('Skill is unavailable in battle');
   if (!source.skills?.includes(skill.id)) throw new Error('Source does not know this skill');
   const mana = source.mana;
   if (!mana || !Number.isSafeInteger(mana.max) || mana.max < 0 || !Number.isSafeInteger(mana.current) ||

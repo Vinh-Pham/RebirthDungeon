@@ -49,7 +49,7 @@ describe('world exploration', () => {
     enterHalls(session); session.dispatch({ type: 'TRAVEL_TO', x: 5, y: 3 }); const battle = session.createBattle();
     expect(battle.engine.getEntity('player')?.combatant?.attack).toBe(13); expect(() => session.finishBattle(battle)).toThrow('ready');
     battle.engine.getEntity('slime-1')!.health!.current = 1;
-    battle.dispatch({ type: 'SELECT_ACTION', action: 'skill', skillId: 'fireball' }); battle.dispatch({ type: 'SELECT_TARGET', targetId: 'slime-1' }); battle.dispatch({ type: 'CONFIRM_ACTION' });
+    battle.dispatch({ type: 'SELECT_ACTION', action: 'skill', skillId: 'firebolt' }); battle.dispatch({ type: 'SELECT_TARGET', targetId: 'slime-1' }); battle.dispatch({ type: 'CONFIRM_ACTION' });
     session.finishBattle(battle);
     expect(session.toSave()).toMatchObject({ hero: { level: 2, experience: 4, gold: 12, inventory: { potion: 3 } }, cleared: ['halls/slime-guard'] });
     expect(() => session.finishBattle(battle)).toThrow('ready'); battle.dispose();
@@ -57,8 +57,8 @@ describe('world exploration', () => {
   it('rebirth returns to refuge, preserves equipment and opened chests, and halves gold', () => {
     vi.useFakeTimers(); const session = create(); const saved = session.toSave(); saved.hero.gold = 11;
     const restored = new JourneySession(content, saved); sessions.push(restored); enterHalls(restored); restored.dispatch({ type: 'TRAVEL_TO', x: 5, y: 3 });
-    const battle = restored.createBattle(); battle.engine.getEntity('player')!.health!.current = 1; battle.engine.getEntity('slime-1')!.combatant!.hitChance = 1;
-    battle.dispatch({ type: 'SELECT_ACTION', action: 'skill', skillId: 'focus' }); battle.dispatch({ type: 'SELECT_TARGET', targetId: 'player' }); battle.dispatch({ type: 'CONFIRM_ACTION' }); battle.advanceEnemyTurns();
+    const battle = restored.createBattle(); battle.engine.getEntity('player')!.health!.current = 1; battle.engine.getEntity('slime-1')!.combatant!.hitChance = 1; battle.engine.getEntity('slime-1')!.combatant!.attack = 100;
+    battle.dispatch({ type: 'SELECT_ACTION', action: 'skill', skillId: 'healing' }); battle.dispatch({ type: 'SELECT_TARGET', targetId: 'player' }); battle.dispatch({ type: 'CONFIRM_ACTION' }); battle.advanceEnemyTurns();
     restored.finishBattle(battle); expect(restored.toSave()).toMatchObject({ worldId: 'refuge', hero: { health: 42, gold: 5 }, cleared: [] }); battle.dispose();
   });
   it('keeps snapshots detached and rejects commands after disposal', () => {

@@ -50,7 +50,7 @@ export class BattleController implements GameSystem {
         validateCombatEntity(source);
         if (action === 'skill') {
           const skill = this.content.skill(skillId!);
-          if (!source.skills?.includes(skill.id) || !source.mana || source.mana.current < skill.manaCost) {
+          if (skill.battleUsable === false || !source.skills?.includes(skill.id) || !source.mana || source.mana.current < skill.manaCost) {
             throw new Error('Skill is unavailable or mana is insufficient');
           }
         }

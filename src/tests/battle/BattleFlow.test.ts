@@ -3,6 +3,7 @@ import * as fc from 'fast-check';
 import { BattleSession } from '../../game/BattleSession';
 import { loadGameContent } from '../../data/content';
 import { ContentRegistry } from '../../engine/data/ContentRegistry';
+import { prepareSkill } from '../../engine/battle/SkillResolver';
 
 const sessions: BattleSession[] = [];
 function create(seed = 12345, content = loadGameContent()) {
@@ -15,6 +16,20 @@ function select(session: BattleSession, targetId = 'slime-1', skillId?: string) 
 afterEach(() => { sessions.splice(0).forEach((session) => session.dispose()); vi.useRealTimers(); });
 
 describe('XState battle flow', () => {
+  it('rejects catalog-only skills before selection or direct resolution spends resources', () => {
+    const session = create();
+    const player = session.engine.getEntity('player')!;
+    player.skills!.push('combat-mastery', 'blacksmithing', 'mana-shield');
+    const random = session.engine.random.snapshot();
+    const mana = player.mana!.current;
+    for (const skillId of ['combat-mastery', 'blacksmithing', 'mana-shield']) {
+      expect(() => session.dispatch({ type: 'SELECT_ACTION', action: 'skill', skillId })).toThrow('unavailable');
+      expect(() => prepareSkill({ source: player, targets: [player], skill: session.content.skill(skillId), random: session.engine.random })).toThrow('unavailable');
+    }
+    expect(session.battle.phase).toBe('selectingAction');
+    expect(player.mana!.current).toBe(mana);
+    expect(session.engine.random.snapshot()).toEqual(random);
+  });
   it('selects and cancels actions, validates targets, and requires confirmation', () => {
     const session = create();
     expect(session.battle.phase).toBe('selectingAction');
@@ -50,18 +65,18 @@ describe('XState battle flow', () => {
   it('spends mana once, supports healing, and rejects unaffordable or unknown skills', () => {
     const session = create();
     session.engine.getEntity('player')!.health!.current = 20;
-    select(session, 'player', 'mend');
+    select(session, 'player', 'healing');
     session.dispatch({ type: 'CONFIRM_ACTION' });
-    expect(session.engine.getEntity('player')?.health?.current).toBe(32);
-    expect(session.engine.getEntity('player')?.mana?.current).toBe(10);
+    expect(session.engine.getEntity('player')?.health?.current).toBe(26);
+    expect(session.engine.getEntity('player')?.mana?.current).toBe(2);
     session.advanceEnemyTurns();
-    select(session, 'slime-1', 'fireball');
+    select(session, 'slime-1', 'firebolt');
     session.dispatch({ type: 'CONFIRM_ACTION' });
-    expect(session.engine.getEntity('player')?.mana?.current).toBe(5);
+    expect(session.engine.getEntity('player')?.mana?.current).toBe(0);
     session.advanceEnemyTurns();
     session.engine.getEntity('player')!.mana!.current = 0;
     const chance = vi.spyOn(session.engine.random, 'chance');
-    expect(() => session.dispatch({ type: 'SELECT_ACTION', action: 'skill', skillId: 'fireball' })).toThrow('mana');
+    expect(() => session.dispatch({ type: 'SELECT_ACTION', action: 'skill', skillId: 'firebolt' })).toThrow('mana');
     expect(() => session.dispatch({ type: 'SELECT_ACTION', action: 'skill', skillId: 'unknown' })).toThrow('Unknown');
     expect(chance).not.toHaveBeenCalled();
   });
@@ -69,7 +84,7 @@ describe('XState battle flow', () => {
   it('ends in victory using commands and rejects new selections afterward', () => {
     const session = create();
     session.engine.getEntity('slime-1')!.health!.current = 1;
-    select(session, 'slime-1', 'fireball');
+    select(session, 'slime-1', 'firebolt');
     session.dispatch({ type: 'CONFIRM_ACTION' });
     expect(session.battle.phase).toBe('victory');
     expect(session.combat.result).toBe('victory');
@@ -97,7 +112,7 @@ describe('XState battle flow', () => {
   });
 
   it('recovers a failed validation without advancing turns or consuming mana/RNG', () => {
-    const session = create(); select(session, 'slime-1', 'fireball');
+    const session = create(); select(session, 'slime-1', 'firebolt');
     session.engine.getEntity('player')!.mana!.current = 0;
     const chance = vi.spyOn(session.engine.random, 'chance');
     expect(() => session.dispatch({ type: 'CONFIRM_ACTION' })).toThrow('mana');
@@ -110,7 +125,7 @@ describe('XState battle flow', () => {
 
   it('uses data-defined skills against all enemies', () => {
     const data = structuredClone(loadGameContent().data);
-    data.skills.push({ ...data.skills[0], id: 'nova', target: 'allEnemies', power: 100 });
+    data.skills.push({ ...data.skills[0], id: 'nova', target: 'allEnemies', power: 100, manaCost: 5 });
     data.classes[0].skills.push('nova');
     data.maps[0].spawns.push({ entityId: 'slime-2', definitionId: 'slime', kind: 'enemy', x: 7, y: 4 });
     const session = create(1, new ContentRegistry(data));

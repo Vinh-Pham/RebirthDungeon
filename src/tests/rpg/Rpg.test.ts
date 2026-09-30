@@ -59,7 +59,7 @@ describe('RPG rules', () => {
     vi.useFakeTimers(); const battle = new BattleSession(content);
     const enemy = battle.engine.getEntity('slime-1')!; enemy.health!.current = 2;
     applyStatus(enemy, 'burn', 'player', content, []);
-    battle.dispatch({ type: 'SELECT_ACTION', action: 'skill', skillId: 'focus' });
+    battle.dispatch({ type: 'SELECT_ACTION', action: 'skill', skillId: 'healing' });
     battle.dispatch({ type: 'SELECT_TARGET', targetId: 'player' }); battle.dispatch({ type: 'CONFIRM_ACTION' });
     battle.advanceEnemyTurns(); expect(enemy.dead).toBe(true); expect(battle.combat.result).toBe('victory');
     expect(battle.presentation.getSnapshot().busy).toBe(true); battle.dispose(); expect(vi.getTimerCount()).toBe(0);

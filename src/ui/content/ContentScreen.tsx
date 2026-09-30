@@ -25,7 +25,8 @@ export default function ContentScreen() {
         <Text style={styles.section}>Skills</Text>
         {content.skills.map((entry) => <View key={entry.id} style={styles.row}>
           <Text style={styles.name}>{entry.name}</Text>
-          <Text style={styles.detail}>{entry.manaCost} mana · {targetNames[entry.target]} · {entry.power} {entry.effect === 'heal' ? 'healing' : 'power'}</Text>
+          <Text style={styles.detail}>{entry.description ?? `${entry.manaCost} mana · ${targetNames[entry.target]} · ${entry.power} ${entry.effect === 'heal' ? 'healing' : 'power'}`}</Text>
+          {entry.reference && <Text style={styles.detail}>Rank {entry.rank} · {entry.category} · {entry.kind}{entry.battleUsable === false ? ' · Unavailable in battle' : ''}</Text>}
         </View>)}
         <Text style={styles.section}>Relics & remedies</Text>
         {content.items.map((entry) => <View key={entry.id} style={styles.row}>

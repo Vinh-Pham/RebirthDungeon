@@ -2,15 +2,30 @@ import { describe, expect, it } from 'vitest';
 import { loadGameContent } from '../../data/content';
 import { ContentRegistry } from '../../engine/data/ContentRegistry';
 import { ContentSchema } from '../../data/schemas/content';
+import { readFileSync, readdirSync } from 'node:fs';
 
 function data() { return structuredClone(loadGameContent().data); }
 describe('validated game content', () => {
+  it('preserves every normalized skill and its full source tables', () => {
+    const directory = new URL('../../../docs/skills/normalized/', import.meta.url);
+    const files = readdirSync(directory).filter((name) => name.endsWith('.json'));
+    const content = loadGameContent();
+    expect(content.data.skills).toHaveLength(files.length);
+    for (const file of files) {
+      const source = JSON.parse(readFileSync(new URL(file, directory), 'utf8'));
+      const skill = content.skill(file.slice(0, -5));
+      expect(skill.reference).toEqual({ ...source, ranks: ['F', 'E', 'D', 'C', 'B', 'A', '9', '8', '7', '6', '5', '4', '3', '2', '1'] });
+      expect(skill.rank).toBe('F');
+    }
+    expect(content.data.classes[0].skills.every((id) => content.skill(id).battleUsable)).toBe(true);
+    expect(content.skill('firebolt').statuses).toEqual([]);
+  });
   it('loads every requested content category and creates independent entity components', () => {
     const content = loadGameContent();
     for (const entries of Object.values(content.data)) expect(entries.length).toBeGreaterThan(0);
     const first = content.spawn('slime', 'first', 'enemy', 1, 2);
     const second = content.spawn('slime', 'second', 'enemy', 3, 4);
-    first.health!.current = 0; first.combatant!.attack = 999; first.skills!.push('fireball'); first.sprite!.idleFrames![0] = 3;
+    first.health!.current = 0; first.combatant!.attack = 999; first.skills!.push('firebolt'); first.sprite!.idleFrames![0] = 3;
     expect(second.health!.current).toBe(34); expect(second.combatant!.attack).toBe(8);
     expect(content.data.enemies[0].combatant.attack).toBe(8);
     expect(second.skills).toEqual([]); expect(second.sprite?.idleFrames).toEqual([2, 3]);

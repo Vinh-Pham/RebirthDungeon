@@ -97,7 +97,7 @@ export function BattleView({ session, restart, finishedLabel = 'Descend again' }
               <Button label="Attack" disabled={!canChoose} selected={view.selectedAction?.action === 'attack'}
                 onPress={() => dispatch({ type: 'SELECT_ACTION', action: 'attack' })} />
               {skills.map((id) => { const skill = session.content.skill(id); return <Button key={id}
-                label={`${skill.name} · ${skill.manaCost} MP`} disabled={!canChoose || (actor?.mana ?? 0) < skill.manaCost}
+                label={`${skill.name} · ${skill.manaCost} MP`} disabled={!canChoose || skill.battleUsable === false || (actor?.mana ?? 0) < skill.manaCost}
                 selected={view.selectedAction?.skillId === id} onPress={() => dispatch({ type: 'SELECT_ACTION', action: 'skill', skillId: id })} />; })}
               {Object.entries(session.engine.getEntity(actor?.id ?? player.id)?.inventory ?? {}).filter(([id]) => session.content.item(id).kind === 'consumable').map(([id, quantity]) => <Button key={id} label={`${session.content.item(id).name} ×${quantity}`} disabled={!canChoose} selected={view.selectedAction?.itemId === id} onPress={() => dispatch({ type: 'SELECT_ACTION', action: 'item', itemId: id })} />)}
             </View>
