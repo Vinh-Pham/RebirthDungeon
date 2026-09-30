@@ -7,6 +7,7 @@ import type { GameCommand } from '../engine/commands';
 import type { GameEvent } from '../engine/events';
 import type { Unsubscribe } from '../engine/EventBus';
 import type { TileMap } from '../data/schemas/content';
+import { MapSchema } from '../data/schemas/content';
 import { PresentationQueue } from '../renderer/animations/PresentationQueue';
 import type { RenderEntity } from '../renderer/types';
 import { createUIStore } from '../state/uiStore';
@@ -36,14 +37,14 @@ export class BattleSession {
   private log: string[] = [];
   private disposed = false;
 
-  constructor(readonly content: ContentRegistry, seed = 12345, mapId = 'chamber', hero?: Hero) {
-    const map = content.data.maps.find((entry) => entry.id === mapId);
+  constructor(readonly content: ContentRegistry, seed = 12345, mapId: string | TileMap = 'chamber', hero?: Hero, effects: readonly { statusId: string; stacks: number }[] = []) {
+    const map = typeof mapId === 'string' ? content.data.maps.find((entry) => entry.id === mapId) : MapSchema.parse(mapId);
     if (!map) throw new Error(`Unknown map: ${mapId}`);
     this.map = map;
     this.engine = createGameEngine({ seed });
-    for (const spawn of map.spawns) this.engine.spawn(content.spawn(spawn.definitionId, spawn.entityId, spawn.kind,
+    for (const spawn of map.spawns) this.engine.spawn(content.spawn(spawn.kind === 'player' && hero ? hero.classId : spawn.definitionId, spawn.entityId, spawn.kind,
       spawn.x * map.tileSize, spawn.y * map.tileSize));
-    if (hero) for (const entity of this.engine.world.entities) if (entity.player) applyHero(entity, hero, content);
+    if (hero) for (const entity of this.engine.world.entities) if (entity.player) applyHero(entity, hero, content, effects);
     this.combat = new CombatSystem(map.spawns.map((spawn) => spawn.entityId), { content,
       canAct: () => this.battle.isResolving });
     this.battle = new BattleController(this.combat, content);

@@ -22,6 +22,6 @@ export function TileRenderer({ map }: { map: Pick<TileMap, 'width' | 'height' | 
       }
     });
     return recorder.finishRecordingAsPicture();
-  }, [map]);
+  }, [map.tiles, map.width, map.height, map.tileSize]);
   return <Picture picture={picture} />;
 }

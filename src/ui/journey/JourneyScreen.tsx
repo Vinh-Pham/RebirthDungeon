@@ -12,6 +12,7 @@ import { heroStats, experienceToNextLevel } from '../../engine/rpg/Character';
 import { distance, findPath, isWalkable } from '../../engine/world/TileMap';
 import type { GameCommand } from '../../engine/commands';
 import WorldCanvas from '../../renderer/WorldCanvas';
+import { bossCleared, inRoom, remainingEnemies } from '../../engine/dungeon/Dungeon';
 function Button({ label, onPress, disabled = false, selected = false }: { label: string; onPress(): void; disabled?: boolean; selected?: boolean }) {
   return <Pressable accessibilityRole="button" accessibilityState={{ disabled, selected }} disabled={disabled} onPress={onPress}
     style={({ pressed }) => [styles.button, disabled && styles.disabled, selected && styles.selected, pressed && styles.pressed]}><Text style={styles.buttonText}>{label}</Text></Pressable>;
@@ -51,7 +52,9 @@ function Exploration({ host, session, soundReady, onAudioSettings, error, setErr
     const unsubscribe = host.subscribe(listener); return unsubscribe;
   }, host.getSnapshot, host.getServerSnapshot);
   const { width: windowWidth } = useWindowDimensions(); const width = Math.max(240, Math.min(windowWidth - 40, 560));
-  const { state, map } = view; const stats = heroStats(state.hero, session.content);
+  const { state, map } = view; const run = state.dungeon; const stats = heroStats(state.hero, session.content, run?.effects);
+  const currentRoom = run?.blueprint.rooms.find((room) => inRoom(room, state.position));
+  const around = run ? map.objects.filter((obj) => (currentRoom && inRoom(currentRoom, obj)) || distance(obj, state.position) <= 5) : map.objects;
   const dispatch = (command: GameCommand) => { if (hostView.busy) return; try { setError(undefined); session.dispatch(command); } catch (error) { setError(error instanceof Error ? error.message : 'Action failed'); } };
   const approach = (objectId: string) => {
     const object = map.objects.find((obj) => obj.id === objectId)!;
@@ -61,15 +64,30 @@ function Exploration({ host, session, soundReady, onAudioSettings, error, setErr
     if (!points.length) { setError('No reachable approach to this object'); return; }
     dispatch({ type: 'TRAVEL_TO', ...points[0].point });
   };
+  const interact = (objectId: string) => {
+    const obj = map.objects.find((obj) => obj.id === objectId);
+    if (!obj || session.isClaimed(objectId)) return;
+    if (obj.kind === 'encounter' || (obj.kind === 'gate' && !obj.blocked)) dispatch({ type: 'TRAVEL_TO', x: obj.x, y: obj.y });
+    else if (distance(obj, state.position) <= 1) dispatch({ type: 'INTERACT', objectId });
+    else approach(objectId);
+  };
   const setVolume = (channel: 'music' | 'sfx', delta: number) => {
     const next = { ...state.audio, [channel]: Math.round(Math.max(0, Math.min(1, state.audio[channel] + delta)) * 10) / 10 };
     session.setAudio(next); onAudioSettings(next);
   };
-  return <SafeAreaView style={styles.screen}><ScrollView contentContainerStyle={styles.scroll}><View style={[styles.content, { width }]}>
+  return <SafeAreaView style={styles.screen}><ScrollView key={map.id} contentContainerStyle={styles.scroll}><View style={[styles.content, { width }]}>
     <Text style={styles.eyebrow}>REBIRTH DUNGEON · JOURNEY</Text><Text style={styles.title}>{map.name}</Text>
-    <Text style={styles.body}>Tap a floor tile to follow a path, or move one step at a time.</Text>
-    <View style={styles.map}><ArenaBoundary><WorldCanvas key={map.id} session={session} width={width} dispatch={dispatch} /></ArenaBoundary></View>
-    <Text style={styles.legend}>K Keeper · C Chest · * Shrine · &gt; Passage · ! Guardian</Text>
+    <Text style={styles.body}>Tap a floor tile to move. Tap an object to approach it, then tap again to interact.</Text>
+    <View style={styles.map}><ArenaBoundary><WorldCanvas key={map.id} session={session} width={width} dispatch={dispatch} onObjectPress={interact} /></ArenaBoundary></View>
+    <Text style={styles.legend}>C Chest · ! Enemy · G Goddess · F Fountain · B Locked door · k Key · D Dungeon · &gt; Passage</Text>
+    {run ? <View style={styles.card}><Text style={styles.heading}>{currentRoom ? currentRoom.kind === 'start' ? 'Goddess sanctuary' : currentRoom.kind === 'boss' ? 'Boss chamber' : currentRoom.kind === 'treasure' ? 'Final treasure room' : 'Dungeon chamber' : 'Corridor'}</Text>
+      <Text accessibilityLiveRegion="polite" style={styles.body}>{remainingEnemies(run)} enemies remain · {bossCleared(run) ? 'Boss defeated' : run.bossDoorOpened ? 'Boss room open' : 'Boss room locked'}</Text>
+      <Text style={styles.body}>Boss key: {run.bossKey.status} · Treasure key: {run.treasureKey.status}</Text>
+      <Text style={styles.body}>Find every enemy, including hidden mimics. Pick up dropped keys before using them.</Text>
+      {run.effects.map((effect) => { const status = session.content.status(effect.statusId); return <Text key={effect.statusId} style={styles.body}>{status.name} ×{effect.stacks} · {status.modifier * effect.stacks > 0 ? '+' : ''}{status.modifier * effect.stacks} {status.stat} · lasts this run</Text>; })}
+      {currentRoom?.kind === 'treasure' ? <Text style={styles.body}>{run.selectedChest ? 'Your reward is claimed. The other four chests remain sealed.' : 'Choose one of five hidden rewards. Your treasure key opens only one chest.'}</Text> : null}
+      {run.selectedChest && currentRoom?.kind === 'treasure' ? <Button label="Return to the refuge" disabled={hostView.busy} onPress={() => dispatch({ type: 'EXIT_DUNGEON' })} /> : null}
+    </View> : null}
     <View style={styles.card}>
       <Text style={styles.heading}>Warden · Level {state.hero.level}</Text>
       <Text style={styles.body}>{state.hero.health}/{stats.maxHealth} HP · {state.hero.mana}/{stats.maxMana} Mana · {state.hero.gold} gold</Text>
@@ -78,12 +96,12 @@ function Exploration({ host, session, soundReady, onAudioSettings, error, setErr
       <View style={styles.actions}>{[[0, -1, 'Up'], [-1, 0, 'Left'], [1, 0, 'Right'], [0, 1, 'Down']].map(([dx, dy, label]) => <Button key={label} label={`Move ${label}`} disabled={hostView.busy || !isWalkable(map, { x: state.position.x + Number(dx), y: state.position.y + Number(dy) })} onPress={() => dispatch({ type: 'MOVE', entityId: 'player', dx: Number(dx), dy: Number(dy) })} />)}</View>
     </View>
     {view.message ? <Text accessibilityLiveRegion="polite" style={styles.message}>{view.message}</Text> : null}
-    <View style={styles.card}><Text style={styles.heading}>Around you</Text>{map.objects.map((obj) => {
-      const claimed = state.opened.includes(`${map.id}/${obj.id}`) || state.cleared.includes(`${map.id}/${obj.id}`);
+    <View style={styles.card}><Text style={styles.heading}>Around you</Text>{!around.length ? <Text style={styles.body}>Follow the corridor to the next chamber.</Text> : null}{around.map((obj) => {
+      const claimed = session.isClaimed(obj.id);
       const nearby = distance(obj, state.position) <= 1;
       return <View key={obj.id} style={styles.object}><Text style={styles.body}>{obj.name}{claimed ? ' · cleared' : ''}</Text>
-        {obj.kind === 'encounter' ? <Button label={`Challenge ${obj.name}`} disabled={claimed || hostView.busy} onPress={() => dispatch({ type: 'TRAVEL_TO', x: obj.x, y: obj.y })} />
-          : <Button label={`${nearby ? 'Interact with' : 'Approach'} ${obj.name}`} disabled={claimed || hostView.busy} onPress={() => nearby ? dispatch({ type: 'INTERACT', objectId: obj.id }) : approach(obj.id)} />}</View>;
+        <Button label={`${obj.kind === 'encounter' ? 'Challenge' : nearby ? obj.kind === 'key' ? 'Pick up' : obj.kind === 'finalChest' ? 'Open' : 'Interact with' : 'Approach'} ${obj.name}`}
+          disabled={claimed || hostView.busy || (obj.kind === 'gate' && !obj.blocked)} onPress={() => interact(obj.id)} /></View>;
     })}</View>
     <View style={styles.card}><Text style={styles.heading}>Your pack</Text>{Object.entries(state.hero.inventory).map(([id, quantity]) => {
       const item = session.content.item(id); const equipped = Object.values(state.hero.equipment).includes(id);
@@ -101,7 +119,7 @@ function Exploration({ host, session, soundReady, onAudioSettings, error, setErr
     }} />{(['music', 'sfx'] as const).map((channel) => <View key={channel} style={styles.object}><Text style={styles.body}>{channel === 'music' ? 'Music' : 'Effects'} · {Math.round(state.audio[channel] * 100)}%</Text><View style={styles.actions}>
       <Button label={`Lower ${channel} volume`} disabled={state.audio[channel] === 0} onPress={() => setVolume(channel, -0.1)} /><Button label={`Raise ${channel} volume`} disabled={state.audio[channel] === 1} onPress={() => setVolume(channel, 0.1)} /></View></View>)}</View>
     {error || hostView.error ? <Text accessibilityRole="alert" style={styles.error}>{error ?? hostView.error}</Text> : null}
-    <Text style={styles.legend}>Position {state.position.x}, {state.position.y} · Seed {state.seed}</Text>
+    <Text style={styles.legend}>Position {state.position.x}, {state.position.y} · Seed {run?.blueprint.seed ?? state.seed}</Text>
   </View></ScrollView></SafeAreaView>;
 }
 const styles = StyleSheet.create({

@@ -12,7 +12,7 @@ export const HeroSchema = z.strictObject({
 });
 export type Hero = z.infer<typeof HeroSchema>;
 export const experienceToNextLevel = (level: number) => level * 20;
-export function heroStats(hero: Hero, content: ContentRegistry) {
+export function heroStats(hero: Hero, content: ContentRegistry, effects: readonly { statusId: string; stacks: number }[] = []) {
   const definition = content.data.classes.find((entry) => entry.id === hero.classId);
   if (!definition) throw new Error('Unknown character class');
   const growth = hero.level - 1;
@@ -25,6 +25,12 @@ export function heroStats(hero: Hero, content: ContentRegistry) {
     const stat = item.stat ?? (slot === 'weapon' ? 'attack' : 'defense');
     combatant[stat] += item.power;
   }
+  const modifiers = { attack: 0, defense: 0, speed: 0 };
+  for (const effect of effects) {
+    const status = content.status(effect.statusId);
+    if (status.effect === 'stat' && status.stat) modifiers[status.stat] += status.modifier * effect.stacks;
+  }
+  for (const stat of ['attack', 'defense', 'speed'] as const) combatant[stat] = Math.max(0, combatant[stat] + modifiers[stat]);
   return { combatant, maxHealth: definition.maxHealth + growth * 5, maxMana: definition.maxMana + growth * 2 };
 }
 export function validateHero(raw: unknown, content: ContentRegistry): Hero {
@@ -64,8 +70,8 @@ export function rollLoot(enemyId: string, content: ContentRegistry, random: Game
   return { experience: enemy.experience, gold: enemy.gold,
     items: enemy.loot.filter((drop) => random.chance(drop.chance)).map((drop) => ({ itemId: drop.itemId, quantity: random.int(drop.min, drop.max) })) };
 }
-export function applyHero(entity: Entity, hero: Hero, content: ContentRegistry) {
-  const stats = heroStats(hero, content);
+export function applyHero(entity: Entity, hero: Hero, content: ContentRegistry, effects: readonly { statusId: string; stacks: number }[] = []) {
+  const stats = heroStats(hero, content, effects);
   entity.health = { current: hero.health, max: stats.maxHealth };
   entity.mana = { current: hero.mana, max: stats.maxMana };
   entity.combatant = { ...stats.combatant }; entity.inventory = { ...hero.inventory };

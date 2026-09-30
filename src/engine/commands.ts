@@ -2,6 +2,7 @@ import type { EntityId } from './ecs/Entity';
 
 export type GameCommand =
   | { type: 'INTERACT'; objectId: string }
+  | { type: 'EXIT_DUNGEON' }
   | { type: 'TRAVEL_TO'; x: number; y: number }
   | { type: 'EQUIP_ITEM'; itemId: string }
   | { type: 'UNEQUIP_ITEM'; slot: 'weapon' | 'armor' }
@@ -26,6 +27,7 @@ export function validateCommand(command: GameCommand): void {
     case 'UNEQUIP_ITEM': valid = ['weapon', 'armor'].includes(command.slot); break;
     case 'TRAVEL_TO': valid = Number.isInteger(command.x) && Number.isInteger(command.y); break;
     case 'START_BATTLE':
+    case 'EXIT_DUNGEON':
     case 'CONFIRM_ACTION':
     case 'CANCEL_ACTION':
     case 'ADVANCE_ENEMY_TURN':

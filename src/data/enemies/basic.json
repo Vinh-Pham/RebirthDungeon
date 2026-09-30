@@ -59,5 +59,36 @@
         "max": 1
       }
     ]
+  },
+  {
+    "id": "mimic",
+    "name": "Hungry mimic",
+    "maxHealth": 34,
+    "maxMana": 0,
+    "combatant": {
+      "attack": 8,
+      "defense": 2,
+      "speed": 3,
+      "hitChance": 0.9
+    },
+    "skills": [],
+    "sprite": {
+      "atlas": "dungeon",
+      "frame": 2,
+      "idleFrames": [
+        2,
+        3
+      ]
+    },
+    "experience": 24,
+    "gold": 12,
+    "loot": [
+      {
+        "itemId": "potion",
+        "chance": 1,
+        "min": 1,
+        "max": 1
+      }
+    ]
   }
 ]

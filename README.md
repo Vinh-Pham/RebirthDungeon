@@ -22,6 +22,34 @@ slots plus an autosave retain character resources, equipment, inventory, XP, gol
 world flags, map position, encounter checkpoints and exact exploration RNG state.
 Native runtime testing requires a development build after adding native modules.
 
+## Generated dungeons
+
+In the refuge, approach **Enter the moss depths**, then interact to begin a run.
+Each entry creates a seeded dungeon with a goddess sanctuary, 8–12 ordinary
+rooms, a locked boss chamber and a final treasure room. Tap tiles to move and
+objects to approach/interact; the dungeon camera follows the player. The authored
+moss halls remain available through the original eastern passage.
+
+Ordinary rooms contain monster encounters, item chests, hidden mimics or fountains.
+Every monster and mimic must be defeated. The final ordinary enemy drops a boss
+room key on the map: pick it up and interact with the boss door to unlock it.
+Defeat the boss and every companion, then pick up the boss's treasure chest key.
+Beyond the boss chamber, choose exactly one of five chests with hidden rewards.
+The remaining chests seal, and a return-to-refuge action becomes available.
+
+The goddess statue can end a run at any time outside combat. Earned items, gold,
+and experience remain; run-specific keys and fountain effects disappear. Defeat
+also ends a run and preserves the existing rebirth/half-gold penalty. Fountains
+work once each and stack their buffs/debuffs for the run, with a cap of 10 per
+effect type. They do not expire with combat turns.
+
+Generation uses the existing pure-rand wrapper with a separate RNG instance.
+Definitions and reward tables live in `src/data/dungeons/basic.json`. Saved
+version 3 campaigns retain generated geometry, hidden outcomes, keys and progress;
+versions 1 and 2 migrate automatically. Encounters still reload at their starting
+checkpoint. The headless dungeon tests cover 200 generated seeds and the complete
+key/reward loop, including save recovery at each stage.
+
 ## Headless engine (Phase 1)
 
 `src/engine` contains the simulation foundation, with no React or native imports.

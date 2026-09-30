@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { WorldMapSchema, validateWorldReferences } from './world';
+import { DungeonDefinitionSchema } from './dungeon';
 
 const id = z.string().trim().min(1);
 const uint = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
@@ -68,9 +69,9 @@ export const MapSchema = z.strictObject({ id, name: id, width: positive.max(128)
 
 export const ContentSchema = z.strictObject({ skills: z.array(SkillSchema), enemies: z.array(EnemySchema),
   classes: z.array(ClassSchema), items: z.array(ItemSchema), statusEffects: z.array(StatusEffectSchema),
-  atlases: z.array(AtlasSchema), maps: z.array(MapSchema), worlds: z.array(WorldMapSchema).default([]),
+  atlases: z.array(AtlasSchema), maps: z.array(MapSchema), worlds: z.array(WorldMapSchema).default([]), dungeons: z.array(DungeonDefinitionSchema).default([]),
 }).superRefine((content, ctx) => {
-  for (const key of ['skills', 'enemies', 'classes', 'items', 'statusEffects', 'atlases', 'maps', 'worlds'] as const) {
+  for (const key of ['skills', 'enemies', 'classes', 'items', 'statusEffects', 'atlases', 'maps', 'worlds', 'dungeons'] as const) {
     const seen = new Set<string>();
     content[key].forEach((entry, index) => {
       if (seen.has(entry.id)) ctx.addIssue({ code: 'custom', message: `Duplicate ${key} ID: ${entry.id}`, path: [key, index, 'id'] });
@@ -92,6 +93,13 @@ export const ContentSchema = z.strictObject({ skills: z.array(SkillSchema), enem
     }
   });
   validateWorldReferences(content, ctx);
+  content.dungeons.forEach((dungeon, index) => {
+    const validEnemies = [...dungeon.monsterIds, dungeon.mimicId, dungeon.bossId, ...dungeon.companionIds]
+      .every((id) => content.enemies.some((enemy) => enemy.id === id));
+    const validRewards = [...dungeon.ordinaryRewards, ...dungeon.finalRewards].every((reward) => content.items.some((item) => item.id === reward.itemId));
+    const validFountains = dungeon.fountainIds.every((id) => content.statusEffects.some((effect) => effect.id === id && effect.effect === 'stat'));
+    if (!validEnemies || !validRewards || !validFountains) ctx.addIssue({ code: 'custom', message: 'Unknown dungeon content reference', path: ['dungeons', index] });
+  });
   content.skills.forEach((skill, index) => skill.statuses.forEach((statusId) => {
     if (!content.statusEffects.some((status) => status.id === statusId)) ctx.addIssue({ code: 'custom', message: 'Unknown skill status', path: ['skills', index, 'statuses'] });
   }));

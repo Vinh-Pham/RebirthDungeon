@@ -113,6 +113,14 @@
         "x": 8,
         "y": 3,
         "destination": "halls"
+      },
+      {
+        "id": "dungeon-entrance",
+        "name": "Enter the moss depths",
+        "kind": "dungeonEntrance",
+        "x": 8,
+        "y": 5,
+        "dungeonId": "moss-depths"
       }
     ]
   },
