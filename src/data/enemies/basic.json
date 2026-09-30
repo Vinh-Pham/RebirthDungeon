@@ -1,0 +1,63 @@
+[
+  {
+    "id": "slime",
+    "name": "Moss slime",
+    "maxHealth": 34,
+    "maxMana": 0,
+    "combatant": {
+      "attack": 8,
+      "defense": 2,
+      "speed": 3,
+      "hitChance": 0.9
+    },
+    "skills": [],
+    "sprite": {
+      "atlas": "dungeon",
+      "frame": 2,
+      "idleFrames": [
+        2,
+        3
+      ]
+    },
+    "experience": 24,
+    "gold": 12,
+    "loot": [
+      {
+        "itemId": "potion",
+        "chance": 1,
+        "min": 1,
+        "max": 1
+      }
+    ]
+  },
+  {
+    "id": "elder-slime",
+    "name": "Elder slime",
+    "maxHealth": 52,
+    "maxMana": 0,
+    "combatant": {
+      "attack": 11,
+      "defense": 4,
+      "speed": 4
+    },
+    "skills": [],
+    "sprite": {
+      "atlas": "dungeon",
+      "frame": 2,
+      "idleFrames": [
+        2,
+        3
+      ]
+    },
+    "experience": 40,
+    "gold": 20,
+    "loot": [
+      {
+        "itemId": "potion",
+        "chance": 1,
+        "min": 1,
+        "max": 1
+      }
+    ]
+  }
+]

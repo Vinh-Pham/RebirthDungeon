@@ -1,6 +1,0 @@
-[bootstrap]
-main_collection = /tests/engine.collectionc
-[project]
-title = RebirthDungeon Tests
-[osx]
-bundle_identifier = games.rebirthdungeon.fixtures

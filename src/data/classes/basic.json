@@ -1,0 +1,26 @@
+[
+  {
+    "id": "warden",
+    "name": "Warden",
+    "maxHealth": 42,
+    "maxMana": 14,
+    "combatant": {
+      "attack": 9,
+      "defense": 3,
+      "speed": 8
+    },
+    "skills": [
+      "fireball",
+      "mend",
+      "focus"
+    ],
+    "sprite": {
+      "atlas": "dungeon",
+      "frame": 0,
+      "idleFrames": [
+        0,
+        1
+      ]
+    }
+  }
+]

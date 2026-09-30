@@ -1,3 +1,0 @@
-default_animation: "tile_0049"
-material: "/builtins/materials/sprite.material"
-textures { sampler: "texture_sampler" texture: "/assets/tiles.atlas" }

@@ -1,0 +1,24 @@
+import type { CampaignState } from './SaveSchema';
+import type { SaveRepository } from './SaveRepository';
+/** Capture detached state at command boundaries, coalesce bursts, surface failures. */
+export class AutoSaver {
+  private pending?: CampaignState;
+  private timer?: ReturnType<typeof setTimeout>;
+  private closed = false;
+  constructor(private repository: SaveRepository, private onError: (error: unknown) => void) {}
+  schedule(state: CampaignState) {
+    if (this.closed) return;
+    this.pending = state;
+    if (this.timer) clearTimeout(this.timer);
+    this.timer = setTimeout(() => { this.timer = undefined; void this.flush().catch(this.onError); }, 250);
+  }
+  async flush() {
+    if (this.timer) { clearTimeout(this.timer); this.timer = undefined; }
+    const state = this.pending; this.pending = undefined;
+    if (state) {
+      try { await this.repository.save('auto', state); }
+      catch (error) { if (!this.pending) this.pending = state; throw error; }
+    }
+  }
+  async dispose() { this.closed = true; await this.flush(); }
+}

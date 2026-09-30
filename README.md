@@ -1,49 +1,279 @@
 # Rebirth Dungeon
 
-A local, single-player Defold RPG: create a character, prepare in Town1, explore a seeded eight-room Alby Dungeon, fight fixed-turn battles, spend the boss’s key in its treasure room, and return home through the goddess statue. Progress saves after each accepted action.
+An Expo SDK 57 RPG with a headless deterministic TypeScript engine, Skia rendering,
+turn-based encounters, exploration, equipment, progression, saves and audio.
 
-## Play
-
-Open `game.project` in **Defold 1.13.1**, fetch project dependencies, then **Project → Build**. The native RNG, A*, Event, DefSave and writer-lock extensions require an initial custom-engine build with internet access.
-
-On macOS, a locally built application is placed in `artifacts/release/RebirthDungeon.app` by the release command below. Builds are local development artifacts, not notarized distributions.
-
-- **WASD / arrows:** walk; **click:** follow a route.
-- **E:** interact with a nearby service or dungeon encounter.
-- **M:** map; click a marker to travel to it.
-- **I / Q:** inventory / quests; **Escape:** close a panel or pause.
-- Click a town NPC (or its map marker) to approach a reachable neighboring tile and open the service. Shops accept quantities from 1 to 99 with **Set quantity**; previews explain funds and capacity limits. **Talk** opens the NPC’s saved conversation; finished conversations can be restarted.
-- **Shift+Tab:** previous enabled control. Focus is outlined; Escape closes details/confirmations before their parent. Mouse wheel changes paged lists/logs, and Settings supports HUD text up to 130%.
-- **Tab / Enter:** move through buttons and inventory rows / activate. In Inventory, select an item for details and actions; type an exact quantity and choose **Set**. Escape cancels discard confirmation or clears selection before closing. The Bank accepts exact item quantities and gold amounts.
-- In battle, select an enemy, optionally use one item, then Attack, use a skill, or Defend. The Skills journal groups learned skills by category and shows effects, exact costs, equipment requirements, training objectives and source notes. During your turn, select an active skill and choose **Use skill**. Starter skills remain at F; higher ranks and books are milestone-6 content.
-
-Start with health and stamina potions from the General Shop. Heal between encounters through Inventory. Clear the contact, chest and switch rooms to open the boss gate; the two side rooms are optional. Reward selection and your single chest choice survive restarts. Menu → Title suspends the current journey.
-
-Character names use an explicit ASCII policy: 2–24 characters, starting with A–Z, with letters, numbers, spaces, apostrophes and hyphens. Up to 20 independent characters are supported. Rebirth becomes available after the planned cooldown.
-
-## Build and verify
-
-Requirements: Python 3, JDK 25+, LuaJIT for the unit suite, and a desktop graphics session for engine tests. The helper downloads the exact matching Bob toolchain and test-library sources. Production library archives are pinned in `game.project`; all revisions are recorded in `tools/dependencies.json`.
-
-```sh
-python3 tools/build.py unit
-python3 tools/build.py test
-python3 tools/build.py visual
-python3 tools/build.py release
+```bash
+npm install
+npx expo start
+npm test
+npm run typecheck
+npm run lint
 ```
 
-The default target is the host's macOS architecture, or x86_64 Linux on Linux. `--platform` chooses another Bob target; a successful cross-build does not establish runtime support. Run build commands sequentially because Bob shares generated native metadata between output directories. Test resources are reachable only from the separate test collections and are excluded from shipping archives.
+Open the Journey tab, speak to the keeper, approach the supplies chest, collect
+and equip the iron blade, then use the eastern passage. Challenge the moss guardian,
+return after victory, collect the moss mail, and challenge the elder guardian.
+Movement works with buttons or by tapping a reachable floor tile. You can return
+to the refuge and rest at the ember shrine. The Codex shows the content definitions.
 
-`tools/compile-dialogue.sh` optionally recompiles the checked-in Ink story using pinned inkjs 2.3.2. It is not needed to play.
+Save slots and sound settings are further down the Journey screen. Three manual
+slots plus an autosave retain character resources, equipment, inventory, XP, gold,
+world flags, map position, encounter checkpoints and exact exploration RNG state.
+Native runtime testing requires a development build after adding native modules.
 
-## Project notes
+## Headless engine (Phase 1)
 
-- [Implementation and remaining scope](docs/implementation-status.md)
-- [Verification evidence](docs/verification.md)
-- [Game plan](docs/game-plan.md) and [documentation index](docs/README.md)
-- [Content values and adaptations](docs/content-data.md)
-- [Art and audio credits](assets/CREDITS.md)
+`src/engine` contains the simulation foundation, with no React or native imports.
+Create an isolated engine with `createGameEngine({ seed: 12345 })`, add entities
+with `engine.spawn({ id: 'player' })`, and register focused systems with
+`engine.addSystem(system)`. Miniplex queries are available through `engine.world`.
+Keep entity IDs fixed and use `spawn` to reject duplicate IDs.
 
-Rules version 2 preserves old aggregate skill training through an explicit migration and freezes run ranks. Save files use versioned A/B generations under Defold's application-data directory (`~/Library/Application Support/RebirthDungeon/` on macOS). A native process lock permits only one writer. Unrecoverable or newer profiles are preserved; a valid older A/B generation can repair its damaged companion. failed writes pause gameplay and offer Retry or Reload. These checks provide recovery from interrupted writes, not a claim of hardware-level power-loss durability.
+Systems can register typed handlers in `initialize` using
+`engine.commands.register('ATTACK', handler)` and return the unsubscribe function.
+Commands execute synchronously and reject malformed inputs or missing handlers;
+systems must validate gameplay rules before changing entities or consuming RNG.
+Events are synchronous, with `engine.events.on(type, listener)` for a specific
+result and `engine.events.subscribe(listener)` for all results. Listener errors
+are aggregated after all subscribers are notified; notifications do not roll back
+simulation mutations.
 
-Combat log: use **Battle log** during combat or **Menu → View combat log** afterward. Select an operation for its costs, hits and status details. Earlier/Later actions preserve your reading position; Jump to latest resumes following. The latest encounter retains up to 100 events through return, defeat and rebirth. Multi-battle archives await a separately verified storage format.
+`engine.update(dt)` updates systems in registration order with an explicit delta
+in seconds. No timer starts automatically. Remove systems using the returned
+cleanup function and call `engine.dispose()` when the engine is no longer needed.
+The seeded RNG exposes `int` (inclusive bounds), `float` ([0, 1)), `chance`, and
+`pick`; seeds must be signed 32-bit integers. Replay reproducibility assumes the
+same engine/library versions, initial entities, system order, and commands.
+
+Run `npm test`, `npm run typecheck`, and `npm run lint` to validate the foundation.
+`src/tests/engine/harness.ts` runs fresh scenarios and captures detached entities
+and events for replay comparisons. Its original attack rule remains a Phase 1 test fixture. Production combat is
+available through the Phase 2 modules below. Rendering and UI integration are described in Phases 3–6 below.
+
+## Basic combat (Phase 2)
+
+Spawn entities with `health`, `combatant`, and exactly one `player: true` or
+`enemy: true` tag, then attach `new CombatSystem(['player', 'slime'])` using
+`engine.addSystem`. Both sides must contain living participants at initialization.
+The system handles `ATTACK` commands and exposes `currentTurn()`, `turnOrder`, and
+`result` (`victory`, `defeat`, or undefined while the battle continues).
+
+```ts
+import { CombatSystem, createGameEngine, createHealth } from './src/engine';
+
+const engine = createGameEngine({ seed: 12345 });
+engine.spawn({ id: 'player', player: true, health: createHealth(30),
+  combatant: { attack: 10, defense: 2, speed: 5 } });
+engine.spawn({ id: 'slime', enemy: true, health: createHealth(20),
+  combatant: { attack: 6, defense: 1, speed: 3 } });
+const combat = new CombatSystem(['player', 'slime']);
+engine.addSystem(combat);
+engine.dispatch({ type: 'ATTACK', attackerId: 'player', targetId: 'slime' });
+// combat.currentTurn() is now 'slime', unless the attack ended the battle.
+engine.dispose();
+```
+
+Turn order is descending speed, with ties preserving participant order; this
+order repeats each round. A valid hit or miss consumes a turn. Wrong-turn attacks,
+allied/self targets, dead units, invalid stats, and nonparticipants are rejected
+before consuming RNG or changing HP. Speeds are fixed for the battle; mid-battle
+joins and speed changes are deferred to later scheduling work.
+
+Hit probability is `max(0, hitChance - target.evasion)`, with defaults 0.95 and 0.
+Critical chance defaults to 0.1 and is rolled only after a hit. Damage is
+`floor(max(1, attack - defense) * criticalMultiplier)` on critical hits, with a
+multiplier default of 1.5; ordinary hits use multiplier 1. Damage events report
+actual HP lost, capped at remaining HP. Health and base combat stats use safe
+integers, and overflowing calculations are rejected before rolling RNG.
+
+Dead units keep their entities with `dead: true`, emit `ENTITY_DIED` once, and
+leave the turn queue. Use `engine.removeEntity(id)` to remove battle participants:
+it emits `ENTITY_REMOVED` after ECS removal so the combat system can update
+initiative and outcomes. Direct `world.remove` bypasses this engine notification.
+Only the registered participants count toward victory or defeat. Presentation
+receives damage/miss, death, turn-end, then battle-end or next-turn events.
+Initialization emits the first `TURN_STARTED` event.
+
+Combat commits authoritative state before publishing events. Nested attacks from
+combat event listeners are rejected; dispatch subsequent actions after the
+current dispatch returns. Listener failures are reported after attempting the
+remaining events; the committed action must not be retried. Combat does no
+per-frame work. The Phase 3 controller below adds state-machine orchestration.
+
+## Battle flow, rendering, animations and content (Phases 3–6)
+
+A battle encounter opens from the Journey exploration screen. Choose Attack, Fireball or
+Mend, select a target with the accessible buttons or a sprite tap, and confirm.
+Enemy turns resolve immediately. The presentation queue plays each resolved action
+in order, without delaying HP, mana, turn order or the battle outcome. Restarting
+uses the same seed (12345) so encounters can be reproduced. The Codex tab displays the validated creature, class, skill, item and status
+definitions. The diamond button
+shows the seed, phase, turn order, positions, entity count and visual queue.
+
+### Phase 3: XState battle flow
+
+`src/engine/battle/BattleMachine.ts` owns initialization, player action/target
+selection, execution, enemy turns, victory and defeat. `BattleController` converts
+`START_BATTLE`, `SELECT_ACTION`, `SELECT_TARGET`, `CONFIRM_ACTION`, `CANCEL_ACTION`
+and `ADVANCE_ENEMY_TURN` commands into machine events. The machine contains no
+damage formulas. In a `BattleSession`, direct ATTACK/USE_SKILL commands are gated
+so they cannot bypass selection and confirmation. The standalone Phase 2 combat
+system remains usable without a state machine.
+
+```ts
+import { loadGameContent } from './src/data/content';
+import { BattleSession } from './src/game/BattleSession';
+
+const session = new BattleSession(loadGameContent(), 12345);
+session.dispatch({ type: 'SELECT_ACTION', action: 'skill', skillId: 'fireball' });
+session.dispatch({ type: 'SELECT_TARGET', targetId: 'slime-1' });
+session.dispatch({ type: 'CONFIRM_ACTION' });
+session.advanceEnemyTurns();
+// Simulation has already advanced; presentation can still be playing.
+session.dispose();
+```
+
+### Phases 4–5: read-only presentation
+
+`src/renderer` renders the tilemap as one cached Skia picture and uses an atlas
+for sprites with data-defined idle frames. Camera zoom/panning and inverse
+coordinate conversion keep touch targeting aligned. Reanimated shared values
+animate lunges, spell projectiles, damage/healing numbers, hit flashes, camera
+shake, HP bars and death opacity on the UI thread. No React state is updated each
+frame. Shared values use the React Compiler-compatible get/set API.
+
+`PresentationQueue` consumes completed simulation events and sequences visual
+batches with presentation-only timers. It never dispatches gameplay commands.
+`BattleSession` exposes cached read-only view projections; the ECS world remains
+the source of truth. Zustand holds only UI preferences. `BattleHost` starts and
+disposes sessions at subscription boundaries, including Strict Mode and restart.
+
+On web, `GameCanvas.web.tsx` loads local CanvasKit before dynamically importing
+Skia components, which stay outside the route directory. `npm install` runs the
+Skia setup scripts for native libraries and generates `public/canvaskit.wasm`.
+The font is Space Mono under the license in `assets/fonts/OFL.txt`; the sprite
+sheet is original procedural pixel art. iOS and Android bundle exports do not
+replace testing in Expo Go or a device development build.
+
+### Phase 6: validated external content
+
+JSON definitions live in `src/data/skills`, `enemies`, `classes`, `items`,
+`status-effects`, `maps` and `atlases`. `ContentRegistry` validates the entire
+bundle through Zod before spawning entities. It rejects invalid stats, unsafe
+damage, duplicate IDs, missing skill/spawn references, invalid atlas frames and
+invalid map spawns. Runtime entities get independent mutable components.
+
+To add an enemy, add a definition and reference it in a map spawn. To add a
+skill, add its definition and list its ID in the class/enemy's skills array.
+Damage skills support one or all enemies; healing supports self or allies. Skills
+validate every target before consuming RNG or spending mana. Damage uses attack
+plus skill power before flat defense and critical scaling. The enemy policy chooses a basic attack against the first living player.
+The RPG runtime systems added in Phase 7 are documented below.
+
+Atlas metadata is data-defined, while bundled image files are registered in the
+renderer because Metro requires static asset references. New sprite frames in
+an existing atlas need only metadata/content changes. New atlas images require a
+static asset registration as well.
+
+Validate with `npm test`, `npm run typecheck`, `npm run lint`,
+`npx expo install --check`, and `npx expo export --platform web`.
+The tests cover command-driven phase transitions, deterministic complete battles,
+skill mana/target validation, content boundaries, camera/atlas math, session
+lifetimes and presentation independence using fake timers.
+
+## RPG and exploration (Phases 7–8)
+
+`src/engine/rpg` derives class stats plus level growth and weapon/armor bonuses,
+validates inventory/equipment ownership, grants XP across level thresholds, and
+rolls loot through seeded RNG. Level cap is 99; stacks cap at 999. Each level needs
+`level * 20` XP, adds 5 max HP, 2 max mana, 2 attack and 1 defense, and restores
+resources. Victory awards the defeated enemy definitions' XP, gold and item drops
+once. Defeat returns to the refuge, restores resources and halves gold.
+
+Combat supports confirmed consumable use and data-defined status applications.
+Fireball applies Burn; Focus applies an attack buff. Status definitions support
+turn-start/end damage, healing and signed stat modifiers, with refresh, bounded
+stack or ignore behavior. Expiry and status deaths update the turn queue and battle
+outcome synchronously. Effects last for their configured ticks (the casting turn
+counts for a self buff), are scoped to an encounter, and never overwrite base stats.
+Speed changes do not reorder the fixed initiative queue during a battle.
+
+`JourneySession` owns the exploration simulation and ECS world. `MOVE`, `TRAVEL_TO`,
+`INTERACT`, `EQUIP_ITEM`, `UNEQUIP_ITEM` and `USE_ITEM` commands enforce cardinal
+movement, tile/object collision, interaction distance, one-time chests and guardian
+encounters. Portals connect JSON world maps. Breadth-first paths give shortest
+routes on these small uniform-cost maps; path travel stops at the first uncleared
+encounter. No rot.js dependency is needed for this map size or cost model.
+World movement, encounter resolution and RNG remain outside React.
+
+Add maps/objects in `src/data/worlds`, battle layouts in `src/data/maps`, loot in
+enemy definitions, and equipment/stat effects in item and status definitions.
+Zod validates dimensions, entry tiles, object positions and all cross-references.
+Skia records static tilemaps once; Reanimated animates hero movement and map fades.
+Accessible buttons provide an alternative to canvas touch interactions.
+
+## Persistence (Phase 9)
+
+`SaveRepository` validates both outgoing and loaded saves before replacing a
+session. Version 2 saves migrate version 1 by supplying audio defaults; malformed,
+unknown-reference and future-version saves fail with a visible error. Failed loads
+preserve the current session and other slots. Character values, map positions,
+claimed objects, equipment and RNG state are validated against current content.
+JSON data is cloned with a Hermes-compatible helper rather than requiring
+`structuredClone` in the mobile runtime.
+
+Native `createSaveStorage` uses Expo SQLite, WAL, parameterized upserts and an
+atomic/idempotent database schema migration. Web uses IndexedDB transactions with
+the same schema/repository, avoiding SQLite web's SharedArrayBuffer hosting
+requirements. Save-format migrations and database migrations are separate.
+`AutoSaver` coalesces command bursts (250ms), captures detached data, serializes
+writes, surfaces storage failures and retries retained data on the next flush.
+Backgrounding/unmount flushes queued changes; host generations prevent stale async
+loads from replacing a remounted session.
+
+Saving uses exploration and encounter-boundary checkpoints. While an encounter
+is active, loading/restarting the app resumes that encounter from its original
+hero resources and seed. Partial battle turns and animation timers are intentionally
+not serialized. Manual save/load controls are available during exploration;
+returning from a completed battle commits rewards/resources before autosave.
+An abrupt process kill within the autosave debounce can lose the latest step.
+
+## Audio and polish (Phase 10)
+
+`AudioManager` subscribes to simulation events through an injected backend. The
+Expo audio backend provides a bounded pool for overlapping SFX, looping exploration
+and battle music, mute and independent music/SFX volume controls. Players and
+subscriptions are released with the session; backgrounding pauses music. Audio
+failures are surfaced without changing gameplay. Playback-only config disables
+microphone permissions, recording and background audio services.
+
+`assets/audio` contains original synthesized WAV music and SFX. Sound starts when
+explicitly enabled. After a browser reload, Resume sound uses a fresh user gesture
+to unlock playback while retaining saved volume preferences. `ParticleRenderer` adds
+presentation-only impact/healing bursts, alongside HP/damage/death animation,
+spell effects, camera shake, smooth world movement and map fade transitions.
+Haptics remain optional and are not enabled.
+
+## Verification
+
+The tests include generated path/RNG invariants, battle status and item flows,
+progression/equipment/loot, world transitions, checkpoint replay, corrupt/future
+save rejection, version migration, autosave ordering/failures, host lifetimes,
+actual SQLite round trips via Node's built-in SQLite, and audio cleanup/failure
+isolation. Run tests with Node 24 or newer for the SQLite integration suite.
+
+```bash
+npm test
+npx tsc --noEmit
+npx expo lint
+npx expo-doctor
+npx expo install --check
+npx expo export --platform ios --platform android --platform web
+```
+
+Browser testing covers the playable loop, save/load, reload persistence and sound
+controls. Bundle exports and desktop SQLite tests do not verify native audio or
+SQLite behavior on a device; exercise those in an Expo development build.
+SDK references fetched with Firecrawl: [SQLite](https://docs.expo.dev/versions/v57.0.0/sdk/sqlite/),
+[Audio](https://docs.expo.dev/versions/v57.0.0/sdk/audio/).

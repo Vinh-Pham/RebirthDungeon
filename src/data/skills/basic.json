@@ -1,0 +1,36 @@
+[
+  {
+    "id": "fireball",
+    "name": "Fireball",
+    "manaCost": 5,
+    "power": 12,
+    "element": "fire",
+    "target": "enemy",
+    "hitChance": 1,
+    "criticalChance": 0.15,
+    "statuses": [
+      "burn"
+    ]
+  },
+  {
+    "id": "mend",
+    "name": "Mend",
+    "manaCost": 4,
+    "power": 12,
+    "element": "physical",
+    "target": "self",
+    "effect": "heal"
+  },
+  {
+    "id": "focus",
+    "name": "Focus",
+    "manaCost": 3,
+    "power": 0,
+    "element": "physical",
+    "target": "self",
+    "effect": "buff",
+    "statuses": [
+      "focus"
+    ]
+  }
+]

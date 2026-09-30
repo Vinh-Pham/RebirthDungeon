@@ -1,0 +1,28 @@
+[
+  {
+    "id": "potion",
+    "name": "Healing potion",
+    "kind": "consumable",
+    "price": 10,
+    "power": 20,
+    "description": "A draught of bitter herbs, prized for its restorative power."
+  },
+  {
+    "id": "iron-blade",
+    "name": "Iron blade",
+    "kind": "weapon",
+    "price": 30,
+    "power": 4,
+    "stat": "attack",
+    "description": "A balanced blade. +4 attack."
+  },
+  {
+    "id": "moss-mail",
+    "name": "Moss mail",
+    "kind": "armor",
+    "price": 35,
+    "power": 3,
+    "stat": "defense",
+    "description": "Living moss cushions each blow. +3 defense."
+  }
+]

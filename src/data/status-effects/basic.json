@@ -1,0 +1,33 @@
+[
+  {
+    "id": "burn",
+    "name": "Burn",
+    "duration": 3,
+    "tickTiming": "turnEnd",
+    "stacking": "refresh",
+    "effect": "damage",
+    "power": 3
+  },
+  {
+    "id": "focus",
+    "name": "Focus",
+    "duration": 3,
+    "tickTiming": "turnEnd",
+    "stacking": "refresh",
+    "effect": "stat",
+    "power": 0,
+    "stat": "attack",
+    "modifier": 4
+  },
+  {
+    "id": "weakness",
+    "name": "Weakness",
+    "duration": 2,
+    "tickTiming": "turnEnd",
+    "stacking": "refresh",
+    "effect": "stat",
+    "power": 0,
+    "stat": "attack",
+    "modifier": -3
+  }
+]

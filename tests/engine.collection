@@ -1,2 +1,0 @@
-name: "tests"
-embedded_instances { id: "test" data: "components { id: \"test\" component: \"/tests/engine.script\" }\n" }
