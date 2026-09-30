@@ -64,7 +64,7 @@ describe('save storage and autosave', () => {
       async execAsync(sql) { db.exec(sql); },
       async runAsync(sql, ...params) { return db.prepare(sql).run(...params); },
       async getFirstAsync<T>(sql: string, ...params: (string | number)[]) { return (db.prepare(sql).get(...params) as T | undefined) ?? null; },
-      async getAllAsync<T>(sql: string) { return db.prepare(sql).all() as T[]; }, async closeAsync() { db.close(); },
+      async getAllAsync<T>(sql: string, ...params: (string | number)[]) { return db.prepare(sql).all(...params) as T[]; }, async closeAsync() { db.close(); },
     };
     const storage = await new SQLiteSaveStorage(driver).initialize(); await storage.initialize();
     const repository = new SaveRepository(storage, content);
@@ -72,7 +72,7 @@ describe('save storage and autosave', () => {
     expect(await repository.list()).toHaveLength(4); expect((await repository.load('2'))?.hero.gold).toBe(20);
     const updated = state(); updated.hero.gold = 99; await repository.save('2', updated);
     expect((await repository.load('2'))?.hero.gold).toBe(99); expect((await repository.load('1'))?.hero.gold).toBe(10);
-    expect(db.prepare('PRAGMA user_version').get()?.user_version).toBe(1); await repository.close();
+    expect(db.prepare('PRAGMA user_version').get()?.user_version).toBe(2); await repository.close();
   });
   it('preserves save slots when corrupt or future-version loads fail', async () => {
     const rows = new Map<string, SaveRow>(); const repository = new SaveRepository(memory(rows), content);

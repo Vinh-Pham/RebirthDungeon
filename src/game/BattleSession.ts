@@ -37,7 +37,7 @@ export class BattleSession {
   private log: string[] = [];
   private disposed = false;
 
-  constructor(readonly content: ContentRegistry, seed = 12345, mapId: string | TileMap = 'chamber', hero?: Hero, effects: readonly { statusId: string; stacks: number }[] = []) {
+  constructor(readonly content: ContentRegistry, seed = 12345, mapId: string | TileMap = 'chamber', hero?: Hero, effects: readonly { statusId: string; stacks: number }[] = [], characterName?: string) {
     const map = typeof mapId === 'string' ? content.data.maps.find((entry) => entry.id === mapId) : MapSchema.parse(mapId);
     if (!map) throw new Error(`Unknown map: ${mapId}`);
     this.map = map;
@@ -45,6 +45,7 @@ export class BattleSession {
     for (const spawn of map.spawns) this.engine.spawn(content.spawn(spawn.kind === 'player' && hero ? hero.classId : spawn.definitionId, spawn.entityId, spawn.kind,
       spawn.x * map.tileSize, spawn.y * map.tileSize));
     if (hero) for (const entity of this.engine.world.entities) if (entity.player) applyHero(entity, hero, content, effects);
+    if (characterName) for (const entity of this.engine.world.entities) if (entity.player) entity.name = characterName;
     this.combat = new CombatSystem(map.spawns.map((spawn) => spawn.entityId), { content,
       canAct: () => this.battle.isResolving });
     this.battle = new BattleController(this.combat, content);

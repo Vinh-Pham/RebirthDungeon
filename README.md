@@ -11,7 +11,15 @@ npm run typecheck
 npm run lint
 ```
 
-Open the Journey tab, speak to the keeper, approach the supplies chest, collect
+Press **Play**, then choose a saved character or **Create New Character**. Enter a
+name (1–24 characters), choose Warrior, Archery or Mage, and select an age from
+10–17. Talent and age are character details; they do not change combat stats yet.
+Each character has an independent autosave and three manual slots. Use
+**Characters** above the game to save progress and return to the roster.
+Existing saves appear as **Imported Adventurer**; complete its character details
+once to continue. Original legacy save rows remain available as recovery copies.
+
+On the Journey tab, speak to the keeper, approach the supplies chest, collect
 and equip the iron blade, then use the eastern passage. Challenge the moss guardian,
 return after victory, collect the moss mail, and challenge the elder guardian.
 Movement works with buttons or by tapping a reachable floor tile. You can return

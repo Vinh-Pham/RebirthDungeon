@@ -22,7 +22,7 @@ export class JourneySession {
   private disposed = false;
   private dispatching = false;
   private dungeonMap?: WorldMap;
-  constructor(readonly content: ContentRegistry, restored?: CampaignState, seed = 12345) {
+  constructor(readonly content: ContentRegistry, restored?: CampaignState, seed = 12345, readonly characterName?: string) {
     this.engine = createGameEngine({ seed: restored?.seed ?? seed });
     const first = content.data.worlds[0];
     if (!first) throw new Error('No exploration map defined');
@@ -174,7 +174,7 @@ export class JourneySession {
   createBattle(): BattleSession {
     if (!this.state.pending) throw new Error('No pending encounter');
     const encounter = this.state.dungeon?.blueprint.encounters.find((entry) => entry.objectId === this.state.pending!.objectId);
-    return new BattleSession(this.content, this.state.pending.seed, encounter?.map ?? this.state.pending.mapId, cloneData(this.state.hero), this.state.dungeon?.effects);
+    return new BattleSession(this.content, this.state.pending.seed, encounter?.map ?? this.state.pending.mapId, cloneData(this.state.hero), this.state.dungeon?.effects, this.characterName);
   }
   finishBattle(battle: BattleSession) {
     if (this.disposed || !this.state.pending || !battle.combat.result || battle.engine.seed !== this.state.pending.seed || battle.map.id !== this.state.pending.mapId) throw new Error('Encounter is not ready to finish');
@@ -241,6 +241,7 @@ export class JourneySession {
   private spawnWorld() {
     this.engine.world.clear();
     const hero = this.content.spawn(this.state.hero.classId, 'player', 'player', this.state.position.x, this.state.position.y);
+    if (this.characterName) hero.name = this.characterName;
     applyHero(hero, this.state.hero, this.content, this.state.dungeon?.effects); this.engine.spawn(hero);
     this.map.objects.forEach((obj) => this.engine.spawn({ id: obj.id, name: obj.name, position: { x: obj.x, y: obj.y } }));
   }

@@ -5,6 +5,7 @@ export class AutoSaver {
   private pending?: CampaignState;
   private timer?: ReturnType<typeof setTimeout>;
   private closed = false;
+  private inFlight?: Promise<void>;
   constructor(private repository: SaveRepository, private onError: (error: unknown) => void) {}
   schedule(state: CampaignState) {
     if (this.closed) return;
@@ -12,12 +13,22 @@ export class AutoSaver {
     if (this.timer) clearTimeout(this.timer);
     this.timer = setTimeout(() => { this.timer = undefined; void this.flush().catch(this.onError); }, 250);
   }
-  async flush() {
+  async flush(): Promise<void> {
     if (this.timer) { clearTimeout(this.timer); this.timer = undefined; }
+    if (this.inFlight) {
+      await this.inFlight;
+      return this.flush();
+    }
     const state = this.pending; this.pending = undefined;
     if (state) {
-      try { await this.repository.save('auto', state); }
+      let writing: Promise<void> | undefined;
+      try {
+        writing = this.repository.save('auto', state);
+        this.inFlight = writing;
+        await writing;
+      }
       catch (error) { if (!this.pending) this.pending = state; throw error; }
+      finally { if (this.inFlight === writing) this.inFlight = undefined; }
     }
   }
   async dispose() { this.closed = true; await this.flush(); }

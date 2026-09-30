@@ -6,21 +6,23 @@ import {
   TabTriggerSlotProps,
   TabListProps,
 } from 'expo-router/ui';
+import { useLocalSearchParams } from 'expo-router';
 import { Pressable, View, Text, StyleSheet } from 'react-native';
 
 
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 
 export default function AppTabs() {
+  const { characterId } = useLocalSearchParams<{ characterId: string }>();
   return (
     <Tabs>
       <TabSlot style={{ height: '100%' }} />
       <TabList asChild>
         <CustomTabList>
-          <TabTrigger name="home" href="/" asChild>
+          <TabTrigger name="home" href={{ pathname: '/game/[characterId]', params: { characterId } }} asChild>
             <TabButton>Journey</TabButton>
           </TabTrigger>
-          <TabTrigger name="explore" href="/explore" asChild>
+          <TabTrigger name="explore" href={{ pathname: '/game/[characterId]/explore', params: { characterId } }} asChild>
             <TabButton>Codex</TabButton>
           </TabTrigger>
         </CustomTabList>

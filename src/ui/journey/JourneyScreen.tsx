@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { AppState, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { loadGameContent } from '../../data/content';
 import type { JourneySession } from '../../game/JourneySession';
 import { JourneyHost } from '../../game/JourneyHost';
-import { createSaveStorage } from '../../persistence/createSaveStorage';
+import { useCharacterGame } from '../menu/CharacterGameContext';
 import { AudioManager, type AudioSettings } from '../../audio/AudioManager';
 import { ExpoAudioBackend } from '../../audio/ExpoAudioBackend';
 import { BattleView, ArenaBoundary } from '../battle/BattleScreen';
@@ -18,7 +17,7 @@ function Button({ label, onPress, disabled = false, selected = false }: { label:
     style={({ pressed }) => [styles.button, disabled && styles.disabled, selected && styles.selected, pressed && styles.pressed]}><Text style={styles.buttonText}>{label}</Text></Pressable>;
 }
 export default function JourneyScreen() {
-  const [host] = useState(() => new JourneyHost(loadGameContent(), createSaveStorage));
+  const { host } = useCharacterGame();
   const snapshot = useSyncExternalStore(host.subscribe, host.getSnapshot, host.getServerSnapshot);
   const session = snapshot.session;
   const [error, setError] = useState<string>();
@@ -31,7 +30,7 @@ export default function JourneyScreen() {
     const disconnect = manager.connect(session.engine.events);
     manager.setSettings(session.getSnapshot().state.audio);
     if (Platform.OS !== 'web' && session.getSnapshot().state.audio.enabled) void manager.enable(session.getSnapshot().state.audio);
-    const lifecycle = AppState.addEventListener('change', (state) => { manager.suspend(state !== 'active'); if (state !== 'active') void host.flush(); });
+    const lifecycle = AppState.addEventListener('change', (state) => { manager.suspend(state !== 'active'); });
     return () => { disconnect(); lifecycle.remove(); manager.dispose(); audio.current = null; };
   }, [session, host]);
   useEffect(() => {
@@ -75,7 +74,7 @@ function Exploration({ host, session, soundReady, onAudioSettings, error, setErr
     const next = { ...state.audio, [channel]: Math.round(Math.max(0, Math.min(1, state.audio[channel] + delta)) * 10) / 10 };
     session.setAudio(next); onAudioSettings(next);
   };
-  return <SafeAreaView style={styles.screen}><ScrollView key={map.id} contentContainerStyle={styles.scroll}><View style={[styles.content, { width }]}>
+  return <SafeAreaView edges={['bottom']} style={styles.screen}><ScrollView key={map.id} contentContainerStyle={styles.scroll}><View style={[styles.content, { width }]}>
     <Text style={styles.eyebrow}>REBIRTH DUNGEON · JOURNEY</Text><Text style={styles.title}>{map.name}</Text>
     <Text style={styles.body}>Tap a floor tile to move. Tap an object to approach it, then tap again to interact.</Text>
     <View style={styles.map}><ArenaBoundary><WorldCanvas key={map.id} session={session} width={width} dispatch={dispatch} onObjectPress={interact} /></ArenaBoundary></View>
@@ -89,7 +88,7 @@ function Exploration({ host, session, soundReady, onAudioSettings, error, setErr
       {run.selectedChest && currentRoom?.kind === 'treasure' ? <Button label="Return to the refuge" disabled={hostView.busy} onPress={() => dispatch({ type: 'EXIT_DUNGEON' })} /> : null}
     </View> : null}
     <View style={styles.card}>
-      <Text style={styles.heading}>Warden · Level {state.hero.level}</Text>
+      <Text style={styles.heading}>{session.characterName ?? 'Warden'} · Level {state.hero.level}</Text>
       <Text style={styles.body}>{state.hero.health}/{stats.maxHealth} HP · {state.hero.mana}/{stats.maxMana} Mana · {state.hero.gold} gold</Text>
       <Text style={styles.body}>Attack {stats.combatant.attack} · Defense {stats.combatant.defense} · Speed {stats.combatant.speed}</Text>
       <Text style={styles.body}>{state.hero.level < 99 ? `${state.hero.experience}/${experienceToNextLevel(state.hero.level)} XP to next level` : 'Maximum level'}</Text>

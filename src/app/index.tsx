@@ -1,2 +1,1 @@
-import JourneyScreen from '../ui/journey/JourneyScreen';
-export default JourneyScreen;
+export { default } from '../ui/menu/TitleScreen';
