@@ -40,6 +40,19 @@ export function heroStats(hero: Hero, content: ContentRegistry, effects: readonl
   }
   return calculateCharacterStats(heroStatSource(hero, effects), content);
 }
+/** Inspect a loadout without changing ownership, resources, durability or RNG. */
+export function previewEquipment(hero: Hero, reference: OwnedItem | { slot: 'weapon' | 'armor' }, content: ContentRegistry, effects: readonly { statusId: string; stacks: number }[] = []) {
+  const equipment = { ...hero.equipment };
+  if ('slot' in reference) delete equipment[reference.slot];
+  else if ('weaponId' in reference) {
+    if (!hero.weapons[reference.weaponId]) throw new Error('This weapon is not in your pack');
+    equipment.weapon = reference.weaponId;
+  } else {
+    if (!hero.inventory[reference.itemId] || content.item(reference.itemId).kind !== 'armor') throw new Error('This item cannot be equipped');
+    equipment.armor = reference.itemId;
+  }
+  return { before: heroStats(hero, content, effects), after: heroStats({ ...hero, equipment }, content, effects) };
+}
 export function restoreHero(hero: Hero, content: ContentRegistry) {
   const stats = heroStats(hero, content); hero.health = stats.maxHealth; hero.mana = stats.maxMana; hero.stamina = stats.maxStamina; hero.wounds = 0; hero.fullness = 100;
 }

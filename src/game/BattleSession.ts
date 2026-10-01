@@ -1,6 +1,6 @@
 import { cloneData } from '../engine/cloneData';
 import { EncounterTraining, type TrainingLedger } from '../engine/rpg/Skills';
-import { applyHero, createHero, type Hero } from '../engine/rpg/Character';
+import { applyHero, createHero, type Hero, type Weapon } from '../engine/rpg/Character';
 import { calculateCharacterStats, type CharacterStats, type StatSource } from '../engine/rpg/Stats';
 import { effectiveEntity } from '../engine/rpg/StatusEffects';
 import { createGameEngine } from '../engine/GameEngine';
@@ -25,6 +25,7 @@ export interface CharacterReview {
 }
 export interface BattleView {
   character?: CharacterReview;
+  inventory?: { items: Record<string, number>; weapon?: Weapon & { id: string } };
   phase: BattlePhase;
   turnId?: string;
   selectedTargetId?: string;
@@ -108,7 +109,7 @@ export class BattleSession {
     const character: CharacterReview | undefined = player && stats ? { source: cloneData(player.statSource!), stats: { ...stats, combatant: { ...effectiveEntity(player, this.content).combatant! } }, health: player.health!.current, mana: player.mana!.current, stamina: player.stamina!.current, wounds: player.wounds!, fullness: player.fullness!,
       statuses: (player.statuses ?? []).map((status) => ({ name: this.content.status(status.id).name, turns: status.remainingTurns, stacks: status.stacks })),
       weapon: player.weapon ? { name: this.content.item(player.weapon.itemId).name, durability: player.weapon.durability, maxDurability: this.content.item(player.weapon.itemId).maxDurability! } : undefined } : undefined;
-    this.snapshot = { character, phase: this.battle.phase, turnId: this.combat.currentTurn(),
+    this.snapshot = { character, inventory: player ? { items: { ...player.inventory }, weapon: player.weapon ? { ...player.weapon } : undefined } : undefined, phase: this.battle.phase, turnId: this.combat.currentTurn(),
       selectedAction: this.battle.context.action ? { ...this.battle.context.action } : undefined, selectedTargetId: this.battle.context.targetId,
       entities: this.projectEntities(), targets: this.battle.validTargetIds(), log: [...this.log], training: this.training.snapshot() };
     this.listeners.forEach((listener) => listener());

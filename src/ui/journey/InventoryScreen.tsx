@@ -1,6 +1,6 @@
-import { router } from 'expo-router';
 import ProgressionFeedback from '../skills/ProgressionFeedback';
-import { useState, useSyncExternalStore } from 'react';
+import { Input } from 'heroui-native/input';
+import { useMemo, useState, useSyncExternalStore } from 'react';
 import { Text, View } from 'react-native';
 import type { GameCommand } from '../../engine/commands';
 import type { JourneyHost } from '../../game/JourneyHost';
@@ -8,10 +8,13 @@ import type { JourneySession } from '../../game/JourneySession';
 import { useCharacterGame } from '../menu/CharacterGameContext';
 import { MenuPage, menu } from '../menu/MenuUI';
 import { DungeonButton, DungeonCard, DungeonLoading, DungeonNotice } from '../shared/DungeonUI';
+import InventoryDetails from './InventoryDetails';
 import InventoryPager, { INVENTORY_PAGE_SIZE, inventoryPage } from './InventoryPager';
+import { inventoryRowLabel, inventoryRows, visibleInventoryRows, type InventoryFilter } from './inventoryRows';
 
 const noSubscribe = () => () => {};
 const noSnapshot = () => undefined;
+const filters = [['all', 'All'], ['supplies', 'Supplies'], ['equipment', 'Equipment'], ['books', 'Books']] as const;
 
 export default function InventoryScreen() {
   const { host } = useCharacterGame();
@@ -34,55 +37,54 @@ export function InventoryContent({ host, session }: { host: JourneyHost; session
   const hosted = useSyncExternalStore(host.subscribe, host.getSnapshot, host.getServerSnapshot);
   const battle = useSyncExternalStore(hosted.battle?.subscribe ?? noSubscribe, hosted.battle?.getSnapshot ?? noSnapshot, noSnapshot);
   const [page, setPage] = useState(0);
+  const [filter, setFilter] = useState<InventoryFilter>('all');
+  const [search, setSearch] = useState('');
+  const [selectedKey, setSelectedKey] = useState<string>();
   const [error, setError] = useState<string>();
   const hero = view.state.hero;
-  const player = battle ? hosted.battle?.engine.getEntity('player') : undefined;
-  const items = Object.entries(player?.inventory ?? hero.inventory);
-  const weapons = Object.entries(hero.weapons);
-  const currentPage = inventoryPage(page, weapons.length);
+  const rows = useMemo(() => inventoryRows(hero, session.content, battle?.inventory), [hero, session.content, battle?.inventory]);
+  const visible = useMemo(() => visibleInventoryRows(rows, filter, search), [rows, filter, search]);
+  const selected = rows.find((row) => row.key === selectedKey);
+  const currentPage = inventoryPage(page, visible.length);
   const start = currentPage * INVENTORY_PAGE_SIZE;
-  const { profile } = useCharacterGame();
-  const disabled = hosted.busy || !!hosted.battle || !!hosted.retryAvailable;
-  const progressionDisabled = disabled || !!view.state.dungeon || !view.map.theme;
+  const disabled = hosted.busy || !!hosted.battle || !!hosted.retryAvailable || !!view.state.pending;
+  const town = !view.state.dungeon && !view.state.pending && !!view.map.theme;
+  const equippedWeapon = rows.find((row) => row.equipped && row.item.kind === 'weapon');
+  const equippedArmor = rows.find((row) => row.equipped && row.item.kind === 'armor');
   const dispatch = (command: GameCommand) => {
-    if (host.getSnapshot().busy || host.getSnapshot().battle) return;
+    const current = host.getSnapshot();
+    if (current.busy || current.battle || current.retryAvailable) return;
     try { setError(undefined); session.dispatch(command); }
     catch (failure: unknown) { setError(failure instanceof Error ? failure.message : 'This item could not be used.'); }
   };
+  const back = () => { setSelectedKey(undefined); setError(undefined); };
   return <View className="gap-4">
-    {hosted.battle ? <DungeonNotice status="accent" message="Inventory is read-only during encounters. Use the battle Item menu for consumables." /> : null}
-    <DungeonCard><Text className="text-accent" style={menu.heading}>Your pack</Text>
-      {!items.length && !weapons.length ? <Text className="text-muted" style={menu.body}>Your pack is empty.</Text> : null}
-      {items.map(([id, quantity]) => {
-        const item = session.content.item(id);
-        const equipped = Object.values(hero.equipment).includes(id);
-        return <View key={id} className="gap-2 py-2">
-          <Text className="text-foreground" style={menu.body}>{item.name} ×{quantity}{equipped ? ' · equipped' : ''}</Text>
-          <Text className="text-muted" style={menu.body}>{item.description}</Text>
-          {item.kind === 'skillBook' ? <DungeonButton label={`Read ${item.name}`} disabled={progressionDisabled || !!hero.learnedSkills[item.skillId!]} onPress={() => { void host.progress({ type: 'READ_SKILL_BOOK', itemId: id }); }} />
-            : ['skillPage', 'incompleteBook'].includes(item.kind) ? <DungeonButton label="View book collection" onPress={() => router.navigate({ pathname: '/game/[characterId]/skills', params: { characterId: profile.id } })} />
-            : <DungeonButton disabled={disabled} selected={equipped}
-              label={`${item.kind === 'consumable' ? 'Use' : equipped ? 'Unequip' : 'Equip'} ${item.name}`}
-              onPress={() => dispatch(item.kind === 'consumable' ? { type: 'USE_ITEM', sourceId: 'player', targetId: 'player', itemId: id }
-                : equipped ? { type: 'UNEQUIP_ITEM', slot: 'armor' } : { type: 'EQUIP_ITEM', itemId: id })} />}
-          {item.kind === 'skillBook' && !view.map.theme ? <Text className="text-muted" style={menu.body}>Return to town to read</Text> : null}
-        </View>;
-      })}
-      {weapons.slice(start, start + INVENTORY_PAGE_SIZE).map(([weaponId, weapon], offset) => {
-        const index = start + offset;
-        const item = session.content.item(weapon.itemId);
-        const equipped = hero.equipment.weapon === weaponId;
-        const durability = player?.weapon?.id === weaponId ? player.weapon.durability : weapon.durability;
-        return <View key={weaponId} className="gap-2 py-2">
-          <Text className="text-foreground" style={menu.body}>{item.name} · Weapon {index + 1}{equipped ? ' · equipped' : ''}</Text>
-          <Text className="text-muted" style={menu.body}>{durability}/{item.maxDurability} durability{durability === 0
-            ? ' · broken, no stat bonus; repair at the blacksmith' : ` · +${item.power} ${item.stat ?? 'attack'}`}</Text>
-          <DungeonButton disabled={disabled} selected={equipped} label={`${equipped ? 'Unequip' : 'Equip'} ${item.name} · Weapon ${index + 1}`}
-            onPress={() => dispatch(equipped ? { type: 'UNEQUIP_ITEM', slot: 'weapon' } : { type: 'EQUIP_WEAPON', weaponId })} />
-        </View>;
-      })}
-      <InventoryPager label="Weapons" page={currentPage} count={weapons.length} disabled={hosted.busy} onPage={setPage} />
-    </DungeonCard>
+    {hosted.battle ? <DungeonNotice status="accent" message="Inventory is read-only during encounters. Equipment cannot change during battle; use the battle Item menu for consumables." /> : null}
     <DungeonNotice message={error} />
+    {selected ? <InventoryDetails row={selected} hero={hero} host={host} session={session} review={battle?.character} disabled={disabled} town={town} dispatch={dispatch} back={back} /> : <>
+      {selectedKey ? <DungeonNotice status="accent" message="That item is no longer in your pack." /> : null}
+      <DungeonCard>
+        <Text className="text-accent" accessibilityRole="header" style={menu.heading}>Equipment</Text>
+        <Text className="text-muted" style={menu.body}>{hero.gold.toLocaleString()} gold · Character pack</Text>
+        {equippedWeapon ? <DungeonButton label={inventoryRowLabel(equippedWeapon)} detail={`${equippedWeapon.durability} / ${equippedWeapon.item.maxDurability} durability${equippedWeapon.durability === 0 ? ' · Broken; repair at the blacksmith' : ''}`}
+          onPress={() => { setSelectedKey(equippedWeapon.key); setError(undefined); }} /> : <Text className="text-muted" style={menu.body}>Weapon: Bare hands</Text>}
+        {equippedArmor ? <DungeonButton label={equippedArmor.item.name} detail="Armor · One equipped copy" onPress={() => { setSelectedKey(equippedArmor.key); setError(undefined); }} /> : <Text className="text-muted" style={menu.body}>Armor: None</Text>}
+        {view.state.dungeon ? <Text className="text-muted" style={menu.body}>Dungeon keys · Boss: {view.state.dungeon.bossKey.status} · Treasure: {view.state.dungeon.treasureKey.status}</Text> : null}
+      </DungeonCard>
+      <DungeonCard>
+        <Text className="text-accent" accessibilityRole="header" style={menu.heading}>Your pack</Text>
+        <Text className="text-muted" style={menu.body}>Supplies stack up to 999 of each item. Weapons retain their own durability. Tap an item to inspect it.</Text>
+        <Input accessibilityLabel="Search inventory" value={search} placeholder="Search your pack" autoCorrect={false} autoCapitalize="none" returnKeyType="search"
+          onChangeText={(value) => { setSearch(value); setPage(0); setSelectedKey(undefined); }} className="min-h-12 border border-border" />
+        <View className="flex-row flex-wrap gap-2">{filters.map(([value, label]) => <DungeonButton key={value} label={label} selected={filter === value}
+          accessibilityLabel={`Show ${label.toLowerCase()} in inventory`} onPress={() => { setFilter(value); setPage(0); setSelectedKey(undefined); }} />)}</View>
+        <Text className="text-muted" accessibilityLiveRegion="polite" style={menu.body}>{visible.length} {visible.length === 1 ? 'entry' : 'entries'} · Sorted by name</Text>
+        {!visible.length ? <Text className="text-muted" style={menu.body}>{!rows.length ? 'Your pack is empty.' : 'No items match this search and filter.'}</Text> : null}
+        {visible.slice(start, start + INVENTORY_PAGE_SIZE).map((row) => <DungeonButton key={row.key} label={inventoryRowLabel(row)}
+          detail={`Character pack · ${row.item.kind === 'weapon' ? `${row.durability} / ${row.item.maxDurability} durability${row.durability === 0 ? ' · Broken' : ''}` : row.item.kind === 'consumable' ? 'Supply' : row.item.kind === 'armor' ? 'Armor' : 'Skill collection'}`}
+          onPress={() => { setSelectedKey(row.key); setError(undefined); }} />)}
+        <InventoryPager label="Pack entries" page={currentPage} count={visible.length} onPage={setPage} />
+      </DungeonCard>
+    </>}
   </View>;
 }
