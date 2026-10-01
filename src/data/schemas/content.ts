@@ -2,12 +2,14 @@ import { z } from 'zod';
 import { WorldMapSchema, validateWorldReferences } from './world';
 import { DungeonDefinitionSchema } from './dungeon';
 import { ShopSchema } from './town';
+import { SkillRankSchema, SKILL_RANKS } from './skillRank';
+import { QuestSchema, TitleAwardSchema, validateQuestReferences } from './quests';
+export { SkillRankSchema } from './skillRank';
 
 const id = z.string().trim().min(1);
 const uint = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
 const positive = uint.min(1);
 const probability = z.number().min(0).max(1);
-export const SkillRankSchema = z.enum(['F', 'E', 'D', 'C', 'B', 'A', '9', '8', '7', '6', '5', '4', '3', '2', '1']);
 const SkillReferenceSchema = z.strictObject({
   url: z.url(), retrievedAt: z.iso.date(),
   ranks: z.array(SkillRankSchema).length(15),
@@ -115,8 +117,9 @@ export const ContentSchema = z.strictObject({ skills: z.array(SkillSchema), enem
   classes: z.array(ClassSchema), items: z.array(ItemSchema), statusEffects: z.array(StatusEffectSchema),
   atlases: z.array(AtlasSchema), maps: z.array(MapSchema), worlds: z.array(WorldMapSchema).default([]), dungeons: z.array(DungeonDefinitionSchema).default([]),
   shops: z.array(ShopSchema).default([]), skillBookRecipes: z.array(SkillBookRecipeSchema).default([]),
+  quests: z.array(QuestSchema).max(1000).default([]), titles: z.array(TitleAwardSchema).max(1000).default([]), questFlags: z.array(id).max(1000).default([]),
 }).superRefine((content, ctx) => {
-  for (const key of ['skills', 'enemies', 'classes', 'items', 'statusEffects', 'atlases', 'maps', 'worlds', 'dungeons', 'shops', 'skillBookRecipes'] as const) {
+  for (const key of ['skills', 'enemies', 'classes', 'items', 'statusEffects', 'atlases', 'maps', 'worlds', 'dungeons', 'shops', 'skillBookRecipes', 'quests', 'titles'] as const) {
     const seen = new Set<string>();
     content[key].forEach((entry, index) => {
       if (seen.has(entry.id)) ctx.addIssue({ code: 'custom', message: `Duplicate ${key} ID: ${entry.id}`, path: [key, index, 'id'] });
@@ -138,7 +141,7 @@ export const ContentSchema = z.strictObject({ skills: z.array(SkillSchema), enem
     }
   });
   const issue = (message: string) => ctx.addIssue({ code: 'custom', message });
-  const rankOrder = SkillRankSchema.options;
+  const rankOrder = SKILL_RANKS;
   for (const skill of content.skills) if (skill.gameRanks) {
     if (!skill.gameRanks.F || !['active', 'passive'].includes(skill.kind ?? '')) issue('Implemented skills need F and an explicit kind');
     if (skill.kind === 'passive' && skill.battleUsable !== false) issue('Passives cannot be battle actions');
@@ -166,6 +169,7 @@ export const ContentSchema = z.strictObject({ skills: z.array(SkillSchema), enem
   for (const world of content.worlds) for (const object of world.objects) if (object.lessons.some((offer) =>
     !content.skills.find((s) => s.id === offer.skillId)?.gameRanks?.F) || (object.lessons.length && (object.kind !== 'npc' || !world.theme))) issue('Invalid instructor lesson');
   validateWorldReferences(content, ctx);
+  validateQuestReferences(content, ctx);
   content.shops.forEach((shop) => {
     if (shop.items.some((itemId) => !content.items.some((item) => item.id === itemId)) ||
         (shop.buysItems && shop.kind !== 'general')) ctx.addIssue({ code: 'custom', message: 'Invalid shop catalog' });

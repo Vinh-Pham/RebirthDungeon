@@ -1,0 +1,36 @@
+[
+  {
+    "id": "refuge-preparations", "name": "A provision for the road", "description": "The keeper asks you to visit Orchard Grocery and bring two loaves for the refuge watch. Spare supplies can be sold at The Wanderer’s Pack to pay for food.",
+    "category": "mainstream", "chapter": {"id": "chapter-1", "name": "Chapter 1"}, "generation": {"id": "generation-1", "name": "Generation 1 · The Broken Seal"},
+    "delivery": "npc", "offerNpc": {"worldId": "refuge", "objectId": "keeper"}, "claimNpc": {"worldId": "refuge", "objectId": "keeper"},
+    "stages": [
+      {"id": "visit-grocery", "name": "Visit the grocery", "objectives": [{"id": "grocery-visit", "kind": "visit", "worldId": "grocery-interior", "label": "Enter Orchard Grocery", "target": 1}]},
+      {"id": "bring-provisions", "name": "Supply the watch", "objectives": [{"id": "watch-bread", "kind": "deliverItem", "itemId": "bread", "label": "Bring Bread ×2 to the keeper", "target": 2}]}
+    ],
+    "rewards": {"experience": 10, "gold": 8, "items": [{"itemId": "combat-manual", "quantity": 1}]}
+  },
+  {
+    "id": "broken-seal", "name": "The Broken Seal", "description": "Practice Smash in completed encounters, then uncover the final treasure of the moss depths. Return to the keeper with news of the broken seal.",
+    "category": "mainstream", "chapter": {"id": "chapter-1", "name": "Chapter 1"}, "generation": {"id": "generation-1", "name": "Generation 1 · The Broken Seal"},
+    "delivery": "automatic", "claimNpc": {"worldId": "refuge", "objectId": "keeper"},
+    "prerequisite": {"kind": "all", "conditions": [{"kind": "quest", "questId": "refuge-preparations"}, {"kind": "skill", "skillId": "smash", "rank": "F"}]},
+    "stages": [
+      {"id": "seal-practice", "name": "Practice for the depths", "objectives": [{"id": "practice-smash", "kind": "useSkill", "skillId": "smash", "allowDefeat": true, "label": "Use Smash in completed encounters (victory or defeat)", "target": 3}]},
+      {"id": "seal-depths", "name": "Uncover the seal", "objectives": [{"id": "clear-moss-depths", "kind": "clearDungeon", "dungeonId": "moss-depths", "label": "Claim final treasure and exit the moss depths", "target": 1}]},
+      {"id": "seal-report", "name": "Report to the keeper", "objectives": [{"id": "keeper-report", "kind": "interact", "worldId": "refuge", "objectId": "keeper", "label": "Speak to the keeper in the refuge", "target": 1}]}
+    ],
+    "rewards": {"experience": 20, "gold": 30, "ap": 2, "titles": ["seals-witness"], "flags": ["seal-witnessed"]}
+  },
+  {
+    "id": "healers-apples", "name": "A little kindness", "description": "The healer needs two fresh apples for recovering travelers. Buy them at Orchard Grocery, then bring them to the Healer House.",
+    "category": "sidequest", "delivery": "npc", "offerNpc": {"worldId": "healer-interior", "objectId": "healer-keeper"}, "claimNpc": {"worldId": "healer-interior", "objectId": "healer-keeper"},
+    "stages": [{"id": "bring-apples", "name": "Help the healer", "objectives": [{"id": "healer-apples", "kind": "deliverItem", "itemId": "apple", "label": "Bring Apple ×2 to the healer", "target": 2}]}],
+    "rewards": {"experience": 5, "gold": 10, "items": [{"itemId": "potion", "quantity": 1}]}
+  },
+  {
+    "id": "sword-milestone", "name": "A steady sword", "description": "Your committed Sword Mastery Rank E marks your first step as a practiced swordsman. Claim this one-time AP award in town.",
+    "category": "skill", "delivery": "automatic", "prerequisite": {"kind": "skill", "skillId": "sword-mastery", "rank": "E"},
+    "stages": [{"id": "mastery-milestone", "name": "Sword Mastery milestone", "objectives": [{"id": "mastery-rank-e", "kind": "skillRank", "skillId": "sword-mastery", "rank": "E", "label": "Commit Sword Mastery Rank E", "target": 1}]}],
+    "rewards": {"ap": 2}
+  }
+]

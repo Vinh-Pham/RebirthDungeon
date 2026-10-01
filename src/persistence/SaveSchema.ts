@@ -1,6 +1,7 @@
+import { emptyQuestProgression } from '../engine/rpg/Quests';
 import { starterProgression } from '../engine/rpg/Skills';
 import { z } from 'zod';
-import { HeroSchema, LegacyHeroSchema, VersionFourHeroSchema, VersionFiveHeroSchema, migrateHero, restoreHero, validateHero } from '../engine/rpg/Character';
+import { HeroSchema, LegacyHeroSchema, VersionFourHeroSchema, VersionFiveHeroSchema, VersionSixHeroSchema, migrateHero, restoreHero, validateHero } from '../engine/rpg/Character';
 import type { GrowthTalent } from '../engine/rpg/Stats';
 import type { ContentRegistry } from '../engine/data/ContentRegistry';
 import { isWalkable } from '../engine/world/TileMap';
@@ -16,7 +17,8 @@ export const CampaignSchema = z.strictObject({
   audio: z.strictObject({ music: z.number().min(0).max(1), sfx: z.number().min(0).max(1), enabled: z.boolean() }),
   dungeon: DungeonRunSchema.optional(),
 });
-export const SaveSchema = z.strictObject({ version: z.literal(6), savedAt: z.string().datetime(), campaign: CampaignSchema });
+export const SaveSchema = z.strictObject({ version: z.literal(7), savedAt: z.string().datetime(), campaign: CampaignSchema });
+const VersionSixSchema = z.strictObject({ version: z.literal(6), savedAt: z.string().datetime(), campaign: CampaignSchema.extend({ hero: VersionSixHeroSchema }) });
 const VersionFiveSchema = z.strictObject({ version: z.literal(5), savedAt: z.string().datetime(), campaign: CampaignSchema.extend({ hero: VersionFiveHeroSchema }) });
 const VersionFourSchema = z.strictObject({ version: z.literal(4), savedAt: z.string().datetime(), campaign: CampaignSchema.extend({ hero: VersionFourHeroSchema }) });
 const LegacyCampaignSchema = CampaignSchema.extend({ hero: LegacyHeroSchema });
@@ -60,16 +62,16 @@ export function validateCampaign(raw: unknown, content: ContentRegistry): Campai
 export function parseSave(raw: unknown, content: ContentRegistry, growthTalent?: GrowthTalent): SaveGame {
   const version = (raw as { version?: unknown } | null)?.version;
   let migrated = raw;
-  if (version === 1 || version === 2 || version === 3 || version === 4 || version === 5) {
-    const legacy = version === 1 ? LegacySaveSchema.parse(raw) : version === 2 ? VersionTwoSchema.parse(raw) : version === 3 ? VersionThreeSchema.parse(raw) : version === 4 ? VersionFourSchema.parse(raw) : VersionFiveSchema.parse(raw);
+  if (version === 1 || version === 2 || version === 3 || version === 4 || version === 5 || version === 6) {
+    const legacy = version === 1 ? LegacySaveSchema.parse(raw) : version === 2 ? VersionTwoSchema.parse(raw) : version === 3 ? VersionThreeSchema.parse(raw) : version === 4 ? VersionFourSchema.parse(raw) : version === 5 ? VersionFiveSchema.parse(raw) : VersionSixSchema.parse(raw);
     const talent = growthTalent ?? 'warrior';
     // Preserve the original wire contract before restoring into the new stat system.
     const old = legacy.campaign.hero;
     const definition = content.data.classes.find((entry) => entry.id === old.classId);
-    if (!definition || (version !== 5 && (old.health > definition.maxHealth + (old.level - 1) * 5 || old.mana > definition.maxMana + (old.level - 1) * 2))) throw new Error('Invalid legacy character resources');
-    const hero = version === 5 ? { ...VersionFiveHeroSchema.parse(old), ...starterProgression(old.classId, content) } : version === 4 ? { ...starterProgression(old.classId, content), ...VersionFourHeroSchema.parse(old), growthTalent: talent, stamina: 0, wounds: 0, fullness: 100 } : migrateHero(old, content, talent);
-    if (version !== 5) restoreHero(hero, content);
-    migrated = { ...legacy, version: 6, campaign: { ...legacy.campaign,
+    if (!definition || (version < 5 && (old.health > definition.maxHealth + (old.level - 1) * 5 || old.mana > definition.maxMana + (old.level - 1) * 2))) throw new Error('Invalid legacy character resources');
+    const hero = version === 6 ? { ...VersionSixHeroSchema.parse(old), ...emptyQuestProgression() } : version === 5 ? { ...VersionFiveHeroSchema.parse(old), ...emptyQuestProgression(), ...starterProgression(old.classId, content) } : version === 4 ? { ...emptyQuestProgression(), ...starterProgression(old.classId, content), ...VersionFourHeroSchema.parse(old), growthTalent: talent, stamina: 0, wounds: 0, fullness: 100 } : migrateHero(old, content, talent);
+    if (version < 5) restoreHero(hero, content);
+    migrated = { ...legacy, version: 7, campaign: { ...legacy.campaign,
       audio: 'audio' in legacy.campaign ? legacy.campaign.audio : { music: 0.3, sfx: 0.7, enabled: false },
       hero,
     } };
@@ -79,5 +81,5 @@ export function parseSave(raw: unknown, content: ContentRegistry, growthTalent?:
   return { ...save, campaign: validateCampaign(save.campaign, content) };
 }
 export function encodeSave(state: CampaignState, content: ContentRegistry, savedAt = new Date().toISOString()): string {
-  return JSON.stringify(parseSave({ version: 6, savedAt, campaign: state }, content));
+  return JSON.stringify(parseSave({ version: 7, savedAt, campaign: state }, content));
 }

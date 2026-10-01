@@ -84,7 +84,7 @@ describe('character persistence', () => {
   });
   it('imports all legacy rows once, preserves their bytes and retains progress after completing details', async () => {
     const { db, driver } = database(); const original = campaign(); original.hero.gold = 93;
-    const { growthTalent, stamina, wounds, fullness, ap, learnedSkills, discoveredSkills, bookCollections, claimedMilestones, ...oldHero } = original.hero; void ap; void learnedSkills; void discoveredSkills; void bookCollections; void claimedMilestones; void growthTalent; void stamina; void wounds; void fullness; oldHero.health = 42; oldHero.mana = 14;
+    const { growthTalent, stamina, wounds, fullness, ap, learnedSkills, discoveredSkills, bookCollections, claimedMilestones, quests, earnedTitles, questFlags, trackedObjectives, ...oldHero } = original.hero; void ap; void learnedSkills; void discoveredSkills; void bookCollections; void claimedMilestones; void quests; void earnedTitles; void questFlags; void trackedObjectives; void growthTalent; void stamina; void wounds; void fullness; oldHero.health = 42; oldHero.mana = 14;
     const payload = JSON.stringify({ version: 4, savedAt: new Date().toISOString(), campaign: { ...original, hero: oldHero } });
     db.exec('CREATE TABLE save_slots (id TEXT PRIMARY KEY, savedAt TEXT NOT NULL, payload TEXT NOT NULL); PRAGMA user_version=1;');
     for (const slot of ['auto', '1', '2', '3']) db.prepare('INSERT INTO save_slots VALUES (?, ?, ?)').run(slot, new Date().toISOString(), payload);
@@ -100,7 +100,7 @@ describe('character persistence', () => {
     const migrated = (await new SaveRepository(storage, content, 'mage').load('auto'))!;
     expect(migrated.hero).toMatchObject({ gold: 93, growthTalent: 'mage', health: 118, mana: 108 });
     expect((await repository.list())[0].error).toBeUndefined();
-    expect(JSON.parse((await storage.readSave('legacy', 'auto'))!.payload).version).toBe(6);
+    expect(JSON.parse((await storage.readSave('legacy', 'auto'))!.payload).version).toBe(7);
     expect(db.prepare('SELECT payload FROM save_slots WHERE id = ?').get('auto')?.payload).toBe(payload);
     await expect(repository.completeImport('legacy', { name: 'Other', talent: 'mage', age: 15 })).rejects.toThrow();
   });

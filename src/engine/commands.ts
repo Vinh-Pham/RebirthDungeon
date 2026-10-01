@@ -3,6 +3,9 @@ import type { OwnedItem } from './rpg/Character';
 import type { BattleAction } from './battle/BattleMachine';
 
 export type GameCommand =
+  | { type: 'ACCEPT_QUEST'; questId: string; objectId?: string }
+  | { type: 'CLAIM_QUEST'; questId: string; objectId?: string }
+  | { type: 'TRACK_QUEST_OBJECTIVE'; questId: string; objectiveId: string }
   | { type: 'LEARN_SKILL'; objectId: string; skillId: string }
   | { type: 'READ_SKILL_BOOK'; itemId: string }
   | { type: 'INSERT_SKILL_PAGE'; recipeId: string; pageId: string }
@@ -40,6 +43,9 @@ export function validateCommand(command: GameCommand): void {
   const quantity = (value: number) => Number.isInteger(value) && value >= 1 && value <= 999;
   let valid = false;
   switch (command?.type) {
+    case 'ACCEPT_QUEST':
+    case 'CLAIM_QUEST': valid = id(command.questId) && (command.objectId === undefined || id(command.objectId)); break;
+    case 'TRACK_QUEST_OBJECTIVE': valid = id(command.questId) && id(command.objectiveId); break;
     case 'LEARN_SKILL': valid = id(command.objectId) && id(command.skillId); break;
     case 'READ_SKILL_BOOK': valid = id(command.itemId); break;
     case 'INSERT_SKILL_PAGE': valid = id(command.recipeId) && id(command.pageId); break;
@@ -83,7 +89,7 @@ export function validateCommand(command: GameCommand): void {
   if (!valid) throw new Error('Invalid game command');
 }
 
-export type ProgressionCommand = Extract<GameCommand, { type: 'LEARN_SKILL' | 'READ_SKILL_BOOK' | 'INSERT_SKILL_PAGE' | 'RANK_UP_SKILL' }>;
+export type ProgressionCommand = Extract<GameCommand, { type: 'LEARN_SKILL' | 'READ_SKILL_BOOK' | 'INSERT_SKILL_PAGE' | 'RANK_UP_SKILL' | 'BUY_ITEM' | 'SELL_ITEM' | 'REPAIR_WEAPON' | 'HEAL' | 'OFFER_ITEM' | 'EXIT_DUNGEON' | 'ACCEPT_QUEST' | 'CLAIM_QUEST' | 'TRACK_QUEST_OBJECTIVE' }>;
 export function isProgressionCommand(command: GameCommand): command is ProgressionCommand {
-  return ['LEARN_SKILL', 'READ_SKILL_BOOK', 'INSERT_SKILL_PAGE', 'RANK_UP_SKILL'].includes(command.type);
+  return ['LEARN_SKILL', 'READ_SKILL_BOOK', 'INSERT_SKILL_PAGE', 'RANK_UP_SKILL', 'BUY_ITEM', 'SELL_ITEM', 'REPAIR_WEAPON', 'HEAL', 'OFFER_ITEM', 'EXIT_DUNGEON', 'ACCEPT_QUEST', 'CLAIM_QUEST', 'TRACK_QUEST_OBJECTIVE'].includes(command.type);
 }

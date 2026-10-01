@@ -12,6 +12,7 @@ import WorldCanvas from '../../renderer/WorldCanvas';
 import { bossCleared, inRoom, remainingEnemies } from '../../engine/dungeon/Dungeon';
 import TownServicePanel from './TownServicePanel';
 import JourneyCharacterTabs from './JourneyCharacterTabs';
+import QuestTracker from '../quests/QuestTracker';
 
 export default function JourneyScreen() {
   const { host } = useCharacterGame();
@@ -54,7 +55,7 @@ function Exploration({ host, session, error, setError }: {
   if (view.activeService) return <SafeAreaView className="bg-background" edges={['left', 'right']} style={styles.screen}><ScrollView contentContainerStyle={styles.scroll}><View style={[styles.content, { width }]}>
     <TownServicePanel key={view.activeService} session={session} objectId={view.activeService} busy={hostView.busy || !!hostView.retryAvailable} dispatch={dispatch} progress={(command) => { void host.progress(command); }} />
     {view.message ? <DungeonNotice status="accent" message={view.message} /> : null}
-    <DungeonNotice message={error} /><ProgressionFeedback host={host} />
+    <DungeonNotice message={error} /><ProgressionFeedback host={host} showNotice={false} />
   </View></ScrollView></SafeAreaView>;
   return <SafeAreaView className="bg-background" edges={['left', 'right']} style={styles.screen}><ScrollView key={map.id} contentContainerStyle={styles.scroll}><View style={[styles.content, { width }]}>
     <Text className="text-accent" style={styles.eyebrow}>REBIRTH DUNGEON · JOURNEY</Text><Text className="text-foreground" style={styles.title}>{map.name}</Text>
@@ -67,11 +68,12 @@ function Exploration({ host, session, error, setError }: {
       <Text className="text-muted" style={styles.body}>Find every enemy, including hidden mimics. Pick up dropped keys before using them.</Text>
       {run.effects.map((effect) => { const status = session.content.status(effect.statusId); return <Text className="text-muted" key={effect.statusId} style={styles.body}>{status.name} ×{effect.stacks} · {status.modifier * effect.stacks > 0 ? '+' : ''}{status.modifier * effect.stacks} {status.stat} · lasts this run</Text>; })}
       {currentRoom?.kind === 'treasure' ? <Text className="text-muted" style={styles.body}>{run.selectedChest ? 'Your reward is claimed. The other four chests remain sealed.' : 'Choose one of five hidden rewards. Your treasure key opens only one chest.'}</Text> : null}
-      {run.selectedChest && currentRoom?.kind === 'treasure' ? <Button label="Return to the refuge" disabled={hostView.busy} onPress={() => dispatch({ type: 'EXIT_DUNGEON' })} /> : null}
+      {run.selectedChest && currentRoom?.kind === 'treasure' ? <Button label="Return to the refuge" disabled={hostView.busy || !!hostView.retryAvailable} onPress={() => { void host.progress({ type: 'EXIT_DUNGEON' }); }} /> : null}
     </DungeonCard> : null}
     <JourneyCharacterTabs host={host} session={session} value={characterTab} onValueChange={setCharacterTab} dispatch={dispatch} />
+    <QuestTracker session={session} />
     {view.message ? <DungeonNotice status="accent" message={view.message} /> : null}
-    <DungeonNotice message={error} /><ProgressionFeedback host={host} />
+    <DungeonNotice message={error} /><ProgressionFeedback host={host} showNotice={false} />
     <Text className="text-muted" style={styles.legend}>Position {state.position.x}, {state.position.y} · Seed {run?.blueprint.seed ?? state.seed}</Text>
   </View></ScrollView></SafeAreaView>;
 }

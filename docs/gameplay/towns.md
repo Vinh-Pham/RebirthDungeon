@@ -18,6 +18,7 @@ The one-time supply chest grants the starter iron blade only after its item gran
 | Ember Forge | Buy iron blades; repair owned weapons | Repair includes an equipped weapon and preserves its instance ID |
 | The Wanderer’s Pack | Buy HP/MP/SP potions and moss mail; sell owned items | The current service that buys items from the player |
 | Healer House | Paid full recovery | 10 gold; restores HP, MP, SP, wounds and fullness |
+| Refuge keeper | Free Smash Rank F lesson and quest offers/claims | The introductory melee lesson awards 3 AP once; rank advancement remains in the Skills journal |
 | Training halls | Explore/interact with authored NPCs | Learned-rank lessons and mastery systems remain planned |
 | Dungeon altar | Offer an unequipped item and enter a generated dungeon | Owns generation/entry validation rather than a shop transaction |
 
@@ -33,7 +34,7 @@ Weapon repair costs **ceil(item price × 0.5 × missing durability / maximum dur
 
 Healer recovery costs 10 gold and uses the current full-restore rule, including clearing wounds and restoring fullness to 100. An already fully recovered hero is rejected without charge. Raising a resource maximum through future gear, skills or titles is separate from paying for recovery and must not refill pools. [Stats](stats.md).
 
-All services revalidate at confirmation. Preview exact quantity, price and repair/recovery effect; opening/closing a panel does not charge, heal, tick resources or refresh state. Existing autosave is asynchronous; exactly-once durable service receipts are planned improvements rather than a current guarantee against every abrupt shutdown.
+All services revalidate at confirmation. Preview exact quantity, price and repair/recovery effect; opening/closing a panel does not charge, heal, tick resources or refresh state. Existing autosave is asynchronous; the selected JourneyHost now stages purchases, sales, repairs, healing and offerings as durable candidates. Success is published after saving; a failed write retains the exact candidate and blocks dependent mutations until retry. An abrupt shutdown before a successful write may still restore the previous checkpoint.
 
 ## 4. Dungeon preparation and return
 
@@ -60,7 +61,7 @@ Keep the reference-inspired town as a small set of useful destinations rather th
 | Bank | Optional future carried/banked economy with a defined migration and defeat policy |
 | Rebirth service | Explicit reset/preserve preview and town-only confirmation after Character is implemented |
 
-The first progression slice should add one instructor and the book/page route required by the unchanged Skills plan. Introduce quests/titles next, then unique item instances and enchanting materials. Existing shop IDs, prices and save IDs remain stable unless deliberately migrated.
+The first instructor and book/page routes are implemented. The next slice now includes NPC offers, delivery/manual quest claims, a journal/tracker and an earned story title. Title equipment, additional item instances and enchanting materials remain future work. Existing shop IDs, prices and save IDs remain stable unless deliberately migrated.
 
 An optional future bank may offer exact deposits/withdrawals and a protected balance. Gold bags could add carried capacity, with proposed capacities of 10,000/25,000/50,000. These are later economy proposals: they must not retroactively strand current gold, silently change defeat losses or become requirements for the present loop. Validate removing a capacity bag before mutation, and define full-reward handling before the economy ships. Use [Inventory](inventory.md) overflow rules where appropriate.
 
@@ -86,4 +87,4 @@ New quest/skill/bank/gathering fields belong in versioned campaign saves with va
 
 Preserve current map transitions, proximity checks, supply-chest claims, 999-count/1,000,000-gold bounds, equipped-item sale rejection, exact sell/repair rounding and paid full recovery. Test rejected services without item/gold/RNG changes; dungeon services unavailable; early return and defeat retention; and service panels invalidated by movement/context changes.
 
-Future acceptance adds instructor/quest eligibility, durable claims, bank migration if adopted, gathering persistence, recipe output capacity and large-text touch interaction. Run lint/typecheck and the relevant pure engine/persistence tests when implementing, then smoke-test on iOS, Android and web. Current prices and defeat policy remain authoritative until a tested, explicit balance change replaces them.
+The initial instructor/quest eligibility, delivery readiness and durable service/claim retries have engine/persistence coverage. Future acceptance adds title equipment, bank migration if adopted, gathering persistence, recipe output capacity and native large-text touch interaction. Run lint/typecheck and the relevant pure engine/persistence tests when implementing, then smoke-test on iOS, Android and web. Current prices and defeat policy remain authoritative until a tested, explicit balance change replaces them.

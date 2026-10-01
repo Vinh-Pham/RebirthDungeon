@@ -1,6 +1,8 @@
 import { cloneData } from '../cloneData';
 import { SkillProgressionSchema, starterProgression, validateSkillProgression } from './Skills';
 import { z } from 'zod';
+import { QuestProgressionSchema, emptyQuestProgression } from './QuestState';
+import { validateQuestProgression } from './Quests';
 import type { ContentRegistry } from '../data/ContentRegistry';
 import type { Entity } from '../ecs/Entity';
 import type { GameRandom } from '../Random';
@@ -23,7 +25,8 @@ export const VersionFourHeroSchema = LegacyHeroSchema.extend({
   nextWeaponId: z.number().int().min(1).max(Number.MAX_SAFE_INTEGER),
 });
 export const VersionFiveHeroSchema = VersionFourHeroSchema.extend({ growthTalent: z.enum(TALENTS), stamina: amount, wounds: amount, fullness: z.number().min(50).max(100).refine((n) => Math.abs(n * 10 - Math.round(n * 10)) < 1e-8) });
-export const HeroSchema = VersionFiveHeroSchema.extend(SkillProgressionSchema.shape);
+export const VersionSixHeroSchema = VersionFiveHeroSchema.extend(SkillProgressionSchema.shape);
+export const HeroSchema = VersionSixHeroSchema.extend(QuestProgressionSchema.shape);
 export type Hero = z.infer<typeof HeroSchema>;
 export type OwnedItem = { itemId: string } | { weaponId: string };
 export const experienceToNextLevel = (level: number) => level * 20;
@@ -64,6 +67,7 @@ export function tickHero(hero: Hero, content: ContentRegistry, rest = false) {
 export function validateHero(raw: unknown, content: ContentRegistry): Hero {
   const hero = HeroSchema.parse(raw);
   validateSkillProgression(hero, content);
+  validateQuestProgression(hero, content);
   const stats = heroStats(hero, content);
   if (hero.health > stats.maxHealth - hero.wounds || hero.wounds >= stats.maxHealth || hero.mana > stats.maxMana || hero.stamina > stats.maxStamina ||
       (hero.level < 99 && hero.experience >= experienceToNextLevel(hero.level)) || (hero.level === 99 && hero.experience !== 0)) throw new Error('Invalid character resources or experience');
@@ -79,7 +83,7 @@ export function validateHero(raw: unknown, content: ContentRegistry): Hero {
 export function createHero(content: ContentRegistry, growthTalent: GrowthTalent = 'warrior'): Hero {
   const definition = content.data.classes[0];
   if (!definition) throw new Error('A character class is required');
-  const hero: Hero = { ...starterProgression(definition.id, content), growthTalent, stamina: 0, wounds: 0, fullness: 100, classId: definition.id, level: 1, experience: 0, gold: 0, health: definition.maxHealth,
+  const hero: Hero = { ...emptyQuestProgression(), ...starterProgression(definition.id, content), growthTalent, stamina: 0, wounds: 0, fullness: 100, classId: definition.id, level: 1, experience: 0, gold: 0, health: definition.maxHealth,
     mana: definition.maxMana, inventory: { potion: 2 }, equipment: {}, weapons: {}, nextWeaponId: 1 };
   restoreHero(hero, content); return hero;
 }
@@ -120,7 +124,7 @@ export function repairPrice(weapon: Weapon, content: ContentRegistry) {
 }
 export function migrateHero(raw: unknown, content: ContentRegistry, growthTalent: GrowthTalent = 'warrior'): Hero {
   const legacy = LegacyHeroSchema.parse(raw);
-  const hero: Hero = { ...starterProgression(legacy.classId, content), growthTalent, stamina: 0, wounds: 0, fullness: 100, ...legacy, inventory: { ...legacy.inventory }, equipment: { ...legacy.equipment }, weapons: {}, nextWeaponId: 1 };
+  const hero: Hero = { ...emptyQuestProgression(), ...starterProgression(legacy.classId, content), growthTalent, stamina: 0, wounds: 0, fullness: 100, ...legacy, inventory: { ...legacy.inventory }, equipment: { ...legacy.equipment }, weapons: {}, nextWeaponId: 1 };
   for (const itemId of Object.keys(legacy.inventory).sort()) {
     if (content.item(itemId).kind !== 'weapon') continue;
     delete hero.inventory[itemId];

@@ -1,6 +1,6 @@
 # Rebirth Dungeon: Inventory and Equipment
 
-Updated **October 1, 2026**. The Expo app already has bounded item stacks, individually tracked weapons, equipment, consumable use, shops and repair. Grids, bags, item locks and reward overflow are future extensions. Read this with [Battle](battle.md), [Stats](stats.md), [Skills](skills.md), [Towns](towns.md), and [Enchants](enchants.md).
+Updated **October 1, 2026**. The Expo app already has bounded item stacks, individually tracked weapons, equipment, consumable use, shops and repair. The pack also shows active quest item requirements and delivery destinations. Grids, bags, item locks and reward overflow are future extensions. Read this with [Battle](battle.md), [Stats](stats.md), [Skills](skills.md), [Towns](towns.md), and [Enchants](enchants.md).
 
 ## 1. Current ownership and capacity
 
@@ -27,7 +27,8 @@ Current inventory screens show ordinary item rows and individually listed weapon
 | Equip/unequip weapon or armor | Validated campaign command | Unavailable |
 | Use an eligible consumable | Validated campaign command | Through Item; one accepted use consumes a turn |
 | Buy, sell, repair | Only through a nearby open town service | Unavailable |
-| Learn/read/assemble books, enchant, burn | Future town-only services | Unavailable |
+| Learn/read/assemble books and quest acceptance/claims | Implemented town-only commands | Unavailable |
+| Enchant, burn | Future town-only services | Unavailable |
 | Rearrange grids, split/merge, sort | Future presentation/storage operations | Initially unavailable while an encounter is active |
 
 Selection, cancellation, comparison and scrolling spend nothing. Equip/use commands revalidate ownership and context at execution; stale rows are not authority. Opening a menu is not movement or a recovery tick. Food that is not battle-usable cannot be consumed through the battle menu.
@@ -95,6 +96,9 @@ Current grants have different boundaries that must be described accurately:
 - A chest grant that cannot fit the current per-definition limit is rejected before marking that chest claimed.
 - Encounter victory currently truncates drops to remaining per-definition capacity and clamps gold to its balance limit. There is no recoverable overflow queue today.
 - Shop purchases validate capacity and affordability before charging; selling protects equipped gear and uses the rules in [Towns](towns.md).
+- Manual quest claims stage delivery inputs before validating all rewards. If any reward cannot fit, the entire claim is rejected; no inputs or rewards change. Delivery, XP/level AP, gold, explicit AP, items, earned titles, flags and the one-time receipt save together.
+
+Quest supplies remain usable until a confirmed delivery. Using, selling or offering a required item may make a ready quest unfinished again. Item details and shop confirmations show that relationship; equipped armor copies are reserved from delivery. Inspecting requirements does not accept or complete quests.
 
 The grid milestone should replace silent reward truncation with saved overflow. Authoritative encounter/quest grants place what fits and store the exact remainder in the same candidate. Overflow has no timer and is withdraw-only: no use, equip, sale, enchant or recipe consumption before withdrawal. Players cannot deposit ordinary items into it. Show pending entries clearly, and block optional additional reward-producing activities while overflow remains; already completed outcomes must still be recoverable.
 
@@ -118,7 +122,7 @@ Search/filter results identify the actual container. Favorites, sorting previews
 
 Extend src/data definitions, Zod validation, RPG commands and hero serialization together. Future saved data includes stable item/container IDs, anchors, bag parents, unique armor/enchant state, locks, pickup priority and overflow. Reject duplicate ownership, overlapping placements, cycles, orphan contents and incompatible equipment. Do not repair corruption by deleting items.
 
-The current v5 repository is serialized and autosaved; it is not an operation-ID ledger for every inventory command. New multi-part rewards and recipes should use the [planned durable candidate boundary](../game-plan.md#6-saves-ownership-and-durability), publishing success only after the exact candidate saves and retaining it for retry on failure. UI previews and animations never perform ownership mutations.
+The current v7 repository serializes saved campaigns. Town transactions, skill/book operations and manual quest claims use the [durable candidate boundary](../game-plan.md#6-saves-ownership-and-durability), publishing success only after the exact candidate saves and retaining it for retry on failure. Ordinary exploration equip/use commands still use asynchronous autosave; future multi-part recipes should adopt the same candidate boundary. UI previews and animations never perform ownership mutations.
 
 ## 9. Delivery and acceptance
 

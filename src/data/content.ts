@@ -9,8 +9,10 @@ import maps from './maps/basic.json';
 import atlases from './atlases/basic.json';
 import dungeons from './dungeons/basic.json';
 import shops from './shops/basic.json';
+import quests from './quests/basic.json';
+import titles from './titles/basic.json';
 import { ContentRegistry } from '../engine/data/ContentRegistry';
 
 export function loadGameContent(): ContentRegistry {
-  return new ContentRegistry({ skills, enemies, classes, items, statusEffects, maps, atlases, worlds, dungeons, shops, skillBookRecipes });
+  return new ContentRegistry({ skills, enemies, classes, items, statusEffects, maps, atlases, worlds, dungeons, shops, skillBookRecipes, quests, titles, questFlags: ['seal-witnessed'] });
 }

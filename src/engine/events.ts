@@ -2,6 +2,8 @@ import type { ActionOutcome, TrainingLedger } from './rpg/Skills';
 import type { EntityId } from './ecs/Entity';
 
 export type GameEvent =
+  | { type: 'QUEST_ACCEPTED' | 'QUEST_CLAIMED'; questId: string }
+  | { type: 'QUEST_TRACKING_CHANGED' }
   | { type: 'ACTION_RESOLVED'; outcome: ActionOutcome }
   | { type: 'SKILL_LEARNED' | 'SKILL_RANKED_UP'; skillId: string; rank: string }
   | { type: 'SKILL_PAGE_INSERTED'; recipeId: string; pageId: string }

@@ -100,8 +100,8 @@ function SkillDetails({ host, session, skill }: { host: JourneyHost; session: Jo
         {rank.nextRank ? <DungeonButton primary label={`Rank up ${record.rank} → ${rank.nextRank} · ${rank.apCost} AP`} disabled={disabled || !!rankUpReason(hero, skill.id, session.content)} onPress={() => { void host.progress({ type: 'RANK_UP_SKILL', skillId: skill.id }); }} /> : null}
       </DungeonCard> : <DungeonCard>
         <Text className="text-muted" style={menu.body}>{skill.acquisitionHint ?? 'Granted to new wardens.'}</Text>
-        {offer && instructor ? <><Text className="text-muted" style={menu.body}>{instructor.name} · {offer.fee} gold{distance(instructor, view.state.position) > 1 ? ' · Approach the instructor first' : ''}</Text>
-          <DungeonButton primary label={`Learn ${skill.name} · Rank F`} disabled={disabled || distance(instructor, view.state.position) > 1 || hero.gold < offer.fee}
+        {offer && instructor ? <><Text className="text-muted" style={menu.body}>{instructor.name} · {offer.fee} gold{distance(instructor, view.state.position) > 1 || view.activeService !== instructor.id ? ' · Approach and speak to the instructor first' : ''}</Text>
+          <DungeonButton primary label={`Learn ${skill.name} · Rank F`} disabled={disabled || distance(instructor, view.state.position) > 1 || view.activeService !== instructor.id || hero.gold < offer.fee}
             onPress={() => { void host.progress({ type: 'LEARN_SKILL', skillId: skill.id, objectId: instructor.id }); }} /></> : null}
         {books.map((book) => <DungeonButton primary key={book.id} label={`Read ${book.name}`} disabled={disabled} onPress={() => { void host.progress({ type: 'READ_SKILL_BOOK', itemId: book.id }); }} />)}
       </DungeonCard>}

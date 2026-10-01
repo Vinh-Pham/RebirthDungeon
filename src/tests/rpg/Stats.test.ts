@@ -135,9 +135,9 @@ describe('stat save migration', () => {
   it.each([1, 2, 3, 4])('restores v%i once with the selected talent while preserving progress and RNG', (version) => {
     const journey = new JourneySession(content); journeys.push(journey); const current = journey.toSave(); current.hero.gold = 71; addItem(current.hero, 'iron-blade', 1, content); current.hero.equipment.weapon = 'weapon-1'; current.hero.weapons['weapon-1'].durability = 11;
     let campaign: object = legacyCampaign(current);
-    if (version === 4) { const { growthTalent, stamina, wounds, fullness, ap, learnedSkills, discoveredSkills, bookCollections, claimedMilestones, ...hero } = current.hero; void ap; void learnedSkills; void discoveredSkills; void bookCollections; void claimedMilestones; void growthTalent; void stamina; void wounds; void fullness; hero.health = 10; hero.mana = 2; campaign = { ...current, hero }; }
+    if (version === 4) { const { growthTalent, stamina, wounds, fullness, ap, learnedSkills, discoveredSkills, bookCollections, claimedMilestones, quests, earnedTitles, questFlags, trackedObjectives, ...hero } = current.hero; void ap; void learnedSkills; void discoveredSkills; void bookCollections; void claimedMilestones; void quests; void earnedTitles; void questFlags; void trackedObjectives; void growthTalent; void stamina; void wounds; void fullness; hero.health = 10; hero.mana = 2; campaign = { ...current, hero }; }
     if (version === 1) { const { audio, ...rest } = campaign as ReturnType<typeof legacyCampaign>; void audio; campaign = rest; }
-    const save = parseSave({ version, savedAt: new Date().toISOString(), campaign }, content, 'mage'); expect(save.version).toBe(6);
+    const save = parseSave({ version, savedAt: new Date().toISOString(), campaign }, content, 'mage'); expect(save.version).toBe(7);
     expect(save.campaign.hero).toMatchObject({ growthTalent: 'mage', health: 118, mana: 108, stamina: 113, wounds: 0, fullness: 100, gold: 71 }); expect(save.campaign.randomState).toEqual(current.randomState);
     if (version === 4) expect(save.campaign.hero.weapons['weapon-1'].durability).toBe(11);
     const hero = save.campaign.hero; hero.health = 40; hero.mana = 3; hero.stamina = 15; hero.wounds = 20; hero.fullness = 60;

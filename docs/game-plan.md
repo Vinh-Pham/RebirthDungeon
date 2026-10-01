@@ -12,7 +12,7 @@ Updated **October 1, 2026**. Target: **Expo SDK 57, React Native 0.86, React 19,
 | [Skills](gameplay/skills.md) | NPC/book/page learning, ranks, 100 training points plus AP, the F/E pilot |
 | [Inventory](gameplay/inventory.md) | Current stacks/weapon instances and future grids, bags, equipment expansion |
 | [Towns](gameplay/towns.md) | Refuge movement, shops, repair, recovery, dungeon entry, future services |
-| [Quests](gameplay/quests.md) | Future story/side/skill quests, objective attribution, reward claims, RP missions |
+| [Quests](gameplay/quests.md) | Initial story/side/skill quests, objective attribution, durable reward claims; future RP missions |
 | [Titles](gameplay/titles.md) | Future achievements, equipped effects, discovery and mastery titles |
 | [Enchants](gameplay/enchants.md) | Future prefix/suffix installation, protected failure, burning and saved RNG |
 | [User interface](gameplay/user-interface.md) | Mobile screens, navigation, controls, accessibility and presentation |
@@ -76,11 +76,11 @@ Future enchanting gets an independently persisted stream. Additional RNG streams
 
 A character profile stores identity/setup: ID, name, chosen talent, starting age, and creation time. The character-scoped **campaign hero** stores playable progression, resources, inventory and equipment. Do not put a second independently mutable AP/inventory balance in the profile.
 
-Current wire saves are **version 5**, with migrations from versions 1–4. Native storage uses Expo SQLite; web uses IndexedDB through a platform-specific adapter. Slots are `auto`, `1`, `2`, and `3`. Repository operations are serialized. The 250ms autosaver coalesces detached campaign checkpoints, retains failed writes for retry, and flushes on supported exit/background paths. The app must preserve the active session on invalid/corrupt/future saves rather than creating a replacement hero.
+Current wire saves are **version 7**, with migrations from versions 1–6. Version 6 adds learned skills/AP; version 7 adds quest progress, receipts, tracking and earned story titles. Native storage uses Expo SQLite; web uses IndexedDB through a platform-specific adapter. Slots are `auto`, `1`, `2`, and `3`. Repository operations are serialized. The 250ms autosaver coalesces detached campaign checkpoints, retains failed writes for retry, and flushes on supported exit/background paths. The app must preserve the active session on invalid/corrupt/future saves rather than creating a replacement hero.
 
 An active encounter is saved as its entry hero plus pending encounter identity/seed. Loading or relaunching restarts that encounter; partial turns, statuses, presentation timers and battle RNG continuation are **not** serialized. Completed victory commits hero resources/consumptions/weapon wear, XP, gold, drops and encounter clearance together. Defeat commits used supplies/wear, restores resources/wounds/fullness, returns to the refuge, and sets gold to `floor(previousGold / 2)`; it grants no victory loot/XP. Already committed rewards from earlier encounters survive.
 
-The current autosave debounce can lose the latest operation on abrupt termination. The skills work therefore proposes a **host-owned durable candidate operation**: flush earlier writes, validate/save one candidate campaign including progression, items/rewards and RNG, then publish success and allow the next dependent mutation. Retain the identical candidate on failure and retry its write, not its random resolution. Extend this boundary to quests, titles and enchanting as they ship. This is planned work, not an existing guarantee of every service command.
+The current autosave debounce can lose the latest operation on abrupt termination. Skills, completed encounters, town transactions, final dungeon exits and quest claims now use a **host-owned durable candidate operation**: flush earlier writes, validate/save one candidate campaign including progression, items/rewards and RNG, then publish success and allow the next dependent mutation. Retain the identical candidate on failure and retry its write, not its random resolution. The initial story title award shares its quest claim; future title equipment and enchanting should use this same boundary. Ordinary movement/interactions still use asynchronous autosave.
 
 Pending skill/quest/title combat evidence must remain inside its battle until the encounter result commits. Restarting a pending encounter discards that attempt's evidence. Training commits on completed victory or defeat under the skills plan; clear/victory objectives still require their named success. Ordinary exploration evidence commits with its accepted world command. There is no second dungeon-exit award of previously banked gains.
 
@@ -90,7 +90,7 @@ Format migrations and SQLite/IndexedDB database migrations are separate. A new h
 
 | Milestone | Work | Exit evidence |
 | --- | --- | --- |
-| Baseline upkeep | Keep current character/refuge/dungeon/battle loop and version 5 migrations working | Engine suites, lint/typecheck, platform smoke tests |
+| Baseline upkeep | Keep current character/refuge/dungeon/battle loop and version 7 migrations working | Engine suites, lint/typecheck, platform smoke tests |
 | Skill progression | Implement the unchanged [Skills plan](gameplay/skills.md): learned ranks, AP/training, NPC/book/pages, F/E pilot, journal, durable result merge | All three learning routes and saved rank-up; unchanged starter combat/stat behavior |
 | Quest and title foundations | Attributed outcomes, story/side/skill quests, claims, first/second titles and stat sources | Completed/failed encounter evidence, duplicate claim and combined title-effect checks |
 | Inventory/equipment expansion | Instance model where needed, grid/bags/locks/overflow, hand/armor categories | Quantity conservation, lossless migration, compact-screen controls |

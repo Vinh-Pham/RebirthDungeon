@@ -10,6 +10,8 @@ import { useCharacterGame } from '../menu/CharacterGameContext';
 import { menu } from '../menu/MenuUI';
 import { DungeonButton, DungeonCard, DungeonNotice } from '../shared/DungeonUI';
 import { inventoryRowLabel, type InventoryRow } from './inventoryRows';
+import { questItemNeeds } from '../../engine/rpg/Quests';
+import { npcLabel } from '../quests/questLabels';
 
 export default function InventoryDetails({ row, hero, host, session, review, disabled, town, dispatch, back }: {
   row: InventoryRow; hero: Hero; host: JourneyHost; session: JourneySession; review?: CharacterReview;
@@ -24,6 +26,7 @@ export default function InventoryDetails({ row, hero, host, session, review, dis
   const slot = item.kind === 'weapon' ? 'weapon' : 'armor';
   const comparison = !review && ['weapon', 'armor'].includes(item.kind) ? previewEquipment(hero, row.equipped ? { slot } : row.reference, session.content, effects) : undefined;
   const openJournal = () => router.navigate({ pathname: '/game/[characterId]/skills', params: { characterId: profile.id } });
+  const needs = questItemNeeds(hero, session.content, item.id);
   return <View className="gap-3">
     <DungeonButton label="Back to pack" onPress={back} />
     <DungeonCard>
@@ -51,6 +54,15 @@ export default function InventoryDetails({ row, hero, host, session, review, dis
       {['skillPage', 'incompleteBook', 'skillBook'].includes(item.kind) ? <DungeonButton label="View skill and book collection" onPress={openJournal} /> : null}
       <Text className="text-muted" style={menu.body}>Buy, sell and repair through a nearby town service.</Text>
     </DungeonCard>
+    {needs.length ? <DungeonCard>
+      <Text className="text-accent" style={menu.heading}>Quest supplies</Text>
+      {needs.map(({ quest, objective, count }) => <View key={`${quest.id}/${objective.id}`} className="gap-1">
+        <Text className="text-foreground" style={menu.body}>{quest.name} · {count}/{objective.target} {item.name}</Text>
+        <Text className="text-muted" style={menu.body}>{objective.kind === 'deliverItem' ? `Deliver to ${npcLabel(session.content, quest.claimNpc)}. ` : ''}{Math.max(0, objective.target - count)} more needed.</Text>
+      </View>)}
+      <Text className="text-muted" style={menu.body}>These copies stay usable. Using, selling or offering them can make the quest unfinished again.</Text>
+      <DungeonButton label="View quest journal" onPress={() => router.navigate({ pathname: '/game/[characterId]/quests', params: { characterId: profile.id } })} />
+    </DungeonCard> : null}
     {comparison ? <DungeonCard>
       <Text className="text-accent" style={menu.heading}>{row.equipped ? 'After unequipping' : 'After equipping'}</Text>
       <Text className="text-muted" style={menu.body}>Physical damage: {comparison.before.combatant.minDamage}–{comparison.before.combatant.maxDamage} → {comparison.after.combatant.minDamage}–{comparison.after.combatant.maxDamage}</Text>

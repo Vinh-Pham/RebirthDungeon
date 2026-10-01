@@ -1,6 +1,6 @@
 # Rebirth Dungeon: Quests and Story Progression
 
-Updated **October 1, 2026**. Quests are **planned**; the current app has NPC dialogue and dungeon/encounter outcomes but no quest definitions, quest journal, objective ledger or claims. Build these on the existing TypeScript campaign and turn-based battle, with React Native views. Read with [Skills](skills.md), [Character](character.md), [Battle](battle.md), [Inventory](inventory.md), and [Titles](titles.md).
+Updated **October 1, 2026**. The first quest slice is **implemented**: a short Chapter 1 / Generation 1 chain, an NPC delivery request, a skill-rank milestone, a journal/tracker and durable manual claims. Broader objectives and RP missions remain planned. Build these on the existing TypeScript campaign and turn-based battle, with React Native views. Read with [Skills](skills.md), [Character](character.md), [Battle](battle.md), [Inventory](inventory.md), and [Titles](titles.md).
 
 ## 1. Categories and story structure
 
@@ -13,7 +13,7 @@ Preserve the Mabinogi-inspired Chapter/Generation structure and several acquisit
 | Skill quest | Learning, practice and rank milestones | Skills grouping linked to the skill journal |
 | Role-playing mission | Control an authored NPC in a scenario | Mission mode attached to a story/side quest, not a second reward category |
 
-Use stable IDs for chapters, generations, quests, stages and objectives. Display labels may change without resetting progress. A quest belongs to one category; a role-playing scenario is its execution mode. The initial content can contain Chapter 1 / Generation 1, “The Broken Seal,” without implying those quests already exist.
+Use stable IDs for chapters, generations, quests, stages and objectives. Display labels may change without resetting progress. A quest belongs to one category; a role-playing scenario is its execution mode. Initial content contains Chapter 1 / Generation 1, “The Broken Seal.” “A provision for the road” starts at the keeper, followed by Smash practice, successful moss-depths completion and a keeper report. The healer offers “A little kindness” (two apples); committed Sword Mastery Rank E reveals “A steady sword.”
 
 ## 2. Prerequisites, discovery and offers
 
@@ -45,6 +45,8 @@ Keep acquisition routes consistent with Skills: one quest hint must not accident
 
 ## 4. Objectives and attribution
 
+The first engine supports named interaction/visit, direct skill-use practice, authored encounter wins, final dungeon exit, current skill rank, owned items and item delivery. Damage/kill attribution, pickup-history objectives and RP adapters remain future work. Initial story practice counts completed victories and defeats; restart discards unfinished evidence.
+
 Stages execute in authored order; objectives within a stage can progress in parallel. A stage advances only when all required objectives meet their semantics. Display integer progress and a concrete location/target where available.
 
 | Objective type | Evidence | Completion boundary |
@@ -75,7 +77,7 @@ Initial quests are one-time and have no timers. Mainstream quests can be untrack
 
 Rewards can include authored XP, gold, AP, items/books/pages, a learned F skill, titles and story flags. Stage all changes together, including delivery-item removal and XP level-ups. Preserve existing level-up resource restoration and future per-level AP without applying either twice. For item rewards, either reject the complete claim when bounded capacity cannot fit or implement saved overflow first; do not silently truncate a manual quest reward.
 
-A claim ID/result record prevents duplicates. Save completion, rewards, title awards and inventory changes in one durable candidate before showing success. On write failure retain the identical candidate and block dependent changes; retry its write rather than recomputing rewards. The current autosaver does not already provide this quest receipt system.
+A claim ID/result record prevents duplicates. Save completion, rewards, title awards and inventory changes in one durable candidate before showing success. On write failure retain the identical candidate and block dependent changes; retry its write rather than recomputing rewards. JourneyHost owns this claim boundary; ordinary exploration autosave remains asynchronous.
 
 ## 6. Encounter and dungeon boundaries
 
@@ -101,10 +103,10 @@ Add thin Expo Router quest routes backed by components under src/ui/quests, reus
 
 The tracker initially shows up to three chosen objectives plus More; this is a display limit, not an active-quest cap. Distinguish Available, Active, Ready and Completed through text/icons. Details show prerequisite hints, stage progress, exact rewards and “Return to [NPC]” versus “Claim in town.” Read-only inspection is available during encounters; claims/acceptance services remain context-gated. Notifications follow saved success and do not drive progression.
 
-New TypeScript quest definitions and predicates belong in the content/RPG layer, with Zod validation and source-attributed evidence. JourneySession owns campaign integration; BattleSession owns unresolved evidence; JourneyHost owns the durable merge. Extend hero save fields and migrations, including stable objective counters, active stage, one-time claims, tracking and completed IDs. UI selection/scroll can stay transient.
+New TypeScript quest definitions and predicates belong in the content/RPG layer, with Zod validation and source-attributed evidence. JourneySession owns campaign integration; BattleSession owns unresolved evidence; JourneyHost owns the durable merge. Version 7 hero saves include stable objective counters, active stage IDs, one-time claim receipts, tracking, earned titles and story flags. Version 6 imports preserve resources, learned ranks and AP without replaying rewards; state eligibility is reconciled on JourneySession load. UI selection/scroll can stay transient.
 
 ## 9. First slice and verification
 
-Start with one short Generation chain, one NPC sidequest and one skill-milestone quest. Prove automatic availability, NPC acceptance, ordered stages, a practice objective, item delivery, manual claim and one title award before adding RP. Quest definitions must have reachable objectives and available rewards; validate dangling IDs, cycles, unsupported skills, negative counts and overflow-prone claims.
+The implemented slice contains one short Generation chain, one NPC sidequest and one skill-milestone quest. Its final story claim records “the Seal’s Witness” as earned; equipping titles and applying title stat effects remain planned. Prove automatic availability, NPC acceptance, ordered stages, a practice objective, item delivery, manual claim and one title award before adding RP. Quest definitions must have reachable objectives and available rewards; validate dangling IDs, cycles, unsupported skills, negative counts and overflow-prone claims.
 
 Acceptance covers action-versus-target counting; no progress from previews; completed victory/defeat evidence; unfinished-attempt discard; successful dungeon clear versus early return; readiness regressing after item use; delivery/rewards saved together; duplicate claim/retry; rank labels; retained progress after defeat/rebirth; and touch/large-text journal navigation. For RP later, test isolated borrowed state, explicit retry checkpoints and one hero completion award.

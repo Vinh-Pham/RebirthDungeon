@@ -71,10 +71,10 @@ describe('learned ranks and acquisition', () => {
     const hero = createHero(content); grantExperience(hero, 120, content);
     expect(hero).toMatchObject({ level: 4, experience: 0, ap: 3 });
     const journey = new JourneySession(content); const state = journey.toSave(); journey.dispose(); state.hero.level = 5; state.hero.health = 17; state.hero.mana = 4; state.hero.stamina = 9;
-    const { ap, learnedSkills, discoveredSkills, bookCollections, claimedMilestones, ...legacy } = state.hero;
-    void ap; void learnedSkills; void discoveredSkills; void bookCollections; void claimedMilestones;
+    const { ap, learnedSkills, discoveredSkills, bookCollections, claimedMilestones, quests, earnedTitles, questFlags, trackedObjectives, ...legacy } = state.hero;
+    void ap; void learnedSkills; void discoveredSkills; void bookCollections; void claimedMilestones; void quests; void earnedTitles; void questFlags; void trackedObjectives;
     const migrated = parseSave({ version: 5, savedAt: new Date().toISOString(), campaign: { ...state, hero: legacy } }, content);
-    expect(migrated.version).toBe(6); expect(migrated.campaign.hero).toMatchObject({ ap: 0, level: 5, health: 17, mana: 4, stamina: 9 });
+    expect(migrated.version).toBe(7); expect(migrated.campaign.hero).toMatchObject({ ap: 0, level: 5, health: 17, mana: 4, stamina: 9 });
     expect(heroStats(migrated.campaign.hero, content).base.intelligence).toBe(52);
     expect(parseSave(JSON.parse(encodeSave(migrated.campaign, content)), content).campaign.hero).toEqual(migrated.campaign.hero);
   });

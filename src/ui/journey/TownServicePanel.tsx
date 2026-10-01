@@ -5,6 +5,8 @@ import type { JourneySession } from '../../game/JourneySession';
 import type { GameCommand, ProgressionCommand } from '../../engine/commands';
 import { heroStats, itemCount, removableCount, repairPrice, type OwnedItem } from '../../engine/rpg/Character';
 import InventoryPager, { INVENTORY_PAGE_SIZE, inventoryPage } from './InventoryPager';
+import TownQuestOffers from '../quests/TownQuestOffers';
+import { questItemNeeds } from '../../engine/rpg/Quests';
 
 function TradeRow({ name, detail, price, maximum, verb, disabled, choose }: {
   name: string; detail: string; price: number; maximum: number; verb: string; disabled: boolean; choose(quantity: number): void;
@@ -21,7 +23,7 @@ function TradeRow({ name, detail, price, maximum, verb, disabled, choose }: {
     <Button label={`${verb} ${name} ×${count}`} disabled={disabled || maximum < 1} onPress={() => choose(count)} />
   </DungeonCard>;
 }
-type Quote = { command: GameCommand; label: string; goldChange: number; detail: string };
+type Quote = { command: ProgressionCommand; label: string; goldChange: number; detail: string };
 
 export default function TownServicePanel({ session, objectId, busy, dispatch, progress }: {
   session: JourneySession; objectId: string; busy: boolean; dispatch(command: GameCommand): boolean; progress(command: ProgressionCommand): void;
@@ -42,7 +44,7 @@ export default function TownServicePanel({ session, objectId, busy, dispatch, pr
     if (!next || busy) return;
     // Consume the UI confirmation before dispatch so rapid repeated taps cannot buy twice.
     pending.current = undefined;
-    dispatch(next.command); setQuote(undefined);
+    progress(next.command); setQuote(undefined);
   };
   const inventory = [
     ...Object.entries(hero.inventory).map(([itemId]) => ({ reference: { itemId } as OwnedItem, item: content.item(itemId), key: itemId, detail: `${hero.inventory[itemId]} in your pack` })),
@@ -52,6 +54,8 @@ export default function TownServicePanel({ session, objectId, busy, dispatch, pr
   const weapons = Object.entries(hero.weapons);
   const repairStart = inventoryPage(repairPage, weapons.length) * INVENTORY_PAGE_SIZE;
   const tradeStart = inventoryPage(tradePage, inventory.length) * INVENTORY_PAGE_SIZE;
+  const questWarning = (itemId: string) => questItemNeeds(hero, content, itemId)
+    .map(({ quest, objective, count }) => `Needed for ${quest.name}: ${count}/${objective.target}. Spending this item can delay the quest.`).join(' ');
 
   return <DungeonCard>
     <Text className="text-accent" style={styles.eyebrow}>{altar ? 'GODDESS SANCTUARY' : object.kind === 'healer' ? 'RECOVERY' : 'TOWN SERVICES'}</Text>
@@ -63,6 +67,7 @@ export default function TownServicePanel({ session, objectId, busy, dispatch, pr
       <Button label={altar ? 'Confirm offering and enter dungeon' : 'Confirm transaction'} disabled={busy || hero.gold + quote.goldChange < 0 || hero.gold + quote.goldChange > 1000000} onPress={confirm} />
       <Button label="Cancel" disabled={busy} onPress={cancel} />
     </DungeonCard> : <>
+      <TownQuestOffers session={session} objectId={objectId} busy={busy} progress={progress} />
       {object.lessons.length ? <>
         <Text className="text-muted" style={styles.body}>Learn a skill at Rank F, then practice in the dungeon. The introductory Smash lesson awards 3 AP once.</Text>
         {object.lessons.map((offer) => {
@@ -96,7 +101,7 @@ export default function TownServicePanel({ session, objectId, busy, dispatch, pr
       {object.kind === 'healer' ? <>
         <Text className="text-muted" style={styles.body}>The healer restores all resources, removes wounds, and restores fullness. Treatment costs {object.healingCost} gold.</Text>
         <Button label={`Receive treatment · ${object.healingCost} gold`} disabled={busy || hero.gold < object.healingCost! || (hero.health === stats.maxHealth && hero.mana === stats.maxMana && hero.stamina === stats.maxStamina && hero.wounds === 0 && hero.fullness === 100)}
-          onPress={() => choose({ command: { type: 'HEAL', objectId }, label: 'Receive treatment?', goldChange: -object.healingCost!, detail: 'Restore all resources, clear wounds and hunger. Weapon durability is unchanged.' })} />
+          onPress={() => choose({ command: { type: 'HEAL', objectId }, label: 'Receive treatment?', goldChange: -object.healingCost!, detail: `HP ${hero.health} → ${stats.maxHealth}; mana ${hero.mana} → ${stats.maxMana}; stamina ${hero.stamina} → ${stats.maxStamina}; wounds ${hero.wounds} → 0; fullness ${hero.fullness} → 100%. Weapon durability is unchanged.` })} />
         {hero.gold < object.healingCost! ? <Text className="text-muted" style={styles.body}>You need more gold for treatment. You can sell spare items at the general shop.</Text> : null}
       </> : null}
       {altar || shop?.buysItems ? <><Text className="text-accent" style={styles.section}>{altar ? 'Choose an offering' : 'Sell spare items'}</Text>
@@ -105,10 +110,10 @@ export default function TownServicePanel({ session, objectId, busy, dispatch, pr
         {inventory.slice(tradeStart, tradeStart + INVENTORY_PAGE_SIZE).map((entry) => altar ? <DungeonCard key={entry.key} >
           <Text className="text-foreground" style={styles.name}>{entry.item.name}</Text><Text className="text-muted" style={styles.body}>{entry.detail}</Text>
           <Button label={`Offer ${entry.item.name}`} disabled={busy} onPress={() => choose({ command: { type: 'OFFER_ITEM', objectId, item: entry.reference }, label: `Offer ${entry.item.name}?`, goldChange: 0,
-            detail: `${entry.detail}. One copy will be permanently consumed to begin a new dungeon run.` })} />
+            detail: `${entry.detail}. One copy will be permanently consumed to begin a new dungeon run. ${questWarning(entry.item.id)}` })} />
         </DungeonCard> : <TradeRow key={entry.key} name={entry.item.name} detail={entry.detail} price={Math.floor(entry.item.price / 2)}
           maximum={Math.min(removableCount(hero, entry.reference), Math.floor(entry.item.price / 2) > 0 ? Math.floor((1000000 - hero.gold) / Math.floor(entry.item.price / 2)) : 999)} verb="Sell" disabled={busy}
-          choose={(quantity) => choose({ command: { type: 'SELL_ITEM', objectId, item: entry.reference, quantity }, label: `Sell ${entry.item.name} ×${quantity}?`, goldChange: Math.floor(entry.item.price / 2) * quantity, detail: entry.detail })} />)}
+          choose={(quantity) => choose({ command: { type: 'SELL_ITEM', objectId, item: entry.reference, quantity }, label: `Sell ${entry.item.name} ×${quantity}?`, goldChange: Math.floor(entry.item.price / 2) * quantity, detail: `${entry.detail}. ${questWarning(entry.item.id)}` })} />)}
         <InventoryPager label={altar ? 'Offerings' : 'Sale items'} page={inventoryPage(tradePage, inventory.length)} count={inventory.length} disabled={busy} onPage={setTradePage} />
       </> : null}
     </>}

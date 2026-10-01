@@ -12,6 +12,7 @@ function memory(rows = new Map<string, SaveRow>()): SaveStorage {
   return { async read(id) { return rows.get(id); }, async list() { return [...rows.values()]; }, async write(row) { rows.set(row.id, row); }, async close() {} };
 }
 async function settle() { for (let i = 0; i < 80; i++) await Promise.resolve(); }
+async function speakToKeeper(host: JourneyHost) { host.getSnapshot().session!.dispatch({ type: 'INTERACT', objectId: 'keeper' }); await host.flush(); }
 function savedState() { const session = new JourneySession(content); const state = session.toSave(); session.dispose(); return state; }
 async function hostWith(state = savedState()) {
   const rows = new Map<string, SaveRow>(); rows.set('auto', { id: 'auto', savedAt: new Date().toISOString(), payload: encodeSave(state, content) });
@@ -24,6 +25,7 @@ describe('durable character progression candidates', () => {
     const { host, rows } = await hostWith(); const before = host.getSnapshot().session!.toSave();
     expect(await host.progress({ type: 'LEARN_SKILL', objectId: 'keeper', skillId: 'firebolt' })).toBe(false);
     expect(host.getSnapshot().session!.toSave()).toEqual(before);
+    await speakToKeeper(host);
     expect(await host.progress({ type: 'LEARN_SKILL', objectId: 'keeper', skillId: 'smash' })).toBe(true);
     const hero = host.getSnapshot().session!.toSave().hero;
     expect(hero).toMatchObject({ ap: 3, claimedMilestones: ['intro-melee-lesson'], learnedSkills: { smash: { rank: 'F', objectiveCounts: {} } } });
@@ -35,7 +37,7 @@ describe('durable character progression candidates', () => {
     expect(await host.progress({ type: 'RANK_UP_SKILL', skillId: 'smash' })).toBe(false); expect(host.getSnapshot().error).toContain('town');
   });
   it('retains a failed learning candidate, locks dependent mutations and retries without charging twice', async () => {
-    const { host, storage } = await hostWith(); const initial = host.getSnapshot().session!;
+    const { host, storage } = await hostWith(); await speakToKeeper(host); const initial = host.getSnapshot().session!;
     const write = vi.spyOn(storage, 'write').mockRejectedValueOnce(new Error('Disk full'));
     expect(await host.progress({ type: 'LEARN_SKILL', objectId: 'keeper', skillId: 'smash' })).toBe(false);
     const candidateBytes = write.mock.calls[0][0].payload;
@@ -105,7 +107,7 @@ describe('durable character progression candidates', () => {
     expect(JSON.parse(write.mock.calls[1][0].payload).campaign.hero.learnedSkills.smash.rank).toBe('F');
   });
   it('publishes progression/AP events only after saving and never retries committed notification failures', async () => {
-    const { host, storage } = await hostWith(); const initial = host.getSnapshot().session!;
+    const { host, storage } = await hostWith(); await speakToKeeper(host); const initial = host.getSnapshot().session!;
     const events: string[] = [];
     const stop = host.subscribe(() => {
       const session = host.getSnapshot().session;
@@ -125,7 +127,7 @@ describe('durable character progression candidates', () => {
     expect(host.getSnapshot().session!.toSave().hero.ap).toBe(3);
   });
   it('an audio refresh during a candidate write cannot schedule an older campaign over the committed result', async () => {
-    vi.useFakeTimers(); const { host, storage, rows } = await hostWith(); const initial = host.getSnapshot().session!;
+    vi.useFakeTimers(); const { host, storage, rows } = await hostWith(); await speakToKeeper(host); const initial = host.getSnapshot().session!;
     let release!: () => void; const gate = new Promise<void>((resolve) => { release = resolve; }); const originalWrite = storage.write;
     const write = vi.spyOn(storage, 'write').mockImplementation(async (row) => { await gate; await originalWrite(row); });
     const saving = host.progress({ type: 'LEARN_SKILL', objectId: 'keeper', skillId: 'smash' }); await settle();
@@ -135,7 +137,7 @@ describe('durable character progression candidates', () => {
     expect(parseSave(JSON.parse(rows.get('auto')!.payload), content).campaign.hero.learnedSkills.smash.rank).toBe('F');
   });
   it('honors host generations when a critical save completes after unmount and another character starts', async () => {
-    const { host, storage, rows } = await hostWith(); let release!: () => void;
+    const { host, storage, rows } = await hostWith(); await speakToKeeper(host); let release!: () => void;
     const gate = new Promise<void>((resolve) => { release = resolve; }); const originalWrite = storage.write;
     vi.spyOn(storage, 'write').mockImplementation(async (row) => { await gate; await originalWrite(row); });
     const pending = host.progress({ type: 'LEARN_SKILL', objectId: 'keeper', skillId: 'smash' }); await settle();

@@ -1,4 +1,5 @@
 import { learnSkill, readSkillBook, insertSkillPage, rankUpSkill, mergeTraining } from '../engine/rpg/Skills';
+import { acceptQuest, claimQuest, mergeQuestEncounter, reconcileQuests, recordQuestWorldEvidence, trackObjective } from '../engine/rpg/Quests';
 import { cloneData } from '../engine/cloneData';
 import { createGameEngine } from '../engine/GameEngine';
 import type { ContentRegistry } from '../engine/data/ContentRegistry';
@@ -86,7 +87,7 @@ export class JourneySession {
       switch (obj.kind) {
         case 'npc':
           for (const lesson of obj.lessons) if (!this.state.hero.discoveredSkills.includes(lesson.skillId)) this.state.hero.discoveredSkills.push(lesson.skillId);
-          if (obj.lessons.length) this.activeService = obj.id;
+          if (!run && this.map.theme) this.activeService = obj.id;
           this.message = obj.dialogue; break;
         case 'chest':
           if (this.isClaimed(obj.id)) throw new Error('This chest is empty');
@@ -145,19 +146,22 @@ export class JourneySession {
         }
         case 'portal': {
           const destination = content.data.worlds.find((map) => map.id === obj.destination)!;
+          recordQuestWorldEvidence(this.state.hero, { kind: 'interact', worldId: this.state.worldId, objectId }, content);
           this.state.worldId = destination.id; this.state.position = { ...(obj.destinationPosition ?? destination.entry) }; this.spawnWorld();
           this.message = `Entered ${destination.name}.`; this.commit({ type: 'MAP_CHANGED', mapId: destination.id }); return;
         }
         case 'encounter': throw new Error('Step onto the guardian tile to begin the encounter');
       }
       this.dungeonMap = undefined;
+      recordQuestWorldEvidence(this.state.hero, { kind: 'interact', worldId: this.state.worldId, objectId }, content);
       this.commit({ type: 'WORLD_INTERACTED', objectId, message: this.message });
     });
     this.engine.commands.register('EXIT_DUNGEON', () => {
+      if (this.hostManaged) throw new Error('Use the host durable progression operation');
       this.requireExploring();
       const run = this.state.dungeon; const room = run?.blueprint.rooms.find((room) => room.kind === 'treasure');
       if (!run?.selectedChest || !room || !inRoom(room, this.state.position)) throw new Error('Claim a final chest in the treasure room before returning');
-      this.leaveDungeon();
+      this.leaveDungeon(true);
     });
     this.engine.commands.register('EQUIP_ITEM', ({ itemId }) => {
       this.requireExploring(); const item = content.item(itemId);
@@ -186,6 +190,7 @@ export class JourneySession {
     });
     this.registerServices();
     this.registerProgression();
+    this.registerQuests();
     this.refresh();
   }
   get map() { return this.state.dungeon ? this.dungeonMap ??= projectDungeonMap(this.state.dungeon) : this.content.data.worlds.find((map) => map.id === this.state.worldId)!; }
@@ -206,6 +211,7 @@ export class JourneySession {
     const candidate = new JourneySession(this.content, this.toSave(), undefined, this.characterName);
     candidate.activeService = this.activeService; candidate.staging = true;
     try { candidate.dispatch(command);
+      validateCampaign(candidate.toSave(), this.content);
       if (candidate.state.hero.ap !== this.state.hero.ap) candidate.committedEvents.push({ type: 'AP_CHANGED', ap: candidate.state.hero.ap });
       return candidate; } catch (error) { candidate.dispose(); throw error; }
   }
@@ -237,6 +243,7 @@ export class JourneySession {
     if (this.disposed || !this.state.pending || !battle.combat.result || battle.engine.seed !== this.state.pending.seed || battle.map.id !== this.state.pending.mapId || battle.encounterId !== this.encounterIdentity) throw new Error('Encounter is not ready to finish');
     const hero = cloneData(this.state.hero);
     mergeTraining(hero, battle.training.snapshot(), this.content);
+    mergeQuestEncounter(hero, battle.quests.snapshot(), battle.combat.result, battle.map.id, this.content);
     const entity = battle.engine.world.entities.find((entity) => entity.player)!;
     hero.health = Math.max(1, entity.health!.current); hero.mana = entity.mana!.current;
     hero.stamina = entity.stamina!.current; hero.wounds = entity.wounds!; hero.fullness = entity.fullness!;
@@ -293,18 +300,20 @@ export class JourneySession {
     this.state.pending = { objectId, worldId: this.map.id, mapId: obj.encounterMap!, seed: encounter?.seed ?? this.engine.random.int(-2147483648, 2147483647) };
     this.state.encounterCount++; this.commit({ type: 'ENCOUNTER_STARTED', objectId });
   }
-  private leaveDungeon() {
+  private leaveDungeon(completed = false) {
     const run = this.state.dungeon;
     if (!run) throw new Error('You are not inside a dungeon');
+    if (completed) recordQuestWorldEvidence(this.state.hero, { kind: 'clearDungeon', dungeonId: run.blueprint.definitionId }, this.content);
     this.state.worldId = run.returnTo.worldId; this.state.position = { ...run.returnTo.position }; this.state.dungeon = undefined;
     this.dungeonMap = undefined; this.spawnWorld(); this.message = 'Returned to the refuge. Your earned loot is safe; dungeon effects and keys have faded.';
     this.commit({ type: 'MAP_CHANGED', mapId: this.map.id });
   }
   private requireExploring() { if (this.mutationsLocked) throw new Error('Save pending. Retry before continuing.'); if (this.state.pending) throw new Error('Finish the encounter before exploring'); }
   private requireService(objectId: string, kinds: readonly WorldMap['objects'][number]['kind'][]) {
+    if (this.hostManaged) throw new Error('Use the host durable progression operation');
     this.requireExploring();
     const object = this.map.objects.find((entry) => entry.id === objectId);
-    if (this.state.dungeon || this.activeService !== objectId || !object || !kinds.includes(object.kind) || distance(object, this.state.position) > 1) throw new Error('Approach and speak to this service first');
+    if (this.state.dungeon || !this.map.theme || this.activeService !== objectId || !object || !kinds.includes(object.kind) || distance(object, this.state.position) > 1) throw new Error('Approach and speak to this service first');
     return object;
   }
   private registerServices() {
@@ -377,7 +386,7 @@ export class JourneySession {
     };
     this.engine.commands.register('LEARN_SKILL', ({ objectId, skillId }) => {
       town();
-      const object = this.map.objects.find((o) => o.id === objectId && o.kind === 'npc');
+      const object = this.requireService(objectId, ['npc']);
       const offer = object?.lessons.find((o) => o.skillId === skillId);
       if (!object || !offer || distance(object, this.state.position) > 1) throw new Error('Approach the instructor for this lesson');
       if (this.state.hero.gold < offer.fee) throw new Error('Not enough gold for this lesson');
@@ -411,11 +420,53 @@ export class JourneySession {
     applyHero(hero, this.state.hero, this.content, this.state.dungeon?.effects); this.engine.spawn(hero);
     this.map.objects.forEach((obj) => this.engine.spawn({ id: obj.id, name: obj.name, position: { x: obj.x, y: obj.y } }));
   }
-  private commit(event: GameEvent) { this.state.randomState = this.engine.random.snapshot(); this.refresh(); if (this.staging) this.committedEvents.push(event); else this.engine.events.emit(event); }
+  private commit(event: GameEvent) {
+    if (event.type === 'MAP_CHANGED') recordQuestWorldEvidence(this.state.hero, { kind: 'visit', worldId: event.mapId }, this.content);
+    this.state.randomState = this.engine.random.snapshot(); this.refresh();
+    if (this.staging) this.committedEvents.push(event); else this.engine.events.emit(event);
+  }
   private refresh() {
+    reconcileQuests(this.state.hero, this.content, this.activeService && !this.state.dungeon && !this.state.pending
+      ? { worldId: this.state.worldId, objectId: this.activeService } : undefined);
     const player = this.engine.getEntity('player');
     if (player) applyHero(player, this.state.hero, this.content, this.state.dungeon?.effects);
     this.snapshot = { state: cloneData(this.state), map: this.map, message: this.message, revision: ++this.revision, activeService: this.activeService };
     this.listeners.forEach((listener) => listener());
+  }
+  private registerQuests() {
+    const quest = (id: string) => {
+      const definition = this.content.data.quests.find((q) => q.id === id);
+      if (!definition) throw new Error('Unknown quest');
+      return definition;
+    };
+    const town = () => {
+      if (this.hostManaged) throw new Error('Use the host durable progression operation');
+      this.requireExploring();
+      if (this.state.dungeon || !this.map.theme) throw new Error('Return to town for quest acceptance and claims');
+    };
+    const atNpc = (npc: { worldId: string; objectId: string }, objectId?: string) => {
+      if (npc.worldId !== this.state.worldId || objectId !== npc.objectId) throw new Error('Return to the quest’s named NPC');
+      this.requireService(npc.objectId, ['npc', 'healer', 'merchant']);
+    };
+    this.engine.commands.register('ACCEPT_QUEST', ({ questId, objectId }) => {
+      town(); const definition = quest(questId);
+      if (definition.offerNpc) atNpc(definition.offerNpc, objectId);
+      this.state.hero = acceptQuest(this.state.hero, definition, this.content);
+      this.message = `Accepted ${definition.name}.`;
+      this.commit({ type: 'QUEST_ACCEPTED', questId });
+    });
+    this.engine.commands.register('CLAIM_QUEST', ({ questId, objectId }) => {
+      town(); const definition = quest(questId);
+      if (definition.claimNpc) atNpc(definition.claimNpc, objectId);
+      this.state.hero = claimQuest(this.state.hero, definition, this.content);
+      this.message = `Completed ${definition.name}. Rewards saved.`;
+      this.commit({ type: 'QUEST_CLAIMED', questId });
+    });
+    this.engine.commands.register('TRACK_QUEST_OBJECTIVE', ({ questId, objectiveId }) => {
+      if (this.hostManaged) throw new Error('Use the host durable progression operation');
+      this.requireExploring(); trackObjective(this.state.hero, quest(questId), objectiveId);
+      this.message = 'Quest tracker updated.';
+      this.commit({ type: 'QUEST_TRACKING_CHANGED' });
+    });
   }
 }

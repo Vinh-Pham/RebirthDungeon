@@ -7,6 +7,11 @@ export class ContentRegistry {
   readonly data: GameContent;
   constructor(raw: unknown) {
     this.data = ContentSchema.parse(raw);
+    const freeze = (value: unknown): void => {
+      if (!value || typeof value !== 'object' || Object.isFrozen(value)) return;
+      Object.values(value).forEach(freeze); Object.freeze(value);
+    };
+    this.data.quests.forEach(freeze); this.data.titles.forEach(freeze);
     for (const skill of this.data.skills) if (skill.gameRanks) {
       for (const rank of Object.values(skill.gameRanks)) {
         rank.objectives.forEach(Object.freeze); Object.freeze(rank.objectives);

@@ -8,6 +8,8 @@ import type { BattleSession } from '../../game/BattleSession';
 import { distance, findPath, isWalkable } from '../../engine/world/TileMap';
 import { encodeSave, parseSave, validateCampaign } from '../../persistence/SaveSchema';
 import { addItem, heroStats, itemCount } from '../../engine/rpg/Character';
+import { learnSkill } from '../../engine/rpg/Skills';
+import { questReady } from '../../engine/rpg/Quests';
 import { legacyCampaign } from '../persistence/legacyFixture';
 import { followCamera, screenToWorld, worldToScreen } from '../../renderer/Camera';
 
@@ -68,6 +70,13 @@ function resume(session: JourneySession) {
   expect(resumed.toSave()).toEqual(session.toSave()); return resumed;
 }
 
+function watchingSeal(session: JourneySession) {
+  const saved = session.toSave(); saved.hero = learnSkill(saved.hero, 'smash', content);
+  saved.hero.quests['refuge-preparations'] = { status: 'completed', stageId: 'bring-provisions', counts: { 'grocery-visit': 1 }, claimId: 'quest/refuge-preparations/once' };
+  saved.hero.quests['broken-seal'] = { status: 'active', stageId: 'seal-depths', counts: { 'practice-smash': 3 } };
+  const restored = new JourneySession(content, saved); sessions.push(restored); return restored;
+}
+
 describe('seeded dungeon geometry and content', () => {
   it('generates deterministic connected layouts with required room types and isolated gates', () => {
     fc.assert(fc.property(fc.integer(), (seed) => {
@@ -99,6 +108,26 @@ describe('seeded dungeon geometry and content', () => {
 });
 
 describe('dungeon progression', () => {
+  it('counts the successful final exit once, excludes statue returns, and requires a later keeper report before the title claim', () => {
+    const early = watchingSeal(create()); interact(early, 'goddess-statue');
+    expect(early.toSave().hero.quests['broken-seal'].counts['clear-moss-depths']).toBeUndefined();
+    const session = watchingSeal(create()); clearOrdinary(session); interact(session, 'boss-key'); interact(session, 'boss-gate');
+    const gate = session.map.objects.find((obj) => obj.id === 'boss-gate')!; travel(session, { x: 50, y: gate.y }); win(session); interact(session, 'treasure-key');
+    interact(session, 'final-chest-1');
+    expect(session.toSave().hero.quests['broken-seal'].stageId).toBe('seal-depths');
+    const statueReturn = resume(session); interact(statueReturn, 'goddess-statue');
+    expect(statueReturn.toSave().hero.quests['broken-seal'].counts['clear-moss-depths']).toBeUndefined();
+    const before = session.toSave(), candidate = session.progressionCandidate({ type: 'EXIT_DUNGEON' }); sessions.push(candidate);
+    expect(session.toSave()).toEqual(before);
+    expect(candidate.toSave().hero.quests['broken-seal']).toMatchObject({ stageId: 'seal-report', counts: { 'clear-moss-depths': 1 } });
+    session.dispatch({ type: 'EXIT_DUNGEON' });
+    expect(session.toSave()).toEqual(candidate.toSave());
+    expect(questReady(session.toSave().hero, content.data.quests[1])).toBe(false);
+    interact(session, 'keeper'); expect(questReady(session.toSave().hero, content.data.quests[1])).toBe(true);
+    session.dispatch({ type: 'CLAIM_QUEST', questId: 'broken-seal', objectId: 'keeper' });
+    expect(session.toSave().hero.earnedTitles).toEqual(['seals-witness']);
+    expect(resume(session).toSave().hero.quests['broken-seal'].status).toBe('completed');
+  });
   it('starts beside the goddess and ends runs while retaining resources and generating a fresh layout', () => {
     const session = create(); const initial = session.toSave();
     expect(initial.position).toEqual(initial.dungeon!.blueprint.world.entry);
@@ -177,7 +206,7 @@ describe('dungeon progression', () => {
     expect(() => restored.dispatch({ type: 'INTERACT', objectId: chest.id })).toThrow('full'); expect(restored.toSave()).toEqual(saved);
   });
   it('ends a defeated run, clears fountain effects and keys, restores resources and halves gold', () => {
-    const session = create(); const fountain = session.toSave().dungeon!.blueprint.fountains[0]; interact(session, fountain.objectId);
+    const session = watchingSeal(create()); const fountain = session.toSave().dungeon!.blueprint.fountains[0]; interact(session, fountain.objectId);
     const saved = session.toSave(); saved.hero.gold = 101; const restored = new JourneySession(content, saved); sessions.push(restored);
     const monster = saved.dungeon!.blueprint.encounters.find((e) => e.kind === 'monster' && !saved.dungeon!.cleared.includes(e.objectId))
       ?? saved.dungeon!.blueprint.encounters.find((e) => e.kind === 'mimic')!;
@@ -188,6 +217,8 @@ describe('dungeon progression', () => {
     battle.dispatch({ type: 'SELECT_ACTION', action: 'attack' }); battle.dispatch({ type: 'SELECT_TARGET', targetId: battle.battle.validTargetIds()[0] }); battle.dispatch({ type: 'CONFIRM_ACTION' }); battle.advanceEnemyTurns();
     expect(battle.combat.result).toBe('defeat'); restored.finishBattle(battle);
     expect(restored.toSave()).toMatchObject({ worldId: 'refuge', hero: { gold: Math.floor(goldBefore / 2) } }); expect(restored.toSave().dungeon).toBeUndefined();
+    expect(restored.toSave().hero.quests['broken-seal']).toMatchObject({ stageId: 'seal-depths', counts: { 'practice-smash': 3 } });
+    expect(restored.toSave().hero.quests['broken-seal'].counts['clear-moss-depths']).toBeUndefined();
     expect(restored.engine.getEntity('player')!.combatant).toEqual(heroStats(restored.toSave().hero, content).combatant);
   });
 });
@@ -223,7 +254,7 @@ describe('fountains, checkpoints and camera', () => {
   });
   it('migrates version 2 and rejects corrupt progress, effects, key states, references and bypass corridors', () => {
     const legacy = new JourneySession(content); sessions.push(legacy);
-    expect(parseSave({ version: 2, savedAt: new Date().toISOString(), campaign: legacyCampaign(legacy.toSave()) }, content)).toMatchObject({ version: 6, campaign: legacy.toSave() });
+    expect(parseSave({ version: 2, savedAt: new Date().toISOString(), campaign: legacyCampaign(legacy.toSave()) }, content)).toMatchObject({ version: 7, campaign: legacy.toSave() });
     const session = create();
     for (const mutate of [
       (run: NonNullable<ReturnType<JourneySession['toSave']>['dungeon']>) => { run.bossKey.status = 'held'; },

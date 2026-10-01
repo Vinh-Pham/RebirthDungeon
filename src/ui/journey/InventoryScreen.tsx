@@ -1,4 +1,7 @@
 import ProgressionFeedback from '../skills/ProgressionFeedback';
+import { router } from 'expo-router';
+import { questItemNeeds } from '../../engine/rpg/Quests';
+import { npcLabel } from '../quests/questLabels';
 import { Input } from 'heroui-native/input';
 import { useMemo, useState, useSyncExternalStore } from 'react';
 import { Text, View } from 'react-native';
@@ -28,11 +31,12 @@ function InventoryPage({ host, session }: { host: JourneyHost; session: JourneyS
   return <MenuPage>
     <InventoryContent host={host} session={session} />
     {view.message ? <DungeonNotice status="accent" message={view.message} /> : null}
-    <ProgressionFeedback host={host} />
+    <ProgressionFeedback host={host} showNotice={false} />
   </MenuPage>;
 }
 
 export function InventoryContent({ host, session }: { host: JourneyHost; session: JourneySession }) {
+  const { profile } = useCharacterGame();
   const view = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
   const hosted = useSyncExternalStore(host.subscribe, host.getSnapshot, host.getServerSnapshot);
   const battle = useSyncExternalStore(hosted.battle?.subscribe ?? noSubscribe, hosted.battle?.getSnapshot ?? noSnapshot, noSnapshot);
@@ -58,10 +62,11 @@ export function InventoryContent({ host, session }: { host: JourneyHost; session
     catch (failure: unknown) { setError(failure instanceof Error ? failure.message : 'This item could not be used.'); }
   };
   const back = () => { setSelectedKey(undefined); setError(undefined); };
+  const needs = questItemNeeds(battle?.inventory ? { ...hero, inventory: battle.inventory.items } : hero, session.content);
   return <View className="gap-4">
     {hosted.battle ? <DungeonNotice status="accent" message="Inventory is read-only during encounters. Equipment cannot change during battle; use the battle Item menu for consumables." /> : null}
     <DungeonNotice message={error} />
-    {selected ? <InventoryDetails row={selected} hero={hero} host={host} session={session} review={battle?.character} disabled={disabled} town={town} dispatch={dispatch} back={back} /> : <>
+    {selected ? <InventoryDetails row={selected} hero={battle?.inventory ? { ...hero, inventory: battle.inventory.items } : hero} host={host} session={session} review={battle?.character} disabled={disabled} town={town} dispatch={dispatch} back={back} /> : <>
       {selectedKey ? <DungeonNotice status="accent" message="That item is no longer in your pack." /> : null}
       <DungeonCard>
         <Text className="text-accent" accessibilityRole="header" style={menu.heading}>Equipment</Text>
@@ -70,6 +75,13 @@ export function InventoryContent({ host, session }: { host: JourneyHost; session
           onPress={() => { setSelectedKey(equippedWeapon.key); setError(undefined); }} /> : <Text className="text-muted" style={menu.body}>Weapon: Bare hands</Text>}
         {equippedArmor ? <DungeonButton label={equippedArmor.item.name} detail="Armor · One equipped copy" onPress={() => { setSelectedKey(equippedArmor.key); setError(undefined); }} /> : <Text className="text-muted" style={menu.body}>Armor: None</Text>}
         {view.state.dungeon ? <Text className="text-muted" style={menu.body}>Dungeon keys · Boss: {view.state.dungeon.bossKey.status} · Treasure: {view.state.dungeon.treasureKey.status}</Text> : null}
+      </DungeonCard>
+      <DungeonCard>
+        <Text className="text-accent" style={menu.heading}>Quest supplies</Text>
+        {needs.length ? needs.map(({ quest, objective, count }) => <Text key={`${quest.id}/${objective.id}`} className="text-muted" style={menu.body}>
+          {session.content.item(objective.itemId).name} · {count}/{objective.target} for {quest.name}{objective.kind === 'deliverItem' ? ` · ${npcLabel(session.content, quest.claimNpc)}` : ''}
+        </Text>) : <Text className="text-muted" style={menu.body}>No current item objectives. Speak to town NPCs for requests.</Text>}
+        <DungeonButton label="Quest journal" onPress={() => router.navigate({ pathname: '/game/[characterId]/quests', params: { characterId: profile.id } })} />
       </DungeonCard>
       <DungeonCard>
         <Text className="text-accent" accessibilityRole="header" style={menu.heading}>Your pack</Text>

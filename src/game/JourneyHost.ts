@@ -57,7 +57,7 @@ export class JourneyHost {
   progress = async (command: ProgressionCommand): Promise<boolean> => {
     const { session, busy, battle } = this.snapshot;
     if (!session || busy || battle || this.candidate) return false;
-    if (!this.repository) { this.fail(new Error('Save storage is required to learn or advance skills')); return false; }
+    if (!this.repository) { this.fail(new Error('Save storage is required for town services and progression')); return false; }
     try { this.candidate = session.progressionCandidate(command); }
     catch (error) { this.fail(error); return false; }
     session.lockMutations();
@@ -132,7 +132,11 @@ export class JourneyHost {
       if (this.characterName && !state) throw new Error('No journey save was found for this character.');
       if (generation !== this.generation) return;
       this.autosaver = new AutoSaver(repository, (error) => { if (generation === this.generation) this.fail(error); });
-      this.attach(new JourneySession(this.content, state, undefined, this.characterName));
+      const session = new JourneySession(this.content, state, undefined, this.characterName);
+      const reconciled = session.toSave();
+      this.attach(session);
+      // Save newly discovered automatic offers/state-stage advancement after a load.
+      if ((state && JSON.stringify(state) !== JSON.stringify(reconciled)) || (!state && Object.keys(reconciled.hero.quests).length)) this.autosaver?.schedule(session.toSave());
       const slots = await repository.list();
       if (generation === this.generation) this.update({ slots, busy: false });
     } catch (error) {
