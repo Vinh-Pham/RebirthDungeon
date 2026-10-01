@@ -4,6 +4,7 @@ import { effectiveEntity } from '../engine/rpg/StatusEffects';
 import { createGameEngine } from '../engine/GameEngine';
 import { CombatSystem } from '../engine/ecs/systems/CombatSystem';
 import { BattleController, type BattlePhase } from '../engine/battle/BattleController';
+import type { BattleAction } from '../engine/battle/BattleMachine';
 import type { ContentRegistry } from '../engine/data/ContentRegistry';
 import type { GameCommand } from '../engine/commands';
 import type { GameEvent } from '../engine/events';
@@ -24,7 +25,7 @@ export interface BattleView {
   phase: BattlePhase;
   turnId?: string;
   selectedTargetId?: string;
-  selectedAction?: { action: 'attack' | 'skill' | 'item' | 'rest'; skillId?: string; itemId?: string };
+  selectedAction?: BattleAction;
   entities: readonly RenderEntity[];
   targets: readonly string[];
   log: readonly string[];
@@ -116,6 +117,7 @@ export class BattleSession {
     if (event.type === 'MANA_RESTORED') line = `${name(event.targetId)} recovers ${event.amount} mana.`;
     if (event.type === 'WEAPON_WORN') line = event.durability === 0 ? `${this.content.item(event.itemId).name} broke. Its stat bonus is lost until repaired.` : `${this.content.item(event.itemId).name} · ${event.durability} durability.`;
     if (event.type === 'RESTED') line = `${name(event.entityId)} rests to recover stamina.`;
+    if (event.type === 'DEFENDED') line = `${name(event.entityId)} defends, halving attack and spell damage until their next turn and recovering stamina.`;
     if (event.type === 'WOUNDS_RECEIVED') line = `${name(event.entityId)} suffers ${event.amount} wounds.`;
     if (event.type === 'SKILL_USED') line = `${name(event.sourceId)} casts ${this.content.skill(event.skillId).name}.`;
     if (event.type === 'ITEM_USED') line = `${name(event.sourceId)} uses ${this.content.item(event.itemId).name}.`;

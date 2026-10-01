@@ -1,8 +1,10 @@
 import type { EntityId } from './ecs/Entity';
 import type { OwnedItem } from './rpg/Character';
+import type { BattleAction } from './battle/BattleMachine';
 
 export type GameCommand =
   | { type: 'REST'; entityId: EntityId }
+  | { type: 'DEFEND'; entityId: EntityId }
   | { type: 'INTERACT'; objectId: string }
   | { type: 'CLOSE_SERVICE' }
   | { type: 'BUY_ITEM'; objectId: string; itemId: string; quantity: number }
@@ -16,7 +18,7 @@ export type GameCommand =
   | { type: 'EQUIP_ITEM'; itemId: string }
   | { type: 'UNEQUIP_ITEM'; slot: 'weapon' | 'armor' }
   | { type: 'START_BATTLE' }
-  | { type: 'SELECT_ACTION'; action: 'attack' | 'skill' | 'item' | 'rest'; skillId?: string; itemId?: string }
+  | ({ type: 'SELECT_ACTION' } & BattleAction)
   | { type: 'SELECT_TARGET'; targetId: EntityId }
   | { type: 'CONFIRM_ACTION' }
   | { type: 'CANCEL_ACTION' }
@@ -34,7 +36,8 @@ export function validateCommand(command: GameCommand): void {
   const quantity = (value: number) => Number.isInteger(value) && value >= 1 && value <= 999;
   let valid = false;
   switch (command?.type) {
-    case 'REST': valid = id(command.entityId); break;
+    case 'REST':
+    case 'DEFEND': valid = id(command.entityId); break;
     case 'INTERACT': valid = id(command.objectId); break;
     case 'BUY_ITEM': valid = id(command.objectId) && id(command.itemId) && quantity(command.quantity); break;
     case 'SELL_ITEM': valid = id(command.objectId) && owned(command.item) && quantity(command.quantity); break;
@@ -53,7 +56,7 @@ export function validateCommand(command: GameCommand): void {
     case 'ADVANCE_ENEMY_TURN':
       valid = true; break;
     case 'SELECT_ACTION':
-      valid = command.action === 'attack' || command.action === 'rest' || (command.action === 'skill' && id(command.skillId)) || (command.action === 'item' && id(command.itemId)); break;
+      valid = command.action === 'attack' || command.action === 'defend' || command.action === 'rest' || (command.action === 'skill' && id(command.skillId)) || (command.action === 'item' && id(command.itemId)); break;
     case 'SELECT_TARGET':
       valid = id(command.targetId); break;
     case 'MOVE':

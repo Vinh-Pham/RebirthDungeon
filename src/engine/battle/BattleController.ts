@@ -98,7 +98,7 @@ export class BattleController implements GameSystem {
     const source = this.engine.getEntity(this.combat.currentTurn()!);
     if (!source) return [];
     const action = this.context.action;
-    const mode = ['item', 'rest'].includes(action.action) ? 'self' : action.action === 'skill' ? this.content.skill(action.skillId!).target : 'enemy';
+    const mode = ['item', 'rest', 'defend'].includes(action.action) ? 'self' : action.action === 'skill' ? this.content.skill(action.skillId!).target : 'enemy';
     return this.combat.turnOrder.filter((id) => {
       const target = this.engine!.getEntity(id);
       if (!target?.health?.current || target.dead) return false;
@@ -120,7 +120,7 @@ export class BattleController implements GameSystem {
   private resolve(action: BattleAction, targetId: string) {
     const sourceId = this.combat.currentTurn()!;
     try {
-      this.engine!.dispatch(action.action === 'rest' ? { type: 'REST', entityId: sourceId } : action.action === 'attack'
+      this.engine!.dispatch(action.action === 'defend' ? { type: 'DEFEND', entityId: sourceId } : action.action === 'rest' ? { type: 'REST', entityId: sourceId } : action.action === 'attack'
         ? { type: 'ATTACK', attackerId: sourceId, targetId }
         : action.action === 'skill' ? { type: 'USE_SKILL', sourceId, targetId, skillId: action.skillId! }
         : { type: 'USE_ITEM', sourceId, targetId, itemId: action.itemId! });

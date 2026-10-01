@@ -14,7 +14,7 @@ export interface PresentationBatch {
   id: number;
   sourceId: string;
   targetId: string;
-  animation: 'attack' | 'skill';
+  animation: Extract<GameEvent, { type: 'ANIMATION_REQUESTED' }>['animation'];
   skillId?: string;
   impacts: PresentedImpact[];
   deaths: string[];

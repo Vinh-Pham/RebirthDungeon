@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useStore } from 'zustand';
 import { loadGameContent } from '../../data/content';
 import { BattleHost } from '../../game/BattleHost';
-import { BattleSession } from '../../game/BattleSession';
+import { BattleSession, type BattleView as BattleSnapshot } from '../../game/BattleSession';
 import type { GameCommand } from '../../engine/commands';
 import { staminaCost } from '../../engine/rpg/Resources';
 import GameCanvas from '../../renderer/GameCanvas';
@@ -19,13 +19,14 @@ export class ArenaBoundary extends Component<{ children: ReactNode }, { failed: 
   }
 }
 
-function Button({ label, onPress, disabled = false, selected = false, primary = false }: {
-  label: string; onPress(): void; disabled?: boolean; selected?: boolean; primary?: boolean;
+function Button({ label, detail, onPress, disabled = false, selected = false, primary = false, group = false }: {
+  label: string; detail?: string; onPress(): void; disabled?: boolean; selected?: boolean; primary?: boolean; group?: boolean;
 }) {
   return <Pressable accessibilityRole="button" accessibilityState={{ disabled, selected }} disabled={disabled}
-    onPress={onPress} style={({ pressed }) => [styles.button, primary && styles.primary,
+    onPress={onPress} style={({ pressed }) => [styles.button, group && styles.actionGroup, primary && styles.primary,
       selected && styles.selected, disabled && styles.disabled, pressed && styles.pressed]}>
     <Text style={[styles.buttonText, primary && styles.primaryText]}>{label}</Text>
+    {detail ? <Text style={styles.buttonDetail}>{detail}</Text> : null}
   </Pressable>;
 }
 
@@ -47,24 +48,22 @@ export function BattleView({ session, restart, finishedLabel = 'Descend again' }
   const { width: windowWidth } = useWindowDimensions();
   const width = Math.max(240, Math.min(windowWidth - 40, 560));
   const [error, setError] = useState<string>();
-  const actor = view.entities.find((entity) => entity.id === view.turnId);
-  const player = view.entities.find((entity) => entity.side === 'player')!;
-  const skills = session.engine.getEntity(actor?.id ?? player.id)?.skills ?? [];
-  const attackCost = staminaCost({ stamina: actor?.maxStamina !== undefined ? { current: actor.stamina ?? 0, max: actor.maxStamina } : undefined, fullness: actor?.fullness }, 2);
   const finished = view.phase === 'victory' || view.phase === 'defeat';
   const canChoose = !presentation.busy && ['selectingAction', 'selectingTarget'].includes(view.phase);
   useEffect(() => {
     // Simulation advances independently of presentation completion.
     if (view.phase === 'enemyTurn') session.advanceEnemyTurns();
   }, [session, view.phase]);
-  function dispatch(command: GameCommand) {
-    try { session.dispatch(command); setError(undefined); }
-    catch (error) { setError(error instanceof Error ? error.message : 'Action could not resolve'); }
+  function dispatch(command: GameCommand): boolean {
+    try { session.dispatch(command); setError(undefined); return true; }
+    catch (error) { setError(error instanceof Error ? error.message : 'Action could not resolve'); return false; }
   }
+  const defending = view.selectedAction?.action === 'defend';
   const headline = view.phase === 'victory' ? 'Chamber cleared' : view.phase === 'defeat' ? 'A warden falls' :
-    presentation.busy ? 'Steel, spell & consequence' : view.phase === 'selectingTarget' ? 'Choose your target' : 'Your move, warden';
+    presentation.busy ? 'Steel, spell & consequence' : defending ? 'Hold your ground' : view.phase === 'selectingTarget' ? 'Choose your target' : 'Your move, warden';
   const hint = view.phase === 'victory' ? 'A small victory. The dungeon runs deeper.' : view.phase === 'defeat' ? 'Every descent teaches something.' :
-    presentation.busy ? 'The battle unfolds before you.' : view.phase === 'selectingTarget' ? 'Tap a sprite or choose a name below, then confirm.' : 'Strike with your blade, or spend mana on a spell.';
+    presentation.busy ? 'The battle unfolds before you.' : defending ? 'Halve damage from attacks and spells until your next turn and recover stamina. Confirm to defend.' :
+    view.phase === 'selectingTarget' ? 'Tap a sprite or choose a name below, then confirm.' : 'Choose Attack, Skill, Defend, or Item.';
 
   return <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
     <ScrollView contentContainerStyle={styles.scroll}>
@@ -96,25 +95,8 @@ export function BattleView({ session, restart, finishedLabel = 'Descend again' }
         </View>
         <View style={styles.decision}>
           <Text style={styles.headline}>{headline}</Text><Text style={styles.body}>{hint}</Text>
-          {!finished ? <>
-            <View style={styles.actions}>
-              <Button label={(actor?.stamina ?? 0) >= attackCost ? `Attack · ${attackCost} SP` : 'Attack · bare hands'} disabled={!canChoose} selected={view.selectedAction?.action === 'attack'}
-                onPress={() => dispatch({ type: 'SELECT_ACTION', action: 'attack' })} />
-              <Button label="Rest · recover stamina" disabled={!canChoose} selected={view.selectedAction?.action === 'rest'} onPress={() => dispatch({ type: 'SELECT_ACTION', action: 'rest' })} />
-              {skills.map((id) => { const skill = session.content.skill(id); return <Button key={id}
-                label={`${skill.name} · ${skill.manaCost} MP${skill.staminaCost ? ` · ${staminaCost(session.engine.getEntity(actor?.id ?? player.id)!, skill.staminaCost)} SP` : ''}`} disabled={!canChoose || skill.battleUsable === false || (actor?.mana ?? 0) < skill.manaCost || (actor?.stamina ?? 0) < staminaCost(session.engine.getEntity(actor?.id ?? player.id)!, skill.staminaCost)}
-                selected={view.selectedAction?.skillId === id} onPress={() => dispatch({ type: 'SELECT_ACTION', action: 'skill', skillId: id })} />; })}
-              {Object.entries(session.engine.getEntity(actor?.id ?? player.id)?.inventory ?? {}).filter(([id]) => { const item = session.content.item(id); return item.kind === 'consumable' && item.battleUsable; }).map(([id, quantity]) => <Button key={id} label={`${session.content.item(id).name} ×${quantity}`} disabled={!canChoose} selected={view.selectedAction?.itemId === id} onPress={() => dispatch({ type: 'SELECT_ACTION', action: 'item', itemId: id })} />)}
-            </View>
-            {view.phase === 'selectingTarget' ? <>
-              <View style={styles.targets}>{view.targets.map((targetId) => <Button key={targetId}
-                label={view.entities.find((entity) => entity.id === targetId)?.name ?? targetId}
-                disabled={presentation.busy} selected={view.selectedTargetId === targetId}
-                onPress={() => dispatch({ type: 'SELECT_TARGET', targetId })} />)}</View>
-              <View style={styles.actions}><Button primary label="Confirm action" disabled={presentation.busy || !view.selectedTargetId}
-                onPress={() => dispatch({ type: 'CONFIRM_ACTION' })} /><Button label="Back" disabled={presentation.busy} onPress={() => dispatch({ type: 'CANCEL_ACTION' })} /></View>
-            </> : null}
-          </> : <View style={styles.actions}><Button primary label={finishedLabel} disabled={presentation.busy} onPress={restart} /></View>}
+          {!finished ? <BattleActions key={`${view.turnId}:${canChoose}`} session={session} view={view} canChoose={canChoose} dispatch={dispatch} /> :
+            <View style={styles.actions}><Button primary label={finishedLabel} disabled={presentation.busy} onPress={restart} /></View>}
           {error || session.battle.context.error ? <Text accessibilityRole="alert" style={styles.error}>{error ?? session.battle.context.error}</Text> : null}
         </View>
         <View style={styles.log}>
@@ -125,6 +107,61 @@ export function BattleView({ session, restart, finishedLabel = 'Descend again' }
       </View>
     </ScrollView>
   </SafeAreaView>;
+}
+
+function BattleActions({ session, view, canChoose, dispatch }: {
+  session: BattleSession; view: BattleSnapshot; canChoose: boolean; dispatch(command: GameCommand): boolean;
+}) {
+  const [menu, setMenu] = useState<'skill' | 'item'>();
+  const source = session.engine.getEntity(view.turnId ?? '');
+  const skills = (source?.skills ?? []).map((id) => session.content.skill(id)).filter((skill) => skill.battleUsable !== false);
+  const items = Object.entries(source?.inventory ?? {}).flatMap(([id, quantity]) => {
+    const item = session.content.item(id);
+    return quantity > 0 && item.kind === 'consumable' && item.battleUsable ? [{ item, quantity }] : [];
+  });
+  const attackCost = source?.stamina ? staminaCost(source, 2) : 0;
+  const selectedGroup = menu ?? view.selectedAction?.action;
+  function selectAction(command: Extract<GameCommand, { type: 'SELECT_ACTION' }>) {
+    if (!dispatch(command)) return;
+    const targets = session.battle.validTargetIds();
+    if (targets.length === 1 && targets[0] === view.turnId) dispatch({ type: 'SELECT_TARGET', targetId: targets[0] });
+  }
+  function chooseGroup(group: 'attack' | 'skill' | 'defend' | 'item') {
+    if (view.phase === 'selectingTarget' && !dispatch({ type: 'CANCEL_ACTION' })) return;
+    setMenu(group === 'skill' || group === 'item' ? group : undefined);
+    if (group === 'attack' || group === 'defend') selectAction({ type: 'SELECT_ACTION', action: group });
+  }
+  return <>
+    <View style={styles.actions}>
+      <Button group label="Attack" detail={source?.stamina && source.stamina.current < attackCost ? 'Bare hands' : attackCost ? `${attackCost} SP` : 'Basic strike'}
+        disabled={!canChoose} selected={selectedGroup === 'attack'} onPress={() => chooseGroup('attack')} />
+      <Button group label="Skill" detail="Choose a skill" disabled={!canChoose} selected={selectedGroup === 'skill'} onPress={() => chooseGroup('skill')} />
+      <Button group label="Defend" detail="Guard & recover" disabled={!canChoose} selected={selectedGroup === 'defend' || selectedGroup === 'rest'} onPress={() => chooseGroup('defend')} />
+      <Button group label="Item" detail="Use a consumable" disabled={!canChoose} selected={selectedGroup === 'item'} onPress={() => chooseGroup('item')} />
+    </View>
+    {menu ? <View style={styles.actionList}>
+      <Text style={styles.eyebrow}>{menu === 'skill' ? 'SKILLS' : 'ITEMS'}</Text>
+      {menu === 'skill' ? skills.length ? skills.map((skill) => {
+        const cost = source && !(skill.effect === 'heal' && skill.target === 'ally') ? staminaCost(source, skill.staminaCost) : 0;
+        const unavailable = !source?.mana || source.mana.current < skill.manaCost || !!source.stamina && source.stamina.current < cost;
+        return <Button key={skill.id} label={skill.name} detail={`${skill.manaCost} MP${cost ? ` · ${cost} SP` : ''}`}
+          disabled={!canChoose || unavailable} selected={view.selectedAction?.skillId === skill.id}
+          onPress={() => selectAction({ type: 'SELECT_ACTION', action: 'skill', skillId: skill.id })} />;
+      }) : <Text style={styles.body}>No battle skills learned.</Text> : items.length ? items.map(({ item, quantity }) =>
+        <Button key={item.id} label={`${item.name} ×${quantity}`} disabled={!canChoose} selected={view.selectedAction?.itemId === item.id}
+          onPress={() => selectAction({ type: 'SELECT_ACTION', action: 'item', itemId: item.id })} />)
+        : <Text style={styles.body}>No usable items in your inventory.</Text>}
+      {view.phase !== 'selectingTarget' ? <Button label="Back" disabled={!canChoose} onPress={() => setMenu(undefined)} /> : null}
+    </View> : null}
+    {view.phase === 'selectingTarget' ? <>
+      {view.selectedAction?.action !== 'defend' ? <View style={styles.targets}>{view.targets.map((targetId) => <Button key={targetId}
+        label={view.entities.find((entity) => entity.id === targetId)?.name ?? targetId}
+        disabled={!canChoose} selected={view.selectedTargetId === targetId}
+        onPress={() => dispatch({ type: 'SELECT_TARGET', targetId })} />)}</View> : null}
+      <View style={styles.actions}><Button primary label={view.selectedAction?.action === 'defend' ? 'Confirm defend' : 'Confirm action'} disabled={!canChoose || !view.selectedTargetId}
+        onPress={() => dispatch({ type: 'CONFIRM_ACTION' })} /><Button label="Back" disabled={!canChoose} onPress={() => dispatch({ type: 'CANCEL_ACTION' })} /></View>
+    </> : null}
+  </>;
 }
 
 const styles = StyleSheet.create({
@@ -143,8 +180,10 @@ const styles = StyleSheet.create({
   headline: { color: '#ddd6c8', fontSize: 20, fontFamily: Platform.OS === 'android' ? 'serif' : 'Georgia' },
   body: { color: '#87969a', fontSize: 12, lineHeight: 19 },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }, targets: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingVertical: 4 },
-  button: { paddingHorizontal: 15, minHeight: 46, justifyContent: 'center', borderWidth: 1, borderColor: '#3a454a', borderRadius: 5, backgroundColor: '#1b252b' },
+  actionGroup: { flexBasis: '47%', flexGrow: 1, minHeight: 68 }, actionList: { gap: 8, padding: 12, borderWidth: 1, borderColor: '#293137', borderRadius: 5 },
+  button: { paddingHorizontal: 15, paddingVertical: 10, minHeight: 46, gap: 4, justifyContent: 'center', borderWidth: 1, borderColor: '#3a454a', borderRadius: 5, backgroundColor: '#1b252b' },
   buttonText: { color: '#cecbbd', fontSize: 12, fontWeight: '600' },
+  buttonDetail: { color: '#87969a', fontSize: 10 },
   selected: { borderColor: '#ba9a63', backgroundColor: '#302d27' }, primary: { backgroundColor: '#c7a571', borderColor: '#c7a571' },
   primaryText: { color: '#171b1e' }, disabled: { opacity: 0.35 }, pressed: { opacity: 0.7 },
   log: { backgroundColor: '#151e24', borderRadius: 5, padding: 16, gap: 12 }, logLine: { color: '#7f9296', fontSize: 11, lineHeight: 19 },

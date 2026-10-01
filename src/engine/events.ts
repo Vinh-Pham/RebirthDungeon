@@ -4,7 +4,8 @@ export type GameEvent =
   | { type: 'RESOURCES_CHANGED'; entityId: EntityId; health: number; mana: number; stamina: number; wounds: number; fullness: number }
   | { type: 'WOUNDS_RECEIVED'; entityId: EntityId; amount: number }
   | { type: 'RESTED'; entityId: EntityId }
-  | { type: 'ANIMATION_REQUESTED'; sourceId: EntityId; targetId: EntityId; animation: 'attack' | 'skill'; skillId?: string }
+  | { type: 'DEFENDED'; entityId: EntityId }
+  | { type: 'ANIMATION_REQUESTED'; sourceId: EntityId; targetId: EntityId; animation: 'attack' | 'skill' | 'defend'; skillId?: string }
   | { type: 'STATUS_APPLIED' | 'STATUS_EXPIRED'; entityId: EntityId; statusId: string }
   | { type: 'ITEM_USED'; sourceId: EntityId; itemId: string }
   | { type: 'WORLD_MOVED'; entityId: EntityId; x: number; y: number }
