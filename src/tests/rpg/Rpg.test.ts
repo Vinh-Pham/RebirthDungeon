@@ -10,8 +10,8 @@ const content = loadGameContent();
 afterEach(() => vi.useRealTimers());
 describe('RPG rules', () => {
   it('derives independent stats from class, level, weapon and armor', () => {
-    const hero = createHero(content); addItem(hero, 'iron-blade', 1, content); hero.inventory['moss-mail'] = 1;
-    hero.equipment = { weapon: 'weapon-1', armor: 'moss-mail' }; hero.level = 3;
+    const hero = createHero(content); addItem(hero, 'iron-blade', 1, content); addItem(hero, 'moss-mail', 1, content);
+    hero.equipment = { weapon: 'weapon-1', armor: 'armor-1' }; hero.level = 3;
     expect(heroStats(hero, content)).toMatchObject({ maxHealth: 118, maxMana: 98, maxStamina: 113, combatant: { attack: 38, defense: 9 } });
     expect(content.data.classes[0].combatant.attack).toBe(9);
     const entity = content.spawn('warden', 'player', 'player', 0, 0); applyHero(entity, hero, content);

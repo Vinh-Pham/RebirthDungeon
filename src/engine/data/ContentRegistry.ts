@@ -11,7 +11,7 @@ export class ContentRegistry {
       if (!value || typeof value !== 'object' || Object.isFrozen(value)) return;
       Object.values(value).forEach(freeze); Object.freeze(value);
     };
-    this.data.quests.forEach(freeze); this.data.titles.forEach(freeze);
+    this.data.enchants.forEach(freeze); freeze(this.data.enchantingRules); this.data.quests.forEach(freeze); this.data.titles.forEach(freeze);
     for (const skill of this.data.skills) if (skill.gameRanks) {
       for (const rank of Object.values(skill.gameRanks)) {
         rank.objectives.forEach(Object.freeze); Object.freeze(rank.objectives);

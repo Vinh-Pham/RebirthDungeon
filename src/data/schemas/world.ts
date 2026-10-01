@@ -8,6 +8,7 @@ export const WorldMapSchema = z.strictObject({
   theme: z.enum(['town', 'interior']).optional(),
   objects: z.array(z.strictObject({ id, ...point, name: id,
     kind: z.enum(['npc', 'chest', 'rest', 'portal', 'encounter', 'dungeonEntrance', 'statue', 'mimic', 'fountain', 'gate', 'key', 'finalChest', 'merchant', 'healer', 'altar']),
+    enchanting: z.boolean().default(false),
     lessons: z.array(z.strictObject({ skillId: id, fee: z.number().int().min(0).max(100000) })).default([]),
     dialogue: z.string().default(''), itemId: id.optional(), quantity: z.number().int().min(1).max(99).default(1),
     destination: id.optional(), encounterMap: id.optional(),
@@ -24,7 +25,7 @@ export const WorldMapSchema = z.strictObject({
   for (const obj of map.objects) {
     const pos = `${obj.x},${obj.y}`;
     if (seen.has(obj.id) || positions.has(pos) || !valid(obj)) ctx.addIssue({ code: 'custom', message: 'Invalid or duplicate world object' });
-    if ((obj.kind === 'portal' && !obj.destination) || (['encounter', 'mimic'].includes(obj.kind) && !obj.encounterMap) ||
+    if ((obj.enchanting && (!map.theme || !['npc', 'merchant'].includes(obj.kind))) || (obj.kind === 'portal' && !obj.destination) || (['encounter', 'mimic'].includes(obj.kind) && !obj.encounterMap) ||
         (['chest', 'finalChest'].includes(obj.kind) && !obj.itemId) || (['dungeonEntrance', 'altar'].includes(obj.kind) && !obj.dungeonId) ||
         (obj.kind === 'merchant' && !obj.shopId) || (obj.kind === 'healer' && !obj.healingCost) ||
         (obj.destinationPosition && obj.kind !== 'portal') ||

@@ -1,0 +1,106 @@
+[
+  {
+    "id": "enchant",
+    "name": "Enchant",
+    "manaCost": 0,
+    "power": 0,
+    "element": "physical",
+    "target": "self",
+    "effect": "buff",
+    "category": "life",
+    "kind": "life",
+    "battleUsable": false,
+    "description": "Apply scrolls to equipment and burn equipment to recover scrolls in town.",
+    "acquisitionHint": "Learn from the refuge keeper. Enchant at the town blacksmith.",
+    "gameRanks": {
+      "F": {
+        "minPower": 0,
+        "maxPower": 0,
+        "manaCost": 0,
+        "staminaCost": 0,
+        "statBonuses": {
+          "intelligence": 1
+        },
+        "objectives": [
+          {
+            "id": "success",
+            "label": "Apply an enchant successfully",
+            "event": "enchantSuccess",
+            "scope": "action",
+            "points": 10,
+            "maximum": 10
+          },
+          {
+            "id": "failure",
+            "label": "Practice an unsuccessful application",
+            "event": "enchantFailure",
+            "scope": "action",
+            "points": 5,
+            "maximum": 20
+          },
+          {
+            "id": "burn",
+            "label": "Burn enchanted equipment",
+            "event": "burnUse",
+            "scope": "action",
+            "points": 5,
+            "maximum": 20
+          },
+          {
+            "id": "recover",
+            "label": "Recover scrolls from burning",
+            "event": "recovery",
+            "scope": "target",
+            "points": 5,
+            "maximum": 20
+          }
+        ],
+        "nextRank": "E",
+        "apCost": 2
+      },
+      "E": {
+        "minPower": 0,
+        "maxPower": 0,
+        "manaCost": 0,
+        "staminaCost": 0,
+        "statBonuses": {
+          "intelligence": 2
+        },
+        "objectives": [
+          {
+            "id": "success",
+            "label": "Apply an enchant successfully",
+            "event": "enchantSuccess",
+            "scope": "action",
+            "points": 10,
+            "maximum": 10
+          },
+          {
+            "id": "failure",
+            "label": "Practice an unsuccessful application",
+            "event": "enchantFailure",
+            "scope": "action",
+            "points": 5,
+            "maximum": 20
+          },
+          {
+            "id": "burn",
+            "label": "Burn enchanted equipment",
+            "event": "burnUse",
+            "scope": "action",
+            "points": 5,
+            "maximum": 20
+          },
+          {
+            "id": "recover",
+            "label": "Recover scrolls from burning",
+            "event": "recovery",
+            "scope": "target",
+            "points": 5,
+            "maximum": 20
+          }
+        ]
+      }
+    }
+  }
+]

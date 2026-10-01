@@ -1,3 +1,4 @@
+import EnchantServicePanel from './EnchantServicePanel';
 import { DungeonButton as Button, DungeonCard } from '../shared/DungeonUI';
 import { useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -28,6 +29,7 @@ type Quote = { command: ProgressionCommand; label: string; goldChange: number; d
 export default function TownServicePanel({ session, objectId, busy, dispatch, progress }: {
   session: JourneySession; objectId: string; busy: boolean; dispatch(command: GameCommand): boolean; progress(command: ProgressionCommand): void;
 }) {
+  const [enchanting, setEnchanting] = useState(false);
   const [quote, setQuote] = useState<Quote>();
   const [repairPage, setRepairPage] = useState(0);
   const [tradePage, setTradePage] = useState(0);
@@ -48,6 +50,7 @@ export default function TownServicePanel({ session, objectId, busy, dispatch, pr
   };
   const inventory = [
     ...Object.entries(hero.inventory).map(([itemId]) => ({ reference: { itemId } as OwnedItem, item: content.item(itemId), key: itemId, detail: `${hero.inventory[itemId]} in your pack` })),
+    ...Object.entries(hero.armors).map(([armorId, armor]) => ({ reference: { armorId } as OwnedItem, item: content.item(armor.itemId), key: armorId, detail: `Armor copy ${armorId.slice(6)}` })),
     ...Object.entries(hero.weapons).map(([weaponId, weapon], index) => ({ reference: { weaponId } as OwnedItem, item: content.item(weapon.itemId), key: weaponId,
       detail: `Weapon ${index + 1} · ${weapon.durability}/${content.item(weapon.itemId).maxDurability} durability${weapon.durability === 0 ? ' · broken' : ''}` })),
   ].filter((entry) => entry.item.kind !== 'incompleteBook' && removableCount(hero, entry.reference) > 0);
@@ -61,15 +64,16 @@ export default function TownServicePanel({ session, objectId, busy, dispatch, pr
     <Text className="text-accent" style={styles.eyebrow}>{altar ? 'GODDESS SANCTUARY' : object.kind === 'healer' ? 'RECOVERY' : 'TOWN SERVICES'}</Text>
     <Text className="text-accent" accessibilityRole="header" style={styles.heading}>{shop?.name ?? object.name}</Text>
     <Text className="text-accent" accessibilityLiveRegion="polite" style={styles.gold}>{hero.gold} gold · {hero.health}/{stats.maxHealth} HP · {hero.mana}/{stats.maxMana} mana · {hero.stamina}/{stats.maxStamina} stamina</Text>
-    {quote ? <DungeonCard className="bg-surface-tertiary" >
+    {enchanting && object.enchanting ? <EnchantServicePanel session={session} objectId={objectId} busy={busy} progress={progress} back={() => setEnchanting(false)} /> : quote ? <DungeonCard className="bg-surface-tertiary" >
       <Text className="text-foreground" style={styles.name}>{quote.label}</Text><Text className="text-muted" style={styles.body}>{quote.detail}</Text>
       <Text className="text-accent" style={styles.gold}>{quote.goldChange > 0 ? `Receive ${quote.goldChange}` : `Cost ${-quote.goldChange}`} gold · After: {hero.gold + quote.goldChange} gold</Text>
       <Button label={altar ? 'Confirm offering and enter dungeon' : 'Confirm transaction'} disabled={busy || hero.gold + quote.goldChange < 0 || hero.gold + quote.goldChange > 1000000} onPress={confirm} />
       <Button label="Cancel" disabled={busy} onPress={cancel} />
     </DungeonCard> : <>
+      {object.enchanting ? <Button label="Enchant equipment or burn for scrolls" disabled={busy} onPress={() => setEnchanting(true)} /> : null}
       <TownQuestOffers session={session} objectId={objectId} busy={busy} progress={progress} />
       {object.lessons.length ? <>
-        <Text className="text-muted" style={styles.body}>Learn a skill at Rank F, then practice in the dungeon. The introductory Smash lesson awards 3 AP once.</Text>
+        <Text className="text-muted" style={styles.body}>Learn a skill at Rank F. Combat skills train in the dungeon; Enchant trains at the town forge. The introductory Smash lesson awards 3 AP once.</Text>
         {object.lessons.map((offer) => {
           const skill = content.skill(offer.skillId), record = hero.learnedSkills[skill.id];
           return <DungeonCard key={skill.id}>
@@ -105,7 +109,7 @@ export default function TownServicePanel({ session, objectId, busy, dispatch, pr
         {hero.gold < object.healingCost! ? <Text className="text-muted" style={styles.body}>You need more gold for treatment. You can sell spare items at the general shop.</Text> : null}
       </> : null}
       {altar || shop?.buysItems ? <><Text className="text-accent" style={styles.section}>{altar ? 'Choose an offering' : 'Sell spare items'}</Text>
-        <Text className="text-muted" style={styles.body}>{altar ? 'Offer one unequipped item. The goddess consumes it and opens the moss depths. All offerings lead to the same dungeon.' : 'The general shop pays half the item’s purchase price. Equipped copies stay in your pack.'}</Text>
+        <Text className="text-muted" style={styles.body}>{altar ? 'Offer one unequipped item. The goddess consumes it and opens the moss depths. All offerings lead to the same dungeon.' : 'The general shop pays half the item’s purchase price. Equipped and locked copies stay in your pack.'}</Text>
         {inventory.length === 0 ? <Text className="text-muted" style={styles.body}>No unequipped items available. Unequip equipment or find loot in the moss halls.</Text> : null}
         {inventory.slice(tradeStart, tradeStart + INVENTORY_PAGE_SIZE).map((entry) => altar ? <DungeonCard key={entry.key} >
           <Text className="text-foreground" style={styles.name}>{entry.item.name}</Text><Text className="text-muted" style={styles.body}>{entry.detail}</Text>

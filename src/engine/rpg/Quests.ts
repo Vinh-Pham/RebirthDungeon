@@ -21,7 +21,7 @@ export function questEligible(hero: Hero, condition?: QuestCondition): boolean {
     case 'skill': return rankAtLeast(hero.learnedSkills[condition.skillId]?.rank, condition.rank);
     case 'flag': return hero.questFlags.includes(condition.flagId);
     case 'item': return condition.equipped
-      ? hero.equipment.armor === condition.itemId || (!!hero.equipment.weapon && hero.weapons[hero.equipment.weapon]?.itemId === condition.itemId)
+      ? (!!hero.equipment.armor && hero.armors[hero.equipment.armor]?.itemId === condition.itemId) || (!!hero.equipment.weapon && hero.weapons[hero.equipment.weapon]?.itemId === condition.itemId)
       : itemCount(hero, condition.itemId) >= condition.quantity;
   }
 }

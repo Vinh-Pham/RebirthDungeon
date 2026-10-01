@@ -54,7 +54,7 @@ export class CombatSystem implements GameSystem {
     const content = this.options.content, cost = source.stamina ? staminaCost(source, 2) : 0;
     let attacker = effectiveEntity(source, content);
     if (source.stamina && source.stamina.current < cost && source.statSource && content)
-      attacker = effectiveEntity({ ...source, combatant: calculateCharacterStats({ ...source.statSource, weaponItemId: undefined }, content).combatant }, content);
+      attacker = effectiveEntity({ ...source, combatant: calculateCharacterStats({ ...source.statSource, weaponItemId: undefined, enchantments: source.statSource.enchantments?.filter((e) => !e.sourceId.startsWith('weapon-')) }, content).combatant }, content);
     const preview = previewAttack(attacker, effectiveEntity(target, content));
     return { healing: false, area: false, manaCost: 0, staminaCost: cost, targets: [{ targetId, ...preview,
       ...(this.defending.has(targetId) ? { min: Math.max(1, Math.floor(preview.min / 2)), max: Math.max(1, Math.floor(preview.max / 2)),
@@ -149,7 +149,7 @@ export class CombatSystem implements GameSystem {
     const cost = !skill && !item && !recoveryAction && attacker.stamina ? staminaCost(attacker, 2) : 0;
     const exhausted = !skill && !item && !recoveryAction && attacker.stamina && attacker.stamina.current < cost;
     let basic = effectiveEntity(attacker, this.options.content);
-    if (exhausted && attacker.statSource && this.options.content) basic = effectiveEntity({ ...attacker, combatant: calculateCharacterStats({ ...attacker.statSource, weaponItemId: undefined }, this.options.content).combatant }, this.options.content);
+    if (exhausted && attacker.statSource && this.options.content) basic = effectiveEntity({ ...attacker, combatant: calculateCharacterStats({ ...attacker.statSource, weaponItemId: undefined, enchantments: attacker.statSource.enchantments?.filter((e) => !e.sourceId.startsWith('weapon-')) }, this.options.content).combatant }, this.options.content);
     const targets = skill?.target === 'allEnemies'
       ? this.turns.order.map((id) => engine.getEntity(id)!).filter((entity) => !!entity.player !== !!attacker.player) : [target];
     const skillPlan = skill ? prepareSkill({ source: effectiveEntity(attacker, this.options.content), targets: targets.map((entity) => effectiveEntity(entity, this.options.content)), skill, random: engine.random, selectedTargetId: targetId }) : undefined;
@@ -211,8 +211,12 @@ export class CombatSystem implements GameSystem {
         weapon.durability--;
         if (weapon.durability === 0) {
           if (attacker.statSource) {
-            attacker.statSource = { ...attacker.statSource, weaponItemId: undefined };
-            attacker.combatant = calculateCharacterStats(attacker.statSource, this.options.content).combatant;
+            attacker.statSource = { ...attacker.statSource, weaponItemId: undefined, enchantments: attacker.statSource.enchantments?.filter((e) => !e.sourceId.startsWith('weapon-')) };
+            const stats = calculateCharacterStats(attacker.statSource, this.options.content); attacker.combatant = stats.combatant;
+            attacker.health!.max = stats.maxHealth; attacker.wounds = Math.min(attacker.wounds ?? 0, stats.maxHealth - 1);
+            attacker.health!.current = Math.min(attacker.health!.current, stats.maxHealth - attacker.wounds);
+            if (attacker.mana) { attacker.mana.max = stats.maxMana; attacker.mana.current = Math.min(attacker.mana.current, stats.maxMana); }
+            if (attacker.stamina) { attacker.stamina.max = stats.maxStamina; attacker.stamina.current = Math.min(attacker.stamina.current, stats.maxStamina); }
           } else {
             const definition = this.options.content.item(weapon.itemId); const stat = definition.stat ?? 'attack';
             attacker.combatant[stat] = Math.max(0, attacker.combatant[stat] - definition.power);

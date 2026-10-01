@@ -16,6 +16,7 @@ const noSubscribe = () => () => {};
 const noSnapshot = () => undefined;
 function rankEffects(skill: Skill, rank: NonNullable<Skill['gameRanks']>[keyof NonNullable<Skill['gameRanks']>]) {
   if (!rank) return '';
+  if (skill.kind === 'life') return `Apply scrolls and burn equipment at the town forge. Permanent Intelligence +${rank.statBonuses?.intelligence ?? 0}. Recipes are shown before each attempt.`;
   if (skill.kind === 'active') return `${skill.effect === 'heal' ? 'Healing' : 'Power'} ${rank.minPower}–${rank.maxPower} · ${rank.manaCost} MP · ${rank.staminaCost} base SP${skill.requiresWeapon ? ` · usable ${skill.requiresWeapon} weapon` : ''}`;
   return [rank.maxHealth ? `Max HP +${rank.maxHealth}` : '', rank.meleeMax ? `Melee damage +${rank.meleeMin}–${rank.meleeMax}` : '',
     rank.swordMax ? `Sword damage +${rank.swordMin}–${rank.swordMax}` : '', rank.swordBalance ? `Sword Balance +${Math.round(rank.swordBalance * 100)}%` : ''].filter(Boolean).join(' · ');
@@ -54,7 +55,7 @@ function SkillJournal({ host, session }: { host: JourneyHost; session: JourneySe
       ListHeaderComponent={<View className="gap-4 pb-2">
         <Text className="text-foreground" accessibilityRole="header" style={menu.title}>Skills</Text>
         <Text className="text-accent" style={menu.heading}>{hero.ap} Ability Points</Text>
-        <Text className="text-muted" style={menu.body}>Practice in battle, then invest AP in town. 100 training unlocks advancement.</Text>
+        <Text className="text-muted" style={menu.body}>Combat skills train in battle; Enchant trains at the town blacksmith. Invest AP in town. 100 training unlocks advancement.</Text>
         <View className="flex-row flex-wrap gap-2">{(['learned', 'discovered', 'catalog'] as const).map((value) => <DungeonButton key={value} label={value === 'learned' ? 'Learned' : value === 'discovered' ? 'Discovered' : 'Catalog'} selected={filter === value} onPress={() => setFilter(value)} />)}</View>
         {!town ? <DungeonNotice status="accent" message="Return to town to rank up or learn skills. Viewing the journal uses no turn." /> : null}
         <ProgressionFeedback host={host} />
@@ -94,7 +95,7 @@ function SkillDetails({ host, session, skill }: { host: JourneyHost; session: Jo
         {inactive ? <Text className="text-muted" style={menu.body}>Inactive · Equip a usable sword</Text> : null}
         {rank.nextRank ? <><Text className="text-foreground" style={menu.heading}>Next: Rank {rank.nextRank} · {rank.apCost} AP</Text><Text className="text-muted" style={menu.body}>{rankEffects(skill, skill.gameRanks![rank.nextRank])}</Text></> : null}
       </DungeonCard>
-      {record ? <DungeonCard><Text className="text-foreground" style={menu.heading}>{rank.nextRank ? `Training: ${trainingPoints(skill, record)} / 100` : progressLabel(hero, skill, town)}</Text>
+      {record ? <DungeonCard><Text className="text-foreground" style={menu.heading}>{rank.objectives.length ? `Training: ${trainingPoints(skill, record)} / 100${rank.nextRank ? '' : ' · Current rank cap'}` : progressLabel(hero, skill, town)}</Text>
         {hosted.battle ? <Text className="text-accent" style={menu.body}>Banked after this battle: +{pendingPoints} training</Text> : null}
         {rank.objectives.map((o) => <Text key={o.id} className="text-muted" style={menu.body}>{o.label} · {record.objectiveCounts[o.id] ?? 0}/{o.maximum} · {o.points} points each{pending[o.id] ? ` · +${pending[o.id]} pending` : ''}</Text>)}
         {rank.nextRank ? <DungeonButton primary label={`Rank up ${record.rank} → ${rank.nextRank} · ${rank.apCost} AP`} disabled={disabled || !!rankUpReason(hero, skill.id, session.content)} onPress={() => { void host.progress({ type: 'RANK_UP_SKILL', skillId: skill.id }); }} /> : null}

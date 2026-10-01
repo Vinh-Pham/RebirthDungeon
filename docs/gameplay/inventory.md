@@ -1,6 +1,6 @@
 # Rebirth Dungeon: Inventory and Equipment
 
-Updated **October 1, 2026**. The Expo app already has bounded item stacks, individually tracked weapons, equipment, consumable use, shops and repair. The pack also shows active quest item requirements and delivery destinations. Grids, bags, item locks and reward overflow are future extensions. Read this with [Battle](battle.md), [Stats](stats.md), [Skills](skills.md), [Towns](towns.md), and [Enchants](enchants.md).
+Updated **October 1, 2026**. The Expo app already has bounded item stacks, individually tracked weapons and armor, equipment enchants and locks, consumable use, shops and repair. The pack also shows active quest item requirements and delivery destinations. Grids, bags and reward overflow are future extensions. Read this with [Battle](battle.md), [Stats](stats.md), [Skills](skills.md), [Towns](towns.md), and [Enchants](enchants.md).
 
 ## 1. Current ownership and capacity
 
@@ -9,15 +9,16 @@ The character's campaign hero owns inventory throughout town and dungeon explora
 | Current data | Meaning |
 | --- | --- |
 | Hero inventory | Item-definition counts, bounded to 999 per definition |
-| Weapon instances | Stable instance ID, definition ID and current durability; each weapon is individually owned |
+| Weapon instances | Stable instance ID, definition ID, durability, lock and optional prefix/suffix with saved clause values |
+| Armor instances | Stable instance ID, definition ID, lock and optional prefix/suffix with saved clause values |
 | Equipment weapon | An owned weapon instance ID |
-| Equipment armor | An owned armor definition ID; one copy is assigned to the armor slot |
+| Equipment armor | An owned armor instance ID; that specific copy is assigned to the armor slot |
 | Gold | One hero balance, bounded to 1,000,000; no bank or gold-bag capacity |
 | Dungeon keys | Run-specific absent/dropped/held/spent state; outside normal inventory |
 
-Weapon references and count limits must remain consistent. Armor currently stacks by definition and has no per-copy enchant state. There is no footprint capacity, weight, expiration, ground-item dropping or subscription storage. Item previews and React selection never create additional ownership.
+Weapon references and count limits must remain consistent. Armor is individually owned; version 8 migrates older armor stacks without losing copies or refilling resources. There is no footprint capacity, weight, expiration, ground-item dropping or subscription storage. Item previews and React selection never create additional ownership.
 
-Current inventory screens show ordinary item rows and individually listed weapons, with weapon pages of 20. During battle they observe the active battle's inventory and durability and disable exploration equip/use commands. The battle Item action owns combat consumable use.
+Current inventory screens show ordinary item rows and individually listed equipment, with pages of 20. During battle they observe the active battle's inventory and durability and disable exploration equip/use commands. The battle Item action owns combat consumable use.
 
 ## 2. Current actions and equipment
 
@@ -28,7 +29,8 @@ Current inventory screens show ordinary item rows and individually listed weapon
 | Use an eligible consumable | Validated campaign command | Through Item; one accepted use consumes a turn |
 | Buy, sell, repair | Only through a nearby open town service | Unavailable |
 | Learn/read/assemble books and quest acceptance/claims | Implemented town-only commands | Unavailable |
-| Enchant, burn | Future town-only services | Unavailable |
+| Enchant, burn | Implemented at the nearby open town blacksmith | Unavailable |
+| Lock/unlock equipment | Durable campaign command; locked gear stays equippable | Unavailable |
 | Rearrange grids, split/merge, sort | Future presentation/storage operations | Initially unavailable while an encounter is active |
 
 Selection, cancellation, comparison and scrolling spend nothing. Equip/use commands revalidate ownership and context at execution; stale rows are not authority. Opening a menu is not movement or a recovery tick. Food that is not battle-usable cannot be consumed through the battle menu.

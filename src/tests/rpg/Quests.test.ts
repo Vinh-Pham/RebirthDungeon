@@ -1,3 +1,4 @@
+import { versionSevenHero } from '../persistence/legacyFixture';
 import { afterEach, describe, expect, it } from 'vitest';
 import { loadGameContent } from '../../data/content';
 import { ContentRegistry } from '../../engine/data/ContentRegistry';
@@ -110,7 +111,7 @@ describe('ordered town objectives, deliveries and claims', () => {
     journey.dispatch({ type: 'USE_ITEM', sourceId: 'player', targetId: 'player', itemId: 'apple' });
     expect(questReady(journey.toSave().hero, side)).toBe(false); expect(questItemNeeds(journey.toSave().hero, content)[0].count).toBe(1);
     const before = journey.toSave().hero; expect(() => claimQuest(before, side, content)).toThrow('not ready'); expect(journey.toSave().hero).toEqual(before);
-    const armored = createHero(content); addItem(armored, 'moss-mail', 1, content); armored.equipment.armor = 'moss-mail';
+    const armored = createHero(content); addItem(armored, 'moss-mail', 1, content); armored.equipment.armor = 'armor-1';
     expect(objectiveProgress(armored, side, { kind: 'deliverItem', itemId: 'moss-mail', id: 'mail', label: 'Mail', target: 1 })).toBe(0);
   });
   it('rejects the entire delivery if any reward cannot fit; validates capacity after removing inputs', () => {
@@ -177,9 +178,9 @@ describe('attempt-local practice and versioned saved progress', () => {
   it('migrates version 6 without restoring depleted resources, replaying evidence, awarding XP/AP or auto-learning', () => {
     const journey = session(); const campaign = journey.toSave(); campaign.hero = learnSkill(campaign.hero, 'sword-mastery', content);
     campaign.hero.learnedSkills['sword-mastery'].rank = 'E'; campaign.hero.ap = 11; campaign.hero.health = 20; campaign.hero.mana = 3; campaign.hero.stamina = 5;
-    const { quests, earnedTitles, questFlags, trackedObjectives, ...old } = campaign.hero; void quests; void earnedTitles; void questFlags; void trackedObjectives;
+    const { quests, earnedTitles, questFlags, trackedObjectives, ...old } = versionSevenHero(campaign.hero); void quests; void earnedTitles; void questFlags; void trackedObjectives;
     const migrated = parseSave({ version: 6, savedAt: new Date().toISOString(), campaign: { ...campaign, hero: old } }, content);
-    expect(migrated.version).toBe(7); expect(migrated.campaign.hero).toMatchObject({ health: 20, mana: 3, stamina: 5, ap: 11, quests: {}, earnedTitles: [] });
+    expect(migrated.version).toBe(8); expect(migrated.campaign.hero).toMatchObject({ health: 20, mana: 3, stamina: 5, ap: 11, quests: {}, earnedTitles: [] });
     const restored = new JourneySession(content, migrated.campaign); sessions.push(restored);
     expect(restored.toSave().hero.quests[milestone.id].status).toBe('available'); expect(restored.toSave().hero.ap).toBe(11);
     restored.dispatch({ type: 'ACCEPT_QUEST', questId: milestone.id }); expect(questReady(restored.toSave().hero, milestone)).toBe(true);

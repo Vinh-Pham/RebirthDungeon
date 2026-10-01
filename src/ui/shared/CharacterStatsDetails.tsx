@@ -22,7 +22,7 @@ export default function CharacterStatsDetails({ host, session }: { host: Journey
   const battle = useSyncExternalStore(hosted.battle?.subscribe ?? noSubscribe, hosted.battle?.getSnapshot ?? noSnapshot, noSnapshot);
   const hero = campaign.state.hero;
   const weapon = hero.equipment.weapon ? hero.weapons[hero.equipment.weapon] : undefined;
-  const review: CharacterReview = battle?.character ?? { source: heroStatSource(hero, campaign.state.dungeon?.effects), stats: heroStats(hero, host.content, campaign.state.dungeon?.effects), health: hero.health, mana: hero.mana, stamina: hero.stamina, wounds: hero.wounds, fullness: hero.fullness, statuses: [],
+  const review: CharacterReview = battle?.character ?? { source: heroStatSource(hero, campaign.state.dungeon?.effects, host.content), stats: heroStats(hero, host.content, campaign.state.dungeon?.effects), health: hero.health, mana: hero.mana, stamina: hero.stamina, wounds: hero.wounds, fullness: hero.fullness, statuses: [],
     weapon: weapon ? { name: host.content.item(weapon.itemId).name, durability: weapon.durability, maxDurability: host.content.item(weapon.itemId).maxDurability! } : undefined };
   const { stats } = review; const combat = stats.combatant;
   const { base: baseCombat, equipment: equippedCombat, dungeon: dungeonCombat } = characterStatBreakdown(review.source, host.content);
@@ -61,7 +61,7 @@ export default function CharacterStatsDetails({ host, session }: { host: Journey
     <Row label="Speed" value={String(combat.speed)} note={`${breakdown('speed')}\nInitiative order stays fixed during an encounter.`} />
     <Text className="text-accent" style={styles.section}>EQUIPMENT & EFFECTS</Text>
     <Row label="Weapon" value={review.weapon?.name ?? 'Bare hands'} note={review.weapon ? `${review.weapon.durability} / ${review.weapon.maxDurability} durability${review.weapon.durability === 0 ? ' · Broken; repair at the blacksmith' : ''}` : undefined} />
-    <Row label="Armor" value={hero.equipment.armor ? host.content.item(hero.equipment.armor).name : 'None'} />
+    <Row label="Armor" value={hero.equipment.armor ? host.content.item(hero.armors[hero.equipment.armor].itemId).name : 'None'} />
     {stats.modifiers.map((modifier, index) => <View key={`${modifier.name}-${index}`} style={styles.effect}><Text className="text-foreground" style={styles.rowLabel}>{modifier.name}</Text><Text className="text-muted" style={styles.note}>{modifier.description}</Text></View>)}
     {review.statuses.map((status) => <Row key={status.name} label={status.name} value={`${status.turns} ticks`} note={`${status.stacks} stacks · expires on the affected actor's turn boundary`} />)}
     {!stats.modifiers.length && !review.statuses.length ? <Text className="text-muted" style={styles.note}>No equipment bonuses or active effects.</Text> : null}

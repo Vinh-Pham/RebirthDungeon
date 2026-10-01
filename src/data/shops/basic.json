@@ -13,7 +13,14 @@
     "name": "Ember Forge",
     "kind": "blacksmith",
     "items": [
-      "iron-blade"
+      "iron-blade",
+      "keen-scroll",
+      "studious-scroll",
+      "vigor-scroll",
+      "resilience-scroll",
+      "enchant-powder",
+      "mana-herb",
+      "holy-water"
     ]
   },
   {

@@ -40,7 +40,7 @@ describe('world exploration', () => {
     session.dispatch({ type: 'TRAVEL_TO', x: 7, y: 3 });
     expect(session.toSave().pending?.objectId).toBe('slime-guard'); expect(session.toSave().position).toEqual({ x: 5, y: 3 });
     expect(() => session.dispatch({ type: 'MOVE', entityId: 'player', dx: 1, dy: 0 })).toThrow('Finish');
-    expect(() => session.dispatch({ type: 'EQUIP_ITEM', itemId: 'potion' })).toThrow('Finish');
+    expect(() => session.dispatch({ type: 'EQUIP_ARMOR', armorId: 'potion' })).toThrow('Finish');
     const resumed = new JourneySession(content, session.toSave()); sessions.push(resumed); expect(resumed.toSave()).toEqual(session.toSave());
   });
   it('carries equipment into battles and awards XP, gold and loot exactly once', () => {

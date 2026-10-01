@@ -13,9 +13,11 @@ skill defaults. Resolve a hero action through `resolveLearnedSkill`, without cha
 the catalog or importing reference percentages, charges, or racial variants.
 
 The four starter spells preserve their existing F ranges, scaling, targets and costs.
-They are capped at F until E adapters are authored. Smash, Combat Mastery and Sword
+Firebolt, Lightning Bolt and Healing are capped at F. Icebolt has an F/E adapter: 20 casts train 100 points, F → E costs 2 AP, and E uses power 11–21 with +2 INT. Smash, Combat Mastery and Sword
 Mastery implement the gameplay document's F/E pilot. Their E cap is explicit; they
-cannot spend AP on an unimplemented D rank. All other entries remain unavailable.
+cannot spend AP on an unimplemented D rank. `enchant.json` adds a separately authored Enchant life skill at F/E; it uses town application/burning objectives and never resolves in combat. All other entries remain unavailable.
+
+The keeper teaches Enchant F for free with zero training and no AP award. The blacksmith sells its scrolls and materials and hosts the enchant/burn service.
 
 The keeper offers a free Smash lesson and a one-time 3 AP introductory milestone.
 Five guaranteed refuge training coffers provide the Combat manual, unfinished Sword
@@ -30,8 +32,8 @@ victory or defeat banks that ledger with resources, durability and rewards. Rest
 an unfinished checkpoint discards its ledger. A host-owned candidate is written to
 the auto slot before learning, page insertion, rank-up or battle completion becomes
 live. Failed writes retain the exact candidate and block dependent mutations until
-Retry save succeeds. Saves use wire version 6, preserving migrations from versions
-1–5; the existing native/web storage adapters need no database schema changes.
+Retry save succeeds. Saves use wire version 8, preserving migrations from versions
+1–7; the existing native/web storage adapters need no database schema changes.
 
 The character-scoped Skills journal is available from the character panel and drawer.
 It lists learned/discovered skills, rank effects, training objectives, AP eligibility,

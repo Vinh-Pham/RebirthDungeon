@@ -1,6 +1,6 @@
 # Rebirth Dungeon: Skills
 
-Updated **October 1, 2026** for the Expo/React Native application in this repository. This is a gameplay and implementation plan; acquisition, per-hero ranks, training, and AP are proposed work, not completed features.
+Updated **October 1, 2026** for the Expo/React Native application in this repository. NPC/book/page acquisition, per-hero ranks, capped training and AP are implemented for the supported pilot skills. This document also records later extensions.
 
 Skills grow through practice and investment. Heroes learn them through **NPC instruction**, **complete skill books**, or **collected pages assembled into a book**. Advancing a learned skill requires **at least 100 training points at its current rank plus the authored AP (Ability Points) cost**. Preserve these requirements while adapting the skills to the application's existing turn-based combat.
 
@@ -13,13 +13,13 @@ Use the TypeScript implementation as the integration baseline. The neighboring [
 | Platform | Expo SDK 57, React Native, Expo Router; iOS, Android, and web | Reuse the existing app and dependencies |
 | Battle flow | Select action → select target → confirm → resolve → next actor | Resolve a learned skill at the hero's saved rank |
 | Initiative | Fixed speed order established at encounter start; ties preserve participant order | Skills consume one scheduled turn; speed buffs do not reorder this queue |
-| Catalog | 33 skill definitions with Mabinogi reference tables; four battle-usable skills | Add authored game rank definitions and explicit availability |
+| Catalog | 33 reference skill definitions plus the separately authored Enchant town skill | Add authored game rank definitions and explicit availability |
 | Combat | Seeded hit, critical, damage-range, defense, protection, and injury rules | Reuse the resolvers; add only the mechanics an enabled skill needs |
-| Progression | Hero level, XP, growth talent, resources, inventory, and equipment | Add learned ranks, training counts, AP, discovery, and book collections |
-| Saves | Version 5 campaign saves; SQLite on native, IndexedDB on web | Extend the hero payload and migrate existing saves |
+| Progression | Hero level, XP, talent, resources, inventory, equipment, learned ranks, training, AP, discovery and books | Author further supported rank adapters |
+| Saves | Version 8 campaign saves; SQLite on native, IndexedDB on web | Preserve lossless migrations from versions 1–7 |
 | Battle continuation | A pending encounter restarts from its entry hero state and seed | Keep training inside that battle until its result is committed |
 
-The four usable skills are `firebolt`, `icebolt`, `lightning-bolt`, and `healing`. Their catalog `rank: F` is a definition value, not a saved hero rank. The Warden's class currently supplies those skill IDs, and `calculateCharacterStats` includes their stat bonuses from the class list. The new model must replace both assumptions together: the hero's learned skill records determine available actions **and** rank-derived stat contributions.
+The four starter spells are `firebolt`, `icebolt`, `lightning-bolt`, and `healing`; NPC instruction also enables Smash. Their catalog `rank: F` is a definition value, not the saved hero rank. Class skill IDs supply starter grants, while hero learned records determine battle availability and reconstructed rank bonuses. Smash, Combat Mastery, Sword Mastery, Icebolt and the town-only Enchant skill support F/E progression. Other catalog entries need authored adapters before learning.
 
 Implementation anchors: [BattleMachine](../../src/engine/battle/BattleMachine.ts), [BattleController](../../src/engine/battle/BattleController.ts), [CombatSystem](../../src/engine/ecs/systems/CombatSystem.ts), [SkillResolver](../../src/engine/battle/SkillResolver.ts), [Stats](../../src/engine/rpg/Stats.ts), [Hero model](../../src/engine/rpg/Character.ts), [JourneySession](../../src/game/JourneySession.ts), and [SaveSchema](../../src/persistence/SaveSchema.ts).
 
@@ -164,7 +164,7 @@ Preserve these skills and their current Rank F behavior while adding learned-ran
 | `lightning-bolt` | One hostile, lightning damage | 1–40 plus authored magic scaling | 2 | 0 |
 | `healing` | One living ally, including self | 6–10 plus authored magic scaling; capped by unwounded missing HP | 12 | 6 base for self, 0 for another ally |
 
-Each is one action, with no loading timer or stored charges. Firebolt does not gain Burn from its name, Icebolt does not gain slowing, and Lightning Bolt does not gain chain targets. Their Rank E adapters must be authored and tested before they become trainable beyond F. Training can count committed uses, actual damage/healing, and direct defeats where appropriate.
+Each is one action, with no loading timer or stored charges. Firebolt does not gain Burn from its name, Icebolt does not gain slowing, and Lightning Bolt does not gain chain targets. Icebolt has an authored F/E adapter: 20 committed uses supply 100 training for a 2 AP advancement, with E power 11–21 and +2 permanent INT. Firebolt, Lightning Bolt and Healing remain capped at F until their E adapters are authored. Training can count committed uses, actual damage/healing, and direct defeats where appropriate.
 
 ### Combat skills
 
@@ -362,3 +362,7 @@ Pilot defaults above settle hero ownership, town-only advancement, F/E scope, en
 Mabinogi supplies the learning/training/AP inspiration and skill identities. The catalog retains source URLs, retrieval dates, rank descriptions, and tables; preserve those references without treating them as game rules. Background: [skill overview](https://wiki.mabinogiworld.com/view/Category:Skills), [AP](https://wiki.mabinogiworld.com/view/Stats#Ability_Points), [book learning example](https://wiki.mabinogiworld.com/view/Icebolt#Obtaining_the_Skill), and [page collection example](https://wiki.mabinogiworld.com/view/Fireball#Obtaining_the_Skill). The earlier September 2026 research is historical reference material, not a fresh mechanics audit.
 
 Expo SDK **57** was checked against `package.json` for this revision. Follow [AGENTS.md](../../AGENTS.md), fetch [matching SDK documentation](https://docs.expo.dev/versions/v57.0.0/) and the [Expo documentation index](https://docs.expo.dev/llms.txt) before implementing framework APIs, and reuse the current [native SQLite adapter](../../src/persistence/createSaveStorage.ts) and [web IndexedDB adapter](../../src/persistence/createSaveStorage.web.ts). Native database guidance: [Expo SQLite SDK 57](https://docs.expo.dev/versions/v57.0.0/sdk/sqlite/).
+
+## Implemented enchanting pilot
+
+Enchant is a town-only life skill, learned at F for free from the refuge keeper. Applications and destructive burns at the blacksmith train its authored objectives. F → E needs 100 training and 2 AP; E is the current cap. It never appears as a battle action or trains from combat outcomes. Current saves are version 8 and preserve ranks, capped training, installed equipment values and the separate enchanting RNG. See [Enchants](enchants.md) for acquisition, recipes and protections.

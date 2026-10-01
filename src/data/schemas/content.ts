@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { EnchantSchema, EnchantRulesSchema } from './enchants';
 import { WorldMapSchema, validateWorldReferences } from './world';
 import { DungeonDefinitionSchema } from './dungeon';
 import { ShopSchema } from './town';
@@ -29,7 +30,7 @@ export const CombatStatsSchema = z.strictObject({
 }).refine((stats) => (stats.minDamage === undefined) === (stats.maxDamage === undefined) && (stats.minDamage ?? 0) <= (stats.maxDamage ?? 0) && (stats.minInjury ?? 0) <= (stats.maxInjury ?? 0), { message: 'Invalid combat range' }).refine((stats) => Number.isSafeInteger(Math.floor(Math.max(1, stats.attack) * stats.criticalMultiplier)),
   { message: 'Combat damage must fit within safe integer range' });
 export const TrainingObjectiveSchema = z.strictObject({
-  id, label: id, event: z.enum(['use', 'damage', 'defeat', 'heal']),
+  id, label: id, event: z.enum(['use', 'damage', 'defeat', 'heal', 'enchantSuccess', 'enchantFailure', 'burnUse', 'recovery']),
   scope: z.enum(['action', 'target', 'encounter']), points: positive.max(100), maximum: positive.max(1000),
 });
 export const GameRankSchema = z.strictObject({
@@ -73,7 +74,8 @@ export const EnemySchema = z.strictObject({ ...actor, experience: uint.max(10000
   loot: z.array(z.strictObject({ itemId: id, chance: probability, min: positive.max(99), max: positive.max(99) })
     .refine((drop) => drop.min <= drop.max)).default([]) });
 export const ClassSchema = z.strictObject(actor);
-export const ItemSchema = z.strictObject({ id, name: id, kind: z.enum(['consumable', 'weapon', 'armor', 'skillBook', 'incompleteBook', 'skillPage']),
+export const ItemSchema = z.strictObject({ id, name: id, kind: z.enum(['consumable', 'weapon', 'armor', 'skillBook', 'incompleteBook', 'skillPage', 'enchantScroll', 'material']),
+  enchantId: id.optional(),
   price: uint.max(100000), power: uint.max(10000), description: z.string(),
   weaponTags: z.array(z.enum(['melee', 'sword'])).default([]), skillId: id.optional(), recipeId: id.optional(),
   stat: z.enum(['attack', 'defense', 'speed']).optional(),
@@ -84,6 +86,7 @@ export const ItemSchema = z.strictObject({ id, name: id, kind: z.enum(['consumab
   staminaRecovery: uint.max(10000).default(0), fullnessRecovery: z.number().min(0).max(50).default(0),
 }).refine((item) => item.kind === 'weapon' ? item.maxDurability !== undefined : item.maxDurability === undefined,
   { message: 'Only weapons require maximum durability' }).refine((item) =>
+    ((item.kind === 'enchantScroll') === !!item.enchantId) && (!['enchantScroll', 'material'].includes(item.kind) || !item.battleUsable) &&
     ((item.kind === 'skillBook') === !!item.skillId) &&
     (['incompleteBook', 'skillPage'].includes(item.kind) === !!item.recipeId) &&
     (item.kind !== 'skillBook' || (!!item.skillId && !item.battleUsable)) &&
@@ -117,9 +120,10 @@ export const ContentSchema = z.strictObject({ skills: z.array(SkillSchema), enem
   classes: z.array(ClassSchema), items: z.array(ItemSchema), statusEffects: z.array(StatusEffectSchema),
   atlases: z.array(AtlasSchema), maps: z.array(MapSchema), worlds: z.array(WorldMapSchema).default([]), dungeons: z.array(DungeonDefinitionSchema).default([]),
   shops: z.array(ShopSchema).default([]), skillBookRecipes: z.array(SkillBookRecipeSchema).default([]),
+  enchants: z.array(EnchantSchema).max(1000).default([]), enchantingRules: EnchantRulesSchema.optional(),
   quests: z.array(QuestSchema).max(1000).default([]), titles: z.array(TitleAwardSchema).max(1000).default([]), questFlags: z.array(id).max(1000).default([]),
 }).superRefine((content, ctx) => {
-  for (const key of ['skills', 'enemies', 'classes', 'items', 'statusEffects', 'atlases', 'maps', 'worlds', 'dungeons', 'shops', 'skillBookRecipes', 'quests', 'titles'] as const) {
+  for (const key of ['skills', 'enemies', 'classes', 'items', 'statusEffects', 'atlases', 'maps', 'worlds', 'dungeons', 'shops', 'skillBookRecipes', 'quests', 'titles', 'enchants'] as const) {
     const seen = new Set<string>();
     content[key].forEach((entry, index) => {
       if (seen.has(entry.id)) ctx.addIssue({ code: 'custom', message: `Duplicate ${key} ID: ${entry.id}`, path: [key, index, 'id'] });
@@ -143,8 +147,8 @@ export const ContentSchema = z.strictObject({ skills: z.array(SkillSchema), enem
   const issue = (message: string) => ctx.addIssue({ code: 'custom', message });
   const rankOrder = SKILL_RANKS;
   for (const skill of content.skills) if (skill.gameRanks) {
-    if (!skill.gameRanks.F || !['active', 'passive'].includes(skill.kind ?? '')) issue('Implemented skills need F and an explicit kind');
-    if (skill.kind === 'passive' && skill.battleUsable !== false) issue('Passives cannot be battle actions');
+    if (!skill.gameRanks.F || !['active', 'passive', 'life'].includes(skill.kind ?? '')) issue('Implemented skills need F and an explicit kind');
+    if ((skill.kind === 'passive' || skill.kind === 'life') && skill.battleUsable !== false) issue('Passives cannot be battle actions');
     for (const [name, rank] of Object.entries(skill.gameRanks)) {
       if (rank.nextRank && (rankOrder[rankOrder.indexOf(name as typeof rankOrder[number]) + 1] !== rank.nextRank || !skill.gameRanks[rank.nextRank])) issue('Missing or invalid next game rank');
       if (name === '1' && rank.nextRank) issue('Final rank cannot advance');
@@ -154,6 +158,22 @@ export const ContentSchema = z.strictObject({ skills: z.array(SkillSchema), enem
       if (skill.kind === 'passive' && (rank.manaCost || rank.staminaCost || rank.cooldown)) issue('Passives cannot have action costs');
       if ((rank.swordMin || rank.swordMax || rank.swordBalance) && skill.requiresWeapon !== 'sword') issue('Sword bonuses require sword equipment');
     }
+  }
+  const rules = content.enchantingRules;
+  const enchanting = content.skills.find((s) => s.id === 'enchant');
+  if (rules) {
+    if (enchanting?.kind !== 'life' || !enchanting.gameRanks?.F || !Object.keys(rules.powderBonusBp).length) issue('Enchant requires a town skill and powder');
+    for (const rank of Object.keys(enchanting?.gameRanks ?? {})) if (!rules.recipes[rank as typeof rankOrder[number]]) issue('Missing enchant recipe');
+    for (const material of [rules.manaHerbId, rules.holyWaterId, ...Object.keys(rules.powderBonusBp)]) if (!content.items.some((i) => i.id === material && i.kind === 'material')) issue('Unknown enchanting material');
+  }
+  for (const enchant of content.enchants) {
+    if (!rules || !['F', 'E'].includes(enchant.rank) || rules.baseChanceBp[enchant.rank] === undefined || !content.items.some((i) => i.kind === 'enchantScroll' && i.enchantId === enchant.id)) issue('Unsupported enchant or missing scroll/chance');
+    for (const clause of enchant.clauses) for (const condition of clause.conditions) if (condition.kind === 'skill' && !content.skills.find((s) => s.id === condition.skillId)?.gameRanks?.[condition.rank]) issue('Unsupported enchant condition');
+  }
+  for (const item of content.items) if (item.enchantId && !content.enchants.some((e) => e.id === item.enchantId)) issue('Unknown enchant scroll');
+  for (const skill of content.skills) if (skill.gameRanks) for (const rank of Object.values(skill.gameRanks)) {
+    if (skill.kind === 'life' && (skill.id !== 'enchant' || rank.objectives.some((o) => !['enchantSuccess', 'enchantFailure', 'burnUse', 'recovery'].includes(o.event) || (o.event !== 'recovery' && o.scope !== 'action')))) issue('Unsupported town training objective');
+    if (skill.kind !== 'life' && rank.objectives.some((o) => ['enchantSuccess', 'enchantFailure', 'burnUse', 'recovery'].includes(o.event))) issue('Town objectives require a town skill');
   }
   for (const recipe of content.skillBookRecipes) {
     if (!content.skills.find((s) => s.id === recipe.skillId)?.gameRanks?.F ||

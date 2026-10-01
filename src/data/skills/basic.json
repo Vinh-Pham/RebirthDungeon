@@ -914,10 +914,40 @@
         "maxPower": 20,
         "manaCost": 1,
         "staminaCost": 0,
-        "objectives": [],
+        "objectives": [
+          {
+            "id": "uses",
+            "label": "Cast Icebolt",
+            "event": "use",
+            "scope": "action",
+            "points": 5,
+            "maximum": 20
+          }
+        ],
         "statBonuses": {
           "intelligence": 1
-        }
+        },
+        "nextRank": "E",
+        "apCost": 2
+      },
+      "E": {
+        "minPower": 11,
+        "maxPower": 21,
+        "manaCost": 1,
+        "staminaCost": 0,
+        "statBonuses": {
+          "intelligence": 2
+        },
+        "objectives": [
+          {
+            "id": "uses",
+            "label": "Cast Icebolt",
+            "event": "use",
+            "scope": "action",
+            "points": 5,
+            "maximum": 20
+          }
+        ]
       }
     }
   },

@@ -1,7 +1,8 @@
+import EquipmentEnchants from './EquipmentEnchants';
 import { router } from 'expo-router';
 import { Text, View } from 'react-native';
 import type { GameCommand } from '../../engine/commands';
-import { heroStats, previewEquipment, type Hero } from '../../engine/rpg/Character';
+import { heroStats, ownedEquipment, previewEquipment, type Hero } from '../../engine/rpg/Character';
 import { consumableRecovery } from '../../engine/rpg/Consumables';
 import type { CharacterReview } from '../../game/BattleSession';
 import type { JourneyHost } from '../../game/JourneyHost';
@@ -19,12 +20,13 @@ export default function InventoryDetails({ row, hero, host, session, review, dis
 }) {
   const { profile } = useCharacterGame();
   const item = row.item;
+  const equipment = 'itemId' in row.reference ? undefined : ownedEquipment(hero, row.reference);
   const effects = session.getSnapshot().state.dungeon?.effects;
   const stats = review?.stats ?? heroStats(hero, session.content, effects);
   const resource = { health: { current: review?.health ?? hero.health, max: stats.maxHealth }, mana: { current: review?.mana ?? hero.mana, max: stats.maxMana }, stamina: { current: review?.stamina ?? hero.stamina, max: stats.maxStamina }, wounds: review?.wounds ?? hero.wounds, fullness: review?.fullness ?? hero.fullness };
   const recovery = item.kind === 'consumable' && resource.health.current > 0 ? consumableRecovery(item, resource) : undefined;
   const slot = item.kind === 'weapon' ? 'weapon' : 'armor';
-  const comparison = !review && ['weapon', 'armor'].includes(item.kind) ? previewEquipment(hero, row.equipped ? { slot } : row.reference, session.content, effects) : undefined;
+  const comparison = !review && ['weapon', 'armor'].includes(item.kind) ? previewEquipment(hero, row.equipped ? { slot } : row.reference as Exclude<typeof row.reference, { itemId: string }>, session.content, effects) : undefined;
   const openJournal = () => router.navigate({ pathname: '/game/[characterId]/skills', params: { characterId: profile.id } });
   const needs = questItemNeeds(hero, session.content, item.id);
   return <View className="gap-3">
@@ -32,7 +34,7 @@ export default function InventoryDetails({ row, hero, host, session, review, dis
     <DungeonCard>
       <Text className="text-accent" accessibilityRole="header" style={menu.heading}>{inventoryRowLabel(row)}</Text>
       <Text className="text-muted" style={menu.body}>{item.description}</Text>
-      <Text className="text-muted" style={menu.body}>Character pack · {item.kind === 'weapon' ? 'Individually owned weapon' : `${row.quantity} / ${item.kind === 'incompleteBook' ? 1 : 999} owned${row.equipped ? ' · One copy assigned to armor' : ''}`}</Text>
+      <Text className="text-muted" style={menu.body}>Character pack · {equipment ? 'Individually owned equipment' : `${row.quantity} / ${item.kind === 'incompleteBook' ? 1 : 999} owned${row.equipped ? ' · One copy assigned to armor' : ''}`}</Text>
       {'weaponId' in row.reference ? <>
         <Text className="text-foreground" style={menu.body}>{row.durability} / {item.maxDurability} durability</Text>
         <Text className="text-muted" style={menu.body}>{row.durability === 0 ? 'Broken: supplies no combat bonuses. Repair this copy at the town blacksmith.' : 'Physical hits wear this copy once per action. Misses and spells do not wear it.'}</Text>
@@ -45,8 +47,15 @@ export default function InventoryDetails({ row, hero, host, session, review, dis
       </> : null}
       {item.kind === 'consumable' && !recovery ? <Text className="text-muted" style={menu.body}>Consumables cannot revive you. Return to the journey for defeat recovery.</Text> : null}
       {['weapon', 'armor'].includes(item.kind) ? <DungeonButton label={`${row.equipped ? 'Unequip' : 'Equip'} ${item.name}${'weaponId' in row.reference ? ` · Copy ${row.reference.weaponId.slice(7)}` : ''}`} selected={row.equipped} disabled={disabled}
-        onPress={() => dispatch(row.equipped ? { type: 'UNEQUIP_ITEM', slot } : 'weaponId' in row.reference ? { type: 'EQUIP_WEAPON', weaponId: row.reference.weaponId } : { type: 'EQUIP_ITEM', itemId: item.id })} /> : null}
-      {item.kind === 'skillBook' ? <>
+        onPress={() => { if (row.equipped) dispatch({ type: 'UNEQUIP_ITEM', slot }); else if ('weaponId' in row.reference) dispatch({ type: 'EQUIP_WEAPON', weaponId: row.reference.weaponId }); else if ('armorId' in row.reference) dispatch({ type: 'EQUIP_ARMOR', armorId: row.reference.armorId }); }} /> : null}
+      {equipment ? <>
+        <EquipmentEnchants equipment={equipment} facts={hero} content={session.content} />
+        <Text className="text-muted" style={menu.body}>Saved values stay on this copy. Conditions use your level, talent and learned ranks. Bonuses apply while equipped.</Text>
+        <DungeonButton label={equipment.locked ? 'Unlock this equipment' : 'Lock this equipment'} disabled={disabled}
+          onPress={() => { if (!('itemId' in row.reference)) void host.progress({ type: 'LOCK_EQUIPMENT', target: row.reference, locked: !equipment.locked }); }} />
+        <Text className="text-muted" style={menu.body}>{equipment.locked ? 'Locked: cannot be sold, offered, enchanted or burned. You can still equip it.' : 'Visit the town blacksmith to apply enchants or burn this copy for scrolls.'}</Text>
+      </> : null}
+      {item.kind === 'skillBook'  ? <>
         <DungeonButton label={hero.learnedSkills[item.skillId!] ? 'Skill already learned' : `Read ${item.name}`} disabled={disabled || !town || !!hero.learnedSkills[item.skillId!]}
           onPress={() => { void host.progress({ type: 'READ_SKILL_BOOK', itemId: item.id }); }} />
         {!town ? <Text className="text-muted" style={menu.body}>Return to town to read skill books.</Text> : null}

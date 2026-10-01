@@ -1,0 +1,112 @@
+[
+  {
+    "id": "keen",
+    "name": "Keen",
+    "slot": "prefix",
+    "rank": "F",
+    "kinds": [
+      "weapon"
+    ],
+    "tags": [
+      "sword"
+    ],
+    "clauses": [
+      {
+        "id": "edge",
+        "stat": "physicalAttack",
+        "unit": "flat",
+        "min": 2,
+        "max": 2,
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "studious",
+    "name": "Studious",
+    "slot": "prefix",
+    "rank": "E",
+    "kinds": [
+      "weapon"
+    ],
+    "tags": [],
+    "clauses": [
+      {
+        "id": "spell",
+        "stat": "magicAttack",
+        "unit": "flat",
+        "min": 3,
+        "max": 3,
+        "conditions": [
+          {
+            "kind": "skill",
+            "skillId": "icebolt",
+            "rank": "E"
+          }
+        ]
+      },
+      {
+        "id": "cost",
+        "stat": "maxStamina",
+        "unit": "flat",
+        "min": -2,
+        "max": -2,
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "vigor",
+    "name": "of Vigor",
+    "slot": "suffix",
+    "rank": "F",
+    "kinds": [
+      "armor"
+    ],
+    "tags": [],
+    "clauses": [
+      {
+        "id": "health",
+        "stat": "maxHealth",
+        "unit": "flat",
+        "min": 5,
+        "max": 5,
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "resilience",
+    "name": "of Resilience",
+    "slot": "suffix",
+    "rank": "E",
+    "kinds": [
+      "weapon",
+      "armor"
+    ],
+    "tags": [],
+    "clauses": [
+      {
+        "id": "guard",
+        "stat": "defense",
+        "unit": "flat",
+        "min": 1,
+        "max": 3,
+        "conditions": [
+          {
+            "kind": "level",
+            "minimum": 2
+          }
+        ]
+      },
+      {
+        "id": "resolve",
+        "stat": "will",
+        "unit": "flat",
+        "min": 1,
+        "max": 2,
+        "conditions": []
+      }
+    ]
+  }
+]

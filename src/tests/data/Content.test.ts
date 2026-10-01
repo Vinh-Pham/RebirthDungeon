@@ -8,7 +8,7 @@ function data() { return structuredClone(loadGameContent().data); }
 describe('validated game content', () => {
   it('preserves every normalized skill and its full source tables', () => {
     const content = loadGameContent();
-    expect(content.data.skills).toHaveLength(33);
+    expect(content.data.skills).toHaveLength(34);
     for (const source of catalog) {
       const skill = content.skill(source.id);
       expect(skill.reference).toEqual(source.reference);
@@ -21,7 +21,7 @@ describe('validated game content', () => {
   });
   it('loads every requested content category and creates independent entity components', () => {
     const content = loadGameContent();
-    for (const entries of Object.values(content.data)) expect(entries.length).toBeGreaterThan(0);
+    for (const entries of Object.values(content.data)) expect(Array.isArray(entries) ? entries.length : Object.keys(entries ?? {}).length).toBeGreaterThan(0);
     const first = content.spawn('slime', 'first', 'enemy', 1, 2);
     const second = content.spawn('slime', 'second', 'enemy', 3, 4);
     first.health!.current = 0; first.combatant!.attack = 999; first.skills!.push('firebolt'); first.sprite!.idleFrames![0] = 3;

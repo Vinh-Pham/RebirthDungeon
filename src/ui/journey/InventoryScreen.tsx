@@ -85,7 +85,7 @@ export function InventoryContent({ host, session }: { host: JourneyHost; session
       </DungeonCard>
       <DungeonCard>
         <Text className="text-accent" accessibilityRole="header" style={menu.heading}>Your pack</Text>
-        <Text className="text-muted" style={menu.body}>Supplies stack up to 999 of each item. Weapons retain their own durability. Tap an item to inspect it.</Text>
+        <Text className="text-muted" style={menu.body}>Supplies stack up to 999 of each item. Equipment keeps its own enchants and locks; weapons retain their durability. Tap an item to inspect it.</Text>
         <Input accessibilityLabel="Search inventory" value={search} placeholder="Search your pack" autoCorrect={false} autoCapitalize="none" returnKeyType="search"
           onChangeText={(value) => { setSearch(value); setPage(0); setSelectedKey(undefined); }} className="min-h-12 border border-border" />
         <View className="flex-row flex-wrap gap-2">{filters.map(([value, label]) => <DungeonButton key={value} label={label} selected={filter === value}
@@ -93,7 +93,7 @@ export function InventoryContent({ host, session }: { host: JourneyHost; session
         <Text className="text-muted" accessibilityLiveRegion="polite" style={menu.body}>{visible.length} {visible.length === 1 ? 'entry' : 'entries'} · Sorted by name</Text>
         {!visible.length ? <Text className="text-muted" style={menu.body}>{!rows.length ? 'Your pack is empty.' : 'No items match this search and filter.'}</Text> : null}
         {visible.slice(start, start + INVENTORY_PAGE_SIZE).map((row) => <DungeonButton key={row.key} label={inventoryRowLabel(row)}
-          detail={`Character pack · ${row.item.kind === 'weapon' ? `${row.durability} / ${row.item.maxDurability} durability${row.durability === 0 ? ' · Broken' : ''}` : row.item.kind === 'consumable' ? 'Supply' : row.item.kind === 'armor' ? 'Armor' : 'Skill collection'}`}
+          detail={`Character pack · ${row.item.kind === 'weapon' ? `${row.durability} / ${row.item.maxDurability} durability${row.durability === 0 ? ' · Broken' : ''}` : row.item.kind === 'consumable' ? 'Supply' : row.item.kind === 'armor' ? 'Armor' : ['material', 'enchantScroll'].includes(row.item.kind) ? 'Enchant supplies' : 'Skill collection'}`}
           onPress={() => { setSelectedKey(row.key); setError(undefined); }} />)}
         <InventoryPager label="Pack entries" page={currentPage} count={visible.length} onPage={setPage} />
       </DungeonCard>

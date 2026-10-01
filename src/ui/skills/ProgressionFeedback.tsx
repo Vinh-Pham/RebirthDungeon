@@ -7,6 +7,7 @@ export default function ProgressionFeedback({ host, showNotice = true }: { host:
   if (!view.error && !view.busy && (!view.notice || !showNotice)) return null;
   return <View className="gap-2">
     <DungeonNotice message={view.error ?? (view.busy ? 'Saving progress…' : view.notice)} status={view.error ? 'danger' : 'accent'} />
+    {view.retryAvailable && view.pendingResult ? <DungeonNotice status="accent" message={`Waiting to save: ${view.pendingResult} Retry saves this same result without another roll or charge.`} /> : null}
     {view.retryAvailable ? <DungeonButton primary label="Retry save" busy={view.busy} onPress={() => { void host.retryProgression(); }} /> : null}
   </View>;
 }

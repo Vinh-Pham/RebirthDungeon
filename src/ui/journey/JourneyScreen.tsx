@@ -52,12 +52,12 @@ function Exploration({ host, session, error, setError }: {
     else if (distance(obj, state.position) <= 1) dispatch({ type: 'INTERACT', objectId });
     else approach(objectId);
   };
-  if (view.activeService) return <SafeAreaView className="bg-background" edges={['left', 'right']} style={styles.screen}><ScrollView contentContainerStyle={styles.scroll}><View style={[styles.content, { width }]}>
+  if (view.activeService) return <SafeAreaView className="bg-background" edges={['bottom', 'left', 'right']} style={styles.screen}><ScrollView contentContainerStyle={styles.scroll}><View style={[styles.content, { width }]}>
     <TownServicePanel key={view.activeService} session={session} objectId={view.activeService} busy={hostView.busy || !!hostView.retryAvailable} dispatch={dispatch} progress={(command) => { void host.progress(command); }} />
     {view.message ? <DungeonNotice status="accent" message={view.message} /> : null}
     <DungeonNotice message={error} /><ProgressionFeedback host={host} showNotice={false} />
   </View></ScrollView></SafeAreaView>;
-  return <SafeAreaView className="bg-background" edges={['left', 'right']} style={styles.screen}><ScrollView key={map.id} contentContainerStyle={styles.scroll}><View style={[styles.content, { width }]}>
+  return <SafeAreaView className="bg-background" edges={['bottom', 'left', 'right']} style={styles.screen}><ScrollView key={map.id} contentContainerStyle={styles.scroll}><View style={[styles.content, { width }]}>
     <Text className="text-accent" style={styles.eyebrow}>REBIRTH DUNGEON · JOURNEY</Text><Text className="text-foreground" style={styles.title}>{map.name}</Text>
     <Text className="text-muted" style={styles.body}>Tap a floor tile to move. Tap an object to approach it, then tap again to interact.</Text>
     <View className="border-border" style={styles.map}><ArenaBoundary><WorldCanvas key={map.id} session={session} width={width} dispatch={dispatch} onObjectPress={interact} /></ArenaBoundary></View>

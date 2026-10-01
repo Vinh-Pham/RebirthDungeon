@@ -1,16 +1,22 @@
 # Rebirth Dungeon: Enchanting
 
-Updated **October 1, 2026**. Enchanting is **planned**. The current game has weapon instances, durability, repair and town resource recovery, but no Enchant skill adapter, scroll/powder items, installed enchant fields or enchanting RNG. Build this as a town progression service on the existing TypeScript engine and React Native UI. Read with [Skills](skills.md), [Stats](stats.md), [Inventory](inventory.md), [Towns](towns.md), and [Character](character.md).
+Updated **October 1, 2026**. The F/E enchanting pilot is implemented as a town service on the existing TypeScript engine and React Native UI. The refuge keeper teaches Enchant F for free; the town blacksmith sells scrolls and materials and offers applications and burning. Saves use version 8 with unique armor copies, installed values, locks, a dedicated random stream and bounded operation receipts. Read with [Skills](skills.md), [Stats](stats.md), [Inventory](inventory.md), [Towns](towns.md), and [Character](character.md).
+
+Current authored balance: applications consume one scroll, one Enchant Powder and **6 MP**. F/E scroll bases are **60% / 55%**, powder adds **5 percentage points**, each floored INT point adds **0.1 percentage points** up to 100 INT, and the final chance caps at **90%**. Burning consumes the equipment, one Mana Herb, one Holy Water and **8 MP**, with **50% / 65%** recovery per occupied slot at Enchant F/E. Enchant F → E needs 100 training and **2 AP**; E is the pilot cap. Successful applications train 10 points each (limit 10), failures 5 (limit 20), burns 5 (limit 20), and each recovered scroll 5 (limit 20). Permanent Intelligence is +1 at F or +2 at E, reconstructed once.
+
+The catalog includes Keen, Studious and of Vigor below, plus **of Resilience** (suffix E, weapons/armor): Defense +1–3 at current level 2 or higher and unconditional Will +1–2. Both variable clauses resolve on successful installation, including an inactive Defense clause. Icebolt now has an authored F → E path: 20 committed casts for 100 training and 2 AP, allowing Studious’s condition to become active. Veteran and other D–1 scrolls remain unimplemented.
+
+Operation receipts retain the most recent 100 accepted results. A monotonic operation sequence rejects evicted or unknown old IDs. Failed storage writes retain the entire resolved candidate; Retry saves that result without charging or rolling again. Armor migration preserves all copies and the equipped copy, while retaining weapon wear, depleted resources and existing progression.
 
 ## 1. Scope and prerequisites
 
 The reference inspiration is [Mabinogi Enchant](https://wiki.mabinogiworld.com/view/Enchant) and its [enchant system](https://wiki.mabinogiworld.com/view/Enchant_(System)). The formulas, costs and protection rules below are proposed Rebirth Dungeon defaults, not imported reference balance.
 
-The player learns Enchant at F from a town instructor, obtains a scroll/powder, chooses an owned equipment instance, previews an attempt and confirms it. Qualifying outcomes train the skill; advancement requires 100 training points plus authored AP, following Skills. Enchant is not among the current 33-skill reference catalog entries and must be added deliberately with definitions, acquisition and progression. The Enchant F/E pilot comes after the base Skills pilot, rather than becoming an unexpected prerequisite for starter combat.
+The player learns Enchant at F from a town instructor, obtains a scroll/powder, chooses an owned equipment instance, previews an attempt and confirms it. Qualifying outcomes train the skill; advancement requires 100 training points plus authored AP, following Skills. Enchant is authored separately from the preserved 33-skill reference catalog, with its own acquisition, definitions and town progression. The Enchant F/E pilot comes after the base Skills pilot, rather than becoming an unexpected prerequisite for starter combat.
 
 Application and burning are town-only, outside any dungeon/pending encounter. Neither action spends a combat turn, invokes BattleController or gains resources through animation time. The current paid healer supplies explicit MP recovery. No free refill occurs when opening the screen.
 
-Unique equipment ownership is required before installation. Weapons already have stable instance IDs; armor currently stacks by definition and needs lossless per-copy migration. An enchant belongs to its item, never the UI row or shared item definition. Item locks and output-capacity rules must exist before the service exposes them.
+Unique equipment ownership is required before installation. Weapons and armor have stable instance IDs; older stacked armor migrates losslessly to per-copy ownership. An enchant belongs to its item, never the UI row or shared item definition. Item locks prevent sale, offerings, application and burning; equipped locked items retain their bonuses. Burning reserves every potential scroll under the current 999-per-definition limit before consuming inputs or drawing RNG.
 
 ## 2. Slots, ranks and compatibility
 
@@ -120,7 +126,7 @@ Adopt the planned JourneyHost durable candidate boundary: flush prior writes, va
 
 ## 9. React Native service and acceptance
 
-Use a town service view under src/ui with a thin Expo Router entry only if needed; reuse CharacterGameContext rather than creating another host. Compact portrait list/detail flows select equipment, scroll and powder, then show compatibility, current/opposite slots, conditional effects, variable ranges, chance and total cost. Keep confirm/cancel visible within safe insets and support large text.
+The town service view lives under src/ui. Use it with a thin Expo Router entry only if needed; reuse CharacterGameContext rather than creating another host. Compact portrait list/detail flows select equipment, scroll and powder, then show compatibility, current/opposite slots, conditional effects, variable ranges, chance and total cost. Keep confirm/cancel visible within safe insets and support large text.
 
 Application failure text states that scroll, powder and MP are spent while equipment is preserved. Burning has a separate destructive preview naming the item and possible zero/one/two recoveries. Details show persisted rolled values and inactive conditions. Save failure offers Retry of the same accepted result, not another random attempt. Animations/audio observe success and cannot spend inputs.
 

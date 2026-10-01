@@ -124,6 +124,7 @@ export class EncounterTraining {
     if (outcome.sourceId !== 'player' || outcome.origin !== 'direct') return;
     for (const [id, record] of Object.entries(this.learned)) {
       const skill = this.content.skill(id), rank = gameRank(skill, record.rank);
+      if (skill.kind === 'life') continue;
       const applies = skill.kind === 'passive' ? outcome.tags.includes(skill.requiresWeapon === 'sword' ? 'sword' : 'melee') : outcome.skillId === id && outcome.rank === record.rank;
       if (!applies) continue;
       for (const objective of rank.objectives) {

@@ -7,7 +7,7 @@ import type { GrowthTalent } from '../engine/rpg/Stats';
 import type { BattleSession } from './BattleSession';
 import type { AudioSettings } from '../audio/AudioManager';
 interface HostView { session?: JourneySession; battle?: BattleSession; revision: number; busy: boolean; storageAvailable: boolean; error?: string;
-  notice?: string; retryAvailable?: boolean; slots: { id: SaveSlot; savedAt: string }[] }
+  notice?: string; pendingResult?: string; retryAvailable?: boolean; slots: { id: SaveSlot; savedAt: string }[] }
 const empty: HostView = { revision: 0, busy: true, storageAvailable: false, slots: [] };
 const pendingStops = new Set<Promise<void>>();
 export async function settleJourneySaves() { await Promise.all([...pendingStops]); }
@@ -78,12 +78,12 @@ export class JourneyHost {
         if (generation !== this.generation) return false;
         this.candidate = undefined;
         const notice = candidate.getSnapshot().message;
-        this.attach(candidate); this.update({ notice, retryAvailable: false });
+        this.attach(candidate); this.update({ notice, pendingResult: undefined, retryAvailable: false });
         // Saved progression cannot be retried because a consumer failed after commit.
         try { candidate.publishCommittedEvents(); } catch (error) { this.fail(error); }
         return true;
       } catch (error) {
-        if (generation === this.generation) { this.fail(error); this.update({ retryAvailable: true }); }
+        if (generation === this.generation) { this.fail(error); this.update({ retryAvailable: true, pendingResult: candidate.getSnapshot().message }); }
         return false;
       } finally { if (generation === this.generation) this.update({ busy: false }); }
     })();

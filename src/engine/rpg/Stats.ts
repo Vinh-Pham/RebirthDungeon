@@ -1,3 +1,4 @@
+import type { EnchantContribution } from './EnchantEffects';
 import { gameRank, type LearnedSkills } from './Skills';
 import type { ContentRegistry } from '../data/ContentRegistry';
 import type { CombatStats } from '../ecs/components/CombatStats';
@@ -7,7 +8,7 @@ export type GrowthTalent = typeof TALENTS[number];
 export const ATTRIBUTE_KEYS = ['strength', 'intelligence', 'dexterity', 'will', 'luck'] as const;
 export type Attributes = Record<typeof ATTRIBUTE_KEYS[number], number>;
 export type StatEffect = { statusId: string; stacks: number };
-export interface StatSource { classId: string; level: number; growthTalent: GrowthTalent; weaponItemId?: string; armorItemId?: string; effects: readonly StatEffect[]; learnedSkills: LearnedSkills }
+export interface StatSource { classId: string; level: number; growthTalent: GrowthTalent; weaponItemId?: string; armorItemId?: string; enchantments?: readonly EnchantContribution[]; effects: readonly StatEffect[]; learnedSkills: LearnedSkills }
 export interface CharacterStats {
   base: Attributes; equipment: Attributes; effective: Attributes;
   attributeSources: { starting: Attributes; talent: Attributes; levels: Attributes; skills: Attributes };
@@ -52,6 +53,16 @@ export function calculateCharacterStats(source: StatSource, content: ContentRegi
     for (const key of ATTRIBUTE_KEYS) equipment[key] += item.statBonuses?.[key] ?? 0;
     modifiers.push({ name: item.name, description: item.description });
   }
+  const enchantTotals: Partial<Record<EnchantContribution['stat'], number>> = {};
+  const seen = new Set<string>();
+  for (const clause of source.enchantments ?? []) {
+    if (seen.has(clause.sourceId)) continue; seen.add(clause.sourceId);
+    modifiers.push({ name: clause.name, description: `${clause.value >= 0 ? '+' : ''}${clause.value} ${clause.stat}${clause.condition ? ` · ${clause.active ? 'Active' : 'Inactive'}: ${clause.condition}` : ''}` });
+    if (clause.active) enchantTotals[clause.stat] = (enchantTotals[clause.stat] ?? 0) + clause.value;
+  }
+  for (const key of ATTRIBUTE_KEYS) equipment[key] += enchantTotals[key] ?? 0;
+  maxHealth = Math.max(1, maxHealth + (enchantTotals.maxHealth ?? 0)); maxMana = Math.max(0, maxMana + (enchantTotals.maxMana ?? 0)); maxStamina = Math.max(0, maxStamina + (enchantTotals.maxStamina ?? 0));
+  const physicalAttack = enchantTotals.physicalAttack ?? 0;
   const effective = zero();
   for (const key of ATTRIBUTE_KEYS) { base[key] = clamp(base[key], 1500); effective[key] = clamp(base[key] + equipment[key], 1500); }
   const str = Math.max(0, effective.strength - 10), dex = Math.max(0, effective.dexterity - 10), int = Math.max(0, effective.intelligence - 10);
@@ -64,8 +75,8 @@ export function calculateCharacterStats(source: StatSource, content: ContentRegi
     meleeMin += rank.meleeMin; meleeMax += rank.meleeMax;
     if (weapon?.weaponTags.includes('sword')) { meleeMin += rank.swordMin; meleeMax += rank.swordMax; swordBalance += rank.swordBalance; }
   }
-  const minDamage = Math.floor(str / 3) + (w?.minDamage ?? 0) + equipmentDamage + meleeMin;
-  const maxDamage = Math.floor(str / 2.5) + 8 + (w?.maxDamage ?? 0) + equipmentDamage + meleeMax;
+  const minDamage = Math.floor(str / 3) + (w?.minDamage ?? 0) + equipmentDamage + meleeMin + physicalAttack;
+  const maxDamage = Math.floor(str / 2.5) + 8 + (w?.maxDamage ?? 0) + equipmentDamage + meleeMax + physicalAttack;
   const balance = clamp(8.728944 * Math.log2((dex + 9.814582) / 20.34565), 50) / 100;
   const rating = clamp((effective.will - 10) / 1000 + (effective.luck - 10) / 500, 9.999);
   const combatant: CombatStats = { attack: maxDamage, minDamage, maxDamage,
@@ -79,6 +90,8 @@ export function calculateCharacterStats(source: StatSource, content: ContentRegi
     criticalChance: Math.min(0.3, rating + (w?.critical ?? 0.1)), criticalMultiplier: 1.5,
     minInjury: clamp((w?.minInjury ?? 0) + dex / 2000 + will / 2000, 1),
     maxInjury: clamp((w?.maxInjury ?? 0) + dex / 1000 + will / 500, 1) };
+  for (const key of ['magicAttack', 'defense', 'protection', 'magicDefense', 'magicProtection'] as const) combatant[key] = Math.max(0, (combatant[key] ?? 0) + (enchantTotals[key] ?? 0));
+  combatant.attack = Math.max(0, combatant.attack); combatant.minDamage = Math.max(0, combatant.minDamage!); combatant.maxDamage = Math.max(0, combatant.maxDamage!);
   const totals = { attack: 0, defense: 0, speed: 0 };
   for (const effect of [...source.effects].sort((a, b) => a.statusId.localeCompare(b.statusId))) {
     const status = content.status(effect.statusId);
@@ -97,7 +110,7 @@ export function calculateCharacterStats(source: StatSource, content: ContentRegi
 /** Compare source stages using the same derivation, including live weapon eligibility. */
 export function characterStatBreakdown(source: StatSource, content: ContentRegistry) {
   return {
-    base: calculateCharacterStats({ ...source, weaponItemId: undefined, armorItemId: undefined, effects: [] }, content).combatant,
+    base: calculateCharacterStats({ ...source, weaponItemId: undefined, armorItemId: undefined, enchantments: [], effects: [] }, content).combatant,
     equipment: calculateCharacterStats({ ...source, effects: [] }, content).combatant,
     dungeon: calculateCharacterStats(source, content).combatant,
   };

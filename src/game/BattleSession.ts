@@ -112,7 +112,7 @@ export class BattleSession {
     const character: CharacterReview | undefined = player && stats ? { source: cloneData(player.statSource!), stats: { ...stats, combatant: { ...effectiveEntity(player, this.content).combatant! } }, health: player.health!.current, mana: player.mana!.current, stamina: player.stamina!.current, wounds: player.wounds!, fullness: player.fullness!,
       statuses: (player.statuses ?? []).map((status) => ({ name: this.content.status(status.id).name, turns: status.remainingTurns, stacks: status.stacks })),
       weapon: player.weapon ? { name: this.content.item(player.weapon.itemId).name, durability: player.weapon.durability, maxDurability: this.content.item(player.weapon.itemId).maxDurability! } : undefined } : undefined;
-    this.snapshot = { character, inventory: player ? { items: { ...player.inventory }, weapon: player.weapon ? { ...player.weapon } : undefined } : undefined, phase: this.battle.phase, turnId: this.combat.currentTurn(),
+    this.snapshot = { character, inventory: player ? { items: { ...player.inventory }, weapon: player.weapon ? cloneData(player.weapon) : undefined } : undefined, phase: this.battle.phase, turnId: this.combat.currentTurn(),
       selectedAction: this.battle.context.action ? { ...this.battle.context.action } : undefined, selectedTargetId: this.battle.context.targetId,
       entities: this.projectEntities(), targets: this.battle.validTargetIds(), log: [...this.log], training: this.training.snapshot() };
     this.listeners.forEach((listener) => listener());

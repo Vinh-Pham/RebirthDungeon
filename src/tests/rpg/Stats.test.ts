@@ -11,7 +11,7 @@ import { prepareSkill } from '../../engine/battle/SkillResolver';
 import { BattleSession } from '../../game/BattleSession';
 import { JourneySession } from '../../game/JourneySession';
 import { encodeSave, parseSave } from '../../persistence/SaveSchema';
-import { legacyCampaign } from '../persistence/legacyFixture';
+import { versionSevenHero, legacyCampaign } from '../persistence/legacyFixture';
 import type { Entity } from '../../engine/ecs/Entity';
 
 const content = loadGameContent(); const battles: BattleSession[] = []; const journeys: JourneySession[] = [];
@@ -37,7 +37,7 @@ describe('Mabinogi stat projection', () => {
     expect(bare.combatant).toMatchObject({ minDamage: 21, maxDamage: 34, defense: 6, magicDefense: 4, magicAttack: 8, magicProtection: 2, armorPierce: 3 });
     expect(bare.combatant.magicBalance).toBeCloseTo(.405); expect(bare.combatant.criticalRating).toBeCloseTo(.221);
     expect(bare.combatant.balance).toBeCloseTo(.3 + 8.728944 * Math.log2((48 + 9.814582) / 20.34565) / 100);
-    addItem(hero, 'iron-blade', 1, content); hero.inventory['moss-mail'] = 1; hero.equipment = { weapon: 'weapon-1', armor: 'moss-mail' };
+    addItem(hero, 'iron-blade', 1, content); addItem(hero, 'moss-mail', 1, content); hero.equipment = { weapon: 'weapon-1', armor: 'armor-1' };
     expect(heroStats(hero, content).combatant).toMatchObject({ minDamage: 25, maxDamage: 38, defense: 9, protection: 2 });
     hero.weapons['weapon-1'].durability = 0; expect(heroStats(hero, content).combatant.maxDamage).toBe(34);
     const raw = structuredClone(content.data); raw.items.find((item) => item.id === 'moss-mail')!.statBonuses = { strength: 1500, intelligence: 1500, dexterity: 1500 };
@@ -135,9 +135,9 @@ describe('stat save migration', () => {
   it.each([1, 2, 3, 4])('restores v%i once with the selected talent while preserving progress and RNG', (version) => {
     const journey = new JourneySession(content); journeys.push(journey); const current = journey.toSave(); current.hero.gold = 71; addItem(current.hero, 'iron-blade', 1, content); current.hero.equipment.weapon = 'weapon-1'; current.hero.weapons['weapon-1'].durability = 11;
     let campaign: object = legacyCampaign(current);
-    if (version === 4) { const { growthTalent, stamina, wounds, fullness, ap, learnedSkills, discoveredSkills, bookCollections, claimedMilestones, quests, earnedTitles, questFlags, trackedObjectives, ...hero } = current.hero; void ap; void learnedSkills; void discoveredSkills; void bookCollections; void claimedMilestones; void quests; void earnedTitles; void questFlags; void trackedObjectives; void growthTalent; void stamina; void wounds; void fullness; hero.health = 10; hero.mana = 2; campaign = { ...current, hero }; }
+    if (version === 4) { const { growthTalent, stamina, wounds, fullness, ap, learnedSkills, discoveredSkills, bookCollections, claimedMilestones, quests, earnedTitles, questFlags, trackedObjectives, ...hero } = versionSevenHero(current.hero); void ap; void learnedSkills; void discoveredSkills; void bookCollections; void claimedMilestones; void quests; void earnedTitles; void questFlags; void trackedObjectives; void growthTalent; void stamina; void wounds; void fullness; hero.health = 10; hero.mana = 2; campaign = { ...current, hero }; }
     if (version === 1) { const { audio, ...rest } = campaign as ReturnType<typeof legacyCampaign>; void audio; campaign = rest; }
-    const save = parseSave({ version, savedAt: new Date().toISOString(), campaign }, content, 'mage'); expect(save.version).toBe(7);
+    const save = parseSave({ version, savedAt: new Date().toISOString(), campaign }, content, 'mage'); expect(save.version).toBe(8);
     expect(save.campaign.hero).toMatchObject({ growthTalent: 'mage', health: 118, mana: 108, stamina: 113, wounds: 0, fullness: 100, gold: 71 }); expect(save.campaign.randomState).toEqual(current.randomState);
     if (version === 4) expect(save.campaign.hero.weapons['weapon-1'].durability).toBe(11);
     const hero = save.campaign.hero; hero.health = 40; hero.mana = 3; hero.stamina = 15; hero.wounds = 20; hero.fullness = 60;
@@ -156,7 +156,7 @@ describe('seeded encounter balance', () => {
     vi.useFakeTimers(); const wins = [0, 0];
     for (let scenario = 0; scenario < 2; scenario++) for (let seed = 0; seed < 100; seed++) {
       const hero = createHero(content, talent); const map = structuredClone(content.data.maps[scenario]);
-      if (scenario) { hero.level = 5; addItem(hero, 'iron-blade', 1, content); hero.equipment.weapon = 'weapon-1'; hero.inventory['moss-mail'] = 1; hero.equipment.armor = 'moss-mail'; hero.inventory.potion = 8; restoreHero(hero, content); map.spawns.push({ ...content.data.maps[0].spawns[1], entityId: 'slime-2', y: 2 }, { ...content.data.maps[0].spawns[1], entityId: 'slime-3', y: 4 }); }
+      if (scenario) { hero.level = 5; addItem(hero, 'iron-blade', 1, content); hero.equipment.weapon = 'weapon-1'; addItem(hero, 'moss-mail', 1, content); hero.equipment.armor = 'armor-1'; hero.inventory.potion = 8; restoreHero(hero, content); map.spawns.push({ ...content.data.maps[0].spawns[1], entityId: 'slime-2', y: 2 }, { ...content.data.maps[0].spawns[1], entityId: 'slime-3', y: 4 }); }
       const session = new BattleSession(content, seed, map, hero);
       try {
         for (let turn = 0; turn < 200 && !session.combat.result; turn++) {

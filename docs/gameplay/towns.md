@@ -1,6 +1,6 @@
 # Rebirth Dungeon: Towns and Services
 
-Updated **October 1, 2026**. The app already contains the authored refuge, connected interiors, NPC conversations, shops, repair, healing and dungeon entry. This document records those services and plans their progression extensions for the Expo/React Native game. Read it with [Inventory](inventory.md), [Character](character.md), [Skills](skills.md), [Quests](quests.md), and the [game plan](../game-plan.md).
+Updated **October 1, 2026**. The app already contains the authored refuge, connected interiors, NPC conversations, shops, repair, healing, F/E enchanting and dungeon entry. This document records those services and plans their progression extensions for the Expo/React Native game. Read it with [Inventory](inventory.md), [Character](character.md), [Skills](skills.md), [Quests](quests.md), and the [game plan](../game-plan.md).
 
 ## 1. Refuge and movement
 
@@ -88,3 +88,7 @@ New quest/skill/bank/gathering fields belong in versioned campaign saves with va
 Preserve current map transitions, proximity checks, supply-chest claims, 999-count/1,000,000-gold bounds, equipped-item sale rejection, exact sell/repair rounding and paid full recovery. Test rejected services without item/gold/RNG changes; dungeon services unavailable; early return and defeat retention; and service panels invalidated by movement/context changes.
 
 The initial instructor/quest eligibility, delivery readiness and durable service/claim retries have engine/persistence coverage. Future acceptance adds title equipment, bank migration if adopted, gathering persistence, recipe output capacity and native large-text touch interaction. Run lint/typecheck and the relevant pure engine/persistence tests when implementing, then smoke-test on iOS, Android and web. Current prices and defeat policy remain authoritative until a tested, explicit balance change replaces them.
+
+## Enchanting pilot
+
+The refuge keeper offers a free Enchant F lesson with zero training and no AP award. The blacksmith sells Keen/Studious/Vigor/Resilience scrolls, Enchant Powder, Mana Herb and Holy Water. Its service has a separate enchant chooser and explicit destructive burn preview. Applications and burns require a nearby open service in town, learned Enchant, unlocked owned equipment and the previewed inputs. Costs, equipment, rolled values, outputs, training, RNG and receipt become live only after the host candidate saves; Retry saves the same retained result. See [Enchants](enchants.md) for balance and conditions.

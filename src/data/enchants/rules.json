@@ -1,0 +1,29 @@
+{
+  "intCap": 100,
+  "intBonusBpPerPoint": 10,
+  "baseChanceBp": {
+    "F": 6000,
+    "E": 5500
+  },
+  "powderBonusBp": {
+    "enchant-powder": 500
+  },
+  "recipes": {
+    "F": {
+      "scrollCount": 1,
+      "powderCount": 1,
+      "manaCost": 6,
+      "burnManaCost": 8,
+      "burnChanceBp": 5000
+    },
+    "E": {
+      "scrollCount": 1,
+      "powderCount": 1,
+      "manaCost": 6,
+      "burnManaCost": 8,
+      "burnChanceBp": 6500
+    }
+  },
+  "manaHerbId": "mana-herb",
+  "holyWaterId": "holy-water"
+}

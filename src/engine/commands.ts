@@ -1,5 +1,6 @@
+import type { EnchantRequest, BurnRequest } from './rpg/Enchants';
 import type { EntityId } from './ecs/Entity';
-import type { OwnedItem } from './rpg/Character';
+import type { EquipmentReference, OwnedItem } from './rpg/Character';
 import type { BattleAction } from './battle/BattleMachine';
 
 export type GameCommand =
@@ -19,10 +20,13 @@ export type GameCommand =
   | { type: 'REPAIR_WEAPON'; objectId: string; weaponId: string }
   | { type: 'HEAL'; objectId: string }
   | { type: 'OFFER_ITEM'; objectId: string; item: OwnedItem }
+  | ({ type: 'APPLY_ENCHANT'; objectId: string } & EnchantRequest)
+  | ({ type: 'BURN_EQUIPMENT'; objectId: string } & BurnRequest)
+  | { type: 'LOCK_EQUIPMENT'; target: EquipmentReference; locked: boolean }
+  | { type: 'EQUIP_ARMOR'; armorId: string }
   | { type: 'EQUIP_WEAPON'; weaponId: string }
   | { type: 'EXIT_DUNGEON' }
   | { type: 'TRAVEL_TO'; x: number; y: number }
-  | { type: 'EQUIP_ITEM'; itemId: string }
   | { type: 'UNEQUIP_ITEM'; slot: 'weapon' | 'armor' }
   | { type: 'START_BATTLE' }
   | ({ type: 'SELECT_ACTION' } & BattleAction)
@@ -38,8 +42,8 @@ export type GameCommand =
 /** Shape validation only; systems must validate gameplay rules before mutation. */
 export function validateCommand(command: GameCommand): void {
   const id = (value: unknown) => typeof value === 'string' && value.trim().length > 0;
-  const owned = (value: OwnedItem) => value && typeof value === 'object' &&
-    (('weaponId' in value && !('itemId' in value) && id(value.weaponId)) || ('itemId' in value && !('weaponId' in value) && id(value.itemId)));
+  const owned = (value: OwnedItem) => value && typeof value === 'object' && ['itemId', 'weaponId', 'armorId'].filter((key) => key in value).length === 1 && Object.keys(value).length === 1 && id(Object.values(value)[0]);
+  const equipment = (value: EquipmentReference) => owned(value) && !('itemId' in value);
   const quantity = (value: number) => Number.isInteger(value) && value >= 1 && value <= 999;
   let valid = false;
   switch (command?.type) {
@@ -58,8 +62,11 @@ export function validateCommand(command: GameCommand): void {
     case 'REPAIR_WEAPON': valid = id(command.objectId) && id(command.weaponId); break;
     case 'HEAL': valid = id(command.objectId); break;
     case 'OFFER_ITEM': valid = id(command.objectId) && owned(command.item); break;
+    case 'APPLY_ENCHANT': valid = id(command.objectId) && equipment(command.target) && id(command.scrollId) && id(command.powderId) && Number.isSafeInteger(command.revision) && id(command.operationId); break;
+    case 'BURN_EQUIPMENT': valid = id(command.objectId) && equipment(command.target) && Number.isSafeInteger(command.revision) && id(command.operationId); break;
+    case 'LOCK_EQUIPMENT': valid = equipment(command.target) && typeof command.locked === 'boolean'; break;
+    case 'EQUIP_ARMOR': valid = id(command.armorId); break;
     case 'EQUIP_WEAPON': valid = id(command.weaponId); break;
-    case 'EQUIP_ITEM': valid = id(command.itemId); break;
     case 'UNEQUIP_ITEM': valid = ['weapon', 'armor'].includes(command.slot); break;
     case 'TRAVEL_TO': valid = Number.isInteger(command.x) && Number.isInteger(command.y); break;
     case 'START_BATTLE':
@@ -89,7 +96,7 @@ export function validateCommand(command: GameCommand): void {
   if (!valid) throw new Error('Invalid game command');
 }
 
-export type ProgressionCommand = Extract<GameCommand, { type: 'LEARN_SKILL' | 'READ_SKILL_BOOK' | 'INSERT_SKILL_PAGE' | 'RANK_UP_SKILL' | 'BUY_ITEM' | 'SELL_ITEM' | 'REPAIR_WEAPON' | 'HEAL' | 'OFFER_ITEM' | 'EXIT_DUNGEON' | 'ACCEPT_QUEST' | 'CLAIM_QUEST' | 'TRACK_QUEST_OBJECTIVE' }>;
+export type ProgressionCommand = Extract<GameCommand, { type: 'APPLY_ENCHANT' | 'BURN_EQUIPMENT' | 'LOCK_EQUIPMENT' | 'LEARN_SKILL' | 'READ_SKILL_BOOK' | 'INSERT_SKILL_PAGE' | 'RANK_UP_SKILL' | 'BUY_ITEM' | 'SELL_ITEM' | 'REPAIR_WEAPON' | 'HEAL' | 'OFFER_ITEM' | 'EXIT_DUNGEON' | 'ACCEPT_QUEST' | 'CLAIM_QUEST' | 'TRACK_QUEST_OBJECTIVE' }>;
 export function isProgressionCommand(command: GameCommand): command is ProgressionCommand {
-  return ['LEARN_SKILL', 'READ_SKILL_BOOK', 'INSERT_SKILL_PAGE', 'RANK_UP_SKILL', 'BUY_ITEM', 'SELL_ITEM', 'REPAIR_WEAPON', 'HEAL', 'OFFER_ITEM', 'EXIT_DUNGEON', 'ACCEPT_QUEST', 'CLAIM_QUEST', 'TRACK_QUEST_OBJECTIVE'].includes(command.type);
+  return ['APPLY_ENCHANT', 'BURN_EQUIPMENT', 'LOCK_EQUIPMENT', 'LEARN_SKILL', 'READ_SKILL_BOOK', 'INSERT_SKILL_PAGE', 'RANK_UP_SKILL', 'BUY_ITEM', 'SELL_ITEM', 'REPAIR_WEAPON', 'HEAL', 'OFFER_ITEM', 'EXIT_DUNGEON', 'ACCEPT_QUEST', 'CLAIM_QUEST', 'TRACK_QUEST_OBJECTIVE'].includes(command.type);
 }

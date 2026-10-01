@@ -140,5 +140,72 @@
     "battleUsable": false,
     "description": "Collect and assemble the sword manual in town.",
     "recipeId": "sword-manual"
+  },
+  {
+    "id": "keen-scroll",
+    "name": "Keen Scroll",
+    "kind": "enchantScroll",
+    "enchantId": "keen",
+    "price": 3,
+    "power": 0,
+    "battleUsable": false,
+    "description": "Rank F prefix enchant. Consumed on success or failure."
+  },
+  {
+    "id": "studious-scroll",
+    "name": "Studious Scroll",
+    "kind": "enchantScroll",
+    "enchantId": "studious",
+    "price": 5,
+    "power": 0,
+    "battleUsable": false,
+    "description": "Rank E prefix enchant. Consumed on success or failure."
+  },
+  {
+    "id": "vigor-scroll",
+    "name": "of Vigor Scroll",
+    "kind": "enchantScroll",
+    "enchantId": "vigor",
+    "price": 3,
+    "power": 0,
+    "battleUsable": false,
+    "description": "Rank F suffix enchant. Consumed on success or failure."
+  },
+  {
+    "id": "resilience-scroll",
+    "name": "of Resilience Scroll",
+    "kind": "enchantScroll",
+    "enchantId": "resilience",
+    "price": 5,
+    "power": 0,
+    "battleUsable": false,
+    "description": "Rank E suffix enchant. Consumed on success or failure."
+  },
+  {
+    "id": "enchant-powder",
+    "name": "Enchant Powder",
+    "kind": "material",
+    "price": 2,
+    "power": 0,
+    "battleUsable": false,
+    "description": "One powder for each enchant application. Adds 5 percentage points to the chance."
+  },
+  {
+    "id": "mana-herb",
+    "name": "Mana Herb",
+    "kind": "material",
+    "price": 2,
+    "power": 0,
+    "battleUsable": false,
+    "description": "One herb is consumed when burning enchanted equipment."
+  },
+  {
+    "id": "holy-water",
+    "name": "Holy Water",
+    "kind": "material",
+    "price": 2,
+    "power": 0,
+    "battleUsable": false,
+    "description": "One vial is consumed when burning enchanted equipment."
   }
 ]

@@ -1,3 +1,4 @@
+import { applyEnchant, burnEquipment, operationReceipt } from '../engine/rpg/Enchants';
 import { learnSkill, readSkillBook, insertSkillPage, rankUpSkill, mergeTraining } from '../engine/rpg/Skills';
 import { acceptQuest, claimQuest, mergeQuestEncounter, reconcileQuests, recordQuestWorldEvidence, trackObjective } from '../engine/rpg/Quests';
 import { cloneData } from '../engine/cloneData';
@@ -5,7 +6,7 @@ import { createGameEngine } from '../engine/GameEngine';
 import type { ContentRegistry } from '../engine/data/ContentRegistry';
 import { isProgressionCommand, type ProgressionCommand, type GameCommand } from '../engine/commands';
 import type { GameEvent } from '../engine/events';
-import { addItem, createHero, consumeItem, grantExperience, heroStats, rollLoot, applyHero, itemCount, ownedDefinition, removeOwnedItem, repairPrice, restoreHero, tickHero } from '../engine/rpg/Character';
+import { addItem, clampHeroResources, ownedEquipment, createHero, consumeItem, grantExperience, heroStats, rollLoot, applyHero, itemCount, ownedDefinition, removeOwnedItem, repairPrice, restoreHero, tickHero } from '../engine/rpg/Character';
 import type { GrowthTalent } from '../engine/rpg/Stats';
 import { consumableRecovery } from '../engine/rpg/Consumables';
 import { createGameRandom } from '../engine/Random';
@@ -15,6 +16,7 @@ import { validateCampaign, type CampaignState } from '../persistence/SaveSchema'
 import { BattleSession } from './BattleSession';
 import { bossCleared, createDungeonRun, dungeonObjectClaimed, freezeDungeonBlueprint, generateDungeon, inRoom, projectDungeonMap, remainingEnemies, validateDungeon } from '../engine/dungeon/Dungeon';
 
+let nextViewRevision = 0;
 export interface JourneyView { state: CampaignState; map: WorldMap; message: string; revision: number; activeService?: string }
 /** Owns exploration state. React sends commands and reads detached projections. */
 export class JourneySession {
@@ -22,7 +24,6 @@ export class JourneySession {
   private state: CampaignState;
   private snapshot!: JourneyView;
   private listeners = new Set<() => void>();
-  private revision = 0;
   private message = 'Collect supplies, visit the town shops, and offer an item at the goddess altar. The eastern passage leads to the training halls.';
   private disposed = false;
   private dispatching = false;
@@ -37,7 +38,7 @@ export class JourneySession {
     const first = content.data.worlds[0];
     if (!first) throw new Error('No exploration map defined');
     this.state = restored ? validateCampaign(restored, content) : { seed, randomState: this.engine.random.snapshot(),
-      hero: createHero(content, growthTalent), worldId: first.id, position: { ...first.entry }, opened: [], cleared: [], encounterCount: 0,
+      hero: createHero(content, growthTalent, seed), worldId: first.id, position: { ...first.entry }, opened: [], cleared: [], encounterCount: 0,
       audio: { music: 0.3, sfx: 0.7, enabled: false } };
     if (restored) this.message = 'Your journey has been restored.';
     if (this.state.dungeon) freezeDungeonBlueprint(this.state.dungeon.blueprint);
@@ -163,21 +164,21 @@ export class JourneySession {
       if (!run?.selectedChest || !room || !inRoom(room, this.state.position)) throw new Error('Claim a final chest in the treasure room before returning');
       this.leaveDungeon(true);
     });
-    this.engine.commands.register('EQUIP_ITEM', ({ itemId }) => {
-      this.requireExploring(); const item = content.item(itemId);
-      if (item.kind !== 'armor' || !this.state.hero.inventory[itemId]) throw new Error('This item cannot be equipped');
-      this.state.hero.equipment[item.kind] = itemId; this.message = `Equipped ${item.name}.`;
-      this.commit({ type: 'EQUIPMENT_CHANGED', itemId });
+    this.engine.commands.register('EQUIP_ARMOR', ({ armorId }) => {
+      this.requireExploring(); const armor = this.state.hero.armors[armorId];
+      if (!armor) throw new Error('This armor is not in your pack');
+      this.state.hero.equipment.armor = armorId; clampHeroResources(this.state.hero, content); this.message = `Equipped ${content.item(armor.itemId).name}.`;
+      this.commit({ type: 'EQUIPMENT_CHANGED', itemId: armor.itemId });
     });
     this.engine.commands.register('EQUIP_WEAPON', ({ weaponId }) => {
       this.requireExploring(); const weapon = this.state.hero.weapons[weaponId];
       if (!weapon) throw new Error('This weapon is not in your pack');
       if (content.item(weapon.itemId).weaponTags.includes('sword') && !this.state.hero.discoveredSkills.includes('sword-mastery')) this.state.hero.discoveredSkills.push('sword-mastery');
-      this.state.hero.equipment.weapon = weaponId; this.message = `Equipped ${content.item(weapon.itemId).name}.`;
+      this.state.hero.equipment.weapon = weaponId; clampHeroResources(this.state.hero, content); this.message = `Equipped ${content.item(weapon.itemId).name}.`;
       this.commit({ type: 'EQUIPMENT_CHANGED', itemId: weapon.itemId });
     });
     this.engine.commands.register('UNEQUIP_ITEM', ({ slot }) => {
-      this.requireExploring(); delete this.state.hero.equipment[slot]; this.commit({ type: 'EQUIPMENT_CHANGED' });
+      this.requireExploring(); delete this.state.hero.equipment[slot]; clampHeroResources(this.state.hero, content); this.commit({ type: 'EQUIPMENT_CHANGED' });
     });
     this.engine.commands.register('USE_ITEM', ({ sourceId, targetId, itemId }) => {
       this.requireExploring(); const item = content.item(itemId);
@@ -189,6 +190,7 @@ export class JourneySession {
       this.message = `Used ${item.name}.`; this.commit({ type: 'ITEM_USED', sourceId, itemId });
     });
     this.registerServices();
+    this.registerEnchanting();
     this.registerProgression();
     this.registerQuests();
     this.refresh();
@@ -208,7 +210,9 @@ export class JourneySession {
   manageDurability() { this.hostManaged = true; }
   lockMutations() { this.mutationsLocked = true; }
   progressionCandidate(command: ProgressionCommand) {
+    if ((command.type === 'APPLY_ENCHANT' || command.type === 'BURN_EQUIPMENT') && !operationReceipt(this.state.hero, command.operationId) && command.revision !== this.snapshot.revision) throw new Error('The campaign changed. Preview this enchant operation again.');
     const candidate = new JourneySession(this.content, this.toSave(), undefined, this.characterName);
+    if (command.type === 'APPLY_ENCHANT' || command.type === 'BURN_EQUIPMENT') command = { ...command, revision: candidate.getSnapshot().revision };
     candidate.activeService = this.activeService; candidate.staging = true;
     try { candidate.dispatch(command);
       validateCampaign(candidate.toSave(), this.content);
@@ -248,7 +252,8 @@ export class JourneySession {
     hero.health = Math.max(1, entity.health!.current); hero.mana = entity.mana!.current;
     hero.stamina = entity.stamina!.current; hero.wounds = entity.wounds!; hero.fullness = entity.fullness!;
     hero.inventory = { ...entity.inventory! };
-    if (entity.weapon) hero.weapons[entity.weapon.id] = { itemId: entity.weapon.itemId, durability: entity.weapon.durability };
+    if (entity.weapon) hero.weapons[entity.weapon.id] = { ...hero.weapons[entity.weapon.id], durability: entity.weapon.durability };
+    clampHeroResources(hero, this.content);
     if (battle.combat.result === 'victory') {
       let gold = 0; let experience = 0;
       const drops = battle.map.spawns.filter((spawn) => spawn.kind === 'enemy').map((spawn) => rollLoot(spawn.definitionId, this.content, this.engine.random));
@@ -333,6 +338,7 @@ export class JourneySession {
       const object = this.requireService(objectId, ['merchant']);
       if (!content.data.shops.find((shop) => shop.id === object.shopId)!.buysItems) throw new Error('This merchant does not buy items');
       const item = ownedDefinition(this.state.hero, reference, content);
+      if (item.kind === 'armor' && 'itemId' in reference) throw new Error('Choose an individual armor copy');
       if (item.kind === 'incompleteBook') throw new Error('Unfinished books cannot be sold');
       const total = Math.floor(item.price / 2) * quantity;
       if (this.state.hero.gold + total > 1000000) throw new Error('Your gold purse is full');
@@ -363,6 +369,7 @@ export class JourneySession {
       const definition = content.data.dungeons.find((entry) => entry.id === object.dungeonId);
       if (!definition) throw new Error('This dungeon is unavailable');
       const hero = cloneData(this.state.hero); const item = ownedDefinition(hero, reference, content);
+      if (item.kind === 'armor' && 'itemId' in reference) throw new Error('Choose an individual armor copy');
       if (item.kind === 'incompleteBook') throw new Error('Keep the unfinished book for its collection');
       removeOwnedItem(hero, reference, 1);
       // Stage RNG and the entire run before spending the offering or changing the live campaign.
@@ -377,6 +384,27 @@ export class JourneySession {
       this.message = `The goddess accepts ${item.name}. Her sanctuary statue can return you to town.`;
       this.commit({ type: 'MAP_CHANGED', mapId: this.map.id });
     });
+  }
+  private registerEnchanting() {
+    this.engine.commands.register('LOCK_EQUIPMENT', ({ target, locked }) => {
+      if (this.hostManaged) throw new Error('Use the host durable progression operation');
+      this.requireExploring(); const hero = cloneData(this.state.hero); ownedEquipment(hero, target).locked = locked;
+      this.state.hero = hero; this.message = locked ? 'Equipment locked. It cannot be sold, offered, enchanted or burned.' : 'Equipment unlocked.';
+      this.commit({ type: 'EQUIPMENT_CHANGED' });
+    });
+    const operation = (command: Extract<GameCommand, { type: 'APPLY_ENCHANT' | 'BURN_EQUIPMENT' }>) => {
+      if (this.hostManaged) throw new Error('Use the host durable progression operation');
+      this.requireExploring();
+      const receipt = operationReceipt(this.state.hero, command.operationId);
+      if (receipt) { if (receipt.kind !== (command.type === 'APPLY_ENCHANT' ? 'apply' : 'burn')) throw new Error('Operation ID belongs to another action'); this.message = `This operation was already saved. ${receipt.message}`; this.refresh(); return; }
+      if (command.revision !== this.snapshot.revision) throw new Error('The campaign changed. Preview this enchant operation again.');
+      const object = this.requireService(command.objectId, ['merchant', 'npc']);
+      if (!object.enchanting) throw new Error('This town service does not offer enchanting');
+      const result = command.type === 'APPLY_ENCHANT' ? applyEnchant(this.state.hero, command, this.content) : burnEquipment(this.state.hero, command, this.content);
+      this.state.hero = result.hero; this.message = result.receipt.message;
+      this.commit({ type: 'WORLD_INTERACTED', objectId: object.id, message: this.message });
+    };
+    this.engine.commands.register('APPLY_ENCHANT', operation); this.engine.commands.register('BURN_EQUIPMENT', operation);
   }
   private registerProgression() {
     const town = () => {
@@ -394,7 +422,7 @@ export class JourneySession {
       if (object.id === 'keeper' && skillId === 'smash' && !hero.claimedMilestones.includes('intro-melee-lesson')) {
         hero.claimedMilestones.push('intro-melee-lesson'); hero.ap = Math.min(1000000, hero.ap + 3);
       }
-      this.state.hero = hero; this.message = `Learned ${this.content.skill(skillId).name} · Rank F. Introductory lesson awards 3 AP once.`;
+      this.state.hero = hero; this.message = `Learned ${this.content.skill(skillId).name} · Rank F. ${skillId === 'smash' && object.id === 'keeper' ? 'Introductory lesson awards 3 AP once.' : 'Training starts at zero.'}`;
       this.commit({ type: 'SKILL_LEARNED', skillId, rank: 'F' });
     });
     this.engine.commands.register('READ_SKILL_BOOK', ({ itemId }) => {
@@ -430,7 +458,7 @@ export class JourneySession {
       ? { worldId: this.state.worldId, objectId: this.activeService } : undefined);
     const player = this.engine.getEntity('player');
     if (player) applyHero(player, this.state.hero, this.content, this.state.dungeon?.effects);
-    this.snapshot = { state: cloneData(this.state), map: this.map, message: this.message, revision: ++this.revision, activeService: this.activeService };
+    this.snapshot = { state: cloneData(this.state), map: this.map, message: this.message, revision: ++nextViewRevision, activeService: this.activeService };
     this.listeners.forEach((listener) => listener());
   }
   private registerQuests() {

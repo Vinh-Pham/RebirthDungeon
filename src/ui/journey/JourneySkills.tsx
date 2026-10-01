@@ -18,7 +18,7 @@ export default function JourneySkills({ session }: { session: JourneySession }) 
     <DungeonCard>
       <Text className="text-accent" accessibilityRole="header" style={styles.heading}>Learned skills</Text>
       <Text className="text-muted" style={styles.body}>{skills.length} learned · {hero.ap} AP available</Text>
-      <Text className="text-muted" style={styles.body}>Practice in battle to earn training. Reach 100 training, then spend AP in town to rank up.</Text>
+      <Text className="text-muted" style={styles.body}>Combat skills train in battle; Enchant trains at the town blacksmith. Reach 100 training, then spend AP in town to rank up.</Text>
       <DungeonButton label="Open skills journal" onPress={() => router.navigate({ pathname: '/game/[characterId]/skills', params: { characterId: profile.id } })} />
     </DungeonCard>
     {skills.length === 0 ? <DungeonCard>
@@ -37,7 +37,7 @@ export default function JourneySkills({ session }: { session: JourneySession }) 
           <Text className="rounded-md bg-surface-tertiary px-3 py-1 text-accent" style={styles.rank}>Rank {record.rank}</Text>
         </View>
         <Text className="text-muted capitalize" style={styles.body}>{skill.category ?? 'combat'} · {skill.kind ?? 'active'}</Text>
-        {rank.nextRank ? <>
+        {rank.objectives.length ? <>
           <ProgressBar value={Math.min(points, 100)} maxValue={100} size="sm" className="gap-2"
             accessibilityLabel={`${skill.name} training`} accessibilityValue={{ min: 0, max: 100, now: Math.min(points, 100), text: `${points} of 100 training points` }}>
             <View style={styles.row}>

@@ -104,14 +104,14 @@ describe('town transactions', () => {
   it('sells only spare weapon and armor copies, preserves equipment, and rejects gold overflow', () => {
     const session = create((hero) => {
       addItem(hero, 'iron-blade', 2, content); hero.weapons['weapon-2'].durability = 0;
-      hero.equipment.weapon = 'weapon-1'; hero.inventory['moss-mail'] = 2; hero.equipment.armor = 'moss-mail';
+      hero.equipment.weapon = 'weapon-1'; addItem(hero, 'moss-mail', 2, content); hero.equipment.armor = 'armor-1';
     }); visit(session, 'general'); const before = session.toSave();
     expect(() => session.dispatch({ type: 'SELL_ITEM', objectId: 'general-keeper', item: { weaponId: 'weapon-1' }, quantity: 1 })).toThrow('unequipped');
-    expect(() => session.dispatch({ type: 'SELL_ITEM', objectId: 'general-keeper', item: { itemId: 'moss-mail' }, quantity: 2 })).toThrow('unequipped');
+    expect(() => session.dispatch({ type: 'SELL_ITEM', objectId: 'general-keeper', item: { armorId: 'armor-1' }, quantity: 2 })).toThrow('unequipped');
     expect(session.toSave()).toEqual(before);
     session.dispatch({ type: 'SELL_ITEM', objectId: 'general-keeper', item: { weaponId: 'weapon-2' }, quantity: 1 });
-    session.dispatch({ type: 'SELL_ITEM', objectId: 'general-keeper', item: { itemId: 'moss-mail' }, quantity: 1 });
-    expect(session.toSave().hero).toMatchObject({ gold: 32, equipment: { weapon: 'weapon-1', armor: 'moss-mail' }, inventory: { 'moss-mail': 1 } });
+    session.dispatch({ type: 'SELL_ITEM', objectId: 'general-keeper', item: { armorId: 'armor-2' }, quantity: 1 });
+    expect(session.toSave().hero).toMatchObject({ gold: 32, equipment: { weapon: 'weapon-1', armor: 'armor-1' }, armors: { 'armor-1': { itemId: 'moss-mail' } } });
     expect(session.toSave().hero.weapons['weapon-2']).toBeUndefined();
     const rich = create((hero) => { hero.gold = 1000000; }); visit(rich, 'general'); const richBefore = rich.toSave();
     expect(() => rich.dispatch({ type: 'SELL_ITEM', objectId: 'general-keeper', item: { itemId: 'potion' }, quantity: 1 })).toThrow('purse'); expect(rich.toSave()).toEqual(richBefore);
@@ -160,7 +160,7 @@ describe('goddess offerings and save migration', () => {
   it('accepts a broken spare weapon, reserves equipped armor, and rejects missing or equipped offerings', () => {
     const session = create((hero) => {
       addItem(hero, 'iron-blade', 2, content); hero.weapons['weapon-2'].durability = 0; hero.equipment.weapon = 'weapon-1';
-      hero.inventory['moss-mail'] = 1; hero.equipment.armor = 'moss-mail';
+      addItem(hero, 'moss-mail', 1, content); hero.equipment.armor = 'armor-1';
     }); approach(session, 'dungeon-entrance'); const before = session.toSave();
     for (const item of [{ weaponId: 'weapon-1' }, { itemId: 'moss-mail' }, { itemId: 'bread' }, { weaponId: 'missing' }]) {
       expect(() => session.dispatch({ type: 'OFFER_ITEM', objectId: 'dungeon-entrance', item })).toThrow(); expect(session.toSave()).toEqual(before);
@@ -184,7 +184,7 @@ describe('goddess offerings and save migration', () => {
     const campaign = legacyCampaign(session.toSave()); campaign.opened = ['refuge/supply-chest'];
     const { audio, ...withoutAudio } = campaign; void audio;
     const save = parseSave({ version, savedAt: new Date().toISOString(), campaign: version === 1 ? withoutAudio : campaign }, content);
-    expect(save.version).toBe(7); expect(save.campaign.hero).toMatchObject({ gold: 37, nextWeaponId: 4, equipment: { weapon: 'weapon-1' } });
+    expect(save.version).toBe(8); expect(save.campaign.hero).toMatchObject({ gold: 37, nextWeaponId: 4, equipment: { weapon: 'weapon-1' } });
     expect(Object.values(save.campaign.hero.weapons)).toEqual(Array(3).fill({ itemId: 'iron-blade', durability: 60 }));
     expect(save.campaign.hero.inventory['iron-blade']).toBeUndefined(); expect(save.campaign.opened).toEqual(campaign.opened); expect(save.campaign.randomState).toEqual(campaign.randomState);
   });
@@ -200,7 +200,7 @@ describe('goddess offerings and save migration', () => {
       (hero: Hero) => { hero.weapons['weapon-1'].itemId = 'potion'; },
       (hero: Hero) => { hero.inventory['iron-blade'] = 1; },
     ]) { const state = session.toSave(); mutate(state.hero); expect(() => validateCampaign(state, content)).toThrow(); }
-    expect(() => parseSave({ ...save, version: 8 }, content)).toThrow();
+    expect(() => parseSave({ ...save, version: 9 }, content)).toThrow();
     expect(heroStats(save.campaign.hero, content).combatant.attack).toBe(38);
   });
 });

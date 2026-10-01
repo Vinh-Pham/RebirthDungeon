@@ -383,6 +383,10 @@
           {
             "skillId": "smash",
             "fee": 0
+          },
+          {
+            "skillId": "enchant",
+            "fee": 0
           }
         ]
       },
@@ -813,7 +817,8 @@
         "kind": "merchant",
         "x": 4,
         "y": 2,
-        "shopId": "blacksmith"
+        "shopId": "blacksmith",
+        "enchanting": true
       },
       {
         "id": "exit",

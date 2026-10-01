@@ -12,7 +12,7 @@ const content = loadGameContent();
 describe('inventory inspection and ownership boundaries', () => {
   it('previews the actual eligible loadout without changing supplies, pools, durability or learned bonuses', () => {
     const hero = learnSkill(createHero(content), 'sword-mastery', content);
-    addItem(hero, 'iron-blade', 2, content); hero.inventory['moss-mail'] = 2;
+    addItem(hero, 'iron-blade', 2, content); addItem(hero, 'moss-mail', 2, content);
     Object.assign(hero, { health: 20, mana: 4, stamina: 9, wounds: 15, fullness: 60 });
     hero.weapons['weapon-2'].durability = 0;
     const before = structuredClone(hero);
@@ -21,13 +21,13 @@ describe('inventory inspection and ownership boundaries', () => {
     expect(armed.after.combatant).toMatchObject({ minDamage: 25, maxDamage: 40 });
     const broken = previewEquipment(hero, { weaponId: 'weapon-2' }, content);
     expect(broken.after).toEqual(broken.before);
-    const armored = previewEquipment(hero, { itemId: 'moss-mail' }, content);
+    const armored = previewEquipment(hero, { armorId: 'armor-1' }, content);
     expect(armored.after.combatant.defense).toBe(armored.before.combatant.defense + 3);
     expect(hero).toEqual(before);
     hero.equipment.weapon = 'weapon-1';
     expect(previewEquipment(hero, { slot: 'weapon' }, content).after.combatant).toEqual(armed.before.combatant);
     expect(hero.equipment.weapon).toBe('weapon-1');
-    for (const reference of [{ weaponId: 'weapon-99' }, { itemId: 'potion' }, { itemId: 'missing' }]) {
+    for (const reference of [{ weaponId: 'weapon-99' }, { armorId: 'potion' }, { armorId: 'missing' }]) {
       expect(() => previewEquipment(hero, reference, content)).toThrow();
     }
   });
