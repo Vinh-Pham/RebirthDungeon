@@ -1,17 +1,16 @@
 import { DungeonButton as Button, DungeonCard, DungeonLoading, DungeonNotice } from '../shared/DungeonUI';
-import ResourceBar from '../shared/ResourceBar';
 import { useState, useSyncExternalStore } from 'react';
 import { Platform, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { JourneyHost } from '../../game/JourneyHost';
 import { useCharacterGame } from '../menu/CharacterGameContext';
 import { BattleView, ArenaBoundary } from '../battle/BattleScreen';
-import { heroStats, experienceToNextLevel } from '../../engine/rpg/Character';
 import { distance, findPath, isWalkable } from '../../engine/world/TileMap';
 import type { GameCommand } from '../../engine/commands';
 import WorldCanvas from '../../renderer/WorldCanvas';
 import { bossCleared, inRoom, remainingEnemies } from '../../engine/dungeon/Dungeon';
 import TownServicePanel from './TownServicePanel';
+import JourneyCharacterTabs from './JourneyCharacterTabs';
 
 export default function JourneyScreen() {
   const { host } = useCharacterGame();
@@ -26,13 +25,14 @@ function Exploration({ host, session, error, setError }: {
   host: JourneyHost; session: NonNullable<ReturnType<JourneyHost['getSnapshot']>['session']>;
   error?: string; setError(error?: string): void;
 }) {
+  const [characterTab, setCharacterTab] = useState('character');
   const view = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
   const hostView = useSyncExternalStore((listener) => {
     // The parent owns the host lifetime; this subscription only observes its UI notices.
     const unsubscribe = host.subscribe(listener); return unsubscribe;
   }, host.getSnapshot, host.getServerSnapshot);
   const { width: windowWidth } = useWindowDimensions(); const width = Math.max(240, Math.min(windowWidth - 40, 560));
-  const { state, map } = view; const run = state.dungeon; const stats = heroStats(state.hero, session.content, run?.effects);
+  const { state, map } = view; const run = state.dungeon;
   const currentRoom = run?.blueprint.rooms.find((room) => inRoom(room, state.position));
   const dispatch = (command: GameCommand) => { if (hostView.busy) return false; try { setError(undefined); session.dispatch(command); return true; } catch (error) { setError(error instanceof Error ? error.message : 'Action failed'); return false; } };
   const approach = (objectId: string) => {
@@ -68,18 +68,7 @@ function Exploration({ host, session, error, setError }: {
       {currentRoom?.kind === 'treasure' ? <Text className="text-muted" style={styles.body}>{run.selectedChest ? 'Your reward is claimed. The other four chests remain sealed.' : 'Choose one of five hidden rewards. Your treasure key opens only one chest.'}</Text> : null}
       {run.selectedChest && currentRoom?.kind === 'treasure' ? <Button label="Return to the refuge" disabled={hostView.busy} onPress={() => dispatch({ type: 'EXIT_DUNGEON' })} /> : null}
     </DungeonCard> : null}
-    <DungeonCard>
-      <Text className="text-accent" style={styles.heading}>{session.characterName ?? 'Warden'} · Level {state.hero.level}</Text>
-      <ResourceBar label="HP" value={state.hero.health} max={stats.maxHealth} name={session.characterName ?? 'Warden'} />
-      <ResourceBar label="Mana" value={state.hero.mana} max={stats.maxMana} name={session.characterName ?? 'Warden'} />
-      <ResourceBar label="Stamina" value={state.hero.stamina} max={stats.maxStamina} name={session.characterName ?? 'Warden'} />
-      <Text className="text-muted" style={styles.body}>{state.hero.gold} gold</Text>
-      <Text className="text-muted" style={styles.body}>Damage {stats.combatant.minDamage}–{stats.combatant.maxDamage} · Defense {stats.combatant.defense} · Speed {stats.combatant.speed}</Text>
-      <Text className="text-muted" style={styles.body}>{state.hero.level < 99 ? `${state.hero.experience}/${experienceToNextLevel(state.hero.level)} XP to next level` : 'Maximum level'}</Text>
-      <Text className="text-muted" style={styles.body}>{state.hero.wounds} wounds · {state.hero.fullness.toFixed(1)}% fullness</Text>
-      <Button label="Rest · recover stamina" disabled={hostView.busy} onPress={() => dispatch({ type: 'REST', entityId: 'player' })} />
-      <View style={styles.actions}>{[[0, -1, 'Up'], [-1, 0, 'Left'], [1, 0, 'Right'], [0, 1, 'Down']].map(([dx, dy, label]) => <Button key={label} label={`Move ${label}`} disabled={hostView.busy || !isWalkable(map, { x: state.position.x + Number(dx), y: state.position.y + Number(dy) })} onPress={() => dispatch({ type: 'MOVE', entityId: 'player', dx: Number(dx), dy: Number(dy) })} />)}</View>
-    </DungeonCard>
+    <JourneyCharacterTabs host={host} session={session} value={characterTab} onValueChange={setCharacterTab} dispatch={dispatch} />
     {view.message ? <DungeonNotice status="accent" message={view.message} /> : null}
     {error || hostView.error ? <DungeonNotice message={error ?? hostView.error} /> : null}
     <Text className="text-muted" style={styles.legend}>Position {state.position.x}, {state.position.y} · Seed {run?.blueprint.seed ?? state.seed}</Text>
@@ -91,7 +80,6 @@ const styles = StyleSheet.create({
   title: { fontFamily: Platform.OS === 'android' ? 'serif' : 'Georgia', fontSize: 34 },
   body: { fontSize: 12, lineHeight: 20 }, heading: { fontSize: 17, fontWeight: '600' },
    map: { overflow: 'hidden', borderRadius: 8 },
-  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
 
    legend: { fontSize: 10, lineHeight: 18 },
 });

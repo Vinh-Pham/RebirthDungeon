@@ -14,10 +14,21 @@ const noSnapshot = () => undefined;
 export default function InventoryScreen() {
   const { host } = useCharacterGame();
   const hosted = useSyncExternalStore(host.subscribe, host.getSnapshot, host.getServerSnapshot);
-  return hosted.session ? <InventoryContent key={hosted.revision} host={host} session={hosted.session} />
+  return hosted.session ? <InventoryPage key={hosted.revision} host={host} session={hosted.session} />
     : <MenuPage><DungeonLoading label="Loading inventory" /></MenuPage>;
 }
-function InventoryContent({ host, session }: { host: JourneyHost; session: JourneySession }) {
+
+function InventoryPage({ host, session }: { host: JourneyHost; session: JourneySession }) {
+  const view = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
+  const hosted = useSyncExternalStore(host.subscribe, host.getSnapshot, host.getServerSnapshot);
+  return <MenuPage>
+    <InventoryContent host={host} session={session} />
+    {view.message ? <DungeonNotice status="accent" message={view.message} /> : null}
+    <DungeonNotice message={hosted.error} />
+  </MenuPage>;
+}
+
+export function InventoryContent({ host, session }: { host: JourneyHost; session: JourneySession }) {
   const view = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
   const hosted = useSyncExternalStore(host.subscribe, host.getSnapshot, host.getServerSnapshot);
   const battle = useSyncExternalStore(hosted.battle?.subscribe ?? noSubscribe, hosted.battle?.getSnapshot ?? noSnapshot, noSnapshot);
@@ -35,7 +46,7 @@ function InventoryContent({ host, session }: { host: JourneyHost; session: Journ
     try { setError(undefined); session.dispatch(command); }
     catch (failure: unknown) { setError(failure instanceof Error ? failure.message : 'This item could not be used.'); }
   };
-  return <MenuPage>
+  return <View className="gap-4">
     {hosted.battle ? <DungeonNotice status="accent" message="Inventory is read-only during encounters. Use the battle Item menu for consumables." /> : null}
     <DungeonCard><Text className="text-accent" style={menu.heading}>Your pack</Text>
       {!items.length && !weapons.length ? <Text className="text-muted" style={menu.body}>Your pack is empty.</Text> : null}
@@ -66,7 +77,6 @@ function InventoryContent({ host, session }: { host: JourneyHost; session: Journ
       })}
       <InventoryPager label="Weapons" page={currentPage} count={weapons.length} disabled={hosted.busy} onPage={setPage} />
     </DungeonCard>
-    {view.message ? <DungeonNotice status="accent" message={view.message} /> : null}
-    <DungeonNotice message={error ?? hosted.error} />
-  </MenuPage>;
+    <DungeonNotice message={error} />
+  </View>;
 }
