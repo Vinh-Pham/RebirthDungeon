@@ -6,10 +6,15 @@ export interface ActiveStatus { id: string; sourceId: string; remainingTurns: nu
 export function effectiveEntity(entity: Entity, content?: ContentRegistry): Entity {
   if (!entity.combatant || !content) return entity;
   const combatant = { ...entity.combatant };
+  const totals = { attack: 0, defense: 0, speed: 0 };
   for (const active of entity.statuses ?? []) {
     const status = content.status(active.id);
-    if (status.effect === 'stat' && status.stat) combatant[status.stat] = Math.max(0, combatant[status.stat] + status.modifier * active.stacks);
+    if (status.effect === 'stat' && status.stat) {
+      totals[status.stat] += status.modifier * active.stacks;
+    }
   }
+  for (const key of ['attack', 'defense', 'speed'] as const) combatant[key] = Math.max(0, combatant[key] + totals[key]);
+  if (combatant.minDamage !== undefined) { combatant.minDamage = Math.max(0, combatant.minDamage + totals.attack); combatant.maxDamage = combatant.attack; }
   validateCombatStats(combatant);
   return { ...entity, combatant };
 }
@@ -35,7 +40,7 @@ export function tickStatuses(entity: Entity, timing: 'turnStart' | 'turnEnd', co
       const amount = Math.min(entity.health.current, power); entity.health.current -= amount;
       events.push({ type: 'DAMAGE_DEALT', sourceId: active.sourceId, targetId: entity.id, amount, critical: false });
     } else if (definition.effect === 'heal') {
-      const amount = Math.min(entity.health.max - entity.health.current, power); entity.health.current += amount;
+      const amount = Math.max(0, Math.min(entity.health.max - (entity.wounds ?? 0) - entity.health.current, power)); entity.health.current += amount;
       events.push({ type: 'HEALTH_RESTORED', sourceId: active.sourceId, targetId: entity.id, amount });
     }
     active.remainingTurns--;

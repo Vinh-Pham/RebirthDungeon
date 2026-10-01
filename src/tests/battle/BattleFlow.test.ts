@@ -44,7 +44,7 @@ describe('XState battle flow', () => {
     session.dispatch({ type: 'CANCEL_ACTION' });
     expect(session.battle.phase).toBe('selectingAction');
     expect(session.getSnapshot().selectedTargetId).toBeUndefined();
-    expect(session.engine.getEntity('slime-1')?.health?.current).toBe(34);
+    expect(session.engine.getEntity('slime-1')?.health?.current).toBe(55);
     expect(() => session.dispatch({ type: 'ATTACK', attackerId: 'player', targetId: 'slime-1' })).toThrow('Select and confirm');
   });
 
@@ -54,7 +54,7 @@ describe('XState battle flow', () => {
     select(session);
     session.dispatch({ type: 'CONFIRM_ACTION' });
     expect(session.battle.phase).toBe('enemyTurn');
-    expect(session.engine.getEntity('slime-1')!.health!.current).toBeLessThan(34);
+    expect(session.engine.getEntity('slime-1')!.health!.current).toBeLessThan(55);
     session.dispatch({ type: 'ADVANCE_ENEMY_TURN' });
     expect(session.battle.phase).toBe('selectingAction');
     expect(session.presentation.getSnapshot().busy).toBe(true);
@@ -67,12 +67,12 @@ describe('XState battle flow', () => {
     session.engine.getEntity('player')!.health!.current = 20;
     select(session, 'player', 'healing');
     session.dispatch({ type: 'CONFIRM_ACTION' });
-    expect(session.engine.getEntity('player')?.health?.current).toBe(26);
-    expect(session.engine.getEntity('player')?.mana?.current).toBe(2);
+    expect(session.engine.getEntity('player')?.health?.current).toBe(30);
+    expect(session.engine.getEntity('player')?.mana?.current).toBe(87);
     session.advanceEnemyTurns();
     select(session, 'slime-1', 'firebolt');
     session.dispatch({ type: 'CONFIRM_ACTION' });
-    expect(session.engine.getEntity('player')?.mana?.current).toBe(0);
+    expect(session.engine.getEntity('player')?.mana?.current).toBe(86);
     session.advanceEnemyTurns();
     session.engine.getEntity('player')!.mana!.current = 0;
     const chance = vi.spyOn(session.engine.random, 'chance');
@@ -96,7 +96,7 @@ describe('XState battle flow', () => {
     const data = structuredClone(loadGameContent().data);
     data.enemies[0].combatant.speed = 20;
     data.enemies[0].combatant.hitChance = 1;
-    data.enemies[0].combatant.attack = 200;
+    Object.assign(data.enemies[0].combatant, { attack: 200, minDamage: 200, maxDamage: 200 });
     const session = create(1, new ContentRegistry(data));
     expect(session.battle.phase).toBe('enemyTurn');
     session.advanceEnemyTurns();
@@ -118,21 +118,21 @@ describe('XState battle flow', () => {
     expect(() => session.dispatch({ type: 'CONFIRM_ACTION' })).toThrow('mana');
     expect(session.battle.phase).toBe('selectingTarget');
     expect(session.combat.currentTurn()).toBe('player');
-    expect(session.engine.getEntity('slime-1')?.health?.current).toBe(34);
+    expect(session.engine.getEntity('slime-1')?.health?.current).toBe(55);
     expect(chance).not.toHaveBeenCalled();
     session.dispatch({ type: 'CANCEL_ACTION' });
   });
 
   it('uses data-defined skills against all enemies', () => {
     const data = structuredClone(loadGameContent().data);
-    data.skills.push({ ...data.skills[0], id: 'nova', target: 'allEnemies', power: 100, manaCost: 5 });
+    data.skills.push({ ...data.skills[0], id: 'nova', target: 'allEnemies', power: 100, minPower: 100, maxPower: 100, manaCost: 5 });
     data.classes[0].skills.push('nova');
     data.maps[0].spawns.push({ entityId: 'slime-2', definitionId: 'slime', kind: 'enemy', x: 7, y: 4 });
     const session = create(1, new ContentRegistry(data));
     select(session, 'slime-1', 'nova');
     session.dispatch({ type: 'CONFIRM_ACTION' });
     expect(session.battle.phase).toBe('victory');
-    expect(session.engine.getEntity('player')?.mana?.current).toBe(9);
+    expect(session.engine.getEntity('player')?.mana?.current).toBe(94);
     expect(session.engine.getEntity('slime-1')?.dead).toBe(true);
     expect(session.engine.getEntity('slime-2')?.dead).toBe(true);
     expect(session.presentation.getSnapshot().active?.impacts).toHaveLength(2);

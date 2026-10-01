@@ -8,6 +8,7 @@ import { SaveRepository, type SaveStorage, type SaveRow } from '../../persistenc
 import { SQLiteSaveStorage, type SqlDatabase } from '../../persistence/SQLiteSaveStorage';
 import { AutoSaver } from '../../persistence/AutoSaver';
 import { createGameRandom } from '../../engine/Random';
+import { legacyCampaign } from './legacyFixture';
 const content = loadGameContent();
 const sessions: JourneySession[] = [];
 function state() { const session = new JourneySession(content); sessions.push(session); return session.toSave(); }
@@ -26,9 +27,9 @@ describe('save validation and migrations', () => {
     expect(Array.from({ length: 50 }, () => resumed.engine.random.int(1, 100))).toEqual(Array.from({ length: 50 }, () => session.engine.random.int(1, 100)));
   });
   it('migrates legacy version 1 audio defaults and rejects future versions', () => {
-    const campaign = state(); const { audio, ...legacy } = campaign; expect(audio.enabled).toBe(false);
+    const campaign = legacyCampaign(state()); const { audio, ...legacy } = campaign; expect(audio.enabled).toBe(false);
     const migrated = parseSave({ version: 1, savedAt: new Date().toISOString(), campaign: legacy }, content);
-    expect(migrated.version).toBe(3); expect(migrated.campaign.audio).toEqual({ enabled: false, music: 0.3, sfx: 0.7 });
+    expect(migrated.version).toBe(5); expect(migrated.campaign.audio).toEqual({ enabled: false, music: 0.3, sfx: 0.7 });
     expect(() => parseSave({ ...migrated, version: 99 }, content)).toThrow();
   });
   it('rejects invalid positions, resources, flags, references, RNG, and pending encounters', () => {

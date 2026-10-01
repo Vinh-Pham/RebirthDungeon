@@ -26,8 +26,8 @@ describe('validated game content', () => {
     const first = content.spawn('slime', 'first', 'enemy', 1, 2);
     const second = content.spawn('slime', 'second', 'enemy', 3, 4);
     first.health!.current = 0; first.combatant!.attack = 999; first.skills!.push('firebolt'); first.sprite!.idleFrames![0] = 3;
-    expect(second.health!.current).toBe(34); expect(second.combatant!.attack).toBe(8);
-    expect(content.data.enemies[0].combatant.attack).toBe(8);
+    expect(second.health!.current).toBe(55); expect(second.combatant!.attack).toBe(14);
+    expect(content.data.enemies[0].combatant.attack).toBe(14);
     expect(second.skills).toEqual([]); expect(second.sprite?.idleFrames).toEqual([2, 3]);
     expect(content.data.enemies[0].sprite.idleFrames).toEqual([2, 3]);
   });

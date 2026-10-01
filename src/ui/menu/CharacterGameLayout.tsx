@@ -1,6 +1,6 @@
 import { Redirect, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { ActivityIndicator, AppState, BackHandler, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, AppState, BackHandler, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AppTabs from '../../components/app-tabs';
 import { loadGameContent } from '../../data/content';
@@ -8,6 +8,7 @@ import { JourneyHost } from '../../game/JourneyHost';
 import { createSaveStorage } from '../../persistence/createSaveStorage';
 import { withCharacters } from '../../persistence/characters';
 import { TALENT_LABELS, type CharacterProfile, type CompleteCharacter } from '../../persistence/CharacterProfile';
+import { CharacterWindow } from './CharacterWindow';
 import { CharacterGameContext } from './CharacterGameContext';
 import { MenuButton, MenuError, MenuPage, menu } from './MenuUI';
 
@@ -39,9 +40,12 @@ function CharacterGame({ profile }: { profile: CompleteCharacter }) {
   return <GameSession key={attempt} profile={profile} retry={() => setAttempt((value) => value + 1)} />;
 }
 function GameSession({ profile, retry }: { profile: CompleteCharacter; retry(): void }) {
-  const [host] = useState(() => new JourneyHost(loadGameContent(), () => createSaveStorage(profile.id), profile.name));
+  const [host] = useState(() => new JourneyHost(loadGameContent(), () => createSaveStorage(profile.id), profile.name, profile.talent));
   const snapshot = useSyncExternalStore(host.subscribe, host.getSnapshot, host.getServerSnapshot);
   const [leaving, setLeaving] = useState(false);
+  const [statsOpen, setStatsOpen] = useState(false);
+  const statsTrigger = useRef<View>(null);
+  const closeStats = () => { setStatsOpen(false); statsTrigger.current?.focus(); };
   const [error, setError] = useState<string>();
   const leavePending = useRef(false);
   useEffect(() => {
@@ -55,9 +59,16 @@ function GameSession({ profile, retry }: { profile: CompleteCharacter; retry(): 
     else { setError('Your latest progress could not be saved. Please try again.'); leavePending.current = false; setLeaving(false); }
   }, [host, snapshot.busy]);
   useFocusEffect(useCallback(() => {
-    const subscription = BackHandler.addEventListener('hardwareBackPress', () => { void leave(); return true; });
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      const current = host.getSnapshot();
+      if (!current.battle && current.session?.getSnapshot().activeService) {
+        if (!current.busy) current.session.dispatch({ type: 'CLOSE_SERVICE' });
+        return true;
+      }
+      void leave(); return true;
+    });
     return () => subscription.remove();
-  }, [leave]));
+  }, [leave, host]));
   if (!snapshot.session) return <MenuPage><Text style={menu.title}>{profile.name}</Text>
     {snapshot.busy ? <ActivityIndicator color="#d0b987" accessibilityLabel="Loading journey" /> : <>
       <MenuError message={snapshot.error ?? 'Your journey could not be loaded.'} /><MenuButton label="Retry" onPress={retry} />
@@ -68,14 +79,17 @@ function GameSession({ profile, retry }: { profile: CompleteCharacter; retry(): 
     <SafeAreaView edges={['top']} style={styles.header}>
       <View style={styles.headerRow}><View style={styles.identity}><Text numberOfLines={1} style={menu.heading}>{profile.name}</Text>
         <Text style={styles.details}>{TALENT_LABELS[profile.talent]} · Age {profile.age}</Text></View>
+        <Pressable ref={statsTrigger} accessibilityRole="button" accessibilityLabel="Open character stats" onPress={() => setStatsOpen(true)} style={styles.statsButton}><Text style={styles.statsText}>Stats</Text></Pressable>
         <MenuButton label={leaving ? 'Saving…' : 'Characters'} secondary busy={leaving} disabled={snapshot.busy} onPress={() => { void leave(); }} />
       </View><MenuError message={error} />
     </SafeAreaView>
     <AppTabs />
+    {statsOpen ? <CharacterWindow host={host} profile={profile} close={closeStats} /> : null}
   </View></CharacterGameContext>;
 }
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 16, backgroundColor: '#101719', borderBottomWidth: 1, borderBottomColor: '#344044' },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 }, identity: { flex: 1, gap: 4 },
+  statsButton: { minWidth: 48, minHeight: 48, justifyContent: 'center', alignItems: 'center' }, statsText: { color: '#d0b987', fontWeight: '600' },
   details: { color: '#aab6b5', fontSize: 12 },
 });

@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { loadGameContent } from '../../data/content';
 import { ContentRegistry } from '../../engine/data/ContentRegistry';
 import { BattleSession } from '../../game/BattleSession';
-import { createHero, heroStats, grantExperience, validateHero, rollLoot, applyHero } from '../../engine/rpg/Character';
+import { createHero, heroStats, grantExperience, validateHero, rollLoot, applyHero, addItem } from '../../engine/rpg/Character';
 import { applyStatus, effectiveEntity, tickStatuses } from '../../engine/rpg/StatusEffects';
 import { createGameRandom } from '../../engine/Random';
 import type { GameEvent } from '../../engine/events';
@@ -10,9 +10,9 @@ const content = loadGameContent();
 afterEach(() => vi.useRealTimers());
 describe('RPG rules', () => {
   it('derives independent stats from class, level, weapon and armor', () => {
-    const hero = createHero(content); hero.inventory['iron-blade'] = 1; hero.inventory['moss-mail'] = 1;
-    hero.equipment = { weapon: 'iron-blade', armor: 'moss-mail' }; hero.level = 3;
-    expect(heroStats(hero, content)).toMatchObject({ maxHealth: 52, maxMana: 18, combatant: { attack: 17, defense: 8 } });
+    const hero = createHero(content); addItem(hero, 'iron-blade', 1, content); hero.inventory['moss-mail'] = 1;
+    hero.equipment = { weapon: 'weapon-1', armor: 'moss-mail' }; hero.level = 3;
+    expect(heroStats(hero, content)).toMatchObject({ maxHealth: 118, maxMana: 98, maxStamina: 113, combatant: { attack: 38, defense: 9 } });
     expect(content.data.classes[0].combatant.attack).toBe(9);
     const entity = content.spawn('warden', 'player', 'player', 0, 0); applyHero(entity, hero, content);
     entity.inventory!.potion = 900; expect(hero.inventory.potion).toBe(2);
@@ -20,7 +20,7 @@ describe('RPG rules', () => {
   it('crosses multiple level thresholds and restores resources on level up', () => {
     const hero = createHero(content); hero.health = 1; hero.mana = 0;
     grantExperience(hero, 65, content);
-    expect(hero).toMatchObject({ level: 3, experience: 5, health: 52, mana: 18 });
+    expect(hero).toMatchObject({ level: 3, experience: 5, health: 118, mana: 98, stamina: 113, wounds: 0, fullness: 100 });
     grantExperience(hero, 100000, content); expect(hero.level).toBe(99); expect(hero.experience).toBe(0);
   });
   it('rejects unknown inventory, invalid equipment, out-of-range resources and XP', () => {
@@ -70,7 +70,7 @@ describe('RPG rules', () => {
     const chance = vi.spyOn(battle.engine.random, 'chance');
     battle.dispatch({ type: 'SELECT_ACTION', action: 'item', itemId: 'potion' });
     battle.dispatch({ type: 'SELECT_TARGET', targetId: 'player' }); battle.dispatch({ type: 'CONFIRM_ACTION' });
-    expect(player.health!.current).toBe(30); expect(player.inventory!.potion).toBe(1); expect(chance).not.toHaveBeenCalled();
+    expect(player.health!.current).toBe(51); expect(player.inventory!.potion).toBe(1); expect(chance).not.toHaveBeenCalled();
     expect(() => battle.dispatch({ type: 'USE_ITEM', sourceId: 'player', targetId: 'player', itemId: 'potion' })).toThrow(); battle.dispose();
   });
   it('rejects missing consumables before changing turn, health or RNG', () => {

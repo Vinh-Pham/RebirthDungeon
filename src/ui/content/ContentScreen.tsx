@@ -1,8 +1,10 @@
 import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { calculateCharacterStats } from '../../engine/rpg/Stats';
 import { loadGameContent } from '../../data/content';
 
-const content = loadGameContent().data;
+const registry = loadGameContent();
+const content = registry.data;
 const targetNames = { self: 'Self', ally: 'One ally', enemy: 'One enemy', allEnemies: 'All enemies' };
 
 export default function ContentScreen() {
@@ -13,19 +15,20 @@ export default function ContentScreen() {
         <Text style={styles.title}>Dungeon codex</Text>
         <Text style={styles.intro}>A warden’s notes on the creatures and powers of the deep.</Text>
         <Text style={styles.section}>Wardens</Text>
-        {content.classes.map((entry) => <View key={entry.id} style={styles.row}>
+        {content.classes.map((entry) => { const stats = calculateCharacterStats({ classId: entry.id, level: 1, growthTalent: 'warrior', effects: [] }, registry); return <View key={entry.id} style={styles.row}>
           <Text style={styles.name}>{entry.name}</Text>
-          <Text style={styles.detail}>{entry.maxHealth} HP · {entry.maxMana} mana · {entry.combatant.attack} attack</Text>
-        </View>)}
+          <Text style={styles.detail}>{stats.maxHealth} HP · {stats.maxMana} mana · {stats.maxStamina} stamina before talent resource bonuses. Talent and known skills determine your attributes; review Stats for your character.</Text>
+        </View>; })}
         <Text style={styles.section}>Creatures</Text>
         {content.enemies.map((entry) => <View key={entry.id} style={styles.row}>
           <Text style={styles.name}>{entry.name}</Text>
-          <Text style={styles.detail}>{entry.maxHealth} HP · {entry.combatant.attack} attack · {entry.combatant.defense} defense</Text>
+          <Text style={styles.detail}>{entry.maxHealth} HP · {entry.combatant.minDamage ?? entry.combatant.attack}–{entry.combatant.maxDamage ?? entry.combatant.attack} damage · {entry.combatant.defense} defense</Text>
         </View>)}
         <Text style={styles.section}>Skills</Text>
         {content.skills.map((entry) => <View key={entry.id} style={styles.row}>
           <Text style={styles.name}>{entry.name}</Text>
           <Text style={styles.detail}>{entry.description ?? `${entry.manaCost} mana · ${targetNames[entry.target]} · ${entry.power} ${entry.effect === 'heal' ? 'healing' : 'power'}`}</Text>
+          {entry.minPower !== undefined ? <Text style={styles.detail}>{entry.minPower}–{entry.maxPower} base {entry.effect === 'heal' ? 'healing' : 'damage'} · {entry.manaCost} MP{entry.staminaCost ? ` · ${entry.staminaCost} SP when self-targeted` : ''}</Text> : null}
           {entry.reference && <Text style={styles.detail}>Rank {entry.rank} · {entry.category} · {entry.kind}{entry.battleUsable === false ? ' · Unavailable in battle' : ''}</Text>}
         </View>)}
         <Text style={styles.section}>Relics & remedies</Text>
@@ -34,7 +37,7 @@ export default function ContentScreen() {
         </View>)}
         <Text style={styles.section}>Afflictions</Text>
         {content.statusEffects.map((entry) => <View key={entry.id} style={styles.row}>
-          <Text style={styles.name}>{entry.name}</Text><Text style={styles.detail}>{entry.duration} turns · {entry.power} {entry.effect} each turn</Text>
+          <Text style={styles.name}>{entry.name}</Text><Text style={styles.detail}>{entry.duration} turns · {entry.effect === 'stat' ? `${entry.modifier >= 0 ? '+' : ''}${entry.modifier} ${entry.stat}` : `${entry.power} ${entry.effect} each turn`}</Text>
         </View>)}
       </View>
     </ScrollView>

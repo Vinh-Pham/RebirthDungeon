@@ -414,6 +414,13 @@
           "Giant: 60 - 120 Fire Damage"
         ]
       }
+    },
+    "minPower": 7,
+    "maxPower": 25,
+    "minMagicModifier": 0.106,
+    "maxMagicModifier": 0.163,
+    "statBonuses": {
+      "intelligence": 1
     }
   },
   {
@@ -881,6 +888,13 @@
           "Icebolt Damage: 70 - 80"
         ]
       }
+    },
+    "minPower": 10,
+    "maxPower": 20,
+    "minMagicModifier": 0.105,
+    "maxMagicModifier": 0.125,
+    "statBonuses": {
+      "intelligence": 1
     }
   },
   {
@@ -1328,6 +1342,13 @@
           "Lightning Bolt Damage: 40 - 150"
         ]
       }
+    },
+    "minPower": 1,
+    "maxPower": 40,
+    "minMagicModifier": 0.115,
+    "maxMagicModifier": 0.22,
+    "statBonuses": {
+      "intelligence": 1
     }
   },
   {
@@ -1775,7 +1796,15 @@
           "Heal the target for 35-45 HP per charge."
         ]
       }
-    }
+    },
+    "minPower": 6,
+    "maxPower": 10,
+    "minMagicModifier": 0.03,
+    "maxMagicModifier": 0.04,
+    "statBonuses": {
+      "intelligence": 1
+    },
+    "staminaCost": 6
   },
   {
     "id": "arrow-revolver",
@@ -2212,7 +2241,8 @@
         "2": [],
         "1": []
       }
-    }
+    },
+    "staminaCost": 5
   },
   {
     "id": "blacksmithing",
@@ -4374,7 +4404,8 @@
           "Giant: Counter 200% opponent's + 200% user's dmg., Crit. +10%"
         ]
       }
-    }
+    },
+    "staminaCost": 2
   },
   {
     "id": "critical-hit",
@@ -5018,7 +5049,8 @@
         "2": [],
         "1": []
       }
-    }
+    },
+    "staminaCost": 1
   },
   {
     "id": "elf-ranged-attack",
@@ -5385,7 +5417,8 @@
           "Total Ranged Max Damage +15, Total Ranged Min Damage +10, Aim Speed 200%"
         ]
       }
-    }
+    },
+    "staminaCost": 1
   },
   {
     "id": "first-aid",
@@ -6626,7 +6659,8 @@
           "200-300 Ice damage, 5 charges maximum, Charging time decreases"
         ]
       }
-    }
+    },
+    "staminaCost": 2
   },
   {
     "id": "handicraft",
@@ -7914,7 +7948,8 @@
           "Ice Spear Damage: 160 - 240 Linear AoE increases; Explosion Radius increases"
         ]
       }
-    }
+    },
+    "staminaCost": 2
   },
   {
     "id": "light-armor-mastery",
@@ -9015,7 +9050,8 @@
           "Damage 530% Splash damage 20%"
         ]
       }
-    }
+    },
+    "staminaCost": 4
   },
   {
     "id": "mana-regeneration",
@@ -9342,7 +9378,8 @@
           "Recovers up to 50% of Maximum Mana, Cooldown time of 3 Minutes"
         ]
       }
-    }
+    },
+    "staminaCost": 2
   },
   {
     "id": "mana-shield",
@@ -9649,7 +9686,8 @@
           "None"
         ]
       }
-    }
+    },
+    "staminaCost": 2
   },
   {
     "id": "meteor-strike",
@@ -10136,7 +10174,8 @@
           "Physical Damage 5200~7800"
         ]
       }
-    }
+    },
+    "staminaCost": 2
   },
   {
     "id": "potion-making",
@@ -10710,7 +10749,8 @@
           "Total Ranged Max Damage +25, Total Ranged Min Damage +10, Aim Speed 300%"
         ]
       }
-    }
+    },
+    "staminaCost": 1
   },
   {
     "id": "shockwave",
@@ -11097,7 +11137,8 @@
           "Range (Radius) 8M"
         ]
       }
-    }
+    },
+    "staminaCost": 2
   },
   {
     "id": "smash",
@@ -11674,7 +11715,8 @@
           "Giant: Damage 600%, Splash Damage 20%"
         ]
       }
-    }
+    },
+    "staminaCost": 4
   },
   {
     "id": "sword-mastery",
@@ -12408,6 +12450,7 @@
           "Thunder Damage: 106 - 400; Lightning damage 15 - 30"
         ]
       }
-    }
+    },
+    "staminaCost": 2
   }
 ]

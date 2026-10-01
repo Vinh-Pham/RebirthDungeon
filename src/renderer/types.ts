@@ -10,4 +10,6 @@ export interface RenderEntity {
   readonly mana: number;
   readonly maxMana: number;
   readonly dead: boolean;
+  readonly stamina?: number; readonly maxStamina?: number; readonly wounds?: number; readonly fullness?: number;
+  readonly weapon?: { readonly name: string; readonly durability: number; readonly maxDurability: number };
 }

@@ -3,14 +3,17 @@ import { createGameEngine } from '../engine/GameEngine';
 import type { ContentRegistry } from '../engine/data/ContentRegistry';
 import type { GameCommand } from '../engine/commands';
 import type { GameEvent } from '../engine/events';
-import { addItem, createHero, consumeItem, grantExperience, heroStats, rollLoot, applyHero } from '../engine/rpg/Character';
+import { addItem, createHero, consumeItem, grantExperience, heroStats, rollLoot, applyHero, itemCount, ownedDefinition, removeOwnedItem, repairPrice, restoreHero, tickHero } from '../engine/rpg/Character';
+import type { GrowthTalent } from '../engine/rpg/Stats';
+import { consumableRecovery } from '../engine/rpg/Consumables';
+import { createGameRandom } from '../engine/Random';
 import { distance, findPath, isWalkable } from '../engine/world/TileMap';
 import type { WorldMap } from '../data/schemas/world';
 import { validateCampaign, type CampaignState } from '../persistence/SaveSchema';
 import { BattleSession } from './BattleSession';
 import { bossCleared, createDungeonRun, dungeonObjectClaimed, freezeDungeonBlueprint, generateDungeon, inRoom, projectDungeonMap, remainingEnemies, validateDungeon } from '../engine/dungeon/Dungeon';
 
-export interface JourneyView { state: CampaignState; map: WorldMap; message: string; revision: number }
+export interface JourneyView { state: CampaignState; map: WorldMap; message: string; revision: number; activeService?: string }
 /** Owns exploration state. React sends commands and reads detached projections. */
 export class JourneySession {
   readonly engine;
@@ -18,16 +21,17 @@ export class JourneySession {
   private snapshot!: JourneyView;
   private listeners = new Set<() => void>();
   private revision = 0;
-  private message = 'Speak to the keeper, collect supplies, then travel east.';
+  private message = 'Collect supplies, visit the town shops, and offer an item at the goddess altar. The eastern passage leads to the training halls.';
   private disposed = false;
   private dispatching = false;
   private dungeonMap?: WorldMap;
-  constructor(readonly content: ContentRegistry, restored?: CampaignState, seed = 12345, readonly characterName?: string) {
+  private activeService?: string;
+  constructor(readonly content: ContentRegistry, restored?: CampaignState, seed = 12345, readonly characterName?: string, growthTalent: GrowthTalent = 'warrior') {
     this.engine = createGameEngine({ seed: restored?.seed ?? seed });
     const first = content.data.worlds[0];
     if (!first) throw new Error('No exploration map defined');
     this.state = restored ? validateCampaign(restored, content) : { seed, randomState: this.engine.random.snapshot(),
-      hero: createHero(content), worldId: first.id, position: { ...first.entry }, opened: [], cleared: [], encounterCount: 0,
+      hero: createHero(content, growthTalent), worldId: first.id, position: { ...first.entry }, opened: [], cleared: [], encounterCount: 0,
       audio: { music: 0.3, sfx: 0.7, enabled: false } };
     if (restored) this.message = 'Your journey has been restored.';
     if (this.state.dungeon) freezeDungeonBlueprint(this.state.dungeon.blueprint);
@@ -38,8 +42,10 @@ export class JourneySession {
       if (entityId !== 'player' || !Number.isInteger(dx) || !Number.isInteger(dy) || Math.abs(dx) + Math.abs(dy) !== 1) throw new Error('Move one tile at a time');
       const position = { x: this.state.position.x + dx, y: this.state.position.y + dy };
       if (!isWalkable(this.map, position)) throw new Error('The way is blocked');
+      this.activeService = undefined;
       this.state.position = position; this.engine.getEntity('player')!.position = { ...position };
       this.message = '';
+      tickHero(this.state.hero, content);
       const run = this.state.dungeon;
       const boss = run?.blueprint.encounters.find((entry) => entry.kind === 'boss');
       const bossRoom = run?.blueprint.rooms.find((room) => room.kind === 'boss');
@@ -49,6 +55,11 @@ export class JourneySession {
       if (encounter) {
         this.beginEncounter(encounter.id);
       } else this.commit({ type: 'WORLD_MOVED', entityId: 'player', ...position });
+    });
+    this.engine.commands.register('REST', ({ entityId }) => {
+      this.requireExploring(); if (entityId !== 'player' || this.activeService) throw new Error('Rest on the town or dungeon map');
+      tickHero(this.state.hero, content, true); this.message = 'You rest and recover stamina. Wounds require healer treatment.';
+      this.commit({ type: 'RESTED', entityId });
     });
     this.engine.commands.register('TRAVEL_TO', ({ x, y }) => {
       this.requireExploring();
@@ -66,25 +77,22 @@ export class JourneySession {
       if (!visible || distance(visible, this.state.position) > 1) throw new Error('Move next to this object first');
       const run = this.state.dungeon;
       const obj = run?.blueprint.world.objects.find((entry) => entry.id === objectId) ?? visible;
+      this.activeService = undefined;
       switch (obj.kind) {
         case 'npc': this.message = obj.dialogue; break;
         case 'chest':
           if (this.isClaimed(obj.id)) throw new Error('This chest is empty');
-          addItem(this.state.hero, obj.itemId!, obj.quantity);
+          addItem(this.state.hero, obj.itemId!, obj.quantity, content);
           if (run) run.opened.push(obj.id); else this.state.opened.push(this.key(obj.id));
           this.message = `Found ${this.content.item(obj.itemId!).name} ×${obj.quantity}.`; break;
-        case 'dungeonEntrance': {
-          const definition = content.data.dungeons.find((definition) => definition.id === obj.dungeonId);
-          if (run || !definition) throw new Error('This dungeon is unavailable');
-          const blueprint = generateDungeon(definition, this.engine.random.int(-2147483648, 2147483647), this.state.hero.classId);
-          const dungeon = createDungeonRun(blueprint, { worldId: this.state.worldId, position: { ...this.state.position } });
-          validateDungeon(dungeon, content);
-          freezeDungeonBlueprint(blueprint);
-          this.state.dungeon = dungeon; this.state.worldId = blueprint.world.id; this.state.position = { ...blueprint.world.entry };
-          this.dungeonMap = undefined; this.spawnWorld();
-          this.message = 'The goddess watches over your arrival. Her statue can return you to the refuge.';
-          this.commit({ type: 'MAP_CHANGED', mapId: this.map.id }); return;
-        }
+        case 'merchant':
+        case 'healer':
+        case 'altar':
+        case 'dungeonEntrance':
+          if (run) throw new Error('Town services are unavailable inside a dungeon');
+          this.activeService = obj.id;
+          this.message = obj.kind === 'altar' || obj.kind === 'dungeonEntrance'
+            ? 'Offer one unequipped item to enter the moss depths. The offering is consumed.' : `Welcome to ${obj.name}.`; break;
         case 'statue': this.leaveDungeon(); return;
         case 'mimic':
           if (!run || this.isClaimed(obj.id)) throw new Error('This chest is empty');
@@ -120,16 +128,16 @@ export class JourneySession {
         case 'finalChest':
           if (!run || run.selectedChest) throw new Error('You may open only one final chest');
           if (!bossCleared(run) || run.treasureKey.status !== 'held') throw new Error('Pick up the boss’s treasure chest key first');
-          addItem(this.state.hero, obj.itemId!, obj.quantity);
+          addItem(this.state.hero, obj.itemId!, obj.quantity, content);
           run.opened.push(obj.id); run.selectedChest = obj.id; run.treasureKey = { status: 'spent' };
           this.message = `Found ${this.content.item(obj.itemId!).name} ×${obj.quantity}. The other four chests are sealed. You can now return to the refuge.`; break;
         case 'rest': {
-          const stats = heroStats(this.state.hero, content); this.state.hero.health = stats.maxHealth; this.state.hero.mana = stats.maxMana;
+          restoreHero(this.state.hero, content);
           this.message = 'The ember restores your health and mana.'; break;
         }
         case 'portal': {
           const destination = content.data.worlds.find((map) => map.id === obj.destination)!;
-          this.state.worldId = destination.id; this.state.position = { ...destination.entry }; this.spawnWorld();
+          this.state.worldId = destination.id; this.state.position = { ...(obj.destinationPosition ?? destination.entry) }; this.spawnWorld();
           this.message = `Entered ${destination.name}.`; this.commit({ type: 'MAP_CHANGED', mapId: destination.id }); return;
         }
         case 'encounter': throw new Error('Step onto the guardian tile to begin the encounter');
@@ -145,9 +153,15 @@ export class JourneySession {
     });
     this.engine.commands.register('EQUIP_ITEM', ({ itemId }) => {
       this.requireExploring(); const item = content.item(itemId);
-      if (item.kind === 'consumable' || !this.state.hero.inventory[itemId]) throw new Error('This item cannot be equipped');
+      if (item.kind !== 'armor' || !this.state.hero.inventory[itemId]) throw new Error('This item cannot be equipped');
       this.state.hero.equipment[item.kind] = itemId; this.message = `Equipped ${item.name}.`;
       this.commit({ type: 'EQUIPMENT_CHANGED', itemId });
+    });
+    this.engine.commands.register('EQUIP_WEAPON', ({ weaponId }) => {
+      this.requireExploring(); const weapon = this.state.hero.weapons[weaponId];
+      if (!weapon) throw new Error('This weapon is not in your pack');
+      this.state.hero.equipment.weapon = weaponId; this.message = `Equipped ${content.item(weapon.itemId).name}.`;
+      this.commit({ type: 'EQUIPMENT_CHANGED', itemId: weapon.itemId });
     });
     this.engine.commands.register('UNEQUIP_ITEM', ({ slot }) => {
       this.requireExploring(); delete this.state.hero.equipment[slot]; this.commit({ type: 'EQUIPMENT_CHANGED' });
@@ -155,10 +169,13 @@ export class JourneySession {
     this.engine.commands.register('USE_ITEM', ({ sourceId, targetId, itemId }) => {
       this.requireExploring(); const item = content.item(itemId);
       if (sourceId !== 'player' || targetId !== 'player' || item.kind !== 'consumable') throw new Error('Invalid item target');
+      const recovery = consumableRecovery(item, this.engine.getEntity('player')!);
       consumeItem(this.state.hero.inventory, itemId);
-      this.state.hero.health = Math.min(heroStats(this.state.hero, content).maxHealth, this.state.hero.health + item.power);
+      this.state.hero[recovery.resource] += recovery.amount;
+      this.state.hero.stamina += recovery.staminaBonus; this.state.hero.fullness = recovery.fullnessAfter;
       this.message = `Used ${item.name}.`; this.commit({ type: 'ITEM_USED', sourceId, itemId });
     });
+    this.registerServices();
     this.refresh();
   }
   get map() { return this.state.dungeon ? this.dungeonMap ??= projectDungeonMap(this.state.dungeon) : this.content.data.worlds.find((map) => map.id === this.state.worldId)!; }
@@ -181,13 +198,18 @@ export class JourneySession {
     const hero = cloneData(this.state.hero);
     const entity = battle.engine.world.entities.find((entity) => entity.player)!;
     hero.health = Math.max(1, entity.health!.current); hero.mana = entity.mana!.current;
+    hero.stamina = entity.stamina!.current; hero.wounds = entity.wounds!; hero.fullness = entity.fullness!;
     hero.inventory = { ...entity.inventory! };
+    if (entity.weapon) hero.weapons[entity.weapon.id] = { itemId: entity.weapon.itemId, durability: entity.weapon.durability };
     if (battle.combat.result === 'victory') {
       let gold = 0; let experience = 0;
       const drops = battle.map.spawns.filter((spawn) => spawn.kind === 'enemy').map((spawn) => rollLoot(spawn.definitionId, this.content, this.engine.random));
       for (const drop of drops) {
         gold += drop.gold; experience += drop.experience;
-        for (const item of drop.items) hero.inventory[item.itemId] = Math.min(999, (hero.inventory[item.itemId] ?? 0) + item.quantity);
+        for (const item of drop.items) {
+          const quantity = Math.min(999 - itemCount(hero, item.itemId), item.quantity);
+          if (quantity) addItem(hero, item.itemId, quantity, this.content);
+        }
       }
       hero.gold = Math.min(1000000, hero.gold + gold); grantExperience(hero, experience, this.content);
       const objectId = this.state.pending.objectId;
@@ -211,7 +233,7 @@ export class JourneySession {
       this.commit({ type: 'LOOT_RECEIVED', gold, experience });
     } else {
       hero.gold = Math.floor(hero.gold / 2);
-      const stats = heroStats(hero, this.content); hero.health = stats.maxHealth; hero.mana = stats.maxMana;
+      restoreHero(hero, this.content);
       this.state.hero = hero; this.state.pending = undefined; this.state.dungeon = undefined; this.dungeonMap = undefined; this.state.worldId = this.content.data.worlds[0].id;
       this.state.position = { ...this.map.entry }; this.spawnWorld();
       this.message = 'Reborn at the refuge. Half your gold was lost.';
@@ -238,6 +260,71 @@ export class JourneySession {
     this.commit({ type: 'MAP_CHANGED', mapId: this.map.id });
   }
   private requireExploring() { if (this.state.pending) throw new Error('Finish the encounter before exploring'); }
+  private requireService(objectId: string, kinds: readonly WorldMap['objects'][number]['kind'][]) {
+    this.requireExploring();
+    const object = this.map.objects.find((entry) => entry.id === objectId);
+    if (this.state.dungeon || this.activeService !== objectId || !object || !kinds.includes(object.kind) || distance(object, this.state.position) > 1) throw new Error('Approach and speak to this service first');
+    return object;
+  }
+  private registerServices() {
+    const content = this.content;
+    const changed = (objectId: string, message: string) => { this.message = message; this.commit({ type: 'WORLD_INTERACTED', objectId, message }); };
+    this.engine.commands.register('CLOSE_SERVICE', () => { this.activeService = undefined; this.refresh(); });
+    this.engine.commands.register('BUY_ITEM', ({ objectId, itemId, quantity }) => {
+      const object = this.requireService(objectId, ['merchant']);
+      const shop = content.data.shops.find((shop) => shop.id === object.shopId)!;
+      if (!shop.items.includes(itemId)) throw new Error('This merchant does not sell that item');
+      const item = content.item(itemId); const total = item.price * quantity;
+      if (this.state.hero.gold < total) throw new Error('Not enough gold');
+      const hero = cloneData(this.state.hero); addItem(hero, itemId, quantity, content); hero.gold -= total;
+      this.state.hero = hero; changed(objectId, `Bought ${item.name} ×${quantity} for ${total} gold.`);
+    });
+    this.engine.commands.register('SELL_ITEM', ({ objectId, item: reference, quantity }) => {
+      const object = this.requireService(objectId, ['merchant']);
+      if (!content.data.shops.find((shop) => shop.id === object.shopId)!.buysItems) throw new Error('This merchant does not buy items');
+      const item = ownedDefinition(this.state.hero, reference, content); const total = Math.floor(item.price / 2) * quantity;
+      if (this.state.hero.gold + total > 1000000) throw new Error('Your gold purse is full');
+      const hero = cloneData(this.state.hero); removeOwnedItem(hero, reference, quantity); hero.gold += total;
+      this.state.hero = hero; changed(objectId, `Sold ${item.name} ×${quantity} for ${total} gold.`);
+    });
+    this.engine.commands.register('REPAIR_WEAPON', ({ objectId, weaponId }) => {
+      const object = this.requireService(objectId, ['merchant']);
+      if (content.data.shops.find((shop) => shop.id === object.shopId)!.kind !== 'blacksmith') throw new Error('Visit the blacksmith for repairs');
+      const weapon = this.state.hero.weapons[weaponId];
+      if (!weapon) throw new Error('This weapon is not in your pack');
+      const item = content.item(weapon.itemId); const cost = repairPrice(weapon, content);
+      if (weapon.durability === item.maxDurability) throw new Error('This weapon needs no repairs');
+      if (this.state.hero.gold < cost) throw new Error('Not enough gold');
+      weapon.durability = item.maxDurability!; this.state.hero.gold -= cost;
+      changed(objectId, `Repaired ${item.name} for ${cost} gold.`);
+    });
+    this.engine.commands.register('HEAL', ({ objectId }) => {
+      const object = this.requireService(objectId, ['healer']); const hero = this.state.hero;
+      const stats = heroStats(hero, content);
+      if (hero.health === stats.maxHealth && hero.mana === stats.maxMana && hero.stamina === stats.maxStamina && hero.wounds === 0 && hero.fullness === 100) throw new Error('You are already fully recovered');
+      if (hero.gold < object.healingCost!) throw new Error('Not enough gold');
+      hero.gold -= object.healingCost!; restoreHero(hero, content);
+      changed(objectId, `The healer restores your resources, wounds and fullness for ${object.healingCost} gold.`);
+    });
+    this.engine.commands.register('OFFER_ITEM', ({ objectId, item: reference }) => {
+      const object = this.requireService(objectId, ['altar', 'dungeonEntrance']);
+      const definition = content.data.dungeons.find((entry) => entry.id === object.dungeonId);
+      if (!definition) throw new Error('This dungeon is unavailable');
+      const hero = cloneData(this.state.hero); const item = ownedDefinition(hero, reference, content);
+      removeOwnedItem(hero, reference, 1);
+      // Stage RNG and the entire run before spending the offering or changing the live campaign.
+      const random = createGameRandom(this.state.seed); random.restore(this.engine.random.snapshot());
+      const blueprint = generateDungeon(definition, random.int(-2147483648, 2147483647), hero.classId);
+      const dungeon = createDungeonRun(blueprint, { worldId: this.state.worldId, position: { ...this.state.position } });
+      validateDungeon(dungeon, content);
+      const staged = validateCampaign({ ...this.state, hero, dungeon, randomState: random.snapshot(), worldId: blueprint.world.id, position: { ...blueprint.world.entry } }, content);
+      freezeDungeonBlueprint(staged.dungeon!.blueprint);
+      this.state = staged; this.engine.random.restore(staged.randomState); this.activeService = undefined;
+      this.dungeonMap = undefined; this.spawnWorld();
+      this.message = `The goddess accepts ${item.name}. Her sanctuary statue can return you to town.`;
+      this.commit({ type: 'MAP_CHANGED', mapId: this.map.id });
+    });
+  }
   private spawnWorld() {
     this.engine.world.clear();
     const hero = this.content.spawn(this.state.hero.classId, 'player', 'player', this.state.position.x, this.state.position.y);
@@ -249,7 +336,7 @@ export class JourneySession {
   private refresh() {
     const player = this.engine.getEntity('player');
     if (player) applyHero(player, this.state.hero, this.content, this.state.dungeon?.effects);
-    this.snapshot = { state: cloneData(this.state), map: this.map, message: this.message, revision: ++this.revision };
+    this.snapshot = { state: cloneData(this.state), map: this.map, message: this.message, revision: ++this.revision, activeService: this.activeService };
     this.listeners.forEach((listener) => listener());
   }
 }

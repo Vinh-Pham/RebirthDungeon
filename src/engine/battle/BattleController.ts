@@ -5,6 +5,7 @@ import type { Unsubscribe } from '../EventBus';
 import type { ContentRegistry } from '../data/ContentRegistry';
 import type { CombatSystem } from '../ecs/systems/CombatSystem';
 import { validateCombatEntity } from './AttackResolver';
+import { staminaCost } from '../rpg/Resources';
 import { createBattleMachine, type BattleAction } from './BattleMachine';
 
 export type BattlePhase = 'initializing' | 'selectingAction' | 'selectingTarget' | 'executing' | 'enemyTurn' | 'victory' | 'defeat';
@@ -53,8 +54,10 @@ export class BattleController implements GameSystem {
           if (skill.battleUsable === false || !source.skills?.includes(skill.id) || !source.mana || source.mana.current < skill.manaCost) {
             throw new Error('Skill is unavailable or mana is insufficient');
           }
+          const cost = skill.effect === 'heal' && skill.target === 'ally' ? 0 : staminaCost(source, skill.staminaCost);
+          if (source.stamina && source.stamina.current < cost) throw new Error('Insufficient stamina');
         }
-        if (action === 'item' && (this.content.item(itemId!).kind !== 'consumable' || !source.inventory?.[itemId!])) throw new Error('Item is unavailable');
+        if (action === 'item' && (this.content.item(itemId!).kind !== 'consumable' || !this.content.item(itemId!).battleUsable || !source.inventory?.[itemId!])) throw new Error('Item is unavailable');
         this.actor.send({ type: 'SELECT_ACTION', action: { action, skillId, itemId } });
       }));
       cleanups.push(engine.commands.register('SELECT_TARGET', ({ targetId }) => {
@@ -95,7 +98,7 @@ export class BattleController implements GameSystem {
     const source = this.engine.getEntity(this.combat.currentTurn()!);
     if (!source) return [];
     const action = this.context.action;
-    const mode = action.action === 'item' ? 'self' : action.action === 'skill' ? this.content.skill(action.skillId!).target : 'enemy';
+    const mode = ['item', 'rest'].includes(action.action) ? 'self' : action.action === 'skill' ? this.content.skill(action.skillId!).target : 'enemy';
     return this.combat.turnOrder.filter((id) => {
       const target = this.engine!.getEntity(id);
       if (!target?.health?.current || target.dead) return false;
@@ -117,7 +120,7 @@ export class BattleController implements GameSystem {
   private resolve(action: BattleAction, targetId: string) {
     const sourceId = this.combat.currentTurn()!;
     try {
-      this.engine!.dispatch(action.action === 'attack'
+      this.engine!.dispatch(action.action === 'rest' ? { type: 'REST', entityId: sourceId } : action.action === 'attack'
         ? { type: 'ATTACK', attackerId: sourceId, targetId }
         : action.action === 'skill' ? { type: 'USE_SKILL', sourceId, targetId, skillId: action.skillId! }
         : { type: 'USE_ITEM', sourceId, targetId, itemId: action.itemId! });

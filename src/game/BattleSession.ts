@@ -1,4 +1,6 @@
-import { applyHero, type Hero } from '../engine/rpg/Character';
+import { applyHero, createHero, type Hero } from '../engine/rpg/Character';
+import { calculateCharacterStats, type CharacterStats } from '../engine/rpg/Stats';
+import { effectiveEntity } from '../engine/rpg/StatusEffects';
 import { createGameEngine } from '../engine/GameEngine';
 import { CombatSystem } from '../engine/ecs/systems/CombatSystem';
 import { BattleController, type BattlePhase } from '../engine/battle/BattleController';
@@ -12,11 +14,17 @@ import { PresentationQueue } from '../renderer/animations/PresentationQueue';
 import type { RenderEntity } from '../renderer/types';
 import { createUIStore } from '../state/uiStore';
 
+export interface CharacterReview {
+  stats: CharacterStats; health: number; mana: number; stamina: number; wounds: number; fullness: number;
+  statuses: { name: string; turns: number; stacks: number }[];
+  weapon?: { name: string; durability: number; maxDurability: number };
+}
 export interface BattleView {
+  character?: CharacterReview;
   phase: BattlePhase;
   turnId?: string;
   selectedTargetId?: string;
-  selectedAction?: { action: 'attack' | 'skill' | 'item'; skillId?: string; itemId?: string };
+  selectedAction?: { action: 'attack' | 'skill' | 'item' | 'rest'; skillId?: string; itemId?: string };
   entities: readonly RenderEntity[];
   targets: readonly string[];
   log: readonly string[];
@@ -44,7 +52,7 @@ export class BattleSession {
     this.engine = createGameEngine({ seed });
     for (const spawn of map.spawns) this.engine.spawn(content.spawn(spawn.kind === 'player' && hero ? hero.classId : spawn.definitionId, spawn.entityId, spawn.kind,
       spawn.x * map.tileSize, spawn.y * map.tileSize));
-    if (hero) for (const entity of this.engine.world.entities) if (entity.player) applyHero(entity, hero, content, effects);
+    for (const entity of this.engine.world.entities) if (entity.player) applyHero(entity, hero ?? createHero(content), content, effects);
     if (characterName) for (const entity of this.engine.world.entities) if (entity.player) entity.name = characterName;
     this.combat = new CombatSystem(map.spawns.map((spawn) => spawn.entityId), { content,
       canAct: () => this.battle.isResolving });
@@ -84,10 +92,17 @@ export class BattleSession {
     return this.engine.world.entities.filter((entity) => entity.sprite && entity.position && entity.health)
       .map((entity) => ({ id: entity.id, name: entity.name ?? entity.id, side: entity.player ? 'player' : 'enemy',
         x: entity.position!.x, y: entity.position!.y, sprite: { ...entity.sprite!, idleFrames: entity.sprite!.idleFrames ? [...entity.sprite!.idleFrames] : undefined }, health: entity.health!.current,
-        maxHealth: entity.health!.max, mana: entity.mana?.current ?? 0, maxMana: entity.mana?.max ?? 0, dead: !!entity.dead }));
+        maxHealth: entity.health!.max, mana: entity.mana?.current ?? 0, maxMana: entity.mana?.max ?? 0, dead: !!entity.dead,
+        stamina: entity.stamina?.current, maxStamina: entity.stamina?.max, wounds: entity.wounds, fullness: entity.fullness,
+        weapon: entity.weapon ? { name: this.content.item(entity.weapon.itemId).name, durability: entity.weapon.durability, maxDurability: this.content.item(entity.weapon.itemId).maxDurability! } : undefined }));
   }
   private refresh() {
-    this.snapshot = { phase: this.battle.phase, turnId: this.combat.currentTurn(),
+    const player = this.engine.world.entities.find((entity) => entity.player);
+    const stats = player?.statSource ? calculateCharacterStats(player.statSource, this.content) : undefined;
+    const character: CharacterReview | undefined = player && stats ? { stats: { ...stats, combatant: { ...effectiveEntity(player, this.content).combatant! } }, health: player.health!.current, mana: player.mana!.current, stamina: player.stamina!.current, wounds: player.wounds!, fullness: player.fullness!,
+      statuses: (player.statuses ?? []).map((status) => ({ name: this.content.status(status.id).name, turns: status.remainingTurns, stacks: status.stacks })),
+      weapon: player.weapon ? { name: this.content.item(player.weapon.itemId).name, durability: player.weapon.durability, maxDurability: this.content.item(player.weapon.itemId).maxDurability! } : undefined } : undefined;
+    this.snapshot = { character, phase: this.battle.phase, turnId: this.combat.currentTurn(),
       selectedAction: this.battle.context.action ? { ...this.battle.context.action } : undefined, selectedTargetId: this.battle.context.targetId,
       entities: this.projectEntities(), targets: this.battle.validTargetIds(), log: [...this.log] };
     this.listeners.forEach((listener) => listener());
@@ -98,6 +113,10 @@ export class BattleSession {
     if (event.type === 'DAMAGE_DEALT') line = `${name(event.targetId)} loses ${event.amount} HP${event.critical ? ' · critical' : ''}.`;
     if (event.type === 'ATTACK_MISSED') line = `${name(event.sourceId)} misses.`;
     if (event.type === 'HEALTH_RESTORED') line = `${name(event.targetId)} recovers ${event.amount} HP.`;
+    if (event.type === 'MANA_RESTORED') line = `${name(event.targetId)} recovers ${event.amount} mana.`;
+    if (event.type === 'WEAPON_WORN') line = event.durability === 0 ? `${this.content.item(event.itemId).name} broke. Its stat bonus is lost until repaired.` : `${this.content.item(event.itemId).name} · ${event.durability} durability.`;
+    if (event.type === 'RESTED') line = `${name(event.entityId)} rests to recover stamina.`;
+    if (event.type === 'WOUNDS_RECEIVED') line = `${name(event.entityId)} suffers ${event.amount} wounds.`;
     if (event.type === 'SKILL_USED') line = `${name(event.sourceId)} casts ${this.content.skill(event.skillId).name}.`;
     if (event.type === 'ITEM_USED') line = `${name(event.sourceId)} uses ${this.content.item(event.itemId).name}.`;
     if (event.type === 'STATUS_APPLIED') line = `${name(event.entityId)} gains ${this.content.status(event.statusId).name}.`;

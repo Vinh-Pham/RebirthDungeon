@@ -7,7 +7,8 @@ import { JourneySession } from '../../game/JourneySession';
 import type { BattleSession } from '../../game/BattleSession';
 import { distance, findPath, isWalkable } from '../../engine/world/TileMap';
 import { encodeSave, parseSave, validateCampaign } from '../../persistence/SaveSchema';
-import { heroStats } from '../../engine/rpg/Character';
+import { addItem, heroStats, itemCount } from '../../engine/rpg/Character';
+import { legacyCampaign } from '../persistence/legacyFixture';
 import { followCamera, screenToWorld, worldToScreen } from '../../renderer/Camera';
 
 const content = loadGameContent(); const definition = content.data.dungeons[0];
@@ -16,6 +17,7 @@ afterEach(() => { battles.splice(0).forEach((battle) => battle.dispose()); sessi
 function create(seed = 7, registry = content) {
   const session = new JourneySession(registry, undefined, seed); sessions.push(session);
   session.dispatch({ type: 'TRAVEL_TO', x: 7, y: 5 }); session.dispatch({ type: 'INTERACT', objectId: 'dungeon-entrance' });
+  session.dispatch({ type: 'OFFER_ITEM', objectId: 'dungeon-entrance', item: { itemId: 'potion' } });
   return session;
 }
 function win(session: JourneySession) {
@@ -105,6 +107,7 @@ describe('dungeon progression', () => {
     expect(session.toSave()).toMatchObject({ worldId: 'refuge', position: initial.dungeon!.returnTo.position, hero: initial.hero });
     expect(session.toSave().dungeon).toBeUndefined();
     session.dispatch({ type: 'INTERACT', objectId: 'dungeon-entrance' });
+    session.dispatch({ type: 'OFFER_ITEM', objectId: 'dungeon-entrance', item: { itemId: 'potion' } });
     expect(session.toSave().dungeon!.blueprint.seed).not.toBe(initial.dungeon!.blueprint.seed);
   });
   it('requires every hidden mimic, manual key pickup, boss victory and a single final reward, including reloads', () => {
@@ -169,7 +172,7 @@ describe('dungeon progression', () => {
     const gate = session.map.objects.find((obj) => obj.id === 'boss-gate')!; travel(session, { x: 50, y: gate.y }); win(session); interact(session, 'treasure-key');
     const chest = session.toSave().dungeon!.blueprint.world.objects.find((obj) => obj.id === 'final-chest-1')!;
     travel(session, { x: chest.x - 1, y: chest.y });
-    const saved = session.toSave(); saved.hero.inventory[chest.itemId!] = 999;
+    const saved = session.toSave(); addItem(saved.hero, chest.itemId!, 999 - itemCount(saved.hero, chest.itemId!), content);
     const restored = new JourneySession(content, saved); sessions.push(restored);
     expect(() => restored.dispatch({ type: 'INTERACT', objectId: chest.id })).toThrow('full'); expect(restored.toSave()).toEqual(saved);
   });
@@ -211,16 +214,16 @@ describe('fountains, checkpoints and camera', () => {
     interact(restored, 'goddess-statue'); expect(restored.toSave().dungeon).toBeUndefined();
     expect(restored.engine.getEntity('player')!.combatant).toEqual(heroStats(restored.toSave().hero, content).combatant);
   });
-  it('combines positive and negative modifiers independently of order and clamps negative totals', () => {
+  it('combines positive and negative modifiers independently of order', () => {
     const session = new JourneySession(content); sessions.push(session); const hero = session.toSave().hero;
     const effects = [{ statusId: 'focus', stacks: 2 }, { statusId: 'weakness', stacks: 10 }];
     expect(heroStats(hero, content, effects)).toEqual(heroStats(hero, content, [...effects].reverse()));
-    expect(heroStats(hero, content, effects).combatant.attack).toBe(0);
-    expect(heroStats(hero, content).combatant.attack).toBe(9);
+    expect(heroStats(hero, content, effects).combatant.attack).toBe(12);
+    expect(heroStats(hero, content).combatant.attack).toBe(34);
   });
   it('migrates version 2 and rejects corrupt progress, effects, key states, references and bypass corridors', () => {
     const legacy = new JourneySession(content); sessions.push(legacy);
-    expect(parseSave({ version: 2, savedAt: new Date().toISOString(), campaign: legacy.toSave() }, content)).toMatchObject({ version: 3, campaign: legacy.toSave() });
+    expect(parseSave({ version: 2, savedAt: new Date().toISOString(), campaign: legacyCampaign(legacy.toSave()) }, content)).toMatchObject({ version: 5, campaign: legacy.toSave() });
     const session = create();
     for (const mutate of [
       (run: NonNullable<ReturnType<JourneySession['toSave']>['dungeon']>) => { run.bossKey.status = 'held'; },

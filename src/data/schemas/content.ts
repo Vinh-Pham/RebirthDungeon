@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { WorldMapSchema, validateWorldReferences } from './world';
 import { DungeonDefinitionSchema } from './dungeon';
+import { ShopSchema } from './town';
 
 const id = z.string().trim().min(1);
 const uint = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
@@ -14,11 +15,16 @@ const SkillReferenceSchema = z.strictObject({
   effects: z.record(SkillRankSchema, z.array(z.string())),
 });
 export const SpriteSchema = z.strictObject({ atlas: id, frame: uint, idleFrames: z.array(uint).min(1).optional() });
+export const AttributeBonusesSchema = z.strictObject({ strength: z.number().min(-1500).max(1500).optional(), intelligence: z.number().min(-1500).max(1500).optional(), dexterity: z.number().min(-1500).max(1500).optional(), will: z.number().min(-1500).max(1500).optional(), luck: z.number().min(-1500).max(1500).optional() });
 export const CombatStatsSchema = z.strictObject({
   attack: uint.max(1000000), defense: uint.max(1000000), speed: uint.max(1000000),
+  minDamage: uint.max(1000000).optional(), maxDamage: uint.max(1000000).optional(), balance: probability.optional(),
+  magicAttack: uint.max(1000000).optional(), magicDefense: uint.max(1000000).optional(), protection: uint.max(1000000).optional(), magicProtection: uint.max(1000000).optional(),
+  magicBalance: probability.optional(), magicCriticalChance: z.number().min(0).max(9.999).optional(), criticalRating: z.number().min(0).max(9.999).optional(),
+  minInjury: probability.optional(), maxInjury: probability.optional(), armorPierce: uint.max(1000000).optional(),
   hitChance: probability.default(0.95), evasion: probability.default(0),
   criticalChance: probability.default(0.1), criticalMultiplier: z.number().min(1).max(10).default(1.5),
-}).refine((stats) => Number.isSafeInteger(Math.floor(Math.max(1, stats.attack) * stats.criticalMultiplier)),
+}).refine((stats) => (stats.minDamage === undefined) === (stats.maxDamage === undefined) && (stats.minDamage ?? 0) <= (stats.maxDamage ?? 0) && (stats.minInjury ?? 0) <= (stats.maxInjury ?? 0), { message: 'Invalid combat range' }).refine((stats) => Number.isSafeInteger(Math.floor(Math.max(1, stats.attack) * stats.criticalMultiplier)),
   { message: 'Combat damage must fit within safe integer range' });
 export const SkillSchema = z.strictObject({
   id, name: id, manaCost: uint, power: uint.max(1000000),
@@ -27,23 +33,32 @@ export const SkillSchema = z.strictObject({
   effect: z.enum(['damage', 'heal', 'buff']).default('damage'),
   statuses: z.array(id).default([]),
   hitChance: probability.default(1), criticalChance: probability.default(0),
+  staminaCost: uint.max(10000).default(0), statBonuses: AttributeBonusesSchema.optional(),
+  minPower: uint.max(1000000).optional(), maxPower: uint.max(1000000).optional(), minMagicModifier: z.number().min(0).max(10).default(0), maxMagicModifier: z.number().min(0).max(10).default(0),
   category: z.enum(['combat', 'magic', 'life']).optional(),
   kind: z.enum(['active', 'passive', 'life']).optional(),
   battleUsable: z.boolean().optional(),
   rank: SkillRankSchema.optional(), description: z.string().optional(),
   reference: SkillReferenceSchema.optional(),
-}).refine((skill) => skill.effect === 'damage'
+}).refine((skill) => (skill.minPower === undefined) === (skill.maxPower === undefined) && (skill.minPower ?? 0) <= (skill.maxPower ?? 0) && skill.minMagicModifier <= skill.maxMagicModifier, { message: 'Invalid skill range' }).refine((skill) => skill.effect === 'damage'
   ? ['enemy', 'allEnemies'].includes(skill.target) : ['self', 'ally'].includes(skill.target),
 { message: 'Damage skills target enemies; healing skills target self or allies' });
 const actor = { id, name: id, maxHealth: positive.max(100000), maxMana: uint.max(100000),
-  combatant: CombatStatsSchema, skills: z.array(id), sprite: SpriteSchema };
+  combatant: CombatStatsSchema, maxStamina: uint.max(100000).default(0), skills: z.array(id), sprite: SpriteSchema };
 export const EnemySchema = z.strictObject({ ...actor, experience: uint.max(10000).default(0), gold: uint.max(10000).default(0),
   loot: z.array(z.strictObject({ itemId: id, chance: probability, min: positive.max(99), max: positive.max(99) })
     .refine((drop) => drop.min <= drop.max)).default([]) });
 export const ClassSchema = z.strictObject(actor);
 export const ItemSchema = z.strictObject({ id, name: id, kind: z.enum(['consumable', 'weapon', 'armor']),
   price: uint.max(100000), power: uint.max(10000), description: z.string(),
-  stat: z.enum(['attack', 'defense', 'speed']).optional() });
+  stat: z.enum(['attack', 'defense', 'speed']).optional(),
+  maxDurability: positive.max(10000).optional(), restores: z.enum(['health', 'mana', 'stamina']).default('health'),
+  battleUsable: z.boolean().default(true),
+  weaponStats: z.strictObject({ minDamage: uint.max(10000), maxDamage: uint.max(10000), balance: probability, critical: probability, minInjury: probability, maxInjury: probability }).refine((weapon) => weapon.minDamage <= weapon.maxDamage && weapon.minInjury <= weapon.maxInjury, { message: 'Invalid weapon range' }).optional(),
+  protection: uint.max(10000).default(0), magicDefense: uint.max(10000).default(0), magicProtection: uint.max(10000).default(0), statBonuses: AttributeBonusesSchema.optional(),
+  staminaRecovery: uint.max(10000).default(0), fullnessRecovery: z.number().min(0).max(50).default(0),
+}).refine((item) => item.kind === 'weapon' ? item.maxDurability !== undefined : item.maxDurability === undefined,
+  { message: 'Only weapons require maximum durability' });
 export const StatusEffectSchema = z.strictObject({ id, name: id, duration: positive.max(100),
   tickTiming: z.enum(['turnStart', 'turnEnd']), stacking: z.enum(['refresh', 'stack', 'ignore']),
   effect: z.enum(['damage', 'heal', 'stat']), power: uint.max(10000),
@@ -70,8 +85,9 @@ export const MapSchema = z.strictObject({ id, name: id, width: positive.max(128)
 export const ContentSchema = z.strictObject({ skills: z.array(SkillSchema), enemies: z.array(EnemySchema),
   classes: z.array(ClassSchema), items: z.array(ItemSchema), statusEffects: z.array(StatusEffectSchema),
   atlases: z.array(AtlasSchema), maps: z.array(MapSchema), worlds: z.array(WorldMapSchema).default([]), dungeons: z.array(DungeonDefinitionSchema).default([]),
+  shops: z.array(ShopSchema).default([]),
 }).superRefine((content, ctx) => {
-  for (const key of ['skills', 'enemies', 'classes', 'items', 'statusEffects', 'atlases', 'maps', 'worlds', 'dungeons'] as const) {
+  for (const key of ['skills', 'enemies', 'classes', 'items', 'statusEffects', 'atlases', 'maps', 'worlds', 'dungeons', 'shops'] as const) {
     const seen = new Set<string>();
     content[key].forEach((entry, index) => {
       if (seen.has(entry.id)) ctx.addIssue({ code: 'custom', message: `Duplicate ${key} ID: ${entry.id}`, path: [key, index, 'id'] });
@@ -93,6 +109,10 @@ export const ContentSchema = z.strictObject({ skills: z.array(SkillSchema), enem
     }
   });
   validateWorldReferences(content, ctx);
+  content.shops.forEach((shop) => {
+    if (shop.items.some((itemId) => !content.items.some((item) => item.id === itemId)) ||
+        (shop.buysItems && shop.kind !== 'general')) ctx.addIssue({ code: 'custom', message: 'Invalid shop catalog' });
+  });
   content.dungeons.forEach((dungeon, index) => {
     const validEnemies = [...dungeon.monsterIds, dungeon.mimicId, dungeon.bossId, ...dungeon.companionIds]
       .every((id) => content.enemies.some((enemy) => enemy.id === id));

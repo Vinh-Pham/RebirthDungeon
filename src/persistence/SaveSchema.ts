@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { HeroSchema, validateHero } from '../engine/rpg/Character';
+import { HeroSchema, LegacyHeroSchema, VersionFourHeroSchema, migrateHero, restoreHero, validateHero } from '../engine/rpg/Character';
+import type { GrowthTalent } from '../engine/rpg/Stats';
 import type { ContentRegistry } from '../engine/data/ContentRegistry';
 import { isWalkable } from '../engine/world/TileMap';
 import { DungeonRunSchema, inRoom, projectDungeonMap, reachableTiles, validateDungeon } from '../engine/dungeon/Dungeon';
@@ -14,10 +15,13 @@ export const CampaignSchema = z.strictObject({
   audio: z.strictObject({ music: z.number().min(0).max(1), sfx: z.number().min(0).max(1), enabled: z.boolean() }),
   dungeon: DungeonRunSchema.optional(),
 });
-export const SaveSchema = z.strictObject({ version: z.literal(3), savedAt: z.string().datetime(), campaign: CampaignSchema });
-const VersionTwoSchema = z.strictObject({ version: z.literal(2), savedAt: z.string().datetime(), campaign: CampaignSchema.omit({ dungeon: true }) });
+export const SaveSchema = z.strictObject({ version: z.literal(5), savedAt: z.string().datetime(), campaign: CampaignSchema });
+const VersionFourSchema = z.strictObject({ version: z.literal(4), savedAt: z.string().datetime(), campaign: CampaignSchema.extend({ hero: VersionFourHeroSchema }) });
+const LegacyCampaignSchema = CampaignSchema.extend({ hero: LegacyHeroSchema });
+const VersionThreeSchema = z.strictObject({ version: z.literal(3), savedAt: z.string().datetime(), campaign: LegacyCampaignSchema });
+const VersionTwoSchema = z.strictObject({ version: z.literal(2), savedAt: z.string().datetime(), campaign: LegacyCampaignSchema.omit({ dungeon: true }) });
 const LegacySaveSchema = z.strictObject({ version: z.literal(1), savedAt: z.string().datetime(),
-  campaign: CampaignSchema.omit({ audio: true, dungeon: true }) });
+  campaign: LegacyCampaignSchema.omit({ audio: true, dungeon: true }) });
 export type CampaignState = z.infer<typeof CampaignSchema>;
 export type SaveGame = z.infer<typeof SaveSchema>;
 export function validateCampaign(raw: unknown, content: ContentRegistry): CampaignState {
@@ -51,15 +55,27 @@ export function validateCampaign(raw: unknown, content: ContentRegistry): Campai
   if (state.dungeon?.revealedMimics.some((id) => !state.dungeon!.cleared.includes(id) && state.pending?.objectId !== id)) throw new Error('Invalid unresolved mimic');
   return state;
 }
-export function parseSave(raw: unknown, content: ContentRegistry): SaveGame {
+export function parseSave(raw: unknown, content: ContentRegistry, growthTalent?: GrowthTalent): SaveGame {
   const version = (raw as { version?: unknown } | null)?.version;
-  const migrated = version === 1 ? (() => {
-    const legacy = LegacySaveSchema.parse(raw);
-    return { ...legacy, version: 3, campaign: { ...legacy.campaign, audio: { music: 0.3, sfx: 0.7, enabled: false } } };
-  })() : version === 2 ? { ...VersionTwoSchema.parse(raw), version: 3 } : raw;
+  let migrated = raw;
+  if (version === 1 || version === 2 || version === 3 || version === 4) {
+    const legacy = version === 1 ? LegacySaveSchema.parse(raw) : version === 2 ? VersionTwoSchema.parse(raw) : version === 3 ? VersionThreeSchema.parse(raw) : VersionFourSchema.parse(raw);
+    const talent = growthTalent ?? 'warrior';
+    // Preserve the original wire contract before restoring into the new stat system.
+    const old = legacy.campaign.hero;
+    const definition = content.data.classes.find((entry) => entry.id === old.classId);
+    if (!definition || old.health > definition.maxHealth + (old.level - 1) * 5 || old.mana > definition.maxMana + (old.level - 1) * 2) throw new Error('Invalid legacy character resources');
+    const hero = version === 4 ? { ...VersionFourHeroSchema.parse(old), growthTalent: talent, stamina: 0, wounds: 0, fullness: 100 } : migrateHero(old, content, talent);
+    restoreHero(hero, content);
+    migrated = { ...legacy, version: 5, campaign: { ...legacy.campaign,
+      audio: 'audio' in legacy.campaign ? legacy.campaign.audio : { music: 0.3, sfx: 0.7, enabled: false },
+      hero,
+    } };
+  }
   const save = SaveSchema.parse(migrated);
+  if (growthTalent && save.campaign.hero.growthTalent !== growthTalent) throw new Error('Saved talent does not match this character');
   return { ...save, campaign: validateCampaign(save.campaign, content) };
 }
 export function encodeSave(state: CampaignState, content: ContentRegistry, savedAt = new Date().toISOString()): string {
-  return JSON.stringify(parseSave({ version: 3, savedAt, campaign: state }, content));
+  return JSON.stringify(parseSave({ version: 5, savedAt, campaign: state }, content));
 }

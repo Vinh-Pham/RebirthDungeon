@@ -13,7 +13,7 @@ export class CharacterRepository {
         const saves = await this.storage.listSaves(profile.id);
         const save = saves.find((row) => row.id === 'auto') ?? saves.sort((a, b) => b.savedAt.localeCompare(a.savedAt))[0];
         if (!save) return { profile, error: 'No journey save was found.' };
-        const campaign = parseSave(JSON.parse(save.payload), this.content).campaign;
+        const campaign = parseSave(JSON.parse(save.payload), this.content, profile.needsSetup ? undefined : profile.talent).campaign;
         return { profile, level: campaign.hero.level, savedAt: save.savedAt };
       } catch { return { profile, error: 'This journey could not be read. Its saves have been preserved.' }; }
     }));
@@ -23,7 +23,7 @@ export class CharacterRepository {
     const details = CharacterDetailsSchema.parse(raw);
     const profile: CompleteCharacter = { ...details, id: `char-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 14)}`,
       createdAt: new Date().toISOString(), needsSetup: false };
-    const session = new JourneySession(this.content);
+    const session = new JourneySession(this.content, undefined, undefined, profile.name, profile.talent);
     try {
       await this.storage.createProfile(profile, { id: 'auto', savedAt: profile.createdAt,
         payload: encodeSave(session.toSave(), this.content, profile.createdAt) });

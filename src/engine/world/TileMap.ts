@@ -4,7 +4,7 @@ export function isWalkable(map: WorldMap, point: GridPoint): boolean {
   return Number.isInteger(point.x) && Number.isInteger(point.y) && point.x >= 0 && point.y >= 0 &&
     point.x < map.width && point.y < map.height && map.tiles[point.y * map.width + point.x] !== 1 &&
     !map.objects.some((obj) => obj.x === point.x && obj.y === point.y &&
-      (obj.blocked || ['npc', 'chest', 'mimic', 'fountain', 'statue', 'finalChest'].includes(obj.kind)));
+      (obj.blocked || ['npc', 'chest', 'mimic', 'fountain', 'statue', 'finalChest', 'merchant', 'healer'].includes(obj.kind)));
 }
 export const distance = (a: GridPoint, b: GridPoint) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 /** Breadth-first shortest path for these small, uniform-cost maps. No native dependency. */

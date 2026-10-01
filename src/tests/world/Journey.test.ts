@@ -24,15 +24,15 @@ describe('world exploration', () => {
     expect(() => session.dispatch({ type: 'MOVE', entityId: 'player', dx: 1, dy: 0 })).toThrow('blocked');
     expect(session.engine.getEntity('player')?.position).toEqual({ x: 3, y: 3 });
   });
-  it('supports NPC dialogue, one-time chests, equipment and rest', () => {
-    const session = create(); session.dispatch({ type: 'INTERACT', objectId: 'keeper' }); expect(session.getSnapshot().message).toContain('blade');
+  it('supports town dialogue, one-time chests and individual weapon equipment', () => {
+    const session = create(); session.dispatch({ type: 'INTERACT', objectId: 'keeper' }); expect(session.getSnapshot().message).toContain('altar');
     expect(() => session.dispatch({ type: 'INTERACT', objectId: 'supply-chest' })).toThrow('next');
     session.dispatch({ type: 'MOVE', entityId: 'player', dx: 1, dy: 0 }); session.dispatch({ type: 'INTERACT', objectId: 'supply-chest' });
-    expect(session.toSave().hero.inventory['iron-blade']).toBe(1);
+    expect(session.toSave().hero.weapons['weapon-1']).toEqual({ itemId: 'iron-blade', durability: 60 });
     expect(() => session.dispatch({ type: 'INTERACT', objectId: 'supply-chest' })).toThrow('empty');
-    session.dispatch({ type: 'EQUIP_ITEM', itemId: 'iron-blade' }); expect(session.toSave().hero.equipment.weapon).toBe('iron-blade');
+    session.dispatch({ type: 'EQUIP_WEAPON', weaponId: 'weapon-1' }); expect(session.toSave().hero.equipment.weapon).toBe('weapon-1');
     session.dispatch({ type: 'UNEQUIP_ITEM', slot: 'weapon' }); expect(session.toSave().hero.equipment.weapon).toBeUndefined();
-    session.dispatch({ type: 'TRAVEL_TO', x: 2, y: 3 }); session.dispatch({ type: 'INTERACT', objectId: 'rest' }); expect(session.toSave().hero.health).toBe(42);
+    expect(session.map.objects.some((object) => object.kind === 'rest')).toBe(false);
   });
   it('transitions maps and creates deterministic encounters that lock exploration', () => {
     const session = create(); enterHalls(session); expect(session.toSave().worldId).toBe('halls');
@@ -45,9 +45,9 @@ describe('world exploration', () => {
   });
   it('carries equipment into battles and awards XP, gold and loot exactly once', () => {
     vi.useFakeTimers(); const session = create(); session.dispatch({ type: 'MOVE', entityId: 'player', dx: 1, dy: 0 });
-    session.dispatch({ type: 'INTERACT', objectId: 'supply-chest' }); session.dispatch({ type: 'EQUIP_ITEM', itemId: 'iron-blade' });
+    session.dispatch({ type: 'INTERACT', objectId: 'supply-chest' }); session.dispatch({ type: 'EQUIP_WEAPON', weaponId: 'weapon-1' });
     enterHalls(session); session.dispatch({ type: 'TRAVEL_TO', x: 5, y: 3 }); const battle = session.createBattle();
-    expect(battle.engine.getEntity('player')?.combatant?.attack).toBe(13); expect(() => session.finishBattle(battle)).toThrow('ready');
+    expect(battle.engine.getEntity('player')?.combatant?.attack).toBe(38); expect(() => session.finishBattle(battle)).toThrow('ready');
     battle.engine.getEntity('slime-1')!.health!.current = 1;
     battle.dispatch({ type: 'SELECT_ACTION', action: 'skill', skillId: 'firebolt' }); battle.dispatch({ type: 'SELECT_TARGET', targetId: 'slime-1' }); battle.dispatch({ type: 'CONFIRM_ACTION' });
     session.finishBattle(battle);
@@ -59,7 +59,7 @@ describe('world exploration', () => {
     const restored = new JourneySession(content, saved); sessions.push(restored); enterHalls(restored); restored.dispatch({ type: 'TRAVEL_TO', x: 5, y: 3 });
     const battle = restored.createBattle(); battle.engine.getEntity('player')!.health!.current = 1; battle.engine.getEntity('slime-1')!.combatant!.hitChance = 1; battle.engine.getEntity('slime-1')!.combatant!.attack = 100;
     battle.dispatch({ type: 'SELECT_ACTION', action: 'skill', skillId: 'healing' }); battle.dispatch({ type: 'SELECT_TARGET', targetId: 'player' }); battle.dispatch({ type: 'CONFIRM_ACTION' }); battle.advanceEnemyTurns();
-    restored.finishBattle(battle); expect(restored.toSave()).toMatchObject({ worldId: 'refuge', hero: { health: 42, gold: 5 }, cleared: [] }); battle.dispose();
+    restored.finishBattle(battle); expect(restored.toSave()).toMatchObject({ worldId: 'refuge', hero: { health: 118, gold: 5 }, cleared: [] }); battle.dispose();
   });
   it('keeps snapshots detached and rejects commands after disposal', () => {
     const session = create(); const snapshot = session.toSave(); snapshot.hero.inventory.potion = 999;

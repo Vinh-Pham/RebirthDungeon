@@ -2,6 +2,7 @@ import type { ContentRegistry } from '../engine/data/ContentRegistry';
 import { SaveRepository, type SaveSlot, type SaveStorage } from '../persistence/SaveRepository';
 import { AutoSaver } from '../persistence/AutoSaver';
 import { JourneySession } from './JourneySession';
+import type { GrowthTalent } from '../engine/rpg/Stats';
 import type { BattleSession } from './BattleSession';
 interface HostView { session?: JourneySession; battle?: BattleSession; revision: number; busy: boolean; storageAvailable: boolean; error?: string;
   notice?: string; slots: { id: SaveSlot; savedAt: string }[] }
@@ -15,7 +16,7 @@ export class JourneyHost {
   private autosaver?: AutoSaver;
   private unsubscribe?: () => void;
   private generation = 0;
-  constructor(readonly content: ContentRegistry, private createStorage: () => Promise<SaveStorage>, private characterName?: string) {}
+  constructor(readonly content: ContentRegistry, private createStorage: () => Promise<SaveStorage>, private characterName?: string, private growthTalent?: GrowthTalent) {}
   getSnapshot = () => this.snapshot;
   getServerSnapshot = () => empty;
   subscribe = (listener: () => void) => {
@@ -71,7 +72,7 @@ export class JourneyHost {
     try {
       await settleJourneySaves();
       if (generation !== this.generation) return;
-      const repository = new SaveRepository(await this.createStorage(), this.content);
+      const repository = new SaveRepository(await this.createStorage(), this.content, this.growthTalent);
       if (generation !== this.generation) { await repository.close(); return; }
       this.repository = repository; this.update({ storageAvailable: true });
       let state;

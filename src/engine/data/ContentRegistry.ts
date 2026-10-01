@@ -29,7 +29,7 @@ export class ContentRegistry {
     const definition: ActorDefinition | undefined = definitions.find((entry) => entry.id === definitionId);
     if (!definition) throw new Error(`Unknown ${side} definition: ${definitionId}`);
     return { id: entityId, name: definition.name, [side]: true, position: { x, y },
-      health: createHealth(definition.maxHealth), mana: { current: definition.maxMana, max: definition.maxMana },
+      health: createHealth(definition.maxHealth), ...(definition.maxStamina ? { stamina: { current: definition.maxStamina, max: definition.maxStamina }, wounds: 0, fullness: 100 } : {}), mana: { current: definition.maxMana, max: definition.maxMana },
       combatant: { ...definition.combatant }, skills: [...definition.skills], sprite: { ...definition.sprite, idleFrames: definition.sprite.idleFrames ? [...definition.sprite.idleFrames] : undefined } };
   }
 }

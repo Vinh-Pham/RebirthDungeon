@@ -7,7 +7,8 @@ import { CharacterDetailsSchema, TALENTS } from '../../persistence/CharacterProf
 import { CharacterRepository } from '../../persistence/CharacterRepository';
 import { SQLiteSaveStorage, type SqlDatabase } from '../../persistence/SQLiteSaveStorage';
 import { SaveRepository } from '../../persistence/SaveRepository';
-import { encodeSave, parseSave } from '../../persistence/SaveSchema';
+import { parseSave } from '../../persistence/SaveSchema';
+import { createHero } from '../../engine/rpg/Character';
 import { AutoSaver } from '../../persistence/AutoSaver';
 
 const content = loadGameContent();
@@ -43,7 +44,7 @@ describe('character details', () => {
 });
 
 describe('character persistence', () => {
-  it('creates profiles and initial journeys atomically, with talents leaving stats unchanged', async () => {
+  it('creates profiles and initial journeys atomically, with the chosen talent governing growth', async () => {
     const { driver } = database(); const storage = await new SQLiteSaveStorage(driver).initialize();
     const repository = new CharacterRepository(storage, content);
     expect(await repository.list()).toEqual([]);
@@ -51,7 +52,7 @@ describe('character persistence', () => {
       const profile = await repository.create({ name: 'Ember', talent, age: 17 });
       expect(profile.talent).toBe(talent);
       const row = await storage.readSave(profile.id, 'auto');
-      expect(parseSave(JSON.parse(row!.payload), content).campaign.hero).toEqual(campaign().hero);
+      expect(parseSave(JSON.parse(row!.payload), content).campaign.hero).toEqual(createHero(content, talent));
     }
     const roster = await repository.list();
     expect(roster).toHaveLength(3); expect(new Set(roster.map((entry) => entry.profile.id)).size).toBe(3);
@@ -83,7 +84,8 @@ describe('character persistence', () => {
   });
   it('imports all legacy rows once, preserves their bytes and retains progress after completing details', async () => {
     const { db, driver } = database(); const original = campaign(); original.hero.gold = 93;
-    const payload = encodeSave(original, content);
+    const { growthTalent, stamina, wounds, fullness, ...oldHero } = original.hero; void growthTalent; void stamina; void wounds; void fullness; oldHero.health = 42; oldHero.mana = 14;
+    const payload = JSON.stringify({ version: 4, savedAt: new Date().toISOString(), campaign: { ...original, hero: oldHero } });
     db.exec('CREATE TABLE save_slots (id TEXT PRIMARY KEY, savedAt TEXT NOT NULL, payload TEXT NOT NULL); PRAGMA user_version=1;');
     for (const slot of ['auto', '1', '2', '3']) db.prepare('INSERT INTO save_slots VALUES (?, ?, ?)').run(slot, new Date().toISOString(), payload);
     const storage = await new SQLiteSaveStorage(driver).initialize();
@@ -95,7 +97,11 @@ describe('character persistence', () => {
     expect(await storage.listProfiles()).toEqual([completed]);
     expect((await storage.listSaves('legacy')).every((row) => row.payload === payload)).toBe(true);
     expect(db.prepare('SELECT count(*) AS count FROM save_slots').get()?.count).toBe(4);
-    expect((await new SaveRepository(storage, content).load('auto'))?.hero.gold).toBe(93);
+    const migrated = (await new SaveRepository(storage, content, 'mage').load('auto'))!;
+    expect(migrated.hero).toMatchObject({ gold: 93, growthTalent: 'mage', health: 118, mana: 108 });
+    expect((await repository.list())[0].error).toBeUndefined();
+    expect(JSON.parse((await storage.readSave('legacy', 'auto'))!.payload).version).toBe(5);
+    expect(db.prepare('SELECT payload FROM save_slots WHERE id = ?').get('auto')?.payload).toBe(payload);
     await expect(repository.completeImport('legacy', { name: 'Other', talent: 'mage', age: 15 })).rejects.toThrow();
   });
   it('keeps corrupt journeys visible without altering their saves or hiding healthy characters', async () => {

@@ -6,7 +6,7 @@ import { withCharacters } from '../../persistence/characters';
 import { MenuButton, MenuError, MenuPage, menu } from './MenuUI';
 
 const ages = Array.from({ length: 8 }, (_, index) => index + 10);
-const descriptions = { warrior: 'A talent for the blade.', archery: 'A steady hand and a watchful eye.', mage: 'A spark of the arcane.' };
+const descriptions = { warrior: '+20 Strength; gains Strength as you level.', archery: '+10 Dexterity, +5 Health and Stamina; gains Dexterity as you level.', mage: '+10 Intelligence and Mana; gains Intelligence as you level.' };
 export default function NewCharacterScreen() {
   const [attempt, setAttempt] = useState(0);
   return <NewCharacterForm key={attempt} retry={() => setAttempt((value) => value + 1)} />;
@@ -64,7 +64,7 @@ function NewCharacterForm({ retry }: { retry(): void }) {
           <Text style={styles.mark}>{talent === choice ? '●' : '○'}</Text>
         </Pressable>)}
       </View>
-      <View style={menu.section}><Text style={menu.label}>Age</Text><View accessibilityRole="radiogroup" accessibilityLabel="Age" style={styles.ages}>
+      <View style={menu.section}><Text style={menu.label}>Age</Text><Text style={menu.body}>Age changes your character details; it does not affect stats.</Text><View accessibilityRole="radiogroup" accessibilityLabel="Age" style={styles.ages}>
         {ages.map((choice) => <Pressable key={choice} accessibilityRole="radio" accessibilityLabel={`Age ${choice}`}
           accessibilityState={{ selected: age === choice, checked: age === choice, disabled: busy }} disabled={busy} onPress={() => setAge(choice)}
           style={({ pressed }) => [styles.age, age === choice && styles.selected, pressed && menu.pressed]}><Text style={menu.heading}>{choice}</Text></Pressable>)}

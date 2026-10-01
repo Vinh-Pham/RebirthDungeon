@@ -13,7 +13,7 @@ npm run lint
 
 Press **Play**, then choose a saved character or **Create New Character**. Enter a
 name (1–24 characters), choose Warrior, Archery or Mage, and select an age from
-10–17. Talent and age are character details; they do not change combat stats yet.
+10–17. Talent determines starting bonuses and attribute growth; age is cosmetic.
 Each character has an independent autosave and three manual slots. Use
 **Characters** above the game to save progress and return to the roster.
 Existing saves appear as **Imported Adventurer**; complete its character details
@@ -23,16 +23,95 @@ On the Journey tab, speak to the keeper, approach the supplies chest, collect
 and equip the iron blade, then use the eastern passage. Challenge the moss guardian,
 return after victory, collect the moss mail, and challenge the elder guardian.
 Movement works with buttons or by tapping a reachable floor tile. You can return
-to the refuge and rest at the ember shrine. The Codex shows the content definitions.
+to the town for supplies, weapon repairs, and paid healing. The Codex shows the content definitions.
 
 Save slots and sound settings are further down the Journey screen. Three manual
 slots plus an autosave retain character resources, equipment, inventory, XP, gold,
 world flags, map position, encounter checkpoints and exact exploration RNG state.
 Native runtime testing requires a development build after adding native modules.
 
+## Town services and weapon durability
+
+The refuge is now an outdoor town with walkable grocery, blacksmith, healer, and
+general-shop interiors. Tap a building to approach its door, interact to enter,
+and approach the merchant or healer to open services. Close the panel and use
+**Return to town** to exit at the matching doorstep. Larger maps follow the hero;
+movement and interaction buttons remain available without canvas touch input.
+
+- **Grocery:** apples cost 2 gold and restore 3 HP; bread costs 4 gold and restores
+  8 HP. Apples also restore 10 stamina/fullness; bread restores 25. Food is usable outside combat.
+- **Blacksmith:** buy iron blades for 30 gold or repair individual weapon copies.
+- **Healer:** spend 10 gold to restore HP, mana, stamina and fullness, and clear wounds. Full resources need no
+  treatment. There is no free treatment or ember-shrine recovery.
+- **General shop:** buy healing potions (10 gold), mana potions (12 gold, restore
+  20 mana), stamina potions (10 gold, restore 30 stamina), and moss mail (35 gold). Sell spare items for half the purchase price,
+  rounded down. Equipped copies cannot be sold or offered; spare armor can.
+
+Stock is unlimited and prices are fixed. Transactions show a quantity and quote
+before confirmation. Town services require talking to the nearby merchant,
+healer, or altar; moving away closes the service. Android Back closes services
+before leaving the character. Weapon and offering lists show 20 entries per page.
+Characters still begin with zero gold, two healing potions, and the supplies chest.
+
+Iron blades begin at 60 durability. Each successful basic attack or physical
+damage skill costs one point, including multi-target skills once per action.
+Misses, spells, healing, and consumables cause no wear. A breaking action keeps
+its bonus; at zero durability the weapon stays equipped but provides no stats.
+Repairs restore full durability for `ceil(price * 0.5 * missing / maximum)` gold.
+An entirely broken iron blade costs 15 gold to repair. Every weapon copy has its
+own saved identity and durability; all chest, shop, and battle weapon rewards
+arrive fully repaired. Wear persists after both victory and defeat. Reloading an
+unfinished encounter restores its starting durability alongside HP, mana, and RNG.
+
+Town layouts and services live in `src/data/worlds` and `src/data/shops`; item
+prices, recovery rules, and maximum durability live in `src/data/items`.
+
+## Character stats and recovery
+
+Use **Stats** above the game to open the character window from exploration,
+shops, battle, or the Codex. It shows current battle resources, base and equipment
+attributes, combat formulas, active effects and weapon durability. Closing it
+preserves your selected action and target. Phones use the full screen; larger
+screens use a centered window. Escape and Android Back close the window.
+
+The five attributes, protection curve, and known rank-F spell contributions are
+based on [Mabinogi's Stats](https://wiki.mabinogiworld.com/view/Stats) and current
+human talent growth. Shared starting resources are 118 HP, 98 MP and 113 stamina;
+Warrior adds 20 Strength, Archery adds 10 Dexterity and 5 HP/stamina, and Mage adds
+10 Intelligence/mana. Each level adds 0.5 to the talent's primary attribute.
+Known rank-F spells add 4 Intelligence in total; Codex-only skills grant no bonus.
+The level cap remains 99 with the existing experience thresholds.
+
+Physical damage rolls within a range using a seeded triangular approximation
+whose peak follows balance. Critical damage is calculated before defense and
+protection. Attributes cap at 1,500, physical balance at 80%, magic balance at
+100%, final critical chance at 30%, and protection reduction at 90%.
+Firebolt, Icebolt, Lightning Bolt and Healing use their rank-F ranges and magic
+attack coefficients. Physical damage may cause wounds, reducing recoverable HP;
+magic and damage over time do not cause wounds. Zero HP still means defeat.
+
+Successful movement and each living actor's completed turn restore 1 HP/MP/stamina.
+**Rest** restores 10 stamina instead and consumes a battle turn. Fullness falls
+0.1% per player tick to a minimum of 50%, limiting naturally recoverable stamina.
+Above that limit, stamina costs rise 20%. Basic attacks cost 2 stamina even on a
+miss; exhausted attacks use bare hands and cause no weapon wear. Self-healing
+costs 6 stamina; healing another ally has no stamina cost. Potions respect wounds
+and restore 40 HP, 20 MP, or 30 stamina. Paid healing, level-up and defeat recovery
+restore all resources, fullness, and wounds. Reviewing screens, shop transactions,
+failed actions, and exploration item use do not advance recovery ticks.
+
+Save version 5 persists the growth talent, stamina, wounds and fullness. A
+validated older save upgrades once using the selected character's talent and
+full resource restoration; current saves load their exact depleted resources.
+The same deterministic combat tests simulate 100 seeds per talent for both a
+starter slime and an equipped level-5 elder encounter with two companion slimes.
+Enemy damage is calibrated to keep both encounters viable for all talents.
+
 ## Generated dungeons
 
-In the refuge, approach **Enter the moss depths**, then interact to begin a run.
+In the refuge, approach the **Goddess altar**, interact, select an unequipped
+item, and confirm your offering. One copy is consumed to begin a run. Offering
+value does not change the dungeon; there is no free fallback offering.
 Each entry creates a seeded dungeon with a goddess sanctuary, 8–12 ordinary
 rooms, a locked boss chamber and a final treasure room. Tap tiles to move and
 objects to approach/interact; the dungeon camera follows the player. The authored
@@ -53,8 +132,8 @@ effect type. They do not expire with combat turns.
 
 Generation uses the existing pure-rand wrapper with a separate RNG instance.
 Definitions and reward tables live in `src/data/dungeons/basic.json`. Saved
-version 3 campaigns retain generated geometry, hidden outcomes, keys and progress;
-versions 1 and 2 migrate automatically. Encounters still reload at their starting
+version 5 campaigns retain generated geometry, hidden outcomes, keys, weapon
+instances and progress; versions 1–4 migrate automatically, restoring resources once and retaining progress. Encounters still reload at their starting
 checkpoint. The headless dungeon tests cover 200 generated seeds and the complete
 key/reward loop, including save recovery at each stage.
 
@@ -117,9 +196,11 @@ before consuming RNG or changing HP. Speeds are fixed for the battle; mid-battle
 joins and speed changes are deferred to later scheduling work.
 
 Hit probability is `max(0, hitChance - target.evasion)`, with defaults 0.95 and 0.
-Critical chance defaults to 0.1 and is rolled only after a hit. Damage is
+For legacy actors with a single attack value, critical chance defaults to 0.1
+and is rolled only after a hit. Damage is
 `floor(max(1, attack - defense) * criticalMultiplier)` on critical hits, with a
-multiplier default of 1.5; ordinary hits use multiplier 1. Damage events report
+multiplier default of 1.5; ordinary hits use multiplier 1. Current characters and enemies use the ranged
+stat formulas described above. Damage events report
 actual HP lost, capped at remaining HP. Health and base combat stats use safe
 integers, and overflowing calculations are rejected before rolling RNG.
 
@@ -139,8 +220,7 @@ per-frame work. The Phase 3 controller below adds state-machine orchestration.
 
 ## Battle flow, rendering, animations and content (Phases 3–6)
 
-A battle encounter opens from the Journey exploration screen. Choose Attack, Fireball or
-Mend, select a target with the accessible buttons or a sprite tap, and confirm.
+A battle encounter opens from the Journey exploration screen. Choose Attack, Rest, a spell or a potion, select a target with the accessible buttons or a sprite tap, and confirm.
 Enemy turns resolve immediately. The presentation queue plays each resolved action
 in order, without delaying HP, mana, turn order or the battle outcome. Restarting
 uses the same seed (12345) so encounters can be reproduced. The Codex tab displays the validated creature, class, skill, item and status
@@ -162,7 +242,7 @@ import { loadGameContent } from './src/data/content';
 import { BattleSession } from './src/game/BattleSession';
 
 const session = new BattleSession(loadGameContent(), 12345);
-session.dispatch({ type: 'SELECT_ACTION', action: 'skill', skillId: 'fireball' });
+session.dispatch({ type: 'SELECT_ACTION', action: 'skill', skillId: 'firebolt' });
 session.dispatch({ type: 'SELECT_TARGET', targetId: 'slime-1' });
 session.dispatch({ type: 'CONFIRM_ACTION' });
 session.advanceEnemyTurns();
@@ -252,7 +332,8 @@ Accessible buttons provide an alternative to canvas touch interactions.
 ## Persistence (Phase 9)
 
 `SaveRepository` validates both outgoing and loaded saves before replacing a
-session. Version 2 saves migrate version 1 by supplying audio defaults; malformed,
+session. Version 4 saves migrate versions 1–3, supplying legacy audio defaults and
+expanding stacked weapons into full-durability instances; malformed,
 unknown-reference and future-version saves fail with a visible error. Failed loads
 preserve the current session and other slots. Character values, map positions,
 claimed objects, equipment and RNG state are validated against current content.

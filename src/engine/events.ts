@@ -1,12 +1,17 @@
 import type { EntityId } from './ecs/Entity';
 
 export type GameEvent =
+  | { type: 'RESOURCES_CHANGED'; entityId: EntityId; health: number; mana: number; stamina: number; wounds: number; fullness: number }
+  | { type: 'WOUNDS_RECEIVED'; entityId: EntityId; amount: number }
+  | { type: 'RESTED'; entityId: EntityId }
   | { type: 'ANIMATION_REQUESTED'; sourceId: EntityId; targetId: EntityId; animation: 'attack' | 'skill'; skillId?: string }
   | { type: 'STATUS_APPLIED' | 'STATUS_EXPIRED'; entityId: EntityId; statusId: string }
   | { type: 'ITEM_USED'; sourceId: EntityId; itemId: string }
   | { type: 'WORLD_MOVED'; entityId: EntityId; x: number; y: number }
   | { type: 'MAP_CHANGED'; mapId: string }
   | { type: 'WORLD_INTERACTED'; objectId: string; message: string }
+  | { type: 'WEAPON_WORN'; entityId: EntityId; weaponId: string; itemId: string; durability: number }
+  | { type: 'MANA_RESTORED'; sourceId: EntityId; targetId: EntityId; amount: number }
   | { type: 'ENCOUNTER_STARTED'; objectId: string }
   | { type: 'LOOT_RECEIVED'; gold: number; experience: number }
   | { type: 'EQUIPMENT_CHANGED'; itemId?: string }

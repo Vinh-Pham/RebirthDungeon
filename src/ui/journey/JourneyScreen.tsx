@@ -12,6 +12,8 @@ import { distance, findPath, isWalkable } from '../../engine/world/TileMap';
 import type { GameCommand } from '../../engine/commands';
 import WorldCanvas from '../../renderer/WorldCanvas';
 import { bossCleared, inRoom, remainingEnemies } from '../../engine/dungeon/Dungeon';
+import TownServicePanel from './TownServicePanel';
+import InventoryPager, { INVENTORY_PAGE_SIZE, inventoryPage } from './InventoryPager';
 function Button({ label, onPress, disabled = false, selected = false }: { label: string; onPress(): void; disabled?: boolean; selected?: boolean }) {
   return <Pressable accessibilityRole="button" accessibilityState={{ disabled, selected }} disabled={disabled} onPress={onPress}
     style={({ pressed }) => [styles.button, disabled && styles.disabled, selected && styles.selected, pressed && styles.pressed]}><Text style={styles.buttonText}>{label}</Text></Pressable>;
@@ -51,10 +53,12 @@ function Exploration({ host, session, soundReady, onAudioSettings, error, setErr
     const unsubscribe = host.subscribe(listener); return unsubscribe;
   }, host.getSnapshot, host.getServerSnapshot);
   const { width: windowWidth } = useWindowDimensions(); const width = Math.max(240, Math.min(windowWidth - 40, 560));
+  const [weaponPage, setWeaponPage] = useState(0);
   const { state, map } = view; const run = state.dungeon; const stats = heroStats(state.hero, session.content, run?.effects);
+  const weapons = Object.entries(state.hero.weapons); const weaponStart = inventoryPage(weaponPage, weapons.length) * INVENTORY_PAGE_SIZE;
   const currentRoom = run?.blueprint.rooms.find((room) => inRoom(room, state.position));
   const around = run ? map.objects.filter((obj) => (currentRoom && inRoom(currentRoom, obj)) || distance(obj, state.position) <= 5) : map.objects;
-  const dispatch = (command: GameCommand) => { if (hostView.busy) return; try { setError(undefined); session.dispatch(command); } catch (error) { setError(error instanceof Error ? error.message : 'Action failed'); } };
+  const dispatch = (command: GameCommand) => { if (hostView.busy) return false; try { setError(undefined); session.dispatch(command); return true; } catch (error) { setError(error instanceof Error ? error.message : 'Action failed'); return false; } };
   const approach = (objectId: string) => {
     const object = map.objects.find((obj) => obj.id === objectId)!;
     const points = [[0, -1], [-1, 0], [1, 0], [0, 1]].map(([dx, dy]) => ({ x: object.x + dx, y: object.y + dy }))
@@ -74,11 +78,16 @@ function Exploration({ host, session, soundReady, onAudioSettings, error, setErr
     const next = { ...state.audio, [channel]: Math.round(Math.max(0, Math.min(1, state.audio[channel] + delta)) * 10) / 10 };
     session.setAudio(next); onAudioSettings(next);
   };
+  if (view.activeService) return <SafeAreaView edges={['bottom']} style={styles.screen}><ScrollView contentContainerStyle={styles.scroll}><View style={[styles.content, { width }]}>
+    <TownServicePanel key={view.activeService} session={session} objectId={view.activeService} busy={hostView.busy} dispatch={dispatch} />
+    {view.message ? <Text accessibilityLiveRegion="polite" style={styles.message}>{view.message}</Text> : null}
+    {error || hostView.error ? <Text accessibilityRole="alert" style={styles.error}>{error ?? hostView.error}</Text> : null}
+  </View></ScrollView></SafeAreaView>;
   return <SafeAreaView edges={['bottom']} style={styles.screen}><ScrollView key={map.id} contentContainerStyle={styles.scroll}><View style={[styles.content, { width }]}>
     <Text style={styles.eyebrow}>REBIRTH DUNGEON · JOURNEY</Text><Text style={styles.title}>{map.name}</Text>
     <Text style={styles.body}>Tap a floor tile to move. Tap an object to approach it, then tap again to interact.</Text>
     <View style={styles.map}><ArenaBoundary><WorldCanvas key={map.id} session={session} width={width} dispatch={dispatch} onObjectPress={interact} /></ArenaBoundary></View>
-    <Text style={styles.legend}>C Chest · ! Enemy · G Goddess · F Fountain · B Locked door · k Key · D Dungeon · &gt; Passage</Text>
+    <Text style={styles.legend}>{map.theme ? 'G Goddess altar · $ Merchant · + Healer · > Door or passage · C Supplies' : 'C Chest · ! Enemy · G Goddess · F Fountain · B Locked door · k Key · D Dungeon · > Passage'}</Text>
     {run ? <View style={styles.card}><Text style={styles.heading}>{currentRoom ? currentRoom.kind === 'start' ? 'Goddess sanctuary' : currentRoom.kind === 'boss' ? 'Boss chamber' : currentRoom.kind === 'treasure' ? 'Final treasure room' : 'Dungeon chamber' : 'Corridor'}</Text>
       <Text accessibilityLiveRegion="polite" style={styles.body}>{remainingEnemies(run)} enemies remain · {bossCleared(run) ? 'Boss defeated' : run.bossDoorOpened ? 'Boss room open' : 'Boss room locked'}</Text>
       <Text style={styles.body}>Boss key: {run.bossKey.status} · Treasure key: {run.treasureKey.status}</Text>
@@ -89,9 +98,11 @@ function Exploration({ host, session, soundReady, onAudioSettings, error, setErr
     </View> : null}
     <View style={styles.card}>
       <Text style={styles.heading}>{session.characterName ?? 'Warden'} · Level {state.hero.level}</Text>
-      <Text style={styles.body}>{state.hero.health}/{stats.maxHealth} HP · {state.hero.mana}/{stats.maxMana} Mana · {state.hero.gold} gold</Text>
-      <Text style={styles.body}>Attack {stats.combatant.attack} · Defense {stats.combatant.defense} · Speed {stats.combatant.speed}</Text>
+      <Text style={styles.body}>{state.hero.health}/{stats.maxHealth} HP · {state.hero.mana}/{stats.maxMana} Mana · {state.hero.stamina}/{stats.maxStamina} Stamina · {state.hero.gold} gold</Text>
+      <Text style={styles.body}>Damage {stats.combatant.minDamage}–{stats.combatant.maxDamage} · Defense {stats.combatant.defense} · Speed {stats.combatant.speed}</Text>
       <Text style={styles.body}>{state.hero.level < 99 ? `${state.hero.experience}/${experienceToNextLevel(state.hero.level)} XP to next level` : 'Maximum level'}</Text>
+      <Text style={styles.body}>{state.hero.wounds} wounds · {state.hero.fullness.toFixed(1)}% fullness</Text>
+      <Button label="Rest · recover stamina" disabled={hostView.busy} onPress={() => dispatch({ type: 'REST', entityId: 'player' })} />
       <View style={styles.actions}>{[[0, -1, 'Up'], [-1, 0, 'Left'], [1, 0, 'Right'], [0, 1, 'Down']].map(([dx, dy, label]) => <Button key={label} label={`Move ${label}`} disabled={hostView.busy || !isWalkable(map, { x: state.position.x + Number(dx), y: state.position.y + Number(dy) })} onPress={() => dispatch({ type: 'MOVE', entityId: 'player', dx: Number(dx), dy: Number(dy) })} />)}</View>
     </View>
     {view.message ? <Text accessibilityLiveRegion="polite" style={styles.message}>{view.message}</Text> : null}
@@ -105,8 +116,17 @@ function Exploration({ host, session, soundReady, onAudioSettings, error, setErr
     <View style={styles.card}><Text style={styles.heading}>Your pack</Text>{Object.entries(state.hero.inventory).map(([id, quantity]) => {
       const item = session.content.item(id); const equipped = Object.values(state.hero.equipment).includes(id);
       return <View key={id} style={styles.object}><Text style={styles.body}>{item.name} ×{quantity}{equipped ? ' · equipped' : ''}</Text>
-        <Button disabled={hostView.busy} selected={equipped} label={`${item.kind === 'consumable' ? 'Use' : equipped ? 'Unequip' : 'Equip'} ${item.name}`} onPress={() => dispatch(item.kind === 'consumable' ? { type: 'USE_ITEM', sourceId: 'player', targetId: 'player', itemId: id } : equipped ? { type: 'UNEQUIP_ITEM', slot: item.kind } : { type: 'EQUIP_ITEM', itemId: id })} /></View>;
-    })}</View>
+        <Text style={styles.body}>{item.description}</Text>
+        <Button disabled={hostView.busy} selected={equipped} label={`${item.kind === 'consumable' ? 'Use' : equipped ? 'Unequip' : 'Equip'} ${item.name}`} onPress={() => dispatch(item.kind === 'consumable' ? { type: 'USE_ITEM', sourceId: 'player', targetId: 'player', itemId: id } : equipped ? { type: 'UNEQUIP_ITEM', slot: 'armor' } : { type: 'EQUIP_ITEM', itemId: id })} /></View>;
+    })}{weapons.slice(weaponStart, weaponStart + INVENTORY_PAGE_SIZE).map(([weaponId, weapon], offset) => {
+      const index = weaponStart + offset;
+      const item = session.content.item(weapon.itemId); const equipped = state.hero.equipment.weapon === weaponId;
+      return <View key={weaponId} style={styles.object}><Text style={styles.body}>{item.name} · Weapon {index + 1}{equipped ? ' · equipped' : ''}</Text>
+        <Text style={styles.body}>{weapon.durability}/{item.maxDurability} durability{weapon.durability === 0 ? ' · broken, no stat bonus; repair at the blacksmith' : ` · +${item.power} ${item.stat ?? 'attack'}`}</Text>
+        <Button disabled={hostView.busy} selected={equipped} label={`${equipped ? 'Unequip' : 'Equip'} ${item.name} · Weapon ${index + 1}`}
+          onPress={() => dispatch(equipped ? { type: 'UNEQUIP_ITEM', slot: 'weapon' } : { type: 'EQUIP_WEAPON', weaponId })} />
+      </View>;
+    })}<InventoryPager label="Weapons" page={inventoryPage(weaponPage, weapons.length)} count={weapons.length} disabled={hostView.busy} onPage={setWeaponPage} /></View>
     <View style={styles.card}><Text style={styles.heading}>Save your journey</Text><Text style={styles.body}>{hostView.storageAvailable ? 'Autosave follows your steps. Encounters resume at their starting checkpoint.' : 'Saves are unavailable. Your current journey continues in memory.'}</Text>
       {(['1', '2', '3'] as const).map((slot) => <View key={slot} style={styles.object}><Text style={styles.body}>Slot {slot} · {hostView.slots.find((entry) => entry.id === slot)?.savedAt ? 'Saved' : 'Empty'}</Text><View style={styles.actions}>
         <Button label={`Save slot ${slot}`} disabled={hostView.busy || !hostView.storageAvailable} onPress={() => { void host.save(slot); }} /><Button label={`Load slot ${slot}`} disabled={hostView.busy || !hostView.storageAvailable || !hostView.slots.some((entry) => entry.id === slot)} onPress={() => { void host.load(slot); }} /></View></View>)}

@@ -4,8 +4,8 @@
     "name": "Healing potion",
     "kind": "consumable",
     "price": 10,
-    "power": 20,
-    "description": "A draught of bitter herbs, prized for its restorative power."
+    "power": 40,
+    "description": "Restores 40 HP, up to your unwounded health limit."
   },
   {
     "id": "iron-blade",
@@ -14,7 +14,16 @@
     "price": 30,
     "power": 4,
     "stat": "attack",
-    "description": "A balanced blade. +4 attack."
+    "description": "A balanced blade. +4 physical damage; 30% balance; 10% critical.",
+    "maxDurability": 60,
+    "weaponStats": {
+      "minDamage": 4,
+      "maxDamage": 4,
+      "balance": 0.3,
+      "critical": 0.1,
+      "minInjury": 0.05,
+      "maxInjury": 0.1
+    }
   },
   {
     "id": "moss-mail",
@@ -23,6 +32,49 @@
     "price": 35,
     "power": 3,
     "stat": "defense",
-    "description": "Living moss cushions each blow. +3 defense."
+    "description": "Living moss cushions each blow. +3 defense, +2 protection.",
+    "protection": 2
+  },
+  {
+    "id": "apple",
+    "name": "Apple",
+    "kind": "consumable",
+    "price": 2,
+    "power": 3,
+    "restores": "health",
+    "battleUsable": false,
+    "description": "Fresh town fruit. Restores 3 HP outside combat. Also restores 10 stamina and 10 fullness points.",
+    "staminaRecovery": 10,
+    "fullnessRecovery": 10
+  },
+  {
+    "id": "bread",
+    "name": "Bread",
+    "kind": "consumable",
+    "price": 4,
+    "power": 8,
+    "restores": "health",
+    "battleUsable": false,
+    "description": "A warm loaf. Restores 8 HP outside combat. Also restores 25 stamina and 25 fullness points.",
+    "staminaRecovery": 25,
+    "fullnessRecovery": 25
+  },
+  {
+    "id": "mana-potion",
+    "name": "Mana potion",
+    "kind": "consumable",
+    "price": 12,
+    "power": 20,
+    "restores": "mana",
+    "description": "Restores 20 mana, including during combat."
+  },
+  {
+    "id": "stamina-potion",
+    "name": "Stamina potion",
+    "kind": "consumable",
+    "price": 10,
+    "power": 30,
+    "restores": "stamina",
+    "description": "Restores 30 stamina, including during combat."
   }
 ]

@@ -5,9 +5,12 @@ import type { EntityId } from '../Entity';
 import { applyDamage } from '../components/Health';
 import { effectiveEntity, applyStatus, tickStatuses } from '../../rpg/StatusEffects';
 import { consumeItem } from '../../rpg/Character';
+import { consumableRecovery } from '../../rpg/Consumables';
 import { resolveAttack, validateCombatEntity } from '../../battle/AttackResolver';
 import { prepareSkill } from '../../battle/SkillResolver';
 import type { ContentRegistry } from '../../data/ContentRegistry';
+import { calculateCharacterStats } from '../../rpg/Stats';
+import { healableHealth, resourceTick, staminaCost } from '../../rpg/Resources';
 import { TurnQueue } from '../../battle/TurnQueue';
 import { handleDeath } from './DeathSystem';
 
@@ -48,6 +51,7 @@ export class CombatSystem implements GameSystem {
     const extraCleanups: (() => void)[] = [];
     try {
       if (this.options.content) {
+        extraCleanups.push(engine.commands.register('REST', ({ entityId }) => this.attack(engine, entityId, entityId, undefined, undefined, true)));
         extraCleanups.push(engine.commands.register('USE_SKILL', ({ sourceId, targetId, skillId }) => this.attack(engine, sourceId, targetId, skillId)));
         extraCleanups.push(engine.commands.register('USE_ITEM', ({ sourceId, targetId, itemId }) => this.attack(engine, sourceId, targetId, undefined, itemId)));
       }
@@ -84,7 +88,7 @@ export class CombatSystem implements GameSystem {
 
   update(): void { /* Combat resolves on commands, never on frame ticks. */ }
 
-  private attack(engine: GameEngine, attackerId: EntityId, targetId: EntityId, skillId?: string, itemId?: string): void {
+  private attack(engine: GameEngine, attackerId: EntityId, targetId: EntityId, skillId?: string, itemId?: string, rest = false): void {
     if (this.resolving) throw new Error('Cannot dispatch combat commands during combat event delivery');
     if (this.outcome) throw new Error('Battle has ended');
     if (this.options.canAct && !this.options.canAct()) throw new Error('Select and confirm an action through battle flow');
@@ -99,31 +103,51 @@ export class CombatSystem implements GameSystem {
     const skill = skillId ? this.options.content?.skill(skillId) : undefined;
     if (skillId && !skill) throw new Error('Skill content is unavailable');
     const item = itemId ? this.options.content?.item(itemId) : undefined;
-    if (itemId && (!item || item.kind !== 'consumable' || !attacker.inventory?.[itemId] || attackerId !== targetId)) throw new Error('Invalid or unavailable item');
-    if (!skill && !item && !!attacker.player === !!target.player) throw new Error('Cannot attack an ally');
+    if (itemId && (!item || item.kind !== 'consumable' || !item.battleUsable || !attacker.inventory?.[itemId] || attackerId !== targetId)) throw new Error('Invalid or unavailable item');
+    const recovery = item ? consumableRecovery(item, target) : undefined;
+    if (!rest && !skill && !item && !!attacker.player === !!target.player) throw new Error('Cannot attack an ally');
     if (skill?.target === 'allEnemies' && !!attacker.player === !!target.player) throw new Error('Invalid skill target');
+    if (rest && (attackerId !== targetId || !attacker.stamina)) throw new Error('Invalid rest target');
+    const cost = !skill && !item && !rest && attacker.stamina ? staminaCost(attacker, 2) : 0;
+    const exhausted = !skill && !item && !rest && attacker.stamina && attacker.stamina.current < cost;
+    let basic = effectiveEntity(attacker, this.options.content);
+    if (exhausted && attacker.statSource && this.options.content) basic = effectiveEntity({ ...attacker, combatant: calculateCharacterStats({ ...attacker.statSource, weaponItemId: undefined }, this.options.content).combatant }, this.options.content);
     const targets = skill?.target === 'allEnemies'
       ? this.turns.order.map((id) => engine.getEntity(id)!).filter((entity) => !!entity.player !== !!attacker.player) : [target];
-    const skillPlan = skill ? prepareSkill({ source: effectiveEntity(attacker, this.options.content), targets: targets.map((entity) => effectiveEntity(entity, this.options.content)), skill, random: engine.random }) : undefined;
+    const skillPlan = skill ? prepareSkill({ source: effectiveEntity(attacker, this.options.content), targets: targets.map((entity) => effectiveEntity(entity, this.options.content)), skill, random: engine.random, selectedTargetId: targetId }) : undefined;
     this.resolving = true;
     try {
       const effects = skillPlan ? skillPlan.resolve().map((effect) => ({ ...effect, target: engine.getEntity(effect.target.id)! }))
-        : item ? [{ target, result: { hit: true, critical: false, damage: 0 }, healing: Math.min(item.power, target.health.max - target.health.current) }]
-        : [{ target, result: resolveAttack({ attacker: effectiveEntity(attacker, this.options.content), target: effectiveEntity(target, this.options.content), random: engine.random }), healing: 0 }];
+        : item || rest ? [{ target, result: { hit: true, critical: false, damage: 0 }, healing: recovery?.amount ?? 0 }]
+        : [{ target, result: resolveAttack({ attacker: basic, target: effectiveEntity(target, this.options.content), random: engine.random }), healing: 0 }];
       const events: GameEvent[] = [{ type: 'ANIMATION_REQUESTED', sourceId: attackerId, targetId,
         animation: skill || item ? 'skill' : 'attack', skillId }];
+      if (rest) events.push({ type: 'RESTED', entityId: attackerId });
+      if (cost && attacker.stamina) attacker.stamina.current = Math.max(0, attacker.stamina.current - cost);
       if (skillPlan) {
         attacker.mana!.current = skillPlan.manaAfter;
+        if (attacker.stamina && skillPlan.staminaAfter !== undefined) attacker.stamina.current = skillPlan.staminaAfter;
         events.push({ type: 'SKILL_USED', sourceId: attackerId, skillId: skill!.id });
       }
-      if (item) { consumeItem(attacker.inventory!, item.id); events.push({ type: 'ITEM_USED', sourceId: attackerId, itemId: item.id }); }
+      if (item) {
+        if (attacker.stamina) attacker.stamina.current += recovery!.staminaBonus;
+        if (attacker.fullness !== undefined) attacker.fullness = recovery!.fullnessAfter;
+        consumeItem(attacker.inventory!, item.id); events.push({ type: 'ITEM_USED', sourceId: attackerId, itemId: item.id }); }
       for (const effect of effects) {
+        if (rest) continue;
         if (skill?.effect === 'heal' || item) {
-          effect.target.health!.current += effect.healing;
-          events.push({ type: 'HEALTH_RESTORED', sourceId: attackerId, targetId: effect.target.id, amount: effect.healing });
+          const resource = recovery?.resource ?? 'health';
+          effect.target[resource]!.current += effect.healing;
+          if (resource !== 'stamina') events.push({ type: resource === 'mana' ? 'MANA_RESTORED' : 'HEALTH_RESTORED', sourceId: attackerId, targetId: effect.target.id, amount: effect.healing });
         } else if (effect.result.hit && skill?.effect !== 'buff') {
           const amount = applyDamage(effect.target.health!, effect.result.damage);
           events.push({ type: 'DAMAGE_DEALT', sourceId: attackerId, targetId: effect.target.id, amount, critical: effect.result.critical });
+          const wounds = Math.floor(amount * (effect.result.injury ?? 0));
+          if (wounds && effect.target.stamina) {
+            const before = effect.target.wounds ?? 0; effect.target.wounds = Math.min(effect.target.health!.max, before + wounds);
+            effect.target.health!.current = Math.min(effect.target.health!.current, healableHealth(effect.target));
+            events.push({ type: 'WOUNDS_RECEIVED', entityId: effect.target.id, amount: effect.target.wounds - before });
+          }
           const death = handleDeath(engine, effect.target);
           if (death) { this.turns.remove(effect.target.id); events.push(death); }
         } else if (!effect.result.hit) {
@@ -133,7 +157,27 @@ export class CombatSystem implements GameSystem {
           for (const statusId of skill.statuses) applyStatus(effect.target, statusId, attackerId, this.options.content, events);
         }
       }
+      const weapon = attacker.weapon;
+      if (weapon && weapon.durability > 0 && this.options.content && !item && !rest && !exhausted &&
+          (!skill || (skill.effect === 'damage' && skill.element === 'physical')) && effects.some((effect) => effect.result.hit)) {
+        weapon.durability--;
+        if (weapon.durability === 0) {
+          if (attacker.statSource) {
+            attacker.statSource = { ...attacker.statSource, weaponItemId: undefined };
+            attacker.combatant = calculateCharacterStats(attacker.statSource, this.options.content).combatant;
+          } else {
+            const definition = this.options.content.item(weapon.itemId); const stat = definition.stat ?? 'attack';
+            attacker.combatant[stat] = Math.max(0, attacker.combatant[stat] - definition.power);
+            if (stat === 'attack' && attacker.combatant.minDamage !== undefined) {
+              attacker.combatant.minDamage = Math.max(0, attacker.combatant.minDamage - (definition.weaponStats?.minDamage ?? definition.power));
+              attacker.combatant.maxDamage = attacker.combatant.attack;
+            }
+          }
+        }
+        events.push({ type: 'WEAPON_WORN', entityId: attacker.id, weaponId: weapon.id, itemId: weapon.itemId, durability: weapon.durability });
+      }
       this.tick(engine, attackerId, 'turnEnd', events);
+      events.push(...resourceTick(attacker, rest));
       this.checkOutcome(engine, events);
       if (!this.outcome) {
         let next = this.turns.order.includes(attackerId) ? this.turns.advance() : this.turns.current();

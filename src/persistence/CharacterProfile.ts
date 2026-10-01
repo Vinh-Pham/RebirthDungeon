@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import type { SaveRow, SaveSlot, SaveStorage } from './SaveRepository';
 
-export const TALENTS = ['warrior', 'archery', 'mage'] as const;
+import { TALENTS } from '../engine/rpg/Stats';
+export { TALENTS } from '../engine/rpg/Stats';
 export const TALENT_LABELS = { warrior: 'Warrior', archery: 'Archery', mage: 'Mage' } as const;
 export const CharacterDetailsSchema = z.strictObject({
   name: z.string().trim().min(1, 'Enter a character name.').max(24, 'Use 24 characters or fewer.'),

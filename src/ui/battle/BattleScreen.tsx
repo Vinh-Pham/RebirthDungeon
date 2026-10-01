@@ -6,6 +6,7 @@ import { loadGameContent } from '../../data/content';
 import { BattleHost } from '../../game/BattleHost';
 import { BattleSession } from '../../game/BattleSession';
 import type { GameCommand } from '../../engine/commands';
+import { staminaCost } from '../../engine/rpg/Resources';
 import GameCanvas from '../../renderer/GameCanvas';
 
 const mono = Platform.OS === 'ios' ? 'Menlo' : 'monospace';
@@ -49,6 +50,7 @@ export function BattleView({ session, restart, finishedLabel = 'Descend again' }
   const actor = view.entities.find((entity) => entity.id === view.turnId);
   const player = view.entities.find((entity) => entity.side === 'player')!;
   const skills = session.engine.getEntity(actor?.id ?? player.id)?.skills ?? [];
+  const attackCost = staminaCost({ stamina: actor?.maxStamina !== undefined ? { current: actor.stamina ?? 0, max: actor.maxStamina } : undefined, fullness: actor?.fullness }, 2);
   const finished = view.phase === 'victory' || view.phase === 'defeat';
   const canChoose = !presentation.busy && ['selectingAction', 'selectingTarget'].includes(view.phase);
   useEffect(() => {
@@ -87,6 +89,8 @@ export function BattleView({ session, restart, finishedLabel = 'Descend again' }
             <Text style={[styles.unitLabel, entity.side === 'player' ? styles.gold : styles.green]}>{entity.name}</Text>
             <Text style={styles.hp}>{entity.health}<Text style={styles.muted}> / {entity.maxHealth} HP</Text></Text>
             <Text style={styles.resource}>{entity.maxMana ? `${entity.mana} / ${entity.maxMana} MANA` : entity.dead ? 'DEFEATED' : 'ENEMY'}</Text>
+            {entity.maxStamina !== undefined ? <Text style={styles.resource}>{entity.stamina}/{entity.maxStamina} STAMINA · {entity.wounds ?? 0} WOUNDS · {entity.fullness?.toFixed(1)}% FULLNESS</Text> : null}
+            {entity.weapon ? <Text style={styles.resource}>{entity.weapon.name} · {entity.weapon.durability}/{entity.weapon.maxDurability}{entity.weapon.durability === 0 ? ' · BROKEN' : ''}</Text> : null}
             {(session.engine.getEntity(entity.id)?.statuses ?? []).map((status) => <Text key={status.id} style={styles.resource}>{session.content.status(status.id).name} · {status.remainingTurns} turns</Text>)}
           </View>)}
         </View>
@@ -94,12 +98,13 @@ export function BattleView({ session, restart, finishedLabel = 'Descend again' }
           <Text style={styles.headline}>{headline}</Text><Text style={styles.body}>{hint}</Text>
           {!finished ? <>
             <View style={styles.actions}>
-              <Button label="Attack" disabled={!canChoose} selected={view.selectedAction?.action === 'attack'}
+              <Button label={(actor?.stamina ?? 0) >= attackCost ? `Attack · ${attackCost} SP` : 'Attack · bare hands'} disabled={!canChoose} selected={view.selectedAction?.action === 'attack'}
                 onPress={() => dispatch({ type: 'SELECT_ACTION', action: 'attack' })} />
+              <Button label="Rest · recover stamina" disabled={!canChoose} selected={view.selectedAction?.action === 'rest'} onPress={() => dispatch({ type: 'SELECT_ACTION', action: 'rest' })} />
               {skills.map((id) => { const skill = session.content.skill(id); return <Button key={id}
-                label={`${skill.name} · ${skill.manaCost} MP`} disabled={!canChoose || skill.battleUsable === false || (actor?.mana ?? 0) < skill.manaCost}
+                label={`${skill.name} · ${skill.manaCost} MP${skill.staminaCost ? ` · ${staminaCost(session.engine.getEntity(actor?.id ?? player.id)!, skill.staminaCost)} SP` : ''}`} disabled={!canChoose || skill.battleUsable === false || (actor?.mana ?? 0) < skill.manaCost || (actor?.stamina ?? 0) < staminaCost(session.engine.getEntity(actor?.id ?? player.id)!, skill.staminaCost)}
                 selected={view.selectedAction?.skillId === id} onPress={() => dispatch({ type: 'SELECT_ACTION', action: 'skill', skillId: id })} />; })}
-              {Object.entries(session.engine.getEntity(actor?.id ?? player.id)?.inventory ?? {}).filter(([id]) => session.content.item(id).kind === 'consumable').map(([id, quantity]) => <Button key={id} label={`${session.content.item(id).name} ×${quantity}`} disabled={!canChoose} selected={view.selectedAction?.itemId === id} onPress={() => dispatch({ type: 'SELECT_ACTION', action: 'item', itemId: id })} />)}
+              {Object.entries(session.engine.getEntity(actor?.id ?? player.id)?.inventory ?? {}).filter(([id]) => { const item = session.content.item(id); return item.kind === 'consumable' && item.battleUsable; }).map(([id, quantity]) => <Button key={id} label={`${session.content.item(id).name} ×${quantity}`} disabled={!canChoose} selected={view.selectedAction?.itemId === id} onPress={() => dispatch({ type: 'SELECT_ACTION', action: 'item', itemId: id })} />)}
             </View>
             {view.phase === 'selectingTarget' ? <>
               <View style={styles.targets}>{view.targets.map((targetId) => <Button key={targetId}
