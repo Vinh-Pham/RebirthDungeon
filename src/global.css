@@ -1,3 +1,57 @@
+@import 'tailwindcss';
+@import 'uniwind';
+/* Layer the component rules so app utilities override them on web too. */
+@import '../node_modules/heroui-native/lib/module/styles/variables.css';
+@import '../node_modules/heroui-native/lib/module/styles/utilities.css';
+@import '../node_modules/heroui-native/lib/module/styles/theme.css';
+@import '../node_modules/heroui-native/lib/module/styles/components/index.css' layer(components);
+@import '../node_modules/heroui-native-pro/lib/module/styles/components/progress-bar.css' layer(components);
+
+@source '../node_modules/heroui-native/lib';
+@source '../node_modules/heroui-native-pro/lib';
+
+@layer theme {
+  :root {
+    @variant dark {
+      --background: #101719;
+      --foreground: #e4d9c5;
+      --surface: #192326;
+      --surface-foreground: #e4d9c5;
+      --surface-secondary: #202c32;
+      --surface-secondary-foreground: #e4d9c5;
+      --surface-tertiary: #293331;
+      --surface-tertiary-foreground: #e4d9c5;
+      --overlay: #192326;
+      --overlay-foreground: #e4d9c5;
+      --backdrop: #00000099;
+      --muted: #aab6b5;
+      --default: #202c32;
+      --default-foreground: #e4d9c5;
+      --accent: #d0b987;
+      --accent-foreground: #172124;
+      --field-background: #192326;
+      --field-foreground: #e4d9c5;
+      --field-placeholder: #aab6b5;
+      --field-border: #344044;
+      --success: #a3bf88;
+      --success-foreground: #172124;
+      --warning: #d0b987;
+      --warning-foreground: #172124;
+      --danger: #efa68d;
+      --danger-foreground: #172124;
+      --segment: #293331;
+      --segment-foreground: #d0b987;
+      --border: #344044;
+      --separator: #344044;
+      --focus: #d0b987;
+      --link: #d0b987;
+      --surface-shadow: 0 0 0 0 transparent;
+      --overlay-shadow: 0 0 0 0 transparent;
+      --field-shadow: 0 0 0 0 transparent;
+    }
+  }
+}
+
 :root {
   --font-display:
     Spline Sans, Inter, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji,
@@ -6,4 +60,17 @@
     ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
   --font-rounded: 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif;
   --font-serif: Georgia, 'Times New Roman', serif;
+}
+
+/* HeroUI's JS feedback colors need literal values on web: Uniwind returns
+   color-mix() expressions there, which HeroUI's colorKit cannot parse. */
+@theme inline static {
+  --color-default-hover: #29363b;
+  --color-accent-hover: #bda981;
+  --color-danger-hover: #d89781;
+  --color-danger-soft-hover: #efa68d33;
+  --color-field-hover: #202c32;
+  --color-field-focus: #192326;
+  --color-field-border-hover: #53605e;
+  --color-field-border-focus: #d0b987;
 }

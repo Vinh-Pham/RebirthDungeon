@@ -73,7 +73,7 @@ describe('save storage and autosave', () => {
     expect(await repository.list()).toHaveLength(4); expect((await repository.load('2'))?.hero.gold).toBe(20);
     const updated = state(); updated.hero.gold = 99; await repository.save('2', updated);
     expect((await repository.load('2'))?.hero.gold).toBe(99); expect((await repository.load('1'))?.hero.gold).toBe(10);
-    expect(db.prepare('PRAGMA user_version').get()?.user_version).toBe(2); await repository.close();
+    expect(db.prepare('PRAGMA user_version').get()?.user_version).toBe(3); await repository.close();
   });
   it('preserves save slots when corrupt or future-version loads fail', async () => {
     const rows = new Map<string, SaveRow>(); const repository = new SaveRepository(memory(rows), content);

@@ -3,6 +3,16 @@ import { AudioManager, type AudioBackend } from '../../audio/AudioManager';
 import { EventBus } from '../../engine/EventBus';
 function backend(): AudioBackend { return { configure: vi.fn(async () => {}), playSound: vi.fn(), playMusic: vi.fn(), stopMusic: vi.fn(), dispose: vi.fn() }; }
 describe('audio presentation services', () => {
+  it('reports unsuccessful unlocking when audio configuration fails', async () => {
+    const output = backend();
+    output.configure = vi.fn(async () => { throw new Error('Audio unavailable'); });
+    const report = vi.fn();
+    const manager = new AudioManager(output, report);
+    expect(await manager.enable({ enabled: true, music: 0.3, sfx: 0.7 })).toBe(false);
+    expect(report).toHaveBeenCalled();
+    expect(output.playMusic).not.toHaveBeenCalled();
+    manager.dispose();
+  });
   it('plays event SFX only after enable, honors volume/mute and switches music scenes', async () => {
     const output = backend(); const manager = new AudioManager(output); const events = new EventBus(); manager.connect(events);
     const hit = { type: 'DAMAGE_DEALT', sourceId: 'player', targetId: 'enemy', amount: 4, critical: false } as const;

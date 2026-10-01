@@ -4,14 +4,14 @@ import { MenuButton, MenuPage, menu } from './MenuUI';
 
 export default function TitleScreen() {
   return <MenuPage>
-    <Text style={menu.eyebrow}>A NEW LIFE BEYOND THE DARK</Text>
+    <Text className="text-accent" style={menu.eyebrow}>A NEW LIFE BEYOND THE DARK</Text>
     <View style={styles.hero}>
       <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.gate}>
         <View style={styles.innerGate}><Text style={styles.ember}>✦</Text><View style={styles.path} /></View>
       </View>
-      <Text accessibilityRole="header" style={[menu.title, styles.title]}>Rebirth{'\n'}Dungeon</Text>
+      <Text className="text-foreground" accessibilityRole="header" style={[menu.title, styles.title]}>Rebirth{'\n'}Dungeon</Text>
       <View style={styles.rule} />
-      <Text style={[menu.body, styles.subtitle]}>Every journey begins with a name.</Text>
+      <Text className="text-muted" style={[menu.body, styles.subtitle]}>Every journey begins with a name.</Text>
     </View>
     <MenuButton label="Play" onPress={() => router.navigate('/characters')} />
     <Text style={styles.footer}>THE EMBER WAITS FOR YOU</Text>

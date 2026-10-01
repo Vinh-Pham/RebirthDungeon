@@ -4,6 +4,7 @@ import { AutoSaver } from '../persistence/AutoSaver';
 import { JourneySession } from './JourneySession';
 import type { GrowthTalent } from '../engine/rpg/Stats';
 import type { BattleSession } from './BattleSession';
+import type { AudioSettings } from '../audio/AudioManager';
 interface HostView { session?: JourneySession; battle?: BattleSession; revision: number; busy: boolean; storageAvailable: boolean; error?: string;
   notice?: string; slots: { id: SaveSlot; savedAt: string }[] }
 const empty: HostView = { revision: 0, busy: true, storageAvailable: false, slots: [] };
@@ -16,7 +17,7 @@ export class JourneyHost {
   private autosaver?: AutoSaver;
   private unsubscribe?: () => void;
   private generation = 0;
-  constructor(readonly content: ContentRegistry, private createStorage: () => Promise<SaveStorage>, private characterName?: string, private growthTalent?: GrowthTalent) {}
+  constructor(readonly content: ContentRegistry, private createStorage: () => Promise<SaveStorage>, private characterName?: string, private growthTalent?: GrowthTalent, private audioSettings?: () => AudioSettings) {}
   getSnapshot = () => this.snapshot;
   getServerSnapshot = () => empty;
   subscribe = (listener: () => void) => {
@@ -100,6 +101,7 @@ export class JourneyHost {
     }
   }
   private attach(session: JourneySession) {
+    if (this.audioSettings) session.setAudio(this.audioSettings());
     this.unsubscribe?.(); this.snapshot.battle?.dispose(); this.snapshot.session?.dispose();
     this.update({ session, battle: undefined, revision: this.snapshot.revision + 1 });
     this.unsubscribe = session.subscribe(() => {

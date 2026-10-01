@@ -1,4 +1,6 @@
 import type { SaveRow, SaveSlot, SaveStorage } from './SaveRepository';
+import type { AudioSettings } from '../audio/AudioManager';
+import type { AudioSettingsStorage } from './AudioSettingsRepository';
 import { CharacterProfileSchema, importedCharacter, type CharacterProfile, type CompleteCharacter, type CharacterStorage } from './CharacterProfile';
 export interface SqlDatabase {
   execAsync(sql: string): Promise<void>;
@@ -8,11 +10,11 @@ export interface SqlDatabase {
   closeAsync(): Promise<void>;
 }
 /** SQL stays testable without importing Expo into headless tests. */
-export class SQLiteSaveStorage implements SaveStorage, CharacterStorage {
+export class SQLiteSaveStorage implements SaveStorage, CharacterStorage, AudioSettingsStorage {
   constructor(private db: SqlDatabase, private characterId = 'legacy') {}
   async initialize() {
     const row = await this.db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
-    if ((row?.user_version ?? 0) > 2) throw new Error('Save database is newer than this app');
+    if ((row?.user_version ?? 0) > 3) throw new Error('Save database is newer than this app');
     // Idempotent schema migration, committed atomically with its version marker.
     await this.db.execAsync('PRAGMA busy_timeout = 5000; PRAGMA journal_mode = WAL;');
     if ((row?.user_version ?? 0) < 2) {
@@ -26,7 +28,21 @@ export class SQLiteSaveStorage implements SaveStorage, CharacterStorage {
           PRAGMA user_version = 2; COMMIT;`);
       } catch (error) { await this.db.execAsync('ROLLBACK;'); throw error; }
     }
+    if ((row?.user_version ?? 0) < 3) {
+      await this.db.execAsync('BEGIN IMMEDIATE;');
+      try {
+        await this.db.execAsync(`CREATE TABLE IF NOT EXISTS app_settings (id TEXT PRIMARY KEY NOT NULL, payload TEXT NOT NULL);
+          PRAGMA user_version = 3; COMMIT;`);
+      } catch (error) { await this.db.execAsync('ROLLBACK;'); throw error; }
+    }
     return this;
+  }
+  async readAudioSettings() {
+    const row = await this.db.getFirstAsync<{ payload: string }>("SELECT payload FROM app_settings WHERE id = 'audio'");
+    return row ? JSON.parse(row.payload) as unknown : undefined;
+  }
+  async writeAudioSettings(settings: AudioSettings) {
+    await this.db.runAsync("INSERT INTO app_settings (id, payload) VALUES ('audio', ?) ON CONFLICT(id) DO UPDATE SET payload = excluded.payload", JSON.stringify(settings));
   }
   read(id: SaveSlot) { return this.readSave(this.characterId, id); }
   list() { return this.listSaves(this.characterId); }

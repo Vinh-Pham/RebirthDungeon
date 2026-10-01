@@ -15,7 +15,7 @@ Press **Play**, then choose a saved character or **Create New Character**. Enter
 name (1–24 characters), choose Warrior, Archery or Mage, and select an age from
 10–17. Talent determines starting bonuses and attribute growth; age is cosmetic.
 Each character has an independent autosave and three manual slots. Use
-**Characters** above the game to save progress and return to the roster.
+**Characters** in the header menu to save progress and return to the roster.
 Existing saves appear as **Imported Adventurer**; complete its character details
 once to continue. Original legacy save rows remain available as recovery copies.
 
@@ -25,10 +25,38 @@ return after victory, collect the moss mail, and challenge the elder guardian.
 Movement works with buttons or by tapping a reachable floor tile. You can return
 to the town for supplies, weapon repairs, and paid healing. The Codex shows the content definitions.
 
-Save slots and sound settings are further down the Journey screen. Three manual
-slots plus an autosave retain character resources, equipment, inventory, XP, gold,
-world flags, map position, encounter checkpoints and exact exploration RNG state.
+The header menu opens a left drawer with Characters, Stats, Inventory, Save/Load,
+and Settings. Swipe from the left edge on iOS or Android, or use the menu button
+on every platform. Inventory and Save/Load have separate screens; the Journey and
+Codex tabs remain available in the game. Inventory is read-only during battle,
+and manual save/load waits until the encounter finishes. Three manual slots plus
+an autosave retain character resources, equipment, inventory, XP, gold, world
+flags, map position, encounter checkpoints and exact exploration RNG state.
 Native runtime testing requires a development build after adding native modules.
+
+## UI system
+
+App controls use HeroUI Native 1.0 with Tailwind 4 and Uniwind. The root provider
+lives inside the gesture handler root, and `src/global.css` defines the dark
+stone, parchment, gold, sage, and coral tokens. Import HeroUI components from
+individual component paths. Shared action, card, notice, and loading components
+live in `src/ui/shared/DungeonUI.tsx`; game commands remain in the screen owners.
+Skia world and battle canvases are unchanged.
+
+Expo Router owns the app-wide drawer, root stack, game stack, and Journey/Codex
+tabs. Pathless route groups preserve existing links. The shared header includes a
+menu button and Back controls for auxiliary screens. Web drawer controls support
+keyboard focus containment, Escape, and focus restoration.
+Stats use a native HeroUI Dialog and a small web Modal adapter for focus trapping,
+Escape, and background isolation. Web choice groups add arrow-key navigation.
+Component CSS is placed in Tailwind’s components layer so app utilities can
+override HeroUI defaults on web. The Metro configuration avoids a React Native Web import cycle while retaining
+Uniwind's stylesheet adapter. Literal hover tokens and the shared action's web
+variant avoid HeroUI color parsing errors during web rendering.
+
+After changing native dependencies, use a development build and validate on both
+iOS and Android. For a production bundle check, run
+`npx expo export --platform all --output-dir .artifacts/ui-export`.
 
 ## Town services and weapon durability
 
@@ -68,7 +96,7 @@ prices, recovery rules, and maximum durability live in `src/data/items`.
 
 ## Character stats and recovery
 
-Use **Stats** above the game to open the character window from exploration,
+Use **Stats** in the header menu to open the character window from exploration,
 shops, battle, or the Codex. It shows current battle resources, base and equipment
 attributes, combat formulas, active effects and weapon durability. Closing it
 preserves your selected action and target. Phones use the full screen; larger
@@ -361,15 +389,21 @@ An abrupt process kill within the autosave debounce can lose the latest step.
 
 `AudioManager` subscribes to simulation events through an injected backend. The
 Expo audio backend provides a bounded pool for overlapping SFX, looping exploration
-and battle music, mute and independent music/SFX volume controls. Players and
-subscriptions are released with the session; backgrounding pauses music. Audio
-failures are surfaced without changing gameplay. Playback-only config disables
+and battle music, mute and independent music/SFX volume controls. The root audio
+provider keeps players stable across navigation, replaces event subscriptions
+when a session changes, and pauses music when backgrounded or no character is
+selected. Audio failures are surfaced without changing gameplay. Playback-only config disables
 microphone permissions, recording and background audio services.
 
-`assets/audio` contains original synthesized WAV music and SFX. Sound starts when
-explicitly enabled. After a browser reload, Resume sound uses a fresh user gesture
-to unlock playback while retaining saved volume preferences. `ParticleRenderer` adds
-presentation-only impact/healing bursts, alongside HP/damage/death animation,
+`assets/audio` contains original synthesized WAV music and SFX. Settings is
+available before character selection. Sound preferences are global and persist independently of game slots in SQLite on native and IndexedDB on
+web. Database version 3 adds a settings record while preserving character saves.
+The first launch adopts sound preferences from the most recently saved valid
+journey, or starts muted with 30% music and 70% effects. Loading a game never
+replaces global preferences; legacy save audio fields remain compatible. Sound
+starts when explicitly enabled. After a browser reload, Resume sound in Settings
+uses a fresh user gesture to unlock playback while retaining saved preferences.
+`ParticleRenderer` adds presentation-only impact/healing bursts, alongside HP/damage/death animation,
 spell effects, camera shake, smooth world movement and map fade transitions.
 Haptics remain optional and are not enabled.
 

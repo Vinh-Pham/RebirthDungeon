@@ -1,5 +1,8 @@
+import { DungeonButton as Button, DungeonNotice, DungeonLoading } from '../shared/DungeonUI';
+import { Surface } from 'heroui-native/surface';
+import ResourceBar from '../shared/ResourceBar';
 import { Component, useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Platform, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useStore } from 'zustand';
 import { loadGameContent } from '../../data/content';
@@ -15,27 +18,16 @@ export class ArenaBoundary extends Component<{ children: ReactNode }, { failed: 
   state = { failed: false };
   static getDerivedStateFromError() { return { failed: true }; }
   render() {
-    return this.state.failed ? <View style={styles.notice}><Text style={styles.body}>The arena couldn’t load. Restart the app to try again.</Text></View> : this.props.children;
+    return this.state.failed ? <DungeonNotice message="The arena couldn’t load. Restart the app to try again." /> : this.props.children;
   }
-}
-
-function Button({ label, detail, onPress, disabled = false, selected = false, primary = false, group = false }: {
-  label: string; detail?: string; onPress(): void; disabled?: boolean; selected?: boolean; primary?: boolean; group?: boolean;
-}) {
-  return <Pressable accessibilityRole="button" accessibilityState={{ disabled, selected }} disabled={disabled}
-    onPress={onPress} style={({ pressed }) => [styles.button, group && styles.actionGroup, primary && styles.primary,
-      selected && styles.selected, disabled && styles.disabled, pressed && styles.pressed]}>
-    <Text style={[styles.buttonText, primary && styles.primaryText]}>{label}</Text>
-    {detail ? <Text style={styles.buttonDetail}>{detail}</Text> : null}
-  </Pressable>;
 }
 
 export default function BattleScreen() {
   const [host] = useState(() => new BattleHost(() => new BattleSession(loadGameContent())));
   const snapshot = useSyncExternalStore(host.subscribe, host.getSnapshot, host.getServerSnapshot);
-  if (!snapshot.session) return <SafeAreaView style={styles.screen}><View style={styles.notice}>
-    <Text style={styles.title}>Rebirth Dungeon</Text>
-    <Text style={styles.body}>{snapshot.error ?? 'Opening the dungeon…'}</Text>
+  if (!snapshot.session) return <SafeAreaView className="bg-background" style={styles.screen}><View style={styles.notice}>
+    <Text className="text-foreground" style={styles.title}>Rebirth Dungeon</Text>
+    {snapshot.error ? <DungeonNotice message={snapshot.error} /> : <DungeonLoading label="Opening the dungeon" />}
     {snapshot.error ? <Button label="Try again" onPress={host.restart} /> : null}
   </View></SafeAreaView>;
   return <BattleView key={snapshot.revision} session={snapshot.session} restart={host.restart} />;
@@ -65,45 +57,48 @@ export function BattleView({ session, restart, finishedLabel = 'Descend again' }
     presentation.busy ? 'The battle unfolds before you.' : defending ? 'Halve damage from attacks and spells until your next turn and recover stamina. Confirm to defend.' :
     view.phase === 'selectingTarget' ? 'Tap a sprite or choose a name below, then confirm.' : 'Choose Attack, Skill, Defend, or Item.';
 
-  return <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
+  return <SafeAreaView className="bg-background" style={styles.screen} edges={['left', 'right']}>
     <ScrollView contentContainerStyle={styles.scroll}>
       <View style={[styles.content, { width }]}>
-        <View style={styles.headingRow}><Text style={styles.eyebrow}>REBIRTH DUNGEON</Text>
-          <Pressable accessibilityRole="button" accessibilityLabel="Toggle battle debug overlay"
-            onPress={() => session.ui.getState().toggleDebug()} style={styles.debugButton}><Text style={styles.debugButtonText}>◈</Text></Pressable>
+        <View style={styles.headingRow}><Text className="text-accent" style={styles.eyebrow}>REBIRTH DUNGEON</Text>
+          <Button label="◈" accessibilityLabel="Toggle battle debug overlay" selected={debug} onPress={() => session.ui.getState().toggleDebug()} />
         </View>
-        <Text style={styles.title}>{session.map.name}</Text>
-        <Text style={styles.subtitle}>DESCENT I   /   AN UNWELCOME GUEST</Text>
-        <View style={styles.arena}>
+        <Text className="text-foreground" style={styles.title}>{session.map.name}</Text>
+        <Text className="text-muted" style={styles.subtitle}>DESCENT I   /   AN UNWELCOME GUEST</Text>
+        <View className="border-border" style={styles.arena}>
           <ArenaBoundary><GameCanvas session={session} width={width} onSelectTarget={(targetId) => dispatch({ type: 'SELECT_TARGET', targetId })} /></ArenaBoundary>
         </View>
-        {debug ? <View style={styles.debug}>
-          <Text style={styles.debugText}>Seed {session.engine.seed} · {view.phase}</Text>
-          <Text style={styles.debugText}>Entities {session.engine.world.entities.length} · Turn {view.turnId ?? 'complete'}</Text>
-          <Text style={styles.debugText}>Order {session.combat.turnOrder.join(' → ')} · Visual queue {presentation.pending}</Text>
-          {view.entities.map((entity) => <Text key={entity.id} style={styles.debugText}>{entity.id} ({entity.x}, {entity.y}) · {entity.sprite.atlas}:{entity.sprite.frame}</Text>)}
-        </View> : null}
-        <View style={styles.roster}>
+        {debug ? <Surface className="bg-surface-secondary" style={styles.debug}>
+          <Text className="text-muted" style={styles.debugText}>Seed {session.engine.seed} · {view.phase}</Text>
+          <Text className="text-muted" style={styles.debugText}>Entities {session.engine.world.entities.length} · Turn {view.turnId ?? 'complete'}</Text>
+          <Text className="text-muted" style={styles.debugText}>Order {session.combat.turnOrder.join(' → ')} · Visual queue {presentation.pending}</Text>
+          {view.entities.map((entity) => <Text className="text-muted" key={entity.id} style={styles.debugText}>{entity.id} ({entity.x}, {entity.y}) · {entity.sprite.atlas}:{entity.sprite.frame}</Text>)}
+        </Surface> : null}
+        <View className="border-border" style={styles.roster}>
           {view.entities.map((entity) => <View key={entity.id} style={styles.unit}>
-            <Text style={[styles.unitLabel, entity.side === 'player' ? styles.gold : styles.green]}>{entity.name}</Text>
-            <Text style={styles.hp}>{entity.health}<Text style={styles.muted}> / {entity.maxHealth} HP</Text></Text>
-            <Text style={styles.resource}>{entity.maxMana ? `${entity.mana} / ${entity.maxMana} MANA` : entity.dead ? 'DEFEATED' : 'ENEMY'}</Text>
-            {entity.maxStamina !== undefined ? <Text style={styles.resource}>{entity.stamina}/{entity.maxStamina} STAMINA · {entity.wounds ?? 0} WOUNDS · {entity.fullness?.toFixed(1)}% FULLNESS</Text> : null}
-            {entity.weapon ? <Text style={styles.resource}>{entity.weapon.name} · {entity.weapon.durability}/{entity.weapon.maxDurability}{entity.weapon.durability === 0 ? ' · BROKEN' : ''}</Text> : null}
-            {(session.engine.getEntity(entity.id)?.statuses ?? []).map((status) => <Text key={status.id} style={styles.resource}>{session.content.status(status.id).name} · {status.remainingTurns} turns</Text>)}
+            <Text className={entity.side === 'player' ? 'text-accent' : 'text-success'} style={styles.unitLabel}>{entity.name}</Text>
+            <ResourceBar label="HP" value={entity.health} max={entity.maxHealth} name={entity.name} />
+            {entity.maxMana > 0 ? <ResourceBar label="Mana" value={entity.mana} max={entity.maxMana} name={entity.name} /> :
+              <Text className="text-muted" style={styles.resource}>{entity.dead ? 'DEFEATED' : 'ENEMY'}</Text>}
+            {entity.maxStamina !== undefined ? <>
+              <ResourceBar label="Stamina" value={entity.stamina ?? 0} max={entity.maxStamina} name={entity.name} />
+              <Text className="text-muted" style={styles.resource}>{entity.wounds ?? 0} WOUNDS · {entity.fullness?.toFixed(1)}% FULLNESS</Text>
+            </> : null}
+            {entity.weapon ? <Text className="text-muted" style={styles.resource}>{entity.weapon.name} · {entity.weapon.durability}/{entity.weapon.maxDurability}{entity.weapon.durability === 0 ? ' · BROKEN' : ''}</Text> : null}
+            {(session.engine.getEntity(entity.id)?.statuses ?? []).map((status) => <Text className="text-muted" key={status.id} style={styles.resource}>{session.content.status(status.id).name} · {status.remainingTurns} turns</Text>)}
           </View>)}
         </View>
         <View style={styles.decision}>
-          <Text style={styles.headline}>{headline}</Text><Text style={styles.body}>{hint}</Text>
+          <Text className="text-foreground" style={styles.headline}>{headline}</Text><Text className="text-muted" style={styles.body}>{hint}</Text>
           {!finished ? <BattleActions key={`${view.turnId}:${canChoose}`} session={session} view={view} canChoose={canChoose} dispatch={dispatch} /> :
             <View style={styles.actions}><Button primary label={finishedLabel} disabled={presentation.busy} onPress={restart} /></View>}
-          {error || session.battle.context.error ? <Text accessibilityRole="alert" style={styles.error}>{error ?? session.battle.context.error}</Text> : null}
+          {error || session.battle.context.error ? <DungeonNotice message={error ?? session.battle.context.error} /> : null}
         </View>
-        <View style={styles.log}>
-          <Text style={styles.eyebrow}>BATTLE CHRONICLE</Text>
-          <View accessibilityLiveRegion="polite">{view.log.length ? view.log.slice(-4).map((line, index) => <Text key={`${index}:${line}`} style={styles.logLine}>{line}</Text>) : <Text style={styles.logLine}>A moss slime stirs in the dark.</Text>}</View>
-        </View>
-        <Text style={styles.footer}>ONE CHAMBER. ONE CHANCE. ANOTHER REBIRTH.</Text>
+        <Surface className="bg-surface-secondary" style={styles.log}>
+          <Text className="text-accent" style={styles.eyebrow}>BATTLE CHRONICLE</Text>
+          <View accessibilityLiveRegion="polite">{view.log.length ? view.log.slice(-4).map((line, index) => <Text className="text-muted" key={`${index}:${line}`} style={styles.logLine}>{line}</Text>) : <Text className="text-muted" style={styles.logLine}>A moss slime stirs in the dark.</Text>}</View>
+        </Surface>
+        <Text className="text-muted" style={styles.footer}>ONE CHAMBER. ONE CHANCE. ANOTHER REBIRTH.</Text>
       </View>
     </ScrollView>
   </SafeAreaView>;
@@ -139,18 +134,18 @@ function BattleActions({ session, view, canChoose, dispatch }: {
       <Button group label="Defend" detail="Guard & recover" disabled={!canChoose} selected={selectedGroup === 'defend' || selectedGroup === 'rest'} onPress={() => chooseGroup('defend')} />
       <Button group label="Item" detail="Use a consumable" disabled={!canChoose} selected={selectedGroup === 'item'} onPress={() => chooseGroup('item')} />
     </View>
-    {menu ? <View style={styles.actionList}>
-      <Text style={styles.eyebrow}>{menu === 'skill' ? 'SKILLS' : 'ITEMS'}</Text>
-      {menu === 'skill' ? skills.length ? skills.map((skill) => {
+    {menu ? <View className="border-border" style={styles.actionList}>
+      <Text className="text-accent" style={styles.eyebrow}>{menu === 'skill' ? 'SKILLS' : 'ITEMS'}</Text>
+      {menu === 'skill' ? skills.length ? <View style={styles.skillGrid}>{skills.map((skill) => {
         const cost = source && !(skill.effect === 'heal' && skill.target === 'ally') ? staminaCost(source, skill.staminaCost) : 0;
         const unavailable = !source?.mana || source.mana.current < skill.manaCost || !!source.stamina && source.stamina.current < cost;
-        return <Button key={skill.id} label={skill.name} detail={`${skill.manaCost} MP${cost ? ` · ${cost} SP` : ''}`}
+        return <View key={skill.id} style={styles.skillColumn}><Button className="min-h-[68px] flex-1" label={skill.name} detail={`${skill.manaCost} MP${cost ? ` · ${cost} SP` : ''}`}
           disabled={!canChoose || unavailable} selected={view.selectedAction?.skillId === skill.id}
-          onPress={() => selectAction({ type: 'SELECT_ACTION', action: 'skill', skillId: skill.id })} />;
-      }) : <Text style={styles.body}>No battle skills learned.</Text> : items.length ? items.map(({ item, quantity }) =>
+          onPress={() => selectAction({ type: 'SELECT_ACTION', action: 'skill', skillId: skill.id })} /></View>;
+      })}</View> : <Text className="text-muted" style={styles.body}>No battle skills learned.</Text> : items.length ? items.map(({ item, quantity }) =>
         <Button key={item.id} label={`${item.name} ×${quantity}`} disabled={!canChoose} selected={view.selectedAction?.itemId === item.id}
           onPress={() => selectAction({ type: 'SELECT_ACTION', action: 'item', itemId: item.id })} />)
-        : <Text style={styles.body}>No usable items in your inventory.</Text>}
+        : <Text className="text-muted" style={styles.body}>No usable items in your inventory.</Text>}
       {view.phase !== 'selectingTarget' ? <Button label="Back" disabled={!canChoose} onPress={() => setMenu(undefined)} /> : null}
     </View> : null}
     {view.phase === 'selectingTarget' ? <>
@@ -165,30 +160,26 @@ function BattleActions({ session, view, canChoose, dispatch }: {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#10161c' },
-  scroll: { flexGrow: 1, alignItems: 'center', paddingHorizontal: 20, paddingTop: Platform.OS === 'web' ? 88 : 12, paddingBottom: 110 },
+  screen: { flex: 1 },
+  scroll: { flexGrow: 1, alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 24 },
   content: { gap: 18 }, headingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  eyebrow: { color: '#a79474', fontSize: 10, letterSpacing: 2.4, fontFamily: mono },
-  title: { fontFamily: Platform.OS === 'android' ? 'serif' : 'Georgia', fontSize: 36, color: '#e4d9c5', letterSpacing: -1 },
-  subtitle: { fontFamily: mono, color: '#68797d', fontSize: 9, letterSpacing: 1.3, marginTop: -7 },
-  arena: { overflow: 'hidden', borderRadius: 8, backgroundColor: '#192126' },
-  roster: { flexDirection: 'row', gap: 16, borderBottomWidth: 1, borderBottomColor: '#293137', paddingBottom: 18, flexWrap: 'wrap' },
-  unit: { flex: 1, minWidth: 112, gap: 5 }, unitLabel: { fontSize: 12, fontWeight: '600' },
-  hp: { fontSize: 23, color: '#dfddd0', fontFamily: mono }, muted: { color: '#637278', fontSize: 12 },
-  resource: { color: '#75858b', fontFamily: mono, fontSize: 9, letterSpacing: 1 },
-  gold: { color: '#d0ad74' }, green: { color: '#a3bf88' }, decision: { gap: 12 },
-  headline: { color: '#ddd6c8', fontSize: 20, fontFamily: Platform.OS === 'android' ? 'serif' : 'Georgia' },
-  body: { color: '#87969a', fontSize: 12, lineHeight: 19 },
+  eyebrow: { fontSize: 10, letterSpacing: 2.4, fontFamily: mono },
+  title: { fontFamily: Platform.OS === 'android' ? 'serif' : 'Georgia', fontSize: 36, letterSpacing: -1 },
+  subtitle: { fontFamily: mono, fontSize: 9, letterSpacing: 1.3, marginTop: -7 },
+  arena: { overflow: 'hidden', borderRadius: 8 },
+  roster: { flexDirection: 'row', gap: 16, borderBottomWidth: 1, paddingBottom: 18, flexWrap: 'wrap' },
+  unit: { flex: 1, minWidth: 112, gap: 10 }, unitLabel: { fontSize: 12, fontWeight: '600' },
+  resource: { fontFamily: mono, fontSize: 9, letterSpacing: 1 },
+    decision: { gap: 12 },
+  headline: { fontSize: 20, fontFamily: Platform.OS === 'android' ? 'serif' : 'Georgia' },
+  body: { fontSize: 12, lineHeight: 19 },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }, targets: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingVertical: 4 },
-  actionGroup: { flexBasis: '47%', flexGrow: 1, minHeight: 68 }, actionList: { gap: 8, padding: 12, borderWidth: 1, borderColor: '#293137', borderRadius: 5 },
-  button: { paddingHorizontal: 15, paddingVertical: 10, minHeight: 46, gap: 4, justifyContent: 'center', borderWidth: 1, borderColor: '#3a454a', borderRadius: 5, backgroundColor: '#1b252b' },
-  buttonText: { color: '#cecbbd', fontSize: 12, fontWeight: '600' },
-  buttonDetail: { color: '#87969a', fontSize: 10 },
-  selected: { borderColor: '#ba9a63', backgroundColor: '#302d27' }, primary: { backgroundColor: '#c7a571', borderColor: '#c7a571' },
-  primaryText: { color: '#171b1e' }, disabled: { opacity: 0.35 }, pressed: { opacity: 0.7 },
-  log: { backgroundColor: '#151e24', borderRadius: 5, padding: 16, gap: 12 }, logLine: { color: '#7f9296', fontSize: 11, lineHeight: 19 },
-  footer: { color: '#46595e', textAlign: 'center', fontSize: 8, letterSpacing: 1.5, fontFamily: mono },
-  debugButton: { minWidth: 44, minHeight: 44, justifyContent: 'center', alignItems: 'center' }, debugButtonText: { color: '#75868a', fontSize: 23 },
-  debug: { padding: 12, backgroundColor: '#18242b', gap: 4 }, debugText: { fontFamily: mono, fontSize: 10, color: '#93a8aa' },
-  error: { color: '#d99780', fontSize: 12 }, notice: { padding: 24, gap: 20 },
+   actionList: { gap: 8, padding: 12, borderWidth: 1, borderRadius: 5 },
+  skillGrid: { flexDirection: 'row', flexWrap: 'wrap', margin: -4 },
+  skillColumn: { width: '50%', padding: 4 },
+
+  log: { borderRadius: 5, padding: 16, gap: 12 }, logLine: { fontSize: 11, lineHeight: 19 },
+  footer: { textAlign: 'center', fontSize: 8, letterSpacing: 1.5, fontFamily: mono },
+  debug: { padding: 12, gap: 4 }, debugText: { fontFamily: mono, fontSize: 10 },
+   notice: { padding: 24, gap: 20 },
 });

@@ -1,14 +1,16 @@
-import { Redirect, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { Redirect, router, Stack, useFocusEffect, useLocalSearchParams, useNavigation, usePathname } from 'expo-router';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { ActivityIndicator, AppState, BackHandler, Pressable, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import AppTabs from '../../components/app-tabs';
+import { AppState, BackHandler, Text, View } from 'react-native';
+import { useDrawerStatus } from 'expo-router/drawer';
+import { DrawerActions } from 'expo-router/react-navigation';
+import { useAudio } from '../../audio/AudioProvider';
+import { useAppNavigation } from '../navigation/AppNavigationContext';
+import { DungeonLoading } from '../shared/DungeonUI';
 import { loadGameContent } from '../../data/content';
 import { JourneyHost } from '../../game/JourneyHost';
 import { createSaveStorage } from '../../persistence/createSaveStorage';
 import { withCharacters } from '../../persistence/characters';
-import { TALENT_LABELS, type CharacterProfile, type CompleteCharacter } from '../../persistence/CharacterProfile';
-import { CharacterWindow } from './CharacterWindow';
+import { type CharacterProfile, type CompleteCharacter } from '../../persistence/CharacterProfile';
 import { CharacterGameContext } from './CharacterGameContext';
 import { MenuButton, MenuError, MenuPage, menu } from './MenuUI';
 
@@ -30,66 +32,71 @@ function LoadCharacter({ characterId }: { characterId: string }) {
   }, [characterId, attempt]);
   if (profile?.needsSetup) return <Redirect href={{ pathname: '/characters/new', params: { importId: profile.id } }} />;
   if (profile) return <CharacterGame profile={profile} />;
-  return <MenuPage><Text style={menu.title}>Your journey</Text>{error ? <><MenuError message={error} />
+  return <MenuPage><Text className="text-foreground" style={menu.title}>Your journey</Text>{error ? <><MenuError message={error} />
     <MenuButton label="Retry" onPress={() => { setError(undefined); setAttempt((value) => value + 1); }} />
     <MenuButton label="Back to Characters" secondary onPress={() => router.dismissTo('/characters')} />
-  </> : <ActivityIndicator color="#d0b987" accessibilityLabel="Loading character" />}</MenuPage>;
+  </> : <DungeonLoading label="Loading character" />}</MenuPage>;
 }
 function CharacterGame({ profile }: { profile: CompleteCharacter }) {
   const [attempt, setAttempt] = useState(0);
+  const { ready } = useAudio();
+  if (!ready) return <MenuPage><DungeonLoading label="Loading sound preferences" /></MenuPage>;
   return <GameSession key={attempt} profile={profile} retry={() => setAttempt((value) => value + 1)} />;
 }
 function GameSession({ profile, retry }: { profile: CompleteCharacter; retry(): void }) {
-  const [host] = useState(() => new JourneyHost(loadGameContent(), () => createSaveStorage(profile.id), profile.name, profile.talent));
+  const { preferences, attachSession } = useAudio();
+  const { registerGame, statsOpen, closeStats, characters } = useAppNavigation();
+  const navigation = useNavigation('/');
+  const drawerOpen = useDrawerStatus() === 'open';
+  const path = usePathname();
+  const [host] = useState(() => new JourneyHost(loadGameContent(), () => createSaveStorage(profile.id), profile.name, profile.talent, preferences.getSettings));
   const snapshot = useSyncExternalStore(host.subscribe, host.getSnapshot, host.getServerSnapshot);
-  const [leaving, setLeaving] = useState(false);
-  const [statsOpen, setStatsOpen] = useState(false);
-  const statsTrigger = useRef<View>(null);
-  const closeStats = () => { setStatsOpen(false); statsTrigger.current?.focus(); };
-  const [error, setError] = useState<string>();
+  const ready = !!snapshot.session;
   const leavePending = useRef(false);
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => { if (state !== 'active') void host.flush(); });
     return () => subscription.remove();
   }, [host]);
   const leave = useCallback(async () => {
-    if (leavePending.current || snapshot.busy) return;
-    leavePending.current = true; setLeaving(true); setError(undefined);
-    if (await host.flushForExit()) router.dismissTo('/characters');
-    else { setError('Your latest progress could not be saved. Please try again.'); leavePending.current = false; setLeaving(false); }
-  }, [host, snapshot.busy]);
+    if (leavePending.current || host.getSnapshot().busy) return false;
+    leavePending.current = true;
+    try {
+      if (!await host.flushForExit()) return false;
+      router.dismissTo('/characters');
+      return true;
+    } finally { leavePending.current = false; }
+  }, [host]);
+  useEffect(() => {
+    if (ready) return registerGame({ host, profile, leave });
+  }, [ready, registerGame, host, profile, leave]);
+  useEffect(() => {
+    if (snapshot.session) return attachSession(snapshot.session, snapshot.battle);
+  }, [snapshot.session, snapshot.battle, attachSession]);
   useFocusEffect(useCallback(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (drawerOpen) { navigation.dispatch(DrawerActions.closeDrawer()); return true; }
+      if (statsOpen) { closeStats(); return true; }
+      if (path.endsWith('/inventory') || path.endsWith('/save-load')) return false;
       const current = host.getSnapshot();
       if (!current.battle && current.session?.getSnapshot().activeService) {
         if (!current.busy) current.session.dispatch({ type: 'CLOSE_SERVICE' });
         return true;
       }
-      void leave(); return true;
+      void characters(); return true;
     });
     return () => subscription.remove();
-  }, [leave, host]));
-  if (!snapshot.session) return <MenuPage><Text style={menu.title}>{profile.name}</Text>
-    {snapshot.busy ? <ActivityIndicator color="#d0b987" accessibilityLabel="Loading journey" /> : <>
+  }, [characters, host, statsOpen, closeStats, drawerOpen, navigation, path]));
+  if (!snapshot.session) return <MenuPage><Text className="text-foreground" style={menu.title}>{profile.name}</Text>
+    {snapshot.busy ? <DungeonLoading label="Loading journey" /> : <>
       <MenuError message={snapshot.error ?? 'Your journey could not be loaded.'} /><MenuButton label="Retry" onPress={retry} />
       <MenuButton label="Back to Characters" secondary onPress={() => router.dismissTo('/characters')} />
     </>}
   </MenuPage>;
-  return <CharacterGameContext value={{ host, profile }}><View style={menu.screen}>
-    <SafeAreaView edges={['top']} style={styles.header}>
-      <View style={styles.headerRow}><View style={styles.identity}><Text numberOfLines={1} style={menu.heading}>{profile.name}</Text>
-        <Text style={styles.details}>{TALENT_LABELS[profile.talent]} · Age {profile.age}</Text></View>
-        <Pressable ref={statsTrigger} accessibilityRole="button" accessibilityLabel="Open character stats" onPress={() => setStatsOpen(true)} style={styles.statsButton}><Text style={styles.statsText}>Stats</Text></Pressable>
-        <MenuButton label={leaving ? 'Saving…' : 'Characters'} secondary busy={leaving} disabled={snapshot.busy} onPress={() => { void leave(); }} />
-      </View><MenuError message={error} />
-    </SafeAreaView>
-    <AppTabs />
-    {statsOpen ? <CharacterWindow host={host} profile={profile} close={closeStats} /> : null}
+  return <CharacterGameContext value={{ host, profile }}><View className="flex-1 bg-background">
+    <Stack screenOptions={{ headerShown: false, gestureEnabled: false }}>
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="inventory" />
+      <Stack.Screen name="save-load" />
+    </Stack>
   </View></CharacterGameContext>;
 }
-const styles = StyleSheet.create({
-  header: { paddingHorizontal: 16, backgroundColor: '#101719', borderBottomWidth: 1, borderBottomColor: '#344044' },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 }, identity: { flex: 1, gap: 4 },
-  statsButton: { minWidth: 48, minHeight: 48, justifyContent: 'center', alignItems: 'center' }, statsText: { color: '#d0b987', fontWeight: '600' },
-  details: { color: '#aab6b5', fontSize: 12 },
-});

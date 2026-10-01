@@ -21,8 +21,8 @@ export class AudioManager {
   constructor(private backend: AudioBackend, private onError: (error: unknown) => void = () => {}) {}
   async enable(settings: AudioSettings) {
     this.setSettings(settings);
-    try { await this.backend.configure(); if (this.disposed) return; this.ready = true; this.refreshMusic(); }
-    catch (error) { this.onError(error); }
+    try { await this.backend.configure(); if (this.disposed) return false; this.ready = true; this.refreshMusic(); return true; }
+    catch (error) { this.onError(error); return false; }
   }
   setSettings(settings: AudioSettings) {
     if ([settings.music, settings.sfx].some((value) => !Number.isFinite(value) || value < 0 || value > 1)) throw new Error('Invalid audio volume');
