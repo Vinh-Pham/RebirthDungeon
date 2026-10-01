@@ -1,4 +1,5 @@
 import { DungeonButton as Button, DungeonCard, DungeonLoading, DungeonNotice } from '../shared/DungeonUI';
+import ResourceBar from '../shared/ResourceBar';
 import { useState, useSyncExternalStore } from 'react';
 import { Platform, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -33,7 +34,6 @@ function Exploration({ host, session, error, setError }: {
   const { width: windowWidth } = useWindowDimensions(); const width = Math.max(240, Math.min(windowWidth - 40, 560));
   const { state, map } = view; const run = state.dungeon; const stats = heroStats(state.hero, session.content, run?.effects);
   const currentRoom = run?.blueprint.rooms.find((room) => inRoom(room, state.position));
-  const around = run ? map.objects.filter((obj) => (currentRoom && inRoom(currentRoom, obj)) || distance(obj, state.position) <= 5) : map.objects;
   const dispatch = (command: GameCommand) => { if (hostView.busy) return false; try { setError(undefined); session.dispatch(command); return true; } catch (error) { setError(error instanceof Error ? error.message : 'Action failed'); return false; } };
   const approach = (objectId: string) => {
     const object = map.objects.find((obj) => obj.id === objectId)!;
@@ -70,7 +70,10 @@ function Exploration({ host, session, error, setError }: {
     </DungeonCard> : null}
     <DungeonCard>
       <Text className="text-accent" style={styles.heading}>{session.characterName ?? 'Warden'} · Level {state.hero.level}</Text>
-      <Text className="text-muted" style={styles.body}>{state.hero.health}/{stats.maxHealth} HP · {state.hero.mana}/{stats.maxMana} Mana · {state.hero.stamina}/{stats.maxStamina} Stamina · {state.hero.gold} gold</Text>
+      <ResourceBar label="HP" value={state.hero.health} max={stats.maxHealth} name={session.characterName ?? 'Warden'} />
+      <ResourceBar label="Mana" value={state.hero.mana} max={stats.maxMana} name={session.characterName ?? 'Warden'} />
+      <ResourceBar label="Stamina" value={state.hero.stamina} max={stats.maxStamina} name={session.characterName ?? 'Warden'} />
+      <Text className="text-muted" style={styles.body}>{state.hero.gold} gold</Text>
       <Text className="text-muted" style={styles.body}>Damage {stats.combatant.minDamage}–{stats.combatant.maxDamage} · Defense {stats.combatant.defense} · Speed {stats.combatant.speed}</Text>
       <Text className="text-muted" style={styles.body}>{state.hero.level < 99 ? `${state.hero.experience}/${experienceToNextLevel(state.hero.level)} XP to next level` : 'Maximum level'}</Text>
       <Text className="text-muted" style={styles.body}>{state.hero.wounds} wounds · {state.hero.fullness.toFixed(1)}% fullness</Text>
@@ -78,13 +81,6 @@ function Exploration({ host, session, error, setError }: {
       <View style={styles.actions}>{[[0, -1, 'Up'], [-1, 0, 'Left'], [1, 0, 'Right'], [0, 1, 'Down']].map(([dx, dy, label]) => <Button key={label} label={`Move ${label}`} disabled={hostView.busy || !isWalkable(map, { x: state.position.x + Number(dx), y: state.position.y + Number(dy) })} onPress={() => dispatch({ type: 'MOVE', entityId: 'player', dx: Number(dx), dy: Number(dy) })} />)}</View>
     </DungeonCard>
     {view.message ? <DungeonNotice status="accent" message={view.message} /> : null}
-    <DungeonCard><Text className="text-accent" style={styles.heading}>Around you</Text>{!around.length ? <Text className="text-muted" style={styles.body}>Follow the corridor to the next chamber.</Text> : null}{around.map((obj) => {
-      const claimed = session.isClaimed(obj.id);
-      const nearby = distance(obj, state.position) <= 1;
-      return <View key={obj.id} style={styles.object}><Text className="text-muted" style={styles.body}>{obj.name}{claimed ? ' · cleared' : ''}</Text>
-        <Button label={`${obj.kind === 'encounter' ? 'Challenge' : nearby ? obj.kind === 'key' ? 'Pick up' : obj.kind === 'finalChest' ? 'Open' : 'Interact with' : 'Approach'} ${obj.name}`}
-          disabled={claimed || hostView.busy || (obj.kind === 'gate' && !obj.blocked)} onPress={() => interact(obj.id)} /></View>;
-    })}</DungeonCard>
     {error || hostView.error ? <DungeonNotice message={error ?? hostView.error} /> : null}
     <Text className="text-muted" style={styles.legend}>Position {state.position.x}, {state.position.y} · Seed {run?.blueprint.seed ?? state.seed}</Text>
   </View></ScrollView></SafeAreaView>;
@@ -95,7 +91,7 @@ const styles = StyleSheet.create({
   title: { fontFamily: Platform.OS === 'android' ? 'serif' : 'Georgia', fontSize: 34 },
   body: { fontSize: 12, lineHeight: 20 }, heading: { fontSize: 17, fontWeight: '600' },
    map: { overflow: 'hidden', borderRadius: 8 },
-  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }, object: { gap: 8, paddingVertical: 6 },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
 
    legend: { fontSize: 10, lineHeight: 18 },
 });
