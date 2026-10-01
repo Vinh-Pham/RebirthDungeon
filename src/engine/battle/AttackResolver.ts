@@ -30,27 +30,40 @@ export function effectiveCriticalChance(stats: CombatStats, target: CombatStats,
   const rating = magical ? stats.magicCriticalChance ?? stats.criticalChance ?? .1 : stats.criticalRating ?? stats.criticalChance ?? .1;
   return Math.max(0, Math.min(.3, rating - reduction * 2));
 }
+function attackInputs(attacker: Entity, target: Entity, magical = false) {
+  validateCombatEntity(attacker); validateCombatEntity(target);
+  const stats = attacker.combatant, ranged = stats.minDamage !== undefined;
+  return { ranged, min: stats.minDamage ?? stats.attack, max: stats.maxDamage ?? stats.attack,
+    reduction: ranged ? protectionReduction((magical ? target.combatant.magicProtection : target.combatant.protection) ?? 0) : 0,
+    defense: ranged ? Math.max(0, (magical ? target.combatant.magicDefense ?? target.combatant.defense : target.combatant.defense) - (magical ? 0 : stats.armorPierce ?? 0)) : target.combatant.defense,
+    multiplier: stats.criticalMultiplier ?? 1.5, hitChance: calculateHitChance(stats.hitChance, target.combatant.evasion),
+    criticalChance: effectiveCriticalChance(stats, target.combatant, magical) };
+}
+function attackDamage(attack: number, input: ReturnType<typeof attackInputs>, critical: boolean) {
+  return input.ranged ? Math.max(1, Math.floor(Math.max(1, attack * (critical ? input.multiplier : 1) - input.defense) * (1 - input.reduction)))
+    : calculateDamage({ attack, defense: input.defense, critical, criticalMultiplier: input.multiplier });
+}
+export function previewAttack(attacker: Entity, target: Entity, magical = false) {
+  const inputs = attackInputs(attacker, target, magical);
+  return { hitChance: inputs.hitChance, criticalChance: inputs.criticalChance,
+    min: attackDamage(inputs.min, inputs, false), max: attackDamage(inputs.max, inputs, false),
+    criticalMin: attackDamage(inputs.min, inputs, true), criticalMax: attackDamage(inputs.max, inputs, true) };
+}
 export function prepareAttack({ attacker, target, random, magical = false }: {
   attacker: Entity; target: Entity; random: GameRandom; magical?: boolean;
 }): (sharedCritical?: boolean) => AttackResult {
   validateCombatEntity(attacker); validateCombatEntity(target);
   if (attacker.id === target.id) throw new Error('Cannot attack self');
   const stats = attacker.combatant;
-  const ranged = stats.minDamage !== undefined && stats.maxDamage !== undefined;
-  const min = stats.minDamage ?? stats.attack, max = stats.maxDamage ?? stats.attack;
-  const reduction = ranged ? protectionReduction((magical ? target.combatant.magicProtection : target.combatant.protection) ?? 0) : 0;
-  const defense = ranged ? Math.max(0, (magical ? target.combatant.magicDefense ?? target.combatant.defense : target.combatant.defense) - (magical ? 0 : stats.armorPierce ?? 0)) : target.combatant.defense;
-  const multiplier = stats.criticalMultiplier ?? 1.5;
+  const inputs = attackInputs(attacker, target, magical);
+  const { ranged, min, max, reduction, defense, multiplier, hitChance, criticalChance: chance } = inputs;
   // Validate both possible paths before any random roll.
   calculateDamage({ attack: max, defense, critical: true, criticalMultiplier: multiplier });
-  const hitChance = calculateHitChance(stats.hitChance, target.combatant.evasion);
-  const chance = effectiveCriticalChance(stats, target.combatant, magical);
   return (sharedCritical) => {
     if (!rollHit(random, hitChance)) return { hit: false, critical: false, damage: 0 };
     const critical = sharedCritical ?? rollCritical(random, chance);
     const attack = ranged ? sampleDamage(random, min, max, (magical ? stats.magicBalance : stats.balance) ?? .5) : stats.attack;
-    const damage = ranged ? Math.max(1, Math.floor(Math.max(1, attack * (critical ? multiplier : 1) - defense) * (1 - reduction)))
-      : calculateDamage({ attack, defense, critical, criticalMultiplier: multiplier });
+    const damage = attackDamage(attack, inputs, critical);
     const injury = magical || !ranged ? 0 : Math.max(0, ((stats.minInjury ?? 0) + random.float() * ((stats.maxInjury ?? 0) - (stats.minInjury ?? 0))) - reduction);
     return { hit: true, critical, damage, ...(ranged ? { injury } : {}) };
   };

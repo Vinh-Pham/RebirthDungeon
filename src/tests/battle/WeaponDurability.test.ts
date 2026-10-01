@@ -3,6 +3,7 @@ import { loadGameContent } from '../../data/content';
 import { ContentRegistry } from '../../engine/data/ContentRegistry';
 import { addItem, createHero, heroStats, type Hero } from '../../engine/rpg/Character';
 import { applyStatus, effectiveEntity } from '../../engine/rpg/StatusEffects';
+import { characterStatBreakdown } from '../../engine/rpg/Stats';
 import { BattleSession } from '../../game/BattleSession';
 import { JourneySession } from '../../game/JourneySession';
 import { encodeSave, parseSave } from '../../persistence/SaveSchema';
@@ -47,6 +48,13 @@ describe('weapon wear in confirmed combat', () => {
     const expectedDamage = effectiveEntity(player, content).combatant!.attack - Math.max(0, enemy.combatant!.defense - player.combatant!.armorPierce!);
     act(session, 'attack'); expect(beforeHP - enemy.health!.current).toBe(expectedDamage);
     expect(player.weapon!.durability).toBe(0); expect(player.combatant!.attack).toBe(34); expect(player.mana!.current).toBe(mana);
+    const review = session.getSnapshot().character!;
+    expect(review.source.weaponItemId).toBeUndefined();
+    const breakdown = characterStatBreakdown(review.source, content);
+    expect(breakdown.equipment.attack - breakdown.base.attack).toBe(0);
+    expect(review.stats.combatant.attack - breakdown.dungeon.attack).toBe(content.status('focus').modifier);
+    review.source.level = 99;
+    expect(player.statSource!.level).toBe(1);
     expect(effectiveEntity(player, content).combatant!.attack).toBeGreaterThan(34); expect(session.getSnapshot().log.some((line) => line.includes('broke'))).toBe(true);
     session.advanceEnemyTurns(); player.combatant!.minDamage = player.combatant!.maxDamage; const previous = enemy.health!.current; const unarmedDamage = effectiveEntity(player, content).combatant!.attack - Math.max(0, enemy.combatant!.defense - player.combatant!.armorPierce!);
     act(session, 'attack'); expect(previous - enemy.health!.current).toBe(unarmedDamage); expect(player.weapon!.durability).toBe(0);
@@ -73,9 +81,9 @@ describe('weapon wear in confirmed combat', () => {
   });
   it('wears once for a physical skill hitting multiple enemies and never for a damaging magic skill', () => {
     const raw = structuredClone(content.data);
-    raw.skills.push({ ...raw.skills[0], id: 'sweep', name: 'Sweep', effect: 'damage', element: 'physical', target: 'allEnemies', power: 0, minPower: 0, maxPower: 0, manaCost: 0, hitChance: 1, criticalChance: 0, statuses: [] });
+    raw.skills.push({ ...raw.skills[0], id: 'sweep', name: 'Sweep', gameRanks: { F: { ...raw.skills[0].gameRanks!.F!, minPower: 0, maxPower: 0, manaCost: 0 } }, effect: 'damage', element: 'physical', target: 'allEnemies', power: 0, minPower: 0, maxPower: 0, manaCost: 0, hitChance: 1, criticalChance: 0, statuses: [] });
     raw.classes[0].skills.push('sweep'); raw.maps[0].spawns.push({ ...raw.maps[0].spawns[1], entityId: 'slime-2', y: 4 });
-    const registry = new ContentRegistry(raw); const session = battle(armed(2), registry); act(session, 'skill', 'sweep');
+    const registry = new ContentRegistry(raw); const hero = armed(2); hero.learnedSkills.sweep = { rank: 'F', objectiveCounts: {} }; hero.discoveredSkills.push('sweep'); const session = battle(hero, registry); act(session, 'skill', 'sweep');
     expect(session.engine.getEntity('slime-1')!.health!.current).toBeLessThan(55); expect(session.engine.getEntity('slime-2')!.health!.current).toBeLessThan(55);
     expect(session.engine.getEntity('player')!.weapon!.durability).toBe(1); expect(session.getSnapshot().log.filter((line) => line.includes('durability'))).toHaveLength(1);
     session.advanceEnemyTurns(); act(session, 'skill', 'firebolt'); expect(session.engine.getEntity('player')!.weapon!.durability).toBe(1);

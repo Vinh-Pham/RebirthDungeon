@@ -31,7 +31,7 @@ export function applyStatus(entity: Entity, id: string, sourceId: string, conten
   events.push({ type: 'STATUS_APPLIED', entityId: entity.id, statusId: id });
 }
 export function tickStatuses(entity: Entity, timing: 'turnStart' | 'turnEnd', content: ContentRegistry, events: GameEvent[]) {
-  if (entity.dead || !entity.health) return;
+  if (entity.dead || !entity.health || entity.health.current === 0) return;
   for (const active of entity.statuses ?? []) {
     const definition = content.status(active.id);
     if (definition.tickTiming !== timing) continue;

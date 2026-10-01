@@ -1,6 +1,12 @@
+import type { ActionOutcome, TrainingLedger } from './rpg/Skills';
 import type { EntityId } from './ecs/Entity';
 
 export type GameEvent =
+  | { type: 'ACTION_RESOLVED'; outcome: ActionOutcome }
+  | { type: 'SKILL_LEARNED' | 'SKILL_RANKED_UP'; skillId: string; rank: string }
+  | { type: 'SKILL_PAGE_INSERTED'; recipeId: string; pageId: string }
+  | { type: 'AP_CHANGED'; ap: number }
+  | { type: 'SKILL_TRAINING_BANKED'; training: TrainingLedger }
   | { type: 'RESOURCES_CHANGED'; entityId: EntityId; health: number; mana: number; stamina: number; wounds: number; fullness: number }
   | { type: 'WOUNDS_RECEIVED'; entityId: EntityId; amount: number }
   | { type: 'RESTED'; entityId: EntityId }

@@ -23,7 +23,11 @@
       "critical": 0.1,
       "minInjury": 0.05,
       "maxInjury": 0.1
-    }
+    },
+    "weaponTags": [
+      "melee",
+      "sword"
+    ]
   },
   {
     "id": "moss-mail",
@@ -76,5 +80,65 @@
     "power": 30,
     "restores": "stamina",
     "description": "Restores 30 stamina, including during combat."
+  },
+  {
+    "id": "combat-manual",
+    "name": "Combat manual",
+    "kind": "skillBook",
+    "price": 0,
+    "power": 0,
+    "battleUsable": false,
+    "description": "Read in town to learn the skill.",
+    "skillId": "combat-mastery"
+  },
+  {
+    "id": "sword-manual-unfinished",
+    "name": "Unfinished sword manual",
+    "kind": "incompleteBook",
+    "price": 0,
+    "power": 0,
+    "battleUsable": false,
+    "description": "Collect and assemble the sword manual in town.",
+    "recipeId": "sword-manual"
+  },
+  {
+    "id": "sword-manual",
+    "name": "Sword manual",
+    "kind": "skillBook",
+    "price": 0,
+    "power": 0,
+    "battleUsable": false,
+    "description": "Read in town to learn the skill.",
+    "skillId": "sword-mastery"
+  },
+  {
+    "id": "sword-page-1",
+    "name": "Sword page: Grip",
+    "kind": "skillPage",
+    "price": 0,
+    "power": 0,
+    "battleUsable": false,
+    "description": "Collect and assemble the sword manual in town.",
+    "recipeId": "sword-manual"
+  },
+  {
+    "id": "sword-page-2",
+    "name": "Sword page: Balance",
+    "kind": "skillPage",
+    "price": 0,
+    "power": 0,
+    "battleUsable": false,
+    "description": "Collect and assemble the sword manual in town.",
+    "recipeId": "sword-manual"
+  },
+  {
+    "id": "sword-page-3",
+    "name": "Sword page: Finish",
+    "kind": "skillPage",
+    "price": 0,
+    "power": 0,
+    "battleUsable": false,
+    "description": "Collect and assemble the sword manual in town.",
+    "recipeId": "sword-manual"
   }
 ]

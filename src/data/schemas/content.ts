@@ -26,6 +26,25 @@ export const CombatStatsSchema = z.strictObject({
   criticalChance: probability.default(0.1), criticalMultiplier: z.number().min(1).max(10).default(1.5),
 }).refine((stats) => (stats.minDamage === undefined) === (stats.maxDamage === undefined) && (stats.minDamage ?? 0) <= (stats.maxDamage ?? 0) && (stats.minInjury ?? 0) <= (stats.maxInjury ?? 0), { message: 'Invalid combat range' }).refine((stats) => Number.isSafeInteger(Math.floor(Math.max(1, stats.attack) * stats.criticalMultiplier)),
   { message: 'Combat damage must fit within safe integer range' });
+export const TrainingObjectiveSchema = z.strictObject({
+  id, label: id, event: z.enum(['use', 'damage', 'defeat', 'heal']),
+  scope: z.enum(['action', 'target', 'encounter']), points: positive.max(100), maximum: positive.max(1000),
+});
+export const GameRankSchema = z.strictObject({
+  minPower: uint.max(1000000), maxPower: uint.max(1000000), manaCost: uint.max(10000), staminaCost: uint.max(10000),
+  cooldown: uint.max(100).default(0), nextRank: SkillRankSchema.optional(), apCost: uint.max(10000).optional(),
+  objectives: z.array(TrainingObjectiveSchema).max(20), statBonuses: AttributeBonusesSchema.optional(),
+  maxHealth: uint.max(10000).default(0), meleeMin: uint.max(10000).default(0), meleeMax: uint.max(10000).default(0),
+  swordMin: uint.max(10000).default(0), swordMax: uint.max(10000).default(0), swordBalance: probability.default(0),
+}).superRefine((rank, ctx) => {
+  if (rank.minPower > rank.maxPower || rank.meleeMin > rank.meleeMax || rank.swordMin > rank.swordMax || (rank.nextRank === undefined) !== (rank.apCost === undefined) ||
+      new Set(rank.objectives.map((o) => o.id)).size !== rank.objectives.length ||
+      (rank.nextRank && rank.objectives.reduce((sum, o) => sum + o.points * o.maximum, 0) < 100))
+    ctx.addIssue({ code: 'custom', message: 'Invalid game rank or unreachable training gate' });
+});
+export const SkillBookRecipeSchema = z.strictObject({ id, skillId: id, incompleteItemId: id, completeItemId: id,
+  pages: z.array(z.strictObject({ itemId: id, hint: id })).min(1).max(20),
+});
 export const SkillSchema = z.strictObject({
   id, name: id, manaCost: uint, power: uint.max(1000000),
   element: z.enum(['physical', 'fire', 'ice', 'lightning']),
@@ -40,6 +59,9 @@ export const SkillSchema = z.strictObject({
   battleUsable: z.boolean().optional(),
   rank: SkillRankSchema.optional(), description: z.string().optional(),
   reference: SkillReferenceSchema.optional(),
+  gameRanks: z.partialRecord(SkillRankSchema, GameRankSchema).optional(),
+  requiresWeapon: z.enum(['melee', 'sword']).optional(),
+  acquisitionHint: z.string().optional(),
 }).refine((skill) => (skill.minPower === undefined) === (skill.maxPower === undefined) && (skill.minPower ?? 0) <= (skill.maxPower ?? 0) && skill.minMagicModifier <= skill.maxMagicModifier, { message: 'Invalid skill range' }).refine((skill) => skill.effect === 'damage'
   ? ['enemy', 'allEnemies'].includes(skill.target) : ['self', 'ally'].includes(skill.target),
 { message: 'Damage skills target enemies; healing skills target self or allies' });
@@ -49,8 +71,9 @@ export const EnemySchema = z.strictObject({ ...actor, experience: uint.max(10000
   loot: z.array(z.strictObject({ itemId: id, chance: probability, min: positive.max(99), max: positive.max(99) })
     .refine((drop) => drop.min <= drop.max)).default([]) });
 export const ClassSchema = z.strictObject(actor);
-export const ItemSchema = z.strictObject({ id, name: id, kind: z.enum(['consumable', 'weapon', 'armor']),
+export const ItemSchema = z.strictObject({ id, name: id, kind: z.enum(['consumable', 'weapon', 'armor', 'skillBook', 'incompleteBook', 'skillPage']),
   price: uint.max(100000), power: uint.max(10000), description: z.string(),
+  weaponTags: z.array(z.enum(['melee', 'sword'])).default([]), skillId: id.optional(), recipeId: id.optional(),
   stat: z.enum(['attack', 'defense', 'speed']).optional(),
   maxDurability: positive.max(10000).optional(), restores: z.enum(['health', 'mana', 'stamina']).default('health'),
   battleUsable: z.boolean().default(true),
@@ -58,7 +81,13 @@ export const ItemSchema = z.strictObject({ id, name: id, kind: z.enum(['consumab
   protection: uint.max(10000).default(0), magicDefense: uint.max(10000).default(0), magicProtection: uint.max(10000).default(0), statBonuses: AttributeBonusesSchema.optional(),
   staminaRecovery: uint.max(10000).default(0), fullnessRecovery: z.number().min(0).max(50).default(0),
 }).refine((item) => item.kind === 'weapon' ? item.maxDurability !== undefined : item.maxDurability === undefined,
-  { message: 'Only weapons require maximum durability' });
+  { message: 'Only weapons require maximum durability' }).refine((item) =>
+    ((item.kind === 'skillBook') === !!item.skillId) &&
+    (['incompleteBook', 'skillPage'].includes(item.kind) === !!item.recipeId) &&
+    (item.kind !== 'skillBook' || (!!item.skillId && !item.battleUsable)) &&
+    (!['incompleteBook', 'skillPage'].includes(item.kind) || (!!item.recipeId && !item.battleUsable)) &&
+    (new Set(item.weaponTags).size === item.weaponTags.length) && (!item.weaponTags.length || item.kind === 'weapon') && (!item.weaponTags.includes('sword') || item.weaponTags.includes('melee')),
+  { message: 'Invalid skill item or equipment tags' });
 export const StatusEffectSchema = z.strictObject({ id, name: id, duration: positive.max(100),
   tickTiming: z.enum(['turnStart', 'turnEnd']), stacking: z.enum(['refresh', 'stack', 'ignore']),
   effect: z.enum(['damage', 'heal', 'stat']), power: uint.max(10000),
@@ -85,9 +114,9 @@ export const MapSchema = z.strictObject({ id, name: id, width: positive.max(128)
 export const ContentSchema = z.strictObject({ skills: z.array(SkillSchema), enemies: z.array(EnemySchema),
   classes: z.array(ClassSchema), items: z.array(ItemSchema), statusEffects: z.array(StatusEffectSchema),
   atlases: z.array(AtlasSchema), maps: z.array(MapSchema), worlds: z.array(WorldMapSchema).default([]), dungeons: z.array(DungeonDefinitionSchema).default([]),
-  shops: z.array(ShopSchema).default([]),
+  shops: z.array(ShopSchema).default([]), skillBookRecipes: z.array(SkillBookRecipeSchema).default([]),
 }).superRefine((content, ctx) => {
-  for (const key of ['skills', 'enemies', 'classes', 'items', 'statusEffects', 'atlases', 'maps', 'worlds', 'dungeons', 'shops'] as const) {
+  for (const key of ['skills', 'enemies', 'classes', 'items', 'statusEffects', 'atlases', 'maps', 'worlds', 'dungeons', 'shops', 'skillBookRecipes'] as const) {
     const seen = new Set<string>();
     content[key].forEach((entry, index) => {
       if (seen.has(entry.id)) ctx.addIssue({ code: 'custom', message: `Duplicate ${key} ID: ${entry.id}`, path: [key, index, 'id'] });
@@ -108,6 +137,34 @@ export const ContentSchema = z.strictObject({ skills: z.array(SkillSchema), enem
       ctx.addIssue({ code: 'custom', message: 'Unknown atlas or invalid sprite frame', path: [key, index, 'sprite'] });
     }
   });
+  const issue = (message: string) => ctx.addIssue({ code: 'custom', message });
+  const rankOrder = SkillRankSchema.options;
+  for (const skill of content.skills) if (skill.gameRanks) {
+    if (!skill.gameRanks.F || !['active', 'passive'].includes(skill.kind ?? '')) issue('Implemented skills need F and an explicit kind');
+    if (skill.kind === 'passive' && skill.battleUsable !== false) issue('Passives cannot be battle actions');
+    for (const [name, rank] of Object.entries(skill.gameRanks)) {
+      if (rank.nextRank && (rankOrder[rankOrder.indexOf(name as typeof rankOrder[number]) + 1] !== rank.nextRank || !skill.gameRanks[rank.nextRank])) issue('Missing or invalid next game rank');
+      if (name === '1' && rank.nextRank) issue('Final rank cannot advance');
+      if (skill.kind === 'active' && rank.objectives.some((o) => o.event === 'heal' ? skill.effect !== 'heal' : skill.effect !== 'damage')) issue('Objective cannot be produced by this skill');
+      if (rank.objectives.some((o) => o.event === 'use' && o.scope !== 'action')) issue('Use objectives count once per action');
+      if (skill.kind === 'active' && skill.effect === 'buff' && !skill.statuses.length) issue('Implemented buffs need a supported status effect');
+      if (skill.kind === 'passive' && (rank.manaCost || rank.staminaCost || rank.cooldown)) issue('Passives cannot have action costs');
+      if ((rank.swordMin || rank.swordMax || rank.swordBalance) && skill.requiresWeapon !== 'sword') issue('Sword bonuses require sword equipment');
+    }
+  }
+  for (const recipe of content.skillBookRecipes) {
+    if (!content.skills.find((s) => s.id === recipe.skillId)?.gameRanks?.F ||
+        !content.items.some((i) => i.id === recipe.incompleteItemId && i.kind === 'incompleteBook' && i.recipeId === recipe.id) ||
+        !content.items.some((i) => i.id === recipe.completeItemId && i.kind === 'skillBook' && i.skillId === recipe.skillId) ||
+        new Set(recipe.pages.map((p) => p.itemId)).size !== recipe.pages.length ||
+        recipe.pages.some((p) => !content.items.some((i) => i.id === p.itemId && i.kind === 'skillPage' && i.recipeId === recipe.id))) issue('Invalid skill book recipe');
+  }
+  for (const item of content.items) {
+    if ((item.skillId && !content.skills.find((s) => s.id === item.skillId)?.gameRanks?.F) ||
+        (item.recipeId && !content.skillBookRecipes.some((r) => r.id === item.recipeId && (r.incompleteItemId === item.id || r.pages.some((p) => p.itemId === item.id))))) issue('Unknown skill item reference');
+  }
+  for (const world of content.worlds) for (const object of world.objects) if (object.lessons.some((offer) =>
+    !content.skills.find((s) => s.id === offer.skillId)?.gameRanks?.F) || (object.lessons.length && (object.kind !== 'npc' || !world.theme))) issue('Invalid instructor lesson');
   validateWorldReferences(content, ctx);
   content.shops.forEach((shop) => {
     if (shop.items.some((itemId) => !content.items.some((item) => item.id === itemId)) ||

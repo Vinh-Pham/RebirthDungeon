@@ -421,6 +421,18 @@
     "maxMagicModifier": 0.163,
     "statBonuses": {
       "intelligence": 1
+    },
+    "gameRanks": {
+      "F": {
+        "minPower": 7,
+        "maxPower": 25,
+        "manaCost": 2,
+        "staminaCost": 0,
+        "objectives": [],
+        "statBonuses": {
+          "intelligence": 1
+        }
+      }
     }
   },
   {
@@ -461,7 +473,7 @@
       ],
       "rows": [
         {
-          "label": "Required AP · Human / Giant",
+          "label": "Required AP \u00b7 Human / Giant",
           "values": [
             "3",
             "3",
@@ -481,7 +493,7 @@
           ]
         },
         {
-          "label": "Required AP · Elf",
+          "label": "Required AP \u00b7 Elf",
           "values": [
             "3",
             "3",
@@ -501,7 +513,7 @@
           ]
         },
         {
-          "label": "Required AP (Total) · Human / Giant",
+          "label": "Required AP (Total) \u00b7 Human / Giant",
           "values": [
             "3",
             "6",
@@ -521,7 +533,7 @@
           ]
         },
         {
-          "label": "Required AP (Total) · Elf",
+          "label": "Required AP (Total) \u00b7 Elf",
           "values": [
             "3",
             "6",
@@ -721,7 +733,7 @@
           ]
         },
         {
-          "label": "Mana Use* (1st charge) · Human",
+          "label": "Mana Use* (1st charge) \u00b7 Human",
           "values": [
             "1",
             "1",
@@ -741,7 +753,7 @@
           ]
         },
         {
-          "label": "Mana Use* (1st charge) · Elf",
+          "label": "Mana Use* (1st charge) \u00b7 Elf",
           "values": [
             "1",
             "1",
@@ -761,7 +773,7 @@
           ]
         },
         {
-          "label": "Mana Use* (1st charge) · Giant",
+          "label": "Mana Use* (1st charge) \u00b7 Giant",
           "values": [
             "1",
             "1",
@@ -895,6 +907,18 @@
     "maxMagicModifier": 0.125,
     "statBonuses": {
       "intelligence": 1
+    },
+    "gameRanks": {
+      "F": {
+        "minPower": 10,
+        "maxPower": 20,
+        "manaCost": 1,
+        "staminaCost": 0,
+        "objectives": [],
+        "statBonuses": {
+          "intelligence": 1
+        }
+      }
     }
   },
   {
@@ -1349,6 +1373,18 @@
     "maxMagicModifier": 0.22,
     "statBonuses": {
       "intelligence": 1
+    },
+    "gameRanks": {
+      "F": {
+        "minPower": 1,
+        "maxPower": 40,
+        "manaCost": 2,
+        "staminaCost": 0,
+        "objectives": [],
+        "statBonuses": {
+          "intelligence": 1
+        }
+      }
     }
   },
   {
@@ -1804,7 +1840,19 @@
     "statBonuses": {
       "intelligence": 1
     },
-    "staminaCost": 6
+    "staminaCost": 6,
+    "gameRanks": {
+      "F": {
+        "minPower": 6,
+        "maxPower": 10,
+        "manaCost": 12,
+        "staminaCost": 6,
+        "objectives": [],
+        "statBonuses": {
+          "intelligence": 1
+        }
+      }
+    }
   },
   {
     "id": "arrow-revolver",
@@ -1813,7 +1861,7 @@
     "kind": "active",
     "rank": "F",
     "battleUsable": false,
-    "description": "Arrow Revolver — see rank tables for its effects.",
+    "description": "Arrow Revolver \u2014 see rank tables for its effects.",
     "manaCost": 0,
     "power": 0,
     "element": "physical",
@@ -1964,7 +2012,7 @@
           ]
         },
         {
-          "label": "Damage [%] · 1st shot",
+          "label": "Damage [%] \u00b7 1st shot",
           "values": [
             "96",
             "97",
@@ -1984,7 +2032,7 @@
           ]
         },
         {
-          "label": "Damage [%] · 2nd shot",
+          "label": "Damage [%] \u00b7 2nd shot",
           "values": [
             "106",
             "107",
@@ -2004,7 +2052,7 @@
           ]
         },
         {
-          "label": "Damage [%] · 3rd shot",
+          "label": "Damage [%] \u00b7 3rd shot",
           "values": [
             "111",
             "112",
@@ -2024,7 +2072,7 @@
           ]
         },
         {
-          "label": "Damage [%] · 4th shot",
+          "label": "Damage [%] \u00b7 4th shot",
           "values": [
             "131",
             "132",
@@ -2044,7 +2092,7 @@
           ]
         },
         {
-          "label": "Damage [%] · 5th shot",
+          "label": "Damage [%] \u00b7 5th shot",
           "values": [
             "162",
             "164",
@@ -2064,7 +2112,7 @@
           ]
         },
         {
-          "label": "Damage [%] · Total",
+          "label": "Damage [%] \u00b7 Total",
           "values": [
             "606",
             "612",
@@ -3927,6 +3975,56 @@
           "Giant: Melee Max Damage +20, Melee Min Damage +10, HP +150"
         ]
       }
+    },
+    "acquisitionHint": "Read the combat manual from the refuge training chest.",
+    "gameRanks": {
+      "F": {
+        "minPower": 0,
+        "maxPower": 0,
+        "manaCost": 0,
+        "staminaCost": 0,
+        "objectives": [
+          {
+            "id": "uses",
+            "label": "Complete melee actions",
+            "event": "use",
+            "scope": "action",
+            "points": 2,
+            "maximum": 20
+          },
+          {
+            "id": "hits",
+            "label": "Deal melee damage",
+            "event": "damage",
+            "scope": "action",
+            "points": 5,
+            "maximum": 10
+          },
+          {
+            "id": "defeats",
+            "label": "Defeat hostiles with melee",
+            "event": "defeat",
+            "scope": "target",
+            "points": 10,
+            "maximum": 3
+          }
+        ],
+        "nextRank": "E",
+        "apCost": 3,
+        "maxHealth": 10,
+        "meleeMin": 1,
+        "meleeMax": 1
+      },
+      "E": {
+        "minPower": 0,
+        "maxPower": 0,
+        "manaCost": 0,
+        "staminaCost": 0,
+        "objectives": [],
+        "maxHealth": 12,
+        "meleeMin": 2,
+        "meleeMax": 2
+      }
     }
   },
   {
@@ -4067,7 +4165,7 @@
           ]
         },
         {
-          "label": "Damage From Opponent [%] · Human/Giant",
+          "label": "Damage From Opponent [%] \u00b7 Human/Giant",
           "values": [
             "50",
             "60",
@@ -4087,7 +4185,7 @@
           ]
         },
         {
-          "label": "Damage From Opponent [%] · Elf",
+          "label": "Damage From Opponent [%] \u00b7 Elf",
           "values": [
             "50",
             "55",
@@ -4107,7 +4205,7 @@
           ]
         },
         {
-          "label": "Damage From Self [%] · Human/Elf",
+          "label": "Damage From Self [%] \u00b7 Human/Elf",
           "values": [
             "100",
             "100",
@@ -4127,7 +4225,7 @@
           ]
         },
         {
-          "label": "Damage From Self [%] · Giant",
+          "label": "Damage From Self [%] \u00b7 Giant",
           "values": [
             "100",
             "105",
@@ -4621,7 +4719,7 @@
     "kind": "active",
     "rank": "F",
     "battleUsable": false,
-    "description": "Defense — see rank tables for its effects.",
+    "description": "Defense \u2014 see rank tables for its effects.",
     "manaCost": 0,
     "power": 0,
     "element": "physical",
@@ -5059,7 +5157,7 @@
     "kind": "active",
     "rank": "F",
     "battleUsable": false,
-    "description": "Elf Ranged Attack — see rank tables for its effects.",
+    "description": "Elf Ranged Attack \u2014 see rank tables for its effects.",
     "manaCost": 0,
     "power": 0,
     "element": "physical",
@@ -8245,7 +8343,7 @@
     "kind": "passive",
     "rank": "F",
     "battleUsable": false,
-    "description": "Magic Mastery — see rank tables for its effects.",
+    "description": "Magic Mastery \u2014 see rank tables for its effects.",
     "manaCost": 0,
     "power": 0,
     "element": "physical",
@@ -9388,7 +9486,7 @@
     "kind": "active",
     "rank": "F",
     "battleUsable": false,
-    "description": "Mana Shield — see rank tables for its effects.",
+    "description": "Mana Shield \u2014 see rank tables for its effects.",
     "manaCost": 0,
     "power": 0,
     "element": "physical",
@@ -10411,7 +10509,7 @@
     "kind": "active",
     "rank": "F",
     "battleUsable": false,
-    "description": "Range Attack — see rank tables for its effects.",
+    "description": "Range Attack \u2014 see rank tables for its effects.",
     "manaCost": 0,
     "power": 0,
     "element": "physical",
@@ -11146,13 +11244,13 @@
     "category": "combat",
     "kind": "active",
     "rank": "F",
-    "battleUsable": false,
+    "battleUsable": true,
     "description": "Human: Damage 200%; Elf: Damage 200%; Giant: Damage 300%",
     "manaCost": 0,
     "power": 0,
     "element": "physical",
-    "target": "self",
-    "effect": "buff",
+    "target": "enemy",
+    "effect": "damage",
     "hitChance": 1,
     "criticalChance": 0,
     "statuses": [],
@@ -11716,7 +11814,52 @@
         ]
       }
     },
-    "staminaCost": 4
+    "staminaCost": 4,
+    "requiresWeapon": "melee",
+    "acquisitionHint": "Speak to the keeper in the refuge for a free melee lesson.",
+    "gameRanks": {
+      "F": {
+        "minPower": 10,
+        "maxPower": 14,
+        "manaCost": 0,
+        "staminaCost": 4,
+        "objectives": [
+          {
+            "id": "uses",
+            "label": "Use Smash against a hostile",
+            "event": "use",
+            "scope": "action",
+            "points": 2,
+            "maximum": 20
+          },
+          {
+            "id": "hits",
+            "label": "Deal damage with Smash",
+            "event": "damage",
+            "scope": "action",
+            "points": 5,
+            "maximum": 10
+          },
+          {
+            "id": "defeats",
+            "label": "Defeat hostiles with Smash",
+            "event": "defeat",
+            "scope": "target",
+            "points": 10,
+            "maximum": 3
+          }
+        ],
+        "nextRank": "E",
+        "apCost": 3
+      },
+      "E": {
+        "minPower": 14,
+        "maxPower": 20,
+        "manaCost": 0,
+        "staminaCost": 4,
+        "objectives": []
+      }
+    }
   },
   {
     "id": "sword-mastery",
@@ -11982,6 +12125,49 @@
         "1": [
           "Max Damage +20, Min Damage +10, Balance +15% while using Swords."
         ]
+      }
+    },
+    "requiresWeapon": "sword",
+    "acquisitionHint": "Collect the three refuge sword pages, insert them into the unfinished manual, then read it.",
+    "gameRanks": {
+      "F": {
+        "minPower": 0,
+        "maxPower": 0,
+        "manaCost": 0,
+        "staminaCost": 0,
+        "objectives": [
+          {
+            "id": "hits",
+            "label": "Deal damage with a usable sword",
+            "event": "damage",
+            "scope": "action",
+            "points": 3,
+            "maximum": 20
+          },
+          {
+            "id": "defeats",
+            "label": "Defeat hostiles with a sword",
+            "event": "defeat",
+            "scope": "target",
+            "points": 10,
+            "maximum": 6
+          }
+        ],
+        "nextRank": "E",
+        "apCost": 3,
+        "swordMin": 0,
+        "swordMax": 2,
+        "swordBalance": 0.01
+      },
+      "E": {
+        "minPower": 0,
+        "maxPower": 0,
+        "manaCost": 0,
+        "staminaCost": 0,
+        "objectives": [],
+        "swordMin": 1,
+        "swordMax": 3,
+        "swordBalance": 0.02
       }
     }
   },

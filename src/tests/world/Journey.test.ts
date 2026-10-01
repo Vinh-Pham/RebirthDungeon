@@ -54,12 +54,14 @@ describe('world exploration', () => {
     expect(session.toSave()).toMatchObject({ hero: { level: 2, experience: 4, gold: 12, inventory: { potion: 3 } }, cleared: ['halls/slime-guard'] });
     expect(() => session.finishBattle(battle)).toThrow('ready'); battle.dispose();
   });
-  it('rebirth returns to refuge, preserves equipment and opened chests, and halves gold', () => {
+  it('defeat recovery returns to the refuge without resetting earned levels or AP', () => {
     vi.useFakeTimers(); const session = create(); const saved = session.toSave(); saved.hero.gold = 11;
+    saved.hero.level = 3; saved.hero.experience = 5; saved.hero.ap = 2;
     const restored = new JourneySession(content, saved); sessions.push(restored); enterHalls(restored); restored.dispatch({ type: 'TRAVEL_TO', x: 5, y: 3 });
     const battle = restored.createBattle(); battle.engine.getEntity('player')!.health!.current = 1; battle.engine.getEntity('slime-1')!.combatant!.hitChance = 1; battle.engine.getEntity('slime-1')!.combatant!.attack = 100;
     battle.dispatch({ type: 'SELECT_ACTION', action: 'skill', skillId: 'healing' }); battle.dispatch({ type: 'SELECT_TARGET', targetId: 'player' }); battle.dispatch({ type: 'CONFIRM_ACTION' }); battle.advanceEnemyTurns();
-    restored.finishBattle(battle); expect(restored.toSave()).toMatchObject({ worldId: 'refuge', hero: { health: 118, gold: 5 }, cleared: [] }); battle.dispose();
+    restored.finishBattle(battle); expect(restored.toSave()).toMatchObject({ worldId: 'refuge', hero: { level: 3, experience: 5, ap: 2, health: 118, mana: 98, stamina: 113, wounds: 0, fullness: 100, gold: 5 }, cleared: [] });
+    expect(restored.getSnapshot().message).toContain('Recovered at the refuge'); battle.dispose();
   });
   it('keeps snapshots detached and rejects commands after disposal', () => {
     const session = create(); const snapshot = session.toSave(); snapshot.hero.inventory.potion = 999;

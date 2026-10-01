@@ -1,3 +1,4 @@
+import { starterProgression } from '../../engine/rpg/Skills';
 import { DungeonCard } from '../shared/DungeonUI';
 import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,7 +17,7 @@ export default function ContentScreen() {
         <Text className="text-foreground" style={styles.title}>Dungeon codex</Text>
         <Text className="text-muted" style={styles.intro}>A warden’s notes on the creatures and powers of the deep.</Text>
         <Text className="text-accent" style={styles.section}>Wardens</Text>
-        {content.classes.map((entry) => { const stats = calculateCharacterStats({ classId: entry.id, level: 1, growthTalent: 'warrior', effects: [] }, registry); return <DungeonCard key={entry.id} >
+        {content.classes.map((entry) => { const stats = calculateCharacterStats({ classId: entry.id, learnedSkills: starterProgression(entry.id, registry).learnedSkills, level: 1, growthTalent: 'warrior', effects: [] }, registry); return <DungeonCard key={entry.id} >
           <Text className="text-foreground" style={styles.name}>{entry.name}</Text>
           <Text className="text-muted" style={styles.detail}>{stats.maxHealth} HP · {stats.maxMana} mana · {stats.maxStamina} stamina before talent resource bonuses. Talent and known skills determine your attributes; review Stats for your character.</Text>
         </DungeonCard>; })}

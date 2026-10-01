@@ -378,7 +378,13 @@
         "kind": "npc",
         "x": 2,
         "y": 2,
-        "dialogue": "Welcome to the last refuge. Collect the supplies, explore our shops, or train in the moss halls. Offer an unequipped item at the goddess altar to enter the moss depths."
+        "dialogue": "Welcome to the last refuge. Collect the supplies, explore our shops, or train in the moss halls. Offer an unequipped item at the goddess altar to enter the moss depths.",
+        "lessons": [
+          {
+            "skillId": "smash",
+            "fee": 0
+          }
+        ]
       },
       {
         "id": "supply-chest",
@@ -436,6 +442,51 @@
         "x": 14,
         "y": 15,
         "destination": "general-interior"
+      },
+      {
+        "id": "training-manual",
+        "name": "Training manual",
+        "kind": "chest",
+        "itemId": "combat-manual",
+        "quantity": 1,
+        "x": 1,
+        "y": 10
+      },
+      {
+        "id": "sword-binding",
+        "name": "Sword manual binding",
+        "kind": "chest",
+        "itemId": "sword-manual-unfinished",
+        "quantity": 1,
+        "x": 2,
+        "y": 10
+      },
+      {
+        "id": "grip-page",
+        "name": "Sword page: Grip",
+        "kind": "chest",
+        "itemId": "sword-page-1",
+        "quantity": 1,
+        "x": 3,
+        "y": 10
+      },
+      {
+        "id": "balance-page",
+        "name": "Sword page: Balance",
+        "kind": "chest",
+        "itemId": "sword-page-2",
+        "quantity": 1,
+        "x": 6,
+        "y": 10
+      },
+      {
+        "id": "finish-page",
+        "name": "Sword page: Finish",
+        "kind": "chest",
+        "itemId": "sword-page-3",
+        "quantity": 1,
+        "x": 7,
+        "y": 10
       }
     ],
     "theme": "town"

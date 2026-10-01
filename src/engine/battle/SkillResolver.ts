@@ -1,13 +1,13 @@
 import type { Entity } from '../ecs/Entity';
 import type { GameRandom } from '../Random';
 import type { Skill } from '../../data/schemas/content';
-import { effectiveCriticalChance, prepareAttack, sampleDamage, validateCombatEntity } from './AttackResolver';
+import { effectiveCriticalChance, previewAttack, prepareAttack, sampleDamage, validateCombatEntity } from './AttackResolver';
 import { healableHealth, staminaCost } from '../rpg/Resources';
 export function prepareSkill({ source, targets, skill, random, selectedTargetId }: {
   source: Entity; targets: readonly Entity[]; skill: Skill; random: GameRandom; selectedTargetId?: string;
 }) {
   validateCombatEntity(source);
-  if (skill.battleUsable === false) throw new Error('Skill is unavailable in battle');
+  if (skill.battleUsable === false || skill.kind === 'passive') throw new Error('Skill is unavailable in battle');
   if (!source.skills?.includes(skill.id)) throw new Error('Source does not know this skill');
   const mana = source.mana;
   if (!mana || !Number.isSafeInteger(mana.max) || mana.max < 0 || !Number.isSafeInteger(mana.current) || mana.current < 0 || mana.current > mana.max || mana.current < skill.manaCost) throw new Error('Invalid or insufficient mana');
@@ -26,7 +26,10 @@ export function prepareSkill({ source, targets, skill, random, selectedTargetId 
     ...(modern ? { minDamage: min, maxDamage: max } : { criticalChance: skill.criticalChance }) } };
   const resolvers = skill.effect === 'damage' ? targets.map((target) => prepareAttack({ attacker: caster, target, random, magical })) : [];
   const selected = Math.max(0, targets.findIndex((t) => t.id === selectedTargetId));
-  return { manaAfter: mana.current - skill.manaCost, staminaAfter: source.stamina ? source.stamina.current - cost : undefined,
+  return { preview: targets.map((target) => skill.effect === 'damage' ? { targetId: target.id, ...previewAttack(caster, target, magical) } : {
+      targetId: target.id, hitChance: 1, criticalChance: 0, min: skill.effect === 'heal' ? Math.max(0, Math.min(modern ? min : skill.power, healableHealth(target) - target.health!.current)) : 0,
+      max: skill.effect === 'heal' ? Math.max(0, Math.min(modern ? max : skill.power, healableHealth(target) - target.health!.current)) : 0, criticalMin: 0, criticalMax: 0 }),
+    staminaCost: cost, manaCost: skill.manaCost, manaAfter: mana.current - skill.manaCost, staminaAfter: source.stamina ? source.stamina.current - cost : undefined,
     resolve: () => {
       // Resolve selected target first; one critical roll applies to all successful targets.
       const first = skill.effect === 'damage' ? resolvers[selected]() : undefined;

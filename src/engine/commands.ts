@@ -3,6 +3,10 @@ import type { OwnedItem } from './rpg/Character';
 import type { BattleAction } from './battle/BattleMachine';
 
 export type GameCommand =
+  | { type: 'LEARN_SKILL'; objectId: string; skillId: string }
+  | { type: 'READ_SKILL_BOOK'; itemId: string }
+  | { type: 'INSERT_SKILL_PAGE'; recipeId: string; pageId: string }
+  | { type: 'RANK_UP_SKILL'; skillId: string }
   | { type: 'REST'; entityId: EntityId }
   | { type: 'DEFEND'; entityId: EntityId }
   | { type: 'INTERACT'; objectId: string }
@@ -36,6 +40,10 @@ export function validateCommand(command: GameCommand): void {
   const quantity = (value: number) => Number.isInteger(value) && value >= 1 && value <= 999;
   let valid = false;
   switch (command?.type) {
+    case 'LEARN_SKILL': valid = id(command.objectId) && id(command.skillId); break;
+    case 'READ_SKILL_BOOK': valid = id(command.itemId); break;
+    case 'INSERT_SKILL_PAGE': valid = id(command.recipeId) && id(command.pageId); break;
+    case 'RANK_UP_SKILL': valid = id(command.skillId); break;
     case 'REST':
     case 'DEFEND': valid = id(command.entityId); break;
     case 'INTERACT': valid = id(command.objectId); break;
@@ -73,4 +81,9 @@ export function validateCommand(command: GameCommand): void {
       break;
   }
   if (!valid) throw new Error('Invalid game command');
+}
+
+export type ProgressionCommand = Extract<GameCommand, { type: 'LEARN_SKILL' | 'READ_SKILL_BOOK' | 'INSERT_SKILL_PAGE' | 'RANK_UP_SKILL' }>;
+export function isProgressionCommand(command: GameCommand): command is ProgressionCommand {
+  return ['LEARN_SKILL', 'READ_SKILL_BOOK', 'INSERT_SKILL_PAGE', 'RANK_UP_SKILL'].includes(command.type);
 }

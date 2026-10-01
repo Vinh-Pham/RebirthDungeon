@@ -46,9 +46,23 @@ describe('Mabinogi stat projection', () => {
   });
   it('aggregates effect bonuses before clamping, regardless of effect order', () => {
     const raw = structuredClone(content.data); raw.statusEffects.find((s) => s.id === 'weakness')!.modifier = -1000; const registry = new ContentRegistry(raw);
-    const hero = createHero(content); const source = { classId: hero.classId, level: 1, growthTalent: hero.growthTalent, effects: [{ statusId: 'focus', stacks: 1 }, { statusId: 'weakness', stacks: 1 }] };
+    const hero = createHero(content); const source = { classId: hero.classId, learnedSkills: hero.learnedSkills, level: 1, growthTalent: hero.growthTalent, effects: [{ statusId: 'focus', stacks: 1 }, { statusId: 'weakness', stacks: 1 }] };
     expect(calculateCharacterStats(source, registry)).toEqual(calculateCharacterStats({ ...source, effects: [...source.effects].reverse() }, registry));
     expect(calculateCharacterStats(source, registry).combatant).toMatchObject({ attack: 0, minDamage: 0, maxDamage: 0 });
+  });
+  it('identifies attribute contributions once at the current learned rank and rejects mismatched equipment sources', () => {
+    const hero = createHero(content, 'mage'); hero.level = 2;
+    const raw = structuredClone(content.data);
+    const firebolt = raw.skills.find((s) => s.id === 'firebolt')!;
+    firebolt.gameRanks!.E = { ...firebolt.gameRanks!.F!, statBonuses: { intelligence: 7 } };
+    const registry = new ContentRegistry(raw); hero.learnedSkills.firebolt.rank = 'E';
+    const stats = heroStats(hero, registry);
+    expect(stats.attributeSources).toMatchObject({ starting: { intelligence: 48 }, talent: { intelligence: 10 }, levels: { intelligence: 0.5 }, skills: { intelligence: 10 } });
+    expect(stats.base.intelligence).toBe(68.5);
+    expect(heroStats(hero, registry)).toEqual(stats);
+    const source = { classId: hero.classId, learnedSkills: hero.learnedSkills, level: hero.level, growthTalent: hero.growthTalent, effects: [] };
+    expect(() => calculateCharacterStats({ ...source, weaponItemId: 'potion' }, registry)).toThrow('equipment stat source');
+    expect(() => calculateCharacterStats({ ...source, armorItemId: 'iron-blade' }, registry)).toThrow('equipment stat source');
   });
   it('rolls reproducible bounded triangular damage and reduces critical chance with target protection', () => {
     const a = createGameRandom(12), b = createGameRandom(12); const values = Array.from({ length: 100 }, () => sampleDamage(a, 3, 30, .8));
@@ -121,9 +135,9 @@ describe('stat save migration', () => {
   it.each([1, 2, 3, 4])('restores v%i once with the selected talent while preserving progress and RNG', (version) => {
     const journey = new JourneySession(content); journeys.push(journey); const current = journey.toSave(); current.hero.gold = 71; addItem(current.hero, 'iron-blade', 1, content); current.hero.equipment.weapon = 'weapon-1'; current.hero.weapons['weapon-1'].durability = 11;
     let campaign: object = legacyCampaign(current);
-    if (version === 4) { const { growthTalent, stamina, wounds, fullness, ...hero } = current.hero; void growthTalent; void stamina; void wounds; void fullness; hero.health = 10; hero.mana = 2; campaign = { ...current, hero }; }
+    if (version === 4) { const { growthTalent, stamina, wounds, fullness, ap, learnedSkills, discoveredSkills, bookCollections, claimedMilestones, ...hero } = current.hero; void ap; void learnedSkills; void discoveredSkills; void bookCollections; void claimedMilestones; void growthTalent; void stamina; void wounds; void fullness; hero.health = 10; hero.mana = 2; campaign = { ...current, hero }; }
     if (version === 1) { const { audio, ...rest } = campaign as ReturnType<typeof legacyCampaign>; void audio; campaign = rest; }
-    const save = parseSave({ version, savedAt: new Date().toISOString(), campaign }, content, 'mage'); expect(save.version).toBe(5);
+    const save = parseSave({ version, savedAt: new Date().toISOString(), campaign }, content, 'mage'); expect(save.version).toBe(6);
     expect(save.campaign.hero).toMatchObject({ growthTalent: 'mage', health: 118, mana: 108, stamina: 113, wounds: 0, fullness: 100, gold: 71 }); expect(save.campaign.randomState).toEqual(current.randomState);
     if (version === 4) expect(save.campaign.hero.weapons['weapon-1'].durability).toBe(11);
     const hero = save.campaign.hero; hero.health = 40; hero.mana = 3; hero.stamina = 15; hero.wounds = 20; hero.fullness = 60;

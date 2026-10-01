@@ -17,10 +17,10 @@ function AppDrawerContent(props: DrawerContentComponentProps) {
   const path = usePathname();
   const open = useDrawerStatus() === 'open';
   const close = useCallback(() => props.navigation.closeDrawer(), [props.navigation]);
-  const route = (destination: 'inventory' | 'save-load') => {
+  const route = (destination: 'inventory' | 'save-load' | 'skills') => {
     if (!game || !ready) return;
     close();
-    router.navigate({ pathname: destination === 'inventory' ? '/game/[characterId]/inventory' : '/game/[characterId]/save-load', params: { characterId: game.profile.id } });
+    router.navigate({ pathname: destination === 'skills' ? '/game/[characterId]/skills' : destination === 'inventory' ? '/game/[characterId]/inventory' : '/game/[characterId]/save-load', params: { characterId: game.profile.id } });
   };
   return <DrawerAccessibility open={open} close={close}>
     <DrawerContentScrollView {...props} contentContainerStyle={{ padding: 16, gap: 20 }}>
@@ -34,6 +34,7 @@ function AppDrawerContent(props: DrawerContentComponentProps) {
           onPress={() => { close(); void characters(); }} />
         <DungeonButton label="Stats" disabled={!ready} onPress={() => { close(); openStats(); }} />
         <DungeonButton label="Inventory" selected={path.endsWith('/inventory')} disabled={!ready} onPress={() => route('inventory')} />
+        <DungeonButton label="Skills" selected={path.endsWith('/skills')} disabled={!ready} onPress={() => route('skills')} />
         <DungeonButton label="Save/Load" selected={path.endsWith('/save-load')} disabled={!ready} onPress={() => route('save-load')} />
         <DungeonButton label="Settings" selected={path === '/settings'} onPress={() => { close(); router.navigate('/settings'); }} />
       </View>

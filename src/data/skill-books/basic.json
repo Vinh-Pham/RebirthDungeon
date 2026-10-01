@@ -1,0 +1,22 @@
+[
+  {
+    "id": "sword-manual",
+    "skillId": "sword-mastery",
+    "incompleteItemId": "sword-manual-unfinished",
+    "completeItemId": "sword-manual",
+    "pages": [
+      {
+        "itemId": "sword-page-1",
+        "hint": "Refuge: Grip coffer along the southern training row."
+      },
+      {
+        "itemId": "sword-page-2",
+        "hint": "Refuge: Balance coffer along the southern training row."
+      },
+      {
+        "itemId": "sword-page-3",
+        "hint": "Refuge: Finish coffer along the southern training row."
+      }
+    ]
+  }
+]

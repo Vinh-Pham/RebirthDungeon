@@ -125,7 +125,7 @@ describe('XState battle flow', () => {
 
   it('uses data-defined skills against all enemies', () => {
     const data = structuredClone(loadGameContent().data);
-    data.skills.push({ ...data.skills[0], id: 'nova', target: 'allEnemies', power: 100, minPower: 100, maxPower: 100, manaCost: 5 });
+    data.skills.push({ ...data.skills[0], id: 'nova', gameRanks: { F: { ...data.skills[0].gameRanks!.F!, minPower: 100, maxPower: 100, manaCost: 5 } }, target: 'allEnemies', power: 100, minPower: 100, maxPower: 100, manaCost: 5 });
     data.classes[0].skills.push('nova');
     data.maps[0].spawns.push({ entityId: 'slime-2', definitionId: 'slime', kind: 'enemy', x: 7, y: 4 });
     const session = create(1, new ContentRegistry(data));

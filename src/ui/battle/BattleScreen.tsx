@@ -9,6 +9,7 @@ import { loadGameContent } from '../../data/content';
 import { BattleHost } from '../../game/BattleHost';
 import { BattleSession, type BattleView as BattleSnapshot } from '../../game/BattleSession';
 import type { GameCommand } from '../../engine/commands';
+import { skillForEntity, skillEquipmentReason } from '../../engine/rpg/Skills';
 import { staminaCost } from '../../engine/rpg/Resources';
 import GameCanvas from '../../renderer/GameCanvas';
 
@@ -33,7 +34,7 @@ export default function BattleScreen() {
   return <BattleView key={snapshot.revision} session={snapshot.session} restart={host.restart} />;
 }
 
-export function BattleView({ session, restart, finishedLabel = 'Descend again' }: { session: BattleSession; restart(): void; finishedLabel?: string }) {
+export function BattleView({ session, restart, finishedLabel = 'Descend again', busy = false }: { session: BattleSession; restart(): void; finishedLabel?: string; busy?: boolean }) {
   const view = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
   const presentation = useSyncExternalStore(session.presentation.subscribe, session.presentation.getSnapshot, session.presentation.getSnapshot);
   const debug = useStore(session.ui, (state) => state.debugVisible);
@@ -91,7 +92,7 @@ export function BattleView({ session, restart, finishedLabel = 'Descend again' }
         <View style={styles.decision}>
           <Text className="text-foreground" style={styles.headline}>{headline}</Text><Text className="text-muted" style={styles.body}>{hint}</Text>
           {!finished ? <BattleActions key={`${view.turnId}:${canChoose}`} session={session} view={view} canChoose={canChoose} dispatch={dispatch} /> :
-            <View style={styles.actions}><Button primary label={finishedLabel} disabled={presentation.busy} onPress={restart} /></View>}
+            <View style={styles.actions}><Button primary label={finishedLabel} disabled={presentation.busy || busy} busy={busy} onPress={restart} /></View>}
           {error || session.battle.context.error ? <DungeonNotice message={error ?? session.battle.context.error} /> : null}
         </View>
         <Surface className="bg-surface-secondary" style={styles.log}>
@@ -109,7 +110,7 @@ function BattleActions({ session, view, canChoose, dispatch }: {
 }) {
   const [menu, setMenu] = useState<'skill' | 'item'>();
   const source = session.engine.getEntity(view.turnId ?? '');
-  const skills = (source?.skills ?? []).map((id) => session.content.skill(id)).filter((skill) => skill.battleUsable !== false);
+  const skills = (source?.skills ?? []).map((id) => skillForEntity(session.content, source!, id)).filter((skill) => skill.battleUsable !== false);
   const items = Object.entries(source?.inventory ?? {}).flatMap(([id, quantity]) => {
     const item = session.content.item(id);
     return quantity > 0 && item.kind === 'consumable' && item.battleUsable ? [{ item, quantity }] : [];
@@ -138,8 +139,10 @@ function BattleActions({ session, view, canChoose, dispatch }: {
       <Text className="text-accent" style={styles.eyebrow}>{menu === 'skill' ? 'SKILLS' : 'ITEMS'}</Text>
       {menu === 'skill' ? skills.length ? <View style={styles.skillGrid}>{skills.map((skill) => {
         const cost = source && !(skill.effect === 'heal' && skill.target === 'ally') ? staminaCost(source, skill.staminaCost) : 0;
-        const unavailable = !source?.mana || source.mana.current < skill.manaCost || !!source.stamina && source.stamina.current < cost;
-        return <View key={skill.id} style={styles.skillColumn}><Button className="min-h-[68px] flex-1" label={skill.name} detail={`${skill.manaCost} MP${cost ? ` · ${cost} SP` : ''}`}
+        const equipmentReason = source ? skillEquipmentReason(source, skill, session.content) : undefined;
+        const cooldown = source?.cooldowns?.[skill.id] ?? 0;
+        const unavailable = !!equipmentReason || cooldown > 0 || !source?.mana || source.mana.current < skill.manaCost || !!source.stamina && source.stamina.current < cost;
+        return <View key={skill.id} style={styles.skillColumn}><Button className="min-h-[68px] flex-1" label={`${skill.name} · ${skill.rank ?? 'F'}`} detail={`${skill.manaCost} MP${skill.effect === 'heal' && skill.target === 'ally' && source ? ` · 0 SP ally / ${staminaCost(source, skill.staminaCost)} SP self` : ` · ${cost} SP`} · ${skill.target === 'allEnemies' ? 'All enemies' : skill.target}${equipmentReason ? ` · ${equipmentReason}` : cooldown ? ` · Cooldown ${cooldown}` : unavailable ? ' · Insufficient resources' : ''}`}
           disabled={!canChoose || unavailable} selected={view.selectedAction?.skillId === skill.id}
           onPress={() => selectAction({ type: 'SELECT_ACTION', action: 'skill', skillId: skill.id })} /></View>;
       })}</View> : <Text className="text-muted" style={styles.body}>No battle skills learned.</Text> : items.length ? items.map(({ item, quantity }) =>
@@ -149,6 +152,7 @@ function BattleActions({ session, view, canChoose, dispatch }: {
       {view.phase !== 'selectingTarget' ? <Button label="Back" disabled={!canChoose} onPress={() => setMenu(undefined)} /> : null}
     </View> : null}
     {view.phase === 'selectingTarget' ? <>
+      {view.selectedTargetId && ['skill', 'attack'].includes(view.selectedAction?.action ?? '') ? <ActionPreview session={session} view={view} /> : null}
       {view.selectedAction?.action !== 'defend' ? <View style={styles.targets}>{view.targets.map((targetId) => <Button key={targetId}
         label={view.entities.find((entity) => entity.id === targetId)?.name ?? targetId}
         disabled={!canChoose} selected={view.selectedTargetId === targetId}
@@ -157,6 +161,21 @@ function BattleActions({ session, view, canChoose, dispatch }: {
         onPress={() => dispatch({ type: 'CONFIRM_ACTION' })} /><Button label="Back" disabled={!canChoose} onPress={() => dispatch({ type: 'CANCEL_ACTION' })} /></View>
     </> : null}
   </>;
+}
+
+function ActionPreview({ session, view }: { session: BattleSession; view: BattleSnapshot }) {
+  let preview: ReturnType<BattleSession['combat']['previewSkill']> | undefined;
+  let errorMessage: string | undefined;
+  try {
+    preview = view.selectedAction?.action === 'skill'
+      ? session.combat.previewSkill(view.turnId!, view.selectedTargetId!, view.selectedAction.skillId!)
+      : session.combat.previewBasic(view.turnId!, view.selectedTargetId!);
+  } catch (error) { errorMessage = error instanceof Error ? error.message : 'Preview unavailable'; }
+  if (!preview) return <DungeonNotice message={errorMessage} />;
+  return <View className="gap-2" accessibilityLiveRegion="polite">
+      <Text className="text-accent" style={styles.body}>{preview.area ? 'All enemies · ' : ''}{preview.manaCost} MP · {preview.staminaCost} SP</Text>
+      {preview.targets.map((target) => <Text key={target.targetId} className="text-muted" style={styles.body}>{view.entities.find((e) => e.id === target.targetId)?.name ?? target.targetId}: {preview.healing ? 'Restore' : 'Damage'} {target.min}–{target.max} HP{preview.healing ? '' : ` · Hit ${Math.round(target.hitChance * 100)}% · Critical ${Math.round(target.criticalChance * 100)}% (${target.criticalMin}–${target.criticalMax} HP)`}</Text>)}
+    </View>;
 }
 
 const styles = StyleSheet.create({

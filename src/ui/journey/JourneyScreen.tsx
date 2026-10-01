@@ -1,3 +1,4 @@
+import ProgressionFeedback from '../skills/ProgressionFeedback';
 import { DungeonButton as Button, DungeonCard, DungeonLoading, DungeonNotice } from '../shared/DungeonUI';
 import { useState, useSyncExternalStore } from 'react';
 import { Platform, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
@@ -18,7 +19,7 @@ export default function JourneyScreen() {
   const session = snapshot.session;
   const [error, setError] = useState<string>();
   if (!session) return <SafeAreaView className="bg-background" style={styles.screen}><View style={styles.loading}><Text className="text-foreground" style={styles.title}>Rebirth Dungeon</Text>{snapshot.error ? <DungeonNotice message={snapshot.error} /> : <DungeonLoading label="Loading your journey" />}</View></SafeAreaView>;
-  if (snapshot.battle) return <BattleView session={snapshot.battle} restart={host.returnFromBattle} finishedLabel="Return to the journey" />;
+  if (snapshot.battle) return <View className="flex-1"><View className="px-4"><ProgressionFeedback host={host} /></View><BattleView session={snapshot.battle} busy={snapshot.busy} restart={() => { void host.returnFromBattle(); }} finishedLabel={snapshot.retryAvailable ? 'Retry save and return' : 'Return to the journey'} /></View>;
   return <Exploration key={snapshot.revision} host={host} session={session} error={error} setError={setError} />;
 }
 function Exploration({ host, session, error, setError }: {
@@ -51,9 +52,9 @@ function Exploration({ host, session, error, setError }: {
     else approach(objectId);
   };
   if (view.activeService) return <SafeAreaView className="bg-background" edges={['left', 'right']} style={styles.screen}><ScrollView contentContainerStyle={styles.scroll}><View style={[styles.content, { width }]}>
-    <TownServicePanel key={view.activeService} session={session} objectId={view.activeService} busy={hostView.busy} dispatch={dispatch} />
+    <TownServicePanel key={view.activeService} session={session} objectId={view.activeService} busy={hostView.busy || !!hostView.retryAvailable} dispatch={dispatch} progress={(command) => { void host.progress(command); }} />
     {view.message ? <DungeonNotice status="accent" message={view.message} /> : null}
-    {error || hostView.error ? <DungeonNotice message={error ?? hostView.error} /> : null}
+    <DungeonNotice message={error} /><ProgressionFeedback host={host} />
   </View></ScrollView></SafeAreaView>;
   return <SafeAreaView className="bg-background" edges={['left', 'right']} style={styles.screen}><ScrollView key={map.id} contentContainerStyle={styles.scroll}><View style={[styles.content, { width }]}>
     <Text className="text-accent" style={styles.eyebrow}>REBIRTH DUNGEON · JOURNEY</Text><Text className="text-foreground" style={styles.title}>{map.name}</Text>
@@ -70,7 +71,7 @@ function Exploration({ host, session, error, setError }: {
     </DungeonCard> : null}
     <JourneyCharacterTabs host={host} session={session} value={characterTab} onValueChange={setCharacterTab} dispatch={dispatch} />
     {view.message ? <DungeonNotice status="accent" message={view.message} /> : null}
-    {error || hostView.error ? <DungeonNotice message={error ?? hostView.error} /> : null}
+    <DungeonNotice message={error} /><ProgressionFeedback host={host} />
     <Text className="text-muted" style={styles.legend}>Position {state.position.x}, {state.position.y} · Seed {run?.blueprint.seed ?? state.seed}</Text>
   </View></ScrollView></SafeAreaView>;
 }

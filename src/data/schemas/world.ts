@@ -8,6 +8,7 @@ export const WorldMapSchema = z.strictObject({
   theme: z.enum(['town', 'interior']).optional(),
   objects: z.array(z.strictObject({ id, ...point, name: id,
     kind: z.enum(['npc', 'chest', 'rest', 'portal', 'encounter', 'dungeonEntrance', 'statue', 'mimic', 'fountain', 'gate', 'key', 'finalChest', 'merchant', 'healer', 'altar']),
+    lessons: z.array(z.strictObject({ skillId: id, fee: z.number().int().min(0).max(100000) })).default([]),
     dialogue: z.string().default(''), itemId: id.optional(), quantity: z.number().int().min(1).max(99).default(1),
     destination: id.optional(), encounterMap: id.optional(),
     destinationPosition: z.strictObject(point).optional(), shopId: id.optional(),

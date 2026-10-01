@@ -1,3 +1,4 @@
+import ProgressionFeedback from '../skills/ProgressionFeedback';
 import { useSyncExternalStore } from 'react';
 import { Text, View } from 'react-native';
 import { useCharacterGame } from '../menu/CharacterGameContext';
@@ -7,7 +8,7 @@ import { DungeonButton, DungeonCard, DungeonNotice } from '../shared/DungeonUI';
 export default function SaveLoadScreen() {
   const { host } = useCharacterGame();
   const view = useSyncExternalStore(host.subscribe, host.getSnapshot, host.getServerSnapshot);
-  const disabled = view.busy || !view.storageAvailable || !!view.battle;
+  const disabled = view.busy || !!view.retryAvailable || !view.storageAvailable || !!view.battle;
   return <MenuPage>
     <Text className="text-muted" style={menu.body}>{view.storageAvailable
       ? 'Autosave follows your steps. Encounters resume at their starting checkpoint.'
@@ -24,7 +25,6 @@ export default function SaveLoadScreen() {
         </View>
       </DungeonCard>;
     })}
-    <DungeonNotice status="accent" message={view.notice} />
-    <DungeonNotice message={view.error} />
+    <ProgressionFeedback host={host} />
   </MenuPage>;
 }

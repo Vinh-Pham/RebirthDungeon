@@ -5,7 +5,17 @@ import { createHealth } from '../ecs/components/Health';
 /** All external definitions pass through one validating boundary before use. */
 export class ContentRegistry {
   readonly data: GameContent;
-  constructor(raw: unknown) { this.data = ContentSchema.parse(raw); }
+  constructor(raw: unknown) {
+    this.data = ContentSchema.parse(raw);
+    for (const skill of this.data.skills) if (skill.gameRanks) {
+      for (const rank of Object.values(skill.gameRanks)) {
+        rank.objectives.forEach(Object.freeze); Object.freeze(rank.objectives);
+        if (rank.statBonuses) Object.freeze(rank.statBonuses);
+        Object.freeze(rank);
+      }
+      Object.freeze(skill.gameRanks);
+    }
+  }
 
   skill(id: string): Skill {
     const skill = this.data.skills.find((entry) => entry.id === id);

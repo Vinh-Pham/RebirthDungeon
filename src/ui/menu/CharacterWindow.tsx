@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useRef, useSyncExternalStore, type RefObject } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -26,6 +27,7 @@ function CharacterStatsContent({ host, profile, close, closeRef }: { host: Journ
         <DungeonButton ref={closeRef} label="Close" accessibilityLabel="Close character stats" onPress={close} /></View>
       <ScrollView contentContainerStyle={styles.content}>
         <CharacterStatsDetails host={host} session={journey} />
+        <DungeonButton label="Skills" onPress={() => { close(); router.navigate({ pathname: '/game/[characterId]/skills', params: { characterId: profile.id } }); }} />
       </ScrollView>
     </SafeAreaView>;
 }

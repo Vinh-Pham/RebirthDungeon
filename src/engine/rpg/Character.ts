@@ -1,9 +1,13 @@
+import { cloneData } from '../cloneData';
+import { SkillProgressionSchema, starterProgression, validateSkillProgression } from './Skills';
 import { z } from 'zod';
 import type { ContentRegistry } from '../data/ContentRegistry';
 import type { Entity } from '../ecs/Entity';
 import type { GameRandom } from '../Random';
 import { calculateCharacterStats, TALENTS, type GrowthTalent, type StatSource } from './Stats';
 import { resourceTick } from './Resources';
+
+export { consumeItem } from './Inventory';
 
 const amount = z.number().int().min(0).max(1000000);
 export const LegacyHeroSchema = z.strictObject({
@@ -18,13 +22,14 @@ export const VersionFourHeroSchema = LegacyHeroSchema.extend({
   weapons: z.record(z.string().regex(/^weapon-[1-9]\d*$/), WeaponSchema),
   nextWeaponId: z.number().int().min(1).max(Number.MAX_SAFE_INTEGER),
 });
-export const HeroSchema = VersionFourHeroSchema.extend({ growthTalent: z.enum(TALENTS), stamina: amount, wounds: amount, fullness: z.number().min(50).max(100).refine((n) => Math.abs(n * 10 - Math.round(n * 10)) < 1e-8) });
+export const VersionFiveHeroSchema = VersionFourHeroSchema.extend({ growthTalent: z.enum(TALENTS), stamina: amount, wounds: amount, fullness: z.number().min(50).max(100).refine((n) => Math.abs(n * 10 - Math.round(n * 10)) < 1e-8) });
+export const HeroSchema = VersionFiveHeroSchema.extend(SkillProgressionSchema.shape);
 export type Hero = z.infer<typeof HeroSchema>;
 export type OwnedItem = { itemId: string } | { weaponId: string };
 export const experienceToNextLevel = (level: number) => level * 20;
 export function heroStatSource(hero: Hero, effects: readonly { statusId: string; stacks: number }[] = []): StatSource {
   const weapon = hero.equipment.weapon ? hero.weapons[hero.equipment.weapon] : undefined;
-  return { classId: hero.classId, level: hero.level, growthTalent: hero.growthTalent, weaponItemId: weapon && weapon.durability > 0 ? weapon.itemId : undefined, armorItemId: hero.equipment.armor, effects };
+  return { classId: hero.classId, level: hero.level, growthTalent: hero.growthTalent, weaponItemId: weapon && weapon.durability > 0 ? weapon.itemId : undefined, armorItemId: hero.equipment.armor, effects, learnedSkills: hero.learnedSkills };
 }
 export function heroStats(hero: Hero, content: ContentRegistry, effects: readonly { statusId: string; stacks: number }[] = []) {
   for (const [slot, reference] of Object.entries(hero.equipment)) {
@@ -45,6 +50,7 @@ export function tickHero(hero: Hero, content: ContentRegistry, rest = false) {
 }
 export function validateHero(raw: unknown, content: ContentRegistry): Hero {
   const hero = HeroSchema.parse(raw);
+  validateSkillProgression(hero, content);
   const stats = heroStats(hero, content);
   if (hero.health > stats.maxHealth - hero.wounds || hero.wounds >= stats.maxHealth || hero.mana > stats.maxMana || hero.stamina > stats.maxStamina ||
       (hero.level < 99 && hero.experience >= experienceToNextLevel(hero.level)) || (hero.level === 99 && hero.experience !== 0)) throw new Error('Invalid character resources or experience');
@@ -60,7 +66,7 @@ export function validateHero(raw: unknown, content: ContentRegistry): Hero {
 export function createHero(content: ContentRegistry, growthTalent: GrowthTalent = 'warrior'): Hero {
   const definition = content.data.classes[0];
   if (!definition) throw new Error('A character class is required');
-  const hero: Hero = { growthTalent, stamina: 0, wounds: 0, fullness: 100, classId: definition.id, level: 1, experience: 0, gold: 0, health: definition.maxHealth,
+  const hero: Hero = { ...starterProgression(definition.id, content), growthTalent, stamina: 0, wounds: 0, fullness: 100, classId: definition.id, level: 1, experience: 0, gold: 0, health: definition.maxHealth,
     mana: definition.maxMana, inventory: { potion: 2 }, equipment: {}, weapons: {}, nextWeaponId: 1 };
   restoreHero(hero, content); return hero;
 }
@@ -73,7 +79,12 @@ export function addItem(hero: Hero, itemId: string, quantity: number, content: C
   if (item.kind === 'weapon') {
     if (!Number.isSafeInteger(hero.nextWeaponId + quantity)) throw new Error('Weapon allocation limit reached');
     for (let i = 0; i < quantity; i++) hero.weapons[`weapon-${hero.nextWeaponId++}`] = { itemId, durability: item.maxDurability! };
-  } else hero.inventory[itemId] = (hero.inventory[itemId] ?? 0) + quantity;
+  } else {
+    if (item.kind === 'incompleteBook' && (itemCount(hero, itemId) + quantity > 1 || hero.bookCollections[item.recipeId!]?.completed)) throw new Error('Only one unfinished book per collection is allowed');
+    hero.inventory[itemId] = (hero.inventory[itemId] ?? 0) + quantity;
+    const discovered = item.skillId ?? content.data.skillBookRecipes.find((r) => r.id === item.recipeId)?.skillId;
+    if (discovered && !hero.discoveredSkills.includes(discovered)) hero.discoveredSkills.push(discovered);
+  }
 }
 export function ownedDefinition(hero: Hero, reference: OwnedItem, content: ContentRegistry) {
   return content.item('weaponId' in reference ? hero.weapons[reference.weaponId]?.itemId ?? '' : reference.itemId);
@@ -96,7 +107,7 @@ export function repairPrice(weapon: Weapon, content: ContentRegistry) {
 }
 export function migrateHero(raw: unknown, content: ContentRegistry, growthTalent: GrowthTalent = 'warrior'): Hero {
   const legacy = LegacyHeroSchema.parse(raw);
-  const hero: Hero = { growthTalent, stamina: 0, wounds: 0, fullness: 100, ...legacy, inventory: { ...legacy.inventory }, equipment: { ...legacy.equipment }, weapons: {}, nextWeaponId: 1 };
+  const hero: Hero = { ...starterProgression(legacy.classId, content), growthTalent, stamina: 0, wounds: 0, fullness: 100, ...legacy, inventory: { ...legacy.inventory }, equipment: { ...legacy.equipment }, weapons: {}, nextWeaponId: 1 };
   for (const itemId of Object.keys(legacy.inventory).sort()) {
     if (content.item(itemId).kind !== 'weapon') continue;
     delete hero.inventory[itemId];
@@ -106,15 +117,11 @@ export function migrateHero(raw: unknown, content: ContentRegistry, growthTalent
   }
   restoreHero(hero, content); return validateHero(hero, content);
 }
-export function consumeItem(inventory: Record<string, number>, itemId: string) {
-  if (!inventory[itemId]) throw new Error('Item is not in inventory');
-  if (--inventory[itemId] === 0) delete inventory[itemId];
-}
 export function grantExperience(hero: Hero, amount: number, content: ContentRegistry) {
   if (!Number.isSafeInteger(amount) || amount < 0 || !Number.isSafeInteger(hero.experience + amount)) throw new Error('Invalid experience reward');
   hero.experience += amount;
   while (hero.level < 99 && hero.experience >= experienceToNextLevel(hero.level)) {
-    hero.experience -= experienceToNextLevel(hero.level); hero.level++;
+    hero.experience -= experienceToNextLevel(hero.level); hero.level++; hero.ap = Math.min(1000000, hero.ap + 1);
     restoreHero(hero, content);
   }
   if (hero.level === 99) hero.experience = 0;
@@ -127,6 +134,8 @@ export function rollLoot(enemyId: string, content: ContentRegistry, random: Game
 }
 export function applyHero(entity: Entity, hero: Hero, content: ContentRegistry, effects: readonly { statusId: string; stacks: number }[] = []) {
   const stats = heroStats(hero, content, effects);
+  entity.learnedSkills = cloneData(hero.learnedSkills);
+  entity.skills = Object.keys(hero.learnedSkills).filter((id) => content.skill(id).kind === 'active' && content.skill(id).battleUsable === true);
   entity.statSource = heroStatSource(hero, effects);
   entity.stamina = { current: hero.stamina, max: stats.maxStamina }; entity.wounds = hero.wounds; entity.fullness = hero.fullness;
   entity.health = { current: hero.health, max: stats.maxHealth };

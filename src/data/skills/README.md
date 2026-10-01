@@ -1,27 +1,49 @@
 # Skill catalog
 
-`basic.json` contains the 33 skills in `docs/skills/normalized/`. Each entry retains
-the source URL, retrieval date, all rank F–1 effect descriptions, and the complete
-rank table. `reference.ranks` defines the column order for `reference.rows`.
-Race-specific values, percentages, charges, cooldowns, and resource costs remain
-unaltered in these reference tables.
+`basic.json` retains the 33 reference skill identities, source URLs, retrieval dates,
+F–1 descriptions, and reference tables. `reference` is historical research, not
+executable balance. The original `docs/skills/normalized/` scrape files are not
+present in this checkout; the shipped catalog preserves their reference payloads.
 
-The current battle engine uses integer mana and additive attack power. Its rank F
-adapters use the minimum listed damage/healing for Firebolt (7), Icebolt (10),
-Lightning Bolt (1), and Healing (6). Firebolt's Human mana cost of 1.5 is rounded
-up to 2; the other mana costs are 1, 2, and 12 respectively. Bolts add `power` to
-the caster's attack under the existing battle rules. Healing restores one charge
-to one ally, including the caster. These adapters do not implement charge loading,
-racial modifiers, magic attack scaling, critical healing, or Icebolt's slowing.
-No burn status is attached to Firebolt: the source does not specify one.
+`gameRanks` contains authored Rebirth Dungeon numeric rules, separately from those
+reference tables. Its rank objects are frozen after validation. Heroes own explicit
+`learnedSkills` records with rank and capped objective counts; class skill lists are
+used only for starter grants and legacy migration. Enemies keep independent authored
+skill defaults. Resolve a hero action through `resolveLearnedSkill`, without changing
+the catalog or importing reference percentages, charges, or racial variants.
 
-Other skills have `battleUsable: false` until their mechanics are implemented.
-Their zero `manaCost`/`power` and self-targeted buff fields are compatibility
-placeholders, not statements of their documented effects. Battle selection and
-direct skill resolution reject them. The codex shows source descriptions and
-availability instead of these placeholders. The Warden starts with the four
-supported skills.
+The four starter spells preserve their existing F ranges, scaling, targets and costs.
+They are capped at F until E adapters are authored. Smash, Combat Mastery and Sword
+Mastery implement the gameplay document's F/E pilot. Their E cap is explicit; they
+cannot spend AP on an unimplemented D rank. All other entries remain unavailable.
 
-`range-attack-candidate.json` is a duplicate scrape candidate, not another skill.
-`wand-mastery.json` contains an empty wiki page and provides no skill definition;
-neither is included in the catalog.
+The keeper offers a free Smash lesson and a one-time 3 AP introductory milestone.
+Five guaranteed refuge training coffers provide the Combat manual, unfinished Sword
+manual, and Grip/Balance/Finish pages. Insert pages in any order, then read the complete
+manual in town. These sources remain available independently of dungeon success.
+Repeating generated dungeon encounters provides repeatable combat training. Every
+level gained awards 1 AP, with no retroactive AP for migrated levels.
+
+Training uses attributed direct action outcomes, never animation/audio callbacks or
+status-damage notifications. Each BattleSession keeps capped pending counts. Finishing
+victory or defeat banks that ledger with resources, durability and rewards. Restarting
+an unfinished checkpoint discards its ledger. A host-owned candidate is written to
+the auto slot before learning, page insertion, rank-up or battle completion becomes
+live. Failed writes retain the exact candidate and block dependent mutations until
+Retry save succeeds. Saves use wire version 6, preserving migrations from versions
+1–5; the existing native/web storage adapters need no database schema changes.
+
+The character-scoped Skills journal is available from the character panel and drawer.
+It lists learned/discovered skills, rank effects, training objectives, AP eligibility,
+acquisition routes and book slots. Progression is town-only; inspection uses no turn.
+Battle rows show saved ranks, effective costs, equipment/cooldown reasons and confirmed
+target previews without RNG draws. Existing damage branches and shared area critical
+sampling remain intact.
+
+Run `npm test`, `npx expo lint`, and `npx tsc --noEmit`. Focused progression suites cover
+acquisition, gates, attribution, checkpoints and failed-save retries. Browser testing
+covers compact journal navigation, saved learning and reload. iOS/Android touch,
+large-text, suspension and native persistence still require device verification.
+
+Advanced reactions, new defensive/armor passives, Final Hit, Windmill, charge loading,
+shield/dual-wield equipment, HP costs and life skills remain future authored extensions.

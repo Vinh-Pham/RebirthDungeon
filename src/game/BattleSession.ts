@@ -1,5 +1,7 @@
+import { cloneData } from '../engine/cloneData';
+import { EncounterTraining, type TrainingLedger } from '../engine/rpg/Skills';
 import { applyHero, createHero, type Hero } from '../engine/rpg/Character';
-import { calculateCharacterStats, type CharacterStats } from '../engine/rpg/Stats';
+import { calculateCharacterStats, type CharacterStats, type StatSource } from '../engine/rpg/Stats';
 import { effectiveEntity } from '../engine/rpg/StatusEffects';
 import { createGameEngine } from '../engine/GameEngine';
 import { CombatSystem } from '../engine/ecs/systems/CombatSystem';
@@ -16,6 +18,7 @@ import type { RenderEntity } from '../renderer/types';
 import { createUIStore } from '../state/uiStore';
 
 export interface CharacterReview {
+  source: StatSource;
   stats: CharacterStats; health: number; mana: number; stamina: number; wounds: number; fullness: number;
   statuses: { name: string; turns: number; stacks: number }[];
   weapon?: { name: string; durability: number; maxDurability: number };
@@ -28,12 +31,13 @@ export interface BattleView {
   selectedAction?: BattleAction;
   entities: readonly RenderEntity[];
   targets: readonly string[];
-  log: readonly string[];
+  log: readonly string[]; training: TrainingLedger;
 }
 
 /** An event-driven, read-only projection for UI; ECS remains authoritative. */
 export class BattleSession {
   readonly engine;
+  readonly training: EncounterTraining;
   readonly combat: CombatSystem;
   readonly battle: BattleController;
   readonly presentation;
@@ -46,7 +50,7 @@ export class BattleSession {
   private log: string[] = [];
   private disposed = false;
 
-  constructor(readonly content: ContentRegistry, seed = 12345, mapId: string | TileMap = 'chamber', hero?: Hero, effects: readonly { statusId: string; stacks: number }[] = [], characterName?: string) {
+  constructor(readonly content: ContentRegistry, seed = 12345, mapId: string | TileMap = 'chamber', hero?: Hero, effects: readonly { statusId: string; stacks: number }[] = [], characterName?: string, readonly encounterId = `arena/${seed}`, eligibleTraining = false) {
     const map = typeof mapId === 'string' ? content.data.maps.find((entry) => entry.id === mapId) : MapSchema.parse(mapId);
     if (!map) throw new Error(`Unknown map: ${mapId}`);
     this.map = map;
@@ -55,8 +59,9 @@ export class BattleSession {
       spawn.x * map.tileSize, spawn.y * map.tileSize));
     for (const entity of this.engine.world.entities) if (entity.player) applyHero(entity, hero ?? createHero(content), content, effects);
     if (characterName) for (const entity of this.engine.world.entities) if (entity.player) entity.name = characterName;
+    this.training = new EncounterTraining(encounterId, cloneData((hero ?? createHero(content)).learnedSkills), content, eligibleTraining);
     this.combat = new CombatSystem(map.spawns.map((spawn) => spawn.entityId), { content,
-      canAct: () => this.battle.isResolving });
+      canAct: () => this.battle.isResolving, encounterId, onOutcome: (outcome) => this.training.record(outcome) });
     this.battle = new BattleController(this.combat, content);
     this.presentation = new PresentationQueue(this.engine);
     this.initialEntities = this.projectEntities();
@@ -100,12 +105,12 @@ export class BattleSession {
   private refresh() {
     const player = this.engine.world.entities.find((entity) => entity.player);
     const stats = player?.statSource ? calculateCharacterStats(player.statSource, this.content) : undefined;
-    const character: CharacterReview | undefined = player && stats ? { stats: { ...stats, combatant: { ...effectiveEntity(player, this.content).combatant! } }, health: player.health!.current, mana: player.mana!.current, stamina: player.stamina!.current, wounds: player.wounds!, fullness: player.fullness!,
+    const character: CharacterReview | undefined = player && stats ? { source: cloneData(player.statSource!), stats: { ...stats, combatant: { ...effectiveEntity(player, this.content).combatant! } }, health: player.health!.current, mana: player.mana!.current, stamina: player.stamina!.current, wounds: player.wounds!, fullness: player.fullness!,
       statuses: (player.statuses ?? []).map((status) => ({ name: this.content.status(status.id).name, turns: status.remainingTurns, stacks: status.stacks })),
       weapon: player.weapon ? { name: this.content.item(player.weapon.itemId).name, durability: player.weapon.durability, maxDurability: this.content.item(player.weapon.itemId).maxDurability! } : undefined } : undefined;
     this.snapshot = { character, phase: this.battle.phase, turnId: this.combat.currentTurn(),
       selectedAction: this.battle.context.action ? { ...this.battle.context.action } : undefined, selectedTargetId: this.battle.context.targetId,
-      entities: this.projectEntities(), targets: this.battle.validTargetIds(), log: [...this.log] };
+      entities: this.projectEntities(), targets: this.battle.validTargetIds(), log: [...this.log], training: this.training.snapshot() };
     this.listeners.forEach((listener) => listener());
   }
   private record(event: GameEvent) {

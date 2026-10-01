@@ -1,7 +1,8 @@
+import { learnSkill, readSkillBook, insertSkillPage, rankUpSkill, mergeTraining } from '../engine/rpg/Skills';
 import { cloneData } from '../engine/cloneData';
 import { createGameEngine } from '../engine/GameEngine';
 import type { ContentRegistry } from '../engine/data/ContentRegistry';
-import type { GameCommand } from '../engine/commands';
+import { isProgressionCommand, type ProgressionCommand, type GameCommand } from '../engine/commands';
 import type { GameEvent } from '../engine/events';
 import { addItem, createHero, consumeItem, grantExperience, heroStats, rollLoot, applyHero, itemCount, ownedDefinition, removeOwnedItem, repairPrice, restoreHero, tickHero } from '../engine/rpg/Character';
 import type { GrowthTalent } from '../engine/rpg/Stats';
@@ -24,6 +25,10 @@ export class JourneySession {
   private message = 'Collect supplies, visit the town shops, and offer an item at the goddess altar. The eastern passage leads to the training halls.';
   private disposed = false;
   private dispatching = false;
+  private mutationsLocked = false;
+  private hostManaged = false;
+  private staging = false;
+  private committedEvents: GameEvent[] = [];
   private dungeonMap?: WorldMap;
   private activeService?: string;
   constructor(readonly content: ContentRegistry, restored?: CampaignState, seed = 12345, readonly characterName?: string, growthTalent: GrowthTalent = 'warrior') {
@@ -79,7 +84,10 @@ export class JourneySession {
       const obj = run?.blueprint.world.objects.find((entry) => entry.id === objectId) ?? visible;
       this.activeService = undefined;
       switch (obj.kind) {
-        case 'npc': this.message = obj.dialogue; break;
+        case 'npc':
+          for (const lesson of obj.lessons) if (!this.state.hero.discoveredSkills.includes(lesson.skillId)) this.state.hero.discoveredSkills.push(lesson.skillId);
+          if (obj.lessons.length) this.activeService = obj.id;
+          this.message = obj.dialogue; break;
         case 'chest':
           if (this.isClaimed(obj.id)) throw new Error('This chest is empty');
           addItem(this.state.hero, obj.itemId!, obj.quantity, content);
@@ -160,6 +168,7 @@ export class JourneySession {
     this.engine.commands.register('EQUIP_WEAPON', ({ weaponId }) => {
       this.requireExploring(); const weapon = this.state.hero.weapons[weaponId];
       if (!weapon) throw new Error('This weapon is not in your pack');
+      if (content.item(weapon.itemId).weaponTags.includes('sword') && !this.state.hero.discoveredSkills.includes('sword-mastery')) this.state.hero.discoveredSkills.push('sword-mastery');
       this.state.hero.equipment.weapon = weaponId; this.message = `Equipped ${content.item(weapon.itemId).name}.`;
       this.commit({ type: 'EQUIPMENT_CHANGED', itemId: weapon.itemId });
     });
@@ -176,6 +185,7 @@ export class JourneySession {
       this.message = `Used ${item.name}.`; this.commit({ type: 'ITEM_USED', sourceId, itemId });
     });
     this.registerServices();
+    this.registerProgression();
     this.refresh();
   }
   get map() { return this.state.dungeon ? this.dungeonMap ??= projectDungeonMap(this.state.dungeon) : this.content.data.worlds.find((map) => map.id === this.state.worldId)!; }
@@ -184,18 +194,49 @@ export class JourneySession {
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
   toSave(): CampaignState { return cloneData(this.snapshot.state); }
   dispatch(command: GameCommand) {
+    if (this.mutationsLocked) throw new Error('Save pending. Retry before continuing.');
+    if (this.hostManaged && isProgressionCommand(command)) throw new Error('Use the host durable progression operation');
     if (this.disposed || this.dispatching) throw new Error('Journey is disposed or a command is already resolving');
     this.dispatching = true;
     try { this.engine.dispatch(command); } finally { this.dispatching = false; }
   }
+  manageDurability() { this.hostManaged = true; }
+  lockMutations() { this.mutationsLocked = true; }
+  progressionCandidate(command: ProgressionCommand) {
+    const candidate = new JourneySession(this.content, this.toSave(), undefined, this.characterName);
+    candidate.activeService = this.activeService; candidate.staging = true;
+    try { candidate.dispatch(command);
+      if (candidate.state.hero.ap !== this.state.hero.ap) candidate.committedEvents.push({ type: 'AP_CHANGED', ap: candidate.state.hero.ap });
+      return candidate; } catch (error) { candidate.dispose(); throw error; }
+  }
+  battleCandidate(battle: BattleSession) {
+    const candidate = new JourneySession(this.content, this.toSave(), undefined, this.characterName);
+    candidate.staging = true;
+    try { candidate.finishBattle(battle);
+      const training = battle.training.snapshot();
+      if (Object.keys(training).length) candidate.committedEvents.push({ type: 'SKILL_TRAINING_BANKED', training });
+      if (candidate.state.hero.ap !== this.state.hero.ap) candidate.committedEvents.push({ type: 'AP_CHANGED', ap: candidate.state.hero.ap });
+      return candidate; } catch (error) { candidate.dispose(); throw error; }
+  }
+  publishCommittedEvents() {
+    const events = this.committedEvents; this.committedEvents = []; this.staging = false;
+    const failures: unknown[] = [];
+    for (const event of events) try { this.engine.events.emit(event); } catch (error) { failures.push(error); }
+    if (failures.length) throw new AggregateError(failures, 'Progress saved; notification delivery failed');
+  }
+  get encounterIdentity() {
+    const p = this.state.pending; return p ? `${p.worldId}/${p.objectId}/${this.state.encounterCount}/${p.seed}` : undefined;
+  }
   createBattle(): BattleSession {
     if (!this.state.pending) throw new Error('No pending encounter');
     const encounter = this.state.dungeon?.blueprint.encounters.find((entry) => entry.objectId === this.state.pending!.objectId);
-    return new BattleSession(this.content, this.state.pending.seed, encounter?.map ?? this.state.pending.mapId, cloneData(this.state.hero), this.state.dungeon?.effects, this.characterName);
+    return new BattleSession(this.content, this.state.pending.seed, encounter?.map ?? this.state.pending.mapId, cloneData(this.state.hero), this.state.dungeon?.effects, this.characterName, this.encounterIdentity, true);
   }
   finishBattle(battle: BattleSession) {
-    if (this.disposed || !this.state.pending || !battle.combat.result || battle.engine.seed !== this.state.pending.seed || battle.map.id !== this.state.pending.mapId) throw new Error('Encounter is not ready to finish');
+    if (this.hostManaged) throw new Error('Use the host durable battle operation');
+    if (this.disposed || !this.state.pending || !battle.combat.result || battle.engine.seed !== this.state.pending.seed || battle.map.id !== this.state.pending.mapId || battle.encounterId !== this.encounterIdentity) throw new Error('Encounter is not ready to finish');
     const hero = cloneData(this.state.hero);
+    mergeTraining(hero, battle.training.snapshot(), this.content);
     const entity = battle.engine.world.entities.find((entity) => entity.player)!;
     hero.health = Math.max(1, entity.health!.current); hero.mana = entity.mana!.current;
     hero.stamina = entity.stamina!.current; hero.wounds = entity.wounds!; hero.fullness = entity.fullness!;
@@ -236,7 +277,7 @@ export class JourneySession {
       restoreHero(hero, this.content);
       this.state.hero = hero; this.state.pending = undefined; this.state.dungeon = undefined; this.dungeonMap = undefined; this.state.worldId = this.content.data.worlds[0].id;
       this.state.position = { ...this.map.entry }; this.spawnWorld();
-      this.message = 'Reborn at the refuge. Half your gold was lost.';
+      this.message = 'Recovered at the refuge. Half your gold was lost; levels, skills and equipment are preserved.';
       this.commit({ type: 'MAP_CHANGED', mapId: this.map.id });
     }
   }
@@ -259,7 +300,7 @@ export class JourneySession {
     this.dungeonMap = undefined; this.spawnWorld(); this.message = 'Returned to the refuge. Your earned loot is safe; dungeon effects and keys have faded.';
     this.commit({ type: 'MAP_CHANGED', mapId: this.map.id });
   }
-  private requireExploring() { if (this.state.pending) throw new Error('Finish the encounter before exploring'); }
+  private requireExploring() { if (this.mutationsLocked) throw new Error('Save pending. Retry before continuing.'); if (this.state.pending) throw new Error('Finish the encounter before exploring'); }
   private requireService(objectId: string, kinds: readonly WorldMap['objects'][number]['kind'][]) {
     this.requireExploring();
     const object = this.map.objects.find((entry) => entry.id === objectId);
@@ -269,7 +310,7 @@ export class JourneySession {
   private registerServices() {
     const content = this.content;
     const changed = (objectId: string, message: string) => { this.message = message; this.commit({ type: 'WORLD_INTERACTED', objectId, message }); };
-    this.engine.commands.register('CLOSE_SERVICE', () => { this.activeService = undefined; this.refresh(); });
+    this.engine.commands.register('CLOSE_SERVICE', () => { this.requireExploring(); this.activeService = undefined; this.refresh(); });
     this.engine.commands.register('BUY_ITEM', ({ objectId, itemId, quantity }) => {
       const object = this.requireService(objectId, ['merchant']);
       const shop = content.data.shops.find((shop) => shop.id === object.shopId)!;
@@ -282,7 +323,9 @@ export class JourneySession {
     this.engine.commands.register('SELL_ITEM', ({ objectId, item: reference, quantity }) => {
       const object = this.requireService(objectId, ['merchant']);
       if (!content.data.shops.find((shop) => shop.id === object.shopId)!.buysItems) throw new Error('This merchant does not buy items');
-      const item = ownedDefinition(this.state.hero, reference, content); const total = Math.floor(item.price / 2) * quantity;
+      const item = ownedDefinition(this.state.hero, reference, content);
+      if (item.kind === 'incompleteBook') throw new Error('Unfinished books cannot be sold');
+      const total = Math.floor(item.price / 2) * quantity;
       if (this.state.hero.gold + total > 1000000) throw new Error('Your gold purse is full');
       const hero = cloneData(this.state.hero); removeOwnedItem(hero, reference, quantity); hero.gold += total;
       this.state.hero = hero; changed(objectId, `Sold ${item.name} ×${quantity} for ${total} gold.`);
@@ -311,6 +354,7 @@ export class JourneySession {
       const definition = content.data.dungeons.find((entry) => entry.id === object.dungeonId);
       if (!definition) throw new Error('This dungeon is unavailable');
       const hero = cloneData(this.state.hero); const item = ownedDefinition(hero, reference, content);
+      if (item.kind === 'incompleteBook') throw new Error('Keep the unfinished book for its collection');
       removeOwnedItem(hero, reference, 1);
       // Stage RNG and the entire run before spending the offering or changing the live campaign.
       const random = createGameRandom(this.state.seed); random.restore(this.engine.random.snapshot());
@@ -325,6 +369,41 @@ export class JourneySession {
       this.commit({ type: 'MAP_CHANGED', mapId: this.map.id });
     });
   }
+  private registerProgression() {
+    const town = () => {
+      if (this.hostManaged) throw new Error('Use the host durable progression operation');
+      this.requireExploring();
+      if (this.state.dungeon || !this.map.theme) throw new Error('Return to town to rank up or learn skills');
+    };
+    this.engine.commands.register('LEARN_SKILL', ({ objectId, skillId }) => {
+      town();
+      const object = this.map.objects.find((o) => o.id === objectId && o.kind === 'npc');
+      const offer = object?.lessons.find((o) => o.skillId === skillId);
+      if (!object || !offer || distance(object, this.state.position) > 1) throw new Error('Approach the instructor for this lesson');
+      if (this.state.hero.gold < offer.fee) throw new Error('Not enough gold for this lesson');
+      const hero = learnSkill(this.state.hero, skillId, this.content); hero.gold -= offer.fee;
+      if (object.id === 'keeper' && skillId === 'smash' && !hero.claimedMilestones.includes('intro-melee-lesson')) {
+        hero.claimedMilestones.push('intro-melee-lesson'); hero.ap = Math.min(1000000, hero.ap + 3);
+      }
+      this.state.hero = hero; this.message = `Learned ${this.content.skill(skillId).name} · Rank F. Introductory lesson awards 3 AP once.`;
+      this.commit({ type: 'SKILL_LEARNED', skillId, rank: 'F' });
+    });
+    this.engine.commands.register('READ_SKILL_BOOK', ({ itemId }) => {
+      town(); this.state.hero = readSkillBook(this.state.hero, itemId, this.content);
+      const skillId = this.content.item(itemId).skillId!; this.message = `Learned ${this.content.skill(skillId).name} · Rank F.`;
+      this.commit({ type: 'SKILL_LEARNED', skillId, rank: 'F' });
+    });
+    this.engine.commands.register('INSERT_SKILL_PAGE', ({ recipeId, pageId }) => {
+      town(); this.state.hero = insertSkillPage(this.state.hero, recipeId, pageId, this.content);
+      this.message = this.state.hero.bookCollections[recipeId].completed ? 'The manual is complete. Read it to learn the skill.' : 'Page inserted into your manual.';
+      this.commit({ type: 'SKILL_PAGE_INSERTED', recipeId, pageId });
+    });
+    this.engine.commands.register('RANK_UP_SKILL', ({ skillId }) => {
+      town(); this.state.hero = rankUpSkill(this.state.hero, skillId, this.content);
+      this.message = `${this.content.skill(skillId).name} advanced to Rank ${this.state.hero.learnedSkills[skillId].rank}.`;
+      this.commit({ type: 'SKILL_RANKED_UP', skillId, rank: this.state.hero.learnedSkills[skillId].rank });
+    });
+  }
   private spawnWorld() {
     this.engine.world.clear();
     const hero = this.content.spawn(this.state.hero.classId, 'player', 'player', this.state.position.x, this.state.position.y);
@@ -332,7 +411,7 @@ export class JourneySession {
     applyHero(hero, this.state.hero, this.content, this.state.dungeon?.effects); this.engine.spawn(hero);
     this.map.objects.forEach((obj) => this.engine.spawn({ id: obj.id, name: obj.name, position: { x: obj.x, y: obj.y } }));
   }
-  private commit(event: GameEvent) { this.state.randomState = this.engine.random.snapshot(); this.refresh(); this.engine.events.emit(event); }
+  private commit(event: GameEvent) { this.state.randomState = this.engine.random.snapshot(); this.refresh(); if (this.staging) this.committedEvents.push(event); else this.engine.events.emit(event); }
   private refresh() {
     const player = this.engine.getEntity('player');
     if (player) applyHero(player, this.state.hero, this.content, this.state.dungeon?.effects);

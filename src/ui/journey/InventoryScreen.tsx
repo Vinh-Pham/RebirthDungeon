@@ -1,3 +1,5 @@
+import { router } from 'expo-router';
+import ProgressionFeedback from '../skills/ProgressionFeedback';
 import { useState, useSyncExternalStore } from 'react';
 import { Text, View } from 'react-native';
 import type { GameCommand } from '../../engine/commands';
@@ -20,11 +22,10 @@ export default function InventoryScreen() {
 
 function InventoryPage({ host, session }: { host: JourneyHost; session: JourneySession }) {
   const view = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
-  const hosted = useSyncExternalStore(host.subscribe, host.getSnapshot, host.getServerSnapshot);
   return <MenuPage>
     <InventoryContent host={host} session={session} />
     {view.message ? <DungeonNotice status="accent" message={view.message} /> : null}
-    <DungeonNotice message={hosted.error} />
+    <ProgressionFeedback host={host} />
   </MenuPage>;
 }
 
@@ -40,7 +41,9 @@ export function InventoryContent({ host, session }: { host: JourneyHost; session
   const weapons = Object.entries(hero.weapons);
   const currentPage = inventoryPage(page, weapons.length);
   const start = currentPage * INVENTORY_PAGE_SIZE;
-  const disabled = hosted.busy || !!hosted.battle;
+  const { profile } = useCharacterGame();
+  const disabled = hosted.busy || !!hosted.battle || !!hosted.retryAvailable;
+  const progressionDisabled = disabled || !!view.state.dungeon || !view.map.theme;
   const dispatch = (command: GameCommand) => {
     if (host.getSnapshot().busy || host.getSnapshot().battle) return;
     try { setError(undefined); session.dispatch(command); }
@@ -56,10 +59,13 @@ export function InventoryContent({ host, session }: { host: JourneyHost; session
         return <View key={id} className="gap-2 py-2">
           <Text className="text-foreground" style={menu.body}>{item.name} ×{quantity}{equipped ? ' · equipped' : ''}</Text>
           <Text className="text-muted" style={menu.body}>{item.description}</Text>
-          <DungeonButton disabled={disabled} selected={equipped}
-            label={`${item.kind === 'consumable' ? 'Use' : equipped ? 'Unequip' : 'Equip'} ${item.name}`}
-            onPress={() => dispatch(item.kind === 'consumable' ? { type: 'USE_ITEM', sourceId: 'player', targetId: 'player', itemId: id }
-              : equipped ? { type: 'UNEQUIP_ITEM', slot: 'armor' } : { type: 'EQUIP_ITEM', itemId: id })} />
+          {item.kind === 'skillBook' ? <DungeonButton label={`Read ${item.name}`} disabled={progressionDisabled || !!hero.learnedSkills[item.skillId!]} onPress={() => { void host.progress({ type: 'READ_SKILL_BOOK', itemId: id }); }} />
+            : ['skillPage', 'incompleteBook'].includes(item.kind) ? <DungeonButton label="View book collection" onPress={() => router.navigate({ pathname: '/game/[characterId]/skills', params: { characterId: profile.id } })} />
+            : <DungeonButton disabled={disabled} selected={equipped}
+              label={`${item.kind === 'consumable' ? 'Use' : equipped ? 'Unequip' : 'Equip'} ${item.name}`}
+              onPress={() => dispatch(item.kind === 'consumable' ? { type: 'USE_ITEM', sourceId: 'player', targetId: 'player', itemId: id }
+                : equipped ? { type: 'UNEQUIP_ITEM', slot: 'armor' } : { type: 'EQUIP_ITEM', itemId: id })} />}
+          {item.kind === 'skillBook' && !view.map.theme ? <Text className="text-muted" style={menu.body}>Return to town to read</Text> : null}
         </View>;
       })}
       {weapons.slice(start, start + INVENTORY_PAGE_SIZE).map(([weaponId, weapon], offset) => {

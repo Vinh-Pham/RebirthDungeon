@@ -2,7 +2,7 @@ import { DungeonButton as Button, DungeonCard } from '../shared/DungeonUI';
 import { useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { JourneySession } from '../../game/JourneySession';
-import type { GameCommand } from '../../engine/commands';
+import type { GameCommand, ProgressionCommand } from '../../engine/commands';
 import { heroStats, itemCount, removableCount, repairPrice, type OwnedItem } from '../../engine/rpg/Character';
 import InventoryPager, { INVENTORY_PAGE_SIZE, inventoryPage } from './InventoryPager';
 
@@ -23,8 +23,8 @@ function TradeRow({ name, detail, price, maximum, verb, disabled, choose }: {
 }
 type Quote = { command: GameCommand; label: string; goldChange: number; detail: string };
 
-export default function TownServicePanel({ session, objectId, busy, dispatch }: {
-  session: JourneySession; objectId: string; busy: boolean; dispatch(command: GameCommand): boolean;
+export default function TownServicePanel({ session, objectId, busy, dispatch, progress }: {
+  session: JourneySession; objectId: string; busy: boolean; dispatch(command: GameCommand): boolean; progress(command: ProgressionCommand): void;
 }) {
   const [quote, setQuote] = useState<Quote>();
   const [repairPage, setRepairPage] = useState(0);
@@ -48,7 +48,7 @@ export default function TownServicePanel({ session, objectId, busy, dispatch }: 
     ...Object.entries(hero.inventory).map(([itemId]) => ({ reference: { itemId } as OwnedItem, item: content.item(itemId), key: itemId, detail: `${hero.inventory[itemId]} in your pack` })),
     ...Object.entries(hero.weapons).map(([weaponId, weapon], index) => ({ reference: { weaponId } as OwnedItem, item: content.item(weapon.itemId), key: weaponId,
       detail: `Weapon ${index + 1} · ${weapon.durability}/${content.item(weapon.itemId).maxDurability} durability${weapon.durability === 0 ? ' · broken' : ''}` })),
-  ].filter((entry) => removableCount(hero, entry.reference) > 0);
+  ].filter((entry) => entry.item.kind !== 'incompleteBook' && removableCount(hero, entry.reference) > 0);
   const weapons = Object.entries(hero.weapons);
   const repairStart = inventoryPage(repairPage, weapons.length) * INVENTORY_PAGE_SIZE;
   const tradeStart = inventoryPage(tradePage, inventory.length) * INVENTORY_PAGE_SIZE;
@@ -63,6 +63,18 @@ export default function TownServicePanel({ session, objectId, busy, dispatch }: 
       <Button label={altar ? 'Confirm offering and enter dungeon' : 'Confirm transaction'} disabled={busy || hero.gold + quote.goldChange < 0 || hero.gold + quote.goldChange > 1000000} onPress={confirm} />
       <Button label="Cancel" disabled={busy} onPress={cancel} />
     </DungeonCard> : <>
+      {object.lessons.length ? <>
+        <Text className="text-muted" style={styles.body}>Learn a skill at Rank F, then practice in the dungeon. The introductory Smash lesson awards 3 AP once.</Text>
+        {object.lessons.map((offer) => {
+          const skill = content.skill(offer.skillId), record = hero.learnedSkills[skill.id];
+          return <DungeonCard key={skill.id}>
+            <Text className="text-foreground" style={styles.name}>{skill.name} · {record ? `Rank ${record.rank}` : 'Rank F lesson'}</Text>
+            <Text className="text-muted" style={styles.body}>{skill.acquisitionHint} · {offer.fee} gold</Text>
+            <Button label={record ? 'Already learned' : `Learn ${skill.name} · ${offer.fee} gold`} disabled={busy || !!record || hero.gold < offer.fee}
+              onPress={() => progress({ type: 'LEARN_SKILL', objectId, skillId: skill.id })} />
+          </DungeonCard>;
+        })}
+      </> : null}
       {shop ? <><Text className="text-accent" style={styles.section}>Buy supplies</Text>{shop.items.map((itemId) => {
         const item = content.item(itemId); const capacity = 999 - itemCount(hero, itemId);
         const maximum = Math.min(capacity, item.price > 0 ? Math.floor(hero.gold / item.price) : 999);

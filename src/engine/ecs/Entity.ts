@@ -1,3 +1,4 @@
+import type { LearnedSkills } from '../rpg/Skills';
 import type { ActiveStatus } from '../rpg/StatusEffects';
 import type { Health } from './components/Health';
 import type { CombatStats } from './components/CombatStats';
@@ -15,7 +16,7 @@ export type Entity = {
   statuses?: ActiveStatus[];
   stamina?: { current: number; max: number }; wounds?: number; fullness?: number; statSource?: StatSource;
   mana?: { current: number; max: number };
-  skills?: string[];
+  skills?: string[]; learnedSkills?: LearnedSkills; cooldowns?: Record<string, number>;
   position?: { x: number; y: number };
   sprite?: { atlas: string; frame: number; idleFrames?: number[] };
   health?: Health;

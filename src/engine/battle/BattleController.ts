@@ -1,3 +1,4 @@
+import { skillForEntity, skillEquipmentReason } from '../rpg/Skills';
 import { createActor } from 'xstate';
 import type { GameEngine } from '../GameEngine';
 import type { GameSystem } from '../GameSystem';
@@ -50,7 +51,9 @@ export class BattleController implements GameSystem {
         const source = engine.getEntity(this.combat.currentTurn()!);
         validateCombatEntity(source);
         if (action === 'skill') {
-          const skill = this.content.skill(skillId!);
+          const skill = skillForEntity(this.content, source, skillId!);
+          const reason = skillEquipmentReason(source, skill, this.content); if (reason) throw new Error(reason);
+          if ((source.cooldowns?.[skill.id] ?? 0) > 0) throw new Error('Skill is on cooldown');
           if (skill.battleUsable === false || !source.skills?.includes(skill.id) || !source.mana || source.mana.current < skill.manaCost) {
             throw new Error('Skill is unavailable or mana is insufficient');
           }
@@ -119,13 +122,14 @@ export class BattleController implements GameSystem {
   }
   private resolve(action: BattleAction, targetId: string) {
     const sourceId = this.combat.currentTurn()!;
+    const completedActions = this.combat.completedActions;
     try {
       this.engine!.dispatch(action.action === 'defend' ? { type: 'DEFEND', entityId: sourceId } : action.action === 'rest' ? { type: 'REST', entityId: sourceId } : action.action === 'attack'
         ? { type: 'ATTACK', attackerId: sourceId, targetId }
         : action.action === 'skill' ? { type: 'USE_SKILL', sourceId, targetId, skillId: action.skillId! }
         : { type: 'USE_ITEM', sourceId, targetId, itemId: action.itemId! });
     } catch (error) {
-      if (this.combat.result || this.combat.currentTurn() !== sourceId) this.actor.send({ type: 'RESOLVED', ...this.summary() });
+      if (this.combat.completedActions !== completedActions || this.combat.result || this.combat.currentTurn() !== sourceId) this.actor.send({ type: 'RESOLVED', ...this.summary() });
       else this.actor.send({ type: 'FAILED', error: error instanceof Error ? error.message : 'Action failed' });
       throw error;
     }
