@@ -1,8 +1,32 @@
 import type { BattleAction } from '../../engine/battle/BattleMachine';
+import type { Skill } from '../../data/schemas/content';
+import type { GrowthTalent } from '../../engine/rpg/Stats';
 import { skillEquipmentReason, skillForEntity } from '../../engine/rpg/Skills';
 import type { BattleSession } from '../../game/BattleSession';
 
-export type BattleSkillCategory = 'combat' | 'magic';
+export const BATTLE_CATEGORIES = { combat: 'Combat', magic: 'Magic', items: 'Items' } as const;
+export type BattleSkillCategory = keyof typeof BATTLE_CATEGORIES;
+const attackSkills: Record<GrowthTalent, string> = {
+  warrior: 'combat-mastery', archery: 'human-ranged-attack', mage: 'magic-mastery',
+};
+export interface BattleHotbarAction {
+  id: string; label: string; skill: Skill; rank?: Skill['rank']; action: BattleAction;
+}
+
+/** Basic actions use catalog identities without granting or executing mastery skills. */
+export function battleHotbarActions(session: BattleSession, category: BattleSkillCategory): BattleHotbarAction[] {
+  if (category === 'items') return [];
+  const source = session.engine.getEntity(session.getSnapshot().turnId ?? '');
+  if (!source) return [];
+  const basic = category === 'combat' ? (['attack', 'defend'] as const).map((action) => {
+    const skill = session.content.skill(action === 'attack' ? attackSkills[source.statSource?.growthTalent ?? 'warrior'] : 'defense');
+    return { id: action, label: action === 'attack' ? 'Attack' : 'Defend', skill,
+      rank: source.learnedSkills?.[skill.id]?.rank, action: { action } };
+  }) : [];
+  return [...basic, ...battleSkills(session).filter((skill) => skill.category === category)
+    .map((skill) => ({ id: skill.id, label: skill.name, skill, rank: skill.rank,
+      action: { action: 'skill' as const, skillId: skill.id } }))];
+}
 
 export function battleSkills(session: BattleSession) {
   const source = session.engine.getEntity(session.getSnapshot().turnId ?? '');

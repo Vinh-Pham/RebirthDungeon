@@ -8,7 +8,7 @@ function data() { return structuredClone(loadGameContent().data); }
 describe('validated game content', () => {
   it('preserves every normalized skill and its full source tables', () => {
     const content = loadGameContent();
-    expect(content.data.skills).toHaveLength(34);
+    expect(content.data.skills).toHaveLength(35);
     for (const source of catalog) {
       const skill = content.skill(source.id);
       expect(skill.reference).toEqual(source.reference);
@@ -29,6 +29,16 @@ describe('validated game content', () => {
     expect(content.data.enemies[0].combatant.attack).toBe(14);
     expect(second.skills).toEqual([]); expect(second.sprite?.idleFrames).toEqual([2, 3]);
     expect(content.data.enemies[0].sprite.idleFrames).toEqual([2, 3]);
+  });
+  it('registers Human Ranged Attack with verified human reference data without enabling an unsupported skill action', () => {
+    const skill = loadGameContent().skill('human-ranged-attack');
+    expect(skill).toMatchObject({ name: 'Human Ranged Attack', category: 'combat', battleUsable: false,
+      reference: { url: 'https://wiki.mabinogiworld.com/view/Human_Ranged_Attack', retrievedAt: '2026-10-02',
+        effects: { E: ['Total Ranged Max Damage +1, Aim Speed 110%'] } } });
+    expect(skill.reference!.ranks).toHaveLength(15);
+    expect(skill.reference!.rows.find(({ label }) => label === 'Aim Speed [%]')!.values)
+      .toEqual(['100', '110', '120', '130', '140', '150', '160', '170', '180', '190', '200', '220', '250', '280', '300']);
+    expect(skill.gameRanks).toBeUndefined();
   });
   it('adds a new enemy and skill entirely through validated data', () => {
     const raw = data();

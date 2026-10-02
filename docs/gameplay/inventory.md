@@ -1,6 +1,6 @@
 # Rebirth Dungeon: Inventory and Equipment
 
-Updated **October 1, 2026**. The Expo app already has bounded item stacks, individually tracked weapons and armor, equipment enchants and locks, consumable use, shops and repair. The pack also shows active quest item requirements and delivery destinations. Grids, bags and reward overflow are future extensions. Read this with [Battle](battle.md), [Stats](stats.md), [Skills](skills.md), [Towns](towns.md), and [Enchants](enchants.md).
+Updated **October 1, 2026**. The Expo app already has bounded item stacks, individually tracked weapons and armor, equipment enchants and locks, exploration consumable use, shops and repair. The pack also shows active quest item requirements and delivery destinations. Grids, bags and reward overflow are future extensions. Read this with [Battle](battle.md), [Stats](stats.md), [Skills](skills.md), [Towns](towns.md), and [Enchants](enchants.md).
 
 ## 1. Current ownership and capacity
 
@@ -18,7 +18,7 @@ The character's campaign hero owns inventory throughout town and dungeon explora
 
 Weapon references and count limits must remain consistent. Armor is individually owned; version 8 migrates older armor stacks without losing copies or refilling resources. There is no footprint capacity, weight, expiration, ground-item dropping or subscription storage. Item previews and React selection never create additional ownership.
 
-Current inventory screens show ordinary item rows and individually listed equipment, with pages of 20. During battle they observe the active battle's inventory and durability and disable exploration equip/use commands. The battle Item action owns combat consumable use.
+Current inventory screens show ordinary item rows and individually listed equipment, with pages of 20. During battle they observe the active battle's inventory and durability and disable exploration equip/use commands. Combat consumable actions are removed; the hotbar Items category is empty.
 
 ## 2. Current actions and equipment
 
@@ -26,14 +26,14 @@ Current inventory screens show ordinary item rows and individually listed equipm
 | --- | --- | --- |
 | Inspect inventory/equipment | Available; no simulation tick | Read-only inventory screen |
 | Equip/unequip weapon or armor | Validated campaign command | Unavailable |
-| Use an eligible consumable | Validated campaign command | Through Item; one accepted use consumes a turn |
+| Use an eligible consumable | Validated campaign command | Unavailable; reserved for a future Items category |
 | Buy, sell, repair | Only through a nearby open town service | Unavailable |
 | Learn/read/assemble books and quest acceptance/claims | Implemented town-only commands | Unavailable |
 | Enchant, burn | Implemented at the nearby open town blacksmith | Unavailable |
 | Lock/unlock equipment | Durable campaign command; locked gear stays equippable | Unavailable |
 | Rearrange grids, split/merge, sort | Future presentation/storage operations | Initially unavailable while an encounter is active |
 
-Selection, cancellation, comparison and scrolling spend nothing. Equip/use commands revalidate ownership and context at execution; stale rows are not authority. Opening a menu is not movement or a recovery tick. Food that is not battle-usable cannot be consumed through the battle menu.
+Selection, cancellation, comparison and scrolling spend nothing. Equip/use commands revalidate ownership and context at execution; stale rows are not authority. Opening a menu is not movement or a recovery tick. Consumables remain usable in exploration; no battle menu consumes items.
 
 Weapon durability is already implemented. Eligible physical actions with at least one hit wear the equipped weapon once, including an area action. Misses, magical actions, items, Defend, Rest and exhausted unarmed basic attacks do not wear it. At zero durability the weapon remains owned but stops supplying combat stats until repaired. Blacksmith repair restores the same instance, preserving its ID.
 
@@ -128,6 +128,6 @@ The current v7 repository serializes saved campaigns. Town transactions, skill/b
 
 ## 9. Delivery and acceptance
 
-First preserve current stacks, equipment, battle consumption and repair. Then add unique item identities where required, grid migration/overflow, placement/stack tools, one ordinary bag, locks and the expanded loadout. Banking, trade/mail, paid storage, expiration, rotation, pets and manual ground drops remain separate extensions.
+First preserve current stacks, equipment, battle inventory isolation and repair. Then add unique item identities where required, grid migration/overflow, placement/stack tools, one ordinary bag, locks and the expanded loadout. Banking, trade/mail, paid storage, expiration, rotation, pets and manual ground drops remain separate extensions.
 
 Acceptance should verify quantity conservation; count-to-stack migration including 999-item saves; stable weapon IDs/wear; rectangle fragmentation; failed sort/swap preserving state; no bag cycles; lock enforcement; deterministic placement; current full-chest rejection; saved reward overflow; maximum burn-output space; battle read-only inventory; and suspend/reload/retry without duplicated grants. Test compact touch controls, large text and native/web storage as well as pure TypeScript rules.

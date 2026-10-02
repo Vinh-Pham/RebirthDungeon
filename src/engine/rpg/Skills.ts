@@ -109,7 +109,7 @@ export function validateSkillProgression(hero: Hero, content: ContentRegistry) {
 
 export interface ActionOutcome {
   encounterId: string; actionId: number; sourceId: string; skillId?: string; rank?: z.infer<typeof SkillRankSchema>;
-  action: 'attack' | 'skill' | 'item' | 'rest' | 'defend'; tags: string[]; origin: 'direct';
+  action: 'attack' | 'skill' | 'rest' | 'defend'; tags: string[]; origin: 'direct';
   targets: { targetId: string; hostile: boolean; hit: boolean; critical: boolean; damage: number; healing: number; defeated: boolean }[];
 }
 export type TrainingLedger = Record<string, Record<string, number>>;

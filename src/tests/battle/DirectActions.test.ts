@@ -18,7 +18,6 @@ describe('direct player actions', () => {
     [{ action: 'skill', skillId: 'firebolt' }, 'slime-1'],
     [{ action: 'skill', skillId: 'healing' }, 'player'],
     [{ action: 'defend' }, 'player'],
-    [{ action: 'item', itemId: 'potion' }, 'player'],
   ])('matches the existing combat outcomes for %j', (action, targetId) => {
     const direct = create(), legacy = create();
     for (const session of [direct, legacy]) session.engine.getEntity('player')!.health!.current = 40;
@@ -52,15 +51,13 @@ describe('direct player actions', () => {
     expect(session.getSnapshot().selectedAction).toBeUndefined();
   });
 
-  it.each<BattleAction>([{ action: 'defend' }, { action: 'item', itemId: 'potion' }, { action: 'skill', skillId: 'healing' }])(
+  it.each<BattleAction>([{ action: 'defend' }, { action: 'skill', skillId: 'healing' }])(
     'executes self-only selection immediately: %j', (action) => {
       const session = create();
       session.engine.getEntity('player')!.health!.current = 40;
-      const quantity = session.engine.getEntity('player')!.inventory!.potion;
       expect(session.selectPlayerAction(action, 0)).toBe(true);
       expect(session.combat.completedActions).toBe(1);
       expect(session.selectPlayerAction(action, 0)).toBe(false);
-      if (action.action === 'item') expect(session.engine.getEntity('player')!.inventory!.potion).toBe(quantity - 1);
     });
 
   it('supports explicitly self-targeted skills and ally selection when more than one ally is available', () => {

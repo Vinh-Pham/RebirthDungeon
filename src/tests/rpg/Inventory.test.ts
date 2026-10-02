@@ -32,19 +32,17 @@ describe('inventory inspection and ownership boundaries', () => {
     }
   });
 
-  it('shows battle consumption and wear from a detached snapshot while preserving the campaign entry pack', () => {
+  it('shows battle supplies and wear from a detached snapshot while preserving the campaign entry pack', () => {
     const hero = createHero(content); addItem(hero, 'iron-blade', 2, content); hero.equipment.weapon = 'weapon-1';
     const session = new BattleSession(content, 7, 'chamber', hero);
     try {
       const player = session.engine.getEntity('player')!; player.health!.current = 50;
-      session.dispatch({ type: 'SELECT_ACTION', action: 'item', itemId: 'potion' });
-      session.dispatch({ type: 'SELECT_TARGET', targetId: 'player' }); session.dispatch({ type: 'CONFIRM_ACTION' });
       const snapshot = session.getSnapshot().inventory!;
-      expect(inventoryRows(hero, content, snapshot).find((row) => row.key === 'item:potion')!.quantity).toBe(1);
+      expect(inventoryRows(hero, content, snapshot).find((row) => row.key === 'item:potion')!.quantity).toBe(2);
       expect(hero.inventory.potion).toBe(2);
       snapshot.items.potion = 999; snapshot.weapon!.durability = 0;
-      expect(player.inventory!.potion).toBe(1); expect(player.weapon!.durability).toBe(60);
-      session.advanceEnemyTurns(); player.combatant!.hitChance = 1; session.engine.getEntity('slime-1')!.combatant!.evasion = 0;
+      expect(player.inventory!.potion).toBe(2); expect(player.weapon!.durability).toBe(60);
+      player.combatant!.hitChance = 1; session.engine.getEntity('slime-1')!.combatant!.evasion = 0;
       session.dispatch({ type: 'SELECT_ACTION', action: 'attack' }); session.dispatch({ type: 'SELECT_TARGET', targetId: 'slime-1' }); session.dispatch({ type: 'CONFIRM_ACTION' });
       const rows = inventoryRows(hero, content, session.getSnapshot().inventory);
       expect(rows.find((row) => row.key === 'weapon:weapon-1')!.durability).toBe(59);

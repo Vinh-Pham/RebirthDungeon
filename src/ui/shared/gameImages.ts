@@ -62,7 +62,7 @@ const itemImages: Record<string, number> = {
 
 // Existing content IDs can differ from the artwork filenames; art never defines potency.
 const aliases: Record<GameImageKind, Record<string, string>> = {
-  skill: { 'elf-ranged-attack': 'range-attack', 'ice-spear': 'icicle' },
+  skill: { 'elf-ranged-attack': 'range-attack', 'human-ranged-attack': 'range-attack', 'ice-spear': 'icicle' },
   item: { 'iron-blade': 'iron-sword', potion: 'hp-30-potion', 'mana-potion': 'mp-30-potion', 'stamina-potion': 'stamina-30-potion' },
 };
 

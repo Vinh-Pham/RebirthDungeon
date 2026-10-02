@@ -81,7 +81,7 @@ export function validateCommand(command: GameCommand): void {
     case 'ADVANCE_ENEMY_TURN':
       valid = true; break;
     case 'SELECT_ACTION':
-      valid = command.action === 'attack' || command.action === 'defend' || command.action === 'rest' || (command.action === 'skill' && id(command.skillId)) || (command.action === 'item' && id(command.itemId)); break;
+      valid = command.action === 'attack' || command.action === 'defend' || command.action === 'rest' || (command.action === 'skill' && id(command.skillId)); break;
     case 'SELECT_TARGET':
       valid = id(command.targetId); break;
     case 'MOVE':

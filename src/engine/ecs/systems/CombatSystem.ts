@@ -5,8 +5,6 @@ import type { GameEvent } from '../../events';
 import type { EntityId } from '../Entity';
 import { applyDamage } from '../components/Health';
 import { effectiveEntity, applyStatus, tickStatuses } from '../../rpg/StatusEffects';
-import { consumeItem } from '../../rpg/Character';
-import { consumableRecovery } from '../../rpg/Consumables';
 import { resolveAttack, previewAttack, validateCombatEntity } from '../../battle/AttackResolver';
 import { prepareSkill } from '../../battle/SkillResolver';
 import type { ContentRegistry } from '../../data/ContentRegistry';
@@ -77,11 +75,10 @@ export class CombatSystem implements GameSystem {
     });
     const extraCleanups: (() => void)[] = [];
     try {
-      extraCleanups.push(engine.commands.register('DEFEND', ({ entityId }) => this.attack(engine, entityId, entityId, undefined, undefined, 'defend')));
+      extraCleanups.push(engine.commands.register('DEFEND', ({ entityId }) => this.attack(engine, entityId, entityId, undefined, 'defend')));
       if (this.options.content) {
-        extraCleanups.push(engine.commands.register('REST', ({ entityId }) => this.attack(engine, entityId, entityId, undefined, undefined, 'rest')));
+        extraCleanups.push(engine.commands.register('REST', ({ entityId }) => this.attack(engine, entityId, entityId, undefined, 'rest')));
         extraCleanups.push(engine.commands.register('USE_SKILL', ({ sourceId, targetId, skillId }) => this.attack(engine, sourceId, targetId, skillId)));
-        extraCleanups.push(engine.commands.register('USE_ITEM', ({ sourceId, targetId, itemId }) => this.attack(engine, sourceId, targetId, undefined, itemId)));
       }
     } catch (error) { extraCleanups.forEach((cleanup) => cleanup()); unregister(); throw error; }
     this.engine = engine;
@@ -120,7 +117,7 @@ export class CombatSystem implements GameSystem {
 
   update(): void { /* Combat resolves on commands, never on frame ticks. */ }
 
-  private attack(engine: GameEngine, attackerId: EntityId, targetId: EntityId, skillId?: string, itemId?: string, recoveryAction?: 'rest' | 'defend'): void {
+  private attack(engine: GameEngine, attackerId: EntityId, targetId: EntityId, skillId?: string, recoveryAction?: 'rest' | 'defend'): void {
     if (this.resolving) throw new Error('Cannot dispatch combat commands during combat event delivery');
     if (this.outcome) throw new Error('Battle has ended');
     if (this.options.canAct && !this.options.canAct()) throw new Error('Select and confirm an action through battle flow');
@@ -140,30 +137,27 @@ export class CombatSystem implements GameSystem {
       const reason = skillEquipmentReason(attacker, skill, this.options.content); if (reason) throw new Error(reason);
       if ((attacker.cooldowns?.[skill.id] ?? 0) > 0) throw new Error('Skill is on cooldown');
     }
-    const item = itemId ? this.options.content?.item(itemId) : undefined;
-    if (itemId && (!item || item.kind !== 'consumable' || !item.battleUsable || !attacker.inventory?.[itemId] || attackerId !== targetId)) throw new Error('Invalid or unavailable item');
-    const recovery = item ? consumableRecovery(item, target) : undefined;
-    if (!recoveryAction && !skill && !item && !!attacker.player === !!target.player) throw new Error('Cannot attack an ally');
+    if (!recoveryAction && !skill && !!attacker.player === !!target.player) throw new Error('Cannot attack an ally');
     if (skill?.target === 'allEnemies' && !!attacker.player === !!target.player) throw new Error('Invalid skill target');
     if (rest && (attackerId !== targetId || !attacker.stamina)) throw new Error('Invalid rest target');
-    const cost = !skill && !item && !recoveryAction && attacker.stamina ? staminaCost(attacker, 2) : 0;
-    const exhausted = !skill && !item && !recoveryAction && attacker.stamina && attacker.stamina.current < cost;
+    const cost = !skill && !recoveryAction && attacker.stamina ? staminaCost(attacker, 2) : 0;
+    const exhausted = !skill && !recoveryAction && attacker.stamina && attacker.stamina.current < cost;
     let basic = effectiveEntity(attacker, this.options.content);
     if (exhausted && attacker.statSource && this.options.content) basic = effectiveEntity({ ...attacker, combatant: calculateCharacterStats({ ...attacker.statSource, weaponItemId: undefined, enchantments: attacker.statSource.enchantments?.filter((e) => !e.sourceId.startsWith('weapon-')) }, this.options.content).combatant }, this.options.content);
     const targets = skill?.target === 'allEnemies'
       ? this.turns.order.map((id) => engine.getEntity(id)!).filter((entity) => !!entity.player !== !!attacker.player) : [target];
     const skillPlan = skill ? prepareSkill({ source: effectiveEntity(attacker, this.options.content), targets: targets.map((entity) => effectiveEntity(entity, this.options.content)), skill, random: engine.random, selectedTargetId: targetId }) : undefined;
-    const physicalAction = !item && !recoveryAction && (!skill || (skill.effect === 'damage' && skill.element === 'physical'));
+    const physicalAction = !recoveryAction && (!skill || (skill.effect === 'damage' && skill.element === 'physical'));
     const tags = physicalAction ? ['melee', ...(!exhausted && attacker.weapon && attacker.weapon.durability > 0 && this.options.content ? this.options.content.item(attacker.weapon.itemId).weaponTags : [])] : [];
     const cooldown = skill?.gameRanks && skill.rank ? gameRank(skill, skill.rank).cooldown : 0;
     this.resolving = true;
     try {
       const directTargets: ActionOutcome['targets'] = [];
       const effects = skillPlan ? skillPlan.resolve().map((effect) => ({ ...effect, target: engine.getEntity(effect.target.id)! }))
-        : item || recoveryAction ? [{ target, result: { hit: true, critical: false, damage: 0 }, healing: recovery?.amount ?? 0 }]
+        : recoveryAction ? [{ target, result: { hit: true, critical: false, damage: 0 }, healing: 0 }]
         : [{ target, result: resolveAttack({ attacker: basic, target: effectiveEntity(target, this.options.content), random: engine.random }), healing: 0 }];
       const events: GameEvent[] = [{ type: 'ANIMATION_REQUESTED', sourceId: attackerId, targetId,
-        animation: defend ? 'defend' : skill || item ? 'skill' : 'attack', skillId }];
+        animation: defend ? 'defend' : skill ? 'skill' : 'attack', skillId }];
       if (rest) events.push({ type: 'RESTED', entityId: attackerId });
       if (defend) { this.defending.add(attackerId); events.push({ type: 'DEFENDED', entityId: attackerId }); }
       if (cost && attacker.stamina) attacker.stamina.current = Math.max(0, attacker.stamina.current - cost);
@@ -172,20 +166,15 @@ export class CombatSystem implements GameSystem {
         if (attacker.stamina && skillPlan.staminaAfter !== undefined) attacker.stamina.current = skillPlan.staminaAfter;
         events.push({ type: 'SKILL_USED', sourceId: attackerId, skillId: skill!.id });
       }
-      if (item) {
-        if (attacker.stamina) attacker.stamina.current += recovery!.staminaBonus;
-        if (attacker.fullness !== undefined) attacker.fullness = recovery!.fullnessAfter;
-        consumeItem(attacker.inventory!, item.id); events.push({ type: 'ITEM_USED', sourceId: attackerId, itemId: item.id }); }
       for (const effect of effects) {
         const outcomeTarget = { targetId: effect.target.id, hostile: !!effect.target.player !== !!attacker.player,
           hit: effect.result.hit, critical: effect.result.critical, damage: 0, healing: 0, defeated: false };
         directTargets.push(outcomeTarget);
         if (recoveryAction) continue;
-        if (skill?.effect === 'heal' || item) {
-          const resource = recovery?.resource ?? 'health';
-          effect.target[resource]!.current += effect.healing;
-          if (resource === 'health') outcomeTarget.healing = effect.healing;
-          if (resource !== 'stamina') events.push({ type: resource === 'mana' ? 'MANA_RESTORED' : 'HEALTH_RESTORED', sourceId: attackerId, targetId: effect.target.id, amount: effect.healing });
+        if (skill?.effect === 'heal') {
+          effect.target.health!.current += effect.healing;
+          outcomeTarget.healing = effect.healing;
+          events.push({ type: 'HEALTH_RESTORED', sourceId: attackerId, targetId: effect.target.id, amount: effect.healing });
         } else if (effect.result.hit && skill?.effect !== 'buff') {
           const damage = this.defending.has(effect.target.id) ? Math.max(1, Math.floor(effect.result.damage / 2)) : effect.result.damage;
           const amount = applyDamage(effect.target.health!, damage); outcomeTarget.damage = amount;
@@ -206,7 +195,7 @@ export class CombatSystem implements GameSystem {
         }
       }
       const weapon = attacker.weapon;
-      if (weapon && weapon.durability > 0 && this.options.content && !item && !recoveryAction && !exhausted &&
+      if (weapon && weapon.durability > 0 && this.options.content && !recoveryAction && !exhausted &&
           (!skill || (skill.effect === 'damage' && skill.element === 'physical')) && effects.some((effect) => effect.result.hit)) {
         weapon.durability--;
         if (weapon.durability === 0) {
@@ -250,7 +239,7 @@ export class CombatSystem implements GameSystem {
       const resultEvent = events.find((event) => event.type === 'BATTLE_ENDED');
       if (resultEvent) { const index = events.indexOf(resultEvent); events.splice(index, 1); events.push(resultEvent); }
       const outcome: ActionOutcome = { encounterId: this.options.encounterId ?? 'standalone', actionId: ++this.actionSequence,
-        sourceId: attackerId, skillId, rank: skill?.rank, action: skill ? 'skill' : item ? 'item' : recoveryAction ?? 'attack',
+        sourceId: attackerId, skillId, rank: skill?.rank, action: skill ? 'skill' : recoveryAction ?? 'attack',
         origin: 'direct', tags: [...new Set(tags)], targets: directTargets };
       // Internal training commits before any fallible external notification.
       this.options.onOutcome?.(outcome);

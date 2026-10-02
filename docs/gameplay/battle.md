@@ -23,12 +23,11 @@ Select action → select target → Confirm action
 | Attack | `ATTACK` | One basic physical strike against one hostile |
 | Skill | `USE_SKILL` | One owned, battle-usable skill with its authored target/cost/effect |
 | Defend | `DEFEND` | Self; damage reduction and rest-rate stamina recovery |
-| Item | `USE_ITEM` | Self; consume one battle-usable consumable and restore resources |
 | Rest, engine-supported | `REST` | Self; rest-rate resource tick without Defend mitigation |
 
 `BattleController` receives `SELECT_ACTION`, `SELECT_TARGET`, `CONFIRM_ACTION`, and `CANCEL_ACTION`. It submits combat intents only while the XState machine is executing. Direct combat commands cannot bypass this flow inside a normal BattleSession. The low-level standalone CombatSystem can still be exercised by engine tests.
 
-Selection, switching targets and Back/cancel spend nothing and draw no RNG. Confirmation revalidates current turn, living participants, target allegiance, skill/item availability and resource affordability. Reject invalid requests before simulation mutation/randomness. A miss is an accepted action and consumes its normal turn/cost. There is no turn timer; menus and suspension do not advance combat.
+Selection, switching targets and Back/cancel spend nothing and draw no RNG. Confirmation revalidates current turn, living participants, target allegiance, skill availability and resource affordability. Reject invalid requests before simulation mutation/randomness. A miss is an accepted action and consumes its normal turn/cost. There is no turn timer; menus and suspension do not advance combat.
 
 ## 3. Targets and costs
 
@@ -38,7 +37,9 @@ Current active skills pay integer MP and optionally SP. Use the shared fullness-
 
 A basic attack normally costs 2 base SP. When stamina is insufficient, it remains available as the existing bare-hand fallback: exclude weapon bonuses and weapon wear for that action, then retain the current stamina deduction rule. Do not reject the attack as though it were an unaffordable skill or retain sword-mastery credit for bare hands.
 
-Items are alternative full actions. They cannot be used during another action's resolution. Equipment changes are allowed in exploration, including between encounters, but not inside battle. AP remains a permanent progression currency, never a combat cost.
+The Items hotbar category is empty. Battle item selection and consumable resolution are removed; `USE_ITEM` remains an exploration command. Equipment changes are allowed in exploration, including between encounters, but not inside battle. AP remains a permanent progression currency, never a combat cost.
+
+Removing combat potions also removes the prior eight-potion strategy from the seeded level-5 elder-plus-two-slimes fixture. Across its 100 seeds, a basic-attack-only policy now wins 4 times for Warrior and 0 for Archery/Mage; the starter encounter still meets its 95% acceptance threshold for all talents. This is a measured policy result, not a claim that every skill strategy fails. Attack and enemy balance are unchanged; broader encounter balancing is separate work.
 
 ## 4. Hit, critical and damage resolution
 
@@ -69,11 +70,11 @@ For area skills, the selected target resolves first for RNG purposes; its succes
 
 ## 5. Defense, recovery and weapon wear
 
-Defend uses one turn, spends no MP/SP, draws no combat randomness, and does not wear a weapon. Until the defender's next turn starts, incoming attack/skill direct damage is `max(1, floor(normalDamage / 2))`. It does not reduce periodic status damage. Its end-of-action resource tick uses the rest rate. A future learned Defense skill should extend this shared resolver, not add a second stacking guard mechanic.
+Defend uses one turn, spends no MP/SP, draws no combat randomness, and does not wear a weapon. Until the defender's next turn starts, incoming attack/skill direct damage is `max(1, floor(normalDamage / 2))`. It does not reduce periodic status damage. Its end-of-action resource tick uses the rest rate. The hotbar Defend action uses the Defense identity and this shared resolver. Future learned-rank Defense effects should extend it without a second stacking guard mechanic.
 
 Normal completed actions tick HP/MP/SP/fullness under [Stats](stats.md). Rest and Defend use increased stamina recovery. Defeated actors receive no regeneration and healing does not revive them. Selection, tooltips and animation completion never run a resource tick.
 
-A usable weapon loses one durability after an eligible physical action with at least one successful hit. Area hits do not multiply wear by target count. Magic/healing/items/rest/defend, misses and exhausted bare-hand fallback do not wear it. At zero durability its stat contribution is removed for subsequent actions; the item remains owned and can be repaired at the blacksmith.
+A usable weapon loses one durability after an eligible physical action with at least one successful hit. Area hits do not multiply wear by target count. Magic/healing/rest/defend, misses and exhausted bare-hand fallback do not wear it. At zero durability its stat contribution is removed for subsequent actions; the item remains owned and can be repaired at the blacksmith.
 
 ## 6. Status and outcome order
 
@@ -85,7 +86,7 @@ Commit all effects for an action before selecting another actor. Combat listener
 
 ## 7. Encounter results and save continuation
 
-Victory is an encounter result, not automatically a cleared dungeon. `JourneySession.finishBattle` commits remaining resources, consumable use and weapon durability; on victory it also grants enemy XP/gold/drops and records clearance. XP can cross multiple levels and currently fully restores resources on each gained level. Defeat restores the hero at the refuge, clears the active dungeon, retains inventory/wear, and halves the current gold balance with flooring. It awards no victory XP/loot.
+Victory is an encounter result, not automatically a cleared dungeon. `JourneySession.finishBattle` commits remaining resources and weapon durability; on victory it also grants enemy XP/gold/drops and records clearance. XP can cross multiple levels and currently fully restores resources on each gained level. Defeat restores the hero at the refuge, clears the active dungeon, retains inventory/wear, and halves the current gold balance with flooring. It awards no victory XP/loot.
 
 Current saves persist the pending encounter's entry hero and seed. Relaunching restarts that encounter; partially resolved battle state and animations are not restored. Manual save/load is blocked during an encounter. Existing debounced autosave is not a per-turn durable journal.
 
@@ -93,9 +94,9 @@ The [Skills plan](skills.md) adds an attributed, bounded training ledger inside 
 
 ## 8. UI and future extensions
 
-Battle controls show HP/MP/SP, wounds/fullness, selected targets, statuses, weapon durability, error reasons and a bounded combat log. Attack, Defend and Item are separate icons; learned battle skills appear in a horizontally scrollable hotbar with minimal Combat/Magic label tabs. HeroUI Native popovers show saved ranks, target-aware costs, engine-derived damage/healing ranges and equipment/cooldown/resource reasons. The action's Use button confirms selection; enemy-targeted actions then resolve only from a monster tap in the game canvas, and self-only actions resolve from Use. Canvas targeting is paused until an action is confirmed and while a popover is open. Inspecting or closing a popover preserves the previous action and spends nothing; Cancel clears it. There is no Targets button or named target list. Richer enemy intent remains proposed.
+Battle controls show HP/MP/SP, wounds/fullness, selected targets, statuses, weapon durability, error reasons and a bounded combat log. One horizontally scrollable hotbar has minimal Combat/Magic/Items label tabs. Combat includes Attack and Defend even without learned combat skills. Attack uses the current talent: Warrior → Combat Mastery, Archery → Human Ranged Attack, Mage → Magic Mastery. Defend uses Defense. These are basic-action presentation identities, not new skill casts: current damage, SP cost, guard mitigation and rest-rate recovery stay unchanged. Show a saved backing-skill rank only when owned; do not grant progression or reference stat bonuses. Items is empty for future implementation. HeroUI Native popovers show saved ranks, target-aware costs, engine-derived damage/healing ranges and equipment/cooldown/resource reasons. The action's Use button confirms selection; enemy-targeted actions then resolve only from a monster tap in the game canvas, and self-only actions resolve from Use. Canvas targeting is paused until an action is confirmed and while a popover is open. Inspecting or closing a popover preserves the previous action and spends nothing; Cancel clears it. There is no Targets button or named target list. Richer enemy intent remains proposed.
 
-The UI may delay new player input while presentation is busy, but simulation and enemy turn execution must not wait for animation completion. Skipping/reducing motion changes only presentation. During battle, feature panels are inspection-only and the battle Item menu owns item actions.
+The UI may delay new player input while presentation is busy, but simulation and enemy turn execution must not wait for animation completion. Skipping/reducing motion changes only presentation. During battle, feature panels are inspection-only and consumable use is unavailable.
 
 Follow [Skills](skills.md) for the F/E pilot, passive action tags, cooldown owner turns, Final Hit timing, Counterattack reactions and Windmill. Critical rolls and area resolver support already exist; those mechanics are not reasons to defer the entire skill system. Shield/dual-wield equipment, HP costs, charge loading, extra attacks, battle movement, dynamic initiative, revival and exact mid-battle saves require separate extensions.
 

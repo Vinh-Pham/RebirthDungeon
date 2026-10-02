@@ -16,8 +16,8 @@ import type { Entity } from '../../engine/ecs/Entity';
 
 const content = loadGameContent(); const battles: BattleSession[] = []; const journeys: JourneySession[] = [];
 function battle(seed = 17) { const session = new BattleSession(content, seed); battles.push(session); return session; }
-function act(session: BattleSession, action: 'attack' | 'skill' | 'item' | 'rest', targetId: string, id?: string) {
-  session.dispatch({ type: 'SELECT_ACTION', action, skillId: action === 'skill' ? id : undefined, itemId: action === 'item' ? id : undefined });
+function act(session: BattleSession, action: 'attack' | 'skill' | 'rest', targetId: string, id?: string) {
+  session.dispatch({ type: 'SELECT_ACTION', action, skillId: action === 'skill' ? id : undefined });
   session.dispatch({ type: 'SELECT_TARGET', targetId }); session.dispatch({ type: 'CONFIRM_ACTION' });
 }
 afterEach(() => { battles.splice(0).forEach((session) => session.dispose()); journeys.splice(0).forEach((session) => session.dispose()); vi.useRealTimers(); });
@@ -99,9 +99,9 @@ describe('resource and action rules', () => {
     expect(session.engine.random.snapshot()).toEqual(random); expect(player.mana!.current).toBe(mana);
     expect(() => act(session, 'skill', 'player', 'healing')).toThrow('stamina'); expect(session.battle.phase).toBe('selectingTarget');
   });
-  it('caps potions and healing at the wounded maximum; rest changes live projection without changing selection on reads', () => {
+  it('caps healing at the wounded maximum; rest changes live projection without changing selection on reads', () => {
     const session = battle(); const player = session.engine.getEntity('player')!; player.wounds = 40; player.health!.current = 70; player.stamina!.current = 10;
-    act(session, 'item', 'player', 'potion'); expect(player.health!.current).toBe(78); expect(session.getSnapshot().character!.wounds).toBe(40);
+    act(session, 'skill', 'player', 'healing'); expect(player.health!.current).toBe(78); expect(session.getSnapshot().character!.wounds).toBe(40);
     session.advanceEnemyTurns(); session.dispatch({ type: 'SELECT_ACTION', action: 'rest' }); session.dispatch({ type: 'SELECT_TARGET', targetId: 'player' });
     const random = session.engine.random.snapshot(), before = structuredClone(session.getSnapshot()); session.getSnapshot(); session.getSnapshot(); expect(session.getSnapshot()).toEqual(before); expect(session.engine.random.snapshot()).toEqual(random);
     const stamina = player.stamina!.current; session.dispatch({ type: 'CONFIRM_ACTION' }); expect(session.getSnapshot().character!.stamina).toBe(stamina + 10);
@@ -152,23 +152,24 @@ describe('stat save migration', () => {
 });
 
 describe('seeded encounter balance', () => {
-  it.each(TALENTS)('keeps %s starter and equipped level-5 encounters viable across 100 seeds', (talent) => {
+  it.each(TALENTS)('records %s basic-attack encounter outcomes across 100 seeds without battle consumables', (talent) => {
     vi.useFakeTimers(); const wins = [0, 0];
     for (let scenario = 0; scenario < 2; scenario++) for (let seed = 0; seed < 100; seed++) {
       const hero = createHero(content, talent); const map = structuredClone(content.data.maps[scenario]);
-      if (scenario) { hero.level = 5; hero.cumulativeLevel = 5; addItem(hero, 'iron-blade', 1, content); hero.equipment.weapon = 'weapon-1'; addItem(hero, 'moss-mail', 1, content); hero.equipment.armor = 'armor-1'; hero.inventory.potion = 8; restoreHero(hero, content); map.spawns.push({ ...content.data.maps[0].spawns[1], entityId: 'slime-2', y: 2 }, { ...content.data.maps[0].spawns[1], entityId: 'slime-3', y: 4 }); }
+      if (scenario) { hero.level = 5; hero.cumulativeLevel = 5; addItem(hero, 'iron-blade', 1, content); hero.equipment.weapon = 'weapon-1'; addItem(hero, 'moss-mail', 1, content); hero.equipment.armor = 'armor-1'; restoreHero(hero, content); map.spawns.push({ ...content.data.maps[0].spawns[1], entityId: 'slime-2', y: 2 }, { ...content.data.maps[0].spawns[1], entityId: 'slime-3', y: 4 }); }
       const session = new BattleSession(content, seed, map, hero);
       try {
         for (let turn = 0; turn < 200 && !session.combat.result; turn++) {
           if (session.battle.phase === 'enemyTurn') { session.advanceEnemyTurns(); continue; }
-          const player = session.engine.getEntity('player')!;
           const target = session.engine.world.entities.filter((e) => e.enemy && !e.dead).sort((a, b) => a.health!.current - b.health!.current)[0];
-          if (player.health!.current <= 60 && player.inventory!.potion) act(session, 'item', 'player', 'potion');
-          else act(session, 'attack', target.id);
+          act(session, 'attack', target.id);
         }
         if (session.combat.result === 'victory') wins[scenario]++;
       } finally { session.dispose(); }
     }
-    expect(wins[0]).toBeGreaterThanOrEqual(95); expect(wins[1]).toBeGreaterThanOrEqual(80);
+    expect(wins[0]).toBeGreaterThanOrEqual(95);
+    // The old equipped-encounter policy used eight potions. Removing battle items
+    // deliberately removes that strategy, without changing enemy or attack balance.
+    expect(wins[1]).toBe({ warrior: 4, archery: 0, mage: 0 }[talent]);
   });
 });

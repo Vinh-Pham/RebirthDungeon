@@ -41,16 +41,16 @@ Encounter name / active actor / turn order
 Hero and enemy presentation
 Combatant HP/MP/SP, wounds, fullness and weapon wear
 Selected action / rank / target / costs / status details
-Attack / Defend / Item icons
-Combat / Magic label tabs → horizontally scrollable skill icons
-Action popover → stats / eligibility / Use Skill (or Use Attack/Defend/Item)
+Combat / Magic / Items label tabs → horizontally scrollable action icons
+Combat: talent-based Attack / Defense-based Defend / learned combat skills
+Action popover → stats / eligibility / Use Skill (or Use Attack/Defend)
 Cancel selected action
 Recent battle feedback
 ```
 
-Attack, Defend and Item are separate icons above a skill hotbar. Minimal Combat and Magic label tabs filter learned battle-usable skills by their authored category; these tabs do not use HeroUI Tabs. The skill row scrolls horizontally on overflow. Passive, life and unsupported skills do not become action icons. Icons retain accessible names and selected states; unavailable skills remain inspectable with their equipment, cooldown or resource reason.
+Attack and Defend live inside the Combat hotbar, followed by learned combat skills. Attack uses the talent’s backing skill: Warrior → Combat Mastery, Archery → Human Ranged Attack, Mage → Magic Mastery. Defend uses Defense. These icons/details preserve the current basic action rules and display saved ranks only when owned. Minimal Combat, Magic and Items label tabs do not use HeroUI Tabs. Items has no icons, popovers or item commands and is reserved for future implementation. The skill row scrolls horizontally on overflow. Other passive, life and unsupported skills do not become action icons; the basic Attack/Defend identities are explicit exceptions without granting skill ownership. Icons retain accessible names and selected states; unavailable skills remain inspectable with their equipment, cooldown or resource reason.
 
-Every icon opens a HeroUI Native Popover. Skill details show saved rank, effective costs, targeting and engine-derived damage/healing previews, with a **Use Skill** button. Basic actions use **Use Attack**, **Use Defend** and **Use Item**. Item details list owned battle consumables with quantities and an explicit use button. Popover content scrolls within safe viewport bounds; Close, outside tap, Android Back and web Escape dismiss it. The web adapter refreshes HeroUI's initial offscreen measurement after positioning, since RN Web's size observer does not report moves. Web focus stays inside the panel and returns to its trigger on dismissal. Tab labels support keyboard arrows, Home and End.
+Every icon opens a HeroUI Native Popover. Skill details show saved rank, effective costs, targeting and engine-derived damage/healing previews, with a **Use Skill** button. Basic actions use **Use Attack** and **Use Defend**. Popover content scrolls within safe viewport bounds; Close, outside tap, Android Back and web Escape dismiss it. The web adapter refreshes HeroUI's initial offscreen measurement after positioning, since RN Web's size observer does not report moves. Web focus stays inside the panel and returns to its trigger on dismissal. Tab labels support keyboard arrows, Home and End.
 
 Browsing details pauses arena targeting without selecting or cancelling the existing engine action. Closing resumes targeting only when an action has already been confirmed. Confirm an enemy-targeted action with its Use button, then tap a monster in the game canvas to resolve it. Before confirmation, canvas target taps are disabled. There is no Targets button or named target list. Cancel clears the selection and pauses targeting again. Self-only actions resolve once from their Use button. Rest exists in the engine but has no separate icon. No dice slots, kept markers, rerolls, reserved pools or paid Pass controls belong in this interface.
 
@@ -84,7 +84,7 @@ Current setup age is static; do not show an aging countdown or lifetime progress
 
 The Character summary shows an XP progress bar using current-level XP and the engine's next-level threshold; at the level cap it shows “Maximum level.” Beneath Stamina, the recovery limit appears on the left and Hunger on the right, wrapping on compact layouts. Hunger displays `100 - fullness` to one decimal place (91.2% fullness displays as 8.8% Hunger); the engine and saved fullness values retain their existing meaning.
 
-Inventory equip/use commands are available during exploration, including between dungeon encounters. During battle its ordinary screen is read-only and observes battle supplies/wear; consumables use the battle Item action. Future learning/rank-up, quest claims, title changes and enchanting are town-only. Journals may still be inspected during combat without ticking time.
+Inventory equip/use commands are available during exploration, including between dungeon encounters. During battle its ordinary screen is read-only and observes battle supplies/wear; consumable use is unavailable. Future learning/rank-up, quest claims, title changes and enchanting are town-only. Journals may still be inspected during combat without ticking time.
 
 For future grids, use tap item → action → destination as a complete mobile path. Dragging may supplement it and cannot be required. Preview every occupied cell, exact quantity and displaced equipment. Invalid commands restore the view to authoritative state; the drag cursor never owns an item. Search identifies the actual container and does not reveal undiscovered quest/title spoilers.
 

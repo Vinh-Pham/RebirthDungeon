@@ -15,7 +15,11 @@ the catalog or importing reference percentages, charges, or racial variants.
 The four starter spells preserve their existing F ranges, scaling, targets and costs.
 Firebolt, Lightning Bolt and Healing are capped at F. Icebolt has an F/E adapter: 20 casts train 100 points, F → E costs 2 AP, and E uses power 11–21 with +2 INT. Smash, Combat Mastery and Sword
 Mastery implement the gameplay document's F/E pilot. Their E cap is explicit; they
-cannot spend AP on an unimplemented D rank. `enchant.json` adds a separately authored Enchant life skill at F/E; it uses town application/burning objectives and never resolves in combat. All other entries remain unavailable.
+cannot spend AP on an unimplemented D rank. `human-ranged-attack.json` adds the human archery identity with source URL, October 2, 2026 retrieval date, F–1 effects and unambiguous reference rows from [Human Ranged Attack](https://wiki.mabinogiworld.com/view/Human_Ranged_Attack). Its `battleUsable: false` prevents an unsupported skill cast: the Archery hotbar Attack uses its artwork/name while retaining the existing basic attack rules. Aiming, ammunition, bows/crossbows and new damage formulas are not implemented.
+
+Combat always includes Attack (Warrior: Combat Mastery; Archery: Human Ranged Attack; Mage: Magic Mastery) and Defend (Defense). These identities do not grant learned skills or reference stat bonuses. Saved backing-skill ranks appear only when owned. Items is empty; combat consumable selection/resolution is removed while exploration use remains.
+
+`enchant.json` adds a separately authored Enchant life skill at F/E; it uses town application/burning objectives and never resolves in combat. All other entries remain unavailable.
 
 The keeper teaches Enchant F for free with zero training and no AP award. The blacksmith sells its scrolls and materials and hosts the enchant/burn service.
 

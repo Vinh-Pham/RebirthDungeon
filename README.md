@@ -138,9 +138,11 @@ failed actions, and exploration item use do not advance recovery ticks.
 Save version 5 persists the growth talent, stamina, wounds and fullness. A
 validated older save upgrades once using the selected character's talent and
 full resource restoration; current saves load their exact depleted resources.
-The same deterministic combat tests simulate 100 seeds per talent for both a
-starter slime and an equipped level-5 elder encounter with two companion slimes.
-Enemy damage is calibrated to keep both encounters viable for all talents.
+The deterministic combat tests simulate 100 seeds per talent for both a starter
+slime and an equipped level-5 elder encounter with two companion slimes. After
+removing combat potions, the basic-attack-only policy still clears the starter
+acceptance threshold, but wins the three-enemy fixture only 4/100 times for Warrior
+and 0/100 for Archery/Mage. Attack and enemy balance remain unchanged.
 
 ## Titles and achievements
 
@@ -276,7 +278,7 @@ per-frame work. The Phase 3 controller below adds state-machine orchestration.
 
 ## Battle flow, rendering, animations and content (Phases 3–6)
 
-A battle encounter opens from the Journey exploration screen. Attack, Defend and Item are separate icons above a horizontally scrollable skill hotbar. Minimal Combat and Magic tabs switch categories. Tap an icon to inspect its HeroUI Native popover: skills show rank, costs, target previews and a **Use Skill** button; Item lists owned battle consumables and quantities. Confirm an enemy action with its Use button, then tap a monster in the game canvas to resolve it. Canvas targeting stays paused until an action is confirmed; there is no Targets button or target list. Self-only actions resolve from their Use button. Closing details preserves the previous action; Cancel clears it and returns to action selection.
+A battle encounter opens from the Journey exploration screen. One horizontally scrollable hotbar uses minimal Combat, Magic and Items tabs. Combat always includes Attack and Defend beside learned combat skills. Attack's icon and details use Combat Mastery for Warrior, Human Ranged Attack for Archery, or Magic Mastery for Mage; Defend uses Defense. These identities preserve the existing basic attack and guard rules and do not grant learned skills or reference stat bonuses. Items is empty for a future feature; battle consumable selection and resolution are removed, while exploration inventory use remains available. Tap an icon to inspect its HeroUI Native popover with costs, target previews and a Use button. Confirm an enemy action with Use, then tap a monster in the game canvas to resolve it. Canvas targeting stays paused until an action is confirmed. Self-only actions resolve from Use. Closing details preserves the previous action; Cancel clears it and returns to action selection.
 Defend uses a turn, recovers stamina at the rest rate, and halves incoming attack and spell damage (rounded down, minimum one) until the defender's next turn starts. It does not reduce status damage, spend mana, roll RNG, or wear weapons. Rest remains available to existing engine callers.
 Enemy turns resolve immediately. The presentation queue plays each resolved action
 in order, without delaying HP, mana, turn order or the battle outcome. Restarting
@@ -372,7 +374,7 @@ rolls loot through seeded RNG. Level cap is 99; stacks cap at 999. Each level ne
 resources. Victory awards the defeated enemy definitions' XP, gold and item drops
 once. Defeat returns to the refuge, restores resources and halves gold.
 
-Combat supports confirmed consumable use and data-defined status applications.
+Combat supports data-defined status applications; consumables are usable only outside battle.
 Fireball applies Burn; Focus applies an attack buff. Status definitions support
 turn-start/end damage, healing and signed stat modifiers, with refresh, bounded
 stack or ignore behavior. Expiry and status deaths update the turn queue and battle
@@ -445,7 +447,7 @@ Haptics remain optional and are not enabled.
 
 ## Verification
 
-The tests include generated path/RNG invariants, battle status and item flows,
+The tests include generated path/RNG invariants, battle status flows and rejected item commands,
 progression/equipment/loot, world transitions, checkpoint replay, corrupt/future
 save rejection, version migration, autosave ordering/failures, host lifetimes,
 actual SQLite round trips via Node's built-in SQLite, and audio cleanup/failure

@@ -4,74 +4,69 @@ import { type ReactNode, useState } from 'react';
 import { Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { BattleAction } from '../../engine/battle/BattleMachine';
-import { consumableRecovery } from '../../engine/rpg/Consumables';
 import { staminaCost } from '../../engine/rpg/Resources';
 import type { BattleSession, BattleView } from '../../game/BattleSession';
 import { DungeonButton } from '../shared/DungeonUI';
 import GameImage from '../shared/GameImage';
 import type { GameImageReference } from '../shared/gameImages';
 import KeyboardChoiceGroup from '../shared/KeyboardChoiceGroup';
-import { battleActionDetails, battleSkills, type BattleSkillCategory } from './battleActionDetails';
+import { BATTLE_CATEGORIES, battleActionDetails, battleHotbarActions, type BattleSkillCategory } from './battleActionDetails';
 import PopoverAccessibility from './PopoverAccessibility';
 
 export default function BattleHotbar({ session, view, canChoose, inspected, inspect, selectAction }: {
   session: BattleSession; view: BattleView; canChoose: boolean; inspected?: string;
   inspect(id?: string): void; selectAction(action: BattleAction): void;
 }) {
-  const skills = battleSkills(session);
-  const [category, setCategory] = useState<BattleSkillCategory>(() => skills.some((skill) => skill.category === 'combat') ? 'combat' : 'magic');
+  const [category, setCategory] = useState<BattleSkillCategory>('combat');
   const source = session.engine.getEntity(view.turnId ?? '');
-  const visibleSkills = skills.filter((skill) => skill.category === category);
+  const actions = battleHotbarActions(session, category);
   const attackCost = source?.stamina ? staminaCost(source, 2) : 0;
   function actionIcon(id: string, label: string, image: GameImageReference, children: ReactNode, unavailable = false) {
-    const selected = id === (view.selectedAction?.skillId ?? view.selectedAction?.action ?? 'attack');
+    const selected = id === (view.selectedAction?.skillId ?? view.selectedAction?.action);
     return <ActionPopover key={id} label={label} image={image} disabled={!canChoose} unavailable={unavailable}
       selected={selected} open={canChoose && inspected === id} onOpenChange={(open) => inspect(open ? id : undefined)}>
       {children}
     </ActionPopover>;
   }
   return <View className="gap-2">
-    <View className="flex-row gap-2" accessibilityLabel="Basic actions">
-      {actionIcon('attack', 'Attack', { kind: 'item', id: 'iron-blade' }, <>
-        <Text className="text-sm text-muted">{attackCost} SP · One enemy{source?.stamina && source.stamina.current < attackCost ? ' · Bare hands' : ''}</Text>
-        <ActionStats session={session} action={{ action: 'attack' }} />
-        <DungeonButton primary label="Use Attack" disabled={!canChoose} onPress={() => selectAction({ action: 'attack' })} />
-      </>)}
-      {actionIcon('defend', 'Defend', { kind: 'skill', id: 'defense' }, <>
-        <Text className="text-sm text-muted">Self · No MP or SP cost</Text>
-        <Text className="text-sm text-muted">Halve incoming attack and spell damage until your next turn. Recover stamina at the rest rate.</Text>
-        <DungeonButton primary label="Use Defend" disabled={!canChoose} onPress={() => selectAction({ action: 'defend' })} />
-      </>)}
-      {actionIcon('item', 'Item', { kind: 'item', id: 'potion' }, <BattleItems session={session} canChoose={canChoose} selectAction={selectAction} />)}
-    </View>
     <KeyboardChoiceGroup itemRole="tab" value={category}>
       <View className="flex-row gap-6 border-b border-border" accessibilityRole="tablist" accessibilityLabel="Skill categories">
-        {(['combat', 'magic'] as const).map((tab) => <Pressable key={tab} accessibilityRole="tab"
-          accessibilityLabel={tab === 'combat' ? 'Combat' : 'Magic'} accessibilityState={{ selected: category === tab }}
+        {(Object.keys(BATTLE_CATEGORIES) as BattleSkillCategory[]).map((tab) => <Pressable key={tab} accessibilityRole="tab"
+          accessibilityLabel={BATTLE_CATEGORIES[tab]} accessibilityState={{ selected: category === tab }}
           aria-selected={category === tab}
           className={`min-h-12 justify-center border-b-2 px-1 ${category === tab ? 'border-accent' : 'border-transparent'}`}
           onPress={() => { inspect(undefined); setCategory(tab); }}>
-          <Text className={`text-sm ${category === tab ? 'text-accent' : 'text-muted'}`}>{tab === 'combat' ? 'Combat' : 'Magic'}</Text>
+          <Text className={`text-sm ${category === tab ? 'text-accent' : 'text-muted'}`}>{BATTLE_CATEGORIES[tab]}</Text>
         </Pressable>)}
       </View>
     </KeyboardChoiceGroup>
     <ScrollView key={category} horizontal showsHorizontalScrollIndicator indicatorStyle="white" nestedScrollEnabled
-      accessibilityLabel={`${category === 'combat' ? 'Combat' : 'Magic'} skills`} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
-      {visibleSkills.length ? visibleSkills.map((skill) => {
-        const action: BattleAction = { action: 'skill', skillId: skill.id };
+      accessibilityLabel={`${BATTLE_CATEGORIES[category]} actions`} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
+      {actions.map(({ id, label, skill, rank, action }) => {
+        const title = `${label}${action.action === 'skill' ? '' : ` · ${skill.name}`}${rank ? ` · Rank ${rank}` : ''}`;
+        if (action.action === 'attack') return actionIcon(id, title, { kind: 'skill', id: skill.id }, <>
+          <Text className="text-sm text-muted">{attackCost} SP · One enemy{source?.stamina && source.stamina.current < attackCost ? ' · Bare hands' : ''}</Text>
+          <ActionStats session={session} action={action} />
+          <DungeonButton primary label="Use Attack" disabled={!canChoose} onPress={() => selectAction(action)} />
+        </>);
+        if (action.action === 'defend') return actionIcon(id, title, { kind: 'skill', id: skill.id }, <>
+          <Text className="text-sm text-muted">Self · No MP or SP cost</Text>
+          <Text className="text-sm text-muted">Halve incoming attack and spell damage until your next turn. Recover stamina at the rest rate.</Text>
+          <DungeonButton primary label="Use Defend" disabled={!canChoose} onPress={() => selectAction(action)} />
+        </>);
         const details = battleActionDetails(session, action);
         const cost = source ? staminaCost(source, skill.staminaCost) : 0;
-        return actionIcon(skill.id, `${skill.name} · Rank ${skill.rank ?? 'F'}`, { kind: 'skill', id: skill.id }, <>
+        return actionIcon(id, title, { kind: 'skill', id: skill.id }, <>
           <Text className="text-sm text-accent">{skill.manaCost} MP · {skill.effect === 'heal' && skill.target === 'ally' ? `0 SP ally / ${cost} SP self` : `${cost} SP`}</Text>
           <Text className="text-sm text-muted">{skill.target === 'allEnemies' ? 'All enemies' : skill.target === 'enemy' ? 'One enemy' : skill.target === 'ally' ? 'Self or ally' : 'Self'} · {skill.effect === 'heal' ? 'Healing' : skill.element}</Text>
           <ActionStats session={session} action={action} />
           <DungeonButton primary label="Use Skill" disabled={!canChoose || !!details.unavailableReason} onPress={() => selectAction(action)} />
         </>, !!details.unavailableReason);
-      }) : <Text className="py-3 text-sm text-muted">No {category} skills learned.</Text>}
+      })}
+      {!actions.length && category !== 'items' ? <Text className="py-3 text-sm text-muted">No {category} skills learned.</Text> : null}
     </ScrollView>
   </View>;
 }
-
 function ActionPopover({ label, image, disabled, unavailable, selected, open, onOpenChange, children }: {
   label: string; image: GameImageReference; disabled: boolean; unavailable: boolean; selected: boolean;
   open: boolean; onOpenChange(open: boolean): void; children: ReactNode;
@@ -118,27 +113,5 @@ function ActionStats({ session, action }: { session: BattleSession; action: Batt
     </View>))}
     {unavailableReason ? <Text className="text-sm text-danger">{unavailableReason}</Text> : failures.map((failure) =>
       <Text key={failure.targetId} className="text-sm text-danger">{name(failure.targetId)} · {failure.reason}</Text>)}
-  </View>;
-}
-
-function BattleItems({ session, canChoose, selectAction }: { session: BattleSession; canChoose: boolean; selectAction(action: BattleAction): void }) {
-  const source = session.engine.getEntity(session.getSnapshot().turnId ?? '');
-  const items = Object.entries(source?.inventory ?? {}).flatMap(([id, quantity]) => {
-    const item = session.content.item(id);
-    return quantity > 0 && item.kind === 'consumable' && item.battleUsable ? [{ item, quantity }] : [];
-  });
-  const [selectedId, setSelectedId] = useState(items[0]?.item.id);
-  const selected = items.find(({ item }) => item.id === selectedId);
-  const recovery = selected && source ? consumableRecovery(selected.item, source) : undefined;
-  return <View className="gap-3">
-    {items.length ? <>
-      <View className="gap-2">{items.map(({ item, quantity }) => <DungeonButton key={item.id} image={{ kind: 'item', id: item.id }}
-        label={`${item.name} ×${quantity}`} selected={selectedId === item.id} onPress={() => setSelectedId(item.id)} />)}</View>
-      {selected && recovery ? <>
-        <Text className="text-sm text-muted">{selected.item.description}</Text>
-        <Text className="text-sm text-accent">Restore {recovery.amount} {recovery.resource === 'health' ? 'HP' : recovery.resource === 'mana' ? 'MP' : 'SP'} · Uses one turn</Text>
-        <DungeonButton primary label="Use Item" disabled={!canChoose} onPress={() => selectAction({ action: 'item', itemId: selected.item.id })} />
-      </> : null}
-    </> : <Text className="text-sm text-muted">No usable items in your inventory.</Text>}
   </View>;
 }

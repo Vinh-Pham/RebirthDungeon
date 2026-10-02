@@ -163,7 +163,6 @@ export class BattleSession {
     if (event.type === 'DEFENDED') line = `${name(event.entityId)} defends, halving attack and spell damage until their next turn and recovering stamina.`;
     if (event.type === 'WOUNDS_RECEIVED') line = `${name(event.entityId)} suffers ${event.amount} wounds.`;
     if (event.type === 'SKILL_USED') line = `${name(event.sourceId)} casts ${this.content.skill(event.skillId).name}.`;
-    if (event.type === 'ITEM_USED') line = `${name(event.sourceId)} uses ${this.content.item(event.itemId).name}.`;
     if (event.type === 'STATUS_APPLIED') line = `${name(event.entityId)} gains ${this.content.status(event.statusId).name}.`;
     if (event.type === 'STATUS_EXPIRED') line = `${this.content.status(event.statusId).name} fades from ${name(event.entityId)}.`;
     if (event.type === 'ENTITY_DIED') line = `${name(event.entityId)} falls.`;

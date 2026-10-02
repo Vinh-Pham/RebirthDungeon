@@ -56,7 +56,7 @@ There is no exploration fog-of-war model today. Discovery/fog would require save
 
 ## 4. Battle contract
 
-Combat is **select action → select target → confirm → resolve → next scheduled actor**. The UI provides Attack/Defend/Item icons and a scrollable skill hotbar filtered by minimal Combat/Magic tabs. HeroUI Native action popovers show stats and a Use button; target taps confirm enemy actions and self-only Use actions resolve immediately. Rest remains supported by the engine. Inspection, selection and cancellation spend no resources and draw no RNG. Accepted attacks, including misses, consume one turn. Skill and item validation occurs before mutation/random draws. A skill action pays MP/SP once; area skills do not grant turns per target.
+Combat is **select action → select target → confirm → resolve → next scheduled actor**. The UI provides one scrollable hotbar with minimal Combat/Magic/Items tabs. Combat includes Attack (talent mastery identity), Defend (Defense identity), and learned combat skills. Items is an empty future category; combat consumable actions are removed. These basic-action identities preserve current attack/guard rules without granting skill ranks. HeroUI Native action popovers show stats and a Use button; target taps confirm enemy actions and self-only Use actions resolve immediately. Rest remains supported by the engine. Inspection, selection and cancellation spend no resources and draw no RNG. Accepted attacks, including misses, consume one turn. Skill validation occurs before mutation/random draws. A skill action pays MP/SP once; area skills do not grant turns per target.
 
 `TurnQueue` establishes descending speed order at encounter start; ties retain participant order and the queue repeats. Mid-battle speed modifiers affect observed stats but do not reorder initiative. Enemies currently choose a basic attack against a living player. New AI skills need explicit decision rules and fixtures.
 
@@ -66,7 +66,7 @@ The battle copies the campaign hero at **encounter entry**, not at the start of 
 
 ## 5. Content and randomness
 
-Maintain stable IDs and typed definitions for skills, actors, items, statuses, maps, worlds, dungeons, and shops. Zod validates ranges, unique IDs, cross-references and save state. The 33-skill reference catalog has four usable Rank F adapters; scraped tables do not make other skills playable. Authored game ranks and progression metadata extend that catalog without mutating shared definitions.
+Maintain stable IDs and typed definitions for skills, actors, items, statuses, maps, worlds, dungeons, and shops. Zod validates ranges, unique IDs, cross-references and save state. The 34-skill reference catalog (including Human Ranged Attack) has four usable Rank F adapters; scraped tables do not make other skills playable. Authored game ranks and progression metadata extend that catalog without mutating shared definitions.
 
 `GameRandom` uses the existing pure-rand xoroshiro generator with a signed 32-bit seed and four saved signed state words. The journey owns its RNG, dungeon generation uses its dungeon seed, and each battle owns its encounter seed. Preserve current draw order, including the selected-target-first/shared-critical area behavior. Gameplay never calls global random functions. Cosmetic timing does not consume a gameplay stream.
 

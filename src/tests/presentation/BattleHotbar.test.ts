@@ -4,7 +4,7 @@ import { ContentRegistry } from '../../engine/data/ContentRegistry';
 import { createHero } from '../../engine/rpg/Character';
 import { learnSkill } from '../../engine/rpg/Skills';
 import { BattleSession } from '../../game/BattleSession';
-import { battleActionDetails, battleSkills } from '../../ui/battle/battleActionDetails';
+import { battleActionDetails, battleHotbarActions, battleSkills } from '../../ui/battle/battleActionDetails';
 
 const content = loadGameContent();
 const sessions: BattleSession[] = [];
@@ -19,6 +19,32 @@ function create(registry = content) {
 afterEach(() => sessions.splice(0).forEach((session) => session.dispose()));
 
 describe('battle hotbar details', () => {
+  it.each([['warrior', 'combat-mastery'], ['archery', 'human-ranged-attack'], ['mage', 'magic-mastery']] as const)(
+    'keeps Attack and Defend in Combat for a new %s without granting skills', (talent, attackSkill) => {
+      const hero = createHero(content, talent), before = structuredClone(hero);
+      const session = new BattleSession(content, 12345, 'chamber', hero); sessions.push(session);
+      const player = session.engine.getEntity('player')!, entityBefore = structuredClone(player);
+      const random = session.engine.random.snapshot();
+      const actions = battleHotbarActions(session, 'combat');
+      expect(actions.map(({ id, skill, action }) => [id, skill.id, action])).toEqual([
+        ['attack', attackSkill, { action: 'attack' }], ['defend', 'defense', { action: 'defend' }],
+      ]);
+      expect(actions.every(({ rank }) => rank === undefined)).toBe(true);
+      expect(battleHotbarActions(session, 'magic').map(({ id }) => id)).toEqual(['firebolt', 'icebolt', 'lightning-bolt', 'healing']);
+      expect(battleHotbarActions(session, 'items')).toEqual([]);
+      expect(battleActionDetails(session, actions[0].action).previews).toEqual(battleActionDetails(session, { action: 'attack' }).previews);
+      expect(player).toEqual(entityBefore); expect(hero).toEqual(before);
+      expect(session.engine.random.snapshot()).toEqual(random); expect(session.combat.completedActions).toBe(0);
+    });
+
+  it('shows the saved mastery rank on Attack alongside learned Combat skills', () => {
+    const session = create(), player = session.engine.getEntity('player')!;
+    player.learnedSkills!['combat-mastery'].rank = 'E';
+    const actions = battleHotbarActions(session, 'combat');
+    expect(actions.map(({ id }) => id)).toEqual(['attack', 'defend', 'smash']);
+    expect(actions[0]).toMatchObject({ rank: 'E', skill: { id: 'combat-mastery' }, action: { action: 'attack' } });
+  });
+
   it('shows learned active skills in their authored categories with saved ranks', () => {
     const session = create();
     const skills = battleSkills(session);

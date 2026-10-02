@@ -13,7 +13,7 @@ Use the TypeScript implementation as the integration baseline. The neighboring [
 | Platform | Expo SDK 57, React Native, Expo Router; iOS, Android, and web | Reuse the existing app and dependencies |
 | Battle flow | Select action → select target → confirm → resolve → next actor | Resolve a learned skill at the hero's saved rank |
 | Initiative | Fixed speed order established at encounter start; ties preserve participant order | Skills consume one scheduled turn; speed buffs do not reorder this queue |
-| Catalog | 33 reference skill definitions plus the separately authored Enchant town skill | Add authored game rank definitions and explicit availability |
+| Catalog | 34 reference skill definitions (including Human Ranged Attack) plus the separately authored Enchant town skill | Add authored game rank definitions and explicit availability |
 | Combat | Seeded hit, critical, damage-range, defense, protection, and injury rules | Reuse the resolvers; add only the mechanics an enabled skill needs |
 | Progression | Hero level, XP, talent, resources, inventory, equipment, learned ranks, training, AP, discovery and books | Author further supported rank adapters |
 | Saves | Version 10 campaign saves; SQLite on native, IndexedDB on web | Preserve lossless migrations from versions 1–9 |
@@ -36,11 +36,11 @@ SELECT_ACTION { action: 'skill', skillId }
     → next scheduled actor or battle result
 ```
 
-The battle action menu lists **learned, implemented active skills**. Passive skills never appear as selectable actions. Keep Attack, Defend, Item, and the engine's Rest action available under their existing rules; learning skills does not replace those actions.
+The battle action menu lists **learned, implemented active skills**. Combat also contains the always-available Attack and Defend basic actions. Their icons/details use the talent’s Combat Mastery/Human Ranged Attack/Magic Mastery identity and Defense respectively, while keeping existing attack/guard rules. This does not cast a passive, grant a learned rank or import reference bonuses. Other passive skills do not appear as selectable actions. Rest remains engine-supported. Items is an empty future category; battle consumable actions are removed.
 
 Selection and targeting are reversible. Neither spends resources nor draws gameplay randomness. `CANCEL_ACTION` returns to action selection without using the turn or awarding training. Confirmation revalidates ownership, rank, implementation support, equipment, cooldown, resource affordability, and living targets before any mutation or RNG draw. A rejected command changes none of those values and leaves the player able to correct the selection.
 
-On accepted confirmation, resolve one action synchronously and deduct its MP/SP costs once. A committed attack that misses still spends its cost and turn. A multi-target skill pays once and advances initiative once. An item is an alternative full action, not a free accompaniment to a skill. AP is never a battle-use cost.
+On accepted confirmation, resolve one action synchronously and deduct its MP/SP costs once. A committed attack that misses still spends its cost and turn. A multi-target skill pays once and advances initiative once. Items cannot be used during battle. AP is never a battle-use cost.
 
 Use `staminaCost` from the resource rules for the displayed and resolved SP cost, including its fullness adjustment. Healing another ally currently costs no SP; healing oneself applies Healing's authored SP cost. Preserve this target-dependent behavior when showing the confirmation summary. HP costs, charge loading, and upkeep payments need explicit future resolver support before any skill can require them.
 
@@ -69,7 +69,7 @@ Passives contribute automatically when learned and eligible. They have no activa
 | Counterattack window | One prepared reaction, expiring at the start of the owner's next turn |
 | UI/navigation/suspension | No skill, cooldown, status, or initiative advancement |
 
-For cooldown `1`, the next owner turn cannot use that skill; its end clears the cooldown, allowing use on the following owner turn. Attack, Defend, Rest, and Item also count as completed owner turns. Cooldowns clear at encounter end in the initial implementation; longer-lived cooldowns require a separate design.
+For cooldown `1`, the next owner turn cannot use that skill; its end clears the cooldown, allowing use on the following owner turn. Attack, Defend and Rest also count as completed owner turns. Cooldowns clear at encounter end in the initial implementation; longer-lived cooldowns require a separate design.
 
 For a self-buff intended to improve two subsequent owner actions, a `turnEnd` status needs duration `3`: one tick on casting, then two on later actions. Display the remaining useful actions after casting. Do not globally change status duration semantics to add this skill. Reactions resolve inside the triggering action, with no recursive reactions or added queue entry. All death and outcome handling completes before scheduling another actor, retaining defeat priority when both sides die.
 

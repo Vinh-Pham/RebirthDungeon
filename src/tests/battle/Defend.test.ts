@@ -75,7 +75,7 @@ describe('Defend', () => {
       // Both branches use no RNG before the enemy action, so critical damage is comparable.
       if (defend) engine.dispatch({ type: 'DEFEND', entityId: 'player' });
       else {
-        engine.dispatch({ type: 'USE_ITEM', sourceId: 'player', targetId: 'player', itemId: 'potion' });
+        engine.dispatch({ type: 'REST', entityId: 'player' });
       }
       damage(engine, 'enemy-1', spell);
       return events.filter((event) => event.type === 'DAMAGE_DEALT').at(-1)!.amount;

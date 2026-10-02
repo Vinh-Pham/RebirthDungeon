@@ -20,8 +20,8 @@ function battle(hero = armed(), registry = content, mapId = 'chamber') {
   for (const entity of session.engine.world.entities) if (entity.enemy) entity.combatant!.evasion = 0;
   return session;
 }
-function act(session: BattleSession, action: 'attack' | 'skill' | 'item', id?: string, target = 'slime-1') {
-  session.dispatch({ type: 'SELECT_ACTION', action, skillId: action === 'skill' ? id : undefined, itemId: action === 'item' ? id : undefined });
+function act(session: BattleSession, action: 'attack' | 'skill', id?: string, target = 'slime-1') {
+  session.dispatch({ type: 'SELECT_ACTION', action, skillId: action === 'skill' ? id : undefined });
   session.dispatch({ type: 'SELECT_TARGET', targetId: target }); session.dispatch({ type: 'CONFIRM_ACTION' });
 }
 function encounter(hero: Hero) {
@@ -66,18 +66,11 @@ describe('weapon wear in confirmed combat', () => {
     expect(session.engine.random.snapshot()).toEqual(random); expect(session.engine.getEntity('player')!.weapon!.durability).toBe(60);
     vi.spyOn(session.engine.random, 'chance').mockReturnValue(false); act(session, 'attack'); expect(session.engine.getEntity('player')!.weapon!.durability).toBe(60);
   });
-  it('does not wear weapons on spells, healing, or consumables, and restores mana in combat', () => {
-    const hero = armed(); hero.inventory['mana-potion'] = 1;
-    const session = battle(hero); act(session, 'skill', 'firebolt'); expect(session.engine.getEntity('player')!.weapon!.durability).toBe(60);
-    session.advanceEnemyTurns(); const player = session.engine.getEntity('player')!; player.mana!.current = 0;
-    act(session, 'item', 'mana-potion', 'player'); expect(player.mana!.current).toBe(21); expect(player.inventory!['mana-potion']).toBeUndefined(); expect(player.weapon!.durability).toBe(60);
-    session.advanceEnemyTurns(); player.mana!.current = 14; act(session, 'skill', 'healing', 'player'); expect(player.weapon!.durability).toBe(60);
-  });
-  it('rejects food in combat without consuming it, a turn, or randomness', () => {
-    const hero = armed(); hero.inventory.bread = 2; const session = battle(hero); const before = session.engine.random.snapshot();
-    expect(() => act(session, 'item', 'bread', 'player')).toThrow('unavailable');
-    expect(session.engine.getEntity('player')!.inventory!.bread).toBe(2); expect(session.engine.getEntity('player')!.weapon!.durability).toBe(60);
-    expect(session.battle.phase).toBe('selectingAction'); expect(session.engine.random.snapshot()).toEqual(before);
+  it('does not wear weapons on spells or healing', () => {
+    const session = battle(armed()); act(session, 'skill', 'firebolt');
+    expect(session.engine.getEntity('player')!.weapon!.durability).toBe(60);
+    session.advanceEnemyTurns(); act(session, 'skill', 'healing', 'player');
+    expect(session.engine.getEntity('player')!.weapon!.durability).toBe(60);
   });
   it('wears once for a physical skill hitting multiple enemies and never for a damaging magic skill', () => {
     const raw = structuredClone(content.data);
