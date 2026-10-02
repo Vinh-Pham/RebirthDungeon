@@ -34,33 +34,38 @@ When an encounter starts, replace exploration input with the battle surface. Map
 
 ## 3. Portrait battle layout and flow
 
-Use a readable portrait stack, preserving named controls when the canvas becomes small:
+Use a readable portrait stack with reachable action controls and canvas targets on small screens:
 
 ```text
 Encounter name / active actor / turn order
 Hero and enemy presentation
 Combatant HP/MP/SP, wounds, fullness and weapon wear
 Selected action / rank / target / costs / status details
-[Attack] [Skill] [Defend] [Item]
-Skill/item list, then legal named targets
-[Confirm action] [Back]
+Attack / Defend / Item icons
+Combat / Magic label tabs → horizontally scrollable skill icons
+Action popover → stats / eligibility / Use Skill (or Use Attack/Defend/Item)
+Cancel selected action
 Recent battle feedback
 ```
 
-The existing UI supports four action groups and both sprite taps and named target buttons. Keep those named buttons usable without precise sprite targeting. Rest exists in the engine but has no separate current action-group button. No dice slots, kept markers, rerolls, reserved pools or paid Pass controls belong in this interface.
+Attack, Defend and Item are separate icons above a skill hotbar. Minimal Combat and Magic label tabs filter learned battle-usable skills by their authored category; these tabs do not use HeroUI Tabs. The skill row scrolls horizontally on overflow. Passive, life and unsupported skills do not become action icons. Icons retain accessible names and selected states; unavailable skills remain inspectable with their equipment, cooldown or resource reason.
+
+Every icon opens a HeroUI Native Popover. Skill details show saved rank, effective costs, targeting and engine-derived damage/healing previews, with a **Use Skill** button. Basic actions use **Use Attack**, **Use Defend** and **Use Item**. Item details list owned battle consumables with quantities and an explicit use button. Popover content scrolls within safe viewport bounds; Close, outside tap, Android Back and web Escape dismiss it. The web adapter refreshes HeroUI's initial offscreen measurement after positioning, since RN Web's size observer does not report moves. Web focus stays inside the panel and returns to its trigger on dismissal. Tab labels support keyboard arrows, Home and End.
+
+Browsing details pauses arena targeting without selecting or cancelling the existing engine action. Closing resumes targeting only when an action has already been confirmed. Confirm an enemy-targeted action with its Use button, then tap a monster in the game canvas to resolve it. Before confirmation, canvas target taps are disabled. There is no Targets button or named target list. Cancel clears the selection and pauses targeting again. Self-only actions resolve once from their Use button. Rest exists in the engine but has no separate icon. No dice slots, kept markers, rerolls, reserved pools or paid Pass controls belong in this interface.
 
 | Observed state | Interaction |
 | --- | --- |
 | Initializing | Loading feedback; no gameplay requests |
-| Selecting action | Choose Attack/Skill/Defend/Item; inspect information |
-| Selecting target | Choose a valid target, confirm or cancel for free |
+| Selecting action | Inspect a basic-action or skill icon, then choose Use |
+| Selecting target | Tap a valid canvas target to resolve the confirmed action, or cancel for free |
 | Executing / enemy turn | Observe outcome; prevent additional player commands |
 | Presenting | Show committed events; duplicate inputs remain gated |
 | Victory/defeat | Show the completed encounter outcome and its return/continue action |
 
 The current BattleView gates player choices while presentation is busy; enemy turns advance from simulation phase independently of animation completion. Keep that separation. Rendering, audio and skipped/reduced animation must produce the same result and RNG continuation.
 
-Previews should call the engine's preparation/eligibility logic without drawing RNG. Display target-dependent costs accurately, especially self-Healing versus another ally. The existing skill list's broad cost display needs that target-aware treatment when expanded. Basic Attack explains the current bare-hand fallback when SP is insufficient; unsupported/unlearned adapters do not appear as usable skills.
+Previews call the engine's preparation/eligibility logic without drawing RNG. Display target-dependent costs accurately, especially self-Healing versus another ally. Self-Healing requires its stamina payment; another living ally can remain an affordable target when self-Healing is unavailable. Basic Attack explains the current bare-hand fallback when SP is insufficient; unsupported/unlearned adapters do not appear as usable skills.
 
 Defend explicitly previews damage reduction until the owner's next turn and rest-rate recovery. Status detail shows remaining affected-owner ticks; a self turn-end cast ticks on its casting turn. Forecasts are ranges/conditions, not promises of an exact critical or damage roll. Confirmation remains the single spending action; Cancel/Back spends nothing.
 
@@ -122,9 +127,9 @@ First preserve the existing shared host, exploration/service panels, battle acti
 | Check | Evidence |
 | --- | --- |
 | Rules versus presentation | Identical accepted commands with varied animation timing yield identical state/RNG |
-| Small portrait touch | Named targeting, reachable confirmation, no panel click-through, safe insets and large text |
+| Small portrait touch | Canvas targeting after action confirmation, reachable confirmation, no panel click-through, safe insets and large text |
 | iOS/Android installation | Full refuge → dungeon → encounter → return loop, sound, local saves and suspend/relaunch |
-| Web | Keyboard focus/targeting, responsive panels, explicit audio resume and IndexedDB saves |
+| Web | Keyboard action controls, canvas target selection, responsive panels, explicit audio resume and IndexedDB saves |
 | Persistence | Pending-encounter restart, failed load preserving session, candidate retry without duplicate costs/rewards |
 | Accessibility | Labels/state, readable cues, reduced motion, screen-reader traversal and focus restoration |
 | Performance | Long lists/maps/logs do not introduce per-frame React work or unbounded observers/resources |

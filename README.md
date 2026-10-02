@@ -276,7 +276,7 @@ per-frame work. The Phase 3 controller below adds state-machine orchestration.
 
 ## Battle flow, rendering, animations and content (Phases 3–6)
 
-A battle encounter opens from the Journey exploration screen. Actions are grouped into Attack, Skill, Defend, and Item. Skill opens learned battle skills with their resource costs; Item opens available battle consumables with quantities. Choose an action, select a target with the accessible buttons or a sprite tap, and confirm. Self-targeted actions select the acting character automatically. Back cancels targeting before returning to the main menu.
+A battle encounter opens from the Journey exploration screen. Attack, Defend and Item are separate icons above a horizontally scrollable skill hotbar. Minimal Combat and Magic tabs switch categories. Tap an icon to inspect its HeroUI Native popover: skills show rank, costs, target previews and a **Use Skill** button; Item lists owned battle consumables and quantities. Confirm an enemy action with its Use button, then tap a monster in the game canvas to resolve it. Canvas targeting stays paused until an action is confirmed; there is no Targets button or target list. Self-only actions resolve from their Use button. Closing details preserves the previous action; Cancel clears it and returns to action selection.
 Defend uses a turn, recovers stamina at the rest rate, and halves incoming attack and spell damage (rounded down, minimum one) until the defender's next turn starts. It does not reduce status damage, spend mana, roll RNG, or wear weapons. Rest remains available to existing engine callers.
 Enemy turns resolve immediately. The presentation queue plays each resolved action
 in order, without delaying HP, mana, turn order or the battle outcome. Restarting

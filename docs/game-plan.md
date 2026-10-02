@@ -56,7 +56,7 @@ There is no exploration fog-of-war model today. Discovery/fog would require save
 
 ## 4. Battle contract
 
-Combat is **select action → select target → confirm → resolve → next scheduled actor**. Attack, Skill, Defend, and Item are the current UI groups; Rest remains supported by the engine. Selection/cancellation spend no resources and draw no RNG. Accepted attacks, including misses, consume one turn. Skill and item validation occurs before mutation/random draws. A skill action pays MP/SP once; area skills do not grant turns per target.
+Combat is **select action → select target → confirm → resolve → next scheduled actor**. The UI provides Attack/Defend/Item icons and a scrollable skill hotbar filtered by minimal Combat/Magic tabs. HeroUI Native action popovers show stats and a Use button; target taps confirm enemy actions and self-only Use actions resolve immediately. Rest remains supported by the engine. Inspection, selection and cancellation spend no resources and draw no RNG. Accepted attacks, including misses, consume one turn. Skill and item validation occurs before mutation/random draws. A skill action pays MP/SP once; area skills do not grant turns per target.
 
 `TurnQueue` establishes descending speed order at encounter start; ties retain participant order and the queue repeats. Mid-battle speed modifiers affect observed stats but do not reorder initiative. Enemies currently choose a basic attack against a living player. New AI skills need explicit decision rules and fixtures.
 
@@ -102,7 +102,7 @@ Keep the roadmap incremental: grid storage, banks, expanded slots, aging, rebirt
 
 ## 8. Mobile UI, rendering, and audio
 
-Use Expo Router, existing HeroUI/shared components, Uniwind and theme tokens. Preserve the portrait baseline in `app.json`. Compact devices use list/detail navigation and scrollable panels; wider web/tablet layouts may add comparisons. Safe areas, 48-unit touch targets, larger text, named targeting, keyboard focus and screen-reader feedback are acceptance work, not assumptions from rendering a control.
+Use Expo Router, existing HeroUI/shared components, Uniwind and theme tokens. Preserve the portrait baseline in `app.json`. Compact devices use list/detail navigation and scrollable panels; wider web/tablet layouts may add comparisons. Safe areas, 48-unit touch targets, larger text, canvas targeting after action confirmation, keyboard action controls and screen-reader feedback are acceptance work, not assumptions from rendering a control.
 
 Keep Skia/Reanimated for map/sprite presentation and UI-thread motion where already used; avoid per-frame React updates and repeated map/catalog work. Render only needed long-list rows, retain stable keys, and bound battle logs/animation queues. Screen navigation and overlays gate world input; Android Back closes the appropriate surface without spending resources or abandoning an encounter.
 

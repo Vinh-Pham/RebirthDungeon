@@ -93,7 +93,7 @@ The [Skills plan](skills.md) adds an attributed, bounded training ledger inside 
 
 ## 8. UI and future extensions
 
-Battle controls show HP/MP/SP, wounds/fullness, usable skill names/ranks, effective costs, selected targets, statuses, weapon durability, error reasons and a bounded combat log. Named target buttons provide an accessible alternative to sprites. Exact damage previews, explicit cooldown feedback and richer enemy intent are proposed additions; the current menu does not already expose every preview.
+Battle controls show HP/MP/SP, wounds/fullness, selected targets, statuses, weapon durability, error reasons and a bounded combat log. Attack, Defend and Item are separate icons; learned battle skills appear in a horizontally scrollable hotbar with minimal Combat/Magic label tabs. HeroUI Native popovers show saved ranks, target-aware costs, engine-derived damage/healing ranges and equipment/cooldown/resource reasons. The action's Use button confirms selection; enemy-targeted actions then resolve only from a monster tap in the game canvas, and self-only actions resolve from Use. Canvas targeting is paused until an action is confirmed and while a popover is open. Inspecting or closing a popover preserves the previous action and spends nothing; Cancel clears it. There is no Targets button or named target list. Richer enemy intent remains proposed.
 
 The UI may delay new player input while presentation is busy, but simulation and enemy turn execution must not wait for animation completion. Skipping/reducing motion changes only presentation. During battle, feature panels are inspection-only and the battle Item menu owns item actions.
 

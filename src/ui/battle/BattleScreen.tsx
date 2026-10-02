@@ -10,10 +10,11 @@ import { BattleHost } from '../../game/BattleHost';
 import { BattleSession, type BattleView as BattleSnapshot } from '../../game/BattleSession';
 import type { GameCommand } from '../../engine/commands';
 import type { BattleAction } from '../../engine/battle/BattleMachine';
-import { skillForEntity, skillEquipmentReason } from '../../engine/rpg/Skills';
+import { skillForEntity } from '../../engine/rpg/Skills';
 import { staminaCost } from '../../engine/rpg/Resources';
 import GameCanvas from '../../renderer/GameCanvas';
 import GameImage from '../shared/GameImage';
+import BattleHotbar from './BattleHotbar';
 
 const mono = Platform.OS === 'ios' ? 'Menlo' : 'monospace';
 
@@ -47,11 +48,11 @@ export function BattleView({ session, restart, finishedLabel = 'Descend again', 
   const hasVictoryLoot = !!victoryContent;
   const turnKey = `${view.turnId}:${view.actionCount}`;
   const [errorState, setErrorState] = useState<{ turn: string; value?: string }>({ turn: turnKey });
-  const [menuState, setMenuState] = useState<{ turn: string; value?: 'skill' | 'item' }>({ turn: turnKey });
+  const [inspectState, setInspectState] = useState<{ turn: string; value?: string }>({ turn: turnKey });
   const error = errorState.turn === turnKey ? errorState.value : undefined;
-  const menu = menuState.turn === turnKey ? menuState.value : undefined;
+  const inspected = inspectState.turn === turnKey ? inspectState.value : undefined;
   const setError = (value?: string) => setErrorState({ turn: turnKey, value });
-  const setMenu = (value?: 'skill' | 'item') => setMenuState({ turn: turnKey, value });
+  const inspect = (value?: string) => setInspectState({ turn: turnKey, value });
   const finished = view.phase === 'victory' || view.phase === 'defeat';
   const canChoose = !presentation.busy && ['selectingAction', 'selectingTarget'].includes(view.phase);
   useEffect(() => {
@@ -73,23 +74,17 @@ export function BattleView({ session, restart, finishedLabel = 'Descend again', 
   }
   function selectAction(action: BattleAction) {
     if (attempt(() => session.selectPlayerAction(action, view.actionCount))) {
-      setMenu(undefined); scroll.current?.scrollTo({ y: 0, animated: true });
+      inspect(undefined); scroll.current?.scrollTo({ y: 0, animated: true });
     }
-  }
-  function chooseGroup(group: 'attack' | 'skill' | 'defend' | 'item') {
-    if (!session.canAcceptPlayerInput(view.actionCount)) return;
-    if (view.phase === 'selectingTarget' && !dispatch({ type: 'CANCEL_ACTION' })) return;
-    setMenu(group === 'skill' || group === 'item' ? group : undefined);
-    if (group === 'defend') selectAction({ action: 'defend' });
   }
   function cancel() {
     if (!session.canAcceptPlayerInput(view.actionCount)) return;
     if (view.phase === 'selectingTarget' && !dispatch({ type: 'CANCEL_ACTION' })) return;
-    setMenu(undefined);
+    inspect(undefined);
     scroll.current?.scrollTo({ y: 0, animated: true });
   }
   const action: BattleAction = view.selectedAction ?? { action: 'attack' };
-  const inputEnabled = canChoose && (!menu || !!view.selectedAction);
+  const inputEnabled = canChoose && !inspected && !!view.selectedAction;
   const targetIds = inputEnabled ? session.battle.validTargetIds(action) : [];
   function execute(targetId: string, expectedActionCount = view.actionCount) {
     if (!inputEnabled) return;
@@ -99,12 +94,13 @@ export function BattleView({ session, restart, finishedLabel = 'Descend again', 
   const selectedSkill = action.action === 'skill' && source ? skillForEntity(session.content, source, action.skillId!) : undefined;
   const skillCost = selectedSkill && source ? staminaCost(source, selectedSkill.staminaCost) : 0;
   const headline = view.phase === 'victory' ? 'Chamber cleared' : view.phase === 'defeat' ? 'A warden falls' :
-    presentation.busy ? 'Steel, spell & consequence' : menu ? `Choose a ${menu}` : selectedSkill ? selectedSkill.name : 'Your move, warden';
+    presentation.busy ? 'Steel, spell & consequence' : inspected ? 'Action details' : selectedSkill ? selectedSkill.name : 'Your move, warden';
   const hint = view.phase === 'victory' ? victoryContent ? 'Choose your loot, then confirm to continue.' : 'A small victory. The dungeon runs deeper.' : view.phase === 'defeat' ? 'Every descent teaches something.' :
-    presentation.busy ? 'The battle unfolds before you.' : menu ? 'Targeting pauses while you choose. Cancel to return to basic attack.' :
+    presentation.busy ? 'The battle unfolds before you.' : inspected ? 'Review the action, then use it or close to return.' :
     selectedSkill ? `${selectedSkill.manaCost} MP · ${selectedSkill.effect === 'heal' && selectedSkill.target === 'ally' ? `0 SP ally / ${skillCost} SP self` : `${skillCost} SP`} · ` +
       (selectedSkill.target === 'allEnemies' ? `Tap any monster to cast ${selectedSkill.name} against all enemies.` :
-      `Tap ${selectedSkill.target === 'ally' ? 'an ally' : 'a monster'} to cast ${selectedSkill.name}.`) : 'Tap a monster to attack. Choose Skill, Defend, or Item for another action.';
+      `Tap ${selectedSkill.target === 'ally' ? 'an ally' : 'a monster'} to cast ${selectedSkill.name}.`) :
+    view.selectedAction ? 'Tap a monster in the arena to attack.' : 'Choose an action below, then tap a monster in the arena.';
 
   return <SafeAreaView className="bg-background" style={styles.screen} edges={['left', 'right']}>
     <ScrollView ref={scroll} contentContainerStyle={styles.scroll}>
@@ -119,7 +115,7 @@ export function BattleView({ session, restart, finishedLabel = 'Descend again', 
         </View>
         <View style={styles.decision} onLayout={(event) => { decisionY.current = event.nativeEvent.layout.y; }}>
           <Text className="text-foreground" style={styles.headline}>{headline}</Text><Text className="text-muted" style={styles.body}>{hint}</Text>
-          {!finished ? <BattleActions key={`${view.turnId}:${view.actionCount}`} session={session} view={view} canChoose={canChoose} menu={menu} chooseGroup={chooseGroup} selectAction={selectAction} cancel={cancel} targetIds={targetIds} execute={execute} /> : view.phase === 'victory' && victoryContent ? victoryContent :
+          {!finished ? <BattleActions session={session} view={view} canChoose={canChoose} inspected={inspected} inspect={inspect} selectAction={selectAction} cancel={cancel} /> : view.phase === 'victory' && victoryContent ? victoryContent :
             <View style={styles.actions}><Button primary label={finishedLabel} disabled={presentation.busy || busy} busy={busy} onPress={restart} /></View>}
           {error || session.battle.context.error ? <DungeonNotice message={error ?? session.battle.context.error} /> : null}
         </View>
@@ -156,77 +152,14 @@ export function BattleView({ session, restart, finishedLabel = 'Descend again', 
   </SafeAreaView>;
 }
 
-function BattleActions({ session, view, canChoose, menu, chooseGroup, selectAction, cancel, targetIds, execute }: {
-  session: BattleSession; view: BattleSnapshot; canChoose: boolean; menu?: 'skill' | 'item';
-  chooseGroup(group: 'attack' | 'skill' | 'defend' | 'item'): void;
-  selectAction(action: BattleAction): void; cancel(): void;
-  targetIds: readonly string[]; execute(targetId: string): void;
+function BattleActions({ session, view, canChoose, inspected, inspect, selectAction, cancel }: {
+  session: BattleSession; view: BattleSnapshot; canChoose: boolean; inspected?: string;
+  inspect(id?: string): void; selectAction(action: BattleAction): void; cancel(): void;
 }) {
-  const [targetsExpanded, setTargetsExpanded] = useState(false);
-  const [detailsExpanded, setDetailsExpanded] = useState(false);
-  const source = session.engine.getEntity(view.turnId ?? '');
-  const skills = (source?.skills ?? []).map((id) => skillForEntity(session.content, source!, id)).filter((skill) => skill.battleUsable !== false);
-  const items = Object.entries(source?.inventory ?? {}).flatMap(([id, quantity]) => {
-    const item = session.content.item(id);
-    return quantity > 0 && item.kind === 'consumable' && item.battleUsable ? [{ item, quantity }] : [];
-  });
-  const attackCost = source?.stamina ? staminaCost(source, 2) : 0;
-  const selectedGroup = menu ?? view.selectedAction?.action ?? 'attack';
   return <>
-    <View style={styles.actions}>
-      <Button group label="Attack" detail={source?.stamina && source.stamina.current < attackCost ? 'Bare hands' : attackCost ? `${attackCost} SP` : 'Basic strike'}
-        disabled={!canChoose} selected={selectedGroup === 'attack'} onPress={() => chooseGroup('attack')} />
-      <Button group label="Skill" detail="Choose a skill" disabled={!canChoose} selected={selectedGroup === 'skill'} onPress={() => chooseGroup('skill')} />
-      <Button group label="Defend" detail="Guard & recover" disabled={!canChoose} selected={selectedGroup === 'defend' || selectedGroup === 'rest'} onPress={() => chooseGroup('defend')} />
-      <Button group label="Item" detail="Use a consumable" disabled={!canChoose} selected={selectedGroup === 'item'} onPress={() => chooseGroup('item')} />
-    </View>
-    {menu ? <View className="border-border" style={styles.actionList}>
-      <Text className="text-accent" style={styles.eyebrow}>{menu === 'skill' ? 'SKILLS' : 'ITEMS'}</Text>
-      {menu === 'skill' ? skills.length ? <View style={styles.skillGrid}>{skills.map((skill) => {
-        const cost = source && !(skill.effect === 'heal' && skill.target === 'ally') ? staminaCost(source, skill.staminaCost) : 0;
-        const equipmentReason = source ? skillEquipmentReason(source, skill, session.content) : undefined;
-        const cooldown = source?.cooldowns?.[skill.id] ?? 0;
-        const unavailable = !!equipmentReason || cooldown > 0 || !source?.mana || source.mana.current < skill.manaCost || !!source.stamina && source.stamina.current < cost;
-        return <View key={skill.id} style={styles.skillColumn}><Button className="min-h-[68px] flex-1" image={{ kind: 'skill', id: skill.id }} label={`${skill.name} · ${skill.rank ?? 'F'}`} detail={`${skill.manaCost} MP${skill.effect === 'heal' && skill.target === 'ally' && source ? ` · 0 SP ally / ${staminaCost(source, skill.staminaCost)} SP self` : ` · ${cost} SP`} · ${skill.target === 'allEnemies' ? 'All enemies' : skill.target}${equipmentReason ? ` · ${equipmentReason}` : cooldown ? ` · Cooldown ${cooldown}` : unavailable ? ' · Insufficient resources' : ''}`}
-          disabled={!canChoose || unavailable} selected={view.selectedAction?.skillId === skill.id}
-          onPress={() => selectAction({ action: 'skill', skillId: skill.id })} /></View>;
-      })}</View> : <Text className="text-muted" style={styles.body}>No battle skills learned.</Text> : items.length ? items.map(({ item, quantity }) =>
-        <Button key={item.id} image={{ kind: 'item', id: item.id }} label={`${item.name} ×${quantity}`} disabled={!canChoose} selected={view.selectedAction?.itemId === item.id}
-          onPress={() => selectAction({ action: 'item', itemId: item.id })} />)
-        : <Text className="text-muted" style={styles.body}>No usable items in your inventory.</Text>}
-
-    </View> : null}
-    {menu || view.selectedAction ? <Button label="Cancel" disabled={!canChoose} onPress={cancel} /> : null}
-    {targetIds.length ? <>
-      <View style={styles.actions}>
-        <Button label="Targets" secondary accessibilityState={{ expanded: targetsExpanded }} disabled={!canChoose} onPress={() => setTargetsExpanded(!targetsExpanded)} />
-        {['attack', 'skill'].includes(view.selectedAction?.action ?? 'attack') ? <Button label="Action details" secondary accessibilityState={{ expanded: detailsExpanded }} disabled={!canChoose} onPress={() => setDetailsExpanded(!detailsExpanded)} /> : null}
-      </View>
-      {targetsExpanded ? <View style={styles.targets}>{targetIds.map((targetId) => {
-        const entity = view.entities.find((entry) => entry.id === targetId)!;
-        return <Button key={targetId} label={entity.name} detail={`${entity.health}/${entity.maxHealth} HP`}
-          accessibilityLabel={`${view.selectedAction?.action === 'skill' ? 'Cast on' : 'Attack'} ${entity.name}, ${entity.health} of ${entity.maxHealth} health`}
-          disabled={!canChoose} onPress={() => execute(targetId)} />;
-      })}</View> : null}
-      {detailsExpanded ? <ActionPreview session={session} view={view} targetIds={targetIds} /> : null}
-    </> : null}
+    <BattleHotbar session={session} view={view} canChoose={canChoose} inspected={inspected} inspect={inspect} selectAction={selectAction} />
+    {view.selectedAction ? <Button label="Cancel" disabled={!canChoose} onPress={cancel} /> : null}
   </>;
-}
-
-function ActionPreview({ session, view, targetIds }: { session: BattleSession; view: BattleSnapshot; targetIds: readonly string[] }) {
-  let preview: ReturnType<BattleSession['combat']['previewSkill']> | undefined;
-  let errorMessage: string | undefined;
-  try {
-    const previews = targetIds.map((targetId) => view.selectedAction?.action === 'skill'
-      ? session.combat.previewSkill(view.turnId!, targetId, view.selectedAction.skillId!)
-      : session.combat.previewBasic(view.turnId!, targetId));
-    if (previews.length) preview = { ...previews[0], targets: previews[0].area ? previews[0].targets : previews.flatMap((entry) => entry.targets) };
-  } catch (error) { errorMessage = error instanceof Error ? error.message : 'Preview unavailable'; }
-  if (!preview) return <DungeonNotice message={errorMessage} />;
-  return <View className="gap-2" accessibilityLiveRegion="polite">
-      <Text className="text-accent" style={styles.body}>{preview.area ? 'All enemies · ' : ''}{preview.manaCost} MP · {preview.staminaCost} SP</Text>
-      {preview.targets.map((target) => <Text key={target.targetId} className="text-muted" style={styles.body}>{view.entities.find((e) => e.id === target.targetId)?.name ?? target.targetId}: {preview.healing ? 'Restore' : 'Damage'} {target.min}–{target.max} HP{preview.healing ? '' : ` · Hit ${Math.round(target.hitChance * 100)}% · Critical ${Math.round(target.criticalChance * 100)}% (${target.criticalMin}–${target.criticalMax} HP)`}</Text>)}
-    </View>;
 }
 
 const styles = StyleSheet.create({
@@ -243,10 +176,7 @@ const styles = StyleSheet.create({
     decision: { gap: 12 },
   headline: { fontSize: 20, fontFamily: Platform.OS === 'android' ? 'serif' : 'Georgia' },
   body: { fontSize: 12, lineHeight: 19 },
-  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }, targets: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingVertical: 4 },
-   actionList: { gap: 8, padding: 12, borderWidth: 1, borderRadius: 5 },
-  skillGrid: { flexDirection: 'row', flexWrap: 'wrap', margin: -4 },
-  skillColumn: { width: '50%', padding: 4 },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
 
   log: { borderRadius: 5, padding: 16, gap: 12 }, logLine: { fontSize: 11, lineHeight: 19 },
   footer: { textAlign: 'center', fontSize: 8, letterSpacing: 1.5, fontFamily: mono },
