@@ -10,14 +10,14 @@ reference tables. Its rank objects are frozen after validation. Heroes own expli
 `learnedSkills` records with rank and capped objective counts; class skill lists are
 used only for starter grants and legacy migration. Enemies keep independent authored
 skill defaults. Resolve a hero action through `resolveLearnedSkill`, without changing
-the catalog or importing reference percentages, charges, or racial variants.
+the catalog or importing unsupported reference percentages or charges.
 
 The four starter spells preserve their existing F ranges, scaling, targets and costs.
 Firebolt, Lightning Bolt and Healing are capped at F. Icebolt has an F/E adapter: 20 casts train 100 points, F → E costs 2 AP, and E uses power 11–21 with +2 INT. Smash, Combat Mastery and Sword
 Mastery implement the gameplay document's F/E pilot. Smash now uses physical multipliers (F: 2, E: 2.1) with zero additive power and bypasses Defend, retaining ordinary Defense/Protection and 4 SP/0 MP costs. The fields are authored game rules; the wiki payload remains historical research. Source rechecked with Firecrawl October 2, 2026: [Smash](https://wiki.mabinogiworld.com/view/Smash). Their E cap is explicit; they
-cannot spend AP on an unimplemented D rank. `human-ranged-attack.json` adds the human archery identity with source URL, October 2, 2026 retrieval date, F–1 effects and unambiguous reference rows from [Human Ranged Attack](https://wiki.mabinogiworld.com/view/Human_Ranged_Attack). Its `battleUsable: false` prevents an unsupported skill cast: the Archery hotbar Attack uses its artwork/name while retaining the existing basic attack rules. Aiming, ammunition, bows/crossbows and new damage formulas are not implemented.
+cannot spend AP on an unimplemented D rank. `human-ranged-attack.json` adds the human archery identity with source URL, October 2, 2026 retrieval date, F–1 effects and unambiguous reference rows from [Human Ranged Attack](https://wiki.mabinogiworld.com/view/Human_Ranged_Attack). Its `battleUsable: false` keeps ranged attacks on the basic Attack command. Human and Elf F/E adapters provide ranged damage/balance and owned attribute totals; a loaded bow chooses owned Elf Ranged Attack or Human Ranged Attack, defaulting to Human F without granting ownership. Both use 1 base SP and one arrow per shot. Bows without equipped arrows, broken bows and exhausted attacks use fists. Dexterity drives ranged damage; aiming and crossbows remain unimplemented. These adapters have no new acquisition or rank-up route. Elf reference data was rechecked October 2, 2026; its real-time two-arrow volley is outside the requested one-arrow behavior.
 
-Combat always includes Attack (Warrior: Combat Mastery; Archery: Human Ranged Attack; Mage: Magic Mastery) and Defend (Defense). These identities do not grant learned skills or reference stat bonuses. Saved backing-skill ranks appear only when owned. Items shows saved battle-usable consumable assignments configured in Inventory. Item recovery is engine-owned; item actions do not cast skills or train them.
+Combat always includes Attack (Warrior: Combat Mastery; Archery: Human Ranged Attack; Mage: Magic Mastery) and Defend (Defense). Loaded bows use the ranged skill identity regardless of talent; empty/broken bows show Combat Mastery. These identities do not grant learned skills or permanent stat bonuses. See `engine/battle/BasicAttack.ts` and `engine/rpg/Stats.ts` for executable bow inputs. Saved backing-skill ranks appear only when owned. Items shows saved battle-usable consumable assignments configured in Inventory. Item recovery is engine-owned; item actions do not cast skills or train them.
 
 `enchant.json` adds a separately authored Enchant life skill at F/E; it uses town application/burning objectives and never resolves in combat. All other entries remain unavailable.
 
@@ -36,8 +36,8 @@ victory or defeat banks that ledger with resources, durability and rewards. Rest
 an unfinished checkpoint discards its ledger. A host-owned candidate is written to
 the auto slot before learning, page insertion, rank-up or battle completion becomes
 live. Failed writes retain the exact candidate and block dependent mutations until
-Retry save succeeds. Saves use wire version 11, preserving migrations from versions
-1–10; the existing native/web storage adapters need no database schema changes.
+Retry save succeeds. Saves use wire version 12, preserving migrations from versions
+1–11; the existing native/web storage adapters need no database schema changes.
 
 The character-scoped Skills journal is available from the character panel and drawer.
 It lists learned/discovered skills, rank effects, training objectives, AP eligibility,

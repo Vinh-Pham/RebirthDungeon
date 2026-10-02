@@ -69,8 +69,13 @@ export const VersionTenHeroSchema = VersionNineHeroSchema.extend({
   cumulativeLevel: z.number().int().min(1).max(Number.MAX_SAFE_INTEGER),
   experience: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
 });
-export const HeroSchema = VersionTenHeroSchema.extend({
+export const VersionElevenHeroSchema = VersionTenHeroSchema.extend({
   itemHotbar: z.array(z.string().min(1)).max(100),
+});
+export const HeroSchema = VersionElevenHeroSchema.extend({
+  equipment: LegacyHeroSchema.shape.equipment.extend({
+    secondaryHand: z.string().min(1).optional(),
+  }),
 });
 export type Hero = z.infer<typeof HeroSchema>;
 export type HeroSnapshot = Immutable<Hero>;
@@ -101,6 +106,7 @@ export function heroStatSource(
     level: hero.level,
     growthTalent: hero.growthTalent,
     weaponItemId: weapon && weapon.durability > 0 ? weapon.itemId : undefined,
+    ammunitionItemId: hero.equipment.secondaryHand,
     armorItemId: hero.equipment.armor ? hero.armors[hero.equipment.armor]?.itemId : undefined,
     effects: effects?.map((effect) => ({ ...effect })) ?? [],
     learnedSkills: cloneData(hero.learnedSkills),
@@ -128,6 +134,17 @@ export function heroStats(
   hero = readPlain(hero);
   for (const [slot, reference] of Object.entries(hero.equipment)) {
     if (!reference) continue;
+    if (slot === 'secondaryHand') {
+      const weapon = hero.equipment.weapon ? hero.weapons[hero.equipment.weapon] : undefined;
+      if (
+        !hero.inventory[reference] ||
+        content.item(reference).kind !== 'ammunition' ||
+        !weapon ||
+        !content.item(weapon.itemId).weaponTags.includes('bow')
+      )
+        throw new Error('Equip owned arrows with a bow in the secondary hand');
+      continue;
+    }
     const instance = slot === 'weapon' ? hero.weapons[reference] : hero.armors[reference];
     const item = content.item(instance?.itemId ?? '');
     if (item.kind !== slot || !instance) throw new Error('Invalid equipped item');
@@ -137,7 +154,7 @@ export function heroStats(
 /** Inspect a loadout without changing ownership, resources, durability or RNG. */
 export function previewEquipment(
   hero: HeroSnapshot,
-  reference: EquipmentReference | { slot: 'weapon' | 'armor' },
+  reference: OwnedItem | { slot: 'weapon' | 'armor' | 'secondaryHand' },
   content: ContentRegistry,
   effects: readonly { statusId: string; stacks: number }[] = [],
 ) {
@@ -146,10 +163,23 @@ export function previewEquipment(
   else if ('weaponId' in reference) {
     if (!hero.weapons[reference.weaponId]) throw new Error('This weapon is not in your pack');
     equipment.weapon = reference.weaponId;
-  } else {
+  } else if ('armorId' in reference) {
     if (!hero.armors[reference.armorId]) throw new Error('This armor is not in your pack');
     equipment.armor = reference.armorId;
+  } else {
+    equipment.secondaryHand = reference.itemId;
   }
+  const weapon = equipment.weapon ? hero.weapons[equipment.weapon] : undefined;
+  if (
+    'itemId' in reference &&
+    (!hero.inventory[reference.itemId] ||
+      content.item(reference.itemId).kind !== 'ammunition' ||
+      !weapon ||
+      !content.item(weapon.itemId).weaponTags.includes('bow'))
+  )
+    throw new Error('Equip owned arrows with a bow in the secondary hand');
+  if (!weapon || !content.item(weapon.itemId).weaponTags.includes('bow'))
+    delete equipment.secondaryHand;
   return {
     before: heroStats(hero, content, effects),
     after: heroStats({ ...hero, equipment }, content, effects),
@@ -346,7 +376,9 @@ export function removableCount(hero: HeroSnapshot, reference: OwnedItem): number
       ? 1
       : 0;
   return (
-    (hero.inventory[reference.itemId] ?? 0) +
+    (hero.equipment.secondaryHand === reference.itemId
+      ? 0
+      : (hero.inventory[reference.itemId] ?? 0)) +
     Object.entries(readPlain(hero.armors)).filter(
       ([id, a]) => a.itemId === reference.itemId && !a.locked && hero.equipment.armor !== id,
     ).length
@@ -511,6 +543,7 @@ export function applyHero(
   entity.combatant = { ...stats.combatant };
   entity.inventory = { ...hero.inventory };
   entity.itemHotbar = [...hero.itemHotbar];
+  entity.ammunitionItemId = hero.equipment.secondaryHand;
   const weaponId = hero.equipment.weapon;
   entity.weapon = weaponId ? { ...cloneData(hero.weapons[weaponId]), id: weaponId } : undefined;
 }

@@ -190,7 +190,7 @@ describe('learned ranks and acquisition', () => {
       { version: 5, savedAt: new Date().toISOString(), campaign: { ...state, hero: legacy } },
       content,
     );
-    expect(migrated.version).toBe(11);
+    expect(migrated.version).toBe(12);
     expect(migrated.campaign.hero).toMatchObject({
       ap: 0,
       level: 5,

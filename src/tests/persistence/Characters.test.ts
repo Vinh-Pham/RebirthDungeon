@@ -200,7 +200,7 @@ describe('character persistence', () => {
     const migrated = (await new SaveRepository(storage, content, 'mage').load('auto'))!;
     expect(migrated.hero).toMatchObject({ gold: 93, growthTalent: 'mage', health: 118, mana: 108 });
     expect((await repository.list())[0].error).toBeUndefined();
-    expect(JSON.parse((await storage.readSave('legacy', 'auto'))!.payload).version).toBe(11);
+    expect(JSON.parse((await storage.readSave('legacy', 'auto'))!.payload).version).toBe(12);
     expect(db.prepare('SELECT payload FROM save_slots WHERE id = ?').get('auto')?.payload).toBe(
       payload,
     );

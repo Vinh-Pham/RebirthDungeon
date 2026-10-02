@@ -268,7 +268,10 @@ export function burnEquipmentDraft(
   hero.mana -= preview.costs.burnManaCost;
   if ('weaponId' in request.target) {
     delete hero.weapons[request.target.weaponId];
-    if (hero.equipment.weapon === request.target.weaponId) delete hero.equipment.weapon;
+    if (hero.equipment.weapon === request.target.weaponId) {
+      delete hero.equipment.weapon;
+      delete hero.equipment.secondaryHand;
+    }
   } else {
     delete hero.armors[request.target.armorId];
     if (hero.equipment.armor === request.target.armorId) delete hero.equipment.armor;

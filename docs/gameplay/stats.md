@@ -112,6 +112,35 @@ Temporary encounter statuses disappear when BattleSession ends or an unfinished 
 
 Cooldowns and Counterattack's start-of-next-turn reaction window are separate planned counters under [Skills](skills.md), not ordinary status durations. Scoped attack buffs, priority groups, cleanse/dispel, shields, mixed potion side effects and persistent illnesses require explicit additions; existing `focus`, `weakness`, and `burn` definitions do not prove every such effect is playable.
 
+## Bow damage and fist fallback
+
+A usable bow with equipped ammunition uses effective Dexterity, excluding the first
+10 points, for physical range: `floor(DEX / 3.5) + weaponMin + rangedMin` through
+`floor(DEX / 2.5) + 8 + weaponMax + rangedMax`, plus active physical-attack enchants
+and dungeon/temporary attack modifiers. The existing +8 base maximum remains an
+authored game offset. Bow balance adds the chosen ranged rank's balance bonus and
+keeps the existing 80% cap. Defense, protection, hit/critical sampling, injury,
+Defend and resource rules continue through the shared resolver.
+
+Human/Elf F/E game ranks supply total ranged bonuses independently of historical
+reference tables: both F ranks add 0 damage and 1% balance; E adds 0–1 damage and
+2% balance. Owned Human ranks grant +2/+4 permanent DEX; Elf ranks grant +1/+2 DEX
+and E grants +1 STR. The default Human F action does not grant these attributes.
+Neither rank adapter introduces learning or advancement objectives in this change.
+Loaded bows exclude Combat/Sword Mastery melee damage bonuses. Without equipped
+arrows, bow stat/enchant contributions are excluded through `unarmedStatSource`,
+matching a fist attack with the same character, armor and effects. Exhaustion also
+uses that shared fist source for the action without consuming arrows or wearing the
+bow. Empty ammunition updates derived stats and clamps reduced resource capacities
+without refilling depleted pools.
+
+References checked with Firecrawl on October 2, 2026:
+[Dexterity](https://wiki.mabinogiworld.com/view/Stats#Dexterity),
+[Human Ranged Attack](https://wiki.mabinogiworld.com/view/Human_Ranged_Attack), and
+[Elf Ranged Attack](https://wiki.mabinogiworld.com/view/Elf_Ranged_Attack).
+Only the requested bow/ammunition and F/E damage inputs are translated; aiming,
+real-time loading, higher ranks and two-arrow Elf volleys remain unimplemented.
+
 ## 7. Recovery and consumables
 
 A resource tick occurs after a completed battle action and on accepted exploration movement/rest. It does not occur from selecting a panel, reading Inventory, shop browsing, or passive wall-clock time.

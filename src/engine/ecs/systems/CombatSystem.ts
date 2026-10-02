@@ -7,14 +7,15 @@ import {
 import type { GameEngine } from '../../GameEngine';
 import type { GameSystem } from '../../GameSystem';
 import type { GameEvent } from '../../events';
-import type { EntityId } from '../Entity';
+import type { Entity, EntityId } from '../Entity';
 import { applyDamage } from '../components/Health';
 import { effectiveEntity, applyStatus, tickStatuses } from '../../rpg/StatusEffects';
 import { resolveAttack, previewAttack, validateCombatEntity } from '../../battle/AttackResolver';
 import { prepareSkill } from '../../battle/SkillResolver';
 import type { ContentRegistry } from '../../data/ContentRegistry';
 import { calculateCharacterStats } from '../../rpg/Stats';
-import { healableHealth, resourceTick, staminaCost } from '../../rpg/Resources';
+import { prepareBasicAttack } from '../../battle/BasicAttack';
+import { healableHealth, resourceTick } from '../../rpg/Resources';
 import { TurnQueue } from '../../battle/TurnQueue';
 import { handleDeath } from './DeathSystem';
 import { prepareBattleItem } from '../../rpg/Consumables';
@@ -99,32 +100,17 @@ export class CombatSystem implements GameSystem {
   previewBasic(sourceId: string, targetId: string) {
     const source = this.engine!.getEntity(sourceId)!,
       target = this.engine!.getEntity(targetId)!;
-    const content = this.options.content,
-      cost = source.stamina ? staminaCost(source, 2) : 0;
-    let attacker = effectiveEntity(source, content);
-    if (source.stamina && source.stamina.current < cost && source.statSource && content)
-      attacker = effectiveEntity(
-        {
-          ...source,
-          combatant: calculateCharacterStats(
-            {
-              ...source.statSource,
-              weaponItemId: undefined,
-              enchantments: source.statSource.enchantments?.filter(
-                (e) => !e.sourceId.startsWith('weapon-'),
-              ),
-            },
-            content,
-          ).combatant,
-        },
-        content,
-      );
+    const content = this.options.content;
+    const basicPlan = prepareBasicAttack(source, content);
+    const { attacker, cost } = basicPlan;
     const preview = previewAttack(attacker, effectiveEntity(target, content));
     return {
       healing: false,
       area: false,
       manaCost: 0,
       staminaCost: cost,
+      ammunitionCost: basicPlan.ammunitionItemId ? 1 : 0,
+      fallbackReason: basicPlan.fallbackReason,
       targets: [
         {
           targetId,
@@ -230,6 +216,26 @@ export class CombatSystem implements GameSystem {
     /* Combat resolves on commands, never on frame ticks. */
   }
 
+  private refreshCharacterStats(attacker: Entity, content: ContentRegistry) {
+    const stats = calculateCharacterStats(attacker.statSource!, content);
+    attacker.combatant = stats.combatant;
+    attacker.health!.max = stats.maxHealth;
+    attacker.wounds = Math.min(attacker.wounds ?? 0, stats.maxHealth - 1);
+    attacker.health!.current = Math.min(
+      attacker.health!.current,
+      stats.maxHealth - attacker.wounds,
+    );
+    for (const [key, max] of [
+      ['mana', stats.maxMana],
+      ['stamina', stats.maxStamina],
+    ] as const) {
+      if (attacker[key]) {
+        attacker[key].max = max;
+        attacker[key].current = Math.min(attacker[key].current, max);
+      }
+    }
+  }
+
   private attack(
     engine: GameEngine,
     attackerId: EntityId,
@@ -275,28 +281,10 @@ export class CombatSystem implements GameSystem {
       throw new Error('Invalid skill target');
     if (rest && (attackerId !== targetId || !attacker.stamina))
       throw new Error('Invalid rest target');
-    const cost =
-      !skill && !recoveryAction && !itemPlan && attacker.stamina ? staminaCost(attacker, 2) : 0;
-    const exhausted =
-      !skill && !recoveryAction && !itemPlan && attacker.stamina && attacker.stamina.current < cost;
-    let basic = effectiveEntity(attacker, this.options.content);
-    if (exhausted && attacker.statSource && this.options.content)
-      basic = effectiveEntity(
-        {
-          ...attacker,
-          combatant: calculateCharacterStats(
-            {
-              ...attacker.statSource,
-              weaponItemId: undefined,
-              enchantments: attacker.statSource.enchantments?.filter(
-                (e) => !e.sourceId.startsWith('weapon-'),
-              ),
-            },
-            this.options.content,
-          ).combatant,
-        },
-        this.options.content,
-      );
+    const basicPlan = prepareBasicAttack(attacker, this.options.content);
+    const basicAction = !skill && !recoveryAction && !itemPlan;
+    const cost = basicAction ? basicPlan.cost : 0;
+    const basic = basicPlan.attacker;
     const targets =
       skill?.target === 'allEnemies'
         ? this.turns.order
@@ -318,8 +306,8 @@ export class CombatSystem implements GameSystem {
       (!skill || (skill.effect === 'damage' && skill.element === 'physical'));
     const tags = physicalAction
       ? [
-          'melee',
-          ...(!exhausted &&
+          ...(basicAction && basicPlan.ammunitionItemId ? ['ranged'] : ['melee']),
+          ...((!basicAction || basicPlan.usesWeapon) &&
           attacker.weapon &&
           attacker.weapon.durability > 0 &&
           this.options.content
@@ -376,6 +364,16 @@ export class CombatSystem implements GameSystem {
             targetId,
             amount: recovery.amount,
           });
+      }
+      if (basicAction && basicPlan.ammunitionItemId) {
+        consumeItem(attacker.inventory!, basicPlan.ammunitionItemId);
+        if (!attacker.inventory![basicPlan.ammunitionItemId]) {
+          attacker.ammunitionItemId = undefined;
+          if (attacker.statSource && this.options.content) {
+            attacker.statSource = { ...attacker.statSource, ammunitionItemId: undefined };
+            this.refreshCharacterStats(attacker, this.options.content);
+          }
+        }
       }
       if (cost && attacker.stamina)
         attacker.stamina.current = Math.max(0, attacker.stamina.current - cost);
@@ -459,7 +457,7 @@ export class CombatSystem implements GameSystem {
         this.options.content &&
         !recoveryAction &&
         !itemPlan &&
-        !exhausted &&
+        (!basicAction || basicPlan.usesWeapon) &&
         (!skill || (skill.effect === 'damage' && skill.element === 'physical')) &&
         effects.some((effect) => effect.result.hit)
       ) {
@@ -473,22 +471,7 @@ export class CombatSystem implements GameSystem {
                 (e) => !e.sourceId.startsWith('weapon-'),
               ),
             };
-            const stats = calculateCharacterStats(attacker.statSource, this.options.content);
-            attacker.combatant = stats.combatant;
-            attacker.health!.max = stats.maxHealth;
-            attacker.wounds = Math.min(attacker.wounds ?? 0, stats.maxHealth - 1);
-            attacker.health!.current = Math.min(
-              attacker.health!.current,
-              stats.maxHealth - attacker.wounds,
-            );
-            if (attacker.mana) {
-              attacker.mana.max = stats.maxMana;
-              attacker.mana.current = Math.min(attacker.mana.current, stats.maxMana);
-            }
-            if (attacker.stamina) {
-              attacker.stamina.max = stats.maxStamina;
-              attacker.stamina.current = Math.min(attacker.stamina.current, stats.maxStamina);
-            }
+            this.refreshCharacterStats(attacker, this.options.content);
           } else {
             const definition = this.options.content.item(weapon.itemId);
             const stat = definition.stat ?? 'attack';
@@ -543,8 +526,8 @@ export class CombatSystem implements GameSystem {
         encounterId: this.options.encounterId ?? 'standalone',
         actionId: ++this.actionSequence,
         sourceId: attackerId,
-        skillId,
-        rank: skill?.rank,
+        skillId: skillId ?? (basicAction ? basicPlan.skillId : undefined),
+        rank: skill?.rank ?? (basicAction ? basicPlan.rank : undefined),
         action: itemPlan ? 'item' : skill ? 'skill' : (recoveryAction ?? 'attack'),
         origin: 'direct',
         tags: [...new Set(tags)],

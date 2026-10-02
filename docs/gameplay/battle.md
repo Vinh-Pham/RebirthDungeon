@@ -41,6 +41,35 @@ The Items category shows saved `hero.itemHotbar` assignments. Only owned, battle
 
 The seeded level-5 elder-plus-two-slimes baseline uses basic attacks without assigned potions; it excludes the prior eight-potion strategy. Across its 100 seeds, a basic-attack-only policy now wins 4 times for Warrior and 0 for Archery/Mage; the starter encounter still meets its 95% acceptance threshold for all talents. This is a measured policy result, not a claim that every skill strategy fails. Attack and enemy balance are unchanged; broader encounter balancing is separate work.
 
+### Bow attacks and ammunition
+
+Equip an owned bow in `equipment.weapon` and an owned ammunition stack in
+`equipment.secondaryHand`. Keeping arrows in the pack alone does not load the bow.
+Attack with a usable, loaded bow resolves one ranged strike using Dexterity and the
+bow's damage, balance, critical and injury inputs. It uses owned Elf Ranged Attack
+when present, otherwise Human Ranged Attack; unlearned users use the Human F action
+values without gaining skill ownership or permanent attributes. Authored F/E ranks
+supply ranged damage/balance inputs and 1 base SP per shot. The formulas belong to
+[Stats](stats.md#bow-damage-and-fist-fallback).
+
+Each accepted shot consumes one arrow, including a miss, and one turn. Selection,
+inspection, cancellation, rejected targets, spells, items and Defend consume none.
+Only a successful shot wears the bow. Empty, broken or exhausted bows use the
+existing fist attack instead, with no arrow consumption or bow wear. The last arrow
+resolves with ranged stats before consumption clears the secondary hand and restores
+fist damage for subsequent actions. Ranged outcomes carry `ranged`/`bow` tags rather
+than `melee`/`sword`; Combat/Sword Mastery do not add ranged damage or gain shot
+training. Previews and resolution share `prepareBasicAttack` and consume identical
+seeded draws to existing physical attacks.
+
+A battle owns its ammunition copy. Victory and defeat bank the remaining stack and
+secondary-hand assignment with resources, wear and training. Restarting an unfinished
+encounter restores its entry ammunition. Failed result writes retain and retry the
+same candidate without another shot, consumption or RNG draw. This turn-based adapter
+has no aiming meter, spatial range, loading time or Elf two-arrow volley; the user
+requested one arrow per attack. No race selection or new skill acquisition/rank-up
+route is introduced.
+
 ## 4. Hit, critical and damage resolution
 
 Use [AttackResolver](../../src/engine/battle/AttackResolver.ts), [SkillResolver](../../src/engine/battle/SkillResolver.ts), and their existing validation/rounding. Current heroes/enemies use damage ranges; older fixtures without a range retain the legacy single-attack branch.
@@ -102,7 +131,7 @@ enable other exploration/progression mutations or serialize partial combat state
 
 ## 8. UI and future extensions
 
-Battle controls show HP/MP/SP, wounds/fullness, selected targets, statuses, weapon durability, error reasons and a bounded combat log. One horizontally scrollable hotbar has minimal Combat/Magic/Items label tabs. Combat includes Attack and Defend even without learned combat skills. Attack uses the current talent: Warrior → Combat Mastery, Archery → Human Ranged Attack, Mage → Magic Mastery. Defend uses Defense. These are basic-action presentation identities, not new skill casts: current damage, SP cost, guard mitigation and rest-rate recovery stay unchanged. Show a saved backing-skill rank only when owned; do not grant progression or reference stat bonuses. Items shows assigned consumables with quantity and engine-derived capped recovery in its popovers. Empty slots remain inspectable with an Out of stock reason; the empty category directs the player to Inventory. HeroUI Native popovers show saved ranks, target-aware costs, engine-derived damage/healing ranges and equipment/cooldown/resource reasons. The action's Use button confirms selection; Attack and enemy-targeted skills resolve immediately against the sole living enemy, while multiple living enemies still require a monster tap in the game canvas. Self-only actions resolve from Use. Canvas targeting is paused until an action is confirmed and while a popover is open. Inspecting or closing a popover preserves the previous action and spends nothing; Cancel clears it. There is no Targets button or named target list. Richer enemy intent remains proposed.
+Battle controls show HP/MP/SP, wounds/fullness, selected targets, statuses, weapon durability, error reasons and a bounded combat log. One horizontally scrollable hotbar has minimal Combat/Magic/Items label tabs. Combat includes Attack and Defend even without learned combat skills. Attack uses the current talent: Warrior → Combat Mastery, Archery → Human Ranged Attack, Mage → Magic Mastery. Defend uses Defense. A loaded bow uses Human Ranged Attack, or the owned Elf Ranged Attack, regardless of talent; an empty or broken bow shows Combat Mastery for its fist fallback. Other loadouts keep these talent identities. Defend mitigation and recovery remain unchanged. Show a saved backing-skill rank only when owned; do not grant progression or reference stat bonuses. Items shows assigned consumables with quantity and engine-derived capped recovery in its popovers. Empty slots remain inspectable with an Out of stock reason; the empty category directs the player to Inventory. HeroUI Native popovers show saved ranks, target-aware costs, engine-derived damage/healing ranges and equipment/cooldown/resource reasons. The action's Use button confirms selection; Attack and enemy-targeted skills resolve immediately against the sole living enemy, while multiple living enemies still require a monster tap in the game canvas. Self-only actions resolve from Use. Canvas targeting is paused until an action is confirmed and while a popover is open. Inspecting or closing a popover preserves the previous action and spends nothing; Cancel clears it. There is no Targets button or named target list. Richer enemy intent remains proposed.
 
 The UI may delay new player input while presentation is busy, but simulation and enemy turn execution must not wait for animation completion. Skipping/reducing motion changes only presentation. During battle, Inventory may edit hotbar assignments; exploration use and equipment changes remain unavailable. Battle gameplay pauses while an assignment candidate is saving or waiting for retry. Consumable use occurs through the combat Items popover.
 

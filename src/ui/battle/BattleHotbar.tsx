@@ -5,6 +5,7 @@ import { Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { BattleAction } from '../../engine/battle/BattleMachine';
 import { staminaCost } from '../../engine/rpg/Resources';
+import { prepareBasicAttack } from '../../engine/battle/BasicAttack';
 import type { BattleSession, BattleView } from '../../game/BattleSession';
 import { DungeonButton } from '../shared/DungeonUI';
 import GameImage from '../shared/GameImage';
@@ -38,7 +39,8 @@ export default function BattleHotbar({
   const source = session.engine.getEntity(view.turnId ?? '');
   const actions = battleHotbarActions(session, category);
   const items = category === 'items' ? battleHotbarItems(session) : [];
-  const attackCost = source?.stamina ? staminaCost(source, 2) : 0;
+  const basicAttack = source ? prepareBasicAttack(source, session.content) : undefined;
+  const attackCost = basicAttack?.cost ?? 0;
   function actionIcon(
     id: string,
     label: string,
@@ -111,8 +113,13 @@ export default function BattleHotbar({
               <>
                 <Text className="text-sm text-muted">
                   {attackCost} SP · One enemy
-                  {source?.stamina && source.stamina.current < attackCost ? ' · Bare hands' : ''}
+                  {basicAttack?.ammunitionItemId
+                    ? ` · 1 arrow (${source?.inventory?.[basicAttack.ammunitionItemId]} remaining)`
+                    : ''}
                 </Text>
+                {basicAttack?.fallbackReason ? (
+                  <Text className="text-sm text-muted">{basicAttack.fallbackReason}</Text>
+                ) : null}
                 <ActionStats session={session} action={action} />
                 <DungeonButton
                   primary

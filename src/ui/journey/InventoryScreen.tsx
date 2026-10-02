@@ -87,6 +87,7 @@ export function InventoryContent({
   const town = !view.state.dungeon && !view.state.pending && !!view.map.theme;
   const equippedWeapon = rows.find((row) => row.equipped && row.item.kind === 'weapon');
   const equippedArmor = rows.find((row) => row.equipped && row.item.kind === 'armor');
+  const equippedArrows = rows.find((row) => row.equipped && row.item.kind === 'ammunition');
   const dispatch = (command: GameCommand) => {
     const current = host.getSnapshot();
     if (current.busy || current.battle || current.retryAvailable) return;
@@ -117,7 +118,18 @@ export function InventoryContent({
         <ProgressionFeedback host={host} showNotice={false} />
         <InventoryDetails
           row={row}
-          hero={battle?.inventory ? { ...hero, inventory: battle.inventory.items } : hero}
+          hero={
+            battle?.inventory
+              ? {
+                  ...hero,
+                  inventory: battle.inventory.items,
+                  equipment: {
+                    ...hero.equipment,
+                    secondaryHand: battle.inventory.ammunitionItemId,
+                  },
+                }
+              : hero
+          }
           host={host}
           session={session}
           characterId={profile.id}
@@ -161,7 +173,21 @@ export function InventoryContent({
               Armor: None
             </Text>
           )}
+          {equippedArrows ? (
+            icon(equippedArrows, 'equipment')
+          ) : (
+            <Text className="text-muted" style={menu.body}>
+              Secondary hand: None
+            </Text>
+          )}
         </View>
+        {equippedWeapon?.item.weaponTags.includes('bow') ? (
+          <Text className="text-muted" style={menu.body}>
+            {equippedArrows
+              ? `${equippedArrows.quantity} arrows equipped · One arrow per shot`
+              : 'No equipped arrows · Attack uses bare hands'}
+          </Text>
+        ) : null}
         {view.state.dungeon ? (
           <Text className="text-muted" style={menu.body}>
             Dungeon keys · Boss: {view.state.dungeon.bossKey.status} · Treasure:{' '}

@@ -33,7 +33,7 @@ describe('level-200 save migration', () => {
   ])('preserves level %i and converts %i old XP to %i new XP once', (level, oldXP, newXP) => {
     const old = oldSave(level, oldXP),
       migrated = parseSave(old, content);
-    expect(migrated.version).toBe(11);
+    expect(migrated.version).toBe(12);
     expect(migrated.campaign.hero).toEqual({
       ...old.campaign.hero,
       cumulativeLevel: level,

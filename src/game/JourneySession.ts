@@ -377,13 +377,34 @@ export class JourneySession {
       )
         state.hero.discoveredSkills.push('sword-mastery');
       state.hero.equipment.weapon = weaponId;
+      if (!content.item(weapon.itemId).weaponTags.includes('bow'))
+        delete state.hero.equipment.secondaryHand;
       clampHeroResources(state.hero, content);
       tx.message = `Equipped ${content.item(weapon.itemId).name}.`;
       this.commit(state, tx, { type: 'EQUIPMENT_CHANGED', itemId: weapon.itemId });
     });
+    this.registerCommand('EQUIP_AMMUNITION', ({ itemId }, state, tx) => {
+      if (this.hostManaged) throw new Error('Use the host durable progression operation');
+      this.requireExploring(state);
+      const weapon = state.hero.equipment.weapon
+        ? state.hero.weapons[state.hero.equipment.weapon]
+        : undefined;
+      if (
+        !state.hero.inventory[itemId] ||
+        content.item(itemId).kind !== 'ammunition' ||
+        !weapon ||
+        !content.item(weapon.itemId).weaponTags.includes('bow')
+      )
+        throw new Error('Equip a bow and own arrows before equipping the secondary hand');
+      state.hero.equipment.secondaryHand = itemId;
+      clampHeroResources(state.hero, content);
+      tx.message = `Equipped ${content.item(itemId).name} in the secondary hand.`;
+      this.commit(state, tx, { type: 'EQUIPMENT_CHANGED', itemId });
+    });
     this.registerCommand('UNEQUIP_ITEM', ({ slot }, state, tx) => {
       this.requireExploring(state);
       delete state.hero.equipment[slot];
+      if (slot === 'weapon') delete state.hero.equipment.secondaryHand;
       clampHeroResources(state.hero, content);
       this.commit(state, tx, { type: 'EQUIPMENT_CHANGED' });
     });
@@ -731,6 +752,8 @@ export class JourneySession {
     hero.wounds = entity.wounds!;
     hero.fullness = entity.fullness!;
     hero.inventory = { ...entity.inventory! };
+    if (entity.ammunitionItemId) hero.equipment.secondaryHand = entity.ammunitionItemId;
+    else delete hero.equipment.secondaryHand;
     if (entity.weapon)
       hero.weapons[entity.weapon.id] = {
         ...hero.weapons[entity.weapon.id],

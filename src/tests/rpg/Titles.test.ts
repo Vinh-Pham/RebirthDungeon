@@ -356,7 +356,7 @@ describe('title data, spoiler policy and migrations', () => {
       { version: 8, savedAt: new Date().toISOString(), campaign: { ...state, hero: oldHero } },
       content,
     );
-    expect(migrated.version).toBe(11);
+    expect(migrated.version).toBe(12);
     expect(migrated.campaign.hero).toMatchObject({
       health: 5,
       mana: 3,

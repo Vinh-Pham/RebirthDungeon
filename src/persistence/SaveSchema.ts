@@ -15,6 +15,7 @@ import {
   VersionEightHeroSchema,
   VersionNineHeroSchema,
   VersionTenHeroSchema,
+  VersionElevenHeroSchema,
   experienceToNextLevel,
   clampHeroResources,
   migrateEquipmentHero,
@@ -62,9 +63,14 @@ export const CampaignSchema = z.strictObject({
   dungeon: DungeonRunSchema.optional(),
 });
 export const SaveSchema = z.strictObject({
-  version: z.literal(11),
+  version: z.literal(12),
   savedAt: z.string().datetime(),
   campaign: CampaignSchema,
+});
+const VersionElevenSchema = z.strictObject({
+  version: z.literal(11),
+  savedAt: z.string().datetime(),
+  campaign: CampaignSchema.extend({ hero: VersionElevenHeroSchema }),
 });
 const VersionTenSchema = z.strictObject({
   version: z.literal(10),
@@ -342,6 +348,10 @@ export function parseSave(
       campaign: { ...previous.campaign, hero: { ...previous.campaign.hero, itemHotbar: [] } },
     };
   }
+  if (typeof version === 'number' && version >= 1 && version <= 11) {
+    const previous = VersionElevenSchema.parse(migrated);
+    migrated = { ...previous, version: 12 };
+  }
   const save = SaveSchema.parse(migrated);
   if (typeof version === 'number' && version < 9) {
     for (const id of save.campaign.hero.earnedTitles) {
@@ -366,5 +376,5 @@ export function encodeSave(
   content: ContentRegistry,
   savedAt = new Date().toISOString(),
 ): string {
-  return JSON.stringify(parseSave({ version: 11, savedAt, campaign: state }, content));
+  return JSON.stringify(parseSave({ version: 12, savedAt, campaign: state }, content));
 }

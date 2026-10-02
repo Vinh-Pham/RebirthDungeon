@@ -86,7 +86,8 @@ describe('validated game content', () => {
       '280',
       '300',
     ]);
-    expect(skill.gameRanks).toBeUndefined();
+    expect(skill.gameRanks?.F).toMatchObject({ rangedMin: 0, rangedMax: 0, rangedBalance: 0.01 });
+    expect(skill.gameRanks?.E).toMatchObject({ rangedMax: 1, rangedBalance: 0.02 });
   });
   it('adds a new enemy and skill entirely through validated data', () => {
     const raw = data();

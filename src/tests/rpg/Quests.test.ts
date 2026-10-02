@@ -479,7 +479,7 @@ describe('attempt-local practice and versioned saved progress', () => {
       { version: 6, savedAt: new Date().toISOString(), campaign: { ...campaign, hero: old } },
       content,
     );
-    expect(migrated.version).toBe(11);
+    expect(migrated.version).toBe(12);
     expect(migrated.campaign.hero).toMatchObject({
       health: 20,
       mana: 3,

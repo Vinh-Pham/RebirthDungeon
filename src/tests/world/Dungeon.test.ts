@@ -603,7 +603,7 @@ describe('fountains, checkpoints and camera', () => {
         content,
       ),
     ).toMatchObject({
-      version: 11,
+      version: 12,
       campaign: { ...legacy.toSave(), hero: { ...legacy.toSave().hero, ap: 0 } },
     });
     const session = create();

@@ -19,8 +19,14 @@ export interface RenderEntity {
   readonly wounds?: number;
   readonly fullness?: number;
   readonly weapon?: {
+    readonly itemId: string;
     readonly name: string;
     readonly durability: number;
     readonly maxDurability: number;
+  };
+  readonly secondaryHand?: {
+    readonly itemId: string;
+    readonly name: string;
+    readonly quantity: number;
   };
 }

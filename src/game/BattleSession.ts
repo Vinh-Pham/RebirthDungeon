@@ -33,7 +33,11 @@ export interface CharacterReview {
 }
 export interface BattleView {
   character?: CharacterReview;
-  inventory?: { items: Record<string, number>; weapon?: Weapon & { id: string } };
+  inventory?: {
+    items: Record<string, number>;
+    weapon?: Weapon & { id: string };
+    ammunitionItemId?: string;
+  };
   phase: BattlePhase;
   actionCount: number;
   turnId?: string;
@@ -246,9 +250,17 @@ export class BattleSession {
         fullness: entity.fullness,
         weapon: entity.weapon
           ? {
+              itemId: entity.weapon.itemId,
               name: this.content.item(entity.weapon.itemId).name,
               durability: entity.weapon.durability,
               maxDurability: this.content.item(entity.weapon.itemId).maxDurability!,
+            }
+          : undefined,
+        secondaryHand: entity.ammunitionItemId
+          ? {
+              itemId: entity.ammunitionItemId,
+              name: this.content.item(entity.ammunitionItemId).name,
+              quantity: entity.inventory?.[entity.ammunitionItemId] ?? 0,
             }
           : undefined,
       }));
@@ -287,6 +299,7 @@ export class BattleSession {
       inventory: player
         ? {
             items: { ...player.inventory },
+            ammunitionItemId: player.ammunitionItemId,
             weapon: player.weapon ? cloneData(player.weapon) : undefined,
           }
         : undefined,

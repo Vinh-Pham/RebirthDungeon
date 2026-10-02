@@ -4061,18 +4061,18 @@
     "kind": "active",
     "rank": "F",
     "battleUsable": false,
-    "description": "Elf Ranged Attack \u2014 see rank tables for its effects.",
+    "description": "When owned, replaces Human Ranged Attack for basic bow Attack with equipped arrows. Dexterity determines ranged damage; the saved rank adds ranged damage. Each shot consumes one arrow.",
     "manaCost": 0,
     "power": 0,
     "element": "physical",
-    "target": "self",
-    "effect": "buff",
+    "target": "enemy",
+    "effect": "damage",
     "hitChance": 1,
     "criticalChance": 0,
     "statuses": [],
     "reference": {
       "url": "https://wiki.mabinogiworld.com/view/Elf_Ranged_Attack",
-      "retrievedAt": "2026-09-18",
+      "retrievedAt": "2026-10-02",
       "ranks": ["F", "E", "D", "C", "B", "A", "9", "8", "7", "6", "5", "4", "3", "2", "1"],
       "rows": [
         {
@@ -4310,7 +4310,36 @@
         "1": ["Total Ranged Max Damage +15, Total Ranged Min Damage +10, Aim Speed 200%"]
       }
     },
-    "staminaCost": 1
+    "staminaCost": 1,
+    "gameRanks": {
+      "F": {
+        "minPower": 0,
+        "maxPower": 0,
+        "manaCost": 0,
+        "staminaCost": 1,
+        "objectives": [],
+        "rangedMin": 0,
+        "rangedMax": 0,
+        "rangedBalance": 0.01,
+        "statBonuses": {
+          "dexterity": 1
+        }
+      },
+      "E": {
+        "minPower": 0,
+        "maxPower": 0,
+        "manaCost": 0,
+        "staminaCost": 1,
+        "objectives": [],
+        "rangedMin": 0,
+        "rangedMax": 1,
+        "rangedBalance": 0.02,
+        "statBonuses": {
+          "dexterity": 2,
+          "strength": 1
+        }
+      }
+    }
   },
   {
     "id": "first-aid",

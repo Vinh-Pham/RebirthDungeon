@@ -279,7 +279,7 @@
     "price": 400,
     "power": 8,
     "stat": "attack",
-    "description": "+3\u20138 physical damage; 50% balance; 10% critical. Basic attacks do not consume arrows yet; this bow cannot use Smash.",
+    "description": "+3\u20138 ranged damage; 50% balance; 10% critical. Equip arrows in the secondary hand to shoot. Without ammunition, Attack uses bare hands. Cannot use Smash.",
     "maxDurability": 40,
     "weaponStats": {
       "minDamage": 3,
@@ -289,7 +289,7 @@
       "minInjury": 0.05,
       "maxInjury": 0.1
     },
-    "weaponTags": []
+    "weaponTags": ["bow"]
   },
   {
     "id": "wooden-blade",
@@ -389,11 +389,11 @@
   {
     "id": "arrow",
     "name": "Arrow",
-    "kind": "material",
+    "kind": "ammunition",
     "price": 0,
     "power": 0,
     "battleUsable": false,
-    "description": "Arrow supply. Sold in bundles of 20 or 100. Ammunition use is not available yet; resale pays no gold."
+    "description": "Equip in the secondary hand while holding a bow. Each ranged attack consumes one arrow, including misses. Sold in bundles of 20 or 100; resale pays no gold."
   },
   {
     "id": "round-shield",

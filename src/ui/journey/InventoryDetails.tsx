@@ -59,17 +59,14 @@ export default function InventoryDetails({
     item.kind === 'consumable' && resource.health.current > 0
       ? consumableRecovery(item, resource)
       : undefined;
-  const slot = item.kind === 'weapon' ? 'weapon' : 'armor';
+  const slot =
+    item.kind === 'weapon' ? 'weapon' : item.kind === 'ammunition' ? 'secondaryHand' : 'armor';
+  const equippedWeapon = hero.equipment.weapon ? hero.weapons[hero.equipment.weapon] : undefined;
+  const hasBow =
+    !!equippedWeapon && session.content.item(equippedWeapon.itemId).weaponTags.includes('bow');
   const comparison =
-    !review && ['weapon', 'armor'].includes(item.kind)
-      ? previewEquipment(
-          hero,
-          row.equipped
-            ? { slot }
-            : (row.reference as Exclude<typeof row.reference, { itemId: string }>),
-          session.content,
-          effects,
-        )
+    !review && (['weapon', 'armor'].includes(item.kind) || (item.kind === 'ammunition' && hasBow))
+      ? previewEquipment(hero, row.equipped ? { slot } : row.reference, session.content, effects)
       : undefined;
   const openJournal = () =>
     router.navigate({ pathname: '/game/[characterId]/skills', params: { characterId } });
@@ -85,7 +82,11 @@ export default function InventoryDetails({
         </Text>
         <Text className="text-muted" style={menu.body}>
           {itemCount(hero, item.id)} owned{equipment ? ' · Individually owned equipment' : ''}
-          {row.equipped ? ' · This copy is equipped' : ''}
+          {row.equipped
+            ? item.kind === 'ammunition'
+              ? ' · This stack is equipped'
+              : ' · This copy is equipped'
+            : ''}
         </Text>
         {item.weaponStats ? (
           <Text className="text-foreground" style={menu.body}>
@@ -183,6 +184,26 @@ export default function InventoryDetails({
             }}
           />
         ) : null}
+        {item.kind === 'ammunition' ? (
+          <>
+            <Text className="text-muted" style={menu.body}>
+              Secondary hand · {row.quantity} arrows remaining. Each shot consumes one arrow, even
+              on a miss.
+              {!hasBow ? ' Equip a bow in the main hand first.' : ''}
+            </Text>
+            <DungeonButton
+              label={`${row.equipped ? 'Unequip' : 'Equip'} arrows · Secondary hand`}
+              selected={row.equipped}
+              disabled={
+                disabled || hotbarDisabled || (!row.equipped && (!hasBow || row.quantity < 1))
+              }
+              onPress={() => {
+                if (row.equipped) dispatch({ type: 'UNEQUIP_ITEM', slot: 'secondaryHand' });
+                else void host.progress({ type: 'EQUIP_AMMUNITION', itemId: item.id });
+              }}
+            />
+          </>
+        ) : null}
         {droppable > 1 ? (
           <View className="flex-row items-center gap-3">
             <DungeonButton
@@ -219,7 +240,9 @@ export default function InventoryDetails({
         {row.equipped || equipment?.locked ? (
           <Text className="text-muted" style={menu.body}>
             {row.equipped
-              ? 'Unequip this copy before dropping it.'
+              ? item.kind === 'ammunition'
+                ? 'Unequip this stack before dropping it.'
+                : 'Unequip this copy before dropping it.'
               : 'Unlock this copy before dropping it.'}
           </Text>
         ) : null}

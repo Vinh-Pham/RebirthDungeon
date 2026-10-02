@@ -76,7 +76,7 @@ describe('saved consumable hotbars', () => {
       { version: 10, savedAt: '2026-10-02T12:00:00.000Z', campaign: { ...saved, hero } },
       content,
     );
-    expect(migrated.version).toBe(11);
+    expect(migrated.version).toBe(12);
     expect(migrated.campaign).toEqual(saved);
     expect(
       parseSave(JSON.parse(encodeSave(migrated.campaign, content, migrated.savedAt)), content),

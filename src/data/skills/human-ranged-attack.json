@@ -6,7 +6,7 @@
     "kind": "active",
     "rank": "F",
     "battleUsable": false,
-    "description": "The human archery skill for bow or crossbow attacks. Higher reference ranks improve aiming speed, ranged damage and balance.",
+    "description": "Basic bow Attack uses this skill with arrows equipped. Dexterity determines ranged damage; the saved rank adds ranged damage and balance. F is the default for unlearned bow users. Aiming is not part of turn-based combat.",
     "manaCost": 0,
     "staminaCost": 1,
     "power": 0,
@@ -198,6 +198,34 @@
         "3": ["Total Ranged Max Damage +19, Total Ranged Min Damage +6, Aim Speed 250%"],
         "2": ["Total Ranged Max Damage +22, Total Ranged Min Damage +8, Aim Speed 280%"],
         "1": ["Total Ranged Max Damage +25, Total Ranged Min Damage +10, Aim Speed 300%"]
+      }
+    },
+    "gameRanks": {
+      "F": {
+        "minPower": 0,
+        "maxPower": 0,
+        "manaCost": 0,
+        "staminaCost": 1,
+        "objectives": [],
+        "rangedMin": 0,
+        "rangedMax": 0,
+        "rangedBalance": 0.01,
+        "statBonuses": {
+          "dexterity": 2
+        }
+      },
+      "E": {
+        "minPower": 0,
+        "maxPower": 0,
+        "manaCost": 0,
+        "staminaCost": 1,
+        "objectives": [],
+        "rangedMin": 0,
+        "rangedMax": 1,
+        "rangedBalance": 0.02,
+        "statBonuses": {
+          "dexterity": 4
+        }
       }
     }
   }

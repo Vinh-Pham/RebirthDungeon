@@ -13,6 +13,7 @@ export type Entity = {
   name?: string;
   inventory?: Record<string, number>;
   itemHotbar?: string[];
+  ammunitionItemId?: string;
   weapon?: Weapon & { id: string };
   statuses?: ActiveStatus[];
   stamina?: { current: number; max: number };

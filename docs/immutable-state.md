@@ -26,7 +26,7 @@ After a recipe succeeds, the session publishes its frozen state and RNG checkpoi
 
 A candidate has an independent session/engine but starts from the source's immutable campaign root and cached map. Its producer changes only the necessary branches. The complete candidate still passes campaign validation before saving. `JourneyHost` retains the exact candidate after a failed write and retries that write without running the producer, charging costs or drawing randomness again.
 
-The host and autosaver retain frozen checkpoint references instead of deep-cloning every notification. Repository encoding still validates and serializes a complete save. `toSave()` intentionally returns a detached, editable JSON copy for export and callers that need mutation. Loading still parses/validates independent data. Wire saves remain version 11; campaign migrations and platform storage contracts are unchanged.
+The host and autosaver retain frozen checkpoint references instead of deep-cloning every notification. Repository encoding still validates and serializes a complete save. `toSave()` intentionally returns a detached, editable JSON copy for export and callers that need mutation. Loading still parses/validates independent data. Wire saves now use version 12 for optional secondary-hand bow ammunition. Version 11 added the item hotbar; those migrations and platform storage contracts remain intact. Equipment/ammunition changes use the same owned campaign transition, and battle consumption stays isolated until durable settlement.
 
 ## Verification and performance
 

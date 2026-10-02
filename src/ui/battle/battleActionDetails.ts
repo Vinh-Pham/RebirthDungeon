@@ -4,6 +4,7 @@ import type { GrowthTalent } from '../../engine/rpg/Stats';
 import { skillEquipmentReason, skillForEntity } from '../../engine/rpg/Skills';
 import type { BattleSession } from '../../game/BattleSession';
 import { prepareBattleItem } from '../../engine/rpg/Consumables';
+import { prepareBasicAttack } from '../../engine/battle/BasicAttack';
 
 export const BATTLE_CATEGORIES = { combat: 'Combat', magic: 'Magic', items: 'Items' } as const;
 export type BattleSkillCategory = keyof typeof BATTLE_CATEGORIES;
@@ -51,9 +52,13 @@ export function battleHotbarActions(
   const basic =
     category === 'combat'
       ? (['attack', 'defend'] as const).map((action) => {
+          const basicAttack = prepareBasicAttack(source, session.content);
           const skill = session.content.skill(
             action === 'attack'
-              ? attackSkills[source.statSource?.growthTalent ?? 'warrior']
+              ? (basicAttack.skillId ??
+                  (basicAttack.bow
+                    ? 'combat-mastery'
+                    : attackSkills[source.statSource?.growthTalent ?? 'warrior']))
               : 'defense',
           );
           return {

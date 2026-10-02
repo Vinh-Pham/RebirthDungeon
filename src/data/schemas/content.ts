@@ -102,12 +102,16 @@ export const GameRankSchema = z
     swordMin: uint.max(10000).default(0),
     swordMax: uint.max(10000).default(0),
     swordBalance: probability.default(0),
+    rangedMin: uint.max(10000).default(0),
+    rangedMax: uint.max(10000).default(0),
+    rangedBalance: probability.default(0),
   })
   .superRefine((rank, ctx) => {
     if (
       rank.minPower > rank.maxPower ||
       rank.meleeMin > rank.meleeMax ||
       rank.swordMin > rank.swordMax ||
+      rank.rangedMin > rank.rangedMax ||
       (rank.nextRank === undefined) !== (rank.apCost === undefined) ||
       new Set(rank.objectives.map((o) => o.id)).size !== rank.objectives.length ||
       (rank.nextRank && rank.objectives.reduce((sum, o) => sum + o.points * o.maximum, 0) < 100)
@@ -209,6 +213,7 @@ export const ItemSchema = z
       'skillPage',
       'enchantScroll',
       'material',
+      'ammunition',
       'titleCoupon',
     ]),
     enchantId: id.optional(),
@@ -216,7 +221,7 @@ export const ItemSchema = z
     price: uint.max(100000),
     power: uint.max(10000),
     description: z.string(),
-    weaponTags: z.array(z.enum(['melee', 'sword'])).default([]),
+    weaponTags: z.array(z.enum(['melee', 'sword', 'bow'])).default([]),
     skillId: id.optional(),
     recipeId: id.optional(),
     stat: z.enum(['attack', 'defense', 'speed']).optional(),
@@ -254,7 +259,7 @@ export const ItemSchema = z
       (item.kind === 'titleCoupon') === !!item.titleId &&
       (item.kind !== 'titleCoupon' || !item.battleUsable) &&
       (item.kind === 'enchantScroll') === !!item.enchantId &&
-      (!['enchantScroll', 'material'].includes(item.kind) || !item.battleUsable) &&
+      (!['enchantScroll', 'material', 'ammunition'].includes(item.kind) || !item.battleUsable) &&
       (item.kind === 'skillBook') === !!item.skillId &&
       ['incompleteBook', 'skillPage'].includes(item.kind) === !!item.recipeId &&
       (item.kind !== 'skillBook' || (!!item.skillId && !item.battleUsable)) &&
@@ -262,7 +267,8 @@ export const ItemSchema = z
         (!!item.recipeId && !item.battleUsable)) &&
       new Set(item.weaponTags).size === item.weaponTags.length &&
       (!item.weaponTags.length || item.kind === 'weapon') &&
-      (!item.weaponTags.includes('sword') || item.weaponTags.includes('melee')),
+      (!item.weaponTags.includes('sword') || item.weaponTags.includes('melee')) &&
+      (!item.weaponTags.includes('bow') || !item.weaponTags.includes('melee')),
     { message: 'Invalid skill item or equipment tags' },
   );
 export const StatusEffectSchema = z

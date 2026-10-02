@@ -29,9 +29,10 @@ export type GameCommand =
   | { type: 'LOCK_EQUIPMENT'; target: EquipmentReference; locked: boolean }
   | { type: 'EQUIP_ARMOR'; armorId: string }
   | { type: 'EQUIP_WEAPON'; weaponId: string }
+  | { type: 'EQUIP_AMMUNITION'; itemId: string }
   | { type: 'EXIT_DUNGEON' }
   | { type: 'TRAVEL_TO'; x: number; y: number }
-  | { type: 'UNEQUIP_ITEM'; slot: 'weapon' | 'armor' }
+  | { type: 'UNEQUIP_ITEM'; slot: 'weapon' | 'armor' | 'secondaryHand' }
   | { type: 'START_BATTLE' }
   | ({ type: 'SELECT_ACTION' } & BattleAction)
   | { type: 'SELECT_TARGET'; targetId: EntityId }
@@ -140,8 +141,11 @@ export function validateCommand(command: GameCommand): void {
     case 'EQUIP_WEAPON':
       valid = id(command.weaponId);
       break;
+    case 'EQUIP_AMMUNITION':
+      valid = id(command.itemId);
+      break;
     case 'UNEQUIP_ITEM':
-      valid = ['weapon', 'armor'].includes(command.slot);
+      valid = ['weapon', 'armor', 'secondaryHand'].includes(command.slot);
       break;
     case 'TRAVEL_TO':
       valid = Number.isInteger(command.x) && Number.isInteger(command.y);
@@ -186,6 +190,7 @@ export type ProgressionCommand = Extract<
   {
     type:
       | 'DROP_ITEM'
+      | 'EQUIP_AMMUNITION'
       | 'SET_ITEM_HOTBAR'
       | 'SELECT_TITLE'
       | 'UNLOCK_TITLE_COUPON'
@@ -210,6 +215,7 @@ export type ProgressionCommand = Extract<
 export function isProgressionCommand(command: GameCommand): command is ProgressionCommand {
   return [
     'DROP_ITEM',
+    'EQUIP_AMMUNITION',
     'SET_ITEM_HOTBAR',
     'SELECT_TITLE',
     'UNLOCK_TITLE_COUPON',

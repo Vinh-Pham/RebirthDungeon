@@ -426,7 +426,7 @@ describe('stat save migration', () => {
         content,
         'mage',
       );
-      expect(save.version).toBe(11);
+      expect(save.version).toBe(12);
       expect(save.campaign.hero).toMatchObject({
         growthTalent: 'mage',
         health: 118,

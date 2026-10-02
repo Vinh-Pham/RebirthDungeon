@@ -13,6 +13,7 @@ The character's campaign hero owns inventory throughout town and dungeon explora
 | Weapon instances | Stable instance ID, definition ID, durability, lock and optional prefix/suffix with saved clause values |
 | Armor instances  | Stable instance ID, definition ID, lock and optional prefix/suffix with saved clause values             |
 | Equipment weapon | An owned weapon instance ID                                                                             |
+| Secondary hand   | Owned ammunition definition ID, paired with a bow; quantity stays in the existing inventory stack       |
 | Equipment armor  | An owned armor instance ID; that specific copy is assigned to the armor slot                            |
 | Gold             | One hero balance, bounded to 1,000,000; no bank or gold-bag capacity                                    |
 | Dungeon keys     | Run-specific absent/dropped/held/spent state; outside normal inventory                                  |
@@ -43,6 +44,24 @@ Drop defaults to one copy; stacked supplies offer fewer/more and All controls, a
 Weapon durability is already implemented. Eligible physical actions with at least one hit wear the equipped weapon once, including an area action. Misses, magical actions, items, Defend, Rest and exhausted unarmed basic attacks do not wear it. At zero durability the weapon remains owned but stops supplying combat stats until repaired. Blacksmith repair restores the same instance, preserving its ID.
 
 Only active equipment contributes stats. Expanded equipment and capacity bonuses must follow [Stats](stats.md): a higher maximum does not refill a depleted pool, and a lower maximum clamps it. Existing explicit healing, level-up and defeat recovery are separate rules.
+
+### Secondary-hand arrows
+
+Arrows have the `ammunition` item kind. Equip a bow first, then use **Equip arrows ·
+Secondary hand** in Inventory. This saves a validated candidate before publishing
+and supports exact failed-write retry. Unequipping the bow or switching to a non-bow
+clears the secondary hand without deleting arrows. Burning the equipped bow does
+likewise. A broken bow may keep its arrow assignment, but attacks use fists until
+repaired. Equipment changes remain unavailable during encounters.
+
+The equipped stack remains one owned stack; it is neither copied nor added to the
+Items consumable hotbar. Unequip it before dropping, selling, offering or delivering
+arrows. Equipment and Supplies filters both include ammunition. During battle,
+Inventory displays the live remaining arrows and clears the equipped marker after
+the final shot. The entry checkpoint remains unchanged until the result saves.
+Version 12 adds the optional secondary-hand reference and migrates versions 1–11;
+existing arrows remain unequipped and all quantities, equipment IDs, progression,
+depleted resources and pending encounter seeds are preserved.
 
 ## 3. Planned grid and bags
 
@@ -82,7 +101,7 @@ Favorites organize views. A separate future item lock blocks selling, destructio
 
 ## 5. Planned equipment expansion
 
-The existing weapon/armor pair remains the baseline. Introduce additional slots only with item definitions, validation, migration and skill consumers:
+The existing weapon/armor slots plus bow ammunition in the secondary hand form the baseline. Shield and dual-wield assignments remain future extensions. Introduce additional slots only with item definitions, validation, migration and skill consumers:
 
 | Proposed slot     | Rule                                                      |
 | ----------------- | --------------------------------------------------------- |

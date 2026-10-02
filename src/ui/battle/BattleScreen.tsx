@@ -311,18 +311,30 @@ export function BattleView({
                       </Text>
                     </>
                   ) : null}
-                  {entity.weapon ? (
-                    <View className="flex-row items-center gap-2">
-                      <GameImage
-                        kind="item"
-                        id={session.engine.getEntity(entity.id)?.weapon?.itemId ?? ''}
-                        size={32}
-                      />
-                      <Text className="min-w-0 flex-1 text-muted" style={styles.resource}>
-                        {entity.weapon.name} · {entity.weapon.durability}/
-                        {entity.weapon.maxDurability}
-                        {entity.weapon.durability === 0 ? ' · BROKEN' : ''}
-                      </Text>
+                  {entity.weapon || entity.secondaryHand ? (
+                    <View className="flex-row flex-wrap gap-x-6 gap-y-2">
+                      {entity.weapon ? (
+                        <View className="flex-row items-center gap-2" style={styles.hand}>
+                          <GameImage kind="item" id={entity.weapon.itemId} size={32} />
+                          <Text className="min-w-0 shrink text-muted" style={styles.resource}>
+                            {entity.weapon.name} · {entity.weapon.durability}/
+                            {entity.weapon.maxDurability}
+                            {entity.weapon.durability === 0 ? ' · BROKEN' : ''}
+                          </Text>
+                        </View>
+                      ) : null}
+                      {entity.secondaryHand ? (
+                        <View className="flex-row items-center gap-2" style={styles.hand}>
+                          <GameImage kind="item" id={entity.secondaryHand.itemId} size={32} />
+                          <Text
+                            className="min-w-0 shrink text-muted"
+                            style={styles.resource}
+                            accessibilityLabel={`Secondary hand: ${entity.secondaryHand.name}, ${entity.secondaryHand.quantity} remaining`}
+                          >
+                            {entity.secondaryHand.name} · {entity.secondaryHand.quantity} remaining
+                          </Text>
+                        </View>
+                      ) : null}
                     </View>
                   ) : null}
                   {(session.engine.getEntity(entity.id)?.statuses ?? []).map((status) => (
@@ -422,6 +434,7 @@ const styles = StyleSheet.create({
   },
   unit: { flex: 1, minWidth: 112, gap: 10 },
   unitLabel: { fontSize: 12, fontWeight: '600' },
+  hand: { minWidth: 160, maxWidth: '100%', flexShrink: 1 },
   resource: { fontFamily: mono, fontSize: 9, letterSpacing: 1 },
   decision: { gap: 12 },
   headline: { fontSize: 20, fontFamily: Platform.OS === 'android' ? 'serif' : 'Georgia' },

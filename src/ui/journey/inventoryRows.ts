@@ -25,7 +25,7 @@ export function inventoryRows(
       reference: { itemId },
       item: content.item(itemId),
       quantity,
-      equipped: false,
+      equipped: (battle ? battle.ammunitionItemId : hero.equipment.secondaryHand) === itemId,
     })),
     ...Object.entries(hero.armors).map(([armorId, armor]) => ({
       key: `armor:${armorId}`,
@@ -56,9 +56,11 @@ export function visibleInventoryRows(
       const matches =
         filter === 'all' ||
         (filter === 'supplies'
-          ? ['consumable', 'enchantScroll', 'material', 'titleCoupon'].includes(row.item.kind)
+          ? ['consumable', 'enchantScroll', 'material', 'ammunition', 'titleCoupon'].includes(
+              row.item.kind,
+            )
           : filter === 'equipment'
-            ? ['weapon', 'armor'].includes(row.item.kind)
+            ? ['weapon', 'armor', 'ammunition'].includes(row.item.kind)
             : ['skillBook', 'incompleteBook', 'skillPage'].includes(row.item.kind));
       return (
         matches &&

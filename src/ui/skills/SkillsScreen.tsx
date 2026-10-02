@@ -22,6 +22,8 @@ function rankEffects(
   if (!rank) return '';
   if (skill.kind === 'life')
     return `Apply scrolls and burn equipment at the town forge. Permanent Intelligence +${rank.statBonuses?.intelligence ?? 0}. Recipes are shown before each attempt.`;
+  if (skill.id === 'human-ranged-attack' || skill.id === 'elf-ranged-attack')
+    return `Bow Attack · Ranged damage +${rank.rangedMin}–${rank.rangedMax} · Balance +${Math.round(rank.rangedBalance * 100)}% · ${rank.staminaCost} base SP · 1 equipped arrow. Permanent Dexterity +${rank.statBonuses?.dexterity ?? 0}${rank.statBonuses?.strength ? ` · Strength +${rank.statBonuses.strength}` : ''}.`;
   if (skill.kind === 'active')
     return `${rank.physicalMultiplier !== 1 ? `${Math.round(rank.physicalMultiplier * 100)}% physical damage` : `${skill.effect === 'heal' ? 'Healing' : 'Power'} ${rank.minPower}–${rank.maxPower}`} · ${rank.manaCost} MP · ${rank.staminaCost} base SP${skill.requiresWeapon ? ` · usable ${skill.requiresWeapon} weapon` : ''}${rank.bypassDefend ? ' · Bypasses Defend; Defense and Protection still apply' : ''}`;
   return [

@@ -14,6 +14,7 @@ export interface StatSource {
   level: number;
   growthTalent: GrowthTalent;
   weaponItemId?: string;
+  ammunitionItemId?: string;
   armorItemId?: string;
   enchantments?: readonly EnchantContribution[];
   titles?: readonly EnchantContribution[];
@@ -39,6 +40,17 @@ export interface CharacterStats {
 }
 const zero = (): Attributes => ({ strength: 0, intelligence: 0, dexterity: 0, will: 0, luck: 0 });
 const clamp = (n: number, max: number) => Math.max(0, Math.min(max, n));
+export function rangedAttackSkillId(learned: LearnedSkills) {
+  return learned['elf-ranged-attack'] ? 'elf-ranged-attack' : 'human-ranged-attack';
+}
+export function unarmedStatSource(source: StatSource): StatSource {
+  return {
+    ...source,
+    weaponItemId: undefined,
+    ammunitionItemId: undefined,
+    enchantments: source.enchantments?.filter((e) => !e.sourceId.startsWith('weapon-')),
+  };
+}
 /** Exact protection curve; keep unrounded values for damage and critical reduction. */
 export function protectionReduction(value: number) {
   if (!Number.isFinite(value) || value < 0) throw new RangeError('Invalid protection');
@@ -53,6 +65,11 @@ export function calculateCharacterStats(
   source: StatSource,
   content: ContentRegistry,
 ): CharacterStats {
+  const equippedWeapon = source.weaponItemId ? content.item(source.weaponItemId) : undefined;
+  const ranged = equippedWeapon?.weaponTags.includes('bow') && !!source.ammunitionItemId;
+  if (source.ammunitionItemId && content.item(source.ammunitionItemId).kind !== 'ammunition')
+    throw new Error('Invalid ammunition stat source');
+  if (equippedWeapon?.weaponTags.includes('bow') && !ranged) source = unarmedStatSource(source);
   if (
     !Number.isInteger(source.level) ||
     source.level < 1 ||
@@ -155,25 +172,45 @@ export function calculateCharacterStats(
     swordBalance = 0;
   for (const [id, record] of Object.entries(learned)) {
     const rank = gameRank(content.skill(id), record.rank);
-    meleeMin += rank.meleeMin;
-    meleeMax += rank.meleeMax;
+    if (!ranged) {
+      meleeMin += rank.meleeMin;
+      meleeMax += rank.meleeMax;
+    }
     if (weapon?.weaponTags.includes('sword')) {
       meleeMin += rank.swordMin;
       meleeMax += rank.swordMax;
       swordBalance += rank.swordBalance;
     }
   }
+  const rangedId = rangedAttackSkillId(learned);
+  const rangedRank = ranged
+    ? gameRank(content.skill(rangedId), learned[rangedId]?.rank ?? 'F')
+    : undefined;
   const minDamage =
-    Math.floor(str / 3) + (w?.minDamage ?? 0) + equipmentDamage + meleeMin + physicalAttack;
+    Math.floor(ranged ? dex / 3.5 : str / 3) +
+    (w?.minDamage ?? 0) +
+    equipmentDamage +
+    meleeMin +
+    physicalAttack +
+    (rangedRank?.rangedMin ?? 0);
   const maxDamage =
-    Math.floor(str / 2.5) + 8 + (w?.maxDamage ?? 0) + equipmentDamage + meleeMax + physicalAttack;
+    Math.floor((ranged ? dex : str) / 2.5) +
+    8 +
+    (w?.maxDamage ?? 0) +
+    equipmentDamage +
+    meleeMax +
+    physicalAttack +
+    (rangedRank?.rangedMax ?? 0);
   const balance = clamp(8.728944 * Math.log2((dex + 9.814582) / 20.34565), 50) / 100;
   const rating = clamp((effective.will - 10) / 1000 + (effective.luck - 10) / 500, 9.999);
   const combatant: CombatStats = {
     attack: maxDamage,
     minDamage,
     maxDamage,
-    balance: Math.min(0.8, balance + (w?.balance ?? 0.3) + swordBalance),
+    balance: Math.min(
+      0.8,
+      balance + (w?.balance ?? 0.3) + swordBalance + (rangedRank?.rangedBalance ?? 0),
+    ),
     magicBalance: Math.min(1, 0.3 + int / 400),
     defense:
       Math.floor(str / 10) +

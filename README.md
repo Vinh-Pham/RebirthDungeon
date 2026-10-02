@@ -115,8 +115,9 @@ movement and interaction buttons remain available without canvas touch input.
 - **Blacksmith:** buy iron blades, wooden weapons, gathering tools, daggers, short swords,
   bows, round shields, and arrow bundles; repair individual weapon copies. Arrows cost
   15 gold for 20 or 75 gold for 100 and share one inventory stack. See the
-  [stock and prices](docs/gameplay/towns.md). Gathering and ammunition consumption
-  remain future work; the shield uses the current armor slot.
+  [stock and prices](docs/gameplay/towns.md). Gathering remains future work; the shield uses the current armor slot. Equip arrows
+  in the secondary hand with a bow; each shot consumes one, including misses.
+  Empty bows attack with fists.
 - **Healer:** spend 10 gold to restore HP, mana, stamina and fullness, and clear wounds. Full resources need no
   treatment. There is no free treatment or ember-shrine recovery.
 - **General shop:** buy healing potions (10 gold), mana potions (12 gold, restore
@@ -327,7 +328,7 @@ per-frame work. The Phase 3 controller below adds state-machine orchestration.
 
 ## Battle flow, rendering, animations and content (Phases 3–6)
 
-A battle encounter opens from the Journey exploration screen. One horizontally scrollable hotbar uses minimal Combat, Magic and Items tabs. Combat always includes Attack and Defend beside learned combat skills. Attack's icon and details use Combat Mastery for Warrior, Human Ranged Attack for Archery, or Magic Mastery for Mage; Defend uses Defense. These identities preserve the existing basic attack and guard rules and do not grant learned skills or reference stat bonuses. Add battle-usable consumables from Inventory to the Items hotbar, or remove them from item details or the assigned list. Assignments are saved per character and can change during encounters without resetting the battle. Item popovers show quantity and capped recovery; Use Item consumes one copy and one turn on self. Depleted icons remain assigned and unavailable until restocked. Tap an icon to inspect its HeroUI Native popover with costs, target previews and a Use button. Confirm an enemy action with Use. When only one living enemy remains, Attack and enemy-targeted skills select and resolve against it immediately; otherwise tap a monster in the game canvas. Canvas targeting stays paused until an action is confirmed. Self-only actions resolve from Use. Closing details preserves the previous action; Cancel clears it and returns to action selection.
+A battle encounter opens from the Journey exploration screen. One horizontally scrollable hotbar uses minimal Combat, Magic and Items tabs. Combat always includes Attack and Defend beside learned combat skills. Attack's icon and details use Combat Mastery for Warrior, Human Ranged Attack for Archery, or Magic Mastery for Mage; Defend uses Defense. A loaded bow uses Human Ranged Attack, or owned Elf Ranged Attack, regardless of talent; its saved F/E rank supplies ranged damage and balance. Unlearned users default to Human F without gaining ownership. Empty or broken bows use fist damage and Combat Mastery details. Equip arrows in Inventory’s secondary hand; each shot consumes one, including misses. Defend and other loadouts retain their existing rules. Add battle-usable consumables from Inventory to the Items hotbar, or remove them from item details or the assigned list. Assignments are saved per character and can change during encounters without resetting the battle. Item popovers show quantity and capped recovery; Use Item consumes one copy and one turn on self. Depleted icons remain assigned and unavailable until restocked. Tap an icon to inspect its HeroUI Native popover with costs, target previews and a Use button. Confirm an enemy action with Use. When only one living enemy remains, Attack and enemy-targeted skills select and resolve against it immediately; otherwise tap a monster in the game canvas. Canvas targeting stays paused until an action is confirmed. Self-only actions resolve from Use. Closing details preserves the previous action; Cancel clears it and returns to action selection.
 Defend uses a turn, recovers stamina at the rest rate, and halves incoming attack and spell damage (rounded down, minimum one) until the defender's next turn starts. It does not reduce status damage, spend mana, roll RNG, or wear weapons. Rest remains available to existing engine callers.
 Enemy turns resolve immediately. The presentation queue plays each resolved action
 in order, without delaying HP, mana, turn order or the battle outcome. Restarting
@@ -454,7 +455,7 @@ entities remain independent mutable copies. Durable candidates share their initi
 immutable checkpoint and retain the same result for failed-save retries.
 
 The host/autosaver retain frozen checkpoints; `toSave()` remains a detached,
-editable export. Save version 11 and its migrations are unchanged. See
+editable export. Save version 12 adds bow ammunition; immutable snapshot and save ownership are unchanged. See
 [immutable state ownership and performance](docs/immutable-state.md) for the
 boundaries, regressions and local benchmark tradeoffs. To profile headless state
 updates with Node 24+, run `node --expose-gc scripts/profile-campaign.mjs`.
@@ -462,7 +463,7 @@ updates with Node 24+, run `node --expose-gc scripts/profile-campaign.mjs`.
 ## Persistence (Phase 9)
 
 `SaveRepository` validates both outgoing and loaded saves before replacing a
-session. Version 11 saves migrate versions 1–10, preserving progression, resources
+session. Version 12 saves migrate versions 1–11, preserving progression, resources
 and RNG while supplying historical defaults and upgrading equipment ownership; malformed,
 unknown-reference and future-version saves fail with a visible error. Failed loads
 preserve the current session and other slots. Character values, map positions,
