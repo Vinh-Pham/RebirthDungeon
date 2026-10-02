@@ -1,3 +1,4 @@
+import GameImage from '../shared/GameImage';
 import EnchantServicePanel from './EnchantServicePanel';
 import { DungeonButton as Button, DungeonCard } from '../shared/DungeonUI';
 import { useRef, useState } from 'react';
@@ -9,12 +10,12 @@ import InventoryPager, { INVENTORY_PAGE_SIZE, inventoryPage } from './InventoryP
 import TownQuestOffers from '../quests/TownQuestOffers';
 import { questItemNeeds } from '../../engine/rpg/Quests';
 
-function TradeRow({ name, detail, price, maximum, verb, disabled, choose }: {
-  name: string; detail: string; price: number; maximum: number; verb: string; disabled: boolean; choose(quantity: number): void;
+function TradeRow({ itemId, name, detail, price, maximum, verb, disabled, choose }: {
+  itemId: string; name: string; detail: string; price: number; maximum: number; verb: string; disabled: boolean; choose(quantity: number): void;
 }) {
   const [quantity, setQuantity] = useState(1);
   const count = Math.max(1, Math.min(quantity, maximum));
-  return <DungeonCard><Text className="text-foreground" style={styles.name}>{name}</Text><Text className="text-muted" style={styles.body}>{detail}</Text>
+  return <DungeonCard><View className="flex-row items-center gap-3"><GameImage kind="item" id={itemId} /><Text className="min-w-0 flex-1 text-foreground" style={styles.name}>{name}</Text></View><Text className="text-muted" style={styles.body}>{detail}</Text>
     <Text className="text-muted" style={styles.body}>{price} gold each · Total {price * count} gold</Text>
     <View style={styles.actions}>
       <Button label="−" accessibilityLabel={`${verb} fewer ${name}`} disabled={disabled || count <= 1} onPress={() => setQuantity(count - 1)} />
@@ -77,7 +78,7 @@ export default function TownServicePanel({ session, objectId, busy, dispatch, pr
         {object.lessons.map((offer) => {
           const skill = content.skill(offer.skillId), record = hero.learnedSkills[skill.id];
           return <DungeonCard key={skill.id}>
-            <Text className="text-foreground" style={styles.name}>{skill.name} · {record ? `Rank ${record.rank}` : 'Rank F lesson'}</Text>
+            <View className="flex-row items-center gap-3"><GameImage kind="skill" id={skill.id} /><Text className="min-w-0 flex-1 text-foreground" style={styles.name}>{skill.name} · {record ? `Rank ${record.rank}` : 'Rank F lesson'}</Text></View>
             <Text className="text-muted" style={styles.body}>{skill.acquisitionHint} · {offer.fee} gold</Text>
             <Button label={record ? 'Already learned' : `Learn ${skill.name} · ${offer.fee} gold`} disabled={busy || !!record || hero.gold < offer.fee}
               onPress={() => progress({ type: 'LEARN_SKILL', objectId, skillId: skill.id })} />
@@ -87,7 +88,7 @@ export default function TownServicePanel({ session, objectId, busy, dispatch, pr
       {shop ? <><Text className="text-accent" style={styles.section}>Buy supplies</Text>{shop.items.map((itemId) => {
         const item = content.item(itemId); const capacity = 999 - itemCount(hero, itemId);
         const maximum = Math.min(capacity, item.price > 0 ? Math.floor(hero.gold / item.price) : 999);
-        return <TradeRow key={itemId} name={item.name} detail={`${item.description} · ${itemCount(hero, itemId)} owned`} price={item.price} maximum={maximum} verb="Buy" disabled={busy}
+        return <TradeRow itemId={itemId} key={itemId} name={item.name} detail={`${item.description} · ${itemCount(hero, itemId)} owned`} price={item.price} maximum={maximum} verb="Buy" disabled={busy}
           choose={(quantity) => choose({ command: { type: 'BUY_ITEM', objectId, itemId, quantity }, label: `Buy ${item.name} ×${quantity}?`, goldChange: -item.price * quantity,
             detail: item.kind === 'weapon' ? 'Each weapon has its own durability and arrives fully repaired.' : item.description })} />;
       })}</> : null}
@@ -96,7 +97,7 @@ export default function TownServicePanel({ session, objectId, busy, dispatch, pr
         {weapons.slice(repairStart, repairStart + INVENTORY_PAGE_SIZE).map(([weaponId, weapon], offset) => {
           const index = repairStart + offset;
           const item = content.item(weapon.itemId); const cost = repairPrice(weapon, content); const repaired = weapon.durability === item.maxDurability;
-          return <DungeonCard key={weaponId} ><Text className="text-foreground" style={styles.name}>{item.name} · Weapon {index + 1}{hero.equipment.weapon === weaponId ? ' · equipped' : ''}</Text>
+          return <DungeonCard key={weaponId} ><GameImage kind="item" id={item.id} /><Text className="text-foreground" style={styles.name}>{item.name} · Weapon {index + 1}{hero.equipment.weapon === weaponId ? ' · equipped' : ''}</Text>
             <Text className="text-muted" style={styles.body}>{weapon.durability}/{item.maxDurability} durability{weapon.durability === 0 ? ' · broken, no stat bonus' : ''}</Text>
             <Button label={repaired ? 'Fully repaired' : `Repair for ${cost} gold`} disabled={busy || repaired || hero.gold < cost}
               onPress={() => choose({ command: { type: 'REPAIR_WEAPON', objectId, weaponId }, label: `Repair ${item.name}?`, goldChange: -cost, detail: `Restore durability to ${item.maxDurability}/${item.maxDurability}.` })} />
@@ -112,10 +113,10 @@ export default function TownServicePanel({ session, objectId, busy, dispatch, pr
         <Text className="text-muted" style={styles.body}>{altar ? 'Offer one unequipped item. The goddess consumes it and opens the moss depths. All offerings lead to the same dungeon.' : 'The general shop pays half the item’s purchase price. Equipped and locked copies stay in your pack.'}</Text>
         {inventory.length === 0 ? <Text className="text-muted" style={styles.body}>No unequipped items available. Unequip equipment or find loot in the moss halls.</Text> : null}
         {inventory.slice(tradeStart, tradeStart + INVENTORY_PAGE_SIZE).map((entry) => altar ? <DungeonCard key={entry.key} >
-          <Text className="text-foreground" style={styles.name}>{entry.item.name}</Text><Text className="text-muted" style={styles.body}>{entry.detail}</Text>
+          <GameImage kind="item" id={entry.item.id} /><Text className="text-foreground" style={styles.name}>{entry.item.name}</Text><Text className="text-muted" style={styles.body}>{entry.detail}</Text>
           <Button label={`Offer ${entry.item.name}`} disabled={busy} onPress={() => choose({ command: { type: 'OFFER_ITEM', objectId, item: entry.reference }, label: `Offer ${entry.item.name}?`, goldChange: 0,
             detail: `${entry.detail}. One copy will be permanently consumed to begin a new dungeon run. ${questWarning(entry.item.id)}` })} />
-        </DungeonCard> : <TradeRow key={entry.key} name={entry.item.name} detail={entry.detail} price={Math.floor(entry.item.price / 2)}
+        </DungeonCard> : <TradeRow itemId={entry.item.id} key={entry.key} name={entry.item.name} detail={entry.detail} price={Math.floor(entry.item.price / 2)}
           maximum={Math.min(removableCount(hero, entry.reference), Math.floor(entry.item.price / 2) > 0 ? Math.floor((1000000 - hero.gold) / Math.floor(entry.item.price / 2)) : 999)} verb="Sell" disabled={busy}
           choose={(quantity) => choose({ command: { type: 'SELL_ITEM', objectId, item: entry.reference, quantity }, label: `Sell ${entry.item.name} ×${quantity}?`, goldChange: Math.floor(entry.item.price / 2) * quantity, detail: `${entry.detail}. ${questWarning(entry.item.id)}` })} />)}
         <InventoryPager label={altar ? 'Offerings' : 'Sale items'} page={inventoryPage(tradePage, inventory.length)} count={inventory.length} disabled={busy} onPage={setTradePage} />

@@ -3,6 +3,13 @@
 An Expo SDK 57 RPG with a headless deterministic TypeScript engine, Skia rendering,
 turn-based encounters, exploration, equipment, progression, saves and audio.
 
+Skills and items show local artwork in the journal, pack, codex, town services
+and battle menus. `src/ui/shared/gameImages.ts` maps content IDs to static image
+requires from `assets/game/skills`, `weapons` and `consumables`; add a registry
+entry when adding artwork. Existing IDs with different filenames use explicit
+aliases. Missing artwork or a loading error uses `assets/game/no-image.jpg`.
+Images are decorative and do not determine recovery amounts or equipment stats.
+
 ```bash
 npm install
 npx expo start

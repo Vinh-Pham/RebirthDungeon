@@ -1,3 +1,4 @@
+import GameImage from '../shared/GameImage';
 import EquipmentEnchants from './EquipmentEnchants';
 import { router } from 'expo-router';
 import { Text, View } from 'react-native';
@@ -32,7 +33,7 @@ export default function InventoryDetails({ row, hero, host, session, review, dis
   return <View className="gap-3">
     <DungeonButton label="Back to pack" onPress={back} />
     <DungeonCard>
-      <Text className="text-accent" accessibilityRole="header" style={menu.heading}>{inventoryRowLabel(row)}</Text>
+      <View className="flex-row items-center gap-3"><GameImage kind="item" id={item.id} size={80} /><Text className="min-w-0 flex-1 text-accent" accessibilityRole="header" style={menu.heading}>{inventoryRowLabel(row)}</Text></View>
       <Text className="text-muted" style={menu.body}>{item.description}</Text>
       <Text className="text-muted" style={menu.body}>Character pack · {equipment ? 'Individually owned equipment' : `${row.quantity} / ${item.kind === 'incompleteBook' ? 1 : 999} owned${row.equipped ? ' · One copy assigned to armor' : ''}`}</Text>
       {'weaponId' in row.reference ? <>

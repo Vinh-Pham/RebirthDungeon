@@ -1,3 +1,4 @@
+import GameImage from '../shared/GameImage';
 import { trainingPoints } from '../../engine/rpg/Skills';
 import { useRef, useState } from 'react';
 import { Text, View } from 'react-native';
@@ -51,6 +52,7 @@ export default function EnchantServicePanel({ session, objectId, busy, progress,
     <DungeonNotice message={error} />
     {quote ? <DungeonCard>
       <Text className="text-accent" accessibilityRole="header" style={menu.heading}>{quote.mode === 'burn' ? `Destroy ${quote.item.name}?` : `Apply ${quote.enchant.name}?`}</Text>
+      <GameImage kind="item" id={quote.item.id} size={64} />
       <Text className="text-foreground" style={menu.body}>{quote.item.name} · Copy {Object.values(quote.target)[0].split('-')[1]}{'weaponId' in quote.target ? ` · ${hero.weapons[quote.target.weaponId]?.durability}/${quote.item.maxDurability} durability` : ''}</Text>
       <EquipmentEnchants equipment={quote.equipment} facts={hero} content={content} />
       {quote.mode === 'apply' ? <>
@@ -71,6 +73,7 @@ export default function EnchantServicePanel({ session, objectId, busy, progress,
       <Button label="Cancel without spending" disabled={busy} onPress={cancel} />
     </DungeonCard> : equipment && target ? <>
       <DungeonCard>
+        <GameImage kind="item" id={item!.id} size={64} />
         <Text className="text-foreground" style={menu.heading}>{item!.name} · Copy {Object.values(target)[0].split('-')[1]}</Text>
         <EquipmentEnchants equipment={equipment} facts={hero} content={content} />
         <Text className="text-muted" style={menu.body}>Bonuses apply while equipped. Values stay on this copy. {equipment.locked ? 'This copy is locked; unlock it in inventory.' : 'This copy is unlocked.'}</Text>
@@ -81,11 +84,11 @@ export default function EnchantServicePanel({ session, objectId, busy, progress,
       {scrolls.map((scroll) => {
         const definition = content.data.enchants.find((e) => e.id === scroll.enchantId)!;
         const compatible = compatibleEnchant(definition, item!);
-        return <Button key={scroll.id} label={`${scroll.name} ×${hero.inventory[scroll.id]}`} detail={`Rank ${definition.rank} · ${definition.slot}${compatible ? '' : ' · Incompatible with this copy'}`} selected={scrollId === scroll.id} disabled={busy || !compatible || equipment.locked} onPress={() => setScrollId(scroll.id)} />;
+        return <Button image={{ kind: 'item', id: scroll.id }} key={scroll.id} label={`${scroll.name} ×${hero.inventory[scroll.id]}`} detail={`Rank ${definition.rank} · ${definition.slot}${compatible ? '' : ' · Incompatible with this copy'}`} selected={scrollId === scroll.id} disabled={busy || !compatible || equipment.locked} onPress={() => setScrollId(scroll.id)} />;
       })}
       <Text className="text-accent" style={menu.heading}>Choose powder</Text>
       {!powders.length ? <Text className="text-muted" style={menu.body}>Buy enchant powder from this forge.</Text> : null}
-      {powders.map((powder) => <Button key={powder.id} label={`${powder.name} ×${hero.inventory[powder.id]}`} selected={powderId === powder.id} disabled={busy || equipment.locked} onPress={() => setPowderId(powder.id)} />)}
+      {powders.map((powder) => <Button image={{ kind: 'item', id: powder.id }} key={powder.id} label={`${powder.name} ×${hero.inventory[powder.id]}`} selected={powderId === powder.id} disabled={busy || equipment.locked} onPress={() => setPowderId(powder.id)} />)}
       <Button label="Preview enchant attempt" disabled={busy || !scrollId || !powderId || !hero.learnedSkills.enchant || equipment.locked} onPress={() => makeQuote('apply')} />
       <DungeonCard>
         <Text className="text-accent" style={menu.heading}>Burn for scroll recovery</Text>
@@ -95,7 +98,7 @@ export default function EnchantServicePanel({ session, objectId, busy, progress,
     </> : <>
       <Text className="text-muted" style={menu.body}>Choose an individual weapon or armor copy. Buy scrolls and materials from this forge. Restore MP with a mana potion or paid healer treatment.</Text>
       {!rows.length ? <Text className="text-muted" style={menu.body}>Your pack has no equipment. Collect the refuge supply chest or buy equipment in town.</Text> : null}
-      {rows.slice(inventoryPage(page, rows.length) * INVENTORY_PAGE_SIZE, (inventoryPage(page, rows.length) + 1) * INVENTORY_PAGE_SIZE).map((row) => <Button key={row.key} label={inventoryRowLabel(row)} detail={ownedEquipment(hero, row.reference as EquipmentReference).locked ? 'Locked · unlock in inventory' : 'Unlocked'} disabled={busy}
+      {rows.slice(inventoryPage(page, rows.length) * INVENTORY_PAGE_SIZE, (inventoryPage(page, rows.length) + 1) * INVENTORY_PAGE_SIZE).map((row) => <Button image={{ kind: 'item', id: row.item.id }} key={row.key} label={inventoryRowLabel(row)} detail={ownedEquipment(hero, row.reference as EquipmentReference).locked ? 'Locked · unlock in inventory' : 'Unlocked'} disabled={busy}
         onPress={() => { setTarget(row.reference as EquipmentReference); setError(undefined); }} />)}
       <InventoryPager label="Enchant equipment" page={inventoryPage(page, rows.length)} count={rows.length} disabled={busy} onPage={setPage} />
     </>}

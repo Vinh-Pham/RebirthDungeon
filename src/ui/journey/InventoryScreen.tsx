@@ -71,9 +71,9 @@ export function InventoryContent({ host, session }: { host: JourneyHost; session
       <DungeonCard>
         <Text className="text-accent" accessibilityRole="header" style={menu.heading}>Equipment</Text>
         <Text className="text-muted" style={menu.body}>{hero.gold.toLocaleString()} gold · Character pack</Text>
-        {equippedWeapon ? <DungeonButton label={inventoryRowLabel(equippedWeapon)} detail={`${equippedWeapon.durability} / ${equippedWeapon.item.maxDurability} durability${equippedWeapon.durability === 0 ? ' · Broken; repair at the blacksmith' : ''}`}
+        {equippedWeapon ? <DungeonButton image={{ kind: 'item', id: equippedWeapon.item.id }} label={inventoryRowLabel(equippedWeapon)} detail={`${equippedWeapon.durability} / ${equippedWeapon.item.maxDurability} durability${equippedWeapon.durability === 0 ? ' · Broken; repair at the blacksmith' : ''}`}
           onPress={() => { setSelectedKey(equippedWeapon.key); setError(undefined); }} /> : <Text className="text-muted" style={menu.body}>Weapon: Bare hands</Text>}
-        {equippedArmor ? <DungeonButton label={equippedArmor.item.name} detail="Armor · One equipped copy" onPress={() => { setSelectedKey(equippedArmor.key); setError(undefined); }} /> : <Text className="text-muted" style={menu.body}>Armor: None</Text>}
+        {equippedArmor ? <DungeonButton image={{ kind: 'item', id: equippedArmor.item.id }} label={equippedArmor.item.name} detail="Armor · One equipped copy" onPress={() => { setSelectedKey(equippedArmor.key); setError(undefined); }} /> : <Text className="text-muted" style={menu.body}>Armor: None</Text>}
         {view.state.dungeon ? <Text className="text-muted" style={menu.body}>Dungeon keys · Boss: {view.state.dungeon.bossKey.status} · Treasure: {view.state.dungeon.treasureKey.status}</Text> : null}
       </DungeonCard>
       <DungeonCard>
@@ -92,7 +92,7 @@ export function InventoryContent({ host, session }: { host: JourneyHost; session
           accessibilityLabel={`Show ${label.toLowerCase()} in inventory`} onPress={() => { setFilter(value); setPage(0); setSelectedKey(undefined); }} />)}</View>
         <Text className="text-muted" accessibilityLiveRegion="polite" style={menu.body}>{visible.length} {visible.length === 1 ? 'entry' : 'entries'} · Sorted by name</Text>
         {!visible.length ? <Text className="text-muted" style={menu.body}>{!rows.length ? 'Your pack is empty.' : 'No items match this search and filter.'}</Text> : null}
-        {visible.slice(start, start + INVENTORY_PAGE_SIZE).map((row) => <DungeonButton key={row.key} label={inventoryRowLabel(row)}
+        {visible.slice(start, start + INVENTORY_PAGE_SIZE).map((row) => <DungeonButton key={row.key} image={{ kind: 'item', id: row.item.id }} label={inventoryRowLabel(row)}
           detail={`Character pack · ${row.item.kind === 'weapon' ? `${row.durability} / ${row.item.maxDurability} durability${row.durability === 0 ? ' · Broken' : ''}` : row.item.kind === 'consumable' ? 'Supply' : row.item.kind === 'armor' ? 'Armor' : row.item.kind === 'titleCoupon' ? 'Title coupon' : ['material', 'enchantScroll'].includes(row.item.kind) ? 'Enchant supplies' : 'Skill collection'}`}
           onPress={() => { setSelectedKey(row.key); setError(undefined); }} />)}
         <InventoryPager label="Pack entries" page={currentPage} count={visible.length} onPage={setPage} />

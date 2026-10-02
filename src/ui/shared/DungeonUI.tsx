@@ -6,6 +6,8 @@ import { Card } from 'heroui-native/card';
 import { useThemeColor } from 'heroui-native/hooks';
 import { Spinner } from 'heroui-native/spinner';
 import { cn } from 'heroui-native/utils';
+import GameImage from './GameImage';
+import type { GameImageReference } from './gameImages';
 
 type DungeonButtonProps = Omit<ButtonRootProps, 'children' | 'isDisabled' | 'variant' | 'feedbackVariant' | 'animation'> & {
   ref?: Ref<View>;
@@ -17,12 +19,13 @@ type DungeonButtonProps = Omit<ButtonRootProps, 'children' | 'isDisabled' | 'var
   primary?: boolean;
   secondary?: boolean;
   group?: boolean;
+  image?: GameImageReference;
 };
 
 /** Keep game actions and their state separate from the library's presentation API. */
 export function DungeonButton({
   label, detail, disabled = false, busy = false, selected,
-  primary = false, secondary = false, group = false, className, accessibilityState, ...props
+  primary = false, secondary = false, group = false, image, className, accessibilityState, ...props
 }: DungeonButtonProps) {
   const [accent, accentForeground] = useThemeColor(['accent', 'accent-foreground']);
   const filled = primary && !secondary;
@@ -37,9 +40,10 @@ export function DungeonButton({
     className={cn('h-auto min-h-12 rounded-lg px-4 py-3',
       !filled && 'border border-border bg-surface-secondary',
       selected && !filled && 'border-accent bg-surface-tertiary',
-      group && 'min-h-[68px] grow basis-[47%]', className)}>
+      group && 'min-h-[68px] grow basis-[47%]', image && 'gap-3', className)}>
     {busy ? <Spinner size="sm" color={filled ? accentForeground : accent} /> : null}
-    <View className="shrink gap-1">
+    {image ? <GameImage {...image} size={40} /> : null}
+    <View className={cn('shrink gap-1', image && 'min-w-0 flex-1')}>
       <Button.Label className={cn('shrink text-center font-semibold', !filled && 'text-accent')}>{label}</Button.Label>
       {detail ? <Text className="text-center text-xs text-muted">{detail}</Text> : null}
     </View>

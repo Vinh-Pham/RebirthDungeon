@@ -12,6 +12,7 @@ import type { GameCommand } from '../../engine/commands';
 import { skillForEntity, skillEquipmentReason } from '../../engine/rpg/Skills';
 import { staminaCost } from '../../engine/rpg/Resources';
 import GameCanvas from '../../renderer/GameCanvas';
+import GameImage from '../shared/GameImage';
 
 const mono = Platform.OS === 'ios' ? 'Menlo' : 'monospace';
 
@@ -85,7 +86,10 @@ export function BattleView({ session, restart, finishedLabel = 'Descend again', 
               <ResourceBar label="Stamina" value={entity.stamina ?? 0} max={entity.maxStamina} name={entity.name} />
               <Text className="text-muted" style={styles.resource}>{entity.wounds ?? 0} WOUNDS · {entity.fullness?.toFixed(1)}% FULLNESS</Text>
             </> : null}
-            {entity.weapon ? <Text className="text-muted" style={styles.resource}>{entity.weapon.name} · {entity.weapon.durability}/{entity.weapon.maxDurability}{entity.weapon.durability === 0 ? ' · BROKEN' : ''}</Text> : null}
+            {entity.weapon ? <View className="flex-row items-center gap-2">
+              <GameImage kind="item" id={session.engine.getEntity(entity.id)?.weapon?.itemId ?? ''} size={32} />
+              <Text className="min-w-0 flex-1 text-muted" style={styles.resource}>{entity.weapon.name} · {entity.weapon.durability}/{entity.weapon.maxDurability}{entity.weapon.durability === 0 ? ' · BROKEN' : ''}</Text>
+            </View> : null}
             {(session.engine.getEntity(entity.id)?.statuses ?? []).map((status) => <Text className="text-muted" key={status.id} style={styles.resource}>{session.content.status(status.id).name} · {status.remainingTurns} turns</Text>)}
           </View>)}
         </View>
@@ -142,11 +146,11 @@ function BattleActions({ session, view, canChoose, dispatch }: {
         const equipmentReason = source ? skillEquipmentReason(source, skill, session.content) : undefined;
         const cooldown = source?.cooldowns?.[skill.id] ?? 0;
         const unavailable = !!equipmentReason || cooldown > 0 || !source?.mana || source.mana.current < skill.manaCost || !!source.stamina && source.stamina.current < cost;
-        return <View key={skill.id} style={styles.skillColumn}><Button className="min-h-[68px] flex-1" label={`${skill.name} · ${skill.rank ?? 'F'}`} detail={`${skill.manaCost} MP${skill.effect === 'heal' && skill.target === 'ally' && source ? ` · 0 SP ally / ${staminaCost(source, skill.staminaCost)} SP self` : ` · ${cost} SP`} · ${skill.target === 'allEnemies' ? 'All enemies' : skill.target}${equipmentReason ? ` · ${equipmentReason}` : cooldown ? ` · Cooldown ${cooldown}` : unavailable ? ' · Insufficient resources' : ''}`}
+        return <View key={skill.id} style={styles.skillColumn}><Button className="min-h-[68px] flex-1" image={{ kind: 'skill', id: skill.id }} label={`${skill.name} · ${skill.rank ?? 'F'}`} detail={`${skill.manaCost} MP${skill.effect === 'heal' && skill.target === 'ally' && source ? ` · 0 SP ally / ${staminaCost(source, skill.staminaCost)} SP self` : ` · ${cost} SP`} · ${skill.target === 'allEnemies' ? 'All enemies' : skill.target}${equipmentReason ? ` · ${equipmentReason}` : cooldown ? ` · Cooldown ${cooldown}` : unavailable ? ' · Insufficient resources' : ''}`}
           disabled={!canChoose || unavailable} selected={view.selectedAction?.skillId === skill.id}
           onPress={() => selectAction({ type: 'SELECT_ACTION', action: 'skill', skillId: skill.id })} /></View>;
       })}</View> : <Text className="text-muted" style={styles.body}>No battle skills learned.</Text> : items.length ? items.map(({ item, quantity }) =>
-        <Button key={item.id} label={`${item.name} ×${quantity}`} disabled={!canChoose} selected={view.selectedAction?.itemId === item.id}
+        <Button key={item.id} image={{ kind: 'item', id: item.id }} label={`${item.name} ×${quantity}`} disabled={!canChoose} selected={view.selectedAction?.itemId === item.id}
           onPress={() => selectAction({ type: 'SELECT_ACTION', action: 'item', itemId: item.id })} />)
         : <Text className="text-muted" style={styles.body}>No usable items in your inventory.</Text>}
       {view.phase !== 'selectingTarget' ? <Button label="Back" disabled={!canChoose} onPress={() => setMenu(undefined)} /> : null}

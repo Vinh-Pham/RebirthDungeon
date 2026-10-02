@@ -1,3 +1,4 @@
+import GameImage from '../shared/GameImage';
 import { starterProgression } from '../../engine/rpg/Skills';
 import { DungeonCard } from '../shared/DungeonUI';
 import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -28,14 +29,14 @@ export default function ContentScreen() {
         </DungeonCard>)}
         <Text className="text-accent" style={styles.section}>Skills</Text>
         {content.skills.map((entry) => <DungeonCard key={entry.id} >
-          <Text className="text-foreground" style={styles.name}>{entry.name}</Text>
+          <View className="flex-row items-center gap-3"><GameImage kind="skill" id={entry.id} /><Text className="min-w-0 flex-1 text-foreground" style={styles.name}>{entry.name}</Text></View>
           <Text className="text-muted" style={styles.detail}>{entry.description ?? `${entry.manaCost} mana · ${targetNames[entry.target]} · ${entry.power} ${entry.effect === 'heal' ? 'healing' : 'power'}`}</Text>
           {entry.minPower !== undefined ? <Text className="text-muted" style={styles.detail}>{entry.minPower}–{entry.maxPower} base {entry.effect === 'heal' ? 'healing' : 'damage'} · {entry.manaCost} MP{entry.staminaCost ? ` · ${entry.staminaCost} SP when self-targeted` : ''}</Text> : null}
           {entry.reference && <Text className="text-muted" style={styles.detail}>Rank {entry.rank} · {entry.category} · {entry.kind}{entry.battleUsable === false ? ' · Unavailable in battle' : ''}</Text>}
         </DungeonCard>)}
         <Text className="text-accent" style={styles.section}>Relics & remedies</Text>
         {content.items.map((entry) => <DungeonCard key={entry.id} >
-          <Text className="text-foreground" style={styles.name}>{entry.name}</Text><Text className="text-muted" style={styles.detail}>{entry.description}</Text>
+          <View className="flex-row items-center gap-3"><GameImage kind="item" id={entry.id} /><Text className="min-w-0 flex-1 text-foreground" style={styles.name}>{entry.name}</Text></View><Text className="text-muted" style={styles.detail}>{entry.description}</Text>
         </DungeonCard>)}
         <Text className="text-accent" style={styles.section}>Afflictions</Text>
         {content.statusEffects.map((entry) => <DungeonCard key={entry.id} >

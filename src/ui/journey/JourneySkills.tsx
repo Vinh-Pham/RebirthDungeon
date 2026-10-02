@@ -5,6 +5,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { gameRank, rankUpReason, trainingPoints } from '../../engine/rpg/Skills';
 import type { JourneySession } from '../../game/JourneySession';
 import { useCharacterGame } from '../menu/CharacterGameContext';
+import GameImage from '../shared/GameImage';
 import { DungeonButton, DungeonCard } from '../shared/DungeonUI';
 
 export default function JourneySkills({ session }: { session: JourneySession }) {
@@ -33,6 +34,7 @@ export default function JourneySkills({ session }: { session: JourneySession }) 
 
       return <DungeonCard key={skill.id}>
         <View style={styles.row}>
+          <GameImage kind="skill" id={skill.id} />
           <Text className="text-foreground" accessibilityRole="header" style={styles.skillName}>{skill.name}</Text>
           <Text className="rounded-md bg-surface-tertiary px-3 py-1 text-accent" style={styles.rank}>Rank {record.rank}</Text>
         </View>

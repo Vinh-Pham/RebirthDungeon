@@ -10,6 +10,7 @@ import { distance } from '../../engine/world/TileMap';
 import { useCharacterGame } from '../menu/CharacterGameContext';
 import { MenuPage, menu } from '../menu/MenuUI';
 import { DungeonButton, DungeonCard, DungeonLoading, DungeonNotice } from '../shared/DungeonUI';
+import GameImage from '../shared/GameImage';
 import ProgressionFeedback from './ProgressionFeedback';
 
 const noSubscribe = () => () => {};
@@ -61,7 +62,7 @@ function SkillJournal({ host, session }: { host: JourneyHost; session: JourneySe
         <ProgressionFeedback host={host} />
       </View>}
       ListEmptyComponent={<Text className="text-muted" style={menu.body}>Speak to the keeper and collect manuals to discover skills.</Text>}
-      renderItem={({ item: skill }) => <DungeonButton label={`${skill.name}${hero.learnedSkills[skill.id] ? ` · Rank ${hero.learnedSkills[skill.id].rank}` : ''}`}
+      renderItem={({ item: skill }) => <DungeonButton image={{ kind: 'skill', id: skill.id }} label={`${skill.name}${hero.learnedSkills[skill.id] ? ` · Rank ${hero.learnedSkills[skill.id].rank}` : ''}`}
         detail={`${skill.category ?? 'combat'} · ${skill.kind ?? 'active'} · ${progressLabel(hero, skill, town)}`}
         accessibilityLabel={`${skill.name}. ${progressLabel(hero, skill, town)}. View details.`} onPress={() => setSelectedId(skill.id)} />} />
   </SafeAreaView>;
@@ -84,7 +85,7 @@ function SkillDetails({ host, session, skill }: { host: JourneyHost; session: Jo
   const weapon = hosted.battle ? hosted.battle.engine.getEntity('player')?.weapon : hero.equipment.weapon ? hero.weapons[hero.equipment.weapon] : undefined;
   const inactive = skill.kind === 'passive' && skill.requiresWeapon && (!weapon || weapon.durability === 0 || !session.content.item(weapon.itemId).weaponTags.includes(skill.requiresWeapon));
   return <View className="gap-4">
-    <Text className="text-foreground" accessibilityRole="header" style={menu.title}>{skill.name}</Text>
+    <View className="flex-row items-center gap-3"><GameImage kind="skill" id={skill.id} size={80} /><Text className="min-w-0 flex-1 text-foreground" accessibilityRole="header" style={menu.title}>{skill.name}</Text></View>
     <Text className="text-muted" style={menu.body}>{skill.category} · {skill.kind} · {record ? `Rank ${record.rank}` : 'Unlearned'}</Text>
     <Text className="text-accent" style={menu.heading}>{hero.ap} AP · {progressLabel(hero, skill, town)}</Text>
     <ProgressionFeedback host={host} />
@@ -104,7 +105,7 @@ function SkillDetails({ host, session, skill }: { host: JourneyHost; session: Jo
         {offer && instructor ? <><Text className="text-muted" style={menu.body}>{instructor.name} · {offer.fee} gold{distance(instructor, view.state.position) > 1 || view.activeService !== instructor.id ? ' · Approach and speak to the instructor first' : ''}</Text>
           <DungeonButton primary label={`Learn ${skill.name} · Rank F`} disabled={disabled || distance(instructor, view.state.position) > 1 || view.activeService !== instructor.id || hero.gold < offer.fee}
             onPress={() => { void host.progress({ type: 'LEARN_SKILL', skillId: skill.id, objectId: instructor.id }); }} /></> : null}
-        {books.map((book) => <DungeonButton primary key={book.id} label={`Read ${book.name}`} disabled={disabled} onPress={() => { void host.progress({ type: 'READ_SKILL_BOOK', itemId: book.id }); }} />)}
+        {books.map((book) => <DungeonButton primary image={{ kind: 'item', id: book.id }} key={book.id} label={`Read ${book.name}`} disabled={disabled} onPress={() => { void host.progress({ type: 'READ_SKILL_BOOK', itemId: book.id }); }} />)}
       </DungeonCard>}
       {recipe ? <DungeonCard><Text className="text-foreground" style={menu.heading}>Sword manual · {collection?.completed ? 'Complete' : `${collection?.insertedPages.length ?? 0}/${recipe.pages.length} pages`}</Text>
         <Text className="text-muted" style={menu.body}>{hero.inventory[recipe.incompleteItemId] ? 'Binding owned' : collection?.completed ? 'Read the completed manual to learn.' : 'Find the unfinished manual in the refuge training row.'}</Text>
