@@ -43,7 +43,7 @@ Use a readable portrait stack with reachable action controls and canvas targets 
 ```text
 Encounter name / active actor / turn order
 Hero and enemy presentation
-Combatant HP/MP/SP, wounds, fullness and weapon wear
+Current character HP/MP/SP, wounds, fullness and weapon wear
 Selected action / rank / target / costs / status details
 Combat / Magic / Items label tabs → horizontally scrollable action icons
 Combat: talent-based Attack / Defense-based Defend / learned combat skills

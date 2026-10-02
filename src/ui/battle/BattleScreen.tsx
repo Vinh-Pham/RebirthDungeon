@@ -273,66 +273,65 @@ export function BattleView({
             </Surface>
           ) : null}
           <View className="border-border" style={styles.roster}>
-            {view.entities.map((entity) => (
-              <View key={entity.id} style={styles.unit}>
-                <Text
-                  className={entity.side === 'player' ? 'text-accent' : 'text-success'}
-                  style={styles.unitLabel}
-                >
-                  {entity.name}
-                </Text>
-                <ResourceBar
-                  label="HP"
-                  value={entity.health}
-                  max={entity.maxHealth}
-                  name={entity.name}
-                />
-                {entity.maxMana > 0 ? (
+            {view.entities
+              .filter((entity) => entity.side === 'player')
+              .map((entity) => (
+                <View key={entity.id} style={styles.unit}>
+                  <Text className="text-accent" style={styles.unitLabel}>
+                    {entity.name}
+                  </Text>
                   <ResourceBar
-                    label="Mana"
-                    value={entity.mana}
-                    max={entity.maxMana}
+                    label="HP"
+                    value={entity.health}
+                    max={entity.maxHealth}
                     name={entity.name}
                   />
-                ) : (
-                  <Text className="text-muted" style={styles.resource}>
-                    {entity.dead ? 'DEFEATED' : 'ENEMY'}
-                  </Text>
-                )}
-                {entity.maxStamina !== undefined ? (
-                  <>
+                  {entity.maxMana > 0 ? (
                     <ResourceBar
-                      label="Stamina"
-                      value={entity.stamina ?? 0}
-                      max={entity.maxStamina}
+                      label="Mana"
+                      value={entity.mana}
+                      max={entity.maxMana}
                       name={entity.name}
                     />
+                  ) : (
                     <Text className="text-muted" style={styles.resource}>
-                      {entity.wounds ?? 0} WOUNDS · {entity.fullness?.toFixed(1)}% FULLNESS
+                      {entity.dead ? 'DEFEATED' : 'ENEMY'}
                     </Text>
-                  </>
-                ) : null}
-                {entity.weapon ? (
-                  <View className="flex-row items-center gap-2">
-                    <GameImage
-                      kind="item"
-                      id={session.engine.getEntity(entity.id)?.weapon?.itemId ?? ''}
-                      size={32}
-                    />
-                    <Text className="min-w-0 flex-1 text-muted" style={styles.resource}>
-                      {entity.weapon.name} · {entity.weapon.durability}/
-                      {entity.weapon.maxDurability}
-                      {entity.weapon.durability === 0 ? ' · BROKEN' : ''}
+                  )}
+                  {entity.maxStamina !== undefined ? (
+                    <>
+                      <ResourceBar
+                        label="Stamina"
+                        value={entity.stamina ?? 0}
+                        max={entity.maxStamina}
+                        name={entity.name}
+                      />
+                      <Text className="text-muted" style={styles.resource}>
+                        {entity.wounds ?? 0} WOUNDS · {entity.fullness?.toFixed(1)}% FULLNESS
+                      </Text>
+                    </>
+                  ) : null}
+                  {entity.weapon ? (
+                    <View className="flex-row items-center gap-2">
+                      <GameImage
+                        kind="item"
+                        id={session.engine.getEntity(entity.id)?.weapon?.itemId ?? ''}
+                        size={32}
+                      />
+                      <Text className="min-w-0 flex-1 text-muted" style={styles.resource}>
+                        {entity.weapon.name} · {entity.weapon.durability}/
+                        {entity.weapon.maxDurability}
+                        {entity.weapon.durability === 0 ? ' · BROKEN' : ''}
+                      </Text>
+                    </View>
+                  ) : null}
+                  {(session.engine.getEntity(entity.id)?.statuses ?? []).map((status) => (
+                    <Text className="text-muted" key={status.id} style={styles.resource}>
+                      {session.content.status(status.id).name} · {status.remainingTurns} turns
                     </Text>
-                  </View>
-                ) : null}
-                {(session.engine.getEntity(entity.id)?.statuses ?? []).map((status) => (
-                  <Text className="text-muted" key={status.id} style={styles.resource}>
-                    {session.content.status(status.id).name} · {status.remainingTurns} turns
-                  </Text>
-                ))}
-              </View>
-            ))}
+                  ))}
+                </View>
+              ))}
           </View>
           <Surface className="bg-surface-secondary" style={styles.log}>
             <Text className="text-accent" style={styles.eyebrow}>
