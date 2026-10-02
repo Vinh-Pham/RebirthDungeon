@@ -61,7 +61,7 @@ function Exploration({ host, session, error, setError }: {
     <Text className="text-accent" style={styles.eyebrow}>REBIRTH DUNGEON · JOURNEY</Text><Text className="text-foreground" style={styles.title}>{map.name}</Text>
     <Text className="text-muted" style={styles.body}>Tap a floor tile to move. Tap an object to approach it, then tap again to interact.</Text>
     <View className="border-border" style={styles.map}><ArenaBoundary><WorldCanvas key={map.id} session={session} width={width} dispatch={dispatch} onObjectPress={interact} /></ArenaBoundary></View>
-    <Text className="text-muted" style={styles.legend}>{map.theme ? 'G Goddess altar · $ Merchant · + Healer · > Door or passage · C Supplies' : 'C Chest · ! Enemy · G Goddess · F Fountain · B Locked door · k Key · D Dungeon · > Passage'}</Text>
+    <Text className="text-muted" style={styles.legend}>{map.theme ? 'Goddess altar · Merchants · Healer · Doors · Supplies' : 'Chests · Monsters · Goddess · Fountains · Gates · Keys · Passages'}</Text>
     {run ? <DungeonCard><Text className="text-accent" style={styles.heading}>{currentRoom ? currentRoom.kind === 'start' ? 'Goddess sanctuary' : currentRoom.kind === 'boss' ? 'Boss chamber' : currentRoom.kind === 'treasure' ? 'Final treasure room' : 'Dungeon chamber' : 'Corridor'}</Text>
       <Text className="text-muted" accessibilityLiveRegion="polite" style={styles.body}>{remainingEnemies(run)} enemies remain · {bossCleared(run) ? 'Boss defeated' : run.bossDoorOpened ? 'Boss room open' : 'Boss room locked'}</Text>
       <Text className="text-muted" style={styles.body}>Boss key: {run.bossKey.status} · Treasure key: {run.treasureKey.status}</Text>

@@ -6,6 +6,7 @@ import type { JourneySession } from '../game/JourneySession';
 import { atlasAssets } from './AtlasAssets';
 import { TileRenderer } from './TileRenderer';
 import { DecorationRenderer } from './DecorationRenderer';
+import { worldObjectSprite } from './WorldObjectArt';
 import { spriteRect } from './Atlas';
 import type { GameCommand } from '../engine/commands';
 import { followCamera, screenToWorld } from './Camera';
@@ -48,10 +49,7 @@ export default function WorldCanvas({ session, width, dispatch, onObjectPress }:
       {map.objects.map((obj) => {
         if (map.decorations.some((decoration) => decoration.objectId === obj.id)) return null;
         const cleared = session.isClaimed(obj.id);
-        const encounter = obj.kind === 'encounter' ? state.dungeon?.blueprint.encounters.find((entry) => entry.objectId === obj.id)?.map : undefined;
-        const spawn = encounter?.spawns.find((entry) => entry.kind === 'enemy');
-        const enemySprite = spawn ? session.content.data.enemies.find((entry) => entry.id === spawn.definitionId)?.sprite : undefined;
-        const objectSprite = obj.sprite ?? enemySprite;
+        const objectSprite = worldObjectSprite(obj, session.content.data, state.dungeon, cleared);
         return <Group key={obj.id} opacity={cleared ? 0.25 : 1}>
           {objectSprite ? <WorldObjectSprite sprite={objectSprite}
             atlas={session.content.data.atlases.find((entry) => entry.id === objectSprite.atlas)!}

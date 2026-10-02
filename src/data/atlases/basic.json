@@ -201,5 +201,82 @@
     "rows": 1,
     "frameWidth": 32,
     "frameHeight": 32
+  },
+  {
+    "id": "dungeon-chest",
+    "columns": 1,
+    "rows": 1,
+    "frameWidth": 32,
+    "frameHeight": 32
+  },
+  {
+    "id": "dungeon-chest-open",
+    "columns": 1,
+    "rows": 1,
+    "frameWidth": 32,
+    "frameHeight": 32
+  },
+  {
+    "id": "sealed-treasure-chest",
+    "columns": 1,
+    "rows": 1,
+    "frameWidth": 32,
+    "frameHeight": 32
+  },
+  {
+    "id": "sealed-treasure-chest-open",
+    "columns": 1,
+    "rows": 1,
+    "frameWidth": 32,
+    "frameHeight": 32
+  },
+  {
+    "id": "dungeon-boss-gate",
+    "columns": 1,
+    "rows": 1,
+    "frameWidth": 32,
+    "frameHeight": 32
+  },
+  {
+    "id": "dungeon-boss-gate-open",
+    "columns": 1,
+    "rows": 1,
+    "frameWidth": 32,
+    "frameHeight": 32
+  },
+  {
+    "id": "dungeon-treasure-gate",
+    "columns": 1,
+    "rows": 1,
+    "frameWidth": 32,
+    "frameHeight": 32
+  },
+  {
+    "id": "dungeon-treasure-gate-open",
+    "columns": 1,
+    "rows": 1,
+    "frameWidth": 32,
+    "frameHeight": 32
+  },
+  {
+    "id": "dungeon-boss-key",
+    "columns": 1,
+    "rows": 1,
+    "frameWidth": 32,
+    "frameHeight": 32
+  },
+  {
+    "id": "dungeon-treasure-key",
+    "columns": 1,
+    "rows": 1,
+    "frameWidth": 32,
+    "frameHeight": 32
+  },
+  {
+    "id": "dungeon-exit",
+    "columns": 1,
+    "rows": 1,
+    "frameWidth": 32,
+    "frameHeight": 32
   }
 ]
