@@ -149,6 +149,18 @@ Run `npm run format:check`, lint, and typecheck before declaring any task done.
 
 Run focused tests for changed gameplay, content, or persistence rules. Add meaningful regressions for changed behavior, including invalid commands, deterministic results, migration preservation, and failed-write retries where relevant. Run the full suite for changes spanning shared progression, stat resolution, or save contracts. Use the runtime required by the README for storage integration tests. For UI changes, verify the affected interaction on compact layouts and applicable native/web platforms; report any checks that could not be performed.
 
+## Browser debugging and inspection
+
+Use **agent-browser** to debug, inspect, and interactively verify the Expo web app. Use **Firecrawl** to fetch current official agent-browser documentation before relying on its commands: [overview](https://agent-browser.dev/), [debugging](https://agent-browser.dev/debugging), [network inspection](https://agent-browser.dev/network), and [React inspection](https://agent-browser.dev/react). Keep fetched documentation in ignored `.firecrawl/` files.
+
+- Read the agent-browser skill and run `agent-browser skills get core` before browser work. Check the installed CLI's help when documentation and available commands differ.
+- Start the app with `npm run web` and open the web URL printed by Expo. Use an isolated named session for the task; keep the same `--session` value on every command, or set `AGENT_BROWSER_SESSION` in each shell invocation. Derive a session ID with `agent-browser session id --scope worktree --prefix rebirth-debug` rather than using the shared default session.
+- Reproduce the issue through the UI. Use `agent-browser snapshot -i` to discover interactive elements, act on observed `@eN` refs, and take a fresh snapshot after navigation or UI changes. Wait for expected text, elements, or URLs rather than fixed delays or generic `networkidle` waits; Expo's development connection can stay active.
+- Inspect `agent-browser console`, `agent-browser errors`, and `agent-browser network requests` when diagnosing failures. Use `agent-browser network request <requestId>` for a request observed in the log, and `agent-browser inspect` when the live Chrome DevTools frontend helps.
+- For React component/state or excessive-render issues, open the app with `agent-browser open --enable react-devtools "<web-url>"`, then use `react tree`, `react inspect <fiberId>`, and `react renders start` / `react renders stop` as needed. Read props/hooks/state for diagnosis; keep gameplay changes routed through the app's existing commands and host.
+- Verify compact and wider layouts with `agent-browser set viewport <width> <height>`, including web keyboard controls. Capture and visually inspect screenshots with `agent-browser screenshot <path>` for layout, overlays, artwork, and Skia canvas targeting; accessibility snapshots alone do not show canvas content. Repeat the affected interaction after the fix, and verify reload/save recovery when relevant.
+- Keep browser evidence in ignored `.artifacts/` files. Report the tested URL/layout, reproduction steps, outcome, and any native checks not performed. Browser viewport emulation does not establish iOS/Android device behavior. Close the task's session with `agent-browser close` and stop any development server started for the task when finished.
+
 ## Navigation & Routing
 
 - Use **Expo Router** for all navigation. Routes live in `src/app/` — every file there is a screen, `_layout.tsx` files define navigators. Keep non-route code (components, hooks, utils) outside `src/app/`.
