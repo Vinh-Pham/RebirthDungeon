@@ -1,5 +1,13 @@
 /** Metro requires static references for bundled images; metadata stays in JSON. */
 export const atlasAssets: Record<string, number> = {
+  'dungeon-stone-wall': require('../../assets/game/decorations/dungeons/stone-wall.png'),
+  'dungeon-stone-floor': require('../../assets/game/decorations/dungeons/stone-floor.png'),
+  'dungeon-cracked-floor': require('../../assets/game/decorations/dungeons/cracked-floor.png'),
+  'dungeon-cobweb-corner': require('../../assets/game/decorations/dungeons/cobweb-corner.png'),
+  'dungeon-hanging-web': require('../../assets/game/decorations/dungeons/hanging-web.png'),
+  'dungeon-spider-eggs': require('../../assets/game/decorations/dungeons/spider-eggs.png'),
+  'dungeon-bone-pile': require('../../assets/game/decorations/dungeons/bone-pile.png'),
+  'dungeon-stone-brazier': require('../../assets/game/decorations/dungeons/stone-brazier.png'),
   dungeon: require('../../assets/game/dungeon.png'),
   'white-spider': require('../../assets/game/enemies/white-spider.png'),
   'black-spider': require('../../assets/game/enemies/black-spider.png'),

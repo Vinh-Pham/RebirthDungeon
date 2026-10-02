@@ -1,9 +1,16 @@
 import { useMemo } from 'react';
 import { Picture, Skia } from '@shopify/react-native-skia';
-import type { TileMap } from '../data/schemas/content';
+import { DungeonTileRenderer } from './DungeonTileRenderer';
+import type { DungeonSceneMap } from './DungeonScenery';
+
+type SceneMap = DungeonSceneMap & { theme?: 'town' | 'interior' };
+
+export function TileRenderer({ map }: { map: SceneMap }) {
+  return map.theme ? <ClassicTileRenderer map={map} /> : <DungeonTileRenderer map={map} />;
+}
 
 /** Record the entire static map once; it remains one canvas draw node. */
-export function TileRenderer({ map }: { map: Pick<TileMap, 'width' | 'height' | 'tileSize' | 'tiles'> & { theme?: 'town' | 'interior' } }) {
+function ClassicTileRenderer({ map }: { map: SceneMap }) {
   const picture = useMemo(() => {
     const recorder = Skia.PictureRecorder();
     const canvas = recorder.beginRecording(Skia.XYWHRect(0, 0, map.width * map.tileSize, map.height * map.tileSize));

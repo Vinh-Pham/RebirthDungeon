@@ -278,5 +278,61 @@
     "rows": 1,
     "frameWidth": 32,
     "frameHeight": 32
+  },
+  {
+    "id": "dungeon-stone-wall",
+    "columns": 1,
+    "rows": 1,
+    "frameWidth": 32,
+    "frameHeight": 32
+  },
+  {
+    "id": "dungeon-stone-floor",
+    "columns": 1,
+    "rows": 1,
+    "frameWidth": 32,
+    "frameHeight": 32
+  },
+  {
+    "id": "dungeon-cracked-floor",
+    "columns": 1,
+    "rows": 1,
+    "frameWidth": 32,
+    "frameHeight": 32
+  },
+  {
+    "id": "dungeon-cobweb-corner",
+    "columns": 1,
+    "rows": 1,
+    "frameWidth": 32,
+    "frameHeight": 32
+  },
+  {
+    "id": "dungeon-hanging-web",
+    "columns": 1,
+    "rows": 1,
+    "frameWidth": 32,
+    "frameHeight": 32
+  },
+  {
+    "id": "dungeon-spider-eggs",
+    "columns": 1,
+    "rows": 1,
+    "frameWidth": 32,
+    "frameHeight": 32
+  },
+  {
+    "id": "dungeon-bone-pile",
+    "columns": 1,
+    "rows": 1,
+    "frameWidth": 32,
+    "frameHeight": 32
+  },
+  {
+    "id": "dungeon-stone-brazier",
+    "columns": 1,
+    "rows": 1,
+    "frameWidth": 32,
+    "frameHeight": 32
   }
 ]
