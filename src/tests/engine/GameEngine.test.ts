@@ -5,7 +5,12 @@ import { createGameEngine, type Entity, type GameSystem } from '../../engine';
 import { createAttackFixture, runSimulation } from './harness';
 
 const entities: Entity[] = [
-  { id: 'player', player: true, health: { current: 30, max: 30 }, combatant: { attack: 10, defense: 2, speed: 3 } },
+  {
+    id: 'player',
+    player: true,
+    health: { current: 30, max: 30 },
+    combatant: { attack: 10, defense: 2, speed: 3 },
+  },
   { id: 'slime-1', enemy: true, health: { current: 20, max: 20 } },
 ];
 
@@ -13,7 +18,9 @@ const scenario = {
   seed: 12345,
   entities,
   commands: [{ type: 'ATTACK' as const, attackerId: 'player', targetId: 'slime-1' }],
-  configure: (engine: ReturnType<typeof createGameEngine>) => { engine.addSystem(createAttackFixture()); },
+  configure: (engine: ReturnType<typeof createGameEngine>) => {
+    engine.addSystem(createAttackFixture());
+  },
 };
 
 describe('headless engine', () => {
@@ -28,17 +35,20 @@ describe('headless engine', () => {
   });
 
   it('replays arbitrary seeds and attack sequences identically', () => {
-    fc.assert(fc.property(fc.integer(), fc.integer({ min: 1, max: 10 }), (seed, count) => {
-      const replay = {
-        ...scenario,
-        seed,
-        entities: [entities[0], { ...entities[1], health: { current: 1000, max: 1000 } }],
-        commands: Array.from({ length: count }, () => scenario.commands[0]),
-      };
-      const first = runSimulation(replay);
-      expect(first).toEqual(runSimulation(replay));
-      expect(first.entities[1].health?.current).toBeGreaterThanOrEqual(0);
-    }), { seed: 20260929, numRuns: 100 });
+    fc.assert(
+      fc.property(fc.integer(), fc.integer({ min: 1, max: 10 }), (seed, count) => {
+        const replay = {
+          ...scenario,
+          seed,
+          entities: [entities[0], { ...entities[1], health: { current: 1000, max: 1000 } }],
+          commands: Array.from({ length: count }, () => scenario.commands[0]),
+        };
+        const first = runSimulation(replay);
+        expect(first).toEqual(runSimulation(replay));
+        expect(first.entities[1].health?.current).toBeGreaterThanOrEqual(0);
+      }),
+      { seed: 20260929, numRuns: 100 },
+    );
   });
 
   it('rejects invalid attacks before changing state or consuming randomness', () => {
@@ -47,7 +57,9 @@ describe('headless engine', () => {
     engine.addSystem(createAttackFixture());
     const listener = vi.fn();
     engine.events.subscribe(listener);
-    expect(() => engine.dispatch({ type: 'ATTACK', attackerId: 'player', targetId: 'missing' })).toThrow();
+    expect(() =>
+      engine.dispatch({ type: 'ATTACK', attackerId: 'player', targetId: 'missing' }),
+    ).toThrow();
     expect(listener).not.toHaveBeenCalled();
     engine.dispatch(scenario.commands[0]);
     expect(listener.mock.calls[0][0].amount).toBe(3);
@@ -75,10 +87,16 @@ describe('headless engine', () => {
     const cleanup = vi.fn();
     const first: GameSystem = {
       initialize: () => cleanup,
-      update: (_, dt) => { calls.push(`first:${dt}`); },
+      update: (_, dt) => {
+        calls.push(`first:${dt}`);
+      },
     };
     const remove = engine.addSystem(first);
-    engine.addSystem({ update: (_, dt) => { calls.push(`second:${dt}`); } });
+    engine.addSystem({
+      update: (_, dt) => {
+        calls.push(`second:${dt}`);
+      },
+    });
     expect(() => engine.addSystem(first)).toThrow('already registered');
     engine.update(0.25);
     remove();
@@ -100,7 +118,12 @@ describe('headless engine', () => {
     const listener = vi.fn();
     engine.spawn({ id: 'player' });
     engine.events.subscribe(listener);
-    engine.addSystem({ initialize: () => () => { throw new Error('cleanup failed'); }, update() {} });
+    engine.addSystem({
+      initialize: () => () => {
+        throw new Error('cleanup failed');
+      },
+      update() {},
+    });
     engine.addSystem({ initialize: () => cleanup, update() {} });
     expect(() => engine.dispose()).toThrow(AggregateError);
     expect(cleanup).toHaveBeenCalledOnce();

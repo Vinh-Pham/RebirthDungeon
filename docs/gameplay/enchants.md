@@ -10,7 +10,7 @@ Operation receipts retain the most recent 100 accepted results. A monotonic oper
 
 ## 1. Scope and prerequisites
 
-The reference inspiration is [Mabinogi Enchant](https://wiki.mabinogiworld.com/view/Enchant) and its [enchant system](https://wiki.mabinogiworld.com/view/Enchant_(System)). The formulas, costs and protection rules below are proposed Rebirth Dungeon defaults, not imported reference balance.
+The reference inspiration is [Mabinogi Enchant](https://wiki.mabinogiworld.com/view/Enchant) and its [enchant system](<https://wiki.mabinogiworld.com/view/Enchant_(System)>). The formulas, costs and protection rules below are proposed Rebirth Dungeon defaults, not imported reference balance.
 
 The player learns Enchant at F from a town instructor, obtains a scroll/powder, chooses an owned equipment instance, previews an attempt and confirms it. Qualifying outcomes train the skill; advancement requires 100 training points plus authored AP, following Skills. Enchant is authored separately from the preserved 33-skill reference catalog, with its own acquisition, definitions and town progression. The Enchant F/E pilot comes after the base Skills pilot, rather than becoming an unexpected prerequisite for starter combat.
 
@@ -20,13 +20,13 @@ Unique equipment ownership is required before installation. Weapons and armor ha
 
 ## 2. Slots, ranks and compatibility
 
-| Term | Planned meaning |
-| --- | --- |
+| Term               | Planned meaning                                                                        |
+| ------------------ | -------------------------------------------------------------------------------------- |
 | Enchant definition | Stable ID, name, prefix/suffix slot, difficulty rank, compatibility and effect clauses |
-| Scroll | Consumed owned item referring to an enchant definition |
-| Installed enchant | Definition ID plus actual resolved clause values on one equipment instance |
-| Enchant skill rank | Learned character proficiency, training/AP and extraction access |
-| Scroll rank | Difficulty tier; independent of skill rank and item rarity |
+| Scroll             | Consumed owned item referring to an enchant definition                                 |
+| Installed enchant  | Definition ID plus actual resolved clause values on one equipment instance             |
+| Enchant skill rank | Learned character proficiency, training/AP and extraction access                       |
+| Scroll rank        | Difficulty tier; independent of skill rank and item rarity                             |
 
 Both rank tracks use **F → E → D → C → B → A → 9 → 8 → 7 → 6 → 5 → 4 → 3 → 2 → 1**. Compare ordinal definitions, not strings. Initially publish only supported F/E content. Later Rank 5–1 scrolls require Enchant skill 5 or better; weaker scrolls require the learned skill without matching the scroll rank. No lower enchant must be installed first.
 
@@ -44,12 +44,12 @@ Avoid final equipment-modified stat conditions, such as an INT bonus checking th
 
 Illustrative content and balance:
 
-| Enchant | Slot/rank | Compatible items | Effects |
-| --- | --- | --- | --- |
-| Keen | Prefix/F | Swords | Physical Attack +2 |
-| Studious | Prefix/E | Weapons | Magic Attack +3 with Icebolt E or better; unconditional Max SP -2 |
-| of Vigor | Suffix/F | Armor | Max HP +5 |
-| of the Veteran, later | Suffix/D | Weapons | Physical Attack +2–4 with cumulative level at least 20 |
+| Enchant               | Slot/rank | Compatible items | Effects                                                           |
+| --------------------- | --------- | ---------------- | ----------------------------------------------------------------- |
+| Keen                  | Prefix/F  | Swords           | Physical Attack +2                                                |
+| Studious              | Prefix/E  | Weapons          | Magic Attack +3 with Icebolt E or better; unconditional Max SP -2 |
+| of Vigor              | Suffix/F  | Armor            | Max HP +5                                                         |
+| of the Veteran, later | Suffix/D  | Weapons          | Physical Attack +2–4 with cumulative level at least 20            |
 
 Variable clauses roll one inclusive integer value on successful installation in stable definition order, even when their conditions are inactive. Fixed clauses consume no draw. Save the actual values; re-equipping, load, later eligibility and rebirth never reroll. Effective totals reconstruct from the equipped item and eligible clauses.
 
@@ -79,11 +79,11 @@ Example: base 6,000 + INT 40 × 10 + powder 500 = **6,900 basis points / 69%**. 
 
 The first slice always uses **Protect Equipment**:
 
-| Outcome | Cost | Equipment | Training |
-| --- | --- | --- | --- |
-| Rejected/cancelled | None | Unchanged | None |
-| Success | Full scroll/powder/MP recipe | Install selected slot, preserving opposite slot and existing durability | Qualifying success objectives once |
-| Failure | Full scroll/powder/MP recipe | Preserve item, durability and both old enchants | Qualifying failure objectives once, if authored |
+| Outcome            | Cost                         | Equipment                                                               | Training                                        |
+| ------------------ | ---------------------------- | ----------------------------------------------------------------------- | ----------------------------------------------- |
+| Rejected/cancelled | None                         | Unchanged                                                               | None                                            |
+| Success            | Full scroll/powder/MP recipe | Install selected slot, preserving opposite slot and existing durability | Qualifying success objectives once              |
+| Failure            | Full scroll/powder/MP recipe | Preserve item, durability and both old enchants                         | Qualifying failure objectives once, if authored |
 
 Failure consumes the scroll rather than leaving a damaged scroll. Enchant-failure durability damage, scroll integrity, protection potions and Protect Scroll are later systems; ordinary combat durability/repair already exist and continue unchanged. Burning uses a different destructive policy and must never inherit application protection accidentally.
 

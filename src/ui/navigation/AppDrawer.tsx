@@ -1,6 +1,11 @@
 import { useCallback, useSyncExternalStore } from 'react';
 import { router, usePathname } from 'expo-router';
-import { Drawer, DrawerContentScrollView, useDrawerStatus, type DrawerContentComponentProps } from 'expo-router/drawer';
+import {
+  Drawer,
+  DrawerContentScrollView,
+  useDrawerStatus,
+  type DrawerContentComponentProps,
+} from 'expo-router/drawer';
 import { useThemeColor } from 'heroui-native/hooks';
 import { Text, View, useWindowDimensions } from 'react-native';
 import { DungeonButton, DungeonNotice } from '../shared/DungeonUI';
@@ -12,46 +17,138 @@ const noSnapshot = () => undefined;
 
 function AppDrawerContent(props: DrawerContentComponentProps) {
   const { game, openStats, characters, error } = useAppNavigation();
-  const snapshot = useSyncExternalStore(game?.host.subscribe ?? noSubscribe, game?.host.getSnapshot ?? noSnapshot, noSnapshot);
+  const snapshot = useSyncExternalStore(
+    game?.host.subscribe ?? noSubscribe,
+    game?.host.getSnapshot ?? noSnapshot,
+    noSnapshot,
+  );
   const ready = !!snapshot?.session;
   const path = usePathname();
   const open = useDrawerStatus() === 'open';
   const close = useCallback(() => props.navigation.closeDrawer(), [props.navigation]);
-  const route = (destination: 'journey' | 'inventory' | 'save-load' | 'skills' | 'quests' | 'titles') => {
+  const route = (
+    destination: 'journey' | 'inventory' | 'save-load' | 'skills' | 'quests' | 'titles',
+  ) => {
     if (!game || !ready) return;
     close();
-    router.navigate({ pathname: destination === 'journey' ? '/game/[characterId]' : destination === 'titles' ? '/game/[characterId]/titles' : destination === 'quests' ? '/game/[characterId]/quests' : destination === 'skills' ? '/game/[characterId]/skills' : destination === 'inventory' ? '/game/[characterId]/inventory' : '/game/[characterId]/save-load', params: { characterId: game.profile.id } });
+    router.navigate({
+      pathname:
+        destination === 'journey'
+          ? '/game/[characterId]'
+          : destination === 'titles'
+            ? '/game/[characterId]/titles'
+            : destination === 'quests'
+              ? '/game/[characterId]/quests'
+              : destination === 'skills'
+                ? '/game/[characterId]/skills'
+                : destination === 'inventory'
+                  ? '/game/[characterId]/inventory'
+                  : '/game/[characterId]/save-load',
+      params: { characterId: game.profile.id },
+    });
   };
-  return <DrawerAccessibility open={open} close={close}>
-    <DrawerContentScrollView {...props} contentContainerStyle={{ padding: 16, gap: 20 }}>
-      <View className="flex-row items-center justify-between gap-3">
-        <Text className="text-lg font-semibold text-accent">Rebirth Dungeon</Text>
-        <DungeonButton label="×" accessibilityLabel="Close navigation menu" onPress={close} />
-      </View>
-      <Text className="text-sm text-muted">{game ? game.profile.name : 'Choose a character to begin your journey.'}</Text>
-      <View className="gap-3">
-        <DungeonButton label="Journey" selected={!!game && path === `/game/${game.profile.id}`} disabled={!ready} onPress={() => route('journey')} />
-        <DungeonButton label="Characters" selected={path === '/characters'} busy={!!snapshot?.busy}
-          onPress={() => { close(); void characters(); }} />
-        <DungeonButton label="Stats" disabled={!ready} onPress={() => { close(); openStats(); }} />
-        <DungeonButton label="Inventory" selected={path.endsWith('/inventory')} disabled={!ready} onPress={() => route('inventory')} />
-        <DungeonButton label="Skills" selected={path.endsWith('/skills')} disabled={!ready} onPress={() => route('skills')} />
-        <DungeonButton label="Titles" selected={path.endsWith('/titles')} disabled={!ready} onPress={() => route('titles')} />
-        <DungeonButton label="Quests" selected={path.endsWith('/quests')} disabled={!ready} onPress={() => route('quests')} />
-        <DungeonButton label="Save/Load" selected={path.endsWith('/save-load')} disabled={!ready} onPress={() => route('save-load')} />
-        <DungeonButton label="Settings" selected={path === '/settings'} onPress={() => { close(); router.navigate('/settings'); }} />
-      </View>
-      {error ? <DungeonNotice message={error} /> : null}
-    </DrawerContentScrollView>
-  </DrawerAccessibility>;
+  return (
+    <DrawerAccessibility open={open} close={close}>
+      <DrawerContentScrollView {...props} contentContainerStyle={{ padding: 16, gap: 20 }}>
+        <View className="flex-row items-center justify-between gap-3">
+          <Text className="text-lg font-semibold text-accent">Rebirth Dungeon</Text>
+          <DungeonButton label="×" accessibilityLabel="Close navigation menu" onPress={close} />
+        </View>
+        <Text className="text-sm text-muted">
+          {game ? game.profile.name : 'Choose a character to begin your journey.'}
+        </Text>
+        <View className="gap-3">
+          <DungeonButton
+            label="Journey"
+            selected={!!game && path === `/game/${game.profile.id}`}
+            disabled={!ready}
+            onPress={() => route('journey')}
+          />
+          <DungeonButton
+            label="Characters"
+            selected={path === '/characters'}
+            busy={!!snapshot?.busy}
+            onPress={() => {
+              close();
+              void characters();
+            }}
+          />
+          <DungeonButton
+            label="Stats"
+            disabled={!ready}
+            onPress={() => {
+              close();
+              openStats();
+            }}
+          />
+          <DungeonButton
+            label="Inventory"
+            selected={path.endsWith('/inventory')}
+            disabled={!ready}
+            onPress={() => route('inventory')}
+          />
+          <DungeonButton
+            label="Skills"
+            selected={path.endsWith('/skills')}
+            disabled={!ready}
+            onPress={() => route('skills')}
+          />
+          <DungeonButton
+            label="Titles"
+            selected={path.endsWith('/titles')}
+            disabled={!ready}
+            onPress={() => route('titles')}
+          />
+          <DungeonButton
+            label="Quests"
+            selected={path.endsWith('/quests')}
+            disabled={!ready}
+            onPress={() => route('quests')}
+          />
+          <DungeonButton
+            label="Save/Load"
+            selected={path.endsWith('/save-load')}
+            disabled={!ready}
+            onPress={() => route('save-load')}
+          />
+          <DungeonButton
+            label="Settings"
+            selected={path === '/settings'}
+            onPress={() => {
+              close();
+              router.navigate('/settings');
+            }}
+          />
+        </View>
+        {error ? <DungeonNotice message={error} /> : null}
+      </DrawerContentScrollView>
+    </DrawerAccessibility>
+  );
 }
 export default function AppDrawer() {
   const [background, border] = useThemeColor(['background', 'border']);
   const { width } = useWindowDimensions();
   const { statsOpen } = useAppNavigation();
-  return <Drawer drawerContent={(props) => <AppDrawerContent {...props} />} screenOptions={{
-    headerShown: false, drawerPosition: 'left', drawerType: 'front', swipeEnabled: !statsOpen,
-    swipeEdgeWidth: 32, drawerStyle: { width: Math.min(320, width * 0.86), backgroundColor: background, borderRightColor: border, borderRightWidth: 1 },
-    overlayColor: 'rgba(0, 0, 0, 0.6)', overlayAccessibilityLabel: 'Close navigation menu',
-  }}><Drawer.Screen name="(screens)" /></Drawer>;
+  return (
+    <Drawer
+      drawerContent={(props) => <AppDrawerContent {...props} />}
+      screenOptions={{
+        headerShown: false,
+        drawerPosition: 'left',
+        drawerType: 'front',
+        swipeEnabled: !statsOpen,
+        swipeEdgeWidth: 32,
+        drawerStyle: {
+          width: Math.min(320, width * 0.86),
+          backgroundColor: background,
+          borderRightColor: border,
+          borderRightWidth: 1,
+        },
+        overlayColor: 'rgba(0, 0, 0, 0.6)',
+        overlayAccessibilityLabel: 'Close navigation menu',
+      }}
+    >
+      <Drawer.Screen name="(screens)" />
+    </Drawer>
+  );
 }

@@ -19,23 +19,7 @@
     "reference": {
       "url": "https://wiki.mabinogiworld.com/view/Human_Ranged_Attack",
       "retrievedAt": "2026-10-02",
-      "ranks": [
-        "F",
-        "E",
-        "D",
-        "C",
-        "B",
-        "A",
-        "9",
-        "8",
-        "7",
-        "6",
-        "5",
-        "4",
-        "3",
-        "2",
-        "1"
-      ],
+      "ranks": ["F", "E", "D", "C", "B", "A", "9", "8", "7", "6", "5", "4", "3", "2", "1"],
       "rows": [
         {
           "label": "Required AP",
@@ -199,51 +183,21 @@
         }
       ],
       "effects": {
-        "F": [
-          "none"
-        ],
-        "E": [
-          "Total Ranged Max Damage +1, Aim Speed 110%"
-        ],
-        "D": [
-          "Total Ranged Max Damage +2, Aim Speed 120%"
-        ],
-        "C": [
-          "Total Ranged Max Damage +4, Aim Speed 130%"
-        ],
-        "B": [
-          "Total Ranged Max Damage +4, Total Ranged Min Damage +1, Aim Speed 140%"
-        ],
-        "A": [
-          "Total Ranged Max Damage +5, Total Ranged Min Damage +1, Aim Speed 150%"
-        ],
-        "9": [
-          "Total Ranged Max Damage +6, Total Ranged Min Damage +1, Aim Speed 160%"
-        ],
-        "8": [
-          "Total Ranged Max Damage +7, Total Ranged Min Damage +2, Aim Speed 170%"
-        ],
-        "7": [
-          "Total Ranged Max Damage +9, Total Ranged Min Damage +2, Aim Speed 180%"
-        ],
-        "6": [
-          "Total Ranged Max Damage +11, Total Ranged Min Damage +2, Aim Speed 190%"
-        ],
-        "5": [
-          "Total Ranged Max Damage +13, Total Ranged Min Damage +3, Aim Speed 200%"
-        ],
-        "4": [
-          "Total Ranged Max Damage +16, Total Ranged Min Damage +4, Aim Speed 220%"
-        ],
-        "3": [
-          "Total Ranged Max Damage +19, Total Ranged Min Damage +6, Aim Speed 250%"
-        ],
-        "2": [
-          "Total Ranged Max Damage +22, Total Ranged Min Damage +8, Aim Speed 280%"
-        ],
-        "1": [
-          "Total Ranged Max Damage +25, Total Ranged Min Damage +10, Aim Speed 300%"
-        ]
+        "F": ["none"],
+        "E": ["Total Ranged Max Damage +1, Aim Speed 110%"],
+        "D": ["Total Ranged Max Damage +2, Aim Speed 120%"],
+        "C": ["Total Ranged Max Damage +4, Aim Speed 130%"],
+        "B": ["Total Ranged Max Damage +4, Total Ranged Min Damage +1, Aim Speed 140%"],
+        "A": ["Total Ranged Max Damage +5, Total Ranged Min Damage +1, Aim Speed 150%"],
+        "9": ["Total Ranged Max Damage +6, Total Ranged Min Damage +1, Aim Speed 160%"],
+        "8": ["Total Ranged Max Damage +7, Total Ranged Min Damage +2, Aim Speed 170%"],
+        "7": ["Total Ranged Max Damage +9, Total Ranged Min Damage +2, Aim Speed 180%"],
+        "6": ["Total Ranged Max Damage +11, Total Ranged Min Damage +2, Aim Speed 190%"],
+        "5": ["Total Ranged Max Damage +13, Total Ranged Min Damage +3, Aim Speed 200%"],
+        "4": ["Total Ranged Max Damage +16, Total Ranged Min Damage +4, Aim Speed 220%"],
+        "3": ["Total Ranged Max Damage +19, Total Ranged Min Damage +6, Aim Speed 250%"],
+        "2": ["Total Ranged Max Damage +22, Total Ranged Min Damage +8, Aim Speed 280%"],
+        "1": ["Total Ranged Max Damage +25, Total Ranged Min Damage +10, Aim Speed 300%"]
       }
     }
   }

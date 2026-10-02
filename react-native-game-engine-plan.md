@@ -93,12 +93,12 @@ const engine = createGameEngine({
 });
 
 engine.dispatch({
-  type: "ATTACK",
-  attackerId: "player",
-  targetId: "slime-1",
+  type: 'ATTACK',
+  attackerId: 'player',
+  targetId: 'slime-1',
 });
 
-const slime = engine.getEntity("slime-1");
+const slime = engine.getEntity('slime-1');
 
 console.log(slime.health?.current);
 ```
@@ -336,7 +336,7 @@ export type Entity = {
 World:
 
 ```ts
-import { World } from "miniplex";
+import { World } from 'miniplex';
 
 export const world = new World<Entity>();
 ```
@@ -344,7 +344,7 @@ export const world = new World<Entity>();
 Query:
 
 ```ts
-const enemies = world.with("enemy", "health");
+const enemies = world.with('enemy', 'health');
 
 for (const enemy of enemies) {
   // Process enemy
@@ -473,7 +473,7 @@ Create schemas for:
 Example:
 
 ```ts
-import { z } from "zod";
+import { z } from 'zod';
 
 export const SkillSchema = z.object({
   id: z.string(),
@@ -482,19 +482,9 @@ export const SkillSchema = z.object({
   manaCost: z.number().nonnegative(),
   power: z.number().nonnegative(),
 
-  element: z.enum([
-    "physical",
-    "fire",
-    "ice",
-    "lightning",
-  ]),
+  element: z.enum(['physical', 'fire', 'ice', 'lightning']),
 
-  target: z.enum([
-    "self",
-    "ally",
-    "enemy",
-    "allEnemies",
-  ]),
+  target: z.enum(['self', 'ally', 'enemy', 'allEnemies']),
 });
 
 export type Skill = z.infer<typeof SkillSchema>;
@@ -651,8 +641,8 @@ Create an engine-level audio service.
 Example responsibilities:
 
 ```ts
-audio.playSound("sword-hit");
-audio.playMusic("battle-theme");
+audio.playSound('sword-hit');
+audio.playMusic('battle-theme');
 audio.stopMusic();
 audio.setMusicVolume(0.5);
 audio.setSfxVolume(0.8);
@@ -770,24 +760,24 @@ Examples:
 ```ts
 type GameCommand =
   | {
-      type: "MOVE";
+      type: 'MOVE';
       entityId: string;
       dx: number;
       dy: number;
     }
   | {
-      type: "ATTACK";
+      type: 'ATTACK';
       attackerId: string;
       targetId: string;
     }
   | {
-      type: "USE_SKILL";
+      type: 'USE_SKILL';
       sourceId: string;
       targetId: string;
       skillId: string;
     }
   | {
-      type: "USE_ITEM";
+      type: 'USE_ITEM';
       sourceId: string;
       targetId: string;
       itemId: string;
@@ -817,24 +807,24 @@ Example:
 ```ts
 type GameEvent =
   | {
-      type: "DAMAGE_DEALT";
+      type: 'DAMAGE_DEALT';
       sourceId: string;
       targetId: string;
       amount: number;
       critical: boolean;
     }
   | {
-      type: "ENTITY_DIED";
+      type: 'ENTITY_DIED';
       entityId: string;
     }
   | {
-      type: "SKILL_USED";
+      type: 'SKILL_USED';
       sourceId: string;
       skillId: string;
     }
   | {
-      type: "BATTLE_ENDED";
-      result: "victory" | "defeat";
+      type: 'BATTLE_ENDED';
+      result: 'victory' | 'defeat';
     };
 ```
 
@@ -1221,7 +1211,7 @@ Test:
 Example:
 
 ```ts
-it("reduces target health when an attack lands", () => {
+it('reduces target health when an attack lands', () => {
   const engine = createTestEngine({
     seed: 12345,
   });
@@ -1230,14 +1220,12 @@ it("reduces target health when an attack lands", () => {
   const slime = spawnTestSlime(engine);
 
   engine.dispatch({
-    type: "ATTACK",
+    type: 'ATTACK',
     attackerId: player.id,
     targetId: slime.id,
   });
 
-  expect(slime.health.current).toBeLessThan(
-    slime.health.max
-  );
+  expect(slime.health.current).toBeLessThan(slime.health.max);
 });
 ```
 
@@ -1292,23 +1280,17 @@ Example:
 
 ```ts
 fc.assert(
-  fc.property(
-    arbitraryCombatState(),
-    state => {
-      const result = simulateBattle(state);
+  fc.property(arbitraryCombatState(), (state) => {
+    const result = simulateBattle(state);
 
-      return result.entities.every(entity => {
-        if (!entity.health) {
-          return true;
-        }
+    return result.entities.every((entity) => {
+      if (!entity.health) {
+        return true;
+      }
 
-        return (
-          entity.health.current >= 0 &&
-          entity.health.current <= entity.health.max
-        );
-      });
-    }
-  )
+      return entity.health.current >= 0 && entity.health.current <= entity.health.max;
+    });
+  }),
 );
 ```
 
@@ -1407,26 +1389,26 @@ src/
 
 Use this as the architecture ownership table.
 
-| Library | Responsibility |
-|---|---|
-| React Native | Native app shell |
-| Expo | Build tooling and native services |
-| TypeScript | Type safety |
-| React Native Skia | Game rendering |
-| Reanimated | High-performance visual animation |
-| Gesture Handler | Touch input |
-| Miniplex | ECS and entity queries |
-| XState | Game flow and state machines |
-| Zustand | React-facing UI state |
-| Zod | Runtime validation |
-| pure-rand | Deterministic RNG |
-| rot-js | Pathfinding/FOV/procedural utilities |
-| Planck or Matter.js | Optional physics |
-| expo-sqlite | Structured persistence |
-| expo-file-system | File persistence |
-| expo-audio | Music/SFX |
-| Vitest | Unit/integration tests |
-| fast-check | Property-based testing |
+| Library             | Responsibility                       |
+| ------------------- | ------------------------------------ |
+| React Native        | Native app shell                     |
+| Expo                | Build tooling and native services    |
+| TypeScript          | Type safety                          |
+| React Native Skia   | Game rendering                       |
+| Reanimated          | High-performance visual animation    |
+| Gesture Handler     | Touch input                          |
+| Miniplex            | ECS and entity queries               |
+| XState              | Game flow and state machines         |
+| Zustand             | React-facing UI state                |
+| Zod                 | Runtime validation                   |
+| pure-rand           | Deterministic RNG                    |
+| rot-js              | Pathfinding/FOV/procedural utilities |
+| Planck or Matter.js | Optional physics                     |
+| expo-sqlite         | Structured persistence               |
+| expo-file-system    | File persistence                     |
+| expo-audio          | Music/SFX                            |
+| Vitest              | Unit/integration tests               |
+| fast-check          | Property-based testing               |
 
 ---
 

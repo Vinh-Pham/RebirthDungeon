@@ -10,19 +10,19 @@ This is an Expo/React Native RPG with a deterministic TypeScript game engine, tu
 - Current user instructions define the requested change. When docs and source disagree, inspect the implementation and tests to establish current behavior; identify the discrepancy and update the relevant docs alongside the change.
 - Keep detailed formulas, progression tables, transaction rules, and feature specifications in `docs/` and their owning modules. Use this file for shared project guidelines rather than duplicating values that can become stale.
 
-| Work area | Read for implementation details |
-| --- | --- |
-| Architecture, playable loop, session ownership, saves, delivery | [docs/game-plan.md](docs/game-plan.md) |
-| Character setup, leveling, AP, cumulative levels, talents, aging/rebirth scope | [docs/gameplay/character.md](docs/gameplay/character.md) |
-| Attributes, combat stat derivation, resources, wounds, fullness, statuses | [docs/gameplay/stats.md](docs/gameplay/stats.md) |
-| Turn flow, targeting, attacks, skills, damage, encounter results | [docs/gameplay/battle.md](docs/gameplay/battle.md) |
-| Skill acquisition, learned ranks, training objectives, AP costs | [docs/gameplay/skills.md](docs/gameplay/skills.md) and [src/data/skills/README.md](src/data/skills/README.md) |
-| Inventory, item ownership, equipment instances, durability | [docs/gameplay/inventory.md](docs/gameplay/inventory.md) |
-| Town movement, shops, repairs, healing, dungeon entry | [docs/gameplay/towns.md](docs/gameplay/towns.md) |
-| Quest prerequisites, stages, evidence, tracking, reward claims | [docs/gameplay/quests.md](docs/gameplay/quests.md) |
-| Title discovery, awards, selection, eligibility, stat effects | [docs/gameplay/titles.md](docs/gameplay/titles.md) |
-| Enchant application, conditions, failure, burning, saved outcomes | [docs/gameplay/enchants.md](docs/gameplay/enchants.md) |
-| Screens, navigation, accessibility, mobile interaction, presentation | [docs/gameplay/user-interface.md](docs/gameplay/user-interface.md) |
+| Work area                                                                      | Read for implementation details                                                                               |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| Architecture, playable loop, session ownership, saves, delivery                | [docs/game-plan.md](docs/game-plan.md)                                                                        |
+| Character setup, leveling, AP, cumulative levels, talents, aging/rebirth scope | [docs/gameplay/character.md](docs/gameplay/character.md)                                                      |
+| Attributes, combat stat derivation, resources, wounds, fullness, statuses      | [docs/gameplay/stats.md](docs/gameplay/stats.md)                                                              |
+| Turn flow, targeting, attacks, skills, damage, encounter results               | [docs/gameplay/battle.md](docs/gameplay/battle.md)                                                            |
+| Skill acquisition, learned ranks, training objectives, AP costs                | [docs/gameplay/skills.md](docs/gameplay/skills.md) and [src/data/skills/README.md](src/data/skills/README.md) |
+| Inventory, item ownership, equipment instances, durability                     | [docs/gameplay/inventory.md](docs/gameplay/inventory.md)                                                      |
+| Town movement, shops, repairs, healing, dungeon entry                          | [docs/gameplay/towns.md](docs/gameplay/towns.md)                                                              |
+| Quest prerequisites, stages, evidence, tracking, reward claims                 | [docs/gameplay/quests.md](docs/gameplay/quests.md)                                                            |
+| Title discovery, awards, selection, eligibility, stat effects                  | [docs/gameplay/titles.md](docs/gameplay/titles.md)                                                            |
+| Enchant application, conditions, failure, burning, saved outcomes              | [docs/gameplay/enchants.md](docs/gameplay/enchants.md)                                                        |
+| Screens, navigation, accessibility, mobile interaction, presentation           | [docs/gameplay/user-interface.md](docs/gameplay/user-interface.md)                                            |
 
 External game references supply research, not automatically executable rules. When using them, verify the requested source, record its URL with the authored data or documentation, and translate only the mechanics within the requested scope. Use Firecrawl for game-reference documentation research when available or requested.
 
@@ -30,24 +30,24 @@ External game references supply research, not automatically executable rules. Wh
 
 Extend the existing owner and nearby patterns before creating a new abstraction. Place new files in the matching feature directory; keep non-route code outside `src/app/`.
 
-| Directory | Responsibility |
-| --- | --- |
-| `src/app/` | Thin Expo Router screen entry points and navigator layouts |
-| `src/ui/` | Feature screens and controls, grouped under battle, journey, menu, navigation, quests, skills, titles, and shared |
-| `src/components/` | Reusable general UI components; feature UI belongs under `src/ui/` |
-| `src/hooks/`, `src/constants/`, `src/global.css` | Shared React hooks, theme constants, and app styling tokens |
-| `src/game/` | Journey/battle sessions, host lifecycles, encounter integration, and durable action coordination |
-| `src/engine/` | Headless simulation, typed commands/events, seeded randomness, and engine systems |
-| `src/engine/rpg/` | Character progression, stats/resources, skills, inventory, quests, titles, and enchant rules |
-| `src/engine/battle/`, `src/engine/ecs/` | Battle state flow/resolution and entity/component systems |
-| `src/engine/world/`, `src/engine/dungeon/` | World traversal, dungeon generation, and dungeon state validation |
-| `src/data/`, `src/data/schemas/` | Authored JSON content, content loading, Zod schemas, and cross-reference validation |
-| `src/persistence/` | Character profiles, save schemas/migrations, repositories, autosave, and platform storage adapters |
-| `src/renderer/` | Skia worlds/sprites, targeting presentation, cameras, and animation queues |
-| `src/audio/`, `src/state/` | Audio lifecycle and UI/preferences state; authoritative gameplay stays in the session/engine |
-| `src/tests/` | Vitest suites grouped by engine, RPG, battle, world, data, persistence, presentation, and audio |
-| `assets/`, `public/` | Bundled artwork/audio and web assets; register game artwork in `src/ui/shared/gameImages.ts` |
-| `docs/`, `scripts/` | Project/feature specifications and development or verification tooling |
+| Directory                                        | Responsibility                                                                                                    |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| `src/app/`                                       | Thin Expo Router screen entry points and navigator layouts                                                        |
+| `src/ui/`                                        | Feature screens and controls, grouped under battle, journey, menu, navigation, quests, skills, titles, and shared |
+| `src/components/`                                | Reusable general UI components; feature UI belongs under `src/ui/`                                                |
+| `src/hooks/`, `src/constants/`, `src/global.css` | Shared React hooks, theme constants, and app styling tokens                                                       |
+| `src/game/`                                      | Journey/battle sessions, host lifecycles, encounter integration, and durable action coordination                  |
+| `src/engine/`                                    | Headless simulation, typed commands/events, seeded randomness, and engine systems                                 |
+| `src/engine/rpg/`                                | Character progression, stats/resources, skills, inventory, quests, titles, and enchant rules                      |
+| `src/engine/battle/`, `src/engine/ecs/`          | Battle state flow/resolution and entity/component systems                                                         |
+| `src/engine/world/`, `src/engine/dungeon/`       | World traversal, dungeon generation, and dungeon state validation                                                 |
+| `src/data/`, `src/data/schemas/`                 | Authored JSON content, content loading, Zod schemas, and cross-reference validation                               |
+| `src/persistence/`                               | Character profiles, save schemas/migrations, repositories, autosave, and platform storage adapters                |
+| `src/renderer/`                                  | Skia worlds/sprites, targeting presentation, cameras, and animation queues                                        |
+| `src/audio/`, `src/state/`                       | Audio lifecycle and UI/preferences state; authoritative gameplay stays in the session/engine                      |
+| `src/tests/`                                     | Vitest suites grouped by engine, RPG, battle, world, data, persistence, presentation, and audio                   |
+| `assets/`, `public/`                             | Bundled artwork/audio and web assets; register game artwork in `src/ui/shared/gameImages.ts`                      |
+| `docs/`, `scripts/`                              | Project/feature specifications and development or verification tooling                                            |
 
 Keep native/web differences in the existing `.web.ts` / `.web.tsx` adapter pattern. Put tests in the corresponding `src/tests/` area instead of route directories. Keep fetched research in ignored `.firecrawl/` files; document durable findings in `docs/` or content source metadata.
 
@@ -57,14 +57,14 @@ Use **Aseprite MCP tools whenever a new image is needed or requested for the gam
 
 Save each asset in the folder matching its category:
 
-| Asset category | Destination |
-| --- | --- |
+| Asset category   | Destination                |
+| ---------------- | -------------------------- |
 | Consumable items | `assets/game/consumables/` |
 | Town decorations | `assets/game/decorations/` |
-| Enemies | `assets/game/enemies/` |
-| NPCs | `assets/game/npcs/` |
-| Skill icons | `assets/game/skills/` |
-| Weapons | `assets/game/weapons/` |
+| Enemies          | `assets/game/enemies/`     |
+| NPCs             | `assets/game/npcs/`        |
+| Skill icons      | `assets/game/skills/`      |
+| Weapons          | `assets/game/weapons/`     |
 
 Name the final image **`{item name}.png`** and keep its editable source as **`{item name}.aseprite`** in the same folder.
 
@@ -123,9 +123,13 @@ npx expo-doctor             # diagnose dependency and config issues
 npx expo install --fix      # fix incompatible package versions
 npm test                   # run the Vitest suite
 npm run test:watch         # iterate on tests
+npm run format             # format the project with oxfmt
+npm run format:check       # check formatting without writing changes
 ```
 
-Run lint and typecheck before declaring any task done.
+After every file creation or update, immediately run `npm run format` before continuing with further work. This runs oxfmt using `.oxfmtrc.json` and the project's existing ignore rules. Do not defer formatting until the end of the task.
+
+Run `npm run format:check`, lint, and typecheck before declaring any task done.
 
 Run focused tests for changed gameplay, content, or persistence rules. Add meaningful regressions for changed behavior, including invalid commands, deterministic results, migration preservation, and failed-write retries where relevant. Run the full suite for changes spanning shared progression, stat resolution, or save contracts. Use the runtime required by the README for storage integration tests. For UI changes, verify the affected interaction on compact layouts and applicable native/web platforms; report any checks that could not be performed.
 

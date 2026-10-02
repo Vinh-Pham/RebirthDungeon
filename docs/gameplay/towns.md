@@ -12,15 +12,15 @@ The one-time supply chest grants the starter iron blade only after its item gran
 
 ## 2. Current service catalog
 
-| Refuge service | Existing actions | Notes |
-| --- | --- | --- |
-| Orchard Grocery | Buy apples and bread | Food restores authored stamina/fullness; not battle-usable |
-| Ember Forge | Buy iron blades; repair owned weapons | Repair includes an equipped weapon and preserves its instance ID |
-| The Wanderer’s Pack | Buy HP/MP/SP potions and moss mail; sell owned items | The current service that buys items from the player |
-| Healer House | Paid full recovery | 10 gold; restores HP, MP, SP, wounds and fullness |
-| Refuge keeper | Free Smash Rank F lesson and quest offers/claims | The introductory melee lesson awards 3 AP once; rank advancement remains in the Skills journal |
-| Training halls | Explore/interact with authored NPCs | Learned-rank lessons and mastery systems remain planned |
-| Dungeon altar | Offer an unequipped item and enter a generated dungeon | Owns generation/entry validation rather than a shop transaction |
+| Refuge service      | Existing actions                                       | Notes                                                                                          |
+| ------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| Orchard Grocery     | Buy apples and bread                                   | Food restores authored stamina/fullness; not battle-usable                                     |
+| Ember Forge         | Buy iron blades; repair owned weapons                  | Repair includes an equipped weapon and preserves its instance ID                               |
+| The Wanderer’s Pack | Buy HP/MP/SP potions and moss mail; sell owned items   | The current service that buys items from the player                                            |
+| Healer House        | Paid full recovery                                     | 10 gold; restores HP, MP, SP, wounds and fullness                                              |
+| Refuge keeper       | Free Smash Rank F lesson and quest offers/claims       | The introductory melee lesson awards 3 AP once; rank advancement remains in the Skills journal |
+| Training halls      | Explore/interact with authored NPCs                    | Learned-rank lessons and mastery systems remain planned                                        |
+| Dungeon altar       | Offer an unequipped item and enter a generated dungeon | Owns generation/entry validation rather than a shop transaction                                |
 
 Do not describe an existing bank, inn, cooking station, quest board, instructor rank-up service or enchanting bench. Add their content and commands when their feature milestone ships. Display only services supported by the current NPC definition.
 
@@ -50,16 +50,16 @@ There is no town menu action that grants a second copy of encounter loot or skil
 
 Keep the reference-inspired town as a small set of useful destinations rather than a collection of desktop windows. Proposed additions:
 
-| Future service | Dependency and behavior |
-| --- | --- |
-| Instructors | Skills plan: NPC lessons, owned ranks, prerequisite checks and AP/training rank-up |
-| Library/book merchant | Book/page acquisition and assemblies using inventory output validation |
-| Quest NPCs/board | Offers, delivery and manual claims from Quests; state belongs to the hero |
-| Title management | Equip earned First/Second titles with a complete stat preview |
-| Enchanting | Prefix/suffix attempts and separate destructive burning; frozen chance/cost preview |
-| Inn | Optional priced recovery alternative; must have a distinct purpose before adding another full-heal button |
-| Bank | Optional future carried/banked economy with a defined migration and defeat policy |
-| Rebirth service | Explicit reset/preserve preview and town-only confirmation after Character is implemented |
+| Future service        | Dependency and behavior                                                                                   |
+| --------------------- | --------------------------------------------------------------------------------------------------------- |
+| Instructors           | Skills plan: NPC lessons, owned ranks, prerequisite checks and AP/training rank-up                        |
+| Library/book merchant | Book/page acquisition and assemblies using inventory output validation                                    |
+| Quest NPCs/board      | Offers, delivery and manual claims from Quests; state belongs to the hero                                 |
+| Title management      | Equip earned First/Second titles with a complete stat preview                                             |
+| Enchanting            | Prefix/suffix attempts and separate destructive burning; frozen chance/cost preview                       |
+| Inn                   | Optional priced recovery alternative; must have a distinct purpose before adding another full-heal button |
+| Bank                  | Optional future carried/banked economy with a defined migration and defeat policy                         |
+| Rebirth service       | Explicit reset/preserve preview and town-only confirmation after Character is implemented                 |
 
 The first instructor and book/page routes are implemented. The next slice now includes NPC offers, delivery/manual quest claims, a journal/tracker and an earned story title. Title equipment, additional item instances and enchanting materials remain future work. Existing shop IDs, prices and save IDs remain stable unless deliberately migrated.
 

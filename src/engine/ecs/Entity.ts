@@ -15,9 +15,14 @@ export type Entity = {
   itemHotbar?: string[];
   weapon?: Weapon & { id: string };
   statuses?: ActiveStatus[];
-  stamina?: { current: number; max: number }; wounds?: number; fullness?: number; statSource?: StatSource;
+  stamina?: { current: number; max: number };
+  wounds?: number;
+  fullness?: number;
+  statSource?: StatSource;
   mana?: { current: number; max: number };
-  skills?: string[]; learnedSkills?: LearnedSkills; cooldowns?: Record<string, number>;
+  skills?: string[];
+  learnedSkills?: LearnedSkills;
+  cooldowns?: Record<string, number>;
   position?: { x: number; y: number };
   sprite?: { atlas: string; frame: number; idleFrames?: number[] };
   health?: Health;

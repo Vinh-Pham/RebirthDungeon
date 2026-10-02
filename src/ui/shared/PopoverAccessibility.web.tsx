@@ -14,22 +14,35 @@ export default function PopoverAccessibility({ children, open, close }: PopoverA
     // can therefore keep its entering animation paused after positioning.
     const panel = root.current?.closest<HTMLElement>('[role="dialog"]');
     const top = panel?.getBoundingClientRect().top;
-    if (top !== undefined && top > 0 && top < window.innerHeight &&
-      (contentLayout.y === 0 || contentLayout.y >= window.innerHeight)) {
+    if (
+      top !== undefined &&
+      top > 0 &&
+      top < window.innerHeight &&
+      (contentLayout.y === 0 || contentLayout.y >= window.innerHeight)
+    ) {
       setContentLayout({ ...contentLayout, y: top });
     }
   }, [open, contentLayout, triggerPosition, setContentLayout]);
-  useEffect(() => { closeRef.current = close; }, [close]);
+  useEffect(() => {
+    closeRef.current = close;
+  }, [close]);
   useEffect(() => {
     const element = root.current;
     if (!open || !element) return;
     const previous = document.activeElement as HTMLElement | null;
-    const choices = () => Array.from(element.querySelectorAll<HTMLElement>('button, [tabindex]'))
-      .filter((node) => node.tabIndex >= 0 && !node.hasAttribute('disabled') && node.getAttribute('aria-disabled') !== 'true');
+    const choices = () =>
+      Array.from(element.querySelectorAll<HTMLElement>('button, [tabindex]')).filter(
+        (node) =>
+          node.tabIndex >= 0 &&
+          !node.hasAttribute('disabled') &&
+          node.getAttribute('aria-disabled') !== 'true',
+      );
     choices()[0]?.focus();
     const keydown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        event.preventDefault(); event.stopPropagation(); closeRef.current();
+        event.preventDefault();
+        event.stopPropagation();
+        closeRef.current();
       }
       if (event.key !== 'Tab') return;
       const items = choices();
@@ -48,6 +61,14 @@ export default function PopoverAccessibility({ children, open, close }: PopoverA
       if (previous?.isConnected) previous.focus();
     };
   }, [open]);
-  return <View ref={(node) => { root.current = node as unknown as HTMLElement | null; }}
-    accessibilityRole="none">{children}</View>;
+  return (
+    <View
+      ref={(node) => {
+        root.current = node as unknown as HTMLElement | null;
+      }}
+      accessibilityRole="none"
+    >
+      {children}
+    </View>
+  );
 }

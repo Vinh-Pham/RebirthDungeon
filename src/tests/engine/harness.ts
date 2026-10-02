@@ -20,9 +20,18 @@ export function createAttackFixture(): GameSystem {
         if (!target?.health || target.health.current <= 0 || attackerId === targetId) {
           throw new Error('Target must be a different living entity');
         }
-        const amount = Math.min(target.health.current, engine.random.int(1, attacker.combatant.attack));
+        const amount = Math.min(
+          target.health.current,
+          engine.random.int(1, attacker.combatant.attack),
+        );
         target.health.current -= amount;
-        engine.events.emit({ type: 'DAMAGE_DEALT', sourceId: attackerId, targetId, amount, critical: false });
+        engine.events.emit({
+          type: 'DAMAGE_DEALT',
+          sourceId: attackerId,
+          targetId,
+          amount,
+          critical: false,
+        });
       });
     },
     update() {},

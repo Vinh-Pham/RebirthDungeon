@@ -16,7 +16,14 @@ npx expo start
 npm test
 npm run typecheck
 npm run lint
+npm run format
+npm run format:check
 ```
+
+Formatting uses [oxfmt](https://oxc.rs/docs/guide/usage/formatter.html), configured
+in `.oxfmtrc.json`. Run `npm run format` to format the project or
+`npm run format:check` to check it without writing changes. Git-ignored build,
+research, and dependency files, lockfiles, and generated Uniwind types are skipped.
 
 Press **Play**, then choose a saved character or **Create New Character**. Enter a
 name (1–24 characters), choose Warrior, Archery or Mage, and select an age from
@@ -242,10 +249,18 @@ The system handles `ATTACK` commands and exposes `currentTurn()`, `turnOrder`, a
 import { CombatSystem, createGameEngine, createHealth } from './src/engine';
 
 const engine = createGameEngine({ seed: 12345 });
-engine.spawn({ id: 'player', player: true, health: createHealth(30),
-  combatant: { attack: 10, defense: 2, speed: 5 } });
-engine.spawn({ id: 'slime', enemy: true, health: createHealth(20),
-  combatant: { attack: 6, defense: 1, speed: 3 } });
+engine.spawn({
+  id: 'player',
+  player: true,
+  health: createHealth(30),
+  combatant: { attack: 10, defense: 2, speed: 5 },
+});
+engine.spawn({
+  id: 'slime',
+  enemy: true,
+  health: createHealth(20),
+  combatant: { attack: 6, defense: 1, speed: 3 },
+});
 const combat = new CombatSystem(['player', 'slime']);
 engine.addSystem(combat);
 engine.dispatch({ type: 'ATTACK', attackerId: 'player', targetId: 'slime' });

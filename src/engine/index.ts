@@ -33,7 +33,14 @@ export type { BattlePhase } from './battle/BattleController';
 export { prepareSkill } from './battle/SkillResolver';
 export { ContentRegistry } from './data/ContentRegistry';
 
-export { createHero, heroStats, validateHero, grantExperience, rollLoot, experienceToNextLevel } from './rpg/Character';
+export {
+  createHero,
+  heroStats,
+  validateHero,
+  grantExperience,
+  rollLoot,
+  experienceToNextLevel,
+} from './rpg/Character';
 export type { Hero } from './rpg/Character';
 export { applyStatus, tickStatuses, effectiveEntity } from './rpg/StatusEffects';
 export type { ActiveStatus } from './rpg/StatusEffects';

@@ -18,7 +18,10 @@ export const CharacterProfileSchema = z.discriminatedUnion('needsSetup', [
 export type CharacterProfile = z.infer<typeof CharacterProfileSchema>;
 export type CompleteCharacter = Extract<CharacterProfile, { needsSetup: false }>;
 export const importedCharacter = (): CharacterProfile => ({
-  id: 'legacy', name: 'Imported Adventurer', createdAt: new Date().toISOString(), needsSetup: true,
+  id: 'legacy',
+  name: 'Imported Adventurer',
+  createdAt: new Date().toISOString(),
+  needsSetup: true,
 });
 
 export interface CharacterStorage extends SaveStorage {

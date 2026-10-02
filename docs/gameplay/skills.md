@@ -8,16 +8,16 @@ Skills grow through practice and investment. Heroes learn them through **NPC ins
 
 Use the TypeScript implementation as the integration baseline. The neighboring [battle specification](battle.md) and [game plan](../game-plan.md) still describe a historical Godot/five-dice design and need separate revision; their roll, pip, combination, and Godot integration rules do not govern this plan. [README](../../README.md) provides broader project context, but inspect the current schemas and resolvers when its older examples differ.
 
-| Area | Implemented today | Change required for skills |
-| --- | --- | --- |
-| Platform | Expo SDK 57, React Native, Expo Router; iOS, Android, and web | Reuse the existing app and dependencies |
-| Battle flow | Select action → select target → confirm → resolve → next actor | Resolve a learned skill at the hero's saved rank |
-| Initiative | Fixed speed order established at encounter start; ties preserve participant order | Skills consume one scheduled turn; speed buffs do not reorder this queue |
-| Catalog | 34 reference skill definitions (including Human Ranged Attack) plus the separately authored Enchant town skill | Add authored game rank definitions and explicit availability |
-| Combat | Seeded hit, critical, damage-range, defense, protection, and injury rules | Reuse the resolvers; add only the mechanics an enabled skill needs |
-| Progression | Hero level, XP, talent, resources, inventory, equipment, learned ranks, training, AP, discovery and books | Author further supported rank adapters |
-| Saves | Version 11 campaign saves; SQLite on native, IndexedDB on web | Preserve lossless migrations from versions 1–10 |
-| Battle continuation | A pending encounter restarts from its entry hero state and seed | Keep training inside that battle until its result is committed |
+| Area                | Implemented today                                                                                              | Change required for skills                                               |
+| ------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Platform            | Expo SDK 57, React Native, Expo Router; iOS, Android, and web                                                  | Reuse the existing app and dependencies                                  |
+| Battle flow         | Select action → select target → confirm → resolve → next actor                                                 | Resolve a learned skill at the hero's saved rank                         |
+| Initiative          | Fixed speed order established at encounter start; ties preserve participant order                              | Skills consume one scheduled turn; speed buffs do not reorder this queue |
+| Catalog             | 34 reference skill definitions (including Human Ranged Attack) plus the separately authored Enchant town skill | Add authored game rank definitions and explicit availability             |
+| Combat              | Seeded hit, critical, damage-range, defense, protection, and injury rules                                      | Reuse the resolvers; add only the mechanics an enabled skill needs       |
+| Progression         | Hero level, XP, talent, resources, inventory, equipment, learned ranks, training, AP, discovery and books      | Author further supported rank adapters                                   |
+| Saves               | Version 11 campaign saves; SQLite on native, IndexedDB on web                                                  | Preserve lossless migrations from versions 1–10                          |
+| Battle continuation | A pending encounter restarts from its entry hero state and seed                                                | Keep training inside that battle until its result is committed           |
 
 The four starter spells are `firebolt`, `icebolt`, `lightning-bolt`, and `healing`; NPC instruction also enables Smash. Their catalog `rank: F` is a definition value, not the saved hero rank. Class skill IDs supply starter grants, while hero learned records determine battle availability and reconstructed rank bonuses. Smash, Combat Mastery, Sword Mastery, Icebolt and the town-only Enchant skill support F/E progression. Other catalog entries need authored adapters before learning.
 
@@ -60,14 +60,14 @@ Passives contribute automatically when learned and eligible. They have no activa
 
 ### Turn timing
 
-| Mechanic | Planned timing |
-| --- | --- |
-| Existing status effects | Retain `turnStart`/`turnEnd` ticks on the affected actor and the current stacking rules |
-| Self-buff applied with `turnEnd` timing | The casting turn counts, as it does today; author its duration accordingly |
-| Defend | Existing damage reduction lasts until the defender's next turn starts; preserve its recovery behavior |
-| New skill cooldown | Set on successful use; skip that casting turn's end, then decrement at each subsequent completed owner turn |
-| Counterattack window | One prepared reaction, expiring at the start of the owner's next turn |
-| UI/navigation/suspension | No skill, cooldown, status, or initiative advancement |
+| Mechanic                                | Planned timing                                                                                              |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Existing status effects                 | Retain `turnStart`/`turnEnd` ticks on the affected actor and the current stacking rules                     |
+| Self-buff applied with `turnEnd` timing | The casting turn counts, as it does today; author its duration accordingly                                  |
+| Defend                                  | Existing damage reduction lasts until the defender's next turn starts; preserve its recovery behavior       |
+| New skill cooldown                      | Set on successful use; skip that casting turn's end, then decrement at each subsequent completed owner turn |
+| Counterattack window                    | One prepared reaction, expiring at the start of the owner's next turn                                       |
+| UI/navigation/suspension                | No skill, cooldown, status, or initiative advancement                                                       |
 
 For cooldown `1`, the next owner turn cannot use that skill; its end clears the cooldown, allowing use on the following owner turn. Attack, Defend and Rest also count as completed owner turns. Cooldowns clear at encounter end in the initial implementation; longer-lived cooldowns require a separate design.
 
@@ -79,10 +79,10 @@ Progression belongs to **one hero**, scoped by the selected character's existing
 
 A skill can support more than one learning route. Any valid route grants Rank F with zero objective counts and no AP charge. Check prerequisites before consuming a fee or item. A repeated lesson or a book for an already-known skill cannot reset training, increase rank, or award AP.
 
-| Route | Player flow | State transition |
-| --- | --- | --- |
-| NPC instruction | Open an instructor service, inspect prerequisites, choose Learn | Validate instructor/access/fee, deduct any fee, add the learned record |
-| Complete book | Select an owned book in Inventory, inspect the skill, choose Read | Consume one book and add the learned record together |
+| Route           | Player flow                                                                         | State transition                                                                                                     |
+| --------------- | ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| NPC instruction | Open an instructor service, inspect prerequisites, choose Learn                     | Validate instructor/access/fee, deduct any fee, add the learned record                                               |
+| Complete book   | Select an owned book in Inventory, inspect the skill, choose Read                   | Consume one book and add the learned record together                                                                 |
 | Page collection | Obtain the incomplete book, insert its distinct pages, then read the completed book | Consume each page with its slot update; exchange the incomplete book for one complete book when all slots are filled |
 
 Books and pages need explicit item kinds/metadata in `ItemSchema`; they are not battle consumables. Store collection progress per hero under a stable recipe ID. The initial model permits one collection per recipe per hero and one nonstacking incomplete book for that collection, avoiding ambiguity between multiple partly filled copies.
@@ -117,12 +117,12 @@ A skill can advance at 100 points or more without completing every objective. Ex
 
 Illustrative Rank F training for Smash:
 
-| Objective | Points each | Maximum count | Available points |
-| --- | --- | --- | --- |
-| Resolve Smash against an eligible hostile, including a miss | 2 | 20 | 40 |
-| Deal positive HP damage with Smash | 5 | 10 | 50 |
-| Defeat an eligible hostile directly with Smash | 10 | 3 | 30 |
-| **Total** | | | **120** |
+| Objective                                                   | Points each | Maximum count | Available points |
+| ----------------------------------------------------------- | ----------- | ------------- | ---------------- |
+| Resolve Smash against an eligible hostile, including a miss | 2           | 20            | 40               |
+| Deal positive HP damage with Smash                          | 5           | 10            | 50               |
+| Defeat an eligible hostile directly with Smash              | 10          | 3             | 30               |
+| **Total**                                                   |             |               | **120**          |
 
 Twenty uses, ten damaging hits, and one defeat yield `40 + 50 + 10 = 100`. Selection, cancellation, invalid commands, opening a menu, waiting, equipment toggles, and animation completion award nothing. In the pilot, eligible encounters are actual authored world/dungeon encounters involving the hero and a hostile; debug arenas and town interactions do not train combat skills.
 
@@ -144,12 +144,12 @@ Rank-up requires all of the following:
 
 On success, deduct AP once, advance exactly one rank, and reset objective counts for the new rank. On failure, change nothing. Reaching 100 never auto-spends AP. For an illustrative F → E cost of 3 AP:
 
-| Training | AP before | Result |
-| --- | --- | --- |
-| 99 | 10 | Requires more training |
-| 100 | 2 | Requires 1 more AP |
-| 100 | 3 | Rank E, 0 AP, training reset |
-| 120 | 5 | Rank E, 2 AP, training reset |
+| Training | AP before | Result                       |
+| -------- | --------- | ---------------------------- |
+| 99       | 10        | Requires more training       |
+| 100      | 2         | Requires 1 more AP           |
+| 100      | 3         | Rank E, 0 AP, training reset |
+| 120      | 5         | Rank E, 2 AP, training reset |
 
 ## 5. Skill catalog adapted to turns
 
@@ -157,12 +157,12 @@ On success, deduct AP once, advance exactly one rank, and reset objective counts
 
 Preserve these skills and their current Rank F behavior while adding learned-rank resolution. These are runtime definition inputs, not guaranteed final damage or healing:
 
-| Skill ID | Target and effect | Current base range | MP | SP |
-| --- | --- | --- | --- | --- |
-| `firebolt` | One hostile, fire damage | 7–25 plus authored magic scaling | 2 | 0 |
-| `icebolt` | One hostile, ice damage | 10–20 plus authored magic scaling | 1 | 0 |
-| `lightning-bolt` | One hostile, lightning damage | 1–40 plus authored magic scaling | 2 | 0 |
-| `healing` | One living ally, including self | 6–10 plus authored magic scaling; capped by unwounded missing HP | 12 | 6 base for self, 0 for another ally |
+| Skill ID         | Target and effect               | Current base range                                               | MP  | SP                                  |
+| ---------------- | ------------------------------- | ---------------------------------------------------------------- | --- | ----------------------------------- |
+| `firebolt`       | One hostile, fire damage        | 7–25 plus authored magic scaling                                 | 2   | 0                                   |
+| `icebolt`        | One hostile, ice damage         | 10–20 plus authored magic scaling                                | 1   | 0                                   |
+| `lightning-bolt` | One hostile, lightning damage   | 1–40 plus authored magic scaling                                 | 2   | 0                                   |
+| `healing`        | One living ally, including self | 6–10 plus authored magic scaling; capped by unwounded missing HP | 12  | 6 base for self, 0 for another ally |
 
 Each is one action, with no loading timer or stored charges. Firebolt does not gain Burn from its name, Icebolt does not gain slowing, and Lightning Bolt does not gain chain targets. Icebolt has an authored F/E adapter: 20 committed uses supply 100 training for a 2 AP advancement, with E power 11–21 and +2 permanent INT. Firebolt, Lightning Bolt and Healing remain capped at F until their E adapters are authored. Training can count committed uses, actual damage/healing, and direct defeats where appropriate.
 
@@ -170,21 +170,21 @@ Each is one action, with no loading timer or stored charges. Firebolt does not g
 
 Retain the following identities from the earlier plan, adapting them to the current turn scheduler. Availability describes required work, not current implementation status. Smash and several masteries already have reference-only catalog entries; Final Hit, Windmill, Charge, Shield Mastery, and Dual Wield Mastery require new definitions as well as their mechanics.
 
-| Skill | Type | Turn-based role and dependency |
-| --- | --- | --- |
-| Smash | Active melee | Stronger single-hostile physical attack; pilot |
-| Combat Mastery | Passive | Max HP and eligible melee damage; pilot |
-| Sword Mastery | Equipment passive | Sword action damage and authored Balance contribution; pilot after weapon tags |
-| Critical Hit | Triggered passive | Rank-derived critical damage bonus using existing critical resolution |
-| Defense | Active defensive skill | Later rank-aware improvement to Defend, with one shared defense resolver |
-| Final Hit | Active self-buff | Temporary melee bonus for authored future owner actions; status extension |
-| Windmill | Active area melee | One action against all living hostiles; use the existing area resolver |
-| Counterattack | Active stance | Prepare one automatic retaliation; reaction extension |
-| Heavy Armor Mastery | Equipment passive | Defense/protection while wearing heavy armor; armor-category tags |
-| Light Armor Mastery | Equipment passive | Defense/protection while wearing light armor; armor-category tags |
-| Shield Mastery | Equipment passive | Defense/protection while a shield is equipped; shield slot and legality rules |
-| Dual Wield Mastery | Equipment passive | Bonus for a legal two-weapon loadout; two-hand equipment model |
-| Charge | Later active attack | A non-spatial single-target guard-breaking adaptation; authored mitigation extension |
+| Skill               | Type                   | Turn-based role and dependency                                                       |
+| ------------------- | ---------------------- | ------------------------------------------------------------------------------------ |
+| Smash               | Active melee           | Stronger single-hostile physical attack; pilot                                       |
+| Combat Mastery      | Passive                | Max HP and eligible melee damage; pilot                                              |
+| Sword Mastery       | Equipment passive      | Sword action damage and authored Balance contribution; pilot after weapon tags       |
+| Critical Hit        | Triggered passive      | Rank-derived critical damage bonus using existing critical resolution                |
+| Defense             | Active defensive skill | Later rank-aware improvement to Defend, with one shared defense resolver             |
+| Final Hit           | Active self-buff       | Temporary melee bonus for authored future owner actions; status extension            |
+| Windmill            | Active area melee      | One action against all living hostiles; use the existing area resolver               |
+| Counterattack       | Active stance          | Prepare one automatic retaliation; reaction extension                                |
+| Heavy Armor Mastery | Equipment passive      | Defense/protection while wearing heavy armor; armor-category tags                    |
+| Light Armor Mastery | Equipment passive      | Defense/protection while wearing light armor; armor-category tags                    |
+| Shield Mastery      | Equipment passive      | Defense/protection while a shield is equipped; shield slot and legality rules        |
+| Dual Wield Mastery  | Equipment passive      | Bonus for a legal two-weapon loadout; two-hand equipment model                       |
+| Charge              | Later active attack    | A non-spatial single-target guard-breaking adaptation; authored mitigation extension |
 
 **Smash.** Require a usable compatible melee weapon; target one hostile. Add the rank's physical skill range through the existing resolver, pay SP once, and consume one turn. Apply ordinary defense/protection, Defend reduction, hit/critical rules, injury, and weapon wear. Knockback, splash, and defense bypass are not implicit. Train on uses, positive damage, and direct defeats.
 
@@ -216,18 +216,18 @@ Other reference skills, including ranged, advanced magic, and life skills, remai
 
 Keep content, hero progression, encounter state, and UI state separate:
 
-| Owner | Planned data/responsibility |
-| --- | --- |
+| Owner                                               | Planned data/responsibility                                                                                                            |
+| --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | `src/data/skills` and `src/data/schemas/content.ts` | Stable skill IDs, immutable game rank definitions, learning routes, prerequisites, supported mechanics, and retained source references |
-| `src/data/items`, town/world definitions | Book/page metadata, recipes, instructor offers, guaranteed pilot sources |
-| `HeroSchema` in `src/engine/rpg/Character.ts` | AP, discovered IDs, learned rank/objective counts, book collections, claimed progression milestones |
-| `StatSource`/`Stats` | Explicit learned rank input and conditional passive aggregation, replacing the class-list bonus loop |
-| `src/engine/rpg/Skills.ts` (new) | Pure acquisition, training, rank eligibility, rank-up, and passive/rank-resolution helpers |
-| `BattleController`, `CombatSystem`, `SkillResolver` | Validate and resolve a rank-aware action; maintain cooldowns/reactions and authoritative action outcomes |
-| `BattleSession` | Copy hero skills into the encounter, collect bounded pending training, expose detached views |
-| `JourneySession` | Validate town progression commands; merge a completed battle's training and level/milestone AP once |
-| `JourneyHost`, `SaveRepository`, `AutoSaver` | Serialize progression mutations, save the complete candidate campaign, retain/retry failed writes |
-| `src/ui/skills` (new), battle and inventory UI | Render journal/action views and dispatch intents |
+| `src/data/items`, town/world definitions            | Book/page metadata, recipes, instructor offers, guaranteed pilot sources                                                               |
+| `HeroSchema` in `src/engine/rpg/Character.ts`       | AP, discovered IDs, learned rank/objective counts, book collections, claimed progression milestones                                    |
+| `StatSource`/`Stats`                                | Explicit learned rank input and conditional passive aggregation, replacing the class-list bonus loop                                   |
+| `src/engine/rpg/Skills.ts` (new)                    | Pure acquisition, training, rank eligibility, rank-up, and passive/rank-resolution helpers                                             |
+| `BattleController`, `CombatSystem`, `SkillResolver` | Validate and resolve a rank-aware action; maintain cooldowns/reactions and authoritative action outcomes                               |
+| `BattleSession`                                     | Copy hero skills into the encounter, collect bounded pending training, expose detached views                                           |
+| `JourneySession`                                    | Validate town progression commands; merge a completed battle's training and level/milestone AP once                                    |
+| `JourneyHost`, `SaveRepository`, `AutoSaver`        | Serialize progression mutations, save the complete candidate campaign, retain/retry failed writes                                      |
+| `src/ui/skills` (new), battle and inventory UI      | Render journal/action views and dispatch intents                                                                                       |
 
 Proposed learned record: `skillId → { rank, objectiveCounts }`; derive training points rather than saving a second total that can disagree. Counts use stable objective IDs scoped to rank. Book collections store recipe IDs and distinct inserted page IDs, not array positions. Saves contain IDs and runtime values, never source tables, functions, React elements, or mutable catalog definitions.
 
@@ -243,15 +243,15 @@ Catalog validation must reject unknown IDs/ranks/objectives, missing next-rank d
 
 The campaign hero remains authoritative outside combat. While a battle is active, collect training in a detached, bounded encounter ledger. Do not mutate the campaign's learned counts on each attack: restarting the saved pending encounter would otherwise replay those gains.
 
-| Boundary | Proposed skill progression policy |
-| --- | --- |
-| Encounter entry | Save the hero and pending encounter seed/identity; create its rank snapshot |
-| During battle | Training, cooldowns, reactions, and statuses stay in that BattleSession |
-| Victory or defeat committed through `finishBattle` | Merge that battle's eligible training once; AP level/milestone rewards join the same hero transition |
-| Victory | Keep current XP/gold/drop rewards, including any authored book/page loot |
-| Defeat | Preserve learned ranks, AP, and committed training; retain current resource restoration and gold penalty; add no victory rewards |
-| Leave/reload before battle completion is committed | Discard that battle ledger; recreate the pending encounter from the entry state and seed |
-| Later dungeon defeat/return | Previously committed encounter progression and owned books/pages remain with the hero |
+| Boundary                                           | Proposed skill progression policy                                                                                                |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Encounter entry                                    | Save the hero and pending encounter seed/identity; create its rank snapshot                                                      |
+| During battle                                      | Training, cooldowns, reactions, and statuses stay in that BattleSession                                                          |
+| Victory or defeat committed through `finishBattle` | Merge that battle's eligible training once; AP level/milestone rewards join the same hero transition                             |
+| Victory                                            | Keep current XP/gold/drop rewards, including any authored book/page loot                                                         |
+| Defeat                                             | Preserve learned ranks, AP, and committed training; retain current resource restoration and gold penalty; add no victory rewards |
+| Leave/reload before battle completion is committed | Discard that battle ledger; recreate the pending encounter from the entry state and seed                                         |
+| Later dungeon defeat/return                        | Previously committed encounter progression and owned books/pages remain with the hero                                            |
 
 This commits practice on both completed victory and defeat, following the existing encounter boundary rather than deferring progression until a whole dungeon run ends. Defeat is the current refuge recovery flow; it does not reset levels, ranks, AP, or training as a new rebirth system. Deliberate rebirth needs a separate design.
 
@@ -277,16 +277,16 @@ Use the existing React Native/HeroUI shared controls and Uniwind/theme conventio
 
 On compact screens, use a single-column skill list and a drill-in detail view. Show AP, learned/discovered filters, category, rank, training, and eligibility on concise rows. A selected skill shows current/next effects, objective counts, acquisition hints, and one clearly labeled Learn/Read/Rank Up action. Avoid presenting the entire rank table in a narrow combat menu. Long lists should render only the needed rows; keep stable keys and cached immutable catalog lookups outside render loops.
 
-| Journal state | Player-facing feedback |
-| --- | --- |
-| Discovered, unlearned | How to learn and unmet prerequisites |
-| Learned, below threshold | `72 / 100 training` and remaining objectives |
-| Training complete, AP short | `Training complete · Need 1 AP` |
-| Ready | `Rank up F → E · 3 AP` plus next-rank preview |
-| Prototype boundary | `Prototype cap: E` |
-| Final rank | `Max Rank: 1` |
-| Unsupported mechanic | `Not implemented` with its dependency; no learning/rank-up action |
-| Conditional passive inactive | Its reason, such as `Equip a usable sword` |
+| Journal state                | Player-facing feedback                                            |
+| ---------------------------- | ----------------------------------------------------------------- |
+| Discovered, unlearned        | How to learn and unmet prerequisites                              |
+| Learned, below threshold     | `72 / 100 training` and remaining objectives                      |
+| Training complete, AP short  | `Training complete · Need 1 AP`                                   |
+| Ready                        | `Rank up F → E · 3 AP` plus next-rank preview                     |
+| Prototype boundary           | `Prototype cap: E`                                                |
+| Final rank                   | `Max Rank: 1`                                                     |
+| Unsupported mechanic         | `Not implemented` with its dependency; no learning/rank-up action |
+| Conditional passive inactive | Its reason, such as `Equip a usable sword`                        |
 
 Book details show page slots and missing source hints, with explicit Insert/Read actions. Display the journal's banked training and any current-encounter pending gain separately, labeled **Banked after this battle**. Progression actions are read-only during a dungeon/battle, with **Return to town to rank up** visible beside their controls.
 
@@ -300,11 +300,11 @@ Read detached session snapshots with the project's existing subscription pattern
 
 Preserve the four current starter spells. Demonstrate all three acquisition routes with skills that are not already granted:
 
-| Pilot skill | Acquisition | F → E proposal | Dependencies |
-| --- | --- | --- | --- |
-| Smash | Town melee instructor lesson | Additive physical skill range 10–14 → 14–20; 4 base SP, 0 MP, no cooldown; 3 AP | Compatible melee weapon requirement and action tags |
-| Combat Mastery | Read a complete combat manual | Max HP +10 → +12; melee min/max damage +1/+1 → +2/+2; 3 AP | Learned-rank stat aggregation and melee filtering |
-| Sword Mastery | Assemble three named pages, then read its manual | Sword min/max damage +0/+2 → +1/+3; Balance +0.01 → +0.02; 3 AP | Sword tags, usable weapon checks, collection inventory |
+| Pilot skill    | Acquisition                                      | F → E proposal                                                                  | Dependencies                                           |
+| -------------- | ------------------------------------------------ | ------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| Smash          | Town melee instructor lesson                     | Additive physical skill range 10–14 → 14–20; 4 base SP, 0 MP, no cooldown; 3 AP | Compatible melee weapon requirement and action tags    |
+| Combat Mastery | Read a complete combat manual                    | Max HP +10 → +12; melee min/max damage +1/+1 → +2/+2; 3 AP                      | Learned-rank stat aggregation and melee filtering      |
+| Sword Mastery  | Assemble three named pages, then read its manual | Sword min/max damage +0/+2 → +1/+3; Balance +0.01 → +0.02; 3 AP                 | Sword tags, usable weapon checks, collection inventory |
 
 These are **Rebirth Dungeon pilot values**, not imported Mabinogi balance. Author them as numeric definitions and evaluate their damage/resource pacing against existing enemy HP and protection before release. E is the prototype cap for these three; no E → D spending or unsupported training is exposed.
 

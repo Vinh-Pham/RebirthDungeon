@@ -3,10 +3,7 @@
     "id": "grocery",
     "name": "Orchard Grocery",
     "kind": "grocery",
-    "items": [
-      "apple",
-      "bread"
-    ]
+    "items": ["apple", "bread"]
   },
   {
     "id": "blacksmith",
@@ -27,12 +24,7 @@
     "id": "general",
     "name": "The Wanderer\u2019s Pack",
     "kind": "general",
-    "items": [
-      "potion",
-      "mana-potion",
-      "moss-mail",
-      "stamina-potion"
-    ],
+    "items": ["potion", "mana-potion", "moss-mail", "stamina-potion"],
     "buysItems": true
   }
 ]

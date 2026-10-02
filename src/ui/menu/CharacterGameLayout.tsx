@@ -1,4 +1,12 @@
-import { Redirect, router, Stack, useFocusEffect, useLocalSearchParams, useNavigation, usePathname } from 'expo-router';
+import {
+  Redirect,
+  router,
+  Stack,
+  useFocusEffect,
+  useLocalSearchParams,
+  useNavigation,
+  usePathname,
+} from 'expo-router';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { AppState, BackHandler, Text, View } from 'react-native';
 import { useDrawerStatus } from 'expo-router/drawer';
@@ -24,24 +32,64 @@ function LoadCharacter({ characterId }: { characterId: string }) {
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     let active = true;
-    void withCharacters((repository) => repository.get(characterId)).then((found) => {
-      if (!found) throw new Error('This character could not be found. Choose a character to continue.');
-      if (active) setProfile(found);
-    }).catch((failure: unknown) => { if (active) setError(failure instanceof Error ? failure.message : 'Your character could not be loaded.'); });
-    return () => { active = false; };
+    void withCharacters((repository) => repository.get(characterId))
+      .then((found) => {
+        if (!found)
+          throw new Error('This character could not be found. Choose a character to continue.');
+        if (active) setProfile(found);
+      })
+      .catch((failure: unknown) => {
+        if (active)
+          setError(
+            failure instanceof Error ? failure.message : 'Your character could not be loaded.',
+          );
+      });
+    return () => {
+      active = false;
+    };
   }, [characterId, attempt]);
-  if (profile?.needsSetup) return <Redirect href={{ pathname: '/characters/new', params: { importId: profile.id } }} />;
+  if (profile?.needsSetup)
+    return <Redirect href={{ pathname: '/characters/new', params: { importId: profile.id } }} />;
   if (profile) return <CharacterGame profile={profile} />;
-  return <MenuPage><Text className="text-foreground" style={menu.title}>Your journey</Text>{error ? <><MenuError message={error} />
-    <MenuButton label="Retry" onPress={() => { setError(undefined); setAttempt((value) => value + 1); }} />
-    <MenuButton label="Back to Characters" secondary onPress={() => router.dismissTo('/characters')} />
-  </> : <DungeonLoading label="Loading character" />}</MenuPage>;
+  return (
+    <MenuPage>
+      <Text className="text-foreground" style={menu.title}>
+        Your journey
+      </Text>
+      {error ? (
+        <>
+          <MenuError message={error} />
+          <MenuButton
+            label="Retry"
+            onPress={() => {
+              setError(undefined);
+              setAttempt((value) => value + 1);
+            }}
+          />
+          <MenuButton
+            label="Back to Characters"
+            secondary
+            onPress={() => router.dismissTo('/characters')}
+          />
+        </>
+      ) : (
+        <DungeonLoading label="Loading character" />
+      )}
+    </MenuPage>
+  );
 }
 function CharacterGame({ profile }: { profile: CompleteCharacter }) {
   const [attempt, setAttempt] = useState(0);
   const { ready } = useAudio();
-  if (!ready) return <MenuPage><DungeonLoading label="Loading sound preferences" /></MenuPage>;
-  return <GameSession key={attempt} profile={profile} retry={() => setAttempt((value) => value + 1)} />;
+  if (!ready)
+    return (
+      <MenuPage>
+        <DungeonLoading label="Loading sound preferences" />
+      </MenuPage>
+    );
+  return (
+    <GameSession key={attempt} profile={profile} retry={() => setAttempt((value) => value + 1)} />
+  );
 }
 function GameSession({ profile, retry }: { profile: CompleteCharacter; retry(): void }) {
   const { preferences, attachSession } = useAudio();
@@ -49,22 +97,35 @@ function GameSession({ profile, retry }: { profile: CompleteCharacter; retry(): 
   const navigation = useNavigation('/');
   const drawerOpen = useDrawerStatus() === 'open';
   const path = usePathname();
-  const [host] = useState(() => new JourneyHost(loadGameContent(), () => createSaveStorage(profile.id), profile.name, profile.talent, preferences.getSettings));
+  const [host] = useState(
+    () =>
+      new JourneyHost(
+        loadGameContent(),
+        () => createSaveStorage(profile.id),
+        profile.name,
+        profile.talent,
+        preferences.getSettings,
+      ),
+  );
   const snapshot = useSyncExternalStore(host.subscribe, host.getSnapshot, host.getServerSnapshot);
   const ready = !!snapshot.session;
   const leavePending = useRef(false);
   useEffect(() => {
-    const subscription = AppState.addEventListener('change', (state) => { if (state !== 'active') void host.flush(); });
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') void host.flush();
+    });
     return () => subscription.remove();
   }, [host]);
   const leave = useCallback(async () => {
     if (leavePending.current || host.getSnapshot().busy) return false;
     leavePending.current = true;
     try {
-      if (!await host.flushForExit()) return false;
+      if (!(await host.flushForExit())) return false;
       router.dismissTo('/characters');
       return true;
-    } finally { leavePending.current = false; }
+    } finally {
+      leavePending.current = false;
+    }
   }, [host]);
   useEffect(() => {
     if (ready) return registerGame({ host, profile, leave });
@@ -72,34 +133,69 @@ function GameSession({ profile, retry }: { profile: CompleteCharacter; retry(): 
   useEffect(() => {
     if (snapshot.session) return attachSession(snapshot.session, snapshot.battle);
   }, [snapshot.session, snapshot.battle, attachSession]);
-  useFocusEffect(useCallback(() => {
-    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (drawerOpen) { navigation.dispatch(DrawerActions.closeDrawer()); return true; }
-      if (statsOpen) { closeStats(); return true; }
-      if (path.endsWith('/inventory') || path.endsWith('/save-load') || path.endsWith('/skills') || path.endsWith('/titles') || path.endsWith('/quests')) return false;
-      const current = host.getSnapshot();
-      if (!current.battle && current.session?.getSnapshot().activeService) {
-        if (!current.busy) current.session.dispatch({ type: 'CLOSE_SERVICE' });
+  useFocusEffect(
+    useCallback(() => {
+      const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+        if (drawerOpen) {
+          navigation.dispatch(DrawerActions.closeDrawer());
+          return true;
+        }
+        if (statsOpen) {
+          closeStats();
+          return true;
+        }
+        if (
+          path.endsWith('/inventory') ||
+          path.endsWith('/save-load') ||
+          path.endsWith('/skills') ||
+          path.endsWith('/titles') ||
+          path.endsWith('/quests')
+        )
+          return false;
+        const current = host.getSnapshot();
+        if (!current.battle && current.session?.getSnapshot().activeService) {
+          if (!current.busy) current.session.dispatch({ type: 'CLOSE_SERVICE' });
+          return true;
+        }
+        void characters();
         return true;
-      }
-      void characters(); return true;
-    });
-    return () => subscription.remove();
-  }, [characters, host, statsOpen, closeStats, drawerOpen, navigation, path]));
-  if (!snapshot.session) return <MenuPage><Text className="text-foreground" style={menu.title}>{profile.name}</Text>
-    {snapshot.busy ? <DungeonLoading label="Loading journey" /> : <>
-      <MenuError message={snapshot.error ?? 'Your journey could not be loaded.'} /><MenuButton label="Retry" onPress={retry} />
-      <MenuButton label="Back to Characters" secondary onPress={() => router.dismissTo('/characters')} />
-    </>}
-  </MenuPage>;
-  return <CharacterGameContext value={{ host, profile }}><View className="flex-1 bg-background">
-    <Stack screenOptions={{ headerShown: false, gestureEnabled: false }}>
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="inventory" />
-      <Stack.Screen name="skills" />
-      <Stack.Screen name="quests" />
-      <Stack.Screen name="titles" />
-      <Stack.Screen name="save-load" />
-    </Stack>
-  </View></CharacterGameContext>;
+      });
+      return () => subscription.remove();
+    }, [characters, host, statsOpen, closeStats, drawerOpen, navigation, path]),
+  );
+  if (!snapshot.session)
+    return (
+      <MenuPage>
+        <Text className="text-foreground" style={menu.title}>
+          {profile.name}
+        </Text>
+        {snapshot.busy ? (
+          <DungeonLoading label="Loading journey" />
+        ) : (
+          <>
+            <MenuError message={snapshot.error ?? 'Your journey could not be loaded.'} />
+            <MenuButton label="Retry" onPress={retry} />
+            <MenuButton
+              label="Back to Characters"
+              secondary
+              onPress={() => router.dismissTo('/characters')}
+            />
+          </>
+        )}
+      </MenuPage>
+    );
+  return (
+    <CharacterGameContext value={{ host, profile }}>
+      <View className="flex-1 bg-background">
+        <Stack screenOptions={{ headerShown: false, gestureEnabled: false }}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="inventory" />
+          <Stack.Screen name="skills" />
+          <Stack.Screen name="quests" />
+          <Stack.Screen name="titles" />
+          <Stack.Screen name="save-load" />
+        </Stack>
+      </View>
+    </CharacterGameContext>
+  );
 }

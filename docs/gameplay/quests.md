@@ -6,12 +6,12 @@ Updated **October 1, 2026**. The first quest slice is **implemented**: a short C
 
 Preserve the Mabinogi-inspired Chapter/Generation structure and several acquisition routes without importing its MMO delivery systems. These are Rebirth Dungeon content contracts. [Historical inspiration](https://wiki.mabinogiworld.com/view/Category:Quests).
 
-| Category | Role | Proposed journal organization |
-| --- | --- | --- |
-| Mainstream | Ordered story arcs | Chapter → Generation → quests |
-| NPC sidequest | Optional local stories and requests | Town/NPC grouping |
-| Skill quest | Learning, practice and rank milestones | Skills grouping linked to the skill journal |
-| Role-playing mission | Control an authored NPC in a scenario | Mission mode attached to a story/side quest, not a second reward category |
+| Category             | Role                                   | Proposed journal organization                                             |
+| -------------------- | -------------------------------------- | ------------------------------------------------------------------------- |
+| Mainstream           | Ordered story arcs                     | Chapter → Generation → quests                                             |
+| NPC sidequest        | Optional local stories and requests    | Town/NPC grouping                                                         |
+| Skill quest          | Learning, practice and rank milestones | Skills grouping linked to the skill journal                               |
+| Role-playing mission | Control an authored NPC in a scenario  | Mission mode attached to a story/side quest, not a second reward category |
 
 Use stable IDs for chapters, generations, quests, stages and objectives. Display labels may change without resetting progress. A quest belongs to one category; a role-playing scenario is its execution mode. Initial content contains Chapter 1 / Generation 1, “The Broken Seal.” “A provision for the road” starts at the keeper, followed by Smash practice, successful moss-depths completion and a keeper report. The healer offers “A little kindness” (two apples); committed Sword Mastery Rank E reveals “A steady sword.”
 
@@ -34,12 +34,12 @@ Skill quests use the unchanged Skills learning/training/AP model. They may offer
 
 Illustrative content, to be authored and validated:
 
-| Quest hook | Delivery | Result and limitation |
-| --- | --- | --- |
-| Equip a sword | Instructor offer | Explain Sword Mastery and its page/book route; reveal availability without auto-learning |
-| Commit Sword Mastery Rank E | Automatic | A practice quest with an authored AP reward |
-| Commit Smash Rank E | NPC offer | Later Counterattack lesson only after its reaction adapter exists |
-| Complete an introductory book/page lesson | Automatic or instructor report | One-time progression reward; no duplicate AP on reload |
+| Quest hook                                | Delivery                       | Result and limitation                                                                    |
+| ----------------------------------------- | ------------------------------ | ---------------------------------------------------------------------------------------- |
+| Equip a sword                             | Instructor offer               | Explain Sword Mastery and its page/book route; reveal availability without auto-learning |
+| Commit Sword Mastery Rank E               | Automatic                      | A practice quest with an authored AP reward                                              |
+| Commit Smash Rank E                       | NPC offer                      | Later Counterattack lesson only after its reaction adapter exists                        |
+| Complete an introductory book/page lesson | Automatic or instructor report | One-time progression reward; no duplicate AP on reload                                   |
 
 Keep acquisition routes consistent with Skills: one quest hint must not accidentally add a fourth automatic learning path or replace the F/E pilot's required pages. A quest referencing an unsupported combat adapter stays unavailable. The introductory 3 AP grant and per-level AP are progression rewards, not repeatable quest claims.
 
@@ -49,16 +49,16 @@ The first engine supports named interaction/visit, direct skill-use practice, au
 
 Stages execute in authored order; objectives within a stage can progress in parallel. A stage advances only when all required objectives meet their semantics. Display integer progress and a concrete location/target where available.
 
-| Objective type | Evidence | Completion boundary |
-| --- | --- | --- |
-| Talk/interact | Accepted interaction with a named object/NPC | Same world-command candidate |
-| Visit | Accepted entry to a named map/tile region | Same world-command candidate |
-| Use skill / deal damage | Attributed resolved action with action, source and targets | Completed encounter result |
-| Defeat enemy / win encounter | Death/result with eligible enemy and encounter IDs | Completed encounter result; victory when required |
-| Clear dungeon | Named successful run completion after final treasure | Completed-run exit; early return/defeat do not count |
-| Learn/rank skill | Committed learned-rank transition | Same progression candidate |
-| Collect/own items | Current owned quantities or explicit accepted-pickup facts | Definition chooses state or event semantics |
-| Deliver items | Actual owned inputs consumed at a valid NPC claim | Same claim as rewards and completion |
+| Objective type               | Evidence                                                   | Completion boundary                                  |
+| ---------------------------- | ---------------------------------------------------------- | ---------------------------------------------------- |
+| Talk/interact                | Accepted interaction with a named object/NPC               | Same world-command candidate                         |
+| Visit                        | Accepted entry to a named map/tile region                  | Same world-command candidate                         |
+| Use skill / deal damage      | Attributed resolved action with action, source and targets | Completed encounter result                           |
+| Defeat enemy / win encounter | Death/result with eligible enemy and encounter IDs         | Completed encounter result; victory when required    |
+| Clear dungeon                | Named successful run completion after final treasure       | Completed-run exit; early return/defeat do not count |
+| Learn/rank skill             | Committed learned-rank transition                          | Same progression candidate                           |
+| Collect/own items            | Current owned quantities or explicit accepted-pickup facts | Definition chooses state or event semantics          |
+| Deliver items                | Actual owned inputs consumed at a valid NPC claim          | Same claim as rewards and completion                 |
 
 One area skill counts as one use; distinct eligible kills can count separately per target. Periodic damage, reactions, healing and exhausted attacks need explicit objective tags before they count. The renderer, battle log and audio callbacks never grant quest progress. Name the damage basis, eligible actor, enemy type and success requirements rather than accepting every event containing a matching word.
 

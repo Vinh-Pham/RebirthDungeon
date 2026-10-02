@@ -62,7 +62,8 @@ export class GameEngine {
 
   update(dt: number): void {
     this.assertActive();
-    if (!Number.isFinite(dt) || dt < 0) throw new RangeError('Delta must be finite, nonnegative seconds');
+    if (!Number.isFinite(dt) || dt < 0)
+      throw new RangeError('Delta must be finite, nonnegative seconds');
     for (const system of [...this.systems.keys()]) {
       if (this.systems.has(system)) system.update(this, dt);
     }

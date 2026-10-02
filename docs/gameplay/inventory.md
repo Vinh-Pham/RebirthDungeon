@@ -6,16 +6,16 @@ Updated **October 2, 2026**. The Expo app already has bounded item stacks, indiv
 
 The character's campaign hero owns inventory throughout town and dungeon exploration. There is no separate town stash or independently spendable run inventory. At encounter entry, BattleSession copies that hero; the completed result returns consumptions, resources and weapon wear to the campaign. Current saves restart an unfinished encounter from its entry state, as described in [Battle](battle.md#7-encounter-results-and-save-continuation).
 
-| Current data | Meaning |
-| --- | --- |
-| Hero inventory | Item-definition counts, bounded to 999 per definition |
-| Item hotbar | Ordered, unique battle-usable consumable definition IDs; persists independently of quantity |
+| Current data     | Meaning                                                                                                 |
+| ---------------- | ------------------------------------------------------------------------------------------------------- |
+| Hero inventory   | Item-definition counts, bounded to 999 per definition                                                   |
+| Item hotbar      | Ordered, unique battle-usable consumable definition IDs; persists independently of quantity             |
 | Weapon instances | Stable instance ID, definition ID, durability, lock and optional prefix/suffix with saved clause values |
-| Armor instances | Stable instance ID, definition ID, lock and optional prefix/suffix with saved clause values |
-| Equipment weapon | An owned weapon instance ID |
-| Equipment armor | An owned armor instance ID; that specific copy is assigned to the armor slot |
-| Gold | One hero balance, bounded to 1,000,000; no bank or gold-bag capacity |
-| Dungeon keys | Run-specific absent/dropped/held/spent state; outside normal inventory |
+| Armor instances  | Stable instance ID, definition ID, lock and optional prefix/suffix with saved clause values             |
+| Equipment weapon | An owned weapon instance ID                                                                             |
+| Equipment armor  | An owned armor instance ID; that specific copy is assigned to the armor slot                            |
+| Gold             | One hero balance, bounded to 1,000,000; no bank or gold-bag capacity                                    |
+| Dungeon keys     | Run-specific absent/dropped/held/spent state; outside normal inventory                                  |
 
 Weapon references and count limits must remain consistent. Armor is individually owned; version 8 migrates older armor stacks without losing copies or refilling resources. There is no footprint capacity, weight, expiration, ground-item dropping or subscription storage. Item previews and React selection never create additional ownership.
 
@@ -23,18 +23,18 @@ The Inventory route and Journey Inventory tab share an image-only grid, with pag
 
 ## 2. Current actions and equipment
 
-| Action | Exploration, including a dungeon | Active encounter |
-| --- | --- | --- |
-| Inspect inventory/equipment | Available; no simulation tick | Read-only inventory screen |
-| Equip/unequip weapon or armor | Validated campaign command | Unavailable |
-| Use an eligible consumable | Validated campaign command | Assigned battle-usable supplies only; self, one copy and one turn |
-| Add/remove Items hotbar assignment | Durable campaign candidate | Durable configuration candidate; retains the live encounter |
-| Buy, sell, repair | Only through a nearby open town service | Unavailable |
-| Learn/read/assemble books and quest acceptance/claims | Implemented town-only commands | Unavailable |
-| Enchant, burn | Implemented at the nearby open town blacksmith | Unavailable |
-| Drop selected quantity or equipment copy | Durable campaign candidate; protects equipped/locked copies | Unavailable |
-| Lock/unlock equipment | Durable campaign command; locked gear stays equippable | Unavailable |
-| Rearrange grids, split/merge, sort | Future presentation/storage operations | Initially unavailable while an encounter is active |
+| Action                                                | Exploration, including a dungeon                            | Active encounter                                                  |
+| ----------------------------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------- |
+| Inspect inventory/equipment                           | Available; no simulation tick                               | Read-only inventory screen                                        |
+| Equip/unequip weapon or armor                         | Validated campaign command                                  | Unavailable                                                       |
+| Use an eligible consumable                            | Validated campaign command                                  | Assigned battle-usable supplies only; self, one copy and one turn |
+| Add/remove Items hotbar assignment                    | Durable campaign candidate                                  | Durable configuration candidate; retains the live encounter       |
+| Buy, sell, repair                                     | Only through a nearby open town service                     | Unavailable                                                       |
+| Learn/read/assemble books and quest acceptance/claims | Implemented town-only commands                              | Unavailable                                                       |
+| Enchant, burn                                         | Implemented at the nearby open town blacksmith              | Unavailable                                                       |
+| Drop selected quantity or equipment copy              | Durable campaign candidate; protects equipped/locked copies | Unavailable                                                       |
+| Lock/unlock equipment                                 | Durable campaign command; locked gear stays equippable      | Unavailable                                                       |
+| Rearrange grids, split/merge, sort                    | Future presentation/storage operations                      | Initially unavailable while an encounter is active                |
 
 Selection, cancellation, comparison and scrolling spend nothing. Equip/use commands revalidate ownership and context at execution; stale rows are not authority. Opening a menu is not movement or a recovery tick. Consumables remain usable in exploration. Adding requires owned stock; removing works even after depletion. Assignment changes consume nothing, tick no resources, grant no progress and draw no RNG. A failed save retains the same candidate for retry and locks dependent actions. Version 11 adds an empty hotbar to versions 1–10; only saved configuration changes on a pending entry checkpoint, while uncommitted battle consumptions/resources remain isolated. Reloading an unfinished battle restarts from that checkpoint with its saved hotbar.
 
@@ -48,16 +48,16 @@ Only active equipment contributes stats. Expanded equipment and capacity bonuses
 
 The Mabinogi-inspired extension proposes a **6-column × 10-row backpack**, varied item footprints and ordinary bags. These are design defaults, not present save fields or final balance. Use original art and definitions rather than importing reference inventory assets. [Reference inspiration](https://wiki.mabinogiworld.com/view/Inventory).
 
-| Proposed item | Fixed footprint | Proposed stack limit |
-| --- | --- | --- |
-| Potion, powder or herb | 1 × 1 | 20 of the same definition/variant |
-| Skill page | 1 × 1 | 10 of the same page |
-| Enchant scroll | 1 × 2 | 1 |
-| Skill book | 2 × 2 | 1 |
-| Sword | 1 × 3 | 1 |
-| Shield | 2 × 2 | 1 |
-| Body armor | 2 × 3 | 1 |
-| Small bag | 1 × 2 in the backpack | 1; owns a 3 × 4 contents grid |
+| Proposed item          | Fixed footprint       | Proposed stack limit              |
+| ---------------------- | --------------------- | --------------------------------- |
+| Potion, powder or herb | 1 × 1                 | 20 of the same definition/variant |
+| Skill page             | 1 × 1                 | 10 of the same page               |
+| Enchant scroll         | 1 × 2                 | 1                                 |
+| Skill book             | 2 × 2                 | 1                                 |
+| Sword                  | 1 × 3                 | 1                                 |
+| Shield                 | 2 × 2                 | 1                                 |
+| Body armor             | 2 × 3                 | 1                                 |
+| Small bag              | 1 × 2 in the backpack | 1; owns a 3 × 4 contents grid     |
 
 Store a top-left anchor in zero-based container coordinates and derive occupied cells. Validate positive dimensions, boundaries, content restrictions and rectangle overlap. Enough free cells do not guarantee a fitting rectangle. Rotation and weight are deferred. Equipping removes the item from its grid; unequipping needs a legal destination.
 
@@ -84,13 +84,13 @@ Favorites organize views. A separate future item lock blocks selling, destructio
 
 The existing weapon/armor pair remains the baseline. Introduce additional slots only with item definitions, validation, migration and skill consumers:
 
-| Proposed slot | Rule |
-| --- | --- |
-| Main hand | One compatible one-handed or two-handed weapon |
-| Off hand | Shield or a compatible second one-handed weapon |
-| Head, hands, feet | One eligible instance per slot |
-| Body | Exactly one clothing/light-armor/heavy-armor category |
-| Accessories 1/2 | Two distinct assignments subject to authored restrictions |
+| Proposed slot     | Rule                                                      |
+| ----------------- | --------------------------------------------------------- |
+| Main hand         | One compatible one-handed or two-handed weapon            |
+| Off hand          | Shield or a compatible second one-handed weapon           |
+| Head, hands, feet | One eligible instance per slot                            |
+| Body              | Exactly one clothing/light-armor/heavy-armor category     |
+| Accessories 1/2   | Two distinct assignments subject to authored restrictions |
 
 A two-handed item is one main-hand instance with an off-hand occupancy marker; count its bonuses/enchants once. Dual wielding needs two distinct compatible instances and cannot leave a lone off-hand weapon. Masteries cannot legalize an invalid loadout. Inactive/cosmetic sets provide no gameplay bonuses if introduced later.
 

@@ -18,12 +18,12 @@ Select action → select target → Confirm action
     → tick next actor's turn start → next actor or result
 ```
 
-| UI action | Existing engine intent | Behavior |
-| --- | --- | --- |
-| Attack | `ATTACK` | One basic physical strike against one hostile |
-| Skill | `USE_SKILL` | One owned, battle-usable skill with its authored target/cost/effect |
-| Defend | `DEFEND` | Self; damage reduction and rest-rate stamina recovery |
-| Rest, engine-supported | `REST` | Self; rest-rate resource tick without Defend mitigation |
+| UI action              | Existing engine intent | Behavior                                                            |
+| ---------------------- | ---------------------- | ------------------------------------------------------------------- |
+| Attack                 | `ATTACK`               | One basic physical strike against one hostile                       |
+| Skill                  | `USE_SKILL`            | One owned, battle-usable skill with its authored target/cost/effect |
+| Defend                 | `DEFEND`               | Self; damage reduction and rest-rate stamina recovery               |
+| Rest, engine-supported | `REST`                 | Self; rest-rate resource tick without Defend mitigation             |
 
 `BattleController` receives `SELECT_ACTION`, `SELECT_TARGET`, `CONFIRM_ACTION`, and `CANCEL_ACTION`. It submits combat intents only while the XState machine is executing. Direct combat commands cannot bypass this flow inside a normal BattleSession. The low-level standalone CombatSystem can still be exercised by engine tests.
 

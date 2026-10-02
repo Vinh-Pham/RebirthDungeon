@@ -20,7 +20,11 @@ export interface PresentationBatch {
   deaths: string[];
   missed: boolean;
 }
-export interface PresentationSnapshot { active?: PresentationBatch; pending: number; busy: boolean }
+export interface PresentationSnapshot {
+  active?: PresentationBatch;
+  pending: number;
+  busy: boolean;
+}
 
 /** Wall-clock timers only pace visuals. They never dispatch simulation commands. */
 export class PresentationQueue {
@@ -39,14 +43,19 @@ export class PresentationQueue {
   }
   getSnapshot = (): PresentationSnapshot => this.snapshot;
   subscribe = (listener: () => void): Unsubscribe => {
-    this.listeners.add(listener); return () => { this.listeners.delete(listener); };
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
   };
   dispose(): void {
     this.disposed = true;
     this.unsubscribe();
     if (this.timer) clearTimeout(this.timer);
-    this.pending = []; this.collecting = undefined;
-    this.snapshot = { pending: 0, busy: false }; this.listeners.clear();
+    this.pending = [];
+    this.collecting = undefined;
+    this.snapshot = { pending: 0, busy: false };
+    this.listeners.clear();
   }
 
   private accept(event: GameEvent) {
@@ -56,15 +65,28 @@ export class PresentationQueue {
     } else if (this.collecting) {
       if (event.type === 'DAMAGE_DEALT' || event.type === 'HEALTH_RESTORED') {
         const health = this.engine.getEntity(event.targetId)!.health!;
-        const existing = this.collecting.impacts.find((impact) => impact.targetId === event.targetId && impact.healing === (event.type === 'HEALTH_RESTORED'));
-        if (existing) { existing.amount += event.amount; existing.healthAfter = health.current; }
-        else this.collecting.impacts.push({ targetId: event.targetId, amount: event.amount,
-          healing: event.type === 'HEALTH_RESTORED', critical: event.type === 'DAMAGE_DEALT' && event.critical,
-          healthAfter: health.current, maxHealth: health.max });
+        const existing = this.collecting.impacts.find(
+          (impact) =>
+            impact.targetId === event.targetId &&
+            impact.healing === (event.type === 'HEALTH_RESTORED'),
+        );
+        if (existing) {
+          existing.amount += event.amount;
+          existing.healthAfter = health.current;
+        } else
+          this.collecting.impacts.push({
+            targetId: event.targetId,
+            amount: event.amount,
+            healing: event.type === 'HEALTH_RESTORED',
+            critical: event.type === 'DAMAGE_DEALT' && event.critical,
+            healthAfter: health.current,
+            maxHealth: health.max,
+          });
       } else if (event.type === 'ENTITY_DIED') this.collecting.deaths.push(event.entityId);
       else if (event.type === 'ATTACK_MISSED') this.collecting.missed = true;
       else if (event.type === 'TURN_ENDED') {
-        this.pending.push(this.collecting); this.collecting = undefined;
+        this.pending.push(this.collecting);
+        this.collecting = undefined;
         if (!this.snapshot.active) this.next();
         else this.notify({ ...this.snapshot, pending: this.pending.length });
       }

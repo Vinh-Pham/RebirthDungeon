@@ -1,7 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
 import { CommandBus, EventBus, type GameEvent } from '../../engine';
 
-const damage: GameEvent = { type: 'DAMAGE_DEALT', sourceId: 'a', targetId: 'b', amount: 2, critical: false };
+const damage: GameEvent = {
+  type: 'DAMAGE_DEALT',
+  sourceId: 'a',
+  targetId: 'b',
+  amount: 2,
+  critical: false,
+};
 
 describe('event bus', () => {
   it('delivers typed and all-event subscriptions in order with independent cleanup', () => {
@@ -25,7 +31,10 @@ describe('event bus', () => {
     let added = false;
     bus.subscribe(() => {
       unsubscribe();
-      if (!added) { bus.subscribe(late); added = true; }
+      if (!added) {
+        bus.subscribe(late);
+        added = true;
+      }
     });
     const unsubscribe = bus.subscribe(removed);
     bus.emit(damage);
@@ -38,7 +47,9 @@ describe('event bus', () => {
   it('notifies remaining consumers before propagating listener errors', () => {
     const bus = new EventBus();
     const listener = vi.fn();
-    bus.subscribe(() => { throw new Error('consumer failed'); });
+    bus.subscribe(() => {
+      throw new Error('consumer failed');
+    });
     bus.subscribe(listener);
     expect(() => bus.emit(damage)).toThrow(AggregateError);
     expect(listener).toHaveBeenCalledWith(damage);
@@ -80,7 +91,9 @@ describe('command bus', () => {
     bus.register('MOVE', handler);
     bus.register('ATTACK', handler);
     expect(() => bus.dispatch({ type: 'MOVE', entityId: 'a', dx: NaN, dy: 0 })).toThrow('Invalid');
-    expect(() => bus.dispatch({ type: 'ATTACK', attackerId: ' ', targetId: 'b' })).toThrow('Invalid');
+    expect(() => bus.dispatch({ type: 'ATTACK', attackerId: ' ', targetId: 'b' })).toThrow(
+      'Invalid',
+    );
     expect(handler).not.toHaveBeenCalled();
   });
 });

@@ -9,7 +9,10 @@ export interface GameRandom {
   pick<T>(values: readonly T[]): T;
 }
 
-export interface SerializableRandom extends GameRandom { snapshot(): number[]; restore(state: readonly number[]): void }
+export interface SerializableRandom extends GameRandom {
+  snapshot(): number[];
+  restore(state: readonly number[]): void;
+}
 export function createGameRandom(seed: number): SerializableRandom {
   if (!Number.isInteger(seed) || seed < -2147483648 || seed > 2147483647) {
     throw new RangeError('Seed must be a signed 32-bit integer');
@@ -18,7 +21,12 @@ export function createGameRandom(seed: number): SerializableRandom {
   const random: SerializableRandom = {
     snapshot: () => [...generator.getState()],
     restore(state) {
-      if (state.length !== 4 || state.every((v) => v === 0) || state.some((v) => !Number.isInteger(v) || v < -2147483648 || v > 2147483647)) throw new Error('Invalid RNG state');
+      if (
+        state.length !== 4 ||
+        state.every((v) => v === 0) ||
+        state.some((v) => !Number.isInteger(v) || v < -2147483648 || v > 2147483647)
+      )
+        throw new Error('Invalid RNG state');
       generator = xoroshiro128plusFromState(state);
     },
     int(min, max) {

@@ -21,7 +21,12 @@ import { createUIStore } from '../state/uiStore';
 
 export interface CharacterReview {
   source: StatSource;
-  stats: CharacterStats; health: number; mana: number; stamina: number; wounds: number; fullness: number;
+  stats: CharacterStats;
+  health: number;
+  mana: number;
+  stamina: number;
+  wounds: number;
+  fullness: number;
   statuses: { name: string; turns: number; stacks: number }[];
   weapon?: { name: string; durability: number; maxDurability: number };
 }
@@ -35,7 +40,8 @@ export interface BattleView {
   selectedAction?: BattleAction;
   entities: readonly RenderEntity[];
   targets: readonly string[];
-  log: readonly string[]; training: TrainingLedger;
+  log: readonly string[];
+  training: TrainingLedger;
 }
 
 /** An event-driven, read-only projection for UI; ECS remains authoritative. */
@@ -58,36 +64,90 @@ export class BattleSession {
   private submitting = false;
   private inputLocked = false;
 
-  constructor(readonly content: ContentRegistry, seed = 12345, mapId: string | TileMap = 'chamber', hero?: Hero, effects: readonly { statusId: string; stacks: number }[] = [], characterName?: string, readonly encounterId = `arena/${seed}`, eligibleTraining = false) {
-    const map = typeof mapId === 'string' ? content.data.maps.find((entry) => entry.id === mapId) : MapSchema.parse(mapId);
+  constructor(
+    readonly content: ContentRegistry,
+    seed = 12345,
+    mapId: string | TileMap = 'chamber',
+    hero?: Hero,
+    effects: readonly { statusId: string; stacks: number }[] = [],
+    characterName?: string,
+    readonly encounterId = `arena/${seed}`,
+    eligibleTraining = false,
+  ) {
+    const map =
+      typeof mapId === 'string'
+        ? content.data.maps.find((entry) => entry.id === mapId)
+        : MapSchema.parse(mapId);
     if (!map) throw new Error(`Unknown map: ${mapId}`);
     this.map = map;
     this.engine = createGameEngine({ seed });
-    for (const spawn of map.spawns) this.engine.spawn(content.spawn(spawn.kind === 'player' && hero ? hero.classId : spawn.definitionId, spawn.entityId, spawn.kind,
-      spawn.x * map.tileSize, spawn.y * map.tileSize));
-    for (const entity of this.engine.world.entities) if (entity.player) applyHero(entity, hero ?? createHero(content), content, effects);
-    if (characterName) for (const entity of this.engine.world.entities) if (entity.player) entity.name = characterName;
-    this.training = new EncounterTraining(encounterId, cloneData((hero ?? createHero(content)).learnedSkills), content, eligibleTraining);
-    this.quests = new EncounterQuests(encounterId, cloneData(hero ?? createHero(content)), content, eligibleTraining);
+    for (const spawn of map.spawns)
+      this.engine.spawn(
+        content.spawn(
+          spawn.kind === 'player' && hero ? hero.classId : spawn.definitionId,
+          spawn.entityId,
+          spawn.kind,
+          spawn.x * map.tileSize,
+          spawn.y * map.tileSize,
+        ),
+      );
+    for (const entity of this.engine.world.entities)
+      if (entity.player) applyHero(entity, hero ?? createHero(content), content, effects);
+    if (characterName)
+      for (const entity of this.engine.world.entities)
+        if (entity.player) entity.name = characterName;
+    this.training = new EncounterTraining(
+      encounterId,
+      cloneData((hero ?? createHero(content)).learnedSkills),
+      content,
+      eligibleTraining,
+    );
+    this.quests = new EncounterQuests(
+      encounterId,
+      cloneData(hero ?? createHero(content)),
+      content,
+      eligibleTraining,
+    );
     this.titles = new EncounterTitles(encounterId, eligibleTraining);
-    this.combat = new CombatSystem(map.spawns.map((spawn) => spawn.entityId), { content,
-      canAct: () => !this.inputLocked && this.battle.isResolving, encounterId, onOutcome: (outcome) => { this.training.record(outcome); this.quests.record(outcome); } });
+    this.combat = new CombatSystem(
+      map.spawns.map((spawn) => spawn.entityId),
+      {
+        content,
+        canAct: () => !this.inputLocked && this.battle.isResolving,
+        encounterId,
+        onOutcome: (outcome) => {
+          this.training.record(outcome);
+          this.quests.record(outcome);
+        },
+      },
+    );
     this.battle = new BattleController(this.combat, content);
     this.presentation = new PresentationQueue(this.engine);
     this.initialEntities = this.projectEntities();
     this.refresh();
     try {
-      this.cleanup.push(this.engine.events.subscribe((event) => { this.record(event); this.refresh(); }));
+      this.cleanup.push(
+        this.engine.events.subscribe((event) => {
+          this.record(event);
+          this.refresh();
+        }),
+      );
       this.engine.addSystem(this.combat);
       this.engine.addSystem(this.battle);
       this.cleanup.push(this.battle.subscribe(() => this.refresh()));
       this.engine.dispatch({ type: 'START_BATTLE' });
       this.refresh();
-    } catch (error) { this.dispose(); throw error; }
+    } catch (error) {
+      this.dispose();
+      throw error;
+    }
   }
   getSnapshot = (): BattleView => this.snapshot;
   subscribe = (listener: () => void): Unsubscribe => {
-    this.listeners.add(listener); return () => { this.listeners.delete(listener); };
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
   };
   dispatch(command: GameCommand): void {
     if (this.disposed) throw new Error('Battle session has been disposed');
@@ -95,28 +155,42 @@ export class BattleSession {
     this.engine.dispatch(command);
   }
   canAcceptPlayerInput(expectedActionCount: number): boolean {
-    return !this.disposed && !this.inputLocked && !this.submitting && !this.presentation.getSnapshot().busy &&
+    return (
+      !this.disposed &&
+      !this.inputLocked &&
+      !this.submitting &&
+      !this.presentation.getSnapshot().busy &&
       expectedActionCount === this.combat.completedActions &&
       ['selectingAction', 'selectingTarget'].includes(this.battle.phase) &&
-      !!this.engine.getEntity(this.combat.currentTurn() ?? '')?.player;
+      !!this.engine.getEntity(this.combat.currentTurn() ?? '')?.player
+    );
   }
   /** One player intent; retain the controller's authoritative validation and resolution. */
-  executePlayerAction(action: BattleAction, targetId: string, expectedActionCount: number): boolean {
+  executePlayerAction(
+    action: BattleAction,
+    targetId: string,
+    expectedActionCount: number,
+  ): boolean {
     if (!this.canAcceptPlayerInput(expectedActionCount)) return false;
-    if (!this.battle.validTargetIds(action).includes(targetId)) throw new Error('Choose a living, valid target');
+    if (!this.battle.validTargetIds(action).includes(targetId))
+      throw new Error('Choose a living, valid target');
     this.submitting = true;
     try {
       this.dispatch({ type: 'SELECT_ACTION', ...action });
       this.dispatch({ type: 'SELECT_TARGET', targetId });
       this.dispatch({ type: 'CONFIRM_ACTION' });
       return true;
-    } finally { this.submitting = false; }
+    } finally {
+      this.submitting = false;
+    }
   }
   /** Use confirms self-only actions and attacks/skills against the last living enemy. */
   selectPlayerAction(action: BattleAction, expectedActionCount: number): boolean {
     if (!this.canAcceptPlayerInput(expectedActionCount)) return false;
     const targets = this.battle.validTargetIds(action);
-    const soleEnemy = targets.length === 1 && (action.action === 'attack' || action.action === 'skill') &&
+    const soleEnemy =
+      targets.length === 1 &&
+      (action.action === 'attack' || action.action === 'skill') &&
       !!this.engine.getEntity(targets[0])?.enemy;
     if (targets.length === 1 && (targets[0] === this.combat.currentTurn() || soleEnemy)) {
       return this.executePlayerAction(action, targets[0], expectedActionCount);
@@ -129,7 +203,9 @@ export class BattleSession {
     // Consecutive enemies resolve immediately; presentation plays separately.
     while (this.battle.phase === 'enemyTurn') this.dispatch({ type: 'ADVANCE_ENEMY_TURN' });
   }
-  setInputLocked(locked: boolean) { this.inputLocked = locked; }
+  setInputLocked(locked: boolean) {
+    this.inputLocked = locked;
+  }
   /** Publish saved configuration without resetting the encounter or its checkpoint. */
   setItemHotbar(ids: readonly string[]) {
     const player = this.engine.world.entities.find((entity) => entity.player);
@@ -140,46 +216,124 @@ export class BattleSession {
     if (this.disposed) return;
     this.disposed = true;
     this.cleanup.forEach((cleanup) => cleanup());
-    this.presentation.dispose(); this.engine.dispose(); this.listeners.clear();
+    this.presentation.dispose();
+    this.engine.dispose();
+    this.listeners.clear();
   }
 
   private projectEntities(): RenderEntity[] {
-    return this.engine.world.entities.filter((entity) => entity.sprite && entity.position && entity.health)
-      .map((entity) => ({ id: entity.id, name: entity.name ?? entity.id, side: entity.player ? 'player' : 'enemy',
-        x: entity.position!.x, y: entity.position!.y, sprite: { ...entity.sprite!, idleFrames: entity.sprite!.idleFrames ? [...entity.sprite!.idleFrames] : undefined }, health: entity.health!.current,
-        maxHealth: entity.health!.max, mana: entity.mana?.current ?? 0, maxMana: entity.mana?.max ?? 0, dead: !!entity.dead,
-        stamina: entity.stamina?.current, maxStamina: entity.stamina?.max, wounds: entity.wounds, fullness: entity.fullness,
-        weapon: entity.weapon ? { name: this.content.item(entity.weapon.itemId).name, durability: entity.weapon.durability, maxDurability: this.content.item(entity.weapon.itemId).maxDurability! } : undefined }));
+    return this.engine.world.entities
+      .filter((entity) => entity.sprite && entity.position && entity.health)
+      .map((entity) => ({
+        id: entity.id,
+        name: entity.name ?? entity.id,
+        side: entity.player ? 'player' : 'enemy',
+        x: entity.position!.x,
+        y: entity.position!.y,
+        sprite: {
+          ...entity.sprite!,
+          idleFrames: entity.sprite!.idleFrames ? [...entity.sprite!.idleFrames] : undefined,
+        },
+        health: entity.health!.current,
+        maxHealth: entity.health!.max,
+        mana: entity.mana?.current ?? 0,
+        maxMana: entity.mana?.max ?? 0,
+        dead: !!entity.dead,
+        stamina: entity.stamina?.current,
+        maxStamina: entity.stamina?.max,
+        wounds: entity.wounds,
+        fullness: entity.fullness,
+        weapon: entity.weapon
+          ? {
+              name: this.content.item(entity.weapon.itemId).name,
+              durability: entity.weapon.durability,
+              maxDurability: this.content.item(entity.weapon.itemId).maxDurability!,
+            }
+          : undefined,
+      }));
   }
   private refresh() {
     const player = this.engine.world.entities.find((entity) => entity.player);
-    const stats = player?.statSource ? calculateCharacterStats(player.statSource, this.content) : undefined;
-    const character: CharacterReview | undefined = player && stats ? { source: cloneData(player.statSource!), stats: { ...stats, combatant: { ...effectiveEntity(player, this.content).combatant! } }, health: player.health!.current, mana: player.mana!.current, stamina: player.stamina!.current, wounds: player.wounds!, fullness: player.fullness!,
-      statuses: (player.statuses ?? []).map((status) => ({ name: this.content.status(status.id).name, turns: status.remainingTurns, stacks: status.stacks })),
-      weapon: player.weapon ? { name: this.content.item(player.weapon.itemId).name, durability: player.weapon.durability, maxDurability: this.content.item(player.weapon.itemId).maxDurability! } : undefined } : undefined;
-    this.snapshot = { character, inventory: player ? { items: { ...player.inventory }, weapon: player.weapon ? cloneData(player.weapon) : undefined } : undefined, phase: this.battle.phase, actionCount: this.combat.completedActions, turnId: this.combat.currentTurn(),
-      selectedAction: this.battle.context.action ? { ...this.battle.context.action } : undefined, selectedTargetId: this.battle.context.targetId,
-      entities: this.projectEntities(), targets: this.battle.validTargetIds(), log: [...this.log], training: this.training.snapshot() };
+    const stats = player?.statSource
+      ? calculateCharacterStats(player.statSource, this.content)
+      : undefined;
+    const character: CharacterReview | undefined =
+      player && stats
+        ? {
+            source: cloneData(player.statSource!),
+            stats: { ...stats, combatant: { ...effectiveEntity(player, this.content).combatant! } },
+            health: player.health!.current,
+            mana: player.mana!.current,
+            stamina: player.stamina!.current,
+            wounds: player.wounds!,
+            fullness: player.fullness!,
+            statuses: (player.statuses ?? []).map((status) => ({
+              name: this.content.status(status.id).name,
+              turns: status.remainingTurns,
+              stacks: status.stacks,
+            })),
+            weapon: player.weapon
+              ? {
+                  name: this.content.item(player.weapon.itemId).name,
+                  durability: player.weapon.durability,
+                  maxDurability: this.content.item(player.weapon.itemId).maxDurability!,
+                }
+              : undefined,
+          }
+        : undefined;
+    this.snapshot = {
+      character,
+      inventory: player
+        ? {
+            items: { ...player.inventory },
+            weapon: player.weapon ? cloneData(player.weapon) : undefined,
+          }
+        : undefined,
+      phase: this.battle.phase,
+      actionCount: this.combat.completedActions,
+      turnId: this.combat.currentTurn(),
+      selectedAction: this.battle.context.action ? { ...this.battle.context.action } : undefined,
+      selectedTargetId: this.battle.context.targetId,
+      entities: this.projectEntities(),
+      targets: this.battle.validTargetIds(),
+      log: [...this.log],
+      training: this.training.snapshot(),
+    };
     this.listeners.forEach((listener) => listener());
   }
   private record(event: GameEvent) {
     const name = (id: string) => this.engine.getEntity(id)?.name ?? id;
     let line: string | undefined;
     if (event.type === 'DAMAGE_DEALT') this.titles.damage(event.targetId, event.amount);
-    if (event.type === 'DAMAGE_DEALT') line = `${name(event.targetId)} loses ${event.amount} HP${event.critical ? ' · critical' : ''}.`;
+    if (event.type === 'DAMAGE_DEALT')
+      line = `${name(event.targetId)} loses ${event.amount} HP${event.critical ? ' · critical' : ''}.`;
     if (event.type === 'ATTACK_MISSED') line = `${name(event.sourceId)} misses.`;
-    if (event.type === 'HEALTH_RESTORED') line = `${name(event.targetId)} recovers ${event.amount} HP.`;
-    if (event.type === 'MANA_RESTORED') line = `${name(event.targetId)} recovers ${event.amount} mana.`;
-    if (event.type === 'WEAPON_WORN') line = event.durability === 0 ? `${this.content.item(event.itemId).name} broke. Its stat bonus is lost until repaired.` : `${this.content.item(event.itemId).name} · ${event.durability} durability.`;
+    if (event.type === 'HEALTH_RESTORED')
+      line = `${name(event.targetId)} recovers ${event.amount} HP.`;
+    if (event.type === 'MANA_RESTORED')
+      line = `${name(event.targetId)} recovers ${event.amount} mana.`;
+    if (event.type === 'WEAPON_WORN')
+      line =
+        event.durability === 0
+          ? `${this.content.item(event.itemId).name} broke. Its stat bonus is lost until repaired.`
+          : `${this.content.item(event.itemId).name} · ${event.durability} durability.`;
     if (event.type === 'RESTED') line = `${name(event.entityId)} rests to recover stamina.`;
-    if (event.type === 'DEFENDED') line = `${name(event.entityId)} defends, halving attack and spell damage until their next turn and recovering stamina.`;
-    if (event.type === 'WOUNDS_RECEIVED') line = `${name(event.entityId)} suffers ${event.amount} wounds.`;
-    if (event.type === 'SKILL_USED') line = `${name(event.sourceId)} casts ${this.content.skill(event.skillId).name}.`;
-    if (event.type === 'ITEM_USED') line = `${name(event.sourceId)} uses ${this.content.item(event.itemId).name}.`;
-    if (event.type === 'STATUS_APPLIED') line = `${name(event.entityId)} gains ${this.content.status(event.statusId).name}.`;
-    if (event.type === 'STATUS_EXPIRED') line = `${this.content.status(event.statusId).name} fades from ${name(event.entityId)}.`;
+    if (event.type === 'DEFENDED')
+      line = `${name(event.entityId)} defends, halving attack and spell damage until their next turn and recovering stamina.`;
+    if (event.type === 'WOUNDS_RECEIVED')
+      line = `${name(event.entityId)} suffers ${event.amount} wounds.`;
+    if (event.type === 'SKILL_USED')
+      line = `${name(event.sourceId)} casts ${this.content.skill(event.skillId).name}.`;
+    if (event.type === 'ITEM_USED')
+      line = `${name(event.sourceId)} uses ${this.content.item(event.itemId).name}.`;
+    if (event.type === 'STATUS_APPLIED')
+      line = `${name(event.entityId)} gains ${this.content.status(event.statusId).name}.`;
+    if (event.type === 'STATUS_EXPIRED')
+      line = `${this.content.status(event.statusId).name} fades from ${name(event.entityId)}.`;
     if (event.type === 'ENTITY_DIED') line = `${name(event.entityId)} falls.`;
-    if (event.type === 'BATTLE_ENDED') line = event.result === 'victory' ? 'The chamber is clear.' : 'The dungeon claims another warden.';
+    if (event.type === 'BATTLE_ENDED')
+      line =
+        event.result === 'victory' ? 'The chamber is clear.' : 'The dungeon claims another warden.';
     if (line) this.log = [...this.log.slice(-7), line];
   }
 }

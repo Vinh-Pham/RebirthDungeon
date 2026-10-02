@@ -6,12 +6,12 @@ Updated **October 1, 2026**. The starter title collection is **implemented** on 
 
 The collection belongs to one campaign hero. Earned titles survive completed defeat, early dungeon return and future rebirth; a later lower level/age does not erase an achievement. Account sharing is separate future work. [Mabinogi inspiration](https://wiki.mabinogiworld.com/view/Titles) informs the slots and mastery concept; this document defines the game's rules.
 
-| Selection | Current / future behavior |
-| --- | --- |
-| First Title | One earned primary title or empty; supplies its authored effects |
-| Second Title | One earned secondary title or empty; effects combine with the First |
-| Talent display | Optional earned mastery label; presentation only |
-| Vanity override, later | Compatible earned display name for a base slot; no extra effects |
+| Selection              | Current / future behavior                                           |
+| ---------------------- | ------------------------------------------------------------------- |
+| First Title            | One earned primary title or empty; supplies its authored effects    |
+| Second Title           | One earned secondary title or empty; effects combine with the First |
+| Talent display         | Optional earned mastery label; presentation only                    |
+| Vanity override, later | Compatible earned display name for a base slot; no extra effects    |
 
 General, Story, Combat, Master and Event are collection categories, not additional slots. A definition has exactly one base slot type. Ownership, favorites and discovered hints grant no stats. A newly earned title is never equipped automatically.
 
@@ -21,11 +21,11 @@ Vanity is deferred. An override replaces presentation only; clearing its base cl
 
 ## 2. Discovery and acquisition
 
-| Collection state | Presentation | Equippable? |
-| --- | --- | --- |
-| Unknown | Hidden or “???” according to spoiler policy | No |
-| Known | Name, hint and permitted progress | No |
-| Earned | Description, effects and acquisition record | Yes, subject to explicit eligibility |
+| Collection state | Presentation                                | Equippable?                          |
+| ---------------- | ------------------------------------------- | ------------------------------------ |
+| Unknown          | Hidden or “???” according to spoiler policy | No                                   |
+| Known            | Name, hint and permitted progress           | No                                   |
+| Earned           | Description, effects and acquisition record | Yes, subject to explicit eligibility |
 
 Equipped is a marker on an earned title, not another acquisition state. Hint and award conditions are separate. Unknown may advance directly to Earned unless a definition explicitly requires discovery first. A hint alone cannot award the title. Show all nonsecret unmet conditions and define AND/OR requirements explicitly.
 
@@ -76,13 +76,13 @@ Future ordinary rebirth preserves skills and therefore their eligibility. If a s
 
 The first four entries below are original implemented rewards. The Guardian Breaker names the giant-black-spider boss of moss-depths; the story title follows the broken-seal claim. The lantern-watch sidequest gives the Lantern Companion coupon after refuge-preparations, so older campaigns that already claimed provisions can still earn it. This one-time quest gift does not expire and cannot be sold or offered. The age entry remains deferred.
 
-| Title | Slot/category | Hint | Award | Equipped effect |
-| --- | --- | --- | --- | --- |
-| the First Delver | First / General | Enter the introductory dungeon | Complete its final treasure exit | Max HP +10 |
-| the Guardian Breaker | First / Combat | Encounter its guardian | Win that named guardian encounter | Physical Attack +3, Max MP -5 |
-| the Seal’s Witness | First / Story | Discover G1's final quest | Claim its final reward | Magic Attack +3, Physical Defense -1 |
-| Lantern Companion | Second / General | Obtain its town-quest coupon | Consume that coupon | Max HP +5 |
-| the Seasoned, later | First / Character | Reach actual age 18 | Commit actual age 20 | Max SP +10 |
+| Title                | Slot/category     | Hint                           | Award                             | Equipped effect                      |
+| -------------------- | ----------------- | ------------------------------ | --------------------------------- | ------------------------------------ |
+| the First Delver     | First / General   | Enter the introductory dungeon | Complete its final treasure exit  | Max HP +10                           |
+| the Guardian Breaker | First / Combat    | Encounter its guardian         | Win that named guardian encounter | Physical Attack +3, Max MP -5        |
+| the Seal’s Witness   | First / Story     | Discover G1's final quest      | Claim its final reward            | Magic Attack +3, Physical Defense -1 |
+| Lantern Companion    | Second / General  | Obtain its town-quest coupon   | Consume that coupon               | Max HP +5                            |
+| the Seasoned, later  | First / Character | Reach actual age 18            | Commit actual age 20              | Max SP +10                           |
 
 Guardian victory and dungeon completion are distinct boundaries; both awards may eventually be earned but do not require a second reward reconciliation at exit. The age title waits for aging and remains earned after rebirth to a younger age. Start with two competing First Titles and one Second so combined effects and choice are visible.
 

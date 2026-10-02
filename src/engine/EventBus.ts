@@ -10,10 +10,15 @@ export class EventBus<T extends { type: string } = GameEvent> {
     // Each subscription has its own identity, even when callbacks are reused.
     const subscription = (event: T) => listener(event);
     this.listeners.add(subscription);
-    return () => { this.listeners.delete(subscription); };
+    return () => {
+      this.listeners.delete(subscription);
+    };
   }
 
-  on<K extends T['type']>(type: K, listener: (event: Extract<T, { type: K }>) => void): Unsubscribe {
+  on<K extends T['type']>(
+    type: K,
+    listener: (event: Extract<T, { type: K }>) => void,
+  ): Unsubscribe {
     return this.subscribe((event) => {
       if (event.type === type) listener(event as Extract<T, { type: K }>);
     });

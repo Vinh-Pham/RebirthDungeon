@@ -9,19 +9,11 @@
       "defense": 3,
       "speed": 8
     },
-    "skills": [
-      "firebolt",
-      "icebolt",
-      "lightning-bolt",
-      "healing"
-    ],
+    "skills": ["firebolt", "icebolt", "lightning-bolt", "healing"],
     "sprite": {
       "atlas": "dungeon",
       "frame": 0,
-      "idleFrames": [
-        0,
-        1
-      ]
+      "idleFrames": [0, 1]
     }
   }
 ]

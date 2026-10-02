@@ -5,7 +5,8 @@
 @import '../node_modules/heroui-native/lib/module/styles/utilities.css';
 @import '../node_modules/heroui-native/lib/module/styles/theme.css';
 @import '../node_modules/heroui-native/lib/module/styles/components/index.css' layer(components);
-@import '../node_modules/heroui-native-pro/lib/module/styles/components/progress-bar.css' layer(components);
+@import '../node_modules/heroui-native-pro/lib/module/styles/components/progress-bar.css'
+  layer(components);
 
 @source '../node_modules/heroui-native/lib';
 @source '../node_modules/heroui-native-pro/lib';

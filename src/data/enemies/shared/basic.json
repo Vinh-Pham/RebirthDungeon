@@ -24,10 +24,7 @@
     "sprite": {
       "atlas": "dungeon",
       "frame": 2,
-      "idleFrames": [
-        2,
-        3
-      ]
+      "idleFrames": [2, 3]
     },
     "experience": 24,
     "gold": 12,

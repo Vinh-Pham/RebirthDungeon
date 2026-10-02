@@ -6,13 +6,13 @@ Updated **October 2, 2026**. The React Native application implements saved chara
 
 Character and hero mean the same player-owned progression context. Each selected character has independent campaign save slots; there is no account-wide AP, equipment or skill pool.
 
-| Data | Current owner |
-| --- | --- |
-| ID, name, creation time, starting age and chosen talent | `CharacterProfile` metadata |
-| Class, growth talent, current level/XP, cumulative level, gold, resources, inventory/equipment | Campaign `Hero` |
-| World position, discoveries/claims, dungeon and pending encounter | `CampaignState` |
-| Temporary combat statuses and turn order | Active `BattleSession` |
-| Audio preferences | Global settings, separately persisted |
+| Data                                                                                           | Current owner                         |
+| ---------------------------------------------------------------------------------------------- | ------------------------------------- |
+| ID, name, creation time, starting age and chosen talent                                        | `CharacterProfile` metadata           |
+| Class, growth talent, current level/XP, cumulative level, gold, resources, inventory/equipment | Campaign `Hero`                       |
+| World position, discoveries/claims, dungeon and pending encounter                              | `CampaignState`                       |
+| Temporary combat statuses and turn order                                                       | Active `BattleSession`                |
+| Audio preferences                                                                              | Global settings, separately persisted |
 
 Creation accepts a 1–24 character trimmed name, Warrior/Archery/Mage talent, and starting age 10–17. The Warden is the current class. Starting age is **setup metadata today**: it neither increases over time nor changes current stat growth. Avoid storing an independently editable second growth talent in gameplay UI; existing save validation checks the selected profile's talent against the hero.
 
@@ -32,11 +32,11 @@ The skills milestone adds **1 AP per actual earned level** and its separate **3 
 
 ## 3. Growth talents
 
-| Talent | Implemented starting effect | Level growth |
-| --- | --- | --- |
-| Warrior | STR +20 | STR +0.5 per earned level |
+| Talent  | Implemented starting effect   | Level growth              |
+| ------- | ----------------------------- | ------------------------- |
+| Warrior | STR +20                       | STR +0.5 per earned level |
 | Archery | DEX +10, max HP +5, max SP +5 | DEX +0.5 per earned level |
-| Mage | INT +10, max MP +10 | INT +0.5 per earned level |
+| Mage    | INT +10, max MP +10           | INT +0.5 per earned level |
 
 Talent does not change the hero's class or automatically grant every reference skill. All current Warden talents start with Firebolt, Icebolt, Lightning Bolt and Healing. Archery is a growth choice today; it does not imply that the unavailable ranged-attack catalog entries are implemented. The learned-rank migration preserves those four starters and their current stat contributions.
 
@@ -66,11 +66,11 @@ Cumulative level uses `1 + total earned level-ups across all lives`. It incremen
 
 Proposed aging keeps the previous offline-friendly concept: one year per seven elapsed real-world days since creation/rebirth, reconciled in town with no active dungeon/encounter. Store the life ID, starting age, interval anchor, highest processed interval and accrued life growth. Supply the clock to pure rules; battle never reads wall time. Never re-award an interval on load/backward clock changes. Forward-clock trust and anti-manipulation remain product decisions.
 
-| Destination age | Later proposed age-up reward |
-| --- | --- |
-| 11–20 | 5 AP plus authored base and talent age growth |
-| 21–25 | 5 AP plus authored base age growth |
-| 26+ | Age increases with no AP or stat growth |
+| Destination age | Later proposed age-up reward                  |
+| --------------- | --------------------------------------------- |
+| 11–20           | 5 AP plus authored base and talent age growth |
+| 21–25           | 5 AP plus authored base age growth            |
+| 26+             | Age increases with no AP or stat growth       |
 
 These are optional future balance defaults, **not AP sources for the initial skills slice**. Choosing an older starting age grants no skipped age-up rewards. Display actual age directly. Any visual aging leaves collision, targeting and touch areas unchanged.
 
@@ -80,15 +80,15 @@ Current level growth is derived from the selected talent and level. Adding age-d
 
 A life spans many dungeons. Rebirth is a separate town action with a preview, explicit eligibility, fee/cooldown and durable saved result. Those economy rules remain unresolved, so no usable Rebirth control should appear yet.
 
-| State | Proposed transition |
-| --- | --- |
-| Current level/XP | Reset to 1/0 |
-| Life-growth stats | Remove old life growth; apply the new starting profile |
-| Starting age/talent | Choose allowed values and start a new life interval |
-| Cumulative level | Preserve; reset itself adds no level |
-| Skills/ranks/training and unspent AP | Preserve; no AP refund or reset grant |
-| Talent mastery, earned titles, committed quests | Preserve |
-| Inventory, collection pages, installed enchant values | Preserve; reevaluate eligibility/conditions |
+| State                                                 | Proposed transition                                    |
+| ----------------------------------------------------- | ------------------------------------------------------ |
+| Current level/XP                                      | Reset to 1/0                                           |
+| Life-growth stats                                     | Remove old life growth; apply the new starting profile |
+| Starting age/talent                                   | Choose allowed values and start a new life interval    |
+| Cumulative level                                      | Preserve; reset itself adds no level                   |
+| Skills/ranks/training and unspent AP                  | Preserve; no AP refund or reset grant                  |
+| Talent mastery, earned titles, committed quests       | Preserve                                               |
+| Inventory, collection pages, installed enchant values | Preserve; reevaluate eligibility/conditions            |
 
 Rebirth cannot bypass a pending encounter, discard an unresolved saved candidate, or grant rewards again. Preview resource and equipment effects under the new life, and explicitly author whether this ceremonial action restores resources; no general stat recalculation may refill them by accident. If future equipment becomes illegal, use a validated transfer to carried storage or saved overflow rather than deletion.
 

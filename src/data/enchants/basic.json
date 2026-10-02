@@ -4,12 +4,8 @@
     "name": "Keen",
     "slot": "prefix",
     "rank": "F",
-    "kinds": [
-      "weapon"
-    ],
-    "tags": [
-      "sword"
-    ],
+    "kinds": ["weapon"],
+    "tags": ["sword"],
     "clauses": [
       {
         "id": "edge",
@@ -26,9 +22,7 @@
     "name": "Studious",
     "slot": "prefix",
     "rank": "E",
-    "kinds": [
-      "weapon"
-    ],
+    "kinds": ["weapon"],
     "tags": [],
     "clauses": [
       {
@@ -60,9 +54,7 @@
     "name": "of Vigor",
     "slot": "suffix",
     "rank": "F",
-    "kinds": [
-      "armor"
-    ],
+    "kinds": ["armor"],
     "tags": [],
     "clauses": [
       {
@@ -80,10 +72,7 @@
     "name": "of Resilience",
     "slot": "suffix",
     "rank": "E",
-    "kinds": [
-      "weapon",
-      "armor"
-    ],
+    "kinds": ["weapon", "armor"],
     "tags": [],
     "clauses": [
       {

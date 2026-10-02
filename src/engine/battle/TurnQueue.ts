@@ -15,21 +15,29 @@ export class TurnQueue implements TurnScheduler {
   initialize(entities: readonly Entity[]): void {
     const seen = new Set<EntityId>();
     for (const entity of entities) {
-      if (!entity.id.trim() || seen.has(entity.id)) throw new Error('Turn queue requires unique nonempty IDs');
+      if (!entity.id.trim() || seen.has(entity.id))
+        throw new Error('Turn queue requires unique nonempty IDs');
       seen.add(entity.id);
-      if (entity.combatant && (!Number.isSafeInteger(entity.combatant.speed) || entity.combatant.speed < 0)) {
+      if (
+        entity.combatant &&
+        (!Number.isSafeInteger(entity.combatant.speed) || entity.combatant.speed < 0)
+      ) {
         throw new RangeError('Turn speed must be a nonnegative safe integer');
       }
     }
     this.ids = entities
-      .filter((entity) => entity.health && entity.health.current > 0 && entity.combatant && !entity.dead)
+      .filter(
+        (entity) => entity.health && entity.health.current > 0 && entity.combatant && !entity.dead,
+      )
       .map((entity, index) => ({ id: entity.id, speed: entity.combatant!.speed, index }))
       .sort((a, b) => b.speed - a.speed || a.index - b.index)
       .map(({ id }) => id);
     this.cursor = 0;
   }
 
-  current(): EntityId | undefined { return this.ids[this.cursor]; }
+  current(): EntityId | undefined {
+    return this.ids[this.cursor];
+  }
 
   advance(): EntityId | undefined {
     if (this.ids.length) this.cursor = (this.cursor + 1) % this.ids.length;
@@ -45,5 +53,7 @@ export class TurnQueue implements TurnScheduler {
   }
 
   /** Detached order; callers cannot mutate the scheduler. */
-  get order(): readonly EntityId[] { return [...this.ids]; }
+  get order(): readonly EntityId[] {
+    return [...this.ids];
+  }
 }

@@ -6,7 +6,16 @@ import { experienceToNextLevel, MAX_LEVEL } from '../../engine/rpg/Leveling';
 const content = loadGameContent();
 
 describe('normal XP chart and lifetime progression', () => {
-  it.each([[1, 400], [2, 700], [50, 83000], [99, 765900], [100, 249000], [101, 264000], [199, 6825000], [200, 0]])('uses the wiki chart at level %i with %i XP', (level, xp) => {
+  it.each([
+    [1, 400],
+    [2, 700],
+    [50, 83000],
+    [99, 765900],
+    [100, 249000],
+    [101, 264000],
+    [199, 6825000],
+    [200, 0],
+  ])('uses the wiki chart at level %i with %i XP', (level, xp) => {
     expect(experienceToNextLevel(level)).toBe(xp);
   });
   it('reaches every level at its exact threshold and stops at the wiki total of 279,988,500 XP', () => {
@@ -17,7 +26,12 @@ describe('normal XP chart and lifetime progression', () => {
       grantExperience(hero, threshold - 1, content);
       expect(hero.level).toBe(level);
       grantExperience(hero, 1, content);
-      expect(hero).toMatchObject({ level: level + 1, cumulativeLevel: level + 1, ap: 5 + level, experience: 0 });
+      expect(hero).toMatchObject({
+        level: level + 1,
+        cumulativeLevel: level + 1,
+        ap: 5 + level,
+        experience: 0,
+      });
       total += threshold;
       expect(validateHero(hero, content)).toEqual(hero);
     }
@@ -31,9 +45,16 @@ describe('normal XP chart and lifetime progression', () => {
     expect(hero).toMatchObject({ level: 101, cumulativeLevel: 502, ap: 7, experience: 1 });
   });
   it('rejects invalid chart inputs, XP boundaries and lifetime overflow without spending rewards', () => {
-    for (const level of [0, 201, 1.5, NaN, Infinity]) expect(() => experienceToNextLevel(level)).toThrow();
+    for (const level of [0, 201, 1.5, NaN, Infinity])
+      expect(() => experienceToNextLevel(level)).toThrow();
     const hero = createHero(content);
-    for (const change of [{ level: 201 }, { cumulativeLevel: 0 }, { level: 2, cumulativeLevel: 1 }, { experience: 400 }, { level: 200, cumulativeLevel: 200, experience: 1 }]) {
+    for (const change of [
+      { level: 201 },
+      { cumulativeLevel: 0 },
+      { level: 2, cumulativeLevel: 1 },
+      { experience: 400 },
+      { level: 200, cumulativeLevel: 200, experience: 1 },
+    ]) {
       expect(() => validateHero({ ...hero, ...change }, content)).toThrow();
     }
     hero.cumulativeLevel = Number.MAX_SAFE_INTEGER;

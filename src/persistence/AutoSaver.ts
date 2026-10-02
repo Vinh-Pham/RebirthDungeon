@@ -6,30 +6,46 @@ export class AutoSaver {
   private timer?: ReturnType<typeof setTimeout>;
   private closed = false;
   private inFlight?: Promise<void>;
-  constructor(private repository: SaveRepository, private onError: (error: unknown) => void) {}
+  constructor(
+    private repository: SaveRepository,
+    private onError: (error: unknown) => void,
+  ) {}
   schedule(state: CampaignState) {
     if (this.closed) return;
     this.pending = state;
     if (this.timer) clearTimeout(this.timer);
-    this.timer = setTimeout(() => { this.timer = undefined; void this.flush().catch(this.onError); }, 250);
+    this.timer = setTimeout(() => {
+      this.timer = undefined;
+      void this.flush().catch(this.onError);
+    }, 250);
   }
   async flush(): Promise<void> {
-    if (this.timer) { clearTimeout(this.timer); this.timer = undefined; }
+    if (this.timer) {
+      clearTimeout(this.timer);
+      this.timer = undefined;
+    }
     if (this.inFlight) {
       await this.inFlight;
       return this.flush();
     }
-    const state = this.pending; this.pending = undefined;
+    const state = this.pending;
+    this.pending = undefined;
     if (state) {
       let writing: Promise<void> | undefined;
       try {
         writing = this.repository.save('auto', state);
         this.inFlight = writing;
         await writing;
+      } catch (error) {
+        if (!this.pending) this.pending = state;
+        throw error;
+      } finally {
+        if (this.inFlight === writing) this.inFlight = undefined;
       }
-      catch (error) { if (!this.pending) this.pending = state; throw error; }
-      finally { if (this.inFlight === writing) this.inFlight = undefined; }
     }
   }
-  async dispose() { this.closed = true; await this.flush(); }
+  async dispose() {
+    this.closed = true;
+    await this.flush();
+  }
 }

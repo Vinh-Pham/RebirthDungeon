@@ -10,17 +10,17 @@ The app drawer lists Journey first. Selecting it closes the drawer and navigates
 
 The Journey detail row places Quests immediately after Inventory. Its content is the quest tracker with the existing journal link; the tracker no longer sits below every detail tab. The row scrolls horizontally on narrow screens so labels and touch targets stay readable, and supports keyboard tab switching on web.
 
-| Existing surface | Owner and purpose |
-| --- | --- |
-| Character selection/setup | CharacterSelectScreen / NewCharacterScreen; independent saved characters |
-| Character game stack | src/app/(screens)/game/[characterId]/_layout.tsx; shared host/context |
-| Journey tabs | Explore and character content; Character/Stats/Skills/Inventory/Quests detail tabs inside the journey UI |
-| Exploration/service panel | JourneyScreen / TownServicePanel; world interaction and supported NPC actions |
-| Active encounter | BattleView embedded by the journey; no separate authoritative battle route required |
-| Inventory route | InventoryScreen; same inventory content as the character tab |
-| Stats overlay | CharacterStatsOverlay / CharacterStatsDetails; selected character's observed stats |
-| Save/load route | SaveLoadScreen; autosave status and manual slots |
-| App drawer/settings | Shared navigation, character exit, inventory/save access and global preferences |
+| Existing surface          | Owner and purpose                                                                                        |
+| ------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Character selection/setup | CharacterSelectScreen / NewCharacterScreen; independent saved characters                                 |
+| Character game stack      | src/app/(screens)/game/[characterId]/_layout.tsx; shared host/context                                    |
+| Journey tabs              | Explore and character content; Character/Stats/Skills/Inventory/Quests detail tabs inside the journey UI |
+| Exploration/service panel | JourneyScreen / TownServicePanel; world interaction and supported NPC actions                            |
+| Active encounter          | BattleView embedded by the journey; no separate authoritative battle route required                      |
+| Inventory route           | InventoryScreen; same inventory content as the character tab                                             |
+| Stats overlay             | CharacterStatsOverlay / CharacterStatsDetails; selected character's observed stats                       |
+| Save/load route           | SaveLoadScreen; autosave status and manual slots                                                         |
+| App drawer/settings       | Shared navigation, character exit, inventory/save access and global preferences                          |
 
 The standalone BattleScreen/BattleHost is also present for the battle surface; campaign features use JourneyHost's actual encounter instead of constructing that standalone session. Reuse shared DungeonUI, ResourceBar and menu components, HeroUI controls and current theme tokens. There is no Godot scene/Control tree or desktop floating-window framework to implement.
 
@@ -58,14 +58,14 @@ Every icon opens a HeroUI Native Popover. Skill details show saved rank, effecti
 
 Browsing details pauses arena targeting without selecting or cancelling the existing engine action. Closing resumes targeting only when an action has already been confirmed. Confirm Attack or an enemy-targeted skill with its Use button. With exactly one living enemy, select and resolve against it immediately through the existing controller flow; with multiple enemies, tap a monster in the game canvas. Ally targeting keeps its own selection rules. Before confirmation, canvas target taps are disabled. There is no Targets button or named target list. Cancel clears the selection and pauses targeting again. Self-only actions resolve once from their Use button. Rest exists in the engine but has no separate icon. No dice slots, kept markers, rerolls, reserved pools or paid Pass controls belong in this interface.
 
-| Observed state | Interaction |
-| --- | --- |
-| Initializing | Loading feedback; no gameplay requests |
-| Selecting action | Inspect a basic-action or skill icon, then choose Use |
-| Selecting target | Tap a valid canvas target to resolve the confirmed action, or cancel for free |
-| Executing / enemy turn | Observe outcome; prevent additional player commands |
-| Presenting | Show committed events; duplicate inputs remain gated |
-| Victory/defeat | Show the completed encounter outcome and its return/continue action |
+| Observed state         | Interaction                                                                   |
+| ---------------------- | ----------------------------------------------------------------------------- |
+| Initializing           | Loading feedback; no gameplay requests                                        |
+| Selecting action       | Inspect a basic-action or skill icon, then choose Use                         |
+| Selecting target       | Tap a valid canvas target to resolve the confirmed action, or cancel for free |
+| Executing / enemy turn | Observe outcome; prevent additional player commands                           |
+| Presenting             | Show committed events; duplicate inputs remain gated                          |
+| Victory/defeat         | Show the completed encounter outcome and its return/continue action           |
 
 The current BattleView gates player choices while presentation is busy; enemy turns advance from simulation phase independently of animation completion. Keep that separation. Rendering, audio and skipped/reduced animation must produce the same result and RNG continuation.
 
@@ -75,14 +75,14 @@ Defend explicitly previews damage reduction until the owner's next turn and rest
 
 ## 4. Character, progression and inventory views
 
-| Feature | Existing baseline / planned extension |
-| --- | --- |
-| Character/Stats | Current level/XP, talent, setup age, attributes, combat values, resources, wounds/fullness and equipment; AP/mastery/cumulative level later |
-| Skills, planned | Learned/unlearned, rank/prototype cap, objectives, training/AP, lessons/books/pages and Rank Up from Skills |
-| Inventory | Shared image grid, pages of 20, HeroUI item popovers with quantity/stats/actions; spatial placement/bags/overflow later |
-| Quests, planned | Chapter/Generation and side/skill groups, stages, objective progress, exact rewards and manual claim |
-| Titles, planned | First/Second selections, known/earned collection, benefits/penalties and stat preview |
-| Enchanting, planned | Owned instance/scroll/powder, compatibility, replacement, chance/cost and separate destructive burning |
+| Feature             | Existing baseline / planned extension                                                                                                       |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Character/Stats     | Current level/XP, talent, setup age, attributes, combat values, resources, wounds/fullness and equipment; AP/mastery/cumulative level later |
+| Skills, planned     | Learned/unlearned, rank/prototype cap, objectives, training/AP, lessons/books/pages and Rank Up from Skills                                 |
+| Inventory           | Shared image grid, pages of 20, HeroUI item popovers with quantity/stats/actions; spatial placement/bags/overflow later                     |
+| Quests, planned     | Chapter/Generation and side/skill groups, stages, objective progress, exact rewards and manual claim                                        |
+| Titles, planned     | First/Second selections, known/earned collection, benefits/penalties and stat preview                                                       |
+| Enchanting, planned | Owned instance/scroll/powder, compatibility, replacement, chance/cost and separate destructive burning                                      |
 
 Current setup age is static; do not show an aging countdown or lifetime progression until those fields exist. Current gold is one balance; no bank capacity display is available. Avoid showing implemented combat values as deferred merely because a related feature is not present.
 
@@ -128,14 +128,14 @@ Missing characters, corrupt/unsupported saves and render/audio failures are sepa
 
 First preserve the existing shared host, exploration/service panels, battle action/target flow, inventory and save/restart behavior. Add the Skills journal from its unchanged plan, then quests/titles, grid storage and enchanting. Aging/rebirth/RP and advanced combat get controls only after their engine/save contracts exist.
 
-| Check | Evidence |
-| --- | --- |
-| Rules versus presentation | Identical accepted commands with varied animation timing yield identical state/RNG |
-| Small portrait touch | Canvas targeting after action confirmation, reachable confirmation, no panel click-through, safe insets and large text |
-| iOS/Android installation | Full refuge → dungeon → encounter → return loop, sound, local saves and suspend/relaunch |
-| Web | Keyboard action controls, canvas target selection, responsive panels, explicit audio resume and IndexedDB saves |
-| Persistence | Pending-encounter restart, failed load preserving session, candidate retry without duplicate costs/rewards |
-| Accessibility | Labels/state, readable cues, reduced motion, screen-reader traversal and focus restoration |
-| Performance | Long lists/maps/logs do not introduce per-frame React work or unbounded observers/resources |
+| Check                     | Evidence                                                                                                               |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Rules versus presentation | Identical accepted commands with varied animation timing yield identical state/RNG                                     |
+| Small portrait touch      | Canvas targeting after action confirmation, reachable confirmation, no panel click-through, safe insets and large text |
+| iOS/Android installation  | Full refuge → dungeon → encounter → return loop, sound, local saves and suspend/relaunch                               |
+| Web                       | Keyboard action controls, canvas target selection, responsive panels, explicit audio resume and IndexedDB saves        |
+| Persistence               | Pending-encounter restart, failed load preserving session, candidate retry without duplicate costs/rewards             |
+| Accessibility             | Labels/state, readable cues, reduced motion, screen-reader traversal and focus restoration                             |
+| Performance               | Long lists/maps/logs do not introduce per-frame React work or unbounded observers/resources                            |
 
 Implementation runs lint/typecheck and relevant engine/UI-adapter tests. Exported bundles and headless engine tests are useful checks, but device installation/input/audio/SQLite/accessibility need actual platform smoke tests. Build/sign/submit through the future EAS setup in the game plan; this documentation revision claims no new native acceptance.

@@ -29,17 +29,32 @@ export default function RootLayout() {
 
 function RootNavigator() {
   const [background, surface, foreground, accent, border] = useThemeColor([
-    'background', 'surface', 'foreground', 'accent', 'border',
+    'background',
+    'surface',
+    'foreground',
+    'accent',
+    'border',
   ]);
   const theme = {
     ...DarkTheme,
-    colors: { ...DarkTheme.colors, background, card: surface, text: foreground, primary: accent, border },
+    colors: {
+      ...DarkTheme.colors,
+      background,
+      card: surface,
+      text: foreground,
+      primary: accent,
+      border,
+    },
   };
   return (
-      <ThemeProvider value={theme}>
-        <StatusBar style="light" />
-        <AnimatedSplashOverlay />
-        <AudioProvider><AppNavigationProvider><AppDrawer /></AppNavigationProvider></AudioProvider>
-      </ThemeProvider>
+    <ThemeProvider value={theme}>
+      <StatusBar style="light" />
+      <AnimatedSplashOverlay />
+      <AudioProvider>
+        <AppNavigationProvider>
+          <AppDrawer />
+        </AppNavigationProvider>
+      </AudioProvider>
+    </ThemeProvider>
   );
 }

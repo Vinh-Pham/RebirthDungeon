@@ -24,10 +24,7 @@
       "minInjury": 0.05,
       "maxInjury": 0.1
     },
-    "weaponTags": [
-      "melee",
-      "sword"
-    ]
+    "weaponTags": ["melee", "sword"]
   },
   {
     "id": "moss-mail",

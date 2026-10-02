@@ -1,8 +1,16 @@
 import { describe, expect, it, vi } from 'vitest';
 import * as fc from 'fast-check';
 import {
-  applyDamage, calculateDamage, calculateHitChance, createGameRandom, createHealth,
-  resolveAttack, rollCritical, rollHit, validateCombatStats, type Entity,
+  applyDamage,
+  calculateDamage,
+  calculateHitChance,
+  createGameRandom,
+  createHealth,
+  resolveAttack,
+  rollCritical,
+  rollHit,
+  validateCombatStats,
+  type Entity,
 } from '../../engine';
 
 function fighter(id: string): Entity {
@@ -24,32 +32,43 @@ describe('health and damage', () => {
   });
 
   it('maintains health bounds and finite positive damage across generated inputs', () => {
-    fc.assert(fc.property(
-      fc.integer({ min: 1, max: 10000 }), fc.integer({ min: -10000, max: 20000 }),
-      fc.integer({ min: 0, max: 10000 }), fc.integer({ min: 0, max: 10000 }), fc.boolean(),
-      (max, current, attack, defense, critical) => {
-        const health = createHealth(max, current);
-        const before = health.current;
-        const damage = calculateDamage({ attack, defense, critical });
-        const amount = applyDamage(health, damage);
-        expect(Number.isSafeInteger(damage)).toBe(true);
-        expect(damage).toBeGreaterThanOrEqual(1);
-        expect(amount).toBe(before - health.current);
-        expect(health.current).toBeGreaterThanOrEqual(0);
-        expect(health.current).toBeLessThanOrEqual(max);
-      },
-    ), { seed: 20260929, numRuns: 200 });
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 1, max: 10000 }),
+        fc.integer({ min: -10000, max: 20000 }),
+        fc.integer({ min: 0, max: 10000 }),
+        fc.integer({ min: 0, max: 10000 }),
+        fc.boolean(),
+        (max, current, attack, defense, critical) => {
+          const health = createHealth(max, current);
+          const before = health.current;
+          const damage = calculateDamage({ attack, defense, critical });
+          const amount = applyDamage(health, damage);
+          expect(Number.isSafeInteger(damage)).toBe(true);
+          expect(damage).toBeGreaterThanOrEqual(1);
+          expect(amount).toBe(before - health.current);
+          expect(health.current).toBeGreaterThanOrEqual(0);
+          expect(health.current).toBeLessThanOrEqual(max);
+        },
+      ),
+      { seed: 20260929, numRuns: 200 },
+    );
   });
 
   it('rejects invalid health, stats, and overflowing damage', () => {
-    for (const value of [0, -1, 1.5, NaN, Infinity]) expect(() => createHealth(value)).toThrow(RangeError);
+    for (const value of [0, -1, 1.5, NaN, Infinity])
+      expect(() => createHealth(value)).toThrow(RangeError);
     expect(() => applyDamage({ current: -1, max: 10 }, 1)).toThrow(RangeError);
     expect(() => applyDamage({ current: 11, max: 10 }, 1)).toThrow(RangeError);
     expect(() => applyDamage(createHealth(10), -1)).toThrow(RangeError);
     for (const value of [-1, 0.5, NaN, Infinity]) {
-      expect(() => validateCombatStats({ attack: value, defense: 0, speed: 0 })).toThrow(RangeError);
+      expect(() => validateCombatStats({ attack: value, defense: 0, speed: 0 })).toThrow(
+        RangeError,
+      );
     }
-    expect(() => calculateDamage({ attack: Number.MAX_SAFE_INTEGER, defense: 0, critical: true })).toThrow(RangeError);
+    expect(() =>
+      calculateDamage({ attack: Number.MAX_SAFE_INTEGER, defense: 0, critical: true }),
+    ).toThrow(RangeError);
   });
 });
 
@@ -61,7 +80,11 @@ describe('attack resolution', () => {
     const chance = vi.fn().mockReturnValueOnce(true).mockReturnValueOnce(true);
     const random = { ...createGameRandom(1), chance };
     const original = structuredClone([attacker, target]);
-    expect(resolveAttack({ attacker, target, random })).toEqual({ hit: true, critical: true, damage: 12 });
+    expect(resolveAttack({ attacker, target, random })).toEqual({
+      hit: true,
+      critical: true,
+      damage: 12,
+    });
     expect(chance.mock.calls).toEqual([[0.75], [0.1]]);
     expect([attacker, target]).toEqual(original);
     expect(calculateHitChance(0.2, 0.8)).toBe(0);
@@ -69,8 +92,13 @@ describe('attack resolution', () => {
 
   it('does not roll critical chance on a miss', () => {
     const chance = vi.fn().mockReturnValue(false);
-    expect(resolveAttack({ attacker: fighter('a'), target: fighter('b'), random: { ...createGameRandom(1), chance } }))
-      .toEqual({ hit: false, critical: false, damage: 0 });
+    expect(
+      resolveAttack({
+        attacker: fighter('a'),
+        target: fighter('b'),
+        random: { ...createGameRandom(1), chance },
+      }),
+    ).toEqual({ hit: false, critical: false, damage: 0 });
     expect(chance).toHaveBeenCalledOnce();
   });
 
@@ -83,8 +111,11 @@ describe('attack resolution', () => {
       { ...fighter('b'), dead: true as const },
       { ...fighter('b'), combatant: { attack: 1, defense: 0, speed: 0, evasion: 2 } },
     ];
-    for (const target of invalid) expect(() => resolveAttack({ attacker: fighter('a'), target, random })).toThrow();
-    expect(() => resolveAttack({ attacker: fighter('a'), target: fighter('a'), random })).toThrow('self');
+    for (const target of invalid)
+      expect(() => resolveAttack({ attacker: fighter('a'), target, random })).toThrow();
+    expect(() => resolveAttack({ attacker: fighter('a'), target: fighter('a'), random })).toThrow(
+      'self',
+    );
     const attacker = fighter('a');
     attacker.combatant!.attack = Number.MAX_SAFE_INTEGER;
     expect(() => resolveAttack({ attacker, target: fighter('b'), random })).toThrow('safe integer');

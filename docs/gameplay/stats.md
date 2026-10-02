@@ -6,15 +6,15 @@ Updated **October 2, 2026** for the TypeScript engine in the Expo/React Native a
 
 [Stats.ts](../../src/engine/rpg/Stats.ts) owns character derivation; [Resources.ts](../../src/engine/rpg/Resources.ts) owns resource ticks and affordability; [StatusEffects.ts](../../src/engine/rpg/StatusEffects.ts) owns temporary combat effects. React displays their outputs rather than maintaining a second formula. The current conversions are game rules already present in source, inspired by Mabinogi vocabulary rather than a promise to reproduce its full system.
 
-| Source | Current behavior | Planned extension |
-| --- | --- | --- |
-| Starting attributes | STR 55, INT 48, DEX 58, Will 57, Luck 47 before talent/skill grants; shared with HP 118, MP 98, SP 113 and 5 new-character AP in `Leveling.ts` | Content-defined starting profiles if needed |
-| Growth talent | Warrior, Archery, Mage starting bonuses and selected-attribute level growth | Rank-derived talent mastery and deliberate rebirth |
-| Skill grants | Stat bonuses from the Warden's four class skill IDs | Replace with explicit hero learned-rank totals under skills.md |
-| Equipment | Usable weapon plus owned/equipped armor | Conditional masteries, more slots, instance enchants |
-| Dungeon effects | Persistent fountain stat stacks for that dungeon | More supported environment effects |
-| Combat statuses | Temporary attack/defense/speed modifiers and periodic damage/healing | Explicit new effect types; no arbitrary modifier strings |
-| Titles | Absent | First/Second Title sources, removable and counted once |
+| Source              | Current behavior                                                                                                                               | Planned extension                                              |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Starting attributes | STR 55, INT 48, DEX 58, Will 57, Luck 47 before talent/skill grants; shared with HP 118, MP 98, SP 113 and 5 new-character AP in `Leveling.ts` | Content-defined starting profiles if needed                    |
+| Growth talent       | Warrior, Archery, Mage starting bonuses and selected-attribute level growth                                                                    | Rank-derived talent mastery and deliberate rebirth             |
+| Skill grants        | Stat bonuses from the Warden's four class skill IDs                                                                                            | Replace with explicit hero learned-rank totals under skills.md |
+| Equipment           | Usable weapon plus owned/equipped armor                                                                                                        | Conditional masteries, more slots, instance enchants           |
+| Dungeon effects     | Persistent fountain stat stacks for that dungeon                                                                                               | More supported environment effects                             |
+| Combat statuses     | Temporary attack/defense/speed modifiers and periodic damage/healing                                                                           | Explicit new effect types; no arbitrary modifier strings       |
+| Titles              | Absent                                                                                                                                         | First/Second Title sources, removable and counted once         |
 
 Base values match [Mabinogi Level: Starting Stats](https://wiki.mabinogiworld.com/view/Level#Starting_Stats). Active talents add 0.5 STR (Warrior/Close Combat), DEX (Archery), or INT (Mage/Magic) per earned level, through level 200; skill grants remain separate permanent sources. The stat resolver uses current level rather than cumulative level.
 
@@ -22,13 +22,13 @@ Attributes retain the current fractional level-growth precision and clamp to 0�
 
 ## 2. Attributes and derived combat inputs
 
-| Attribute | Current contributions |
-| --- | --- |
-| Strength | Physical damage range and physical Defense |
+| Attribute    | Current contributions                            |
+| ------------ | ------------------------------------------------ |
+| Strength     | Physical damage range and physical Defense       |
 | Intelligence | Magic Attack, Magic Balance and Magic Protection |
-| Dexterity | Physical Balance, Armor Pierce and injury range |
-| Will | Magic Defense, critical rating and injury range |
-| Luck | Critical rating; no automatic loot bonus |
+| Dexterity    | Physical Balance, Armor Pierce and injury range  |
+| Will         | Magic Defense, critical rating and injury range  |
+| Luck         | Critical rating; no automatic loot bonus         |
 
 The source subtracts its authored baseline offsets before conversion. Physical min/max damage includes usable weapon values once; the `attack` compatibility value tracks max physical damage. Physical Balance combines the DEX curve and weapon Balance, capped at 0.8. Magic Balance uses INT and is capped at 1. Armor Pierce affects physical Defense. Critical ratings are distinct from final chance: target protection modifies the latter in [Battle](battle.md).
 
@@ -46,13 +46,13 @@ Current modifiers operate on explicitly supported fields. A speed modifier does 
 
 ## 3. Resource pools, wounds, and fullness
 
-| Value | Bounds and meaning |
-| --- | --- |
-| HP | Integer current health; zero means defeated in combat |
-| Max HP | Positive integer capacity |
-| Wounds | Reduce the healable HP limit; normal HP recovery does not remove them |
-| MP/SP | Nonnegative integer pools within current maxima |
-| Fullness | 50–100, stored in tenth-point precision; affects SP recovery and cost |
+| Value            | Bounds and meaning                                                       |
+| ---------------- | ------------------------------------------------------------------------ |
+| HP               | Integer current health; zero means defeated in combat                    |
+| Max HP           | Positive integer capacity                                                |
+| Wounds           | Reduce the healable HP limit; normal HP recovery does not remove them    |
+| MP/SP            | Nonnegative integer pools within current maxima                          |
+| Fullness         | 50–100, stored in tenth-point precision; affects SP recovery and cost    |
 | AP, XP, training | Separate progression quantities; AP is planned and never pays for combat |
 
 ```text
@@ -98,11 +98,11 @@ Future titles and enchants enter as identified removable sources: item instance/
 
 Current status definitions specify ID, duration, `turnStart`/`turnEnd`, `refresh`/`stack`/`ignore`, and either periodic damage, periodic healing, or a signed attack/defense/speed modifier. Runtime instances store source ID, remaining turns and stacks. Matching is by **status ID**, not a generic cross-skill stacking group.
 
-| Reapplication | Current behavior |
-| --- | --- |
-| Refresh | Reset remaining duration; no increased stacks |
-| Stack | Increase to at most 10 stacks and reset duration |
-| Ignore | Leave existing instance unchanged |
+| Reapplication | Current behavior                                 |
+| ------------- | ------------------------------------------------ |
+| Refresh       | Reset remaining duration; no increased stacks    |
+| Stack         | Increase to at most 10 stacks and reset duration |
+| Ignore        | Leave existing instance unchanged                |
 
 On the affected actor's matching turn boundary, resolve its periodic effect, decrement the counter and remove it at zero. A newly applied self `turnEnd` buff ticks at the end of its casting turn. For two useful future owner actions, author duration 3. An effect applied to another actor ticks at that actor's next matching boundary, not the caster's boundary. Turn-start deaths skip the defeated actor; encounter defeat/victory resolves before another action.
 

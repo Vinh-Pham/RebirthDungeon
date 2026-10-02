@@ -9,10 +9,21 @@ function fighter(id: string, speed = 1): Entity {
 describe('turn queue', () => {
   it('sorts by speed, preserves ties, skips dead/noncombatants, and wraps rounds', () => {
     const queue = new TurnQueue();
-    queue.initialize([fighter('slow', 1), fighter('first', 5), fighter('second', 5),
-      { ...fighter('dead', 10), dead: true }, { ...fighter('zero', 10), health: createHealth(10, 0) }, { id: 'npc' }]);
+    queue.initialize([
+      fighter('slow', 1),
+      fighter('first', 5),
+      fighter('second', 5),
+      { ...fighter('dead', 10), dead: true },
+      { ...fighter('zero', 10), health: createHealth(10, 0) },
+      { id: 'npc' },
+    ]);
     expect(queue.order).toEqual(['first', 'second', 'slow']);
-    expect([queue.current(), queue.advance(), queue.advance(), queue.advance()]).toEqual(['first', 'second', 'slow', 'first']);
+    expect([queue.current(), queue.advance(), queue.advance(), queue.advance()]).toEqual([
+      'first',
+      'second',
+      'slow',
+      'first',
+    ]);
     const order = queue.order as string[];
     order.length = 0;
     expect(queue.current()).toBe('first');
@@ -37,18 +48,21 @@ describe('turn queue', () => {
   });
 
   it('never returns removed entities across arbitrary removals', () => {
-    fc.assert(fc.property(fc.uniqueArray(fc.integer({ min: 0, max: 20 })), (values) => {
-      const queue = new TurnQueue();
-      const ids = values.map(String);
-      queue.initialize(ids.map((id) => fighter(id)));
-      for (const id of ids) {
-        queue.advance();
-        queue.remove(id);
-        expect(queue.order).not.toContain(id);
-        for (let i = 0; i <= queue.order.length; i++) expect(queue.advance()).not.toBe(id);
-      }
-      expect(queue.current()).toBeUndefined();
-    }), { seed: 20260929, numRuns: 100 });
+    fc.assert(
+      fc.property(fc.uniqueArray(fc.integer({ min: 0, max: 20 })), (values) => {
+        const queue = new TurnQueue();
+        const ids = values.map(String);
+        queue.initialize(ids.map((id) => fighter(id)));
+        for (const id of ids) {
+          queue.advance();
+          queue.remove(id);
+          expect(queue.order).not.toContain(id);
+          for (let i = 0; i <= queue.order.length; i++) expect(queue.advance()).not.toBe(id);
+        }
+        expect(queue.current()).toBeUndefined();
+      }),
+      { seed: 20260929, numRuns: 100 },
+    );
   });
 
   it('rejects duplicate IDs and invalid speeds without replacing an existing queue', () => {

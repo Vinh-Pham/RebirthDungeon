@@ -16,8 +16,11 @@ export interface DungeonSceneryBatch {
 export function dungeonScenery(map: DungeonSceneMap): DungeonSceneryBatch[] {
   const terrain = new Map<string, DungeonSceneryBatch>();
   const props = new Map<string, DungeonSceneryBatch>();
-  const occupied = new Set([...(map.objects ?? []), ...(map.spawns ?? [])].map(({ x, y }) => `${x},${y}`));
-  const wall = (x: number, y: number) => x < 0 || y < 0 || x >= map.width || y >= map.height || map.tiles[y * map.width + x] === 1;
+  const occupied = new Set(
+    [...(map.objects ?? []), ...(map.spawns ?? [])].map(({ x, y }) => `${x},${y}`),
+  );
+  const wall = (x: number, y: number) =>
+    x < 0 || y < 0 || x >= map.width || y >= map.height || map.tiles[y * map.width + x] === 1;
   function add(groups: Map<string, DungeonSceneryBatch>, name: string, x: number, y: number) {
     const id = `dungeon-${name}`;
     const batch = groups.get(id) ?? { id, positions: [] };

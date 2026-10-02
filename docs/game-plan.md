@@ -4,35 +4,35 @@ Updated **October 1, 2026**. Target: **Expo SDK 57, React Native 0.86, React 19,
 
 ## 1. Documentation map
 
-| Document | Owns |
-| --- | --- |
-| [Battle](gameplay/battle.md) | Action selection, targeting, initiative, combat resolution, encounter results |
-| [Stats](gameplay/stats.md) | Attributes, damage inputs, resources, wounds/fullness, status timing |
-| [Character](gameplay/character.md) | Character identity, levels/talents, future aging and deliberate rebirth |
-| [Skills](gameplay/skills.md) | NPC/book/page learning, ranks, 100 training points plus AP, the F/E pilot |
-| [Inventory](gameplay/inventory.md) | Current stacks/weapon instances and future grids, bags, equipment expansion |
-| [Towns](gameplay/towns.md) | Refuge movement, shops, repair, recovery, dungeon entry, future services |
-| [Quests](gameplay/quests.md) | Initial story/side/skill quests, objective attribution, durable reward claims; future RP missions |
-| [Titles](gameplay/titles.md) | Future achievements, equipped effects, discovery and mastery titles |
-| [Enchants](gameplay/enchants.md) | Future prefix/suffix installation, protected failure, burning and saved RNG |
-| [User interface](gameplay/user-interface.md) | Mobile screens, navigation, controls, accessibility and presentation |
+| Document                                     | Owns                                                                                              |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| [Battle](gameplay/battle.md)                 | Action selection, targeting, initiative, combat resolution, encounter results                     |
+| [Stats](gameplay/stats.md)                   | Attributes, damage inputs, resources, wounds/fullness, status timing                              |
+| [Character](gameplay/character.md)           | Character identity, levels/talents, future aging and deliberate rebirth                           |
+| [Skills](gameplay/skills.md)                 | NPC/book/page learning, ranks, 100 training points plus AP, the F/E pilot                         |
+| [Inventory](gameplay/inventory.md)           | Current stacks/weapon instances and future grids, bags, equipment expansion                       |
+| [Towns](gameplay/towns.md)                   | Refuge movement, shops, repair, recovery, dungeon entry, future services                          |
+| [Quests](gameplay/quests.md)                 | Initial story/side/skill quests, objective attribution, durable reward claims; future RP missions |
+| [Titles](gameplay/titles.md)                 | Future achievements, equipped effects, discovery and mastery titles                               |
+| [Enchants](gameplay/enchants.md)             | Future prefix/suffix installation, protected failure, burning and saved RNG                       |
+| [User interface](gameplay/user-interface.md) | Mobile screens, navigation, controls, accessibility and presentation                              |
 
 [AGENTS.md](../AGENTS.md) governs implementation. [README](../README.md) provides setup and project context; prefer current source when historical examples disagree. The existing skills plan remains the progression contract. Its introductory warning about outdated companion documents records the state before this revision; those companions are now updated here.
 
 ## 2. Current architecture
 
-| Layer | Existing location | Responsibility |
-| --- | --- | --- |
-| Routes | `src/app/` | Expo Router layouts and thin screen entry points |
-| Screens/shared UI | `src/ui/`, `src/components/` | React Native/HeroUI controls, theme, accessible actions |
-| Session ownership | `src/game/JourneyHost.ts`, `JourneySession.ts`, `BattleSession.ts` | One selected character's journey, active encounter, copied observations and lifetime |
-| Simulation | `src/engine/` | Commands/events, Miniplex ECS, seeded RNG, battle and RPG rules |
-| Battle orchestration | `src/engine/battle/` | XState action flow, fixed turn queue, hit/critical/damage and skill resolution |
-| Content | `src/data/` | JSON definitions validated by Zod and `ContentRegistry` |
-| Presentation | `src/renderer/` | Skia maps/sprites and Reanimated effects from resolved events |
-| Persistence | `src/persistence/` | Save validation/migration, serialized repository operations and autosave |
-| Audio/preferences | `src/audio/`, `src/state/` | Playback and settings; UI preferences are not authoritative gameplay |
-| Verification | `src/tests/` | Vitest engine, battle, content, RPG, world, persistence and presentation suites |
+| Layer                | Existing location                                                  | Responsibility                                                                       |
+| -------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| Routes               | `src/app/`                                                         | Expo Router layouts and thin screen entry points                                     |
+| Screens/shared UI    | `src/ui/`, `src/components/`                                       | React Native/HeroUI controls, theme, accessible actions                              |
+| Session ownership    | `src/game/JourneyHost.ts`, `JourneySession.ts`, `BattleSession.ts` | One selected character's journey, active encounter, copied observations and lifetime |
+| Simulation           | `src/engine/`                                                      | Commands/events, Miniplex ECS, seeded RNG, battle and RPG rules                      |
+| Battle orchestration | `src/engine/battle/`                                               | XState action flow, fixed turn queue, hit/critical/damage and skill resolution       |
+| Content              | `src/data/`                                                        | JSON definitions validated by Zod and `ContentRegistry`                              |
+| Presentation         | `src/renderer/`                                                    | Skia maps/sprites and Reanimated effects from resolved events                        |
+| Persistence          | `src/persistence/`                                                 | Save validation/migration, serialized repository operations and autosave             |
+| Audio/preferences    | `src/audio/`, `src/state/`                                         | Playback and settings; UI preferences are not authoritative gameplay                 |
+| Verification         | `src/tests/`                                                       | Vitest engine, battle, content, RPG, world, persistence and presentation suites      |
 
 `CharacterGameLayout` provides `CharacterGameContext` and owns the selected character's `JourneyHost`. Feature routes reuse that host; navigation must not instantiate a second campaign. Keep non-route helpers outside `src/app/`. React reads detached snapshots through the existing subscription pattern and dispatches typed intents. Engine/RPG modules remain runnable without React Native, rendering, storage, or a device clock.
 
@@ -90,15 +90,15 @@ Format migrations and SQLite/IndexedDB database migrations are separate. A new h
 
 ## 7. Delivery sequence
 
-| Milestone | Work | Exit evidence |
-| --- | --- | --- |
-| Baseline upkeep | Keep current character/refuge/dungeon/battle loop and version 7 migrations working | Engine suites, lint/typecheck, platform smoke tests |
-| Skill progression | Implement the unchanged [Skills plan](gameplay/skills.md): learned ranks, AP/training, NPC/book/pages, F/E pilot, journal, durable result merge | All three learning routes and saved rank-up; unchanged starter combat/stat behavior |
-| Quest and title foundations | Attributed outcomes, story/side/skill quests, claims, first/second titles and stat sources | Completed/failed encounter evidence, duplicate claim and combined title-effect checks |
-| Inventory/equipment expansion | Instance model where needed, grid/bags/locks/overflow, hand/armor categories | Quantity conservation, lossless migration, compact-screen controls |
-| Enchanting and town services | Prefix/suffix, protected attempts, burning, dedicated RNG; instructor/material supply loops | Saved chance outcomes, failures/retries and no capacity loss |
-| Character extensions | Talent mastery, optional aging, deliberate rebirth; isolated RP scenarios | Injected-clock tests, reset/preserve preview, no borrowed state leaking to hero |
-| Advanced combat and release | Supported skill rank tables/reactions, balance, device performance/accessibility, EAS delivery | Native installations, suspend/relaunch, full loop and release-specific checks |
+| Milestone                     | Work                                                                                                                                            | Exit evidence                                                                         |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Baseline upkeep               | Keep current character/refuge/dungeon/battle loop and version 7 migrations working                                                              | Engine suites, lint/typecheck, platform smoke tests                                   |
+| Skill progression             | Implement the unchanged [Skills plan](gameplay/skills.md): learned ranks, AP/training, NPC/book/pages, F/E pilot, journal, durable result merge | All three learning routes and saved rank-up; unchanged starter combat/stat behavior   |
+| Quest and title foundations   | Attributed outcomes, story/side/skill quests, claims, first/second titles and stat sources                                                      | Completed/failed encounter evidence, duplicate claim and combined title-effect checks |
+| Inventory/equipment expansion | Instance model where needed, grid/bags/locks/overflow, hand/armor categories                                                                    | Quantity conservation, lossless migration, compact-screen controls                    |
+| Enchanting and town services  | Prefix/suffix, protected attempts, burning, dedicated RNG; instructor/material supply loops                                                     | Saved chance outcomes, failures/retries and no capacity loss                          |
+| Character extensions          | Talent mastery, optional aging, deliberate rebirth; isolated RP scenarios                                                                       | Injected-clock tests, reset/preserve preview, no borrowed state leaking to hero       |
+| Advanced combat and release   | Supported skill rank tables/reactions, balance, device performance/accessibility, EAS delivery                                                  | Native installations, suspend/relaunch, full loop and release-specific checks         |
 
 Keep the roadmap incremental: grid storage, banks, expanded slots, aging, rebirth, RP, and every advanced skill are not prerequisites for the current playable loop. No retired phase tracker or absent foundation document is used as evidence of completion.
 

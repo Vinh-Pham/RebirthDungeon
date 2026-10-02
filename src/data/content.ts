@@ -20,5 +20,22 @@ import titles from './titles/basic.json';
 import { ContentRegistry } from '../engine/data/ContentRegistry';
 
 export function loadGameContent(): ContentRegistry {
-  return new ContentRegistry({ enchants, enchantingRules, skills: [...skills, ...enchantSkills, ...humanRangedAttack], enemies: [...mossHallsEnemies, ...sharedEnemies, ...spiderNestEnemies], classes, items, statusEffects, maps, atlases, worlds, dungeons, shops, skillBookRecipes, quests, titles, questFlags: ['seal-witnessed'] });
+  return new ContentRegistry({
+    enchants,
+    enchantingRules,
+    skills: [...skills, ...enchantSkills, ...humanRangedAttack],
+    enemies: [...mossHallsEnemies, ...sharedEnemies, ...spiderNestEnemies],
+    classes,
+    items,
+    statusEffects,
+    maps,
+    atlases,
+    worlds,
+    dungeons,
+    shops,
+    skillBookRecipes,
+    quests,
+    titles,
+    questFlags: ['seal-witnessed'],
+  });
 }
