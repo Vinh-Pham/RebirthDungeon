@@ -92,7 +92,11 @@ movement and interaction buttons remain available without canvas touch input.
 
 - **Grocery:** apples cost 2 gold and restore 3 HP; bread costs 4 gold and restores
   8 HP. Apples also restore 10 stamina/fullness; bread restores 25. Food is usable outside combat.
-- **Blacksmith:** buy iron blades for 30 gold or repair individual weapon copies.
+- **Blacksmith:** buy iron blades, wooden weapons, gathering tools, daggers, short swords,
+  bows, round shields, and arrow bundles; repair individual weapon copies. Arrows cost
+  15 gold for 20 or 75 gold for 100 and share one inventory stack. See the
+  [stock and prices](docs/gameplay/towns.md). Gathering and ammunition consumption
+  remain future work; the shield uses the current armor slot.
 - **Healer:** spend 10 gold to restore HP, mana, stamina and fullness, and clear wounds. Full resources need no
   treatment. There is no free treatment or ember-shrine recovery.
 - **General shop:** buy healing potions (10 gold), mana potions (12 gold, restore

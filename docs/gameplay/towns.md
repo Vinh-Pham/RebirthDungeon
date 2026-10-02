@@ -1,6 +1,6 @@
 # Rebirth Dungeon: Towns and Services
 
-Updated **October 1, 2026**. The app already contains the authored refuge, connected interiors, NPC conversations, shops, repair, healing, F/E enchanting and dungeon entry. This document records those services and plans their progression extensions for the Expo/React Native game. Read it with [Inventory](inventory.md), [Character](character.md), [Skills](skills.md), [Quests](quests.md), and the [game plan](../game-plan.md).
+Updated **October 2, 2026**. The app already contains the authored refuge, connected interiors, NPC conversations, shops, repair, healing, F/E enchanting and dungeon entry. This document records those services and plans their progression extensions for the Expo/React Native game. Read it with [Inventory](inventory.md), [Character](character.md), [Skills](skills.md), [Quests](quests.md), and the [game plan](../game-plan.md).
 
 ## 1. Refuge and movement
 
@@ -12,16 +12,16 @@ The one-time supply chest grants the starter iron blade only after its item gran
 
 ## 2. Current service catalog
 
-| Refuge service           | Existing actions                                       | Notes                                                                                |
-| ------------------------ | ------------------------------------------------------ | ------------------------------------------------------------------------------------ |
-| Orchard Grocery          | Buy apples and bread                                   | Food restores authored stamina/fullness; not battle-usable                           |
-| Ember Forge              | Buy iron blades; repair owned weapons                  | Repair includes an equipped weapon and preserves its instance ID                     |
-| The Wanderer’s Pack      | Buy HP/MP/SP potions and moss mail; sell owned items   | The current service that buys items from the player                                  |
-| Healer House             | Paid full recovery                                     | 10 gold; restores HP, MP, SP, wounds and fullness                                    |
-| Combat School instructor | Free Smash Rank F lesson                               | Stands outside the northeast school; grants zero training and 3 introductory AP once |
-| Refuge keeper            | Free Enchant Rank F lesson and quest offers/claims     | Smash directions lead to the school; rank advancement remains in the Skills journal  |
-| Training halls           | Explore/interact with authored NPCs                    | Learned-rank lessons and mastery systems remain planned                              |
-| Dungeon altar            | Offer an unequipped item and enter a generated dungeon | Owns generation/entry validation rather than a shop transaction                      |
+| Refuge service           | Existing actions                                                    | Notes                                                                                |
+| ------------------------ | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Orchard Grocery          | Buy apples and bread                                                | Food restores authored stamina/fullness; not battle-usable                           |
+| Ember Forge              | Buy weapons, tools, arrow bundles and shields; repair owned weapons | Repair includes an equipped weapon and preserves its instance ID                     |
+| The Wanderer’s Pack      | Buy HP/MP/SP potions and moss mail; sell owned items                | The current service that buys items from the player                                  |
+| Healer House             | Paid full recovery                                                  | 10 gold; restores HP, MP, SP, wounds and fullness                                    |
+| Combat School instructor | Free Smash Rank F lesson                                            | Stands outside the northeast school; grants zero training and 3 introductory AP once |
+| Refuge keeper            | Free Enchant Rank F lesson and quest offers/claims                  | Smash directions lead to the school; rank advancement remains in the Skills journal  |
+| Training halls           | Explore/interact with authored NPCs                                 | Learned-rank lessons and mastery systems remain planned                              |
+| Dungeon altar            | Offer an unequipped item and enter a generated dungeon              | Owns generation/entry validation rather than a shop transaction                      |
 
 Do not describe an existing bank, inn, cooking station, quest board, instructor rank-up service or enchanting bench. Add their content and commands when their feature milestone ships. Display only services supported by the current NPC definition.
 
@@ -30,6 +30,27 @@ Do not describe an existing bank, inn, cooking station, quest board, instructor 
 Gold is one nonnegative hero balance capped at **1,000,000**. No loose-coin item, gold bag or protected bank balance exists. Shops use authored prices and consume no RNG. Item capacity is currently a count bound of 999 per definition, not a footprint grid.
 
 A purchase validates an integer quantity, stock definition, item capacity and total price on a staged hero before committing items/gold. Consumable/starter stock is authored rather than a simulated economy. The general store pays **floor(item price / 2) × quantity**. Selling an equipped weapon is rejected; an equipped armor copy is reserved, although extra unequipped copies of its definition may be sold. Validate incoming gold against its bound before accepting a sale.
+
+Ember Forge retains the 30-gold iron blade and its enchant stock, and also sells:
+
+| Stock           | Gold per item or bundle |
+| --------------- | ----------------------: |
+| Wooden Stick    |                      50 |
+| Gathering Knife |                      50 |
+| Arrow x20       |                      15 |
+| Arrow x100      |                      75 |
+| Gathering Axe   |                     170 |
+| Short Bow       |                     400 |
+| Wooden Blade    |                     500 |
+| Wooden Club     |                     600 |
+| Dagger          |                   1,500 |
+| Pickaxe         |                     750 |
+| Short Sword     |                   2,000 |
+| Round Shield    |                  11,600 |
+
+Item names contain no price. A shop bundle quotes a whole bundle price, while `BUY_ITEM.quantity` remains the number of item units; optional `bundleSize` identifies the selected offer. Both arrow offers grant the same `arrow` inventory definition. Partial bundles, forged offers, insufficient funds and counts over 999 are rejected before publication. Arrows are stored supplies with zero resale value; ammunition consumption remains future work. Gathering tools use the current melee weapon rules without gathering actions. The bow supports the current basic attack and does not satisfy Smash's melee requirement. Round Shield uses the existing armor slot and replaces body armor; an off-hand slot remains future work.
+
+New equipment damage, balance, critical, durability and shield bonuses in `src/data/items/basic.json` are authored prototype values, not imported reference stats. Purchases allocate independent full-durability weapon copies or armor copies through the existing ownership path. No save-format change is required.
 
 Weapon repair costs **ceil(item price × 0.5 × missing durability / maximum durability)**. It requires an owned repairable instance, missing durability and enough gold. Fully repaired weapons are rejected without charge. The current iron blade costs 30 gold and has maximum durability 60; repair changes that same instance's durability. Breakage is an implemented combat consequence, not a deferred town feature.
 

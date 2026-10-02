@@ -41,6 +41,14 @@ const skillImages: Record<string, number> = {
 };
 
 const itemImages: Record<string, number> = {
+  arrow: require('../../../assets/game/weapons/arrow.png'),
+  dagger: require('../../../assets/game/weapons/dagger.png'),
+  'gathering-axe': require('../../../assets/game/weapons/gathering-axe.png'),
+  'gathering-knife': require('../../../assets/game/weapons/gathering-knife.png'),
+  pickaxe: require('../../../assets/game/weapons/pickaxe.png'),
+  'wooden-blade': require('../../../assets/game/weapons/wooden-blade.png'),
+  'wooden-club': require('../../../assets/game/weapons/wooden-club.png'),
+  'wooden-stick': require('../../../assets/game/weapons/wooden-stick.png'),
   'baseball-bat': require('../../../assets/game/weapons/baseball-bat.png'),
   'beginner-bow': require('../../../assets/game/weapons/beginner-bow.png'),
   'beginner-shield': require('../../../assets/game/weapons/beginner-shield.png'),
@@ -68,6 +76,8 @@ const aliases: Record<GameImageKind, Record<string, string>> = {
     'ice-spear': 'icicle',
   },
   item: {
+    'short-bow': 'beginner-bow',
+    'round-shield': 'beginner-shield',
     'iron-blade': 'iron-sword',
     potion: 'hp-30-potion',
     'mana-potion': 'mp-30-potion',

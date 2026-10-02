@@ -214,5 +214,195 @@
     "power": 0,
     "battleUsable": false,
     "description": "A gift from the refuge watch. Redeem in town to earn Lantern Companion (Second Title: Max HP +5). Already-earned coupons are kept; they grant no duplicate reward."
+  },
+  {
+    "id": "wooden-stick",
+    "name": "Wooden Stick",
+    "kind": "weapon",
+    "price": 50,
+    "power": 3,
+    "stat": "attack",
+    "description": "+1\u20133 physical damage; 50% balance; 5% critical.",
+    "maxDurability": 30,
+    "weaponStats": {
+      "minDamage": 1,
+      "maxDamage": 3,
+      "balance": 0.5,
+      "critical": 0.05,
+      "minInjury": 0.05,
+      "maxInjury": 0.1
+    },
+    "weaponTags": ["melee"]
+  },
+  {
+    "id": "gathering-knife",
+    "name": "Gathering Knife",
+    "kind": "weapon",
+    "price": 50,
+    "power": 4,
+    "stat": "attack",
+    "description": "+1\u20134 physical damage; 60% balance; 5% critical. Gathering is not available yet.",
+    "maxDurability": 30,
+    "weaponStats": {
+      "minDamage": 1,
+      "maxDamage": 4,
+      "balance": 0.6,
+      "critical": 0.05,
+      "minInjury": 0.05,
+      "maxInjury": 0.1
+    },
+    "weaponTags": ["melee"]
+  },
+  {
+    "id": "gathering-axe",
+    "name": "Gathering Axe",
+    "kind": "weapon",
+    "price": 170,
+    "power": 5,
+    "stat": "attack",
+    "description": "+2\u20135 physical damage; 45% balance; 5% critical. Gathering is not available yet.",
+    "maxDurability": 40,
+    "weaponStats": {
+      "minDamage": 2,
+      "maxDamage": 5,
+      "balance": 0.45,
+      "critical": 0.05,
+      "minInjury": 0.05,
+      "maxInjury": 0.1
+    },
+    "weaponTags": ["melee"]
+  },
+  {
+    "id": "short-bow",
+    "name": "Short Bow",
+    "kind": "weapon",
+    "price": 400,
+    "power": 8,
+    "stat": "attack",
+    "description": "+3\u20138 physical damage; 50% balance; 10% critical. Basic attacks do not consume arrows yet; this bow cannot use Smash.",
+    "maxDurability": 40,
+    "weaponStats": {
+      "minDamage": 3,
+      "maxDamage": 8,
+      "balance": 0.5,
+      "critical": 0.1,
+      "minInjury": 0.05,
+      "maxInjury": 0.1
+    },
+    "weaponTags": []
+  },
+  {
+    "id": "wooden-blade",
+    "name": "Wooden Blade",
+    "kind": "weapon",
+    "price": 500,
+    "power": 6,
+    "stat": "attack",
+    "description": "+2\u20136 physical damage; 55% balance; 5% critical.",
+    "maxDurability": 45,
+    "weaponStats": {
+      "minDamage": 2,
+      "maxDamage": 6,
+      "balance": 0.55,
+      "critical": 0.05,
+      "minInjury": 0.05,
+      "maxInjury": 0.1
+    },
+    "weaponTags": ["melee", "sword"]
+  },
+  {
+    "id": "wooden-club",
+    "name": "Wooden Club",
+    "kind": "weapon",
+    "price": 600,
+    "power": 8,
+    "stat": "attack",
+    "description": "+3\u20138 physical damage; 40% balance; 10% critical.",
+    "maxDurability": 50,
+    "weaponStats": {
+      "minDamage": 3,
+      "maxDamage": 8,
+      "balance": 0.4,
+      "critical": 0.1,
+      "minInjury": 0.05,
+      "maxInjury": 0.1
+    },
+    "weaponTags": ["melee"]
+  },
+  {
+    "id": "dagger",
+    "name": "Dagger",
+    "kind": "weapon",
+    "price": 1500,
+    "power": 10,
+    "stat": "attack",
+    "description": "+4\u201310 physical damage; 65% balance; 15% critical.",
+    "maxDurability": 50,
+    "weaponStats": {
+      "minDamage": 4,
+      "maxDamage": 10,
+      "balance": 0.65,
+      "critical": 0.15,
+      "minInjury": 0.05,
+      "maxInjury": 0.1
+    },
+    "weaponTags": ["melee"]
+  },
+  {
+    "id": "pickaxe",
+    "name": "Pickaxe",
+    "kind": "weapon",
+    "price": 750,
+    "power": 6,
+    "stat": "attack",
+    "description": "+2\u20136 physical damage; 40% balance; 5% critical. Gathering is not available yet.",
+    "maxDurability": 45,
+    "weaponStats": {
+      "minDamage": 2,
+      "maxDamage": 6,
+      "balance": 0.4,
+      "critical": 0.05,
+      "minInjury": 0.05,
+      "maxInjury": 0.1
+    },
+    "weaponTags": ["melee"]
+  },
+  {
+    "id": "short-sword",
+    "name": "Short Sword",
+    "kind": "weapon",
+    "price": 2000,
+    "power": 12,
+    "stat": "attack",
+    "description": "+5\u201312 physical damage; 60% balance; 10% critical.",
+    "maxDurability": 60,
+    "weaponStats": {
+      "minDamage": 5,
+      "maxDamage": 12,
+      "balance": 0.6,
+      "critical": 0.1,
+      "minInjury": 0.05,
+      "maxInjury": 0.1
+    },
+    "weaponTags": ["melee", "sword"]
+  },
+  {
+    "id": "arrow",
+    "name": "Arrow",
+    "kind": "material",
+    "price": 0,
+    "power": 0,
+    "battleUsable": false,
+    "description": "Arrow supply. Sold in bundles of 20 or 100. Ammunition use is not available yet; resale pays no gold."
+  },
+  {
+    "id": "round-shield",
+    "name": "Round Shield",
+    "kind": "armor",
+    "price": 11600,
+    "power": 2,
+    "stat": "defense",
+    "protection": 2,
+    "description": "+2 Defense and +2 Protection. Uses the current armor slot, replacing body armor."
   }
 ]

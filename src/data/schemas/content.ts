@@ -570,7 +570,9 @@ export const ContentSchema = z
     validateTitleReferences(content, ctx);
     content.shops.forEach((shop) => {
       if (
-        shop.items.some((itemId) => !content.items.some((item) => item.id === itemId)) ||
+        [...shop.items, ...shop.bundles.map((bundle) => bundle.itemId)].some(
+          (itemId) => !content.items.some((item) => item.id === itemId),
+        ) ||
         (shop.buysItems && shop.kind !== 'general')
       )
         ctx.addIssue({ code: 'custom', message: 'Invalid shop catalog' });

@@ -19,7 +19,7 @@ export type GameCommand =
   | { type: 'DEFEND'; entityId: EntityId }
   | { type: 'INTERACT'; objectId: string }
   | { type: 'CLOSE_SERVICE' }
-  | { type: 'BUY_ITEM'; objectId: string; itemId: string; quantity: number }
+  | { type: 'BUY_ITEM'; objectId: string; itemId: string; quantity: number; bundleSize?: number }
   | { type: 'SELL_ITEM'; objectId: string; item: OwnedItem; quantity: number }
   | { type: 'REPAIR_WEAPON'; objectId: string; weaponId: string }
   | { type: 'HEAL'; objectId: string }
@@ -94,7 +94,11 @@ export function validateCommand(command: GameCommand): void {
       valid = id(command.objectId);
       break;
     case 'BUY_ITEM':
-      valid = id(command.objectId) && id(command.itemId) && quantity(command.quantity);
+      valid =
+        id(command.objectId) &&
+        id(command.itemId) &&
+        quantity(command.quantity) &&
+        (command.bundleSize === undefined || quantity(command.bundleSize));
       break;
     case 'SELL_ITEM':
       valid = id(command.objectId) && owned(command.item) && quantity(command.quantity);

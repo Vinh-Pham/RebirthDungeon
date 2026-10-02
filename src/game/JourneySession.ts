@@ -61,6 +61,7 @@ import { consumableRecovery } from '../engine/rpg/Consumables';
 import { setItemHotbar } from '../engine/rpg/Inventory';
 import { createGameRandom } from '../engine/Random';
 import { distance, findPath, isWalkable, projectWorldMap } from '../engine/world/TileMap';
+import { purchasePrice } from '../engine/world/Shop';
 import type { WorldMap } from '../data/schemas/world';
 import {
   validateCampaign,
@@ -908,12 +909,11 @@ export class JourneySession {
       this.requireExploring(state);
       tx.activeService = undefined;
     });
-    this.registerCommand('BUY_ITEM', ({ objectId, itemId, quantity }, state, tx) => {
+    this.registerCommand('BUY_ITEM', ({ objectId, itemId, quantity, bundleSize }, state, tx) => {
       const object = this.requireService(state, tx.activeService, objectId, ['merchant']);
       const shop = content.data.shops.find((shop) => shop.id === object.shopId)!;
-      if (!shop.items.includes(itemId)) throw new Error('This merchant does not sell that item');
       const item = content.item(itemId);
-      const total = item.price * quantity;
+      const total = purchasePrice(shop, content, itemId, quantity, bundleSize);
       if (state.hero.gold < total) throw new Error('Not enough gold');
       const hero = state.hero;
       addItem(hero, itemId, quantity, content);

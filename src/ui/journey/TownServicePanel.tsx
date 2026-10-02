@@ -15,12 +15,14 @@ import {
 import InventoryPager, { INVENTORY_PAGE_SIZE, inventoryPage } from './InventoryPager';
 import TownQuestOffers from '../quests/TownQuestOffers';
 import { questItemNeeds } from '../../engine/rpg/Quests';
+import { purchasePrice, shopOffers } from '../../engine/world/Shop';
 
 function TradeRow({
   itemId,
   name,
   detail,
   price,
+  bundleSize = 1,
   maximum,
   verb,
   disabled,
@@ -30,6 +32,7 @@ function TradeRow({
   name: string;
   detail: string;
   price: number;
+  bundleSize?: number;
   maximum: number;
   verb: string;
   disabled: boolean;
@@ -49,7 +52,7 @@ function TradeRow({
         {detail}
       </Text>
       <Text className="text-muted" style={styles.body}>
-        {price} gold each · Total {price * count} gold
+        {price} gold {bundleSize > 1 ? 'per bundle' : 'each'} · Total {price * count} gold
       </Text>
       <View style={styles.actions}>
         <Button
@@ -243,28 +246,42 @@ export default function TownServicePanel({
               <Text className="text-accent" style={styles.section}>
                 Buy supplies
               </Text>
-              {shop.items.map((itemId) => {
+              {shopOffers(shop, content).map((offer) => {
+                const { itemId, price, quantity: bundleSize } = offer;
                 const item = content.item(itemId);
                 const capacity = 999 - itemCount(hero, itemId);
                 const maximum = Math.min(
-                  capacity,
-                  item.price > 0 ? Math.floor(hero.gold / item.price) : 999,
+                  Math.floor(capacity / bundleSize),
+                  price > 0 ? Math.floor(hero.gold / price) : 999,
                 );
                 return (
                   <TradeRow
                     itemId={itemId}
-                    key={itemId}
-                    name={item.name}
+                    key={`${itemId}:${bundleSize}`}
+                    name={`${item.name}${bundleSize > 1 ? ` x${bundleSize}` : ''}`}
                     detail={`${item.description} · ${itemCount(hero, itemId)} owned`}
-                    price={item.price}
+                    price={price}
+                    bundleSize={bundleSize}
                     maximum={maximum}
                     verb="Buy"
                     disabled={busy}
                     choose={(quantity) =>
                       choose({
-                        command: { type: 'BUY_ITEM', objectId, itemId, quantity },
-                        label: `Buy ${item.name} ×${quantity}?`,
-                        goldChange: -item.price * quantity,
+                        command: {
+                          type: 'BUY_ITEM',
+                          objectId,
+                          itemId,
+                          quantity: quantity * bundleSize,
+                          ...(bundleSize > 1 ? { bundleSize } : {}),
+                        },
+                        label: `Buy ${item.name} ×${quantity * bundleSize}?`,
+                        goldChange: -purchasePrice(
+                          shop,
+                          content,
+                          itemId,
+                          quantity * bundleSize,
+                          bundleSize,
+                        ),
                         detail:
                           item.kind === 'weapon'
                             ? 'Each weapon has its own durability and arrives fully repaired.'

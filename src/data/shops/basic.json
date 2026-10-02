@@ -11,6 +11,16 @@
     "kind": "blacksmith",
     "items": [
       "iron-blade",
+      "wooden-stick",
+      "gathering-knife",
+      "gathering-axe",
+      "short-bow",
+      "wooden-blade",
+      "wooden-club",
+      "dagger",
+      "pickaxe",
+      "short-sword",
+      "round-shield",
       "keen-scroll",
       "studious-scroll",
       "vigor-scroll",
@@ -18,6 +28,18 @@
       "enchant-powder",
       "mana-herb",
       "holy-water"
+    ],
+    "bundles": [
+      {
+        "itemId": "arrow",
+        "quantity": 20,
+        "price": 15
+      },
+      {
+        "itemId": "arrow",
+        "quantity": 100,
+        "price": 75
+      }
     ]
   },
   {
