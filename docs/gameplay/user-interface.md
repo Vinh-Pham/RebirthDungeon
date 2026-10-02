@@ -26,6 +26,31 @@ The standalone BattleScreen/BattleHost is also present for the battle surface; c
 
 New Skills/Quests routes should reuse the same character stack as the existing Skills plan. Titles can begin as Character list/detail content; enchanting can begin as a town service. Expose destinations only when their commands/data exist. [Expo Router guidance](https://docs.expo.dev/router/introduction/).
 
+### Development debug sheet
+
+Selected-character screens include a development-only **DBG** floating action
+button. It is 56 logical units across, sits 16 units from the right safe inset,
+and clears the measured Journey/Codex tab bar. It is hidden while the drawer or
+Stats overlay is open. Navigation and character exit close the debug sheet.
+
+The sheet displays the character name, saved gold and **+100**, **+1,000** and
+**+10,000 gold** shortcuts. It stays open after an addition and shows host-owned
+saving/success/error feedback and exact-candidate Retry save. Disable shortcuts
+while saving, awaiting retry, lacking storage, or exceeding the 1,000,000 gold
+cap; show the applicable reason. Closing does not cancel a pending transaction.
+
+Native uses HeroUI BottomSheet at 50%/85% snap points with scrollable content.
+Web uses a bottom-aligned Modal, capped at 560 units wide and 85% viewport height,
+with keyboard focus containment, Escape and focus restoration. Close, backdrop,
+native swipe and Android Back dismiss before the parent character exit. Background
+touch and accessibility traversal are blocked while open. Opening the sheet never
+advances gameplay; adding gold uses the current host's durable checkpoint operation.
+
+`__DEV__` enables both the UI and the host's injected debug capability. Production
+does not mount debug controls. Gold additions are available during encounters,
+preserving the live battle while saving only updated checkpoint gold. Restart keeps
+that gold; normal victory rewards and the defeat half-gold penalty still apply.
+
 ## 2. Exploration surface
 
 Exploration shows the current tile map, hero, authored objects/encounters, map identity, resource summary and applicable interactions. Movement is cardinal tile commands; tap-to-travel uses the validated pathfinder and stops at the first encounter. Interaction requires Manhattan distance at most one. Camera motion and tweened sprites cannot bypass tile/proximity rules.

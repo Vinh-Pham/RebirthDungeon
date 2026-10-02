@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "dependencies": {
     "@expo/ui": "~57.0.21",
+    "@gorhom/bottom-sheet": "^5.2.14",
     "@shopify/react-native-skia": "2.6.2",
     "expo": "~57.0.26",
     "expo-asset": "~57.0.18",

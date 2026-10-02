@@ -78,6 +78,26 @@ After changing native dependencies, use a development build and validate on both
 iOS and Android. For a production bundle check, run
 `npx expo export --platform all --output-dir .artifacts/ui-export`.
 
+## Local development debug menu
+
+When running a development session with the local Expo server, select a character
+and use the **DBG** floating button at the bottom-right of any character screen.
+It stays above the Journey/Codex tab bar and opens a Debug menu sheet showing the
+selected character and their saved gold balance. Use **+100**, **+1,000**, or
+**+10,000 gold** to add gold immediately, including during encounters. A shortcut
+is disabled if its full amount would exceed the 1,000,000 gold cap.
+
+Each addition saves before updating the balance. Failed saves offer **Retry save**
+for the same addition; closing the sheet does not cancel a pending save. Battle
+turns, selections, resources, wear and RNG remain live and unchanged by the debug
+operation. Restarting that encounter retains the debug gold but discards unfinished
+combat changes, and completed defeat still halves the updated gold balance.
+
+The menu is gated by React Native's `__DEV__` flag, so its controls are not mounted
+in production builds and the host rejects debug requests when disabled. The native sheet uses
+HeroUI BottomSheet with its `@gorhom/bottom-sheet` peer; web uses the existing
+Modal adapter pattern. Gold is the only debug tool currently supported.
+
 ## Town services and weapon durability
 
 The refuge is now an outdoor town with walkable grocery, blacksmith, healer, and

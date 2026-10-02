@@ -21,6 +21,8 @@ import { withCharacters } from '../../persistence/characters';
 import { type CharacterProfile, type CompleteCharacter } from '../../persistence/CharacterProfile';
 import { CharacterGameContext } from './CharacterGameContext';
 import { MenuButton, MenuError, MenuPage, menu } from './MenuUI';
+import DebugMenu from '../debug/DebugMenu';
+import { DebugMenuTabBarContext } from '../debug/DebugMenuContext';
 
 export default function CharacterGameLayout() {
   const { characterId } = useLocalSearchParams<{ characterId: string }>();
@@ -97,6 +99,16 @@ function GameSession({ profile, retry }: { profile: CompleteCharacter; retry(): 
   const navigation = useNavigation('/');
   const drawerOpen = useDrawerStatus() === 'open';
   const path = usePathname();
+  const debugBlocked = drawerOpen || statsOpen;
+  const [debugMenu, setDebugMenu] = useState({ path, blocked: debugBlocked, open: false });
+  if (debugMenu.path !== path || debugMenu.blocked !== debugBlocked)
+    setDebugMenu({ path, blocked: debugBlocked, open: false });
+  const debugOpen = debugMenu.path === path && !debugBlocked && debugMenu.open;
+  const setDebugOpen = useCallback(
+    (open: boolean) => setDebugMenu({ path, blocked: debugBlocked, open }),
+    [path, debugBlocked],
+  );
+  const [debugTabBarHeight, setDebugTabBarHeight] = useState(0);
   const [host] = useState(
     () =>
       new JourneyHost(
@@ -105,6 +117,7 @@ function GameSession({ profile, retry }: { profile: CompleteCharacter; retry(): 
         profile.name,
         profile.talent,
         preferences.getSettings,
+        { debugEnabled: __DEV__ },
       ),
   );
   const snapshot = useSyncExternalStore(host.subscribe, host.getSnapshot, host.getServerSnapshot);
@@ -136,6 +149,10 @@ function GameSession({ profile, retry }: { profile: CompleteCharacter; retry(): 
   useFocusEffect(
     useCallback(() => {
       const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+        if (__DEV__ && debugOpen) {
+          setDebugOpen(false);
+          return true;
+        }
         if (drawerOpen) {
           navigation.dispatch(DrawerActions.closeDrawer());
           return true;
@@ -161,7 +178,17 @@ function GameSession({ profile, retry }: { profile: CompleteCharacter; retry(): 
         return true;
       });
       return () => subscription.remove();
-    }, [characters, host, statsOpen, closeStats, drawerOpen, navigation, path]),
+    }, [
+      characters,
+      host,
+      statsOpen,
+      closeStats,
+      drawerOpen,
+      navigation,
+      path,
+      debugOpen,
+      setDebugOpen,
+    ]),
   );
   if (!snapshot.session)
     return (
@@ -186,16 +213,37 @@ function GameSession({ profile, retry }: { profile: CompleteCharacter; retry(): 
     );
   return (
     <CharacterGameContext value={{ host, profile }}>
-      <View className="flex-1 bg-background">
-        <Stack screenOptions={{ headerShown: false, gestureEnabled: false }}>
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="inventory" />
-          <Stack.Screen name="skills" />
-          <Stack.Screen name="quests" />
-          <Stack.Screen name="titles" />
-          <Stack.Screen name="save-load" />
-        </Stack>
-      </View>
+      <DebugMenuTabBarContext value={__DEV__ ? setDebugTabBarHeight : null}>
+        <View className="flex-1 bg-background">
+          <View
+            className="flex-1"
+            pointerEvents={debugOpen ? 'none' : 'auto'}
+            accessibilityElementsHidden={debugOpen}
+            importantForAccessibility={debugOpen ? 'no-hide-descendants' : 'auto'}
+          >
+            <Stack screenOptions={{ headerShown: false, gestureEnabled: false }}>
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="inventory" />
+              <Stack.Screen name="skills" />
+              <Stack.Screen name="quests" />
+              <Stack.Screen name="titles" />
+              <Stack.Screen name="save-load" />
+            </Stack>
+          </View>
+          {__DEV__ ? (
+            <DebugMenu
+              isOpen={debugOpen}
+              onOpenChange={setDebugOpen}
+              hidden={drawerOpen || statsOpen}
+              tabBarHeight={
+                path === `/game/${profile.id}` || path === `/game/${profile.id}/explore`
+                  ? debugTabBarHeight
+                  : 0
+              }
+            />
+          ) : null}
+        </View>
+      </DebugMenuTabBarContext>
     </CharacterGameContext>
   );
 }

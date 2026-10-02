@@ -92,6 +92,14 @@ Current saves persist the pending encounter's entry hero and seed. Relaunching r
 
 The [Skills plan](skills.md) adds an attributed, bounded training ledger inside BattleSession and a durable candidate-save result merge. Training from completed victory/defeat joins the same campaign transition once; abandoning/restarting an uncommitted attempt discards it. Future quests/titles follow the same boundary for combat evidence, with their own success requirements. Do not grant permanent progress from audio or animation callbacks.
 
+Development-only Add Gold is another explicit checkpoint operation allowed during
+an encounter. The host saves the updated campaign gold before publishing it and
+retains the same live BattleSession, action/target, resources, inventory, wear,
+training and RNG. Gameplay is locked while saving or awaiting exact retry. Reload
+keeps the saved gold but restarts combat with entry resources/seed; completed
+victory adds ordinary loot and defeat halves the updated balance. This does not
+enable other exploration/progression mutations or serialize partial combat state.
+
 ## 8. UI and future extensions
 
 Battle controls show HP/MP/SP, wounds/fullness, selected targets, statuses, weapon durability, error reasons and a bounded combat log. One horizontally scrollable hotbar has minimal Combat/Magic/Items label tabs. Combat includes Attack and Defend even without learned combat skills. Attack uses the current talent: Warrior → Combat Mastery, Archery → Human Ranged Attack, Mage → Magic Mastery. Defend uses Defense. These are basic-action presentation identities, not new skill casts: current damage, SP cost, guard mitigation and rest-rate recovery stay unchanged. Show a saved backing-skill rank only when owned; do not grant progression or reference stat bonuses. Items shows assigned consumables with quantity and engine-derived capped recovery in its popovers. Empty slots remain inspectable with an Out of stock reason; the empty category directs the player to Inventory. HeroUI Native popovers show saved ranks, target-aware costs, engine-derived damage/healing ranges and equipment/cooldown/resource reasons. The action's Use button confirms selection; Attack and enemy-targeted skills resolve immediately against the sole living enemy, while multiple living enemies still require a monster tap in the game canvas. Self-only actions resolve from Use. Canvas targeting is paused until an action is confirmed and while a popover is open. Inspecting or closing a popover preserves the previous action and spends nothing; Cancel clears it. There is no Targets button or named target list. Richer enemy intent remains proposed.

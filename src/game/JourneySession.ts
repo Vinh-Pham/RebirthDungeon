@@ -69,6 +69,7 @@ import {
   type CampaignSnapshot,
 } from '../persistence/SaveSchema';
 import { BattleSession } from './BattleSession';
+import { validateDebugCommand, type DebugCommand } from './DebugCommands';
 import {
   bossCleared,
   createDungeonRun,
@@ -580,6 +581,25 @@ export class JourneySession {
       validateCampaign(candidate.state, this.content);
       if (candidate.state.hero.ap !== this.state.hero.ap)
         candidate.committedEvents.push({ type: 'AP_CHANGED', ap: candidate.state.hero.ap });
+      return candidate;
+    } catch (error) {
+      candidate.dispose();
+      throw error;
+    }
+  }
+  /** A debug change updates the saved entry hero, never the live encounter copy. */
+  debugCandidate(command: DebugCommand) {
+    if (this.disposed || this.resolving || this.mutationsLocked)
+      throw new Error('Journey is unavailable or a save is pending.');
+    validateDebugCommand(command, this.state.hero.gold);
+    const candidate = this.forkCandidate();
+    try {
+      candidate.transition((state, tx) => {
+        validateDebugCommand(command, state.hero.gold);
+        state.hero.gold += command.amount;
+        tx.message = `Added ${command.amount.toLocaleString()} debug gold. Total: ${state.hero.gold.toLocaleString()} gold.`;
+      });
+      validateCampaign(candidate.state, this.content);
       return candidate;
     } catch (error) {
       candidate.dispose();

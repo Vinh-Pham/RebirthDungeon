@@ -7,6 +7,11 @@ import { JourneySession } from './JourneySession';
 import type { GrowthTalent } from '../engine/rpg/Stats';
 import type { BattleSession } from './BattleSession';
 import type { AudioSettings } from '../audio/AudioManager';
+import type { DebugCommand } from './DebugCommands';
+
+export interface JourneyHostOptions {
+  debugEnabled?: boolean;
+}
 interface HostView {
   session?: JourneySession;
   battle?: BattleSession;
@@ -40,6 +45,7 @@ export class JourneyHost {
     private characterName?: string,
     private growthTalent?: GrowthTalent,
     private audioSettings?: () => AudioSettings,
+    private options: JourneyHostOptions = {},
   ) {}
   getSnapshot = () => this.snapshot;
   getServerSnapshot = () => empty;
@@ -125,6 +131,24 @@ export class JourneyHost {
         );
       }
       this.candidate = session.progressionCandidate(command);
+      this.candidateBattle = battle;
+      battle?.setInputLocked(true);
+    } catch (error) {
+      this.fail(error);
+      return false;
+    }
+    session.lockMutations();
+    return this.persistCandidate();
+  };
+  debug = async (command: DebugCommand): Promise<boolean> => {
+    const { session, busy, battle } = this.snapshot;
+    if (!this.options.debugEnabled || !session || busy || this.candidate) return false;
+    if (!this.repository) {
+      this.fail(new Error('Save storage is required for debug changes'));
+      return false;
+    }
+    try {
+      this.candidate = session.debugCandidate(command);
       this.candidateBattle = battle;
       battle?.setInputLocked(true);
     } catch (error) {
