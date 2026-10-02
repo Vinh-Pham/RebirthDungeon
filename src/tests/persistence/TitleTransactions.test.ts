@@ -29,7 +29,7 @@ describe('durable title selection and coupons', () => {
     expect(await host.progress(command)).toBe(false); expect(session.toSave()).toEqual(before); expect(host.getSnapshot().notice).toBeUndefined();
     expect(host.getSnapshot().pendingResult).toContain('Guardian Breaker');
     const candidate = JSON.parse(write.mock.calls[0][0].payload).campaign;
-    expect(candidate.hero).toMatchObject({ mana: 93, gold: 0, ap: 0, titleCollection: { selected: { first: 'guardian-breaker' } } });
+    expect(candidate.hero).toMatchObject({ mana: 93, gold: 0, ap: 5, titleCollection: { selected: { first: 'guardian-breaker' } } });
     expect(() => session.dispatch({ type: 'REST', entityId: 'player' })).toThrow('Save pending');
     expect(await host.retryProgression()).toBe(true); expect(host.getSnapshot().session!.toSave()).toEqual(candidate);
     expect(JSON.parse(write.mock.calls[1][0].payload).campaign).toEqual(candidate);
@@ -98,7 +98,7 @@ describe('durable title catch-up and encounter evidence', () => {
     { id: 'chamber-win', name: 'Chamber winner', description: 'Win the chamber', slot: 'first', award: { kind: 'encounter', mapId: 'chamber', minimum: 1 } },
   ] });
   it('catches up reliable saved state before publishing, while an event title requires recorded evidence', async () => {
-    const saved = state(registry); saved.hero.level = 2;
+    const saved = state(registry); saved.hero.level = 2; saved.hero.cumulativeLevel = 2;
     const { host, write } = await hostWith(saved, registry, true);
     expect(host.getSnapshot().session!.toSave().hero.earnedTitles).toEqual([]);
     expect(host.getSnapshot().retryAvailable).toBe(true); expect(host.getSnapshot().notice).toBeUndefined();

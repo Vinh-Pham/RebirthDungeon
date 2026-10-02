@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { experienceToNextLevel, heroStats, heroStatSource } from '../../engine/rpg/Character';
+import { MAX_LEVEL, experienceToNextLevel, heroStats, heroStatSource } from '../../engine/rpg/Character';
 import { ATTRIBUTE_KEYS, characterStatBreakdown, protectionReduction } from '../../engine/rpg/Stats';
 import { TALENT_LABELS } from '../../persistence/CharacterProfile';
 import type { CharacterReview } from '../../game/BattleSession';
@@ -30,9 +30,10 @@ export default function CharacterStatsDetails({ host, session }: { host: Journey
   const breakdown = (key: 'attack' | 'defense' | 'speed' | 'minDamage' | 'maxDamage') => `Base ${number(baseCombat[key]!)} · Titles ${signed(titleCombat[key]! - baseCombat[key]!)} · Equipment ${signed(equippedCombat[key]! - titleCombat[key]!)} · Dungeon ${signed(dungeonCombat[key]! - equippedCombat[key]!)} · Statuses ${signed(combat[key]! - dungeonCombat[key]!)}`;
   return <View className="gap-1">
     <Text className="text-accent" style={styles.section}>PROGRESSION</Text>
-    <Row label="Level" value={`${hero.level} / 99`} />
+    <Row label="Level" value={`${hero.level} / ${MAX_LEVEL}`} />
+    <Row label="Cumulative level" value={String(hero.cumulativeLevel)} note="Total levels earned across all lives" />
     <Row label="Growth talent" value={TALENT_LABELS[hero.growthTalent]} note="Fixed for this character" />
-    <Row label="Experience" value={hero.level === 99 ? 'Maximum level' : `${hero.experience} / ${experienceToNextLevel(hero.level)}`} note="Each earned level grants 1 AP and fully restores resources." />
+    <Row label="Experience" value={hero.level === MAX_LEVEL ? 'Maximum level' : `${hero.experience} / ${experienceToNextLevel(hero.level)}`} note="Each earned level grants 1 AP and fully restores resources." />
     <Row label="Ability points" value={String(hero.ap)} note="Spend in town after completing skill training" />
     <Row label="Gold" value={String(hero.gold)} />
     <Text className="text-accent" style={styles.section}>VITALS</Text>

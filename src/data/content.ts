@@ -4,7 +4,9 @@ import enchants from './enchants/basic.json';
 import enchantingRules from './enchants/rules.json';
 import enchantSkills from './skills/enchant.json';
 import skills from './skills/basic.json';
-import enemies from './enemies/basic.json';
+import mossHallsEnemies from './enemies/dungeons/moss-halls/basic.json';
+import sharedEnemies from './enemies/shared/basic.json';
+import spiderNestEnemies from './enemies/dungeons/spider-nest/basic.json';
 import classes from './classes/basic.json';
 import items from './items/basic.json';
 import statusEffects from './status-effects/basic.json';
@@ -17,5 +19,5 @@ import titles from './titles/basic.json';
 import { ContentRegistry } from '../engine/data/ContentRegistry';
 
 export function loadGameContent(): ContentRegistry {
-  return new ContentRegistry({ enchants, enchantingRules, skills: [...skills, ...enchantSkills], enemies, classes, items, statusEffects, maps, atlases, worlds, dungeons, shops, skillBookRecipes, quests, titles, questFlags: ['seal-witnessed'] });
+  return new ContentRegistry({ enchants, enchantingRules, skills: [...skills, ...enchantSkills], enemies: [...mossHallsEnemies, ...sharedEnemies, ...spiderNestEnemies], classes, items, statusEffects, maps, atlases, worlds, dungeons, shops, skillBookRecipes, quests, titles, questFlags: ['seal-witnessed'] });
 }

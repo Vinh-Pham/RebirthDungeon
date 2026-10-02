@@ -1,3 +1,4 @@
+import { MAX_LEVEL, STARTING_STATS, experienceToNextLevel } from './Leveling';
 import { TitleProgressionSchema, emptyTitleProgression } from './TitleState';
 import { selectedTitleEffects, validateTitleProgression } from './Titles';
 import { EquipmentEnchantFields, EnchantProgressionSchema, emptyEnchantProgression } from './EnchantState';
@@ -13,6 +14,7 @@ import type { GameRandom } from '../Random';
 import { calculateCharacterStats, TALENTS, type GrowthTalent, type StatSource } from './Stats';
 import { resourceTick } from './Resources';
 
+export { MAX_LEVEL, experienceToNextLevel } from './Leveling';
 export { consumeItem } from './Inventory';
 
 const amount = z.number().int().min(0).max(1000000);
@@ -37,7 +39,12 @@ export const VersionEightHeroSchema = VersionSevenHeroSchema.extend({ ...Enchant
   weapons: z.record(z.string().regex(/^weapon-[1-9]\d*$/), WeaponSchema),
   armors: z.record(z.string().regex(/^armor-[1-9]\d*$/), ArmorSchema), nextArmorId: z.number().int().min(1).max(Number.MAX_SAFE_INTEGER),
 });
-export const HeroSchema = VersionEightHeroSchema.extend(TitleProgressionSchema.shape);
+export const VersionNineHeroSchema = VersionEightHeroSchema.extend(TitleProgressionSchema.shape);
+export const HeroSchema = VersionNineHeroSchema.extend({
+  level: z.number().int().min(1).max(MAX_LEVEL),
+  cumulativeLevel: z.number().int().min(1).max(Number.MAX_SAFE_INTEGER),
+  experience: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+});
 export type Hero = z.infer<typeof HeroSchema>;
 export type EquipmentReference = { weaponId: string } | { armorId: string };
 export type OwnedItem = { itemId: string } | EquipmentReference;
@@ -46,7 +53,6 @@ export function ownedEquipment(hero: Hero, reference: EquipmentReference) {
   if (!item) throw new Error('This equipment is not in your pack');
   return item;
 }
-export const experienceToNextLevel = (level: number) => level * 20;
 export function heroStatSource(hero: Hero, effects: readonly { statusId: string; stacks: number }[] | undefined, content: ContentRegistry): StatSource {
   const weapon = hero.equipment.weapon ? hero.weapons[hero.equipment.weapon] : undefined;
   return { classId: hero.classId, level: hero.level, growthTalent: hero.growthTalent, weaponItemId: weapon && weapon.durability > 0 ? weapon.itemId : undefined, armorItemId: hero.equipment.armor ? hero.armors[hero.equipment.armor]?.itemId : undefined, effects: effects ?? [], learnedSkills: cloneData(hero.learnedSkills), titles: selectedTitleEffects(hero, content), enchantments: [...(weapon && weapon.durability > 0 ? equipmentEnchantEffects(hero.equipment.weapon!, weapon, hero, content) : []), ...(hero.equipment.armor && hero.armors[hero.equipment.armor] ? equipmentEnchantEffects(hero.equipment.armor, hero.armors[hero.equipment.armor], hero, content) : [])] };
@@ -87,8 +93,9 @@ export function validateHero(raw: unknown, content: ContentRegistry): Hero {
   validateQuestProgression(hero, content);
   validateTitleProgression(hero, content);
   const stats = heroStats(hero, content);
+  if (hero.cumulativeLevel < hero.level) throw new Error('Invalid cumulative level');
   if (hero.health > stats.maxHealth - hero.wounds || hero.wounds >= stats.maxHealth || hero.mana > stats.maxMana || hero.stamina > stats.maxStamina ||
-      (hero.level < 99 && hero.experience >= experienceToNextLevel(hero.level)) || (hero.level === 99 && hero.experience !== 0)) throw new Error('Invalid character resources or experience');
+      (hero.level < MAX_LEVEL && hero.experience >= experienceToNextLevel(hero.level)) || (hero.level === MAX_LEVEL && hero.experience !== 0)) throw new Error('Invalid character resources or experience');
   Object.keys(hero.inventory).forEach((id) => { if (['weapon', 'armor'].includes(content.item(id).kind)) throw new Error('Equipment requires individual instances'); });
   const counts = new Map<string, number>();
   for (const [id, weapon] of Object.entries(hero.weapons)) {
@@ -118,7 +125,7 @@ export function clampHeroResources(hero: Hero, content: ContentRegistry) {
 export function createHero(content: ContentRegistry, growthTalent: GrowthTalent = 'warrior', seed = 12345): Hero {
   const definition = content.data.classes[0];
   if (!definition) throw new Error('A character class is required');
-  const hero: Hero = { ...emptyTitleProgression(), ...emptyEnchantProgression(seed), armors: {}, nextArmorId: 1, ...emptyQuestProgression(), ...starterProgression(definition.id, content), growthTalent, stamina: 0, wounds: 0, fullness: 100, classId: definition.id, level: 1, experience: 0, gold: 0, health: definition.maxHealth,
+  const hero: Hero = { ...emptyTitleProgression(), ...emptyEnchantProgression(seed), armors: {}, nextArmorId: 1, ...emptyQuestProgression(), ...starterProgression(definition.id, content), growthTalent, stamina: 0, wounds: 0, fullness: 100, ap: STARTING_STATS.ap, classId: definition.id, level: 1, cumulativeLevel: 1, experience: 0, gold: 0, health: definition.maxHealth,
     mana: definition.maxMana, inventory: { potion: 2 }, equipment: {}, weapons: {}, nextWeaponId: 1 };
   restoreHero(hero, content); return hero;
 }
@@ -163,7 +170,7 @@ export function removeOwnedItem(hero: Hero, reference: OwnedItem, quantity: numb
 }
 /** Upgrade stacked armor while preserving the equipped first copy and depleted pools. */
 export function migrateEquipmentHero(old: z.infer<typeof VersionSevenHeroSchema>, content: ContentRegistry, seed = 12345): Hero {
-  const hero: Hero = { ...cloneData(old), ...emptyTitleProgression(), ...emptyEnchantProgression(seed), armors: {}, nextArmorId: 1 };
+  const hero: Hero = { ...cloneData(old), cumulativeLevel: old.level, ...emptyTitleProgression(), ...emptyEnchantProgression(seed), armors: {}, nextArmorId: 1 };
   for (const itemId of Object.keys(old.inventory).sort()) if (content.item(itemId).kind === 'armor') {
     delete hero.inventory[itemId]; const first = `armor-${hero.nextArmorId}`;
     addItem(hero, itemId, old.inventory[itemId], content);
@@ -177,7 +184,7 @@ export function repairPrice(weapon: Weapon, content: ContentRegistry) {
 }
 export function migrateHero(raw: unknown, content: ContentRegistry, growthTalent: GrowthTalent = 'warrior'): Hero {
   const legacy = LegacyHeroSchema.parse(raw);
-  const hero: Hero = { ...emptyTitleProgression(), ...emptyEnchantProgression(), armors: {}, nextArmorId: 1, ...emptyQuestProgression(), ...starterProgression(legacy.classId, content), growthTalent, stamina: 0, wounds: 0, fullness: 100, ...legacy, inventory: { ...legacy.inventory }, equipment: { ...legacy.equipment }, weapons: {}, nextWeaponId: 1 };
+  const hero: Hero = { ...emptyTitleProgression(), ...emptyEnchantProgression(), armors: {}, nextArmorId: 1, ...emptyQuestProgression(), ...starterProgression(legacy.classId, content), growthTalent, stamina: 0, wounds: 0, fullness: 100, ...legacy, cumulativeLevel: legacy.level, inventory: { ...legacy.inventory }, equipment: { ...legacy.equipment }, weapons: {}, nextWeaponId: 1 };
   for (const itemId of Object.keys(legacy.inventory).sort()) {
     const kind = content.item(itemId).kind;
     if (!['weapon', 'armor'].includes(kind)) continue;
@@ -191,12 +198,15 @@ export function migrateHero(raw: unknown, content: ContentRegistry, growthTalent
 }
 export function grantExperience(hero: Hero, amount: number, content: ContentRegistry) {
   if (!Number.isSafeInteger(amount) || amount < 0 || !Number.isSafeInteger(hero.experience + amount)) throw new Error('Invalid experience reward');
-  hero.experience += amount;
-  while (hero.level < 99 && hero.experience >= experienceToNextLevel(hero.level)) {
-    hero.experience -= experienceToNextLevel(hero.level); hero.level++; hero.ap = Math.min(1000000, hero.ap + 1);
-    restoreHero(hero, content);
+  let level = hero.level, experience = hero.experience + amount;
+  while (level < MAX_LEVEL && experience >= experienceToNextLevel(level)) {
+    experience -= experienceToNextLevel(level); level++;
   }
-  if (hero.level === 99) hero.experience = 0;
+  const gained = level - hero.level;
+  if (!Number.isSafeInteger(hero.cumulativeLevel + gained)) throw new Error('Cumulative level limit reached');
+  hero.level = level; hero.experience = level === MAX_LEVEL ? 0 : experience;
+  hero.cumulativeLevel += gained; hero.ap = Math.min(1000000, hero.ap + gained);
+  if (gained > 0) restoreHero(hero, content);
 }
 export function rollLoot(enemyId: string, content: ContentRegistry, random: GameRandom) {
   const enemy = content.data.enemies.find((entry) => entry.id === enemyId);

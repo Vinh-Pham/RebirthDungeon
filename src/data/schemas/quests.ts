@@ -1,3 +1,4 @@
+import { MAX_LEVEL } from '../../engine/rpg/Leveling';
 import { z } from 'zod';
 import { SkillRankSchema } from './skillRank';
 import type { GameContent } from './content';
@@ -18,7 +19,7 @@ export const QuestConditionSchema: z.ZodType<QuestCondition> = z.lazy(() => z.di
   z.strictObject({ kind: z.literal('all'), conditions: z.array(QuestConditionSchema).min(1).max(20) }),
   z.strictObject({ kind: z.literal('any'), conditions: z.array(QuestConditionSchema).min(1).max(20) }),
   z.strictObject({ kind: z.literal('quest'), questId: id }),
-  z.strictObject({ kind: z.literal('level'), level: z.number().int().min(1).max(99) }),
+  z.strictObject({ kind: z.literal('level'), level: z.number().int().min(1).max(MAX_LEVEL) }),
   z.strictObject({ kind: z.literal('talent'), talent: z.enum(['warrior', 'archery', 'mage']) }),
   z.strictObject({ kind: z.literal('skill'), skillId: id, rank: SkillRankSchema }),
   z.strictObject({ kind: z.literal('item'), itemId: id, quantity: count, equipped: z.boolean().default(false) }),

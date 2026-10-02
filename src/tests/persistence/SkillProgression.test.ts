@@ -28,7 +28,7 @@ describe('durable character progression candidates', () => {
     await speakToKeeper(host);
     expect(await host.progress({ type: 'LEARN_SKILL', objectId: 'keeper', skillId: 'smash' })).toBe(true);
     const hero = host.getSnapshot().session!.toSave().hero;
-    expect(hero).toMatchObject({ ap: 3, claimedMilestones: ['intro-melee-lesson'], learnedSkills: { smash: { rank: 'F', objectiveCounts: {} } } });
+    expect(hero).toMatchObject({ ap: 8, claimedMilestones: ['intro-melee-lesson'], learnedSkills: { smash: { rank: 'F', objectiveCounts: {} } } });
     expect(parseSave(JSON.parse(rows.get('auto')!.payload), content).campaign.hero).toEqual(hero);
     expect(await host.progress({ type: 'LEARN_SKILL', objectId: 'keeper', skillId: 'smash' })).toBe(false);
     expect(host.getSnapshot().session!.toSave().hero).toEqual(hero);
@@ -49,7 +49,7 @@ describe('durable character progression candidates', () => {
     expect(await host.retryProgression()).toBe(true);
     expect(write).toHaveBeenCalledTimes(2);
     expect(JSON.parse(write.mock.calls[1][0].payload).campaign).toEqual(JSON.parse(candidateBytes).campaign);
-    expect(host.getSnapshot().session!.toSave().hero.ap).toBe(3); expect(host.getSnapshot().retryAvailable).toBe(false);
+    expect(host.getSnapshot().session!.toSave().hero.ap).toBe(8); expect(host.getSnapshot().retryAvailable).toBe(false);
     expect(await host.retryProgression()).toBe(false);
   });
   it('keeps the last page, binding and completion intact until the whole assembled candidate saves', async () => {
@@ -124,7 +124,7 @@ describe('durable character progression candidates', () => {
     expect(events).toEqual(['attached', 'learned', 'ap']);
     expect(host.getSnapshot().error).toContain('Progress saved');
     expect(host.getSnapshot().retryAvailable).toBe(false); expect(await host.retryProgression()).toBe(false);
-    expect(host.getSnapshot().session!.toSave().hero.ap).toBe(3);
+    expect(host.getSnapshot().session!.toSave().hero.ap).toBe(8);
   });
   it('an audio refresh during a candidate write cannot schedule an older campaign over the committed result', async () => {
     vi.useFakeTimers(); const { host, storage, rows } = await hostWith(); await speakToKeeper(host); const initial = host.getSnapshot().session!;

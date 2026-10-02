@@ -4,7 +4,7 @@ import { emptyEnchantProgression } from '../engine/rpg/EnchantState';
 import { emptyQuestProgression } from '../engine/rpg/Quests';
 import { starterProgression } from '../engine/rpg/Skills';
 import { z } from 'zod';
-import { HeroSchema, LegacyHeroSchema, VersionFourHeroSchema, VersionFiveHeroSchema, VersionSixHeroSchema, VersionSevenHeroSchema, VersionEightHeroSchema, clampHeroResources, migrateEquipmentHero, migrateHero, restoreHero, validateHero } from '../engine/rpg/Character';
+import { HeroSchema, LegacyHeroSchema, VersionFourHeroSchema, VersionFiveHeroSchema, VersionSixHeroSchema, VersionSevenHeroSchema, VersionEightHeroSchema, VersionNineHeroSchema, experienceToNextLevel, clampHeroResources, migrateEquipmentHero, migrateHero, restoreHero, validateHero } from '../engine/rpg/Character';
 import type { GrowthTalent } from '../engine/rpg/Stats';
 import type { ContentRegistry } from '../engine/data/ContentRegistry';
 import { isWalkable, projectWorldMap } from '../engine/world/TileMap';
@@ -20,7 +20,8 @@ export const CampaignSchema = z.strictObject({
   audio: z.strictObject({ music: z.number().min(0).max(1), sfx: z.number().min(0).max(1), enabled: z.boolean() }),
   dungeon: DungeonRunSchema.optional(),
 });
-export const SaveSchema = z.strictObject({ version: z.literal(9), savedAt: z.string().datetime(), campaign: CampaignSchema });
+export const SaveSchema = z.strictObject({ version: z.literal(10), savedAt: z.string().datetime(), campaign: CampaignSchema });
+const VersionNineSchema = z.strictObject({ version: z.literal(9), savedAt: z.string().datetime(), campaign: CampaignSchema.extend({ hero: VersionNineHeroSchema }) });
 const VersionEightSchema = z.strictObject({ version: z.literal(8), savedAt: z.string().datetime(), campaign: CampaignSchema.extend({ hero: VersionEightHeroSchema }) });
 const VersionSevenSchema = z.strictObject({ version: z.literal(7), savedAt: z.string().datetime(), campaign: CampaignSchema.extend({ hero: VersionSevenHeroSchema }) });
 const VersionSixSchema = z.strictObject({ version: z.literal(6), savedAt: z.string().datetime(), campaign: CampaignSchema.extend({ hero: VersionSixHeroSchema }) });
@@ -68,6 +69,12 @@ export function validateCampaign(raw: unknown, content: ContentRegistry): Campai
 export function parseSave(raw: unknown, content: ContentRegistry, growthTalent?: GrowthTalent): SaveGame {
   const version = (raw as { version?: unknown } | null)?.version;
   let migrated = raw;
+  // Check the previous curve before converting it; a migration cannot sanitize invalid XP.
+  if (typeof version === 'number' && version >= 1 && version <= 9) {
+    const old = (raw as { campaign?: { hero?: { level?: number; experience?: number } } }).campaign?.hero;
+    if (old && typeof old.level === 'number' && typeof old.experience === 'number' &&
+        ((old.level < 99 && old.experience >= old.level * 20) || (old.level === 99 && old.experience !== 0))) throw new Error('Invalid legacy experience');
+  }
   if (version === 1 || version === 2 || version === 3 || version === 4 || version === 5 || version === 6 || version === 7) {
     const legacy = version === 1 ? LegacySaveSchema.parse(raw) : version === 2 ? VersionTwoSchema.parse(raw) : version === 3 ? VersionThreeSchema.parse(raw) : version === 4 ? VersionFourSchema.parse(raw) : version === 5 ? VersionFiveSchema.parse(raw) : version === 6 ? VersionSixSchema.parse(raw) : VersionSevenSchema.parse(raw);
     const talent = growthTalent ?? 'warrior';
@@ -88,6 +95,17 @@ export function parseSave(raw: unknown, content: ContentRegistry, growthTalent?:
     const old = VersionEightSchema.parse(raw);
     migrated = { ...old, version: 9, campaign: { ...old.campaign, hero: { ...old.campaign.hero, ...emptyTitleProgression() } } };
   }
+  if (typeof version === 'number' && version >= 1 && version <= 9) {
+    const candidate = migrated as { campaign: { hero: Record<string, unknown> } };
+    const { cumulativeLevel, ...previousHero } = candidate.campaign.hero; void cumulativeLevel;
+    const previous = VersionNineSchema.parse(version < 8 ? { ...candidate, campaign: { ...candidate.campaign, hero: previousHero } } : migrated);
+    const hero = previous.campaign.hero;
+    migrated = { ...previous, version: 10, campaign: { ...previous.campaign, hero: {
+      ...hero, cumulativeLevel: hero.level,
+      // Preserve the earned level and fraction of its XP bar, without granting AP or healing.
+      experience: hero.level === 99 ? 0 : Math.floor(hero.experience * experienceToNextLevel(hero.level) / (hero.level * 20)),
+    } } };
+  }
   const save = SaveSchema.parse(migrated);
   if (typeof version === 'number' && version < 9) {
     for (const id of save.campaign.hero.earnedTitles) {
@@ -101,5 +119,5 @@ export function parseSave(raw: unknown, content: ContentRegistry, growthTalent?:
   return { ...save, campaign: validateCampaign(save.campaign, content) };
 }
 export function encodeSave(state: CampaignState, content: ContentRegistry, savedAt = new Date().toISOString()): string {
-  return JSON.stringify(parseSave({ version: 9, savedAt, campaign: state }, content));
+  return JSON.stringify(parseSave({ version: 10, savedAt, campaign: state }, content));
 }

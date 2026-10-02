@@ -70,7 +70,7 @@ describe('victory loot selection', () => {
     battle.engine.getEntity('player')!.inventory!.potion = 1;
     const loot = journey.previewVictoryLoot(battle);
     journey.finishBattle(battle, ['iron-blade']);
-    expect(journey.toSave().hero).toMatchObject({ gold: 5, level: 2, experience: 4, inventory: { potion: 1 }, nextWeaponId: 2, armors: {} });
+    expect(journey.toSave().hero).toMatchObject({ gold: 5, level: 1, experience: 24, inventory: { potion: 1 }, nextWeaponId: 2, armors: {} });
     expect(journey.toSave().hero.inventory.bread).toBeUndefined(); expect(Object.values(journey.toSave().hero.weapons)).toEqual([{ itemId: 'iron-blade', durability: 60 }]);
     expect(loot.experience).toBe(24);
   });

@@ -1,3 +1,4 @@
+import { MAX_LEVEL } from '../../engine/rpg/Leveling';
 import { z } from 'zod';
 import { SkillRankSchema } from './skillRank';
 const id = z.string().min(1);
@@ -5,7 +6,7 @@ const bp = z.number().int().min(0).max(10000);
 export const EnchantStatSchema = z.enum(['strength', 'intelligence', 'dexterity', 'will', 'luck', 'maxHealth', 'maxMana', 'maxStamina', 'physicalAttack', 'magicAttack', 'defense', 'protection', 'magicDefense', 'magicProtection']);
 export const EnchantConditionSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('skill'), skillId: id, rank: SkillRankSchema }),
-  z.strictObject({ kind: z.literal('level'), minimum: z.number().int().min(1).max(99) }),
+  z.strictObject({ kind: z.literal('level'), minimum: z.number().int().min(1).max(MAX_LEVEL) }),
   z.strictObject({ kind: z.literal('talent'), talent: z.enum(['warrior', 'mage', 'archery']) }),
 ]);
 export const EnchantSchema = z.strictObject({ id, name: id, slot: z.enum(['prefix', 'suffix']), rank: SkillRankSchema,

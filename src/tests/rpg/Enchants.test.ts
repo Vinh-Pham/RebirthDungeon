@@ -94,7 +94,7 @@ describe('atomic protected application and fixed saved values', () => {
     const result = applyEnchant(hero, request(hero, 'studious-scroll'), content); const next = result.hero;
     expect(hero).toEqual(before); expect(result.receipt.success).toBe(true);
     expect(next.weapons['weapon-1']).toEqual({ ...before.weapons['weapon-1'], prefix: { enchantId: 'studious', values: { spell: 3, cost: -2 } } });
-    expect(next).toMatchObject({ mana: before.mana - 6, health: 17, stamina: 111, ap: 0, gold: 0, experience: 0, learnedSkills: { enchant: { objectiveCounts: { success: 1 } } } });
+    expect(next).toMatchObject({ mana: before.mana - 6, health: 17, stamina: 111, ap: before.ap, gold: 0, experience: 0, learnedSkills: { enchant: { objectiveCounts: { success: 1 } } } });
     expect(next.inventory['studious-scroll']).toBe(29); expect(next.inventory['enchant-powder']).toBe(29); expect(next.enchanting.state).toEqual(rng.snapshot());
     expect(heroStats(next, content).combatant.magicAttack).toBe(heroStats(before, content).combatant.magicAttack);
     expect(validateHero(next, content)).toEqual(next);
@@ -111,7 +111,7 @@ describe('atomic protected application and fixed saved values', () => {
     const expected = { guard: rng.int(1, 3), resolve: rng.int(1, 2) };
     const result = applyEnchant(hero, request(hero, 'resilience-scroll'), content).hero;
     expect(result.weapons['weapon-1'].suffix!.values).toEqual(expected); expect(result.enchanting.state).toEqual(rng.snapshot());
-    const beforeDefense = heroStats(result, content).combatant.defense; result.level = 2;
+    const beforeDefense = heroStats(result, content).combatant.defense; result.level = 2; result.cumulativeLevel = 2;
     expect(heroStats(result, content).combatant.defense).toBe(beforeDefense + expected.guard);
     const campaign = new JourneySession(content); const state = campaign.toSave(); campaign.dispose(); state.hero = result;
     const restored = parseSave(JSON.parse(encodeSave(state, content)), content).campaign.hero;
@@ -167,7 +167,7 @@ describe('destructive burning with reserved output capacity', () => {
     expect(result.receipt.recovered).toEqual(expected); expect(next.weapons['weapon-1']).toBeUndefined(); expect(next.equipment.weapon).toBeUndefined(); expect(next.weapons['weapon-2']).toEqual(hero.weapons['weapon-2']);
     expect(next.inventory['mana-herb']).toBe(29); expect(next.inventory['holy-water']).toBe(29); expect(next.mana).toBe(hero.mana - 8); expect(next.enchanting.state).toEqual(rng.snapshot());
     expect(next.learnedSkills.enchant.objectiveCounts).toEqual({ burn: 1, ...(outputs ? { recover: outputs } : {}) });
-    expect(next.ap).toBe(0); expect(next.gold).toBe(0); expect(next.experience).toBe(0); expect(hero).toEqual(before);
+    expect(next.ap).toBe(before.ap); expect(next.gold).toBe(0); expect(next.experience).toBe(0); expect(hero).toEqual(before);
     expect(burnEquipment(next, command, content).hero).toEqual(next); expect(validateHero(next, content)).toEqual(next);
   });
   it('draws only for occupied slots and recovers the definition without installed values', () => {
@@ -185,7 +185,7 @@ describe('destructive burning with reserved output capacity', () => {
     expect(() => previewBurn(prepared(), { weaponId: 'weapon-1' }, content)).toThrow('at least one');
   });
   it('uses skill rank recovery only, has capped training and resets training with authored AP advancement', () => {
-    const hero = installed(prepared()); hero.learnedSkills.enchant.objectiveCounts = { failure: 20, burn: 20, recover: 20 };
+    const hero = installed(prepared()); hero.ap = 0; hero.learnedSkills.enchant.objectiveCounts = { failure: 20, burn: 20, recover: 20 };
     expect(trainingPoints(content.skill('enchant'), hero.learnedSkills.enchant)).toBe(300); expect(() => rankUpSkill(hero, 'enchant', content)).toThrow('AP');
     hero.ap = 2; const upgraded = rankUpSkill(hero, 'enchant', content); expect(upgraded.learnedSkills.enchant).toEqual({ rank: 'E', objectiveCounts: {} }); expect(upgraded.ap).toBe(0);
     expect(previewBurn(hero, { weaponId: 'weapon-1' }, content).chanceBp).toBe(5000); expect(previewBurn(upgraded, { weaponId: 'weapon-1' }, content).chanceBp).toBe(6500);

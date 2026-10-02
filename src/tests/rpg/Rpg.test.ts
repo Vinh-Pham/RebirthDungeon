@@ -11,7 +11,7 @@ afterEach(() => vi.useRealTimers());
 describe('RPG rules', () => {
   it('derives independent stats from class, level, weapon and armor', () => {
     const hero = createHero(content); addItem(hero, 'iron-blade', 1, content); addItem(hero, 'moss-mail', 1, content);
-    hero.equipment = { weapon: 'weapon-1', armor: 'armor-1' }; hero.level = 3;
+    hero.equipment = { weapon: 'weapon-1', armor: 'armor-1' }; hero.level = 3; hero.cumulativeLevel = 3;
     expect(heroStats(hero, content)).toMatchObject({ maxHealth: 118, maxMana: 98, maxStamina: 113, combatant: { attack: 38, defense: 9 } });
     expect(content.data.classes[0].combatant.attack).toBe(9);
     const entity = content.spawn('warden', 'player', 'player', 0, 0); applyHero(entity, hero, content);
@@ -19,9 +19,9 @@ describe('RPG rules', () => {
   });
   it('crosses multiple level thresholds and restores resources on level up', () => {
     const hero = createHero(content); hero.health = 1; hero.mana = 0;
-    grantExperience(hero, 65, content);
+    grantExperience(hero, 1105, content);
     expect(hero).toMatchObject({ level: 3, experience: 5, health: 118, mana: 98, stamina: 113, wounds: 0, fullness: 100 });
-    grantExperience(hero, 100000, content); expect(hero.level).toBe(99); expect(hero.experience).toBe(0);
+    grantExperience(hero, 279988500, content); expect(hero.level).toBe(200); expect(hero.experience).toBe(0);
   });
   it('rejects unknown inventory, invalid equipment, out-of-range resources and XP', () => {
     for (const mutate of [
@@ -29,7 +29,7 @@ describe('RPG rules', () => {
       (hero: ReturnType<typeof createHero>) => { hero.equipment.weapon = 'potion'; },
       (hero: ReturnType<typeof createHero>) => { hero.equipment.weapon = 'iron-blade'; },
       (hero: ReturnType<typeof createHero>) => { hero.health = 999; },
-      (hero: ReturnType<typeof createHero>) => { hero.experience = 20; },
+      (hero: ReturnType<typeof createHero>) => { hero.experience = 400; },
     ]) { const hero = createHero(content); mutate(hero); expect(() => validateHero(hero, content)).toThrow(); }
   });
   it('rolls reproducible loot using engine RNG', () => {

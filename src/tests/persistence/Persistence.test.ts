@@ -29,7 +29,7 @@ describe('save validation and migrations', () => {
   it('migrates legacy version 1 audio defaults and rejects future versions', () => {
     const campaign = legacyCampaign(state()); const { audio, ...legacy } = campaign; expect(audio.enabled).toBe(false);
     const migrated = parseSave({ version: 1, savedAt: new Date().toISOString(), campaign: legacy }, content);
-    expect(migrated.version).toBe(9); expect(migrated.campaign.audio).toEqual({ enabled: false, music: 0.3, sfx: 0.7 });
+    expect(migrated.version).toBe(10); expect(migrated.campaign.audio).toEqual({ enabled: false, music: 0.3, sfx: 0.7 });
     expect(() => parseSave({ ...migrated, version: 99 }, content)).toThrow();
   });
   it('rejects invalid positions, resources, flags, references, RNG, and pending encounters', () => {

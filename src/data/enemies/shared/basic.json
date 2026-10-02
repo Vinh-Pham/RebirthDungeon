@@ -1,0 +1,44 @@
+[
+  {
+    "id": "mimic",
+    "name": "Hungry mimic",
+    "maxHealth": 70,
+    "maxMana": 0,
+    "combatant": {
+      "attack": 24,
+      "defense": 3,
+      "speed": 3,
+      "hitChance": 0.9,
+      "minDamage": 18,
+      "maxDamage": 24,
+      "balance": 0.5,
+      "magicDefense": 3,
+      "protection": 2,
+      "magicProtection": 2,
+      "criticalChance": 0.1,
+      "criticalRating": 0.1,
+      "minInjury": 0.1,
+      "maxInjury": 0.2
+    },
+    "skills": [],
+    "sprite": {
+      "atlas": "dungeon",
+      "frame": 2,
+      "idleFrames": [
+        2,
+        3
+      ]
+    },
+    "experience": 24,
+    "gold": 12,
+    "loot": [
+      {
+        "itemId": "potion",
+        "chance": 1,
+        "min": 1,
+        "max": 1
+      }
+    ],
+    "maxStamina": 40
+  }
+]

@@ -337,7 +337,15 @@ bundle through Zod before spawning entities. It rejects invalid stats, unsafe
 damage, duplicate IDs, missing skill/spawn references, invalid atlas frames and
 invalid map spawns. Runtime entities get independent mutable components.
 
-To add an enemy, add a definition and reference it in a map spawn. To add a
+Enemy definitions are grouped under `src/data/enemies/dungeons/<dungeon>/basic.json`:
+`moss-halls` contains the authored training-hall slimes, and `spider-nest` contains
+the spiders used by the generated `moss-depths` dungeon. Definitions without a
+current dungeon assignment, such as Hungry mimic, live in `src/data/enemies/shared/basic.json`.
+`src/data/content.ts` explicitly imports and combines these files into one validated catalog.
+
+To add an enemy, add a definition to its dungeon file (or shared file), register
+any new file in `src/data/content.ts`, and reference the enemy ID in a map spawn
+or dungeon definition. To add a
 skill, add its definition and list its ID in the class/enemy's skills array.
 Damage skills support one or all enemies; healing supports self or allies. Skills
 validate every target before consuming RNG or spending mana. Damage uses attack

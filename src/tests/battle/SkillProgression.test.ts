@@ -107,7 +107,7 @@ describe('rank-aware skill actions and authoritative practice', () => {
     session.finishBattle(fight);
     expect(session.toSave().hero.learnedSkills.smash.objectiveCounts).toMatchObject({ uses: 1, hits: 1 });
     expect(() => session.finishBattle(fight)).toThrow('ready');
-    if (result === 'defeat') expect(session.toSave().hero.ap).toBe(0);
+    if (result === 'defeat') expect(session.toSave().hero.ap).toBe(checkpoint.hero.ap);
   });
   it.each(['F', 'E'] as const)('keeps pilot rank %s melee pacing viable against authored enemies across 100 seeds', (rank) => {
     let wins = 0, actions = 0;

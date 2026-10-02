@@ -36,7 +36,7 @@ describe('title discovery and committed achievements', () => {
       { id: 'a-level', name: 'Level or skill', description: 'Direct award', slot: 'first', award: { kind: 'any', conditions: [{ kind: 'level', minimum: 2 }, { kind: 'skill', skillId: 'smash', rank: 'F' }] } },
       { id: 'discover-first', name: 'Patient', description: 'Discover first', slot: 'second', discoveryFirst: true, hint: { kind: 'level', minimum: 2 }, award: { kind: 'all', conditions: [{ kind: 'level', minimum: 2 }, { kind: 'attribute', attribute: 'strength', minimum: 50 }] } },
     ]);
-    const hero = createHero(registry); hero.level = 2;
+    const hero = createHero(registry); hero.level = 2; hero.cumulativeLevel = 2;
     expect(reconcileTitles(hero, registry, 'level/2')).toEqual(['a-level', 'z-level']);
     expect(titleState(hero, 'discover-first')).toBe('Known');
     expect(reconcileTitles(hero, registry, 'next-boundary')).toEqual(['discover-first']);
@@ -88,7 +88,7 @@ describe('title selection and stat sources', () => {
     expect(heroStats(hero, content).maxHealth).toBe(before.maxHealth + 5); expect(hero.health).toBe(before.maxHealth + 5);
     hero = selectTitle(hero, 'second', undefined, content);
     expect(heroStats(hero, content)).toEqual(before); expect(hero.health).toBe(before.maxHealth); expect(hero.mana).toBe(before.maxMana - 5);
-    expect(hero.ap).toBe(0); expect(hero.gold).toBe(0);
+    expect(hero.ap).toBe(5); expect(hero.gold).toBe(0);
   });
   it('derives attributes once and clamps wounds and all pools without healing on repeated swaps', () => {
     const registry = withTitles([{ id: 'tough', name: 'Tough', description: 'Attribute and direct effects', slot: 'first', effects: [{ stat: 'strength', value: 30 }, { stat: 'maxHealth', value: -110 }, { stat: 'maxMana', value: -150 }, { stat: 'maxStamina', value: -150 }, { stat: 'protection', value: 10 }] }]);
@@ -114,7 +114,7 @@ describe('title selection and stat sources', () => {
     const registry = withTitles([{ id: 'rank-e', name: 'Practiced', description: 'Requires Rank E', slot: 'first', eligibility: { skillId: 'smash', rank: 'E' }, effects: [{ stat: 'maxHealth', value: 10 }] }]);
     let hero = createHero(registry); hero.learnedSkills.smash = { rank: 'E', objectiveCounts: {} }; awardTitle(hero, 'rank-e', 'test', registry);
     hero = selectTitle(hero, 'first', 'rank-e', registry);
-    hero.learnedSkills.smash.rank = 'F'; hero.level = 1; hero.growthTalent = 'mage';
+    hero.learnedSkills.smash.rank = 'F'; hero.level = 1; hero.cumulativeLevel = 1; hero.growthTalent = 'mage';
     reconcileTitles(hero, registry, 'reset');
     expect(hero.titleCollection.selected.first).toBeUndefined(); expect(hero.earnedTitles).toEqual(['rank-e']);
     hero.learnedSkills.smash.rank = 'E'; expect(() => selectTitle(hero, 'first', 'rank-e', registry)).not.toThrow();
@@ -151,9 +151,9 @@ describe('title data, spoiler policy and migrations', () => {
   it('migrates v8 ownership without refills or losing enchants, and preserves unavailable earned selections', () => {
     const session = new JourneySession(content); const state = session.toSave(); session.dispose();
     state.hero = owned(); state.hero.health = 5; state.hero.mana = 3; state.hero.stamina = 2;
-    const { titleCollection, ...oldHero } = state.hero; void titleCollection;
+    const { titleCollection, cumulativeLevel, ...oldHero } = state.hero; void titleCollection; void cumulativeLevel;
     const migrated = parseSave({ version: 8, savedAt: new Date().toISOString(), campaign: { ...state, hero: oldHero } }, content);
-    expect(migrated.version).toBe(9); expect(migrated.campaign.hero).toMatchObject({ health: 5, mana: 3, stamina: 2, earnedTitles: state.hero.earnedTitles, titleCollection: { selected: {}, records: { 'first-delver': { source: 'legacy/ownership' } } } });
+    expect(migrated.version).toBe(10); expect(migrated.campaign.hero).toMatchObject({ health: 5, mana: 3, stamina: 2, earnedTitles: state.hero.earnedTitles, titleCollection: { selected: {}, records: { 'first-delver': { source: 'legacy/ownership' } } } });
     state.hero = selectTitle(owned(), 'first', 'first-delver', content); state.hero.health = 128;
     const retired = new ContentRegistry({ ...content.data, titles: content.data.titles.filter((t) => t.id !== 'first-delver') });
     const restored = parseSave(JSON.parse(encodeSave(state, content)), retired).campaign.hero;

@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { loadGameContent } from '../../data/content';
 import { ContentRegistry } from '../../engine/data/ContentRegistry';
 import { createHero, addItem, type Hero } from '../../engine/rpg/Character';
+import { experienceToNextLevel } from '../../engine/rpg/Leveling';
 import { acceptQuest, claimQuest, EncounterQuests, mergeQuestEncounter, objectiveProgress, questEligible, questItemNeeds, questReady, rankAtLeast, reconcileQuests, recordQuestWorldEvidence, trackObjective } from '../../engine/rpg/Quests';
 import { learnSkill, rankUpSkill, type ActionOutcome } from '../../engine/rpg/Skills';
 import { JourneySession } from '../../game/JourneySession';
@@ -125,11 +126,20 @@ describe('ordered town objectives, deliveries and claims', () => {
   });
   it('awards XP, per-level AP, restored resources, explicit AP and a title together without equipping it', () => {
     const hero = activeSeal(); hero.quests[seal.id].stageId = 'seal-report'; hero.quests[seal.id].counts = { 'practice-smash': 3, 'clear-moss-depths': 1, 'keeper-report': 1 };
-    hero.health = 20; hero.mana = 1; hero.stamina = 1; hero.wounds = 20; hero.fullness = 50;
+    hero.experience = 399; hero.health = 20; hero.mana = 1; hero.stamina = 1; hero.wounds = 20; hero.fullness = 50;
     const before = structuredClone(hero), claimed = claimQuest(hero, seal, content);
-    expect(hero).toEqual(before); expect(claimed).toMatchObject({ level: 2, ap: 3, gold: 30, wounds: 0, fullness: 100, earnedTitles: ['seals-witness'], questFlags: ['seal-witnessed'] });
+    expect(hero).toEqual(before); expect(claimed).toMatchObject({ level: 2, ap: 8, gold: 30, wounds: 0, fullness: 100, earnedTitles: ['seals-witness'], questFlags: ['seal-witnessed'] });
     expect(claimed.health).toBeGreaterThan(20); expect(claimed.equipment).toEqual(hero.equipment);
     hero.ap = 999998; expect(() => claimQuest(hero, seal, content)).toThrow('capacity'); expect(hero.health).toBe(20);
+  });
+  it('reserves AP for quest-earned levels beyond the former level-99 cap', () => {
+    const hero = activeSide(); addItem(hero, 'apple', 2, content);
+    Object.assign(hero, { level: 99, cumulativeLevel: 99, experience: experienceToNextLevel(99) - 1, ap: 1000000 });
+    const before = structuredClone(hero);
+    expect(() => claimQuest(hero, side, content)).toThrow('capacity');
+    expect(hero).toEqual(before);
+    hero.ap = 999999;
+    expect(claimQuest(hero, side, content)).toMatchObject({ level: 100, cumulativeLevel: 100, ap: 1000000 });
   });
   it('persists discovered offers and revalidates changing acceptance prerequisites', () => {
     const raw = structuredClone(content.data); raw.quests[0].prerequisite = { kind: 'item', itemId: 'iron-blade', quantity: 1, equipped: true };
@@ -180,7 +190,7 @@ describe('attempt-local practice and versioned saved progress', () => {
     campaign.hero.learnedSkills['sword-mastery'].rank = 'E'; campaign.hero.ap = 11; campaign.hero.health = 20; campaign.hero.mana = 3; campaign.hero.stamina = 5;
     const { quests, earnedTitles, questFlags, trackedObjectives, ...old } = versionSevenHero(campaign.hero); void quests; void earnedTitles; void questFlags; void trackedObjectives;
     const migrated = parseSave({ version: 6, savedAt: new Date().toISOString(), campaign: { ...campaign, hero: old } }, content);
-    expect(migrated.version).toBe(9); expect(migrated.campaign.hero).toMatchObject({ health: 20, mana: 3, stamina: 5, ap: 11, quests: {}, earnedTitles: [] });
+    expect(migrated.version).toBe(10); expect(migrated.campaign.hero).toMatchObject({ health: 20, mana: 3, stamina: 5, ap: 11, quests: {}, earnedTitles: [] });
     const restored = new JourneySession(content, migrated.campaign); sessions.push(restored);
     expect(restored.toSave().hero.quests[milestone.id].status).toBe('available'); expect(restored.toSave().hero.ap).toBe(11);
     restored.dispatch({ type: 'ACCEPT_QUEST', questId: milestone.id }); expect(questReady(restored.toSave().hero, milestone)).toBe(true);

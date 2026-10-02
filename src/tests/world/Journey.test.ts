@@ -107,12 +107,12 @@ describe('world exploration', () => {
     battle.engine.getEntity('slime-1')!.health!.current = 1;
     battle.dispatch({ type: 'SELECT_ACTION', action: 'skill', skillId: 'firebolt' }); battle.dispatch({ type: 'SELECT_TARGET', targetId: 'slime-1' }); battle.dispatch({ type: 'CONFIRM_ACTION' });
     session.finishBattle(battle);
-    expect(session.toSave()).toMatchObject({ hero: { level: 2, experience: 4, gold: 12, inventory: { potion: 3 } }, cleared: ['halls/slime-guard'] });
+    expect(session.toSave()).toMatchObject({ hero: { level: 1, experience: 24, gold: 12, inventory: { potion: 3 } }, cleared: ['halls/slime-guard'] });
     expect(() => session.finishBattle(battle)).toThrow('ready'); battle.dispose();
   });
   it('defeat recovery returns to the refuge without resetting earned levels or AP', () => {
     vi.useFakeTimers(); const session = create(); const saved = session.toSave(); saved.hero.gold = 11;
-    saved.hero.level = 3; saved.hero.experience = 5; saved.hero.ap = 2;
+    saved.hero.level = 3; saved.hero.cumulativeLevel = 3; saved.hero.experience = 5; saved.hero.ap = 2;
     const restored = new JourneySession(content, saved); sessions.push(restored); enterHalls(restored); restored.dispatch({ type: 'TRAVEL_TO', x: 5, y: 3 });
     const battle = restored.createBattle(); battle.engine.getEntity('player')!.health!.current = 1; battle.engine.getEntity('slime-1')!.combatant!.hitChance = 1; battle.engine.getEntity('slime-1')!.combatant!.attack = 100;
     battle.dispatch({ type: 'SELECT_ACTION', action: 'skill', skillId: 'healing' }); battle.dispatch({ type: 'SELECT_TARGET', targetId: 'player' }); battle.dispatch({ type: 'CONFIRM_ACTION' }); battle.advanceEnemyTurns();

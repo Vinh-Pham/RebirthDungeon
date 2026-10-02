@@ -1,3 +1,4 @@
+import { MAX_LEVEL, STARTING_STATS } from './Leveling';
 import type { EnchantContribution } from './EnchantEffects';
 import { gameRank, type LearnedSkills } from './Skills';
 import type { ContentRegistry } from '../data/ContentRegistry';
@@ -23,10 +24,10 @@ export function protectionReduction(value: number) {
   return clamp((100 / Math.sqrt(2)) * Math.log10((value + 10 * Math.sqrt(2)) / (10 * Math.sqrt(2))), 90) / 100;
 }
 export function calculateCharacterStats(source: StatSource, content: ContentRegistry): CharacterStats {
-  if (!Number.isInteger(source.level) || source.level < 1 || source.level > 99 || !TALENTS.includes(source.growthTalent)) throw new Error('Invalid character growth');
-  const attributeSources = { starting: { strength: 55, intelligence: 48, dexterity: 58, will: 57, luck: 47 }, talent: zero(), levels: zero(), skills: zero(), titles: zero() };
+  if (!Number.isInteger(source.level) || source.level < 1 || source.level > MAX_LEVEL || !TALENTS.includes(source.growthTalent)) throw new Error('Invalid character growth');
+  const attributeSources = { starting: { strength: STARTING_STATS.strength, intelligence: STARTING_STATS.intelligence, dexterity: STARTING_STATS.dexterity, will: STARTING_STATS.will, luck: STARTING_STATS.luck }, talent: zero(), levels: zero(), skills: zero(), titles: zero() };
   const base: Attributes = { ...attributeSources.starting };
-  let maxHealth = 118, maxMana = 98, maxStamina = 113;
+  let maxHealth: number = STARTING_STATS.maxHealth, maxMana: number = STARTING_STATS.maxMana, maxStamina: number = STARTING_STATS.maxStamina;
   const attribute = source.growthTalent === 'warrior' ? 'strength' : source.growthTalent === 'mage' ? 'intelligence' : 'dexterity';
   attributeSources.talent[attribute] = source.growthTalent === 'warrior' ? 20 : 10;
   attributeSources.levels[attribute] = (source.level - 1) * 0.5;

@@ -16,7 +16,7 @@ Use the TypeScript implementation as the integration baseline. The neighboring [
 | Catalog | 33 reference skill definitions plus the separately authored Enchant town skill | Add authored game rank definitions and explicit availability |
 | Combat | Seeded hit, critical, damage-range, defense, protection, and injury rules | Reuse the resolvers; add only the mechanics an enabled skill needs |
 | Progression | Hero level, XP, talent, resources, inventory, equipment, learned ranks, training, AP, discovery and books | Author further supported rank adapters |
-| Saves | Version 9 campaign saves; SQLite on native, IndexedDB on web | Preserve lossless migrations from versions 1–8 |
+| Saves | Version 10 campaign saves; SQLite on native, IndexedDB on web | Preserve lossless migrations from versions 1–9 |
 | Battle continuation | A pending encounter restarts from its entry hero state and seed | Keep training inside that battle until its result is committed |
 
 The four starter spells are `firebolt`, `icebolt`, `lightning-bolt`, and `healing`; NPC instruction also enables Smash. Their catalog `rank: F` is a definition value, not the saved hero rank. Class skill IDs supply starter grants, while hero learned records determine battle availability and reconstructed rank bonuses. Smash, Combat Mastery, Sword Mastery, Icebolt and the town-only Enchant skill support F/E progression. Other catalog entries need authored adapters before learning.
@@ -132,7 +132,7 @@ Training must be calculated from an authoritative action-result record inside th
 
 ### AP and rank-up
 
-The hero has one nonnegative integer AP balance shared by its skills. AP buys advancement only: it cannot purchase training points or bypass the 100-point gate. Proposed pilot rewards are **1 AP per level gained** and **3 AP for one authored introductory milestone per hero**. Count every actual level gained when an XP reward crosses several thresholds. Add no retroactive AP for imported levels. Later quests can author AP rewards and repeatability; ordinary uses and book reading award none.
+The hero has one nonnegative integer AP balance shared by its skills. AP buys advancement only: it cannot purchase training points or bypass the 100-point gate. New characters start with **5 AP**; implemented progression rewards are **1 AP per level gained** and **3 AP for one authored introductory milestone per hero**. Count every actual level gained when an XP reward crosses several thresholds. Add no retroactive AP for imported levels. Later quests can author AP rewards and repeatability; ordinary uses and book reading award none.
 
 Rank-up requires all of the following:
 
@@ -365,4 +365,4 @@ Expo SDK **57** was checked against `package.json` for this revision. Follow [AG
 
 ## Implemented enchanting pilot
 
-Enchant is a town-only life skill, learned at F for free from the refuge keeper. Applications and destructive burns at the blacksmith train its authored objectives. F → E needs 100 training and 2 AP; E is the current cap. It never appears as a battle action or trains from combat outcomes. Current saves are version 9 and preserve ranks, capped training, installed equipment values and the separate enchanting RNG. See [Enchants](enchants.md) for acquisition, recipes and protections.
+Enchant is a town-only life skill, learned at F for free from the refuge keeper. Applications and destructive burns at the blacksmith train its authored objectives. F → E needs 100 training and 2 AP; E is the current cap. It never appears as a battle action or trains from combat outcomes. Current saves are version 10 and preserve ranks, capped training, installed equipment values and the separate enchanting RNG. See [Enchants](enchants.md) for acquisition, recipes and protections.

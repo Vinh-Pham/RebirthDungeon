@@ -6,6 +6,7 @@ import type { ContentRegistry } from '../data/ContentRegistry';
 import { cloneData } from '../cloneData';
 import { addItem, experienceToNextLevel, grantExperience, itemCount, removeOwnedItem, removableCount, validateHero, type Hero } from './Character';
 import { learnSkill, type ActionOutcome } from './Skills';
+import { MAX_LEVEL } from './Leveling';
 
 export { emptyQuestProgression } from './QuestState';
 export function rankAtLeast(actual: z.infer<typeof SkillRankSchema> | undefined, required: z.infer<typeof SkillRankSchema>) {
@@ -92,7 +93,7 @@ export function claimQuest(hero: Hero, quest: QuestDefinition, content: ContentR
   for (const o of questStage(hero, quest)!.objectives) if (o.kind === 'deliverItem') removeOwnedItem(candidate, { itemId: o.itemId }, o.target);
   const rewards = quest.rewards;
   let level = hero.level, experience = hero.experience + rewards.experience;
-  while (level < 99 && experience >= experienceToNextLevel(level)) experience -= experienceToNextLevel(level++);
+  while (level < MAX_LEVEL && experience >= experienceToNextLevel(level)) experience -= experienceToNextLevel(level++);
   if (candidate.gold + rewards.gold > 1000000 || candidate.ap + rewards.ap + level - hero.level > 1000000) throw new Error('Quest rewards exceed your gold or AP capacity');
   rewards.items.forEach((r) => addItem(candidate, r.itemId, r.quantity, content));
   for (const skillId of rewards.skills) candidate = learnSkill(candidate, skillId, content);

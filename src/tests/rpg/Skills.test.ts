@@ -31,7 +31,7 @@ describe('learned ranks and acquisition', () => {
     const original = createHero(content); addItem(original, 'combat-manual', 2, content);
     const learned = readSkillBook(original, 'combat-manual', content);
     learned.learnedSkills['combat-mastery'].objectiveCounts.uses = 4;
-    expect(learned.inventory['combat-manual']).toBe(1); expect(learned.ap).toBe(0);
+    expect(learned.inventory['combat-manual']).toBe(1); expect(learned.ap).toBe(original.ap);
     const before = structuredClone(learned);
     expect(() => readSkillBook(learned, 'combat-manual', content)).toThrow('already'); expect(learned).toEqual(before);
     expect(() => learnSkill(original, 'blacksmithing', content)).toThrow('Not implemented');
@@ -69,13 +69,13 @@ describe('learned ranks and acquisition', () => {
     expect(hero).toEqual(before);
   });
   it('awards every gained level one AP and never awards AP for importing levels', () => {
-    const hero = createHero(content); grantExperience(hero, 120, content);
-    expect(hero).toMatchObject({ level: 4, experience: 0, ap: 3 });
-    const journey = new JourneySession(content); const state = journey.toSave(); journey.dispose(); state.hero.level = 5; state.hero.health = 17; state.hero.mana = 4; state.hero.stamina = 9;
+    const hero = createHero(content); grantExperience(hero, 2100, content);
+    expect(hero).toMatchObject({ level: 4, cumulativeLevel: 4, experience: 0, ap: 8 });
+    const journey = new JourneySession(content); const state = journey.toSave(); journey.dispose(); state.hero.level = 5; state.hero.cumulativeLevel = 5; state.hero.health = 17; state.hero.mana = 4; state.hero.stamina = 9;
     const { ap, learnedSkills, discoveredSkills, bookCollections, claimedMilestones, quests, earnedTitles, questFlags, trackedObjectives, ...legacy } = versionSevenHero(state.hero);
     void ap; void learnedSkills; void discoveredSkills; void bookCollections; void claimedMilestones; void quests; void earnedTitles; void questFlags; void trackedObjectives;
     const migrated = parseSave({ version: 5, savedAt: new Date().toISOString(), campaign: { ...state, hero: legacy } }, content);
-    expect(migrated.version).toBe(9); expect(migrated.campaign.hero).toMatchObject({ ap: 0, level: 5, health: 17, mana: 4, stamina: 9 });
+    expect(migrated.version).toBe(10); expect(migrated.campaign.hero).toMatchObject({ ap: 0, level: 5, health: 17, mana: 4, stamina: 9 });
     expect(heroStats(migrated.campaign.hero, content).base.intelligence).toBe(52);
     expect(parseSave(JSON.parse(encodeSave(migrated.campaign, content)), content).campaign.hero).toEqual(migrated.campaign.hero);
   });

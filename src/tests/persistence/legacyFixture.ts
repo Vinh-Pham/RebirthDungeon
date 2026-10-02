@@ -3,7 +3,7 @@ import type { CampaignState } from '../../persistence/SaveSchema';
 
 /** The v7 ownership wire shape has stacked armor and plain weapon durability. */
 export function versionSevenHero(current: Hero) {
-  const { armors, nextArmorId, enchanting, titleCollection, ...hero } = structuredClone(current); void titleCollection; void nextArmorId; void enchanting;
+  const { armors, nextArmorId, enchanting, titleCollection, cumulativeLevel, ...hero } = structuredClone(current); void titleCollection; void cumulativeLevel; void nextArmorId; void enchanting;
   for (const armor of Object.values(armors)) hero.inventory[armor.itemId] = (hero.inventory[armor.itemId] ?? 0) + 1;
   if (hero.equipment.armor) hero.equipment.armor = armors[hero.equipment.armor].itemId;
   hero.weapons = Object.fromEntries(Object.entries(hero.weapons).map(([id, w]) => [id, { itemId: w.itemId, durability: w.durability }]));

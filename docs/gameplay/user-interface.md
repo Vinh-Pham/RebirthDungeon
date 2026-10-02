@@ -77,6 +77,8 @@ Defend explicitly previews damage reduction until the owner's next turn and rest
 
 Current setup age is static; do not show an aging countdown or lifetime progression until those fields exist. Current gold is one balance; no bank capacity display is available. Avoid showing implemented combat values as deferred merely because a related feature is not present.
 
+The Character summary shows an XP progress bar using current-level XP and the engine's next-level threshold; at the level cap it shows “Maximum level.” Beneath Stamina, the recovery limit appears on the left and Hunger on the right, wrapping on compact layouts. Hunger displays `100 - fullness` to one decimal place (91.2% fullness displays as 8.8% Hunger); the engine and saved fullness values retain their existing meaning.
+
 Inventory equip/use commands are available during exploration, including between dungeon encounters. During battle its ordinary screen is read-only and observes battle supplies/wear; consumables use the battle Item action. Future learning/rank-up, quest claims, title changes and enchanting are town-only. Journals may still be inspected during combat without ticking time.
 
 For future grids, use tap item → action → destination as a complete mobile path. Dragging may supplement it and cannot be required. Preview every occupied cell, exact quantity and displaced equipment. Invalid commands restore the view to authoritative state; the drag cursor never owns an item. Search identifies the actual container and does not reveal undiscovered quest/title spoilers.

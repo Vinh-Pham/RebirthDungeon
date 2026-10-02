@@ -1,6 +1,6 @@
 # Rebirth Dungeon: Stats, Resources, and Status Effects
 
-Updated **October 1, 2026** for the TypeScript engine in the Expo/React Native app. Resources, attributes, damage ranges, Balance, hit/critical resolution, wounds, fullness, equipment and statuses are implemented. Learned-rank passives, First/Second title effects and F/E enchants also use the shared resolver. Additional effect types remain future work. Read with [Battle](battle.md), [Character](character.md), [Skills](skills.md), and [Inventory](inventory.md).
+Updated **October 2, 2026** for the TypeScript engine in the Expo/React Native app. Resources, attributes, damage ranges, Balance, hit/critical resolution, wounds, fullness, equipment and statuses are implemented. Learned-rank passives, First/Second title effects and F/E enchants also use the shared resolver. Additional effect types remain future work. Read with [Battle](battle.md), [Character](character.md), [Skills](skills.md), and [Inventory](inventory.md).
 
 ## 1. Authoritative stat model
 
@@ -8,13 +8,15 @@ Updated **October 1, 2026** for the TypeScript engine in the Expo/React Native a
 
 | Source | Current behavior | Planned extension |
 | --- | --- | --- |
-| Starting attributes | STR 55, INT 48, DEX 58, Will 57, Luck 47 before talent/skill grants | Content-defined starting profiles if needed |
+| Starting attributes | STR 55, INT 48, DEX 58, Will 57, Luck 47 before talent/skill grants; shared with HP 118, MP 98, SP 113 and 5 new-character AP in `Leveling.ts` | Content-defined starting profiles if needed |
 | Growth talent | Warrior, Archery, Mage starting bonuses and selected-attribute level growth | Rank-derived talent mastery and deliberate rebirth |
 | Skill grants | Stat bonuses from the Warden's four class skill IDs | Replace with explicit hero learned-rank totals under skills.md |
 | Equipment | Usable weapon plus owned/equipped armor | Conditional masteries, more slots, instance enchants |
 | Dungeon effects | Persistent fountain stat stacks for that dungeon | More supported environment effects |
 | Combat statuses | Temporary attack/defense/speed modifiers and periodic damage/healing | Explicit new effect types; no arbitrary modifier strings |
 | Titles | Absent | First/Second Title sources, removable and counted once |
+
+Base values match [Mabinogi Level: Starting Stats](https://wiki.mabinogiworld.com/view/Level#Starting_Stats). Active talents add 0.5 STR (Warrior/Close Combat), DEX (Archery), or INT (Mage/Magic) per earned level, through level 200; skill grants remain separate permanent sources. The stat resolver uses current level rather than cumulative level.
 
 Attributes retain the current fractional level-growth precision and clamp to 0–1500. Do not round away half-point growth when saving or converting the learned-skill pipeline. Unknown classes, illegal equipment references and invalid resources are rejected at the validation boundary.
 

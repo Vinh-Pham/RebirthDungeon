@@ -305,7 +305,7 @@ describe('fountains, checkpoints and camera', () => {
   });
   it('migrates version 2 and rejects corrupt progress, effects, key states, references and bypass corridors', () => {
     const legacy = new JourneySession(content); sessions.push(legacy);
-    expect(parseSave({ version: 2, savedAt: new Date().toISOString(), campaign: legacyCampaign(legacy.toSave()) }, content)).toMatchObject({ version: 9, campaign: legacy.toSave() });
+    expect(parseSave({ version: 2, savedAt: new Date().toISOString(), campaign: legacyCampaign(legacy.toSave()) }, content)).toMatchObject({ version: 10, campaign: { ...legacy.toSave(), hero: { ...legacy.toSave().hero, ap: 0 } } });
     const session = create();
     for (const mutate of [
       (run: NonNullable<ReturnType<JourneySession['toSave']>['dungeon']>) => { run.bossKey.status = 'held'; },

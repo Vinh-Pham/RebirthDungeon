@@ -2,7 +2,7 @@ import { ProgressBar } from 'heroui-native-pro/progress-bar';
 import { Platform, StyleSheet, View } from 'react-native';
 
 const mono = Platform.OS === 'ios' ? 'Menlo' : 'monospace';
-const resourceFill = { HP: 'bg-red-500', Mana: 'bg-blue-500', Stamina: 'bg-yellow-400' };
+const resourceFill = { HP: 'bg-red-500', Mana: 'bg-blue-500', Stamina: 'bg-yellow-400', XP: 'bg-accent' };
 
 interface ResourceBarProps {
   label: keyof typeof resourceFill;
