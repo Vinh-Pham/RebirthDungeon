@@ -32,11 +32,14 @@ return after victory, collect the moss mail, and challenge the elder guardian.
 Movement works with buttons or by tapping a reachable floor tile. You can return
 to the town for supplies, weapon repairs, and paid healing. The Codex shows the content definitions.
 
-The header menu opens a left drawer with Characters, Stats, Inventory, Save/Load,
-and Settings. Swipe from the left edge on iOS or Android, or use the menu button
+The header menu opens a left drawer with Journey first, followed by Characters,
+Stats, Inventory, Skills, Titles, Quests, Save/Load and Settings. Journey returns
+to the selected character's game screen and is disabled without an active character.
+Swipe from the left edge on iOS or Android, or use the menu button
 on every platform. Inventory and Save/Load have separate screens; the Journey and
-Codex tabs remain available in the game. Inventory is read-only during battle,
-and manual save/load waits until the encounter finishes. Three manual slots plus
+Codex tabs remain available in the game. Inventory can add or remove battle
+consumables from the Items hotbar during encounters; equipment and exploration
+use stay unavailable. Manual save/load waits until the encounter finishes. Three manual slots plus
 an autosave retain character resources, equipment, inventory, XP, gold, world
 flags, map position, encounter checkpoints and exact exploration RNG state.
 Native runtime testing requires a development build after adding native modules.
@@ -278,7 +281,7 @@ per-frame work. The Phase 3 controller below adds state-machine orchestration.
 
 ## Battle flow, rendering, animations and content (Phases 3–6)
 
-A battle encounter opens from the Journey exploration screen. One horizontally scrollable hotbar uses minimal Combat, Magic and Items tabs. Combat always includes Attack and Defend beside learned combat skills. Attack's icon and details use Combat Mastery for Warrior, Human Ranged Attack for Archery, or Magic Mastery for Mage; Defend uses Defense. These identities preserve the existing basic attack and guard rules and do not grant learned skills or reference stat bonuses. Items is empty for a future feature; battle consumable selection and resolution are removed, while exploration inventory use remains available. Tap an icon to inspect its HeroUI Native popover with costs, target previews and a Use button. Confirm an enemy action with Use, then tap a monster in the game canvas to resolve it. Canvas targeting stays paused until an action is confirmed. Self-only actions resolve from Use. Closing details preserves the previous action; Cancel clears it and returns to action selection.
+A battle encounter opens from the Journey exploration screen. One horizontally scrollable hotbar uses minimal Combat, Magic and Items tabs. Combat always includes Attack and Defend beside learned combat skills. Attack's icon and details use Combat Mastery for Warrior, Human Ranged Attack for Archery, or Magic Mastery for Mage; Defend uses Defense. These identities preserve the existing basic attack and guard rules and do not grant learned skills or reference stat bonuses. Add battle-usable consumables from Inventory to the Items hotbar, or remove them from item details or the assigned list. Assignments are saved per character and can change during encounters without resetting the battle. Item popovers show quantity and capped recovery; Use Item consumes one copy and one turn on self. Depleted icons remain assigned and unavailable until restocked. Tap an icon to inspect its HeroUI Native popover with costs, target previews and a Use button. Confirm an enemy action with Use. When only one living enemy remains, Attack and enemy-targeted skills select and resolve against it immediately; otherwise tap a monster in the game canvas. Canvas targeting stays paused until an action is confirmed. Self-only actions resolve from Use. Closing details preserves the previous action; Cancel clears it and returns to action selection.
 Defend uses a turn, recovers stamina at the rest rate, and halves incoming attack and spell damage (rounded down, minimum one) until the defender's next turn starts. It does not reduce status damage, spend mana, roll RNG, or wear weapons. Rest remains available to existing engine callers.
 Enemy turns resolve immediately. The presentation queue plays each resolved action
 in order, without delaying HP, mana, turn order or the battle outcome. Restarting
@@ -374,7 +377,7 @@ rolls loot through seeded RNG. Level cap is 99; stacks cap at 999. Each level ne
 resources. Victory awards the defeated enemy definitions' XP, gold and item drops
 once. Defeat returns to the refuge, restores resources and halves gold.
 
-Combat supports data-defined status applications; consumables are usable only outside battle.
+Combat supports data-defined status applications; assigned battle-usable consumables can also be used from the Items hotbar.
 Fireball applies Burn; Focus applies an attack buff. Status definitions support
 turn-start/end damage, healing and signed stat modifiers, with refresh, bounded
 stack or ignore behavior. Expiry and status deaths update the turn queue and battle

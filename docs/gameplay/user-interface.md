@@ -6,11 +6,15 @@ Updated **October 1, 2026**. The app uses Expo SDK 57, Expo Router, React Native
 
 Routes remain thin files under src/app. CharacterGameLayout owns one selected character's JourneyHost and provides CharacterGameContext; every feature view shares it. Routes, tabs, sheets and drawers do not create additional campaigns or award gameplay progress. Components/hooks live outside the route directory.
 
+The app drawer lists Journey first. Selecting it closes the drawer and navigates to the selected character's Journey/game screen, preserving the shared host and any active encounter. Journey is disabled until a character session is ready and shows its selected state on the game screen.
+
+The Journey detail row places Quests immediately after Inventory. Its content is the quest tracker with the existing journal link; the tracker no longer sits below every detail tab. The row scrolls horizontally on narrow screens so labels and touch targets stay readable, and supports keyboard tab switching on web.
+
 | Existing surface | Owner and purpose |
 | --- | --- |
 | Character selection/setup | CharacterSelectScreen / NewCharacterScreen; independent saved characters |
 | Character game stack | src/app/(screens)/game/[characterId]/_layout.tsx; shared host/context |
-| Journey tabs | Explore and character content; Character/Stats/Inventory detail tabs inside the journey UI |
+| Journey tabs | Explore and character content; Character/Stats/Skills/Inventory/Quests detail tabs inside the journey UI |
 | Exploration/service panel | JourneyScreen / TownServicePanel; world interaction and supported NPC actions |
 | Active encounter | BattleView embedded by the journey; no separate authoritative battle route required |
 | Inventory route | InventoryScreen; same inventory content as the character tab |
@@ -48,11 +52,11 @@ Cancel selected action
 Recent battle feedback
 ```
 
-Attack and Defend live inside the Combat hotbar, followed by learned combat skills. Attack uses the talent’s backing skill: Warrior → Combat Mastery, Archery → Human Ranged Attack, Mage → Magic Mastery. Defend uses Defense. These icons/details preserve the current basic action rules and display saved ranks only when owned. Minimal Combat, Magic and Items label tabs do not use HeroUI Tabs. Items has no icons, popovers or item commands and is reserved for future implementation. The skill row scrolls horizontally on overflow. Other passive, life and unsupported skills do not become action icons; the basic Attack/Defend identities are explicit exceptions without granting skill ownership. Icons retain accessible names and selected states; unavailable skills remain inspectable with their equipment, cooldown or resource reason.
+Attack and Defend live inside the Combat hotbar, followed by learned combat skills. Attack uses the talent’s backing skill: Warrior → Combat Mastery, Archery → Human Ranged Attack, Mage → Magic Mastery. Defend uses Defense. These icons/details preserve the current basic action rules and display saved ranks only when owned. Minimal Combat, Magic and Items label tabs do not use HeroUI Tabs. Items contains assigned battle-usable consumables. Its popovers show remaining quantity, capped recovery, wounds and Use Item; out-of-stock icons stay inspectable with use disabled. An empty category points to Inventory. The skill row scrolls horizontally on overflow. Other passive, life and unsupported skills do not become action icons; the basic Attack/Defend identities are explicit exceptions without granting skill ownership. Icons retain accessible names and selected states; unavailable skills remain inspectable with their equipment, cooldown or resource reason.
 
 Every icon opens a HeroUI Native Popover. Skill details show saved rank, effective costs, targeting and engine-derived damage/healing previews, with a **Use Skill** button. Basic actions use **Use Attack** and **Use Defend**. Popover content scrolls within safe viewport bounds; Close, outside tap, Android Back and web Escape dismiss it. The web adapter refreshes HeroUI's initial offscreen measurement after positioning, since RN Web's size observer does not report moves. Web focus stays inside the panel and returns to its trigger on dismissal. Tab labels support keyboard arrows, Home and End.
 
-Browsing details pauses arena targeting without selecting or cancelling the existing engine action. Closing resumes targeting only when an action has already been confirmed. Confirm an enemy-targeted action with its Use button, then tap a monster in the game canvas to resolve it. Before confirmation, canvas target taps are disabled. There is no Targets button or named target list. Cancel clears the selection and pauses targeting again. Self-only actions resolve once from their Use button. Rest exists in the engine but has no separate icon. No dice slots, kept markers, rerolls, reserved pools or paid Pass controls belong in this interface.
+Browsing details pauses arena targeting without selecting or cancelling the existing engine action. Closing resumes targeting only when an action has already been confirmed. Confirm Attack or an enemy-targeted skill with its Use button. With exactly one living enemy, select and resolve against it immediately through the existing controller flow; with multiple enemies, tap a monster in the game canvas. Ally targeting keeps its own selection rules. Before confirmation, canvas target taps are disabled. There is no Targets button or named target list. Cancel clears the selection and pauses targeting again. Self-only actions resolve once from their Use button. Rest exists in the engine but has no separate icon. No dice slots, kept markers, rerolls, reserved pools or paid Pass controls belong in this interface.
 
 | Observed state | Interaction |
 | --- | --- |
@@ -84,7 +88,7 @@ Current setup age is static; do not show an aging countdown or lifetime progress
 
 The Character summary shows an XP progress bar using current-level XP and the engine's next-level threshold; at the level cap it shows “Maximum level.” Beneath Stamina, the recovery limit appears on the left and Hunger on the right, wrapping on compact layouts. Hunger displays `100 - fullness` to one decimal place (91.2% fullness displays as 8.8% Hunger); the engine and saved fullness values retain their existing meaning.
 
-Inventory equip/use commands are available during exploration, including between dungeon encounters. During battle its ordinary screen is read-only and observes battle supplies/wear; consumable use is unavailable. Future learning/rank-up, quest claims, title changes and enchanting are town-only. Journals may still be inspected during combat without ticking time.
+Inventory equip/use commands are available during exploration, including between dungeon encounters. During battle it observes live supplies/wear and permits Items hotbar assignments while equip/exploration-use remain disabled. Battle-usable consumable details expose Add to / Remove from Items hotbar; the assigned list permits removing depleted slots. Saving/retry locks dependent actions, and assignment never resets the live battle. Combat use occurs from the Items popover. Future learning/rank-up, quest claims, title changes and enchanting are town-only. Journals may still be inspected during combat without ticking time.
 
 For future grids, use tap item → action → destination as a complete mobile path. Dragging may supplement it and cannot be required. Preview every occupied cell, exact quantity and displaced equipment. Invalid commands restore the view to authoritative state; the drag cursor never owns an item. Search identifies the actual container and does not reveal undiscovered quest/title spoilers.
 

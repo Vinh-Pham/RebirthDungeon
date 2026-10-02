@@ -231,7 +231,7 @@ describe('goddess offerings and save migration', () => {
     const campaign = legacyCampaign(session.toSave()); campaign.opened = ['refuge/supply-chest'];
     const { audio, ...withoutAudio } = campaign; void audio;
     const save = parseSave({ version, savedAt: new Date().toISOString(), campaign: version === 1 ? withoutAudio : campaign }, content);
-    expect(save.version).toBe(10); expect(save.campaign.hero).toMatchObject({ gold: 37, nextWeaponId: 4, equipment: { weapon: 'weapon-1' } });
+    expect(save.version).toBe(11); expect(save.campaign.hero).toMatchObject({ gold: 37, nextWeaponId: 4, equipment: { weapon: 'weapon-1' } });
     expect(Object.values(save.campaign.hero.weapons)).toEqual(Array(3).fill({ itemId: 'iron-blade', durability: 60 }));
     expect(save.campaign.hero.inventory['iron-blade']).toBeUndefined(); expect(save.campaign.opened).toEqual(campaign.opened); expect(save.campaign.randomState).toEqual(campaign.randomState);
   });
@@ -247,7 +247,7 @@ describe('goddess offerings and save migration', () => {
       (hero: Hero) => { hero.weapons['weapon-1'].itemId = 'potion'; },
       (hero: Hero) => { hero.inventory['iron-blade'] = 1; },
     ]) { const state = session.toSave(); mutate(state.hero); expect(() => validateCampaign(state, content)).toThrow(); }
-    expect(() => parseSave({ ...save, version: 11 }, content)).toThrow();
+    expect(() => parseSave({ ...save, version: 12 }, content)).toThrow();
     expect(heroStats(save.campaign.hero, content).combatant.attack).toBe(38);
   });
 });

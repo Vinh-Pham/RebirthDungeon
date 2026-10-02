@@ -60,6 +60,61 @@ describe('direct player actions', () => {
       expect(session.selectPlayerAction(action, 0)).toBe(false);
     });
 
+  it.each<BattleAction>([{ action: 'attack' }, { action: 'skill', skillId: 'firebolt' }])(
+    'automatically confirms the sole enemy with identical costs, outcomes and RNG: %j', (action) => {
+      const automatic = create(), manual = create();
+      expect(automatic.selectPlayerAction(action, 0)).toBe(true);
+      manual.dispatch({ type: 'SELECT_ACTION', ...action });
+      manual.dispatch({ type: 'SELECT_TARGET', targetId: 'slime-1' }); manual.dispatch({ type: 'CONFIRM_ACTION' });
+      expect(automatic.getSnapshot()).toEqual(manual.getSnapshot());
+      expect(automatic.engine.random.snapshot()).toEqual(manual.engine.random.snapshot());
+      expect(automatic.training.snapshot()).toEqual(manual.training.snapshot());
+      expect(automatic.combat.completedActions).toBe(1);
+      const before = automatic.getSnapshot(), random = automatic.engine.random.snapshot();
+      expect(automatic.selectPlayerAction(action, 0)).toBe(false);
+      expect(automatic.getSnapshot()).toEqual(before); expect(automatic.engine.random.snapshot()).toEqual(random);
+    });
+
+  it.each<BattleAction>([{ action: 'attack' }, { action: 'skill', skillId: 'firebolt' }])(
+    'still waits for a canvas target while multiple enemies are alive: %j', (action) => {
+      const data = structuredClone(loadGameContent().data);
+      data.maps[0].spawns.push({ entityId: 'slime-2', definitionId: 'slime', kind: 'enemy', x: 7, y: 4 });
+      const session = create(new ContentRegistry(data)), player = session.engine.getEntity('player')!;
+      const before = structuredClone(player), random = session.engine.random.snapshot();
+      expect(session.selectPlayerAction(action, 0)).toBe(true);
+      expect(session.getSnapshot().targets).toEqual(['slime-1', 'slime-2']);
+      expect(session.battle.phase).toBe('selectingTarget'); expect(session.combat.completedActions).toBe(0);
+      expect(player).toEqual(before); expect(session.engine.random.snapshot()).toEqual(random);
+    });
+
+  it('automatically targets the survivor after another enemy dies and handles a sole area target', () => {
+    const data = structuredClone(loadGameContent().data);
+    data.skills.find((skill) => skill.id === 'firebolt')!.target = 'allEnemies';
+    data.maps[0].spawns.push({ entityId: 'slime-2', definitionId: 'slime', kind: 'enemy', x: 7, y: 4 });
+    const session = create(new ContentRegistry(data));
+    // Membership and living state, rather than spawn count, define the last target.
+    session.engine.getEntity('slime-1')!.health!.current = 1;
+    vi.spyOn(session.engine.random, 'chance').mockReturnValue(true);
+    session.executePlayerAction({ action: 'attack' }, 'slime-1', 0);
+    expect(session.engine.getEntity('slime-1')!.dead).toBe(true);
+    session.advanceEnemyTurns(); vi.runAllTimers();
+    const count = session.combat.completedActions;
+    expect(session.selectPlayerAction({ action: 'skill', skillId: 'firebolt' }, count)).toBe(true);
+    expect(session.combat.completedActions).toBe(count + 1);
+    expect(session.presentation.getSnapshot().active!.targetId).toBe('slime-2');
+    expect(session.presentation.getSnapshot().active!.impacts.map((impact) => impact.targetId)).toEqual(['slime-2']);
+  });
+
+  it('rejects an unaffordable automatically targeted skill before resources, training or RNG change', () => {
+    const session = create(), player = session.engine.getEntity('player')!;
+    player.mana!.current = 0;
+    const before = structuredClone(player), random = session.engine.random.snapshot();
+    expect(() => session.selectPlayerAction({ action: 'skill', skillId: 'firebolt' }, 0)).toThrow('mana');
+    expect(player).toEqual(before); expect(session.engine.random.snapshot()).toEqual(random);
+    expect(session.training.snapshot()).toEqual({}); expect(session.combat.completedActions).toBe(0);
+    expect(session.battle.phase).toBe('selectingAction');
+  });
+
   it('supports explicitly self-targeted skills and ally selection when more than one ally is available', () => {
     const data = structuredClone(loadGameContent().data);
     data.skills.find((skill) => skill.id === 'healing')!.target = 'self';
@@ -97,7 +152,7 @@ describe('direct player actions', () => {
     const random = session.engine.random.snapshot();
     expect(() => session.executePlayerAction({ action: 'attack' }, 'player', 0)).toThrow('valid target');
     expect(() => session.executePlayerAction({ action: 'attack' }, 'missing', 0)).toThrow('valid target');
-    session.selectPlayerAction({ action: 'skill', skillId: 'firebolt' }, 0);
+    session.dispatch({ type: 'SELECT_ACTION', action: 'skill', skillId: 'firebolt' });
     session.engine.getEntity('player')!.mana!.current = 0;
     expect(() => session.executePlayerAction({ action: 'skill', skillId: 'firebolt' }, 'slime-1', 0)).toThrow('mana');
     expect(session.combat.completedActions).toBe(0);

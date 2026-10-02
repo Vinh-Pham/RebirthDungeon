@@ -16,7 +16,7 @@ Use the TypeScript implementation as the integration baseline. The neighboring [
 | Catalog | 34 reference skill definitions (including Human Ranged Attack) plus the separately authored Enchant town skill | Add authored game rank definitions and explicit availability |
 | Combat | Seeded hit, critical, damage-range, defense, protection, and injury rules | Reuse the resolvers; add only the mechanics an enabled skill needs |
 | Progression | Hero level, XP, talent, resources, inventory, equipment, learned ranks, training, AP, discovery and books | Author further supported rank adapters |
-| Saves | Version 10 campaign saves; SQLite on native, IndexedDB on web | Preserve lossless migrations from versions 1–9 |
+| Saves | Version 11 campaign saves; SQLite on native, IndexedDB on web | Preserve lossless migrations from versions 1–10 |
 | Battle continuation | A pending encounter restarts from its entry hero state and seed | Keep training inside that battle until its result is committed |
 
 The four starter spells are `firebolt`, `icebolt`, `lightning-bolt`, and `healing`; NPC instruction also enables Smash. Their catalog `rank: F` is a definition value, not the saved hero rank. Class skill IDs supply starter grants, while hero learned records determine battle availability and reconstructed rank bonuses. Smash, Combat Mastery, Sword Mastery, Icebolt and the town-only Enchant skill support F/E progression. Other catalog entries need authored adapters before learning.
@@ -36,17 +36,17 @@ SELECT_ACTION { action: 'skill', skillId }
     → next scheduled actor or battle result
 ```
 
-The battle action menu lists **learned, implemented active skills**. Combat also contains the always-available Attack and Defend basic actions. Their icons/details use the talent’s Combat Mastery/Human Ranged Attack/Magic Mastery identity and Defense respectively, while keeping existing attack/guard rules. This does not cast a passive, grant a learned rank or import reference bonuses. Other passive skills do not appear as selectable actions. Rest remains engine-supported. Items is an empty future category; battle consumable actions are removed.
+The battle action menu lists **learned, implemented active skills**. Combat also contains the always-available Attack and Defend basic actions. Their icons/details use the talent’s Combat Mastery/Human Ranged Attack/Magic Mastery identity and Defense respectively, while keeping existing attack/guard rules. This does not cast a passive, grant a learned rank or import reference bonuses. Other passive skills do not appear as selectable actions. Rest remains engine-supported. Items contains the character’s saved battle-usable consumable assignments, configured through Inventory; these do not grant skill training.
 
 Selection and targeting are reversible. Neither spends resources nor draws gameplay randomness. `CANCEL_ACTION` returns to action selection without using the turn or awarding training. Confirmation revalidates ownership, rank, implementation support, equipment, cooldown, resource affordability, and living targets before any mutation or RNG draw. A rejected command changes none of those values and leaves the player able to correct the selection.
 
-On accepted confirmation, resolve one action synchronously and deduct its MP/SP costs once. A committed attack that misses still spends its cost and turn. A multi-target skill pays once and advances initiative once. Items cannot be used during battle. AP is never a battle-use cost.
+On accepted confirmation, resolve one action synchronously and deduct its MP/SP costs once. A committed attack that misses still spends its cost and turn. A multi-target skill pays once and advances initiative once. Assigned battle-usable items consume one copy and one self-targeted turn without weapon wear, attack RNG or skill training. AP is never a battle-use cost.
 
 Use `staminaCost` from the resource rules for the displayed and resolved SP cost, including its fullness adjustment. Healing another ally currently costs no SP; healing oneself applies Healing's authored SP cost. Preserve this target-dependent behavior when showing the confirmation summary. HP costs, charge loading, and upkeep payments need explicit future resolver support before any skill can require them.
 
 Battle rank and learned-skill inputs are copied from the hero when the encounter starts. Equipment durability and encounter statuses can change during the battle and affect subsequent actions through the existing stat pipeline. Town progression cannot alter an active encounter. The next encounter receives the updated hero after the previous result is committed; this plan does not introduce an expedition-wide frozen rank/stat snapshot.
 
-Targeting uses living encounter membership and allegiance: `self`, `ally` (including self), `enemy`, or `allEnemies`. Canvas positions, camera movement, and attack animations do not create range or line-of-sight rules. An area action uses the selected enemy and the full eligible hostile set established at confirmation.
+Targeting uses living encounter membership and allegiance: `self`, `ally` (including self), `enemy`, or `allEnemies`. Canvas positions, camera movement, and attack animations do not create range or line-of-sight rules. An area action uses the selected enemy and the full eligible hostile set established at confirmation. After Use, enemy-targeted skills automatically confirm the sole living enemy; multiple enemies still require a canvas target tap. This shortcut does not apply to ally selection or change costs and RNG draws.
 
 ### Damage, healing, and passives
 
@@ -365,4 +365,4 @@ Expo SDK **57** was checked against `package.json` for this revision. Follow [AG
 
 ## Implemented enchanting pilot
 
-Enchant is a town-only life skill, learned at F for free from the refuge keeper. Applications and destructive burns at the blacksmith train its authored objectives. F → E needs 100 training and 2 AP; E is the current cap. It never appears as a battle action or trains from combat outcomes. Current saves are version 10 and preserve ranks, capped training, installed equipment values and the separate enchanting RNG. See [Enchants](enchants.md) for acquisition, recipes and protections.
+Enchant is a town-only life skill, learned at F for free from the refuge keeper. Applications and destructive burns at the blacksmith train its authored objectives. F → E needs 100 training and 2 AP; E is the current cap. It never appears as a battle action or trains from combat outcomes. Current saves are version 11 and preserve ranks, capped training, installed equipment values and the separate enchanting RNG. See [Enchants](enchants.md) for acquisition, recipes and protections.

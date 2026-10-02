@@ -17,10 +17,10 @@ function AppDrawerContent(props: DrawerContentComponentProps) {
   const path = usePathname();
   const open = useDrawerStatus() === 'open';
   const close = useCallback(() => props.navigation.closeDrawer(), [props.navigation]);
-  const route = (destination: 'inventory' | 'save-load' | 'skills' | 'quests' | 'titles') => {
+  const route = (destination: 'journey' | 'inventory' | 'save-load' | 'skills' | 'quests' | 'titles') => {
     if (!game || !ready) return;
     close();
-    router.navigate({ pathname: destination === 'titles' ? '/game/[characterId]/titles' : destination === 'quests' ? '/game/[characterId]/quests' : destination === 'skills' ? '/game/[characterId]/skills' : destination === 'inventory' ? '/game/[characterId]/inventory' : '/game/[characterId]/save-load', params: { characterId: game.profile.id } });
+    router.navigate({ pathname: destination === 'journey' ? '/game/[characterId]' : destination === 'titles' ? '/game/[characterId]/titles' : destination === 'quests' ? '/game/[characterId]/quests' : destination === 'skills' ? '/game/[characterId]/skills' : destination === 'inventory' ? '/game/[characterId]/inventory' : '/game/[characterId]/save-load', params: { characterId: game.profile.id } });
   };
   return <DrawerAccessibility open={open} close={close}>
     <DrawerContentScrollView {...props} contentContainerStyle={{ padding: 16, gap: 20 }}>
@@ -30,6 +30,7 @@ function AppDrawerContent(props: DrawerContentComponentProps) {
       </View>
       <Text className="text-sm text-muted">{game ? game.profile.name : 'Choose a character to begin your journey.'}</Text>
       <View className="gap-3">
+        <DungeonButton label="Journey" selected={!!game && path === `/game/${game.profile.id}`} disabled={!ready} onPress={() => route('journey')} />
         <DungeonButton label="Characters" selected={path === '/characters'} busy={!!snapshot?.busy}
           onPress={() => { close(); void characters(); }} />
         <DungeonButton label="Stats" disabled={!ready} onPress={() => { close(); openStats(); }} />

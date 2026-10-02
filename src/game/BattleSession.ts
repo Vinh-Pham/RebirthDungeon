@@ -56,6 +56,7 @@ export class BattleSession {
   private log: string[] = [];
   private disposed = false;
   private submitting = false;
+  private inputLocked = false;
 
   constructor(readonly content: ContentRegistry, seed = 12345, mapId: string | TileMap = 'chamber', hero?: Hero, effects: readonly { statusId: string; stacks: number }[] = [], characterName?: string, readonly encounterId = `arena/${seed}`, eligibleTraining = false) {
     const map = typeof mapId === 'string' ? content.data.maps.find((entry) => entry.id === mapId) : MapSchema.parse(mapId);
@@ -70,7 +71,7 @@ export class BattleSession {
     this.quests = new EncounterQuests(encounterId, cloneData(hero ?? createHero(content)), content, eligibleTraining);
     this.titles = new EncounterTitles(encounterId, eligibleTraining);
     this.combat = new CombatSystem(map.spawns.map((spawn) => spawn.entityId), { content,
-      canAct: () => this.battle.isResolving, encounterId, onOutcome: (outcome) => { this.training.record(outcome); this.quests.record(outcome); } });
+      canAct: () => !this.inputLocked && this.battle.isResolving, encounterId, onOutcome: (outcome) => { this.training.record(outcome); this.quests.record(outcome); } });
     this.battle = new BattleController(this.combat, content);
     this.presentation = new PresentationQueue(this.engine);
     this.initialEntities = this.projectEntities();
@@ -90,10 +91,11 @@ export class BattleSession {
   };
   dispatch(command: GameCommand): void {
     if (this.disposed) throw new Error('Battle session has been disposed');
+    if (this.inputLocked) throw new Error('Save pending. Retry before continuing.');
     this.engine.dispatch(command);
   }
   canAcceptPlayerInput(expectedActionCount: number): boolean {
-    return !this.disposed && !this.submitting && !this.presentation.getSnapshot().busy &&
+    return !this.disposed && !this.inputLocked && !this.submitting && !this.presentation.getSnapshot().busy &&
       expectedActionCount === this.combat.completedActions &&
       ['selectingAction', 'selectingTarget'].includes(this.battle.phase) &&
       !!this.engine.getEntity(this.combat.currentTurn() ?? '')?.player;
@@ -110,19 +112,29 @@ export class BattleSession {
       return true;
     } finally { this.submitting = false; }
   }
-  /** Self-only actions resolve on selection; other actions wait for a target tap. */
+  /** Use confirms self-only actions and attacks/skills against the last living enemy. */
   selectPlayerAction(action: BattleAction, expectedActionCount: number): boolean {
     if (!this.canAcceptPlayerInput(expectedActionCount)) return false;
     const targets = this.battle.validTargetIds(action);
-    if (targets.length === 1 && targets[0] === this.combat.currentTurn()) {
+    const soleEnemy = targets.length === 1 && (action.action === 'attack' || action.action === 'skill') &&
+      !!this.engine.getEntity(targets[0])?.enemy;
+    if (targets.length === 1 && (targets[0] === this.combat.currentTurn() || soleEnemy)) {
       return this.executePlayerAction(action, targets[0], expectedActionCount);
     }
     this.dispatch({ type: 'SELECT_ACTION', ...action });
     return true;
   }
   advanceEnemyTurns(): void {
+    if (this.inputLocked) return;
     // Consecutive enemies resolve immediately; presentation plays separately.
     while (this.battle.phase === 'enemyTurn') this.dispatch({ type: 'ADVANCE_ENEMY_TURN' });
+  }
+  setInputLocked(locked: boolean) { this.inputLocked = locked; }
+  /** Publish saved configuration without resetting the encounter or its checkpoint. */
+  setItemHotbar(ids: readonly string[]) {
+    const player = this.engine.world.entities.find((entity) => entity.player);
+    if (player) player.itemHotbar = [...ids];
+    this.refresh();
   }
   dispose(): void {
     if (this.disposed) return;
@@ -163,6 +175,7 @@ export class BattleSession {
     if (event.type === 'DEFENDED') line = `${name(event.entityId)} defends, halving attack and spell damage until their next turn and recovering stamina.`;
     if (event.type === 'WOUNDS_RECEIVED') line = `${name(event.entityId)} suffers ${event.amount} wounds.`;
     if (event.type === 'SKILL_USED') line = `${name(event.sourceId)} casts ${this.content.skill(event.skillId).name}.`;
+    if (event.type === 'ITEM_USED') line = `${name(event.sourceId)} uses ${this.content.item(event.itemId).name}.`;
     if (event.type === 'STATUS_APPLIED') line = `${name(event.entityId)} gains ${this.content.status(event.statusId).name}.`;
     if (event.type === 'STATUS_EXPIRED') line = `${this.content.status(event.statusId).name} fades from ${name(event.entityId)}.`;
     if (event.type === 'ENTITY_DIED') line = `${name(event.entityId)} falls.`;

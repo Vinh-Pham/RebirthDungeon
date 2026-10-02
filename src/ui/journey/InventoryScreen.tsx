@@ -52,6 +52,7 @@ export function InventoryContent({ host, session }: { host: JourneyHost; session
   const currentPage = inventoryPage(page, visible.length);
   const start = currentPage * INVENTORY_PAGE_SIZE;
   const disabled = hosted.busy || !!hosted.battle || !!hosted.retryAvailable || !!view.state.pending;
+  const hotbarDisabled = hosted.busy || !!hosted.retryAvailable || !hosted.storageAvailable;
   const town = !view.state.dungeon && !view.state.pending && !!view.map.theme;
   const equippedWeapon = rows.find((row) => row.equipped && row.item.kind === 'weapon');
   const equippedArmor = rows.find((row) => row.equipped && row.item.kind === 'armor');
@@ -64,9 +65,9 @@ export function InventoryContent({ host, session }: { host: JourneyHost; session
   const back = () => { setSelectedKey(undefined); setError(undefined); };
   const needs = questItemNeeds(battle?.inventory ? { ...hero, inventory: battle.inventory.items } : hero, session.content);
   return <View className="gap-4">
-    {hosted.battle ? <DungeonNotice status="accent" message="Inventory is read-only during encounters. Equipment cannot change during battle; use the battle Item menu for consumables." /> : null}
+    {hosted.battle ? <DungeonNotice status="accent" message="You can change your Items hotbar during battle. Use consumables from the combat screen; equipment stays fixed until the encounter ends." /> : null}
     <DungeonNotice message={error} />
-    {selected ? <InventoryDetails row={selected} hero={battle?.inventory ? { ...hero, inventory: battle.inventory.items } : hero} host={host} session={session} review={battle?.character} disabled={disabled} town={town} dispatch={dispatch} back={back} /> : <>
+    {selected ? <InventoryDetails row={selected} hero={battle?.inventory ? { ...hero, inventory: battle.inventory.items } : hero} host={host} session={session} review={battle?.character} disabled={disabled} hotbarDisabled={hotbarDisabled} town={town} dispatch={dispatch} back={back} /> : <>
       {selectedKey ? <DungeonNotice status="accent" message="That item is no longer in your pack." /> : null}
       <DungeonCard>
         <Text className="text-accent" accessibilityRole="header" style={menu.heading}>Equipment</Text>
@@ -75,6 +76,15 @@ export function InventoryContent({ host, session }: { host: JourneyHost; session
           onPress={() => { setSelectedKey(equippedWeapon.key); setError(undefined); }} /> : <Text className="text-muted" style={menu.body}>Weapon: Bare hands</Text>}
         {equippedArmor ? <DungeonButton image={{ kind: 'item', id: equippedArmor.item.id }} label={equippedArmor.item.name} detail="Armor · One equipped copy" onPress={() => { setSelectedKey(equippedArmor.key); setError(undefined); }} /> : <Text className="text-muted" style={menu.body}>Armor: None</Text>}
         {view.state.dungeon ? <Text className="text-muted" style={menu.body}>Dungeon keys · Boss: {view.state.dungeon.bossKey.status} · Treasure: {view.state.dungeon.treasureKey.status}</Text> : null}
+      </DungeonCard>
+      <DungeonCard>
+        <Text className="text-accent" accessibilityRole="header" style={menu.heading}>Items hotbar</Text>
+        <Text className="text-muted" style={menu.body}>Add a consumable from your pack to use it in combat. Empty slots stay assigned when you run out.</Text>
+        {hero.itemHotbar.length ? hero.itemHotbar.map((id) => {
+          const item = session.content.item(id), quantity = (battle?.inventory?.items ?? hero.inventory)[id] ?? 0;
+          return <DungeonButton key={id} image={{ kind: 'item', id }} label={`Remove ${item.name}`} detail={`${quantity} owned · Items hotbar`}
+            disabled={hotbarDisabled} onPress={() => { void host.progress({ type: 'SET_ITEM_HOTBAR', itemId: id, assigned: false }); }} />;
+        }) : <Text className="text-muted" style={menu.body}>No consumables assigned.</Text>}
       </DungeonCard>
       <DungeonCard>
         <Text className="text-accent" style={menu.heading}>Quest supplies</Text>

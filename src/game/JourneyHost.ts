@@ -1,4 +1,5 @@
 import type { ProgressionCommand } from '../engine/commands';
+import { setItemHotbar } from '../engine/rpg/Inventory';
 import type { ContentRegistry } from '../engine/data/ContentRegistry';
 import { SaveRepository, type SaveSlot, type SaveStorage } from '../persistence/SaveRepository';
 import { AutoSaver } from '../persistence/AutoSaver';
@@ -19,6 +20,7 @@ export class JourneyHost {
   private unsubscribe?: () => void;
   private generation = 0;
   private candidate?: JourneySession;
+  private candidateBattle?: BattleSession;
   private durableWrite?: Promise<boolean>;
   constructor(readonly content: ContentRegistry, private createStorage: () => Promise<SaveStorage>, private characterName?: string, private growthTalent?: GrowthTalent, private audioSettings?: () => AudioSettings) {}
   getSnapshot = () => this.snapshot;
@@ -59,9 +61,16 @@ export class JourneyHost {
   }
   progress = async (command: ProgressionCommand): Promise<boolean> => {
     const { session, busy, battle } = this.snapshot;
-    if (!session || busy || battle || this.candidate) return false;
+    if (!session || busy || (battle && command.type !== 'SET_ITEM_HOTBAR') || this.candidate) return false;
     if (!this.repository) { this.fail(new Error('Save storage is required for town services and progression')); return false; }
-    try { this.candidate = session.progressionCandidate(command); }
+    try {
+      if (battle && command.type === 'SET_ITEM_HOTBAR') {
+        setItemHotbar({ inventory: battle.getSnapshot().inventory?.items ?? {}, itemHotbar: [...session.getSnapshot().state.hero.itemHotbar] }, command.itemId, command.assigned, this.content);
+      }
+      this.candidate = session.progressionCandidate(command);
+      this.candidateBattle = battle;
+      battle?.setInputLocked(true);
+    }
     catch (error) { this.fail(error); return false; }
     session.lockMutations();
     return this.persistCandidate();
@@ -81,7 +90,12 @@ export class JourneyHost {
         if (generation !== this.generation) return false;
         this.candidate = undefined;
         const notice = candidate.getSnapshot().message;
-        this.attach(candidate); this.update({ notice, pendingResult: undefined, retryAvailable: false });
+        const preservedBattle = this.candidateBattle; this.candidateBattle = undefined;
+        if (preservedBattle) {
+          preservedBattle.setItemHotbar(candidate.getSnapshot().state.hero.itemHotbar);
+          preservedBattle.setInputLocked(false);
+        }
+        this.attach(candidate, preservedBattle); this.update({ notice, pendingResult: undefined, retryAvailable: false });
         // Saved progression cannot be retried because a consumer failed after commit.
         try { candidate.publishCommittedEvents(); } catch (error) { this.fail(error); }
         return true;
@@ -151,11 +165,11 @@ export class JourneyHost {
       this.fail(error); this.update({ busy: false });
     }
   }
-  private attach(session: JourneySession) {
+  private attach(session: JourneySession, preservedBattle?: BattleSession) {
     session.manageDurability();
     if (this.audioSettings) session.setAudio(this.audioSettings());
-    this.unsubscribe?.(); this.snapshot.battle?.dispose(); this.snapshot.session?.dispose();
-    this.update({ session, battle: undefined, revision: this.snapshot.revision + 1 });
+    this.unsubscribe?.(); if (this.snapshot.battle !== preservedBattle) this.snapshot.battle?.dispose(); this.snapshot.session?.dispose();
+    this.update({ session, battle: preservedBattle, revision: this.snapshot.revision + 1 });
     this.unsubscribe = session.subscribe(() => {
       // Audio preference refreshes may arrive while a retained candidate is saving.
       if (this.candidate) return;
@@ -163,7 +177,7 @@ export class JourneyHost {
       if (pending && !this.snapshot.battle) this.update({ battle: session.createBattle() });
       this.autosaver?.schedule(session.toSave());
     });
-    if (session.getSnapshot().state.pending) this.update({ battle: session.createBattle() });
+    if (session.getSnapshot().state.pending && !preservedBattle) this.update({ battle: session.createBattle() });
   }
   private async stop() {
     ++this.generation; this.unsubscribe?.(); this.unsubscribe = undefined;
@@ -172,6 +186,7 @@ export class JourneyHost {
     this.autosaver = undefined; this.repository = undefined; this.snapshot = empty;
     // Menu reads wait for writes, but an obsolete blocked read must not delay a new session.
     const candidate = this.candidate; this.candidate = undefined;
+    this.candidateBattle = undefined;
     const saving = Promise.all([saver?.dispose(), this.durableWrite]).then(() => {}).catch(() => {}).finally(() => candidate?.dispose());
     this.durableWrite = undefined;
     pendingStops.add(saving);

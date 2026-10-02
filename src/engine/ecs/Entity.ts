@@ -12,6 +12,7 @@ export type Entity = {
   readonly id: EntityId;
   name?: string;
   inventory?: Record<string, number>;
+  itemHotbar?: string[];
   weapon?: Weapon & { id: string };
   statuses?: ActiveStatus[];
   stamina?: { current: number; max: number }; wounds?: number; fullness?: number; statSource?: StatSource;

@@ -16,6 +16,7 @@ export type GameEvent =
   | { type: 'ANIMATION_REQUESTED'; sourceId: EntityId; targetId: EntityId; animation: 'attack' | 'skill' | 'defend'; skillId?: string }
   | { type: 'STATUS_APPLIED' | 'STATUS_EXPIRED'; entityId: EntityId; statusId: string }
   | { type: 'ITEM_USED'; sourceId: EntityId; itemId: string }
+  | { type: 'ITEM_HOTBAR_CHANGED'; itemId: string; assigned: boolean }
   | { type: 'WORLD_MOVED'; entityId: EntityId; x: number; y: number }
   | { type: 'MAP_CHANGED'; mapId: string }
   | { type: 'WORLD_INTERACTED'; objectId: string; message: string }

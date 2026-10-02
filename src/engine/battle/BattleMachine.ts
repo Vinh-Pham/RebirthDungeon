@@ -1,7 +1,7 @@
 import { assign, setup } from 'xstate';
 import type { BattleResult } from '../ecs/systems/CombatSystem';
 
-export type BattleAction = { action: 'attack' | 'skill' | 'defend' | 'rest'; skillId?: string };
+export type BattleAction = { action: 'attack' | 'skill' | 'defend' | 'rest' | 'item'; skillId?: string; itemId?: string };
 export interface BattleContext {
   turnId?: string;
   side?: 'player' | 'enemy';

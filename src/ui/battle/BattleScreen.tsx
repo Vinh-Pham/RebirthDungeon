@@ -54,11 +54,11 @@ export function BattleView({ session, restart, finishedLabel = 'Descend again', 
   const setError = (value?: string) => setErrorState({ turn: turnKey, value });
   const inspect = (value?: string) => setInspectState({ turn: turnKey, value });
   const finished = view.phase === 'victory' || view.phase === 'defeat';
-  const canChoose = !presentation.busy && ['selectingAction', 'selectingTarget'].includes(view.phase);
+  const canChoose = !busy && !presentation.busy && ['selectingAction', 'selectingTarget'].includes(view.phase);
   useEffect(() => {
     // Simulation advances independently of presentation completion.
-    if (view.phase === 'enemyTurn') session.advanceEnemyTurns();
-  }, [session, view.phase]);
+    if (!busy && view.phase === 'enemyTurn') session.advanceEnemyTurns();
+  }, [session, view.phase, busy]);
   useEffect(() => {
     if (view.phase === 'victory' && hasVictoryLoot && !presentation.busy) scroll.current?.scrollTo({ y: decisionY.current, animated: true });
   }, [view.phase, hasVictoryLoot, presentation.busy]);
@@ -100,7 +100,9 @@ export function BattleView({ session, restart, finishedLabel = 'Descend again', 
     selectedSkill ? `${selectedSkill.manaCost} MP · ${selectedSkill.effect === 'heal' && selectedSkill.target === 'ally' ? `0 SP ally / ${skillCost} SP self` : `${skillCost} SP`} · ` +
       (selectedSkill.target === 'allEnemies' ? `Tap any monster to cast ${selectedSkill.name} against all enemies.` :
       `Tap ${selectedSkill.target === 'ally' ? 'an ally' : 'a monster'} to cast ${selectedSkill.name}.`) :
-    view.selectedAction ? 'Tap a monster in the arena to attack.' : 'Choose an action below, then tap a monster in the arena.';
+    view.selectedAction ? 'Tap a monster in the arena to attack.' :
+    session.battle.validTargetIds({ action: 'attack' }).length === 1 ? 'Choose an action below. The last monster is targeted automatically.' :
+    'Choose an action below, then tap a monster in the arena.';
 
   return <SafeAreaView className="bg-background" style={styles.screen} edges={['left', 'right']}>
     <ScrollView ref={scroll} contentContainerStyle={styles.scroll}>

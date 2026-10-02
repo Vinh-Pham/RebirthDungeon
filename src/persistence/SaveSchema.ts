@@ -4,7 +4,7 @@ import { emptyEnchantProgression } from '../engine/rpg/EnchantState';
 import { emptyQuestProgression } from '../engine/rpg/Quests';
 import { starterProgression } from '../engine/rpg/Skills';
 import { z } from 'zod';
-import { HeroSchema, LegacyHeroSchema, VersionFourHeroSchema, VersionFiveHeroSchema, VersionSixHeroSchema, VersionSevenHeroSchema, VersionEightHeroSchema, VersionNineHeroSchema, experienceToNextLevel, clampHeroResources, migrateEquipmentHero, migrateHero, restoreHero, validateHero } from '../engine/rpg/Character';
+import { HeroSchema, LegacyHeroSchema, VersionFourHeroSchema, VersionFiveHeroSchema, VersionSixHeroSchema, VersionSevenHeroSchema, VersionEightHeroSchema, VersionNineHeroSchema, VersionTenHeroSchema, experienceToNextLevel, clampHeroResources, migrateEquipmentHero, migrateHero, restoreHero, validateHero } from '../engine/rpg/Character';
 import type { GrowthTalent } from '../engine/rpg/Stats';
 import type { ContentRegistry } from '../engine/data/ContentRegistry';
 import { isWalkable, projectWorldMap } from '../engine/world/TileMap';
@@ -20,7 +20,8 @@ export const CampaignSchema = z.strictObject({
   audio: z.strictObject({ music: z.number().min(0).max(1), sfx: z.number().min(0).max(1), enabled: z.boolean() }),
   dungeon: DungeonRunSchema.optional(),
 });
-export const SaveSchema = z.strictObject({ version: z.literal(10), savedAt: z.string().datetime(), campaign: CampaignSchema });
+export const SaveSchema = z.strictObject({ version: z.literal(11), savedAt: z.string().datetime(), campaign: CampaignSchema });
+const VersionTenSchema = z.strictObject({ version: z.literal(10), savedAt: z.string().datetime(), campaign: CampaignSchema.extend({ hero: VersionTenHeroSchema }) });
 const VersionNineSchema = z.strictObject({ version: z.literal(9), savedAt: z.string().datetime(), campaign: CampaignSchema.extend({ hero: VersionNineHeroSchema }) });
 const VersionEightSchema = z.strictObject({ version: z.literal(8), savedAt: z.string().datetime(), campaign: CampaignSchema.extend({ hero: VersionEightHeroSchema }) });
 const VersionSevenSchema = z.strictObject({ version: z.literal(7), savedAt: z.string().datetime(), campaign: CampaignSchema.extend({ hero: VersionSevenHeroSchema }) });
@@ -97,7 +98,7 @@ export function parseSave(raw: unknown, content: ContentRegistry, growthTalent?:
   }
   if (typeof version === 'number' && version >= 1 && version <= 9) {
     const candidate = migrated as { campaign: { hero: Record<string, unknown> } };
-    const { cumulativeLevel, ...previousHero } = candidate.campaign.hero; void cumulativeLevel;
+    const { cumulativeLevel, itemHotbar, ...previousHero } = candidate.campaign.hero; void cumulativeLevel; void itemHotbar;
     const previous = VersionNineSchema.parse(version < 8 ? { ...candidate, campaign: { ...candidate.campaign, hero: previousHero } } : migrated);
     const hero = previous.campaign.hero;
     migrated = { ...previous, version: 10, campaign: { ...previous.campaign, hero: {
@@ -105,6 +106,10 @@ export function parseSave(raw: unknown, content: ContentRegistry, growthTalent?:
       // Preserve the earned level and fraction of its XP bar, without granting AP or healing.
       experience: hero.level === 99 ? 0 : Math.floor(hero.experience * experienceToNextLevel(hero.level) / (hero.level * 20)),
     } } };
+  }
+  if (typeof version === 'number' && version >= 1 && version <= 10) {
+    const previous = VersionTenSchema.parse(migrated);
+    migrated = { ...previous, version: 11, campaign: { ...previous.campaign, hero: { ...previous.campaign.hero, itemHotbar: [] } } };
   }
   const save = SaveSchema.parse(migrated);
   if (typeof version === 'number' && version < 9) {
@@ -119,5 +124,5 @@ export function parseSave(raw: unknown, content: ContentRegistry, growthTalent?:
   return { ...save, campaign: validateCampaign(save.campaign, content) };
 }
 export function encodeSave(state: CampaignState, content: ContentRegistry, savedAt = new Date().toISOString()): string {
-  return JSON.stringify(parseSave({ version: 10, savedAt, campaign: state }, content));
+  return JSON.stringify(parseSave({ version: 11, savedAt, campaign: state }, content));
 }

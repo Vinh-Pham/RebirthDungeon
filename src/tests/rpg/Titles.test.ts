@@ -151,9 +151,9 @@ describe('title data, spoiler policy and migrations', () => {
   it('migrates v8 ownership without refills or losing enchants, and preserves unavailable earned selections', () => {
     const session = new JourneySession(content); const state = session.toSave(); session.dispose();
     state.hero = owned(); state.hero.health = 5; state.hero.mana = 3; state.hero.stamina = 2;
-    const { titleCollection, cumulativeLevel, ...oldHero } = state.hero; void titleCollection; void cumulativeLevel;
+    const { titleCollection, cumulativeLevel, itemHotbar, ...oldHero } = state.hero; void titleCollection; void cumulativeLevel; void itemHotbar;
     const migrated = parseSave({ version: 8, savedAt: new Date().toISOString(), campaign: { ...state, hero: oldHero } }, content);
-    expect(migrated.version).toBe(10); expect(migrated.campaign.hero).toMatchObject({ health: 5, mana: 3, stamina: 2, earnedTitles: state.hero.earnedTitles, titleCollection: { selected: {}, records: { 'first-delver': { source: 'legacy/ownership' } } } });
+    expect(migrated.version).toBe(11); expect(migrated.campaign.hero).toMatchObject({ health: 5, mana: 3, stamina: 2, earnedTitles: state.hero.earnedTitles, titleCollection: { selected: {}, records: { 'first-delver': { source: 'legacy/ownership' } } } });
     state.hero = selectTitle(owned(), 'first', 'first-delver', content); state.hero.health = 128;
     const retired = new ContentRegistry({ ...content.data, titles: content.data.titles.filter((t) => t.id !== 'first-delver') });
     const restored = parseSave(JSON.parse(encodeSave(state, content)), retired).campaign.hero;

@@ -7,6 +7,7 @@ import type { ContentRegistry } from '../data/ContentRegistry';
 import type { CombatSystem } from '../ecs/systems/CombatSystem';
 import { validateCombatEntity } from './AttackResolver';
 import { staminaCost } from '../rpg/Resources';
+import { prepareBattleItem } from '../rpg/Consumables';
 import { createBattleMachine, type BattleAction } from './BattleMachine';
 
 export type BattlePhase = 'initializing' | 'selectingAction' | 'selectingTarget' | 'executing' | 'enemyTurn' | 'victory' | 'defeat';
@@ -46,10 +47,11 @@ export class BattleController implements GameSystem {
         this.requirePhase('initializing');
         this.actor.send({ type: 'START', ...this.summary() });
       }));
-      cleanups.push(engine.commands.register('SELECT_ACTION', ({ action, skillId }) => {
+      cleanups.push(engine.commands.register('SELECT_ACTION', ({ action, skillId, itemId }) => {
         this.requirePhase('selectingAction', 'selectingTarget');
         const source = engine.getEntity(this.combat.currentTurn()!);
         validateCombatEntity(source);
+        if (action === 'item') prepareBattleItem(source, itemId!, this.content);
         if (action === 'skill') {
           const skill = skillForEntity(this.content, source, skillId!);
           const reason = skillEquipmentReason(source, skill, this.content); if (reason) throw new Error(reason);
@@ -60,7 +62,7 @@ export class BattleController implements GameSystem {
           const cost = skill.effect === 'heal' && skill.target === 'ally' ? 0 : staminaCost(source, skill.staminaCost);
           if (source.stamina && source.stamina.current < cost) throw new Error('Insufficient stamina');
         }
-        this.actor.send({ type: 'SELECT_ACTION', action: { action, skillId } });
+        this.actor.send({ type: 'SELECT_ACTION', action: { action, skillId, itemId } });
       }));
       cleanups.push(engine.commands.register('SELECT_TARGET', ({ targetId }) => {
         this.requirePhase('selectingTarget');
@@ -99,7 +101,7 @@ export class BattleController implements GameSystem {
     if (!this.engine || !action) return [];
     const source = this.engine.getEntity(this.combat.currentTurn()!);
     if (!source) return [];
-    const mode = ['rest', 'defend'].includes(action.action) ? 'self' : action.action === 'skill' ? this.content.skill(action.skillId!).target : 'enemy';
+    const mode = ['rest', 'defend', 'item'].includes(action.action) ? 'self' : action.action === 'skill' ? this.content.skill(action.skillId!).target : 'enemy';
     return this.combat.turnOrder.filter((id) => {
       const target = this.engine!.getEntity(id);
       if (!target?.health?.current || target.dead) return false;
@@ -124,6 +126,7 @@ export class BattleController implements GameSystem {
     try {
       this.engine!.dispatch(action.action === 'defend' ? { type: 'DEFEND', entityId: sourceId } : action.action === 'rest' ? { type: 'REST', entityId: sourceId } : action.action === 'attack'
         ? { type: 'ATTACK', attackerId: sourceId, targetId }
+        : action.action === 'item' ? { type: 'USE_ITEM', sourceId, targetId, itemId: action.itemId! }
         : { type: 'USE_SKILL', sourceId, targetId, skillId: action.skillId! });
     } catch (error) {
       if (this.combat.completedActions !== completedActions || this.combat.result || this.combat.currentTurn() !== sourceId) this.actor.send({ type: 'RESOLVED', ...this.summary() });

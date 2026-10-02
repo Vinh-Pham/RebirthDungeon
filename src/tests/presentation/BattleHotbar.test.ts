@@ -57,7 +57,7 @@ describe('battle hotbar details', () => {
 
   it('inspects basic and skill actions without changing the selected action, resources, RNG or training', () => {
     const session = create();
-    session.selectPlayerAction({ action: 'skill', skillId: 'icebolt' }, 0);
+    session.dispatch({ type: 'SELECT_ACTION', action: 'skill', skillId: 'icebolt' });
     const player = session.engine.getEntity('player')!;
     const before = structuredClone(player), snapshot = session.getSnapshot(), random = session.engine.random.snapshot();
     for (const action of [{ action: 'attack' }, { action: 'skill', skillId: 'firebolt' }, { action: 'skill', skillId: 'healing' }] as const) {

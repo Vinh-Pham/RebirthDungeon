@@ -10,7 +10,7 @@ import { DungeonButton } from '../shared/DungeonUI';
 import GameImage from '../shared/GameImage';
 import type { GameImageReference } from '../shared/gameImages';
 import KeyboardChoiceGroup from '../shared/KeyboardChoiceGroup';
-import { BATTLE_CATEGORIES, battleActionDetails, battleHotbarActions, type BattleSkillCategory } from './battleActionDetails';
+import { BATTLE_CATEGORIES, battleActionDetails, battleHotbarActions, battleHotbarItems, type BattleSkillCategory } from './battleActionDetails';
 import PopoverAccessibility from './PopoverAccessibility';
 
 export default function BattleHotbar({ session, view, canChoose, inspected, inspect, selectAction }: {
@@ -20,9 +20,10 @@ export default function BattleHotbar({ session, view, canChoose, inspected, insp
   const [category, setCategory] = useState<BattleSkillCategory>('combat');
   const source = session.engine.getEntity(view.turnId ?? '');
   const actions = battleHotbarActions(session, category);
+  const items = category === 'items' ? battleHotbarItems(session) : [];
   const attackCost = source?.stamina ? staminaCost(source, 2) : 0;
   function actionIcon(id: string, label: string, image: GameImageReference, children: ReactNode, unavailable = false) {
-    const selected = id === (view.selectedAction?.skillId ?? view.selectedAction?.action);
+    const selected = id === (view.selectedAction?.itemId ?? view.selectedAction?.skillId ?? view.selectedAction?.action);
     return <ActionPopover key={id} label={label} image={image} disabled={!canChoose} unavailable={unavailable}
       selected={selected} open={canChoose && inspected === id} onOpenChange={(open) => inspect(open ? id : undefined)}>
       {children}
@@ -63,6 +64,16 @@ export default function BattleHotbar({ session, view, canChoose, inspected, insp
           <DungeonButton primary label="Use Skill" disabled={!canChoose || !!details.unavailableReason} onPress={() => selectAction(action)} />
         </>, !!details.unavailableReason);
       })}
+      {items.map(({ item, quantity, recovery, unavailableReason }) => actionIcon(item.id, `${item.name} · ${quantity} owned`, { kind: 'item', id: item.id }, <>
+        <Text className="text-sm text-muted">{item.description}</Text>
+        <Text className="text-sm text-muted">{quantity} owned · Self · Uses one turn</Text>
+        {recovery ? <Text className="text-sm text-foreground">Restore {recovery.amount} {recovery.resource === 'health' ? 'HP' : recovery.resource === 'mana' ? 'MP' : 'SP'}{recovery.staminaBonus ? ` · +${recovery.staminaBonus} SP` : ''}</Text> : null}
+        {item.restores === 'health' ? <Text className="text-xs text-muted">Healing respects wounds.</Text> : null}
+        {recovery && recovery.amount === 0 && recovery.staminaBonus === 0 ? <Text className="text-sm text-muted">Already at your recovery limit. Using this still consumes one copy.</Text> : null}
+        {unavailableReason ? <Text className="text-sm text-danger">{unavailableReason}</Text> : null}
+        <DungeonButton primary label="Use Item" disabled={!canChoose || !!unavailableReason} onPress={() => selectAction({ action: 'item', itemId: item.id })} />
+      </>, !!unavailableReason))}
+      {!items.length && category === 'items' ? <Text className="py-3 text-sm text-muted">Add consumables from your inventory.</Text> : null}
       {!actions.length && category !== 'items' ? <Text className="py-3 text-sm text-muted">No {category} skills learned.</Text> : null}
     </ScrollView>
   </View>;

@@ -3,6 +3,7 @@ import type { Skill } from '../../data/schemas/content';
 import type { GrowthTalent } from '../../engine/rpg/Stats';
 import { skillEquipmentReason, skillForEntity } from '../../engine/rpg/Skills';
 import type { BattleSession } from '../../game/BattleSession';
+import { prepareBattleItem } from '../../engine/rpg/Consumables';
 
 export const BATTLE_CATEGORIES = { combat: 'Combat', magic: 'Magic', items: 'Items' } as const;
 export type BattleSkillCategory = keyof typeof BATTLE_CATEGORIES;
@@ -11,6 +12,16 @@ const attackSkills: Record<GrowthTalent, string> = {
 };
 export interface BattleHotbarAction {
   id: string; label: string; skill: Skill; rank?: Skill['rank']; action: BattleAction;
+}
+
+export function battleHotbarItems(session: BattleSession) {
+  const source = session.engine.world.entities.find((entity) => entity.player);
+  return (source?.itemHotbar ?? []).map((itemId) => {
+    const item = session.content.item(itemId);
+    try { return { ...prepareBattleItem(source!, itemId, session.content), unavailableReason: undefined }; }
+    catch (error) { return { item, quantity: source?.inventory?.[itemId] ?? 0, recovery: undefined,
+      unavailableReason: error instanceof Error ? error.message : 'Item unavailable' }; }
+  });
 }
 
 /** Basic actions use catalog identities without granting or executing mastery skills. */

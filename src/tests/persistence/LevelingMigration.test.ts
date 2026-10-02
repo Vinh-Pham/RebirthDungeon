@@ -8,15 +8,15 @@ const content = loadGameContent();
 function oldSave(level: number, experience: number) {
   const session = new JourneySession(content);
   const campaign = session.toSave(); session.dispose();
-  const { cumulativeLevel, ...hero } = campaign.hero; void cumulativeLevel;
+  const { cumulativeLevel, itemHotbar, ...hero } = campaign.hero; void cumulativeLevel; void itemHotbar;
   Object.assign(hero, { level, experience, ap: 17, health: 30, mana: 2, stamina: 4, wounds: 10, fullness: 60 });
   return { version: 9, savedAt: '2026-10-02T12:00:00.000Z', campaign: { ...campaign, hero } };
 }
 describe('level-200 save migration', () => {
   it.each([[1, 10, 200], [2, 20, 350], [98, 1959, 740921], [99, 0, 0]])('preserves level %i and converts %i old XP to %i new XP once', (level, oldXP, newXP) => {
     const old = oldSave(level, oldXP), migrated = parseSave(old, content);
-    expect(migrated.version).toBe(10);
-    expect(migrated.campaign.hero).toEqual({ ...old.campaign.hero, cumulativeLevel: level, experience: newXP });
+    expect(migrated.version).toBe(11);
+    expect(migrated.campaign.hero).toEqual({ ...old.campaign.hero, cumulativeLevel: level, itemHotbar: [], experience: newXP });
     expect(parseSave(JSON.parse(encodeSave(migrated.campaign, content, migrated.savedAt)), content)).toEqual(migrated);
   });
   it('allows previously capped characters to earn new levels and AP', () => {

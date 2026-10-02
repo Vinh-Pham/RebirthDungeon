@@ -15,9 +15,9 @@ import { inventoryRowLabel, type InventoryRow } from './inventoryRows';
 import { questItemNeeds } from '../../engine/rpg/Quests';
 import { npcLabel } from '../quests/questLabels';
 
-export default function InventoryDetails({ row, hero, host, session, review, disabled, town, dispatch, back }: {
+export default function InventoryDetails({ row, hero, host, session, review, disabled, hotbarDisabled, town, dispatch, back }: {
   row: InventoryRow; hero: Hero; host: JourneyHost; session: JourneySession; review?: CharacterReview;
-  disabled: boolean; town: boolean; dispatch(command: GameCommand): void; back(): void;
+  disabled: boolean; hotbarDisabled: boolean; town: boolean; dispatch(command: GameCommand): void; back(): void;
 }) {
   const { profile } = useCharacterGame();
   const item = row.item;
@@ -42,11 +42,13 @@ export default function InventoryDetails({ row, hero, host, session, review, dis
       </> : null}
       {recovery ? <>
         <Text className="text-foreground" style={menu.body}>Current recovery: +{recovery.amount} {item.restores === 'health' ? 'HP' : item.restores === 'mana' ? 'mana' : 'stamina'}{recovery.staminaBonus ? ` · +${recovery.staminaBonus} stamina` : ''}{recovery.fullnessAfter > resource.fullness ? ` · +${Math.round((recovery.fullnessAfter - resource.fullness) * 10) / 10}% fullness` : ''}</Text>
-        <Text className="text-muted" style={menu.body}>{item.battleUsable ? 'Usable in exploration and through the battle Item menu.' : 'Food is usable during exploration only.'}{item.restores === 'health' ? ' Healing respects wounds and does not remove them.' : ''}</Text>
+        <Text className="text-muted" style={menu.body}>{item.battleUsable ? 'Usable in exploration and from the combat Items hotbar.' : 'Food is usable during exploration only.'}{item.restores === 'health' ? ' Healing respects wounds and does not remove them.' : ''}</Text>
         {recovery.amount === 0 && recovery.staminaBonus === 0 && recovery.fullnessAfter === resource.fullness ? <DungeonNotice status="accent" message="Your resources are already at their recovery limits. Using this item still consumes one copy." /> : null}
         <DungeonButton label={`Use ${item.name}`} disabled={disabled} onPress={() => dispatch({ type: 'USE_ITEM', sourceId: 'player', targetId: 'player', itemId: item.id })} />
       </> : null}
       {item.kind === 'consumable' && !recovery ? <Text className="text-muted" style={menu.body}>Consumables cannot revive you. Return to the journey for defeat recovery.</Text> : null}
+      {item.kind === 'consumable' && item.battleUsable ? <DungeonButton label={hero.itemHotbar.includes(item.id) ? 'Remove from Items hotbar' : 'Add to Items hotbar'}
+        disabled={hotbarDisabled} onPress={() => { void host.progress({ type: 'SET_ITEM_HOTBAR', itemId: item.id, assigned: !hero.itemHotbar.includes(item.id) }); }} /> : null}
       {['weapon', 'armor'].includes(item.kind) ? <DungeonButton label={`${row.equipped ? 'Unequip' : 'Equip'} ${item.name}${'weaponId' in row.reference ? ` · Copy ${row.reference.weaponId.slice(7)}` : ''}`} selected={row.equipped} disabled={disabled}
         onPress={() => { if (row.equipped) dispatch({ type: 'UNEQUIP_ITEM', slot }); else if ('weaponId' in row.reference) dispatch({ type: 'EQUIP_WEAPON', weaponId: row.reference.weaponId }); else if ('armorId' in row.reference) dispatch({ type: 'EQUIP_ARMOR', armorId: row.reference.armorId }); }} /> : null}
       {equipment ? <>

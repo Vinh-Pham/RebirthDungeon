@@ -190,7 +190,7 @@ describe('attempt-local practice and versioned saved progress', () => {
     campaign.hero.learnedSkills['sword-mastery'].rank = 'E'; campaign.hero.ap = 11; campaign.hero.health = 20; campaign.hero.mana = 3; campaign.hero.stamina = 5;
     const { quests, earnedTitles, questFlags, trackedObjectives, ...old } = versionSevenHero(campaign.hero); void quests; void earnedTitles; void questFlags; void trackedObjectives;
     const migrated = parseSave({ version: 6, savedAt: new Date().toISOString(), campaign: { ...campaign, hero: old } }, content);
-    expect(migrated.version).toBe(10); expect(migrated.campaign.hero).toMatchObject({ health: 20, mana: 3, stamina: 5, ap: 11, quests: {}, earnedTitles: [] });
+    expect(migrated.version).toBe(11); expect(migrated.campaign.hero).toMatchObject({ health: 20, mana: 3, stamina: 5, ap: 11, quests: {}, earnedTitles: [] });
     const restored = new JourneySession(content, migrated.campaign); sessions.push(restored);
     expect(restored.toSave().hero.quests[milestone.id].status).toBe('available'); expect(restored.toSave().hero.ap).toBe(11);
     restored.dispatch({ type: 'ACCEPT_QUEST', questId: milestone.id }); expect(questReady(restored.toSave().hero, milestone)).toBe(true);

@@ -13,7 +13,6 @@ import WorldCanvas from '../../renderer/WorldCanvas';
 import { bossCleared, inRoom, remainingEnemies } from '../../engine/dungeon/Dungeon';
 import TownServicePanel from './TownServicePanel';
 import JourneyCharacterTabs from './JourneyCharacterTabs';
-import QuestTracker from '../quests/QuestTracker';
 
 export default function JourneyScreen() {
   const { host } = useCharacterGame();
@@ -21,7 +20,7 @@ export default function JourneyScreen() {
   const session = snapshot.session;
   const [error, setError] = useState<string>();
   if (!session) return <SafeAreaView className="bg-background" style={styles.screen}><View style={styles.loading}><Text className="text-foreground" style={styles.title}>Rebirth Dungeon</Text>{snapshot.error ? <DungeonNotice message={snapshot.error} /> : <DungeonLoading label="Loading your journey" />}</View></SafeAreaView>;
-  if (snapshot.battle) return <View className="flex-1"><View className="px-4"><ProgressionFeedback host={host} showNotice={false} /></View><BattleView session={snapshot.battle} busy={snapshot.busy} restart={() => { void host.returnFromBattle(); }} finishedLabel={snapshot.retryAvailable ? 'Retry save and return' : 'Return to the journey'}
+  if (snapshot.battle) return <View className="flex-1"><View className="px-4"><ProgressionFeedback host={host} showNotice={false} /></View><BattleView session={snapshot.battle} busy={snapshot.busy || !!snapshot.retryAvailable} restart={() => { void host.returnFromBattle(); }} finishedLabel={snapshot.retryAvailable ? 'Retry save and return' : 'Return to the journey'}
     victoryContent={<VictoryLootPanel key={snapshot.battle.encounterId} journey={session} battle={snapshot.battle} busy={snapshot.busy} retryAvailable={snapshot.retryAvailable} confirm={(selected) => { void host.returnFromBattle(selected); }} />} /></View>;
   return <Exploration key={snapshot.revision} host={host} session={session} error={error} setError={setError} />;
 }
@@ -79,7 +78,6 @@ function Exploration({ host, session, error, setError }: {
       {run.selectedChest && currentRoom?.kind === 'treasure' ? <Button label="Return to the refuge" disabled={hostView.busy || !!hostView.retryAvailable} onPress={() => { void host.progress({ type: 'EXIT_DUNGEON' }); }} /> : null}
     </DungeonCard> : null}
     <JourneyCharacterTabs host={host} session={session} value={characterTab} onValueChange={setCharacterTab} dispatch={dispatch} />
-    <QuestTracker session={session} />
     {view.message ? <DungeonNotice status="accent" message={view.message} /> : null}
     <DungeonNotice message={error} /><ProgressionFeedback host={host} showNotice={false} />
     <Text className="text-muted" style={styles.legend}>Position {state.position.x}, {state.position.y} · Seed {run?.blueprint.seed ?? state.seed}</Text>

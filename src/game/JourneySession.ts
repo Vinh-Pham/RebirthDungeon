@@ -11,6 +11,7 @@ import { addItem, clampHeroResources, ownedEquipment, createHero, consumeItem, g
 import { rollVictoryLoot, selectedVictoryItems } from './VictoryLoot';
 import type { GrowthTalent } from '../engine/rpg/Stats';
 import { consumableRecovery } from '../engine/rpg/Consumables';
+import { setItemHotbar } from '../engine/rpg/Inventory';
 import { createGameRandom } from '../engine/Random';
 import { distance, findPath, isWalkable, projectWorldMap } from '../engine/world/TileMap';
 import type { WorldMap } from '../data/schemas/world';
@@ -199,6 +200,11 @@ export class JourneySession {
       this.state.hero[recovery.resource] += recovery.amount;
       this.state.hero.stamina += recovery.staminaBonus; this.state.hero.fullness = recovery.fullnessAfter;
       this.message = `Used ${item.name}.`; this.commit({ type: 'ITEM_USED', sourceId, itemId });
+    });
+    this.engine.commands.register('SET_ITEM_HOTBAR', ({ itemId, assigned }) => {
+      setItemHotbar(this.state.hero, itemId, assigned, content);
+      this.message = `${content.item(itemId).name} ${assigned ? 'added to' : 'removed from'} the Items hotbar.`;
+      this.commit({ type: 'ITEM_HOTBAR_CHANGED', itemId, assigned });
     });
     this.registerServices();
     this.registerEnchanting();

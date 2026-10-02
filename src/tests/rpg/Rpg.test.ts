@@ -65,13 +65,13 @@ describe('RPG rules', () => {
     battle.advanceEnemyTurns(); expect(enemy.dead).toBe(true); expect(battle.combat.result).toBe('victory');
     expect(battle.presentation.getSnapshot().busy).toBe(true); battle.dispose(); expect(vi.getTimerCount()).toBe(0);
   });
-  it('rejects removed battle item actions without changing supplies, resources, turn or RNG', () => {
+  it('rejects unassigned battle item actions without changing supplies, resources, turn or RNG', () => {
     vi.useFakeTimers(); const battle = new BattleSession(content, 1, 'chamber', createHero(content));
     try {
       const player = battle.engine.getEntity('player')!; player.health!.current = 10;
       const before = structuredClone(player), random = battle.engine.random.snapshot(), snapshot = battle.getSnapshot();
-      expect(() => battle.dispatch({ type: 'SELECT_ACTION', action: 'item', itemId: 'potion' } as unknown as GameCommand)).toThrow('Invalid game command');
-      expect(() => battle.dispatch({ type: 'USE_ITEM', sourceId: 'player', targetId: 'player', itemId: 'potion' })).toThrow('No command handler');
+      expect(() => battle.dispatch({ type: 'SELECT_ACTION', action: 'item', itemId: 'potion' } as unknown as GameCommand)).toThrow('not assigned');
+      expect(() => battle.dispatch({ type: 'USE_ITEM', sourceId: 'player', targetId: 'player', itemId: 'potion' })).toThrow('Select and confirm');
       expect(player).toEqual(before); expect(battle.getSnapshot()).toEqual(snapshot);
       expect(battle.engine.random.snapshot()).toEqual(random); expect(battle.combat.completedActions).toBe(0);
       expect(battle.combat.currentTurn()).toBe('player');

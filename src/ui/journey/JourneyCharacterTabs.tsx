@@ -14,6 +14,7 @@ import KeyboardChoiceGroup from '../shared/KeyboardChoiceGroup';
 import ResourceBar from '../shared/ResourceBar';
 import { InventoryContent } from './InventoryScreen';
 import JourneySkills from './JourneySkills';
+import QuestTracker from '../quests/QuestTracker';
 
 export default function JourneyCharacterTabs({ host, session, value, onValueChange, dispatch }: {
   host: JourneyHost; session: JourneySession; value: string; onValueChange(value: string): void;
@@ -22,11 +23,13 @@ export default function JourneyCharacterTabs({ host, session, value, onValueChan
   return <Tabs value={value} onValueChange={onValueChange} className="w-full gap-4">
     <KeyboardChoiceGroup itemRole="tab" value={value}>
       <Tabs.List accessibilityLabel="Character details" className="w-full border border-border bg-surface">
-        <Tabs.Indicator className="rounded-lg bg-surface-tertiary" />
-        {(['Character', 'Stats', 'Skills', 'Inventory'] as const).map((label) => <Tabs.Trigger key={label} value={label.toLowerCase()}
-          accessibilityLabel={label} className="min-h-12" style={{ flex: label.length > 6 ? 1.3 : 1, paddingHorizontal: 4 }}>
-          <Tabs.Label className="text-xs" numberOfLines={1}>{label}</Tabs.Label>
-        </Tabs.Trigger>)}
+        <Tabs.ScrollView>
+          <Tabs.Indicator className="rounded-lg bg-surface-tertiary" />
+          {(['Character', 'Stats', 'Skills', 'Inventory', 'Quests'] as const).map((label) => <Tabs.Trigger key={label} value={label.toLowerCase()}
+            accessibilityLabel={label} className="min-h-12" style={{ flexGrow: label.length > 6 ? 1.3 : 1, flexShrink: 0, minWidth: label.length > 6 ? 88 : 64, paddingHorizontal: 10 }}>
+            <Tabs.Label className="text-xs" numberOfLines={1}>{label}</Tabs.Label>
+          </Tabs.Trigger>)}
+        </Tabs.ScrollView>
       </Tabs.List>
     </KeyboardChoiceGroup>
     <Tabs.Content value="character">
@@ -43,6 +46,9 @@ export default function JourneyCharacterTabs({ host, session, value, onValueChan
     </Tabs.Content>
     <Tabs.Content value="inventory">
       <InventoryContent host={host} session={session} />
+    </Tabs.Content>
+    <Tabs.Content value="quests">
+      <QuestTracker session={session} />
     </Tabs.Content>
   </Tabs>;
 }
