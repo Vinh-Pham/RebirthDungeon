@@ -1,21 +1,30 @@
+import { current } from 'immer';
+import {
+  immutableData,
+  produceState,
+  readPlain,
+  type Draft,
+  type Immutable,
+} from '../engine/immutableState';
+import type { SerializableRandom } from '../engine/Random';
 import {
   mergeTitleEncounter,
   reconcileTitles,
   recordTitleEvidence,
-  selectTitle,
-  unlockTitleCoupon,
+  selectTitleDraft,
+  unlockTitleCouponDraft,
 } from '../engine/rpg/Titles';
-import { applyEnchant, burnEquipment, operationReceipt } from '../engine/rpg/Enchants';
+import { applyEnchantDraft, burnEquipmentDraft, operationReceipt } from '../engine/rpg/Enchants';
 import {
-  learnSkill,
-  readSkillBook,
-  insertSkillPage,
-  rankUpSkill,
+  learnSkillDraft,
+  readSkillBookDraft,
+  insertSkillPageDraft,
+  rankUpSkillDraft,
   mergeTraining,
 } from '../engine/rpg/Skills';
 import {
-  acceptQuest,
-  claimQuest,
+  acceptQuestDraft,
+  claimQuestDraft,
   mergeQuestEncounter,
   reconcileQuests,
   recordQuestWorldEvidence,
@@ -53,7 +62,11 @@ import { setItemHotbar } from '../engine/rpg/Inventory';
 import { createGameRandom } from '../engine/Random';
 import { distance, findPath, isWalkable, projectWorldMap } from '../engine/world/TileMap';
 import type { WorldMap } from '../data/schemas/world';
-import { validateCampaign, type CampaignState } from '../persistence/SaveSchema';
+import {
+  validateCampaign,
+  type CampaignState,
+  type CampaignSnapshot,
+} from '../persistence/SaveSchema';
 import { BattleSession } from './BattleSession';
 import {
   bossCleared,
@@ -67,18 +80,27 @@ import {
   validateDungeon,
 } from '../engine/dungeon/Dungeon';
 
+interface CampaignTransition {
+  random: SerializableRandom;
+  message: string;
+  activeService?: string;
+  events: GameEvent[];
+  respawn: boolean;
+}
+
 let nextViewRevision = 0;
 export interface JourneyView {
-  state: CampaignState;
-  map: WorldMap;
-  message: string;
-  revision: number;
-  activeService?: string;
+  readonly state: CampaignSnapshot;
+  readonly map: Immutable<WorldMap>;
+  readonly message: string;
+  readonly revision: number;
+  readonly activeService?: string;
 }
-/** Owns exploration state. React sends commands and reads detached projections. */
+/** Owns immutable campaign checkpoints; ECS and presentation are independent observers. */
 export class JourneySession {
   readonly engine;
-  private state: CampaignState;
+  private state: CampaignSnapshot;
+  private resolving = false;
   private snapshot!: JourneyView;
   private listeners = new Set<() => void>();
   private message =
@@ -89,7 +111,7 @@ export class JourneySession {
   private hostManaged = false;
   private staging = false;
   private committedEvents: GameEvent[] = [];
-  private projectedMap?: WorldMap;
+  private projectedMap?: Immutable<WorldMap>;
   private activeService?: string;
   constructor(
     readonly content: ContentRegistry,
@@ -115,11 +137,11 @@ export class JourneySession {
           audio: { music: 0.3, sfx: 0.7, enabled: false },
         };
     if (restored) this.message = 'Your journey has been restored.';
-    if (this.state.dungeon) freezeDungeonBlueprint(this.state.dungeon.blueprint);
+    this.state = produceState(this.state, (draft) => reconcileQuests(draft.hero, content));
     this.engine.random.restore(this.state.randomState);
     this.spawnWorld();
-    this.engine.commands.register('MOVE', ({ entityId, dx, dy }) => {
-      this.requireExploring();
+    this.registerCommand('MOVE', ({ entityId, dx, dy }, state, tx) => {
+      this.requireExploring(state);
       if (
         entityId !== 'player' ||
         !Number.isInteger(dx) ||
@@ -127,36 +149,35 @@ export class JourneySession {
         Math.abs(dx) + Math.abs(dy) !== 1
       )
         throw new Error('Move one tile at a time');
-      const position = { x: this.state.position.x + dx, y: this.state.position.y + dy };
-      if (!isWalkable(this.map, position)) throw new Error('The way is blocked');
-      this.activeService = undefined;
-      this.state.position = position;
-      this.engine.getEntity('player')!.position = { ...position };
-      this.message = '';
-      tickHero(this.state.hero, content);
-      const run = this.state.dungeon;
+      const position = { x: state.position.x + dx, y: state.position.y + dy };
+      if (!isWalkable(this.mapFor(state), position)) throw new Error('The way is blocked');
+      tx.activeService = undefined;
+      state.position = position;
+      tx.message = '';
+      tickHero(state.hero, content);
+      const run = state.dungeon && readPlain(state.dungeon);
       const boss = run?.blueprint.encounters.find((entry) => entry.kind === 'boss');
       const bossRoom = run?.blueprint.rooms.find((room) => room.kind === 'boss');
       const encounter =
         boss && bossRoom && !run!.cleared.includes(boss.objectId) && inRoom(bossRoom, position)
-          ? this.map.objects.find((obj) => obj.id === boss.objectId)
-          : this.map.objects.find(
+          ? this.mapFor(state).objects.find((obj) => obj.id === boss.objectId)
+          : this.mapFor(state).objects.find(
               (obj) =>
                 obj.kind === 'encounter' &&
                 distance(obj, position) === 0 &&
-                !this.isClaimed(obj.id),
+                !this.isClaimed(obj.id, state),
             );
       if (encounter) {
-        this.beginEncounter(encounter.id);
-      } else this.commit({ type: 'WORLD_MOVED', entityId: 'player', ...position });
+        this.beginEncounter(state, tx, encounter.id);
+      } else this.commit(state, tx, { type: 'WORLD_MOVED', entityId: 'player', ...position });
     });
-    this.engine.commands.register('REST', ({ entityId }) => {
-      this.requireExploring();
-      if (entityId !== 'player' || this.activeService)
+    this.registerCommand('REST', ({ entityId }, state, tx) => {
+      this.requireExploring(state);
+      if (entityId !== 'player' || tx.activeService)
         throw new Error('Rest on the town or dungeon map');
-      tickHero(this.state.hero, content, true);
-      this.message = 'You rest and recover stamina. Wounds require healer treatment.';
-      this.commit({ type: 'RESTED', entityId });
+      tickHero(state.hero, content, true);
+      tx.message = 'You rest and recover stamina. Wounds require healer treatment.';
+      this.commit(state, tx, { type: 'RESTED', entityId });
     });
     this.engine.commands.register('TRAVEL_TO', ({ x, y }) => {
       this.requireExploring();
@@ -173,54 +194,54 @@ export class JourneySession {
         if (this.state.pending) break;
       }
     });
-    this.engine.commands.register('INTERACT', ({ objectId }) => {
-      this.requireExploring();
-      const visible = this.map.objects.find((obj) => obj.id === objectId);
-      if (!visible || distance(visible, this.state.position) > 1)
+    this.registerCommand('INTERACT', ({ objectId }, state, tx) => {
+      this.requireExploring(state);
+      const visible = this.mapFor(state).objects.find((obj) => obj.id === objectId);
+      if (!visible || distance(visible, state.position) > 1)
         throw new Error('Move next to this object first');
-      const run = this.state.dungeon;
+      const run = state.dungeon;
       const obj = run?.blueprint.world.objects.find((entry) => entry.id === objectId) ?? visible;
-      this.activeService = undefined;
+      tx.activeService = undefined;
       switch (obj.kind) {
         case 'npc':
           for (const lesson of obj.lessons)
-            if (!this.state.hero.discoveredSkills.includes(lesson.skillId))
-              this.state.hero.discoveredSkills.push(lesson.skillId);
-          if (!run && this.map.theme) this.activeService = obj.id;
-          this.message = obj.dialogue;
+            if (!state.hero.discoveredSkills.includes(lesson.skillId))
+              state.hero.discoveredSkills.push(lesson.skillId);
+          if (!run && this.mapFor(state).theme) tx.activeService = obj.id;
+          tx.message = obj.dialogue;
           break;
         case 'chest':
-          if (this.isClaimed(obj.id)) throw new Error('This chest is empty');
-          addItem(this.state.hero, obj.itemId!, obj.quantity, content);
+          if (this.isClaimed(obj.id, state)) throw new Error('This chest is empty');
+          addItem(state.hero, obj.itemId!, obj.quantity, content);
           if (run) run.opened.push(obj.id);
-          else this.state.opened.push(this.key(obj.id));
-          this.message = `Found ${this.content.item(obj.itemId!).name} ×${obj.quantity}.`;
+          else state.opened.push(this.key(obj.id, state));
+          tx.message = `Found ${this.content.item(obj.itemId!).name} ×${obj.quantity}.`;
           break;
         case 'merchant':
         case 'healer':
         case 'altar':
         case 'dungeonEntrance':
           if (run) throw new Error('Town services are unavailable inside a dungeon');
-          this.activeService = obj.id;
-          this.message =
+          tx.activeService = obj.id;
+          tx.message =
             obj.kind === 'altar' || obj.kind === 'dungeonEntrance'
               ? 'Offer one unequipped item to enter the moss depths. The offering is consumed.'
               : `Welcome to ${obj.name}.`;
           break;
         case 'statue':
-          this.leaveDungeon();
+          this.leaveDungeon(state, tx);
           return;
         case 'mimic':
-          if (!run || this.isClaimed(obj.id)) throw new Error('This chest is empty');
+          if (!run || this.isClaimed(obj.id, state)) throw new Error('This chest is empty');
           run.revealedMimics.push(obj.id);
-          this.projectedMap = undefined;
-          this.message = this.state.dungeon
+
+          tx.message = state.dungeon
             ? 'Spiders spring from the chest!'
             : 'The chest opens its jaws. A mimic attacks!';
-          this.beginEncounter(obj.id);
+          this.beginEncounter(state, tx, obj.id);
           return;
         case 'fountain': {
-          if (!run || this.isClaimed(obj.id)) throw new Error('This fountain has run dry');
+          if (!run || this.isClaimed(obj.id, state)) throw new Error('This fountain has run dry');
           const fountain = run.blueprint.fountains.find(
             (fountain) => fountain.objectId === obj.id,
           )!;
@@ -229,7 +250,7 @@ export class JourneySession {
           if (effect) effect.stacks = Math.min(10, effect.stacks + 1);
           else run.effects.push({ statusId: status.id, stacks: 1 });
           run.usedFountains.push(obj.id);
-          this.message =
+          tx.message =
             status.name +
             ' · ' +
             (status.modifier > 0 ? '+' : '') +
@@ -253,10 +274,10 @@ export class JourneySession {
               throw new Error('Pick up the dropped boss room key first');
             run.bossKey = { status: 'spent' };
             run.bossDoorOpened = true;
-            this.message = 'The boss room key turns. The door is open.';
+            tx.message = 'The boss room key turns. The door is open.';
           } else {
             if (!bossCleared(run)) throw new Error('Defeat the boss and all its companions first');
-            this.message = 'The treasure room passage is open.';
+            tx.message = 'The treasure room passage is open.';
           }
           break;
         case 'key': {
@@ -265,7 +286,7 @@ export class JourneySession {
           if (key.status !== 'dropped') throw new Error('This key has already been collected');
           if (obj.keyType === 'boss') run.bossKey = { status: 'held' };
           else run.treasureKey = { status: 'held' };
-          this.message =
+          tx.message =
             'Collected the ' + (obj.keyType === 'boss' ? 'boss room' : 'treasure chest') + ' key.';
           break;
         }
@@ -273,15 +294,15 @@ export class JourneySession {
           if (!run || run.selectedChest) throw new Error('You may open only one final chest');
           if (!bossCleared(run) || run.treasureKey.status !== 'held')
             throw new Error('Pick up the boss’s treasure chest key first');
-          addItem(this.state.hero, obj.itemId!, obj.quantity, content);
+          addItem(state.hero, obj.itemId!, obj.quantity, content);
           run.opened.push(obj.id);
           run.selectedChest = obj.id;
           run.treasureKey = { status: 'spent' };
-          this.message = `Found ${this.content.item(obj.itemId!).name} ×${obj.quantity}. The other four chests are sealed. You can now return to the refuge.`;
+          tx.message = `Found ${this.content.item(obj.itemId!).name} ×${obj.quantity}. The other four chests are sealed. You can now return to the refuge.`;
           break;
         case 'rest': {
-          restoreHero(this.state.hero, content);
-          this.message = 'The ember restores your health and mana.';
+          restoreHero(state.hero, content);
+          tx.message = 'The ember restores your health and mana.';
           break;
         }
         case 'portal': {
@@ -291,8 +312,9 @@ export class JourneySession {
             if (run) throw new Error('Leave this dungeon before entering another');
             // A dungeon portal's destination is the safe return map for the run.
             this.enterDungeon(
+              state,
+              tx,
               obj.dungeonId,
-              cloneData(this.state.hero),
               `You descend into the moss depths. Explore the chambers, defeat every enemy, and face the giant black spider.`,
               {
                 worldId: destination.id,
@@ -302,91 +324,91 @@ export class JourneySession {
             return;
           }
           recordQuestWorldEvidence(
-            this.state.hero,
-            { kind: 'interact', worldId: this.state.worldId, objectId },
+            state.hero,
+            { kind: 'interact', worldId: state.worldId, objectId },
             content,
           );
-          this.state.worldId = destination.id;
-          this.state.position = { ...(obj.destinationPosition ?? destination.entry) };
-          this.projectedMap = undefined;
-          this.spawnWorld();
-          this.message = `Entered ${destination.name}.`;
-          this.commit({ type: 'MAP_CHANGED', mapId: destination.id });
+          state.worldId = destination.id;
+          state.position = { ...(obj.destinationPosition ?? destination.entry) };
+
+          tx.respawn = true;
+          tx.message = `Entered ${destination.name}.`;
+          this.commit(state, tx, { type: 'MAP_CHANGED', mapId: destination.id });
           return;
         }
         case 'encounter':
           throw new Error('Step onto the guardian tile to begin the encounter');
       }
-      this.projectedMap = undefined;
+
       recordQuestWorldEvidence(
-        this.state.hero,
-        { kind: 'interact', worldId: this.state.worldId, objectId },
+        state.hero,
+        { kind: 'interact', worldId: state.worldId, objectId },
         content,
       );
-      this.commit({ type: 'WORLD_INTERACTED', objectId, message: this.message });
+      this.commit(state, tx, { type: 'WORLD_INTERACTED', objectId, message: tx.message });
     });
-    this.engine.commands.register('EXIT_DUNGEON', () => {
+    this.registerCommand('EXIT_DUNGEON', (_command, state, tx) => {
       if (this.hostManaged) throw new Error('Use the host durable progression operation');
-      this.requireExploring();
-      const run = this.state.dungeon;
+      this.requireExploring(state);
+      const run = state.dungeon;
       const room = run?.blueprint.rooms.find((room) => room.kind === 'treasure');
-      if (!run?.selectedChest || !room || !inRoom(room, this.state.position))
+      if (!run?.selectedChest || !room || !inRoom(room, state.position))
         throw new Error('Claim a final chest in the treasure room before returning');
-      this.leaveDungeon(true);
+      this.leaveDungeon(state, tx, true);
     });
-    this.engine.commands.register('EQUIP_ARMOR', ({ armorId }) => {
-      this.requireExploring();
-      const armor = this.state.hero.armors[armorId];
+    this.registerCommand('EQUIP_ARMOR', ({ armorId }, state, tx) => {
+      this.requireExploring(state);
+      const armor = state.hero.armors[armorId];
       if (!armor) throw new Error('This armor is not in your pack');
-      this.state.hero.equipment.armor = armorId;
-      clampHeroResources(this.state.hero, content);
-      this.message = `Equipped ${content.item(armor.itemId).name}.`;
-      this.commit({ type: 'EQUIPMENT_CHANGED', itemId: armor.itemId });
+      state.hero.equipment.armor = armorId;
+      clampHeroResources(state.hero, content);
+      tx.message = `Equipped ${content.item(armor.itemId).name}.`;
+      this.commit(state, tx, { type: 'EQUIPMENT_CHANGED', itemId: armor.itemId });
     });
-    this.engine.commands.register('EQUIP_WEAPON', ({ weaponId }) => {
-      this.requireExploring();
-      const weapon = this.state.hero.weapons[weaponId];
+    this.registerCommand('EQUIP_WEAPON', ({ weaponId }, state, tx) => {
+      this.requireExploring(state);
+      const weapon = state.hero.weapons[weaponId];
       if (!weapon) throw new Error('This weapon is not in your pack');
       if (
         content.item(weapon.itemId).weaponTags.includes('sword') &&
-        !this.state.hero.discoveredSkills.includes('sword-mastery')
+        !state.hero.discoveredSkills.includes('sword-mastery')
       )
-        this.state.hero.discoveredSkills.push('sword-mastery');
-      this.state.hero.equipment.weapon = weaponId;
-      clampHeroResources(this.state.hero, content);
-      this.message = `Equipped ${content.item(weapon.itemId).name}.`;
-      this.commit({ type: 'EQUIPMENT_CHANGED', itemId: weapon.itemId });
+        state.hero.discoveredSkills.push('sword-mastery');
+      state.hero.equipment.weapon = weaponId;
+      clampHeroResources(state.hero, content);
+      tx.message = `Equipped ${content.item(weapon.itemId).name}.`;
+      this.commit(state, tx, { type: 'EQUIPMENT_CHANGED', itemId: weapon.itemId });
     });
-    this.engine.commands.register('UNEQUIP_ITEM', ({ slot }) => {
-      this.requireExploring();
-      delete this.state.hero.equipment[slot];
-      clampHeroResources(this.state.hero, content);
-      this.commit({ type: 'EQUIPMENT_CHANGED' });
+    this.registerCommand('UNEQUIP_ITEM', ({ slot }, state, tx) => {
+      this.requireExploring(state);
+      delete state.hero.equipment[slot];
+      clampHeroResources(state.hero, content);
+      this.commit(state, tx, { type: 'EQUIPMENT_CHANGED' });
     });
-    this.engine.commands.register('USE_ITEM', ({ sourceId, targetId, itemId }) => {
-      this.requireExploring();
+    this.registerCommand('USE_ITEM', ({ sourceId, targetId, itemId }, state, tx) => {
+      this.requireExploring(state);
       const item = content.item(itemId);
       if (sourceId !== 'player' || targetId !== 'player' || item.kind !== 'consumable')
         throw new Error('Invalid item target');
       const recovery = consumableRecovery(item, this.engine.getEntity('player')!);
-      consumeItem(this.state.hero.inventory, itemId);
-      this.state.hero[recovery.resource] += recovery.amount;
-      this.state.hero.stamina += recovery.staminaBonus;
-      this.state.hero.fullness = recovery.fullnessAfter;
-      this.message = `Used ${item.name}.`;
-      this.commit({ type: 'ITEM_USED', sourceId, itemId });
+      consumeItem(state.hero.inventory, itemId);
+      state.hero[recovery.resource] += recovery.amount;
+      state.hero.stamina += recovery.staminaBonus;
+      state.hero.fullness = recovery.fullnessAfter;
+      tx.message = `Used ${item.name}.`;
+      this.commit(state, tx, { type: 'ITEM_USED', sourceId, itemId });
     });
-    this.engine.commands.register('SET_ITEM_HOTBAR', ({ itemId, assigned }) => {
-      setItemHotbar(this.state.hero, itemId, assigned, content);
-      this.message = `${content.item(itemId).name} ${assigned ? 'added to' : 'removed from'} the Items hotbar.`;
-      this.commit({ type: 'ITEM_HOTBAR_CHANGED', itemId, assigned });
+    this.registerCommand('SET_ITEM_HOTBAR', ({ itemId, assigned }, state, tx) => {
+      setItemHotbar(state.hero, itemId, assigned, content);
+      tx.message = `${content.item(itemId).name} ${assigned ? 'added to' : 'removed from'} the Items hotbar.`;
+      this.commit(state, tx, { type: 'ITEM_HOTBAR_CHANGED', itemId, assigned });
     });
-    this.engine.commands.register('DROP_ITEM', ({ item, quantity }) => {
-      this.requireExploring();
-      const definition = ownedDefinition(this.state.hero, item, content);
-      dropOwnedItem(this.state.hero, item, quantity, content);
-      this.message = `Dropped ${definition.name} ×${quantity}.`;
-      this.commit({ type: 'ITEM_DROPPED', itemId: definition.id, quantity });
+    this.registerCommand('DROP_ITEM', ({ item, quantity }, state, tx) => {
+      this.requireExploring(state);
+      const definition = ownedDefinition(state.hero, item, content);
+      dropOwnedItem(state.hero, item, quantity, content);
+      tx.message = `Dropped ${definition.name} ×${quantity}.`;
+      this.commit(state, tx, { type: 'ITEM_DROPPED', itemId: definition.id, quantity });
     });
     this.registerServices();
     this.registerEnchanting();
@@ -394,6 +416,108 @@ export class JourneySession {
     this.registerQuests();
     this.registerTitles();
     this.refresh();
+  }
+  private registerCommand<K extends GameCommand['type']>(
+    type: K,
+    handler: (
+      command: Extract<GameCommand, { type: K }>,
+      state: Draft<CampaignState>,
+      tx: CampaignTransition,
+    ) => void,
+  ) {
+    this.engine.commands.register(type, (command) =>
+      this.transition((state, tx) => handler(command, state, tx)),
+    );
+  }
+  private transition(operation: (state: Draft<CampaignState>, tx: CampaignTransition) => void) {
+    if (this.disposed || this.resolving)
+      throw new Error('Journey is disposed or a command is already resolving');
+    const random = createGameRandom(this.state.seed);
+    random.restore(this.engine.random.snapshot());
+    const tx: CampaignTransition = {
+      random,
+      message: this.message,
+      activeService: this.activeService,
+      events: [],
+      respawn: false,
+    };
+    this.resolving = true;
+    try {
+      const previous = this.state;
+      const next = produceState(previous, (state) => {
+        operation(state, tx);
+        reconcileQuests(
+          state.hero,
+          this.content,
+          tx.activeService && !state.dungeon && !state.pending
+            ? { worldId: state.worldId, objectId: tx.activeService }
+            : undefined,
+        );
+        const words = random.snapshot();
+        if (words.some((word, index) => word !== state.randomState[index]))
+          state.randomState = words;
+      });
+      this.state = next;
+      this.engine.random.restore(next.randomState);
+      this.message = tx.message;
+      this.activeService = tx.activeService;
+      if (mapChanged(previous, next)) this.projectedMap = undefined;
+      if (tx.respawn) this.spawnWorld();
+      this.refresh();
+      const failures: unknown[] = [];
+      for (const listener of [...this.listeners]) {
+        if (!this.listeners.has(listener)) continue;
+        try {
+          listener();
+        } catch (error) {
+          failures.push(error);
+        }
+      }
+      for (const event of tx.events) {
+        if (this.staging) this.committedEvents.push(event);
+        else
+          try {
+            this.engine.events.emit(event);
+          } catch (error) {
+            failures.push(error);
+          }
+      }
+      if (failures.length)
+        throw new AggregateError(failures, 'Campaign committed; notification delivery failed');
+    } finally {
+      this.resolving = false;
+    }
+  }
+  private forkCandidate() {
+    const candidate = new JourneySession(
+      this.content,
+      undefined,
+      this.state.seed,
+      this.characterName,
+      this.state.hero.growthTalent,
+    );
+    candidate.state = this.state;
+    candidate.engine.random.restore(this.state.randomState);
+    candidate.activeService = this.activeService;
+    candidate.projectedMap = this.map;
+    candidate.staging = true;
+    candidate.spawnWorld();
+    candidate.refresh();
+    return candidate;
+  }
+  private mapFor(state: CampaignSnapshot) {
+    const plain = {
+      worldId: state.worldId,
+      cleared: readPlain(state.cleared),
+      dungeon: state.dungeon && readPlain(state.dungeon),
+    };
+    if (!mapChanged(this.state, plain)) return this.map;
+    return plain.dungeon
+      ? projectDungeonMap(plain.dungeon)
+      : projectWorldMap(
+          this.content.data.worlds.find((map) => map.id === plain.worldId)!,
+          plain.cleared,
+        );
   }
   get map() {
     return (this.projectedMap ??= this.state.dungeon
@@ -403,11 +527,11 @@ export class JourneySession {
           this.state.cleared,
         ));
   }
-  isClaimed(objectId: string) {
-    return this.state.dungeon
-      ? dungeonObjectClaimed(this.state.dungeon, objectId)
-      : this.state.opened.includes(this.key(objectId)) ||
-          this.state.cleared.includes(this.key(objectId));
+  isClaimed(objectId: string, state: CampaignSnapshot = this.state) {
+    return state.dungeon
+      ? dungeonObjectClaimed(state.dungeon, objectId)
+      : state.opened.includes(this.key(objectId, state)) ||
+          state.cleared.includes(this.key(objectId, state));
   }
   getSnapshot = () => this.snapshot;
   subscribe = (listener: () => void) => {
@@ -445,19 +569,14 @@ export class JourneySession {
       command.revision !== this.snapshot.revision
     )
       throw new Error('The campaign changed. Preview this enchant operation again.');
-    const candidate = new JourneySession(
-      this.content,
-      this.toSave(),
-      undefined,
-      this.characterName,
-    );
+    const candidate = this.forkCandidate();
     if (command.type === 'APPLY_ENCHANT' || command.type === 'BURN_EQUIPMENT')
       command = { ...command, revision: candidate.getSnapshot().revision };
     candidate.activeService = this.activeService;
     candidate.staging = true;
     try {
       candidate.dispatch(command);
-      validateCampaign(candidate.toSave(), this.content);
+      validateCampaign(candidate.state, this.content);
       if (candidate.state.hero.ap !== this.state.hero.ap)
         candidate.committedEvents.push({ type: 'AP_CHANGED', ap: candidate.state.hero.ap });
       return candidate;
@@ -467,15 +586,11 @@ export class JourneySession {
     }
   }
   battleCandidate(battle: BattleSession, selectedItemIds?: readonly string[]) {
-    const candidate = new JourneySession(
-      this.content,
-      this.toSave(),
-      undefined,
-      this.characterName,
-    );
+    const candidate = this.forkCandidate();
     candidate.staging = true;
     try {
       candidate.finishBattle(battle, selectedItemIds);
+      validateCampaign(candidate.state, this.content);
       const training = battle.training.snapshot();
       if (Object.keys(training).length)
         candidate.committedEvents.push({ type: 'SKILL_TRAINING_BANKED', training });
@@ -514,7 +629,7 @@ export class JourneySession {
       this.content,
       this.state.pending.seed,
       encounter?.map ?? this.state.pending.mapId,
-      cloneData(this.state.hero),
+      this.state.hero,
       this.state.dungeon?.effects,
       this.characterName,
       this.encounterIdentity,
@@ -559,18 +674,26 @@ export class JourneySession {
     return this.victoryRoll(battle).loot;
   }
   finishBattle(battle: BattleSession, selectedItemIds?: readonly string[]) {
+    this.transition((state, tx) => this.finishBattleDraft(state, tx, battle, selectedItemIds));
+  }
+  private finishBattleDraft(
+    state: Draft<CampaignState>,
+    tx: CampaignTransition,
+    battle: BattleSession,
+    selectedItemIds?: readonly string[],
+  ) {
     if (this.hostManaged) throw new Error('Use the host durable battle operation');
     const { pending, result } = this.requireFinishedBattle(battle);
-    const hero = cloneData(this.state.hero);
-    const runEncounter = this.state.dungeon?.blueprint.encounters.find(
+    const hero = state.hero;
+    const runEncounter = state.dungeon?.blueprint.encounters.find(
       (e) => e.objectId === pending.objectId,
     );
     const guardian =
       runEncounter?.kind === 'boss'
         ? {
-            dungeonId: this.state.dungeon!.blueprint.definitionId,
+            dungeonId: state.dungeon!.blueprint.definitionId,
             enemyId: this.content.data.dungeons.find(
-              (d) => d.id === this.state.dungeon!.blueprint.definitionId,
+              (d) => d.id === state.dungeon!.blueprint.definitionId,
             )!.bossId,
           }
         : undefined;
@@ -600,57 +723,62 @@ export class JourneySession {
       const { gold, experience } = loot;
       hero.gold = Math.min(1000000, hero.gold + gold);
       grantExperience(hero, experience, this.content);
-      this.engine.random.restore(randomState);
+      tx.random.restore(randomState);
       const objectId = pending.objectId;
-      this.state.hero = hero;
-      const run = this.state.dungeon;
+      const run = state.dungeon;
       if (run) run.cleared.push(objectId);
-      else this.state.cleared.push(this.key(objectId));
-      this.projectedMap = undefined;
-      this.state.pending = undefined;
-      this.message = `Victory · +${experience} XP · +${gold} gold · ${items.length ? 'selected loot added to your pack' : 'no items taken'}.`;
+      else state.cleared.push(this.key(objectId, state));
+
+      state.pending = undefined;
+      tx.message = `Victory · +${experience} XP · +${gold} gold · ${items.length ? 'selected loot added to your pack' : 'no items taken'}.`;
       if (
         !run &&
-        this.map.objects.some(
+        this.mapFor(state).objects.some(
           (object) => object.dungeonId && object.kind === 'portal' && !object.blocked,
         )
       ) {
-        this.message += ' The eastern passage is open. Continue into the moss depths.';
+        tx.message += ' The eastern passage is open. Continue into the moss depths.';
       }
       if (run) {
         const position = run.blueprint.world.objects.find((obj) => obj.id === objectId)!;
         if (remainingEnemies(run) === 0 && run.bossKey.status === 'absent') {
           run.bossKey = { status: 'dropped', position: { x: position.x, y: position.y } };
-          this.message += ' The last enemy dropped the boss room key. Pick it up.';
+          tx.message += ' The last enemy dropped the boss room key. Pick it up.';
         }
         if (bossCleared(run) && run.treasureKey.status === 'absent') {
           run.treasureKey = { status: 'dropped', position: { x: position.x, y: position.y } };
-          this.message +=
+          tx.message +=
             ' The boss dropped the treasure chest key. Pick it up before choosing your reward.';
         }
-        this.projectedMap = undefined;
-        this.spawnWorld();
+
+        tx.respawn = true;
       }
-      this.commit({ type: 'LOOT_RECEIVED', gold, experience });
+      this.commit(state, tx, { type: 'LOOT_RECEIVED', gold, experience });
     } else {
       hero.gold = Math.floor(hero.gold / 2);
       restoreHero(hero, this.content);
-      this.state.hero = hero;
-      this.state.pending = undefined;
-      this.state.dungeon = undefined;
-      this.projectedMap = undefined;
-      this.state.worldId = this.content.data.worlds[0].id;
-      this.state.position = { ...this.map.entry };
-      this.spawnWorld();
-      this.message =
+      state.pending = undefined;
+      state.dungeon = undefined;
+
+      state.worldId = this.content.data.worlds[0].id;
+      state.position = { ...this.mapFor(state).entry };
+      tx.respawn = true;
+      tx.message =
         'Recovered at the refuge. Half your gold was lost; levels, skills and equipment are preserved.';
-      this.commit({ type: 'MAP_CHANGED', mapId: this.map.id });
+      this.commit(state, tx, { type: 'MAP_CHANGED', mapId: this.mapFor(state).id });
     }
   }
   setAudio(audio: CampaignState['audio']) {
     if (this.disposed) throw new Error('Journey is disposed');
-    this.state.audio = validateCampaign({ ...this.state, audio }, this.content).audio;
-    this.refresh();
+    const adopted = validateCampaign({ ...this.state, audio }, this.content).audio;
+    this.transition((state) => {
+      if (
+        state.audio.music !== adopted.music ||
+        state.audio.sfx !== adopted.sfx ||
+        state.audio.enabled !== adopted.enabled
+      )
+        state.audio = adopted;
+    });
   }
   dispose() {
     if (this.disposed) return;
@@ -658,166 +786,174 @@ export class JourneySession {
     this.engine.dispose();
     this.listeners.clear();
   }
-  private key(id: string) {
-    return `${this.state.worldId}/${id}`;
+  private key(id: string, state: CampaignSnapshot = this.state) {
+    return `${state.worldId}/${id}`;
   }
-  private beginEncounter(objectId: string) {
+  private beginEncounter(state: Draft<CampaignState>, tx: CampaignTransition, objectId: string) {
     const obj =
-      this.state.dungeon?.blueprint.world.objects.find((obj) => obj.id === objectId) ??
-      this.map.objects.find((obj) => obj.id === objectId)!;
-    const encounter = this.state.dungeon?.blueprint.encounters.find(
+      state.dungeon?.blueprint.world.objects.find((obj) => obj.id === objectId) ??
+      this.mapFor(state).objects.find((obj) => obj.id === objectId)!;
+    const encounter = state.dungeon?.blueprint.encounters.find(
       (entry) => entry.objectId === objectId,
     );
-    this.state.pending = {
+    state.pending = {
       objectId,
-      worldId: this.map.id,
+      worldId: this.mapFor(state).id,
       mapId: obj.encounterMap!,
-      seed: encounter?.seed ?? this.engine.random.int(-2147483648, 2147483647),
+      seed: encounter?.seed ?? tx.random.int(-2147483648, 2147483647),
     };
-    if (encounter?.kind === 'boss' && this.state.dungeon) {
+    if (encounter?.kind === 'boss' && state.dungeon) {
       const dungeon = this.content.data.dungeons.find(
-        (d) => d.id === this.state.dungeon!.blueprint.definitionId,
+        (d) => d.id === state.dungeon!.blueprint.definitionId,
       )!;
-      recordTitleEvidence(this.state.hero, `guardian/${dungeon.id}/${dungeon.bossId}`);
+      recordTitleEvidence(state.hero, `guardian/${dungeon.id}/${dungeon.bossId}`);
     }
-    this.state.encounterCount++;
-    this.commit({ type: 'ENCOUNTER_STARTED', objectId });
+    state.encounterCount++;
+    this.commit(state, tx, { type: 'ENCOUNTER_STARTED', objectId });
   }
   private enterDungeon(
+    state: Draft<CampaignState>,
+    tx: CampaignTransition,
     definitionId: string,
-    hero: CampaignState['hero'],
     message: string,
-    returnTo = { worldId: this.state.worldId, position: { ...this.state.position } },
+    returnTo = { worldId: state.worldId, position: { ...state.position } },
   ) {
     const definition = this.content.data.dungeons.find((entry) => entry.id === definitionId);
     if (!definition) throw new Error('This dungeon is unavailable');
     // Stage generation, validation and RNG before committing any campaign changes.
-    const random = createGameRandom(this.state.seed);
-    random.restore(this.engine.random.snapshot());
+    const random = createGameRandom(state.seed);
+    random.restore(tx.random.snapshot());
     const blueprint = generateDungeon(
       definition,
       random.int(-2147483648, 2147483647),
-      hero.classId,
+      state.hero.classId,
     );
     const dungeon = createDungeonRun(blueprint, returnTo);
     validateDungeon(dungeon, this.content);
-    const staged = validateCampaign(
-      {
-        ...this.state,
-        hero,
-        dungeon,
-        randomState: random.snapshot(),
-        worldId: blueprint.world.id,
-        position: { ...blueprint.world.entry },
-      },
-      this.content,
-    );
-    freezeDungeonBlueprint(staged.dungeon!.blueprint);
-    this.state = staged;
-    this.engine.random.restore(staged.randomState);
-    this.activeService = undefined;
-    this.projectedMap = undefined;
-    this.spawnWorld();
-    this.message = message;
-    this.commit({ type: 'MAP_CHANGED', mapId: this.map.id });
+    const staged = {
+      ...current(state),
+      dungeon,
+      randomState: random.snapshot(),
+      worldId: blueprint.world.id,
+      position: { ...blueprint.world.entry },
+    };
+    validateCampaign(staged, this.content);
+    freezeDungeonBlueprint(dungeon.blueprint);
+    state.dungeon = dungeon;
+    state.worldId = staged.worldId;
+    state.position = staged.position;
+    state.randomState = staged.randomState;
+    tx.random.restore(staged.randomState);
+    tx.activeService = undefined;
+
+    tx.respawn = true;
+    tx.message = message;
+    this.commit(state, tx, { type: 'MAP_CHANGED', mapId: this.mapFor(state).id });
   }
-  private leaveDungeon(completed = false) {
-    const run = this.state.dungeon;
+  private leaveDungeon(state: Draft<CampaignState>, tx: CampaignTransition, completed = false) {
+    const run = state.dungeon;
     if (!run) throw new Error('You are not inside a dungeon');
-    if (completed) recordTitleEvidence(this.state.hero, `clear/${run.blueprint.definitionId}`);
+    if (completed) recordTitleEvidence(state.hero, `clear/${run.blueprint.definitionId}`);
     if (completed)
       recordQuestWorldEvidence(
-        this.state.hero,
+        state.hero,
         { kind: 'clearDungeon', dungeonId: run.blueprint.definitionId },
         this.content,
       );
-    this.state.worldId = run.returnTo.worldId;
-    this.state.position = { ...run.returnTo.position };
-    this.state.dungeon = undefined;
-    this.projectedMap = undefined;
-    this.spawnWorld();
-    this.message =
+    state.worldId = run.returnTo.worldId;
+    state.position = { ...run.returnTo.position };
+    state.dungeon = undefined;
+
+    tx.respawn = true;
+    tx.message =
       'Returned to the refuge. Your earned loot is safe; dungeon effects and keys have faded.';
-    this.commit({ type: 'MAP_CHANGED', mapId: this.map.id });
+    this.commit(state, tx, { type: 'MAP_CHANGED', mapId: this.mapFor(state).id });
   }
-  private requireExploring() {
+  private requireExploring(state: CampaignSnapshot = this.state) {
     if (this.mutationsLocked) throw new Error('Save pending. Retry before continuing.');
-    if (this.state.pending) throw new Error('Finish the encounter before exploring');
+    if (state.pending) throw new Error('Finish the encounter before exploring');
   }
-  private requireService(objectId: string, kinds: readonly WorldMap['objects'][number]['kind'][]) {
+  private requireService(
+    state: CampaignSnapshot,
+    activeService: string | undefined,
+    objectId: string,
+    kinds: readonly WorldMap['objects'][number]['kind'][],
+  ) {
     if (this.hostManaged) throw new Error('Use the host durable progression operation');
-    this.requireExploring();
-    const object = this.map.objects.find((entry) => entry.id === objectId);
+    this.requireExploring(state);
+    const object = this.mapFor(state).objects.find((entry) => entry.id === objectId);
     if (
-      this.state.dungeon ||
-      !this.map.theme ||
-      this.activeService !== objectId ||
+      state.dungeon ||
+      !this.mapFor(state).theme ||
+      activeService !== objectId ||
       !object ||
       !kinds.includes(object.kind) ||
-      distance(object, this.state.position) > 1
+      distance(object, state.position) > 1
     )
       throw new Error('Approach and speak to this service first');
     return object;
   }
   private registerServices() {
     const content = this.content;
-    const changed = (objectId: string, message: string) => {
-      this.message = message;
-      this.commit({ type: 'WORLD_INTERACTED', objectId, message });
+    const changed = (
+      state: Draft<CampaignState>,
+      tx: CampaignTransition,
+      objectId: string,
+      message: string,
+    ) => {
+      tx.message = message;
+      this.commit(state, tx, { type: 'WORLD_INTERACTED', objectId, message });
     };
-    this.engine.commands.register('CLOSE_SERVICE', () => {
-      this.requireExploring();
-      this.activeService = undefined;
-      this.refresh();
+    this.registerCommand('CLOSE_SERVICE', (_command, state, tx) => {
+      this.requireExploring(state);
+      tx.activeService = undefined;
     });
-    this.engine.commands.register('BUY_ITEM', ({ objectId, itemId, quantity }) => {
-      const object = this.requireService(objectId, ['merchant']);
+    this.registerCommand('BUY_ITEM', ({ objectId, itemId, quantity }, state, tx) => {
+      const object = this.requireService(state, tx.activeService, objectId, ['merchant']);
       const shop = content.data.shops.find((shop) => shop.id === object.shopId)!;
       if (!shop.items.includes(itemId)) throw new Error('This merchant does not sell that item');
       const item = content.item(itemId);
       const total = item.price * quantity;
-      if (this.state.hero.gold < total) throw new Error('Not enough gold');
-      const hero = cloneData(this.state.hero);
+      if (state.hero.gold < total) throw new Error('Not enough gold');
+      const hero = state.hero;
       addItem(hero, itemId, quantity, content);
       hero.gold -= total;
-      this.state.hero = hero;
-      changed(objectId, `Bought ${item.name} ×${quantity} for ${total} gold.`);
+      changed(state, tx, objectId, `Bought ${item.name} ×${quantity} for ${total} gold.`);
     });
-    this.engine.commands.register('SELL_ITEM', ({ objectId, item: reference, quantity }) => {
-      const object = this.requireService(objectId, ['merchant']);
+    this.registerCommand('SELL_ITEM', ({ objectId, item: reference, quantity }, state, tx) => {
+      const object = this.requireService(state, tx.activeService, objectId, ['merchant']);
       if (!content.data.shops.find((shop) => shop.id === object.shopId)!.buysItems)
         throw new Error('This merchant does not buy items');
-      const item = ownedDefinition(this.state.hero, reference, content);
+      const item = ownedDefinition(state.hero, reference, content);
       if (item.kind === 'armor' && 'itemId' in reference)
         throw new Error('Choose an individual armor copy');
       if (item.kind === 'titleCoupon')
         throw new Error('Keep title coupons for town redemption; they cannot be sold');
       if (item.kind === 'incompleteBook') throw new Error('Unfinished books cannot be sold');
       const total = Math.floor(item.price / 2) * quantity;
-      if (this.state.hero.gold + total > 1000000) throw new Error('Your gold purse is full');
-      const hero = cloneData(this.state.hero);
+      if (state.hero.gold + total > 1000000) throw new Error('Your gold purse is full');
+      const hero = state.hero;
       removeOwnedItem(hero, reference, quantity);
       hero.gold += total;
-      this.state.hero = hero;
-      changed(objectId, `Sold ${item.name} ×${quantity} for ${total} gold.`);
+      changed(state, tx, objectId, `Sold ${item.name} ×${quantity} for ${total} gold.`);
     });
-    this.engine.commands.register('REPAIR_WEAPON', ({ objectId, weaponId }) => {
-      const object = this.requireService(objectId, ['merchant']);
+    this.registerCommand('REPAIR_WEAPON', ({ objectId, weaponId }, state, tx) => {
+      const object = this.requireService(state, tx.activeService, objectId, ['merchant']);
       if (content.data.shops.find((shop) => shop.id === object.shopId)!.kind !== 'blacksmith')
         throw new Error('Visit the blacksmith for repairs');
-      const weapon = this.state.hero.weapons[weaponId];
+      const weapon = state.hero.weapons[weaponId];
       if (!weapon) throw new Error('This weapon is not in your pack');
       const item = content.item(weapon.itemId);
       const cost = repairPrice(weapon, content);
       if (weapon.durability === item.maxDurability) throw new Error('This weapon needs no repairs');
-      if (this.state.hero.gold < cost) throw new Error('Not enough gold');
+      if (state.hero.gold < cost) throw new Error('Not enough gold');
       weapon.durability = item.maxDurability!;
-      this.state.hero.gold -= cost;
-      changed(objectId, `Repaired ${item.name} for ${cost} gold.`);
+      state.hero.gold -= cost;
+      changed(state, tx, objectId, `Repaired ${item.name} for ${cost} gold.`);
     });
-    this.engine.commands.register('HEAL', ({ objectId }) => {
-      const object = this.requireService(objectId, ['healer']);
-      const hero = this.state.hero;
+    this.registerCommand('HEAL', ({ objectId }, state, tx) => {
+      const object = this.requireService(state, tx.activeService, objectId, ['healer']);
+      const hero = state.hero;
       const stats = heroStats(hero, content);
       if (
         hero.health === stats.maxHealth &&
@@ -831,15 +967,20 @@ export class JourneySession {
       hero.gold -= object.healingCost!;
       restoreHero(hero, content);
       changed(
+        state,
+        tx,
         objectId,
         `The healer restores your resources, wounds and fullness for ${object.healingCost} gold.`,
       );
     });
-    this.engine.commands.register('OFFER_ITEM', ({ objectId, item: reference }) => {
-      const object = this.requireService(objectId, ['altar', 'dungeonEntrance']);
+    this.registerCommand('OFFER_ITEM', ({ objectId, item: reference }, state, tx) => {
+      const object = this.requireService(state, tx.activeService, objectId, [
+        'altar',
+        'dungeonEntrance',
+      ]);
       const definition = content.data.dungeons.find((entry) => entry.id === object.dungeonId);
       if (!definition) throw new Error('This dungeon is unavailable');
-      const hero = cloneData(this.state.hero);
+      const hero = state.hero;
       const item = ownedDefinition(hero, reference, content);
       if (item.kind === 'armor' && 'itemId' in reference)
         throw new Error('Choose an individual armor copy');
@@ -849,51 +990,59 @@ export class JourneySession {
         throw new Error('Keep the unfinished book for its collection');
       removeOwnedItem(hero, reference, 1);
       this.enterDungeon(
+        state,
+        tx,
         definition.id,
-        hero,
         `The goddess accepts ${item.name}. Her sanctuary statue can return you to town.`,
       );
     });
   }
   private registerEnchanting() {
-    this.engine.commands.register('LOCK_EQUIPMENT', ({ target, locked }) => {
+    this.registerCommand('LOCK_EQUIPMENT', ({ target, locked }, state, tx) => {
       if (this.hostManaged) throw new Error('Use the host durable progression operation');
-      this.requireExploring();
-      const hero = cloneData(this.state.hero);
+      this.requireExploring(state);
+      const hero = state.hero;
       ownedEquipment(hero, target).locked = locked;
-      this.state.hero = hero;
-      this.message = locked
+      tx.message = locked
         ? 'Equipment locked. It cannot be sold, offered, enchanted or burned.'
         : 'Equipment unlocked.';
-      this.commit({ type: 'EQUIPMENT_CHANGED' });
+      this.commit(state, tx, { type: 'EQUIPMENT_CHANGED' });
     });
     const operation = (
       command: Extract<GameCommand, { type: 'APPLY_ENCHANT' | 'BURN_EQUIPMENT' }>,
+      state: Draft<CampaignState>,
+      tx: CampaignTransition,
     ) => {
       if (this.hostManaged) throw new Error('Use the host durable progression operation');
-      this.requireExploring();
-      const receipt = operationReceipt(this.state.hero, command.operationId);
+      this.requireExploring(state);
+      const receipt = operationReceipt(state.hero, command.operationId);
       if (receipt) {
         if (receipt.kind !== (command.type === 'APPLY_ENCHANT' ? 'apply' : 'burn'))
           throw new Error('Operation ID belongs to another action');
-        this.message = `This operation was already saved. ${receipt.message}`;
-        this.refresh();
+        tx.message = `This operation was already saved. ${receipt.message}`;
+
         return;
       }
       if (command.revision !== this.snapshot.revision)
         throw new Error('The campaign changed. Preview this enchant operation again.');
-      const object = this.requireService(command.objectId, ['merchant', 'npc']);
+      const object = this.requireService(state, tx.activeService, command.objectId, [
+        'merchant',
+        'npc',
+      ]);
       if (!object.enchanting) throw new Error('This town service does not offer enchanting');
       const result =
         command.type === 'APPLY_ENCHANT'
-          ? applyEnchant(this.state.hero, command, this.content)
-          : burnEquipment(this.state.hero, command, this.content);
-      this.state.hero = result.hero;
-      this.message = result.receipt.message;
-      this.commit({ type: 'WORLD_INTERACTED', objectId: object.id, message: this.message });
+          ? applyEnchantDraft(state.hero, command, this.content)
+          : burnEquipmentDraft(state.hero, command, this.content);
+      tx.message = result.message;
+      this.commit(state, tx, {
+        type: 'WORLD_INTERACTED',
+        objectId: object.id,
+        message: tx.message,
+      });
     };
-    this.engine.commands.register('APPLY_ENCHANT', operation);
-    this.engine.commands.register('BURN_EQUIPMENT', operation);
+    this.registerCommand('APPLY_ENCHANT', operation);
+    this.registerCommand('BURN_EQUIPMENT', operation);
   }
   private registerProgression() {
     const town = () => {
@@ -902,14 +1051,15 @@ export class JourneySession {
       if (this.state.dungeon || !this.map.theme)
         throw new Error('Return to town to rank up or learn skills');
     };
-    this.engine.commands.register('LEARN_SKILL', ({ objectId, skillId }) => {
+    this.registerCommand('LEARN_SKILL', ({ objectId, skillId }, state, tx) => {
       town();
-      const object = this.requireService(objectId, ['npc']);
+      const object = this.requireService(state, tx.activeService, objectId, ['npc']);
       const offer = object?.lessons.find((o) => o.skillId === skillId);
-      if (!object || !offer || distance(object, this.state.position) > 1)
+      if (!object || !offer || distance(object, state.position) > 1)
         throw new Error('Approach the instructor for this lesson');
-      if (this.state.hero.gold < offer.fee) throw new Error('Not enough gold for this lesson');
-      const hero = learnSkill(this.state.hero, skillId, this.content);
+      if (state.hero.gold < offer.fee) throw new Error('Not enough gold for this lesson');
+      learnSkillDraft(state.hero, skillId, this.content);
+      const hero = state.hero;
       hero.gold -= offer.fee;
       if (
         object.id === 'keeper' &&
@@ -919,33 +1069,32 @@ export class JourneySession {
         hero.claimedMilestones.push('intro-melee-lesson');
         hero.ap = Math.min(1000000, hero.ap + 3);
       }
-      this.state.hero = hero;
-      this.message = `Learned ${this.content.skill(skillId).name} · Rank F. ${skillId === 'smash' && object.id === 'keeper' ? 'Introductory lesson awards 3 AP once.' : 'Training starts at zero.'}`;
-      this.commit({ type: 'SKILL_LEARNED', skillId, rank: 'F' });
+      tx.message = `Learned ${this.content.skill(skillId).name} · Rank F. ${skillId === 'smash' && object.id === 'keeper' ? 'Introductory lesson awards 3 AP once.' : 'Training starts at zero.'}`;
+      this.commit(state, tx, { type: 'SKILL_LEARNED', skillId, rank: 'F' });
     });
-    this.engine.commands.register('READ_SKILL_BOOK', ({ itemId }) => {
+    this.registerCommand('READ_SKILL_BOOK', ({ itemId }, state, tx) => {
       town();
-      this.state.hero = readSkillBook(this.state.hero, itemId, this.content);
+      readSkillBookDraft(state.hero, itemId, this.content);
       const skillId = this.content.item(itemId).skillId!;
-      this.message = `Learned ${this.content.skill(skillId).name} · Rank F.`;
-      this.commit({ type: 'SKILL_LEARNED', skillId, rank: 'F' });
+      tx.message = `Learned ${this.content.skill(skillId).name} · Rank F.`;
+      this.commit(state, tx, { type: 'SKILL_LEARNED', skillId, rank: 'F' });
     });
-    this.engine.commands.register('INSERT_SKILL_PAGE', ({ recipeId, pageId }) => {
+    this.registerCommand('INSERT_SKILL_PAGE', ({ recipeId, pageId }, state, tx) => {
       town();
-      this.state.hero = insertSkillPage(this.state.hero, recipeId, pageId, this.content);
-      this.message = this.state.hero.bookCollections[recipeId].completed
+      insertSkillPageDraft(state.hero, recipeId, pageId, this.content);
+      tx.message = state.hero.bookCollections[recipeId].completed
         ? 'The manual is complete. Read it to learn the skill.'
         : 'Page inserted into your manual.';
-      this.commit({ type: 'SKILL_PAGE_INSERTED', recipeId, pageId });
+      this.commit(state, tx, { type: 'SKILL_PAGE_INSERTED', recipeId, pageId });
     });
-    this.engine.commands.register('RANK_UP_SKILL', ({ skillId }) => {
+    this.registerCommand('RANK_UP_SKILL', ({ skillId }, state, tx) => {
       town();
-      this.state.hero = rankUpSkill(this.state.hero, skillId, this.content);
-      this.message = `${this.content.skill(skillId).name} advanced to Rank ${this.state.hero.learnedSkills[skillId].rank}.`;
-      this.commit({
+      rankUpSkillDraft(state.hero, skillId, this.content);
+      tx.message = `${this.content.skill(skillId).name} advanced to Rank ${state.hero.learnedSkills[skillId].rank}.`;
+      this.commit(state, tx, {
         type: 'SKILL_RANKED_UP',
         skillId,
-        rank: this.state.hero.learnedSkills[skillId].rank,
+        rank: state.hero.learnedSkills[skillId].rank,
       });
     });
   }
@@ -965,71 +1114,56 @@ export class JourneySession {
       this.engine.spawn({ id: obj.id, name: obj.name, position: { x: obj.x, y: obj.y } }),
     );
   }
-  private commit(event: GameEvent) {
+  private commit(state: Draft<CampaignState>, tx: CampaignTransition, event: GameEvent) {
     if (event.type === 'MAP_CHANGED')
-      recordQuestWorldEvidence(
-        this.state.hero,
-        { kind: 'visit', worldId: event.mapId },
-        this.content,
-      );
-    if (this.state.dungeon)
-      recordEnteredDungeon(this.state.hero, this.state.dungeon.blueprint.definitionId);
-    reconcileQuests(this.state.hero, this.content);
-    const previousTitles = { ...this.state.hero.titleCollection.selected };
+      recordQuestWorldEvidence(state.hero, { kind: 'visit', worldId: event.mapId }, this.content);
+    if (state.dungeon) recordEnteredDungeon(state.hero, state.dungeon.blueprint.definitionId);
+    reconcileQuests(state.hero, this.content);
+    const previousTitles = { ...state.hero.titleCollection.selected };
     const awarded = reconcileTitles(
-      this.state.hero,
+      state.hero,
       this.content,
       event.type === 'QUEST_CLAIMED'
         ? `quest/${event.questId}/once`
         : event.type === 'LOOT_RECEIVED'
-          ? `encounter/${this.state.encounterCount}`
+          ? `encounter/${state.encounterCount}`
           : `progression/${event.type}`,
       this.staging || !this.hostManaged,
     );
-    this.message += clearedTitleMessage(previousTitles, this.state.hero);
+    tx.message += clearedTitleMessage(previousTitles, state.hero);
     if (awarded.length)
-      this.message += ` Earned: ${awarded.map((id) => this.content.data.titles.find((t) => t.id === id)!.name).join(', ')}.`;
-    this.state.randomState = this.engine.random.snapshot();
-    this.refresh();
-    if (this.staging) this.committedEvents.push(event);
-    else this.engine.events.emit(event);
+      tx.message += ` Earned: ${awarded.map((id) => this.content.data.titles.find((t) => t.id === id)!.name).join(', ')}.`;
+    tx.events.push(event);
   }
+  /** Projection only: observation never reconciles or advances gameplay. */
   private refresh() {
-    reconcileQuests(
-      this.state.hero,
-      this.content,
-      this.activeService && !this.state.dungeon && !this.state.pending
-        ? { worldId: this.state.worldId, objectId: this.activeService }
-        : undefined,
-    );
     const player = this.engine.getEntity('player');
-    if (player) applyHero(player, this.state.hero, this.content, this.state.dungeon?.effects);
-    this.snapshot = {
-      state: cloneData(this.state),
+    if (player) {
+      player.position = { ...this.state.position };
+      applyHero(player, this.state.hero, this.content, this.state.dungeon?.effects);
+    }
+    this.snapshot = immutableData({
+      state: this.state,
       map: this.map,
       message: this.message,
       revision: ++nextViewRevision,
       activeService: this.activeService,
-    };
-    this.listeners.forEach((listener) => listener());
+    });
   }
   titleCatchupCandidate() {
-    const candidate = new JourneySession(
-      this.content,
-      this.toSave(),
-      undefined,
-      this.characterName,
-    );
+    const candidate = this.forkCandidate();
     candidate.staging = true;
-    if (candidate.state.dungeon)
-      recordEnteredDungeon(candidate.state.hero, candidate.state.dungeon.blueprint.definitionId);
-    const awards = reconcileTitles(candidate.state.hero, this.content, 'load/progression');
-    candidate.message =
-      (awards.length
-        ? `Earned: ${awards.map((id) => this.content.data.titles.find((t) => t.id === id)!.name).join(', ')}.`
-        : 'Title collection restored.') +
-      clearedTitleMessage(this.state.hero.titleCollection.selected, candidate.state.hero);
-    candidate.refresh();
+    candidate.transition((state, tx) => {
+      if (state.dungeon) recordEnteredDungeon(state.hero, state.dungeon.blueprint.definitionId);
+      const awards = reconcileTitles(state.hero, this.content, 'load/progression');
+      tx.message =
+        (awards.length
+          ? 'Earned: ' +
+            awards.map((id) => this.content.data.titles.find((t) => t.id === id)!.name).join(', ') +
+            '.'
+          : 'Title collection restored.') +
+        clearedTitleMessage(this.state.hero.titleCollection.selected, state.hero);
+    });
     if (
       JSON.stringify(candidate.state.hero.titleCollection) ===
         JSON.stringify(this.state.hero.titleCollection) &&
@@ -1039,7 +1173,7 @@ export class JourneySession {
       candidate.dispose();
       return undefined;
     }
-    validateCampaign(candidate.toSave(), this.content);
+    validateCampaign(candidate.state, this.content);
     return candidate;
   }
   private registerTitles() {
@@ -1048,19 +1182,19 @@ export class JourneySession {
       this.requireExploring();
       if (this.state.dungeon || !this.map.theme) throw new Error('Change titles in town');
     };
-    this.engine.commands.register('SELECT_TITLE', ({ slot, titleId }) => {
+    this.registerCommand('SELECT_TITLE', ({ slot, titleId }, state, tx) => {
       town();
-      this.state.hero = selectTitle(this.state.hero, slot, titleId, this.content);
-      this.message = titleId
+      selectTitleDraft(state.hero, slot, titleId, this.content);
+      tx.message = titleId
         ? `Selected ${this.content.data.titles.find((t) => t.id === titleId)!.name}.`
         : `Cleared ${slot === 'first' ? 'First' : 'Second'} Title.`;
-      this.commit({ type: 'EQUIPMENT_CHANGED' });
+      this.commit(state, tx, { type: 'EQUIPMENT_CHANGED' });
     });
-    this.engine.commands.register('UNLOCK_TITLE_COUPON', ({ itemId }) => {
+    this.registerCommand('UNLOCK_TITLE_COUPON', ({ itemId }, state, tx) => {
       town();
-      this.state.hero = unlockTitleCoupon(this.state.hero, itemId, this.content);
-      this.message = `Earned ${this.content.data.titles.find((t) => t.id === this.content.item(itemId).titleId)!.name}. Choose it in the title collection.`;
-      this.commit({ type: 'EQUIPMENT_CHANGED' });
+      unlockTitleCouponDraft(state.hero, itemId, this.content);
+      tx.message = `Earned ${this.content.data.titles.find((t) => t.id === this.content.item(itemId).titleId)!.name}. Choose it in the title collection.`;
+      this.commit(state, tx, { type: 'EQUIPMENT_CHANGED' });
     });
   }
   private registerQuests() {
@@ -1075,33 +1209,38 @@ export class JourneySession {
       if (this.state.dungeon || !this.map.theme)
         throw new Error('Return to town for quest acceptance and claims');
     };
-    const atNpc = (npc: { worldId: string; objectId: string }, objectId?: string) => {
-      if (npc.worldId !== this.state.worldId || objectId !== npc.objectId)
+    const atNpc = (
+      state: CampaignSnapshot,
+      activeService: string | undefined,
+      npc: { worldId: string; objectId: string },
+      objectId?: string,
+    ) => {
+      if (npc.worldId !== state.worldId || objectId !== npc.objectId)
         throw new Error('Return to the quest’s named NPC');
-      this.requireService(npc.objectId, ['npc', 'healer', 'merchant']);
+      this.requireService(state, activeService, npc.objectId, ['npc', 'healer', 'merchant']);
     };
-    this.engine.commands.register('ACCEPT_QUEST', ({ questId, objectId }) => {
+    this.registerCommand('ACCEPT_QUEST', ({ questId, objectId }, state, tx) => {
       town();
       const definition = quest(questId);
-      if (definition.offerNpc) atNpc(definition.offerNpc, objectId);
-      this.state.hero = acceptQuest(this.state.hero, definition, this.content);
-      this.message = `Accepted ${definition.name}.`;
-      this.commit({ type: 'QUEST_ACCEPTED', questId });
+      if (definition.offerNpc) atNpc(state, tx.activeService, definition.offerNpc, objectId);
+      acceptQuestDraft(state.hero, definition, this.content);
+      tx.message = `Accepted ${definition.name}.`;
+      this.commit(state, tx, { type: 'QUEST_ACCEPTED', questId });
     });
-    this.engine.commands.register('CLAIM_QUEST', ({ questId, objectId }) => {
+    this.registerCommand('CLAIM_QUEST', ({ questId, objectId }, state, tx) => {
       town();
       const definition = quest(questId);
-      if (definition.claimNpc) atNpc(definition.claimNpc, objectId);
-      this.state.hero = claimQuest(this.state.hero, definition, this.content);
-      this.message = `Completed ${definition.name}. Rewards saved.${definition.rewards.titles.length ? ` Earned: ${definition.rewards.titles.map((id) => this.content.data.titles.find((t) => t.id === id)!.name).join(', ')}.` : ''}`;
-      this.commit({ type: 'QUEST_CLAIMED', questId });
+      if (definition.claimNpc) atNpc(state, tx.activeService, definition.claimNpc, objectId);
+      claimQuestDraft(state.hero, definition, this.content);
+      tx.message = `Completed ${definition.name}. Rewards saved.${definition.rewards.titles.length ? ` Earned: ${definition.rewards.titles.map((id) => this.content.data.titles.find((t) => t.id === id)!.name).join(', ')}.` : ''}`;
+      this.commit(state, tx, { type: 'QUEST_CLAIMED', questId });
     });
-    this.engine.commands.register('TRACK_QUEST_OBJECTIVE', ({ questId, objectiveId }) => {
+    this.registerCommand('TRACK_QUEST_OBJECTIVE', ({ questId, objectiveId }, state, tx) => {
       if (this.hostManaged) throw new Error('Use the host durable progression operation');
-      this.requireExploring();
-      trackObjective(this.state.hero, quest(questId), objectiveId);
-      this.message = 'Quest tracker updated.';
-      this.commit({ type: 'QUEST_TRACKING_CHANGED' });
+      this.requireExploring(state);
+      trackObjective(state.hero, quest(questId), objectiveId);
+      tx.message = 'Quest tracker updated.';
+      this.commit(state, tx, { type: 'QUEST_TRACKING_CHANGED' });
     });
   }
 }
@@ -1111,8 +1250,8 @@ function recordEnteredDungeon(hero: CampaignState['hero'], id: string) {
 }
 
 function clearedTitleMessage(
-  previous: CampaignState['hero']['titleCollection']['selected'],
-  hero: CampaignState['hero'],
+  previous: CampaignSnapshot['hero']['titleCollection']['selected'],
+  hero: CampaignSnapshot['hero'],
 ) {
   return (['first', 'second'] as const)
     .filter((slot) => previous[slot] && !hero.titleCollection.selected[slot])
@@ -1121,4 +1260,23 @@ function clearedTitleMessage(
         ` Cleared ${slot === 'first' ? 'First' : 'Second'} Title: its required skill rank is no longer eligible. The earned achievement is preserved.`,
     )
     .join('');
+}
+
+/** Only physical map projection inputs invalidate its cache. */
+function mapChanged(
+  before: Pick<CampaignSnapshot, 'worldId' | 'cleared' | 'dungeon'>,
+  after: Pick<CampaignSnapshot, 'worldId' | 'cleared' | 'dungeon'>,
+) {
+  const a = before.dungeon,
+    b = after.dungeon;
+  return (
+    before.worldId !== after.worldId ||
+    before.cleared !== after.cleared ||
+    a?.blueprint !== b?.blueprint ||
+    a?.cleared !== b?.cleared ||
+    a?.revealedMimics !== b?.revealedMimics ||
+    a?.bossDoorOpened !== b?.bossDoorOpened ||
+    a?.bossKey !== b?.bossKey ||
+    a?.treasureKey !== b?.treasureKey
+  );
 }

@@ -1,8 +1,9 @@
+import type { Immutable } from '../engine/immutableState';
 import { EncounterTitles } from '../engine/rpg/Titles';
 import { cloneData } from '../engine/cloneData';
 import { EncounterTraining, type TrainingLedger } from '../engine/rpg/Skills';
 import { EncounterQuests } from '../engine/rpg/Quests';
-import { applyHero, createHero, type Hero, type Weapon } from '../engine/rpg/Character';
+import { applyHero, createHero, type HeroSnapshot, type Weapon } from '../engine/rpg/Character';
 import { calculateCharacterStats, type CharacterStats, type StatSource } from '../engine/rpg/Stats';
 import { effectiveEntity } from '../engine/rpg/StatusEffects';
 import { createGameEngine } from '../engine/GameEngine';
@@ -67,8 +68,8 @@ export class BattleSession {
   constructor(
     readonly content: ContentRegistry,
     seed = 12345,
-    mapId: string | TileMap = 'chamber',
-    hero?: Hero,
+    mapId: string | Immutable<TileMap> = 'chamber',
+    hero?: HeroSnapshot,
     effects: readonly { statusId: string; stacks: number }[] = [],
     characterName?: string,
     readonly encounterId = `arena/${seed}`,

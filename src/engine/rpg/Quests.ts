@@ -4,6 +4,7 @@ import { SkillRankSchema, SKILL_RANKS } from '../../data/schemas/skillRank';
 import type { QuestCondition, QuestDefinition, QuestObjective } from '../../data/schemas/quests';
 import type { ContentRegistry } from '../data/ContentRegistry';
 import { cloneData } from '../cloneData';
+import { produceState, type Draft } from '../immutableState';
 import {
   addItem,
   experienceToNextLevel,
@@ -13,8 +14,9 @@ import {
   removableCount,
   validateHero,
   type Hero,
+  type HeroSnapshot,
 } from './Character';
-import { learnSkill, type ActionOutcome } from './Skills';
+import { learnSkillDraft, type ActionOutcome } from './Skills';
 import { MAX_LEVEL } from './Leveling';
 
 export { emptyQuestProgression } from './QuestState';
@@ -24,7 +26,7 @@ export function rankAtLeast(
 ) {
   return !!actual && SKILL_RANKS.indexOf(actual) >= SKILL_RANKS.indexOf(required);
 }
-export function questEligible(hero: Hero, condition?: QuestCondition): boolean {
+export function questEligible(hero: HeroSnapshot, condition?: QuestCondition): boolean {
   if (!condition) return true;
   switch (condition.kind) {
     case 'all':
@@ -50,9 +52,9 @@ export function questEligible(hero: Hero, condition?: QuestCondition): boolean {
         : itemCount(hero, condition.itemId) >= condition.quantity;
   }
 }
-export const questStage = (hero: Hero, quest: QuestDefinition) =>
+export const questStage = (hero: HeroSnapshot, quest: QuestDefinition) =>
   quest.stages.find((s) => s.id === hero.quests[quest.id]?.stageId);
-export function objectiveProgress(hero: Hero, quest: QuestDefinition, o: QuestObjective) {
+export function objectiveProgress(hero: HeroSnapshot, quest: QuestDefinition, o: QuestObjective) {
   if (hero.quests[quest.id]?.status === 'completed') return o.target;
   if (o.kind === 'ownItem') return Math.min(o.target, itemCount(hero, o.itemId));
   if (o.kind === 'deliverItem')
@@ -61,7 +63,7 @@ export function objectiveProgress(hero: Hero, quest: QuestDefinition, o: QuestOb
     return rankAtLeast(hero.learnedSkills[o.skillId]?.rank, o.rank) ? 1 : 0;
   return hero.quests[quest.id]?.counts[o.id] ?? 0;
 }
-export function questReady(hero: Hero, quest: QuestDefinition) {
+export function questReady(hero: HeroSnapshot, quest: QuestDefinition) {
   const record = hero.quests[quest.id],
     stage = questStage(hero, quest);
   return (
@@ -88,7 +90,7 @@ export function reconcileQuests(
     }
     advanceStages(hero, quest);
   }
-  hero.trackedObjectives = hero.trackedObjectives.filter((t) => {
+  const tracked = hero.trackedObjectives.filter((t) => {
     const quest = content.data.quests.find((q) => q.id === t.questId);
     return (
       quest &&
@@ -96,6 +98,7 @@ export function reconcileQuests(
       questStage(hero, quest)?.objectives.some((o) => o.id === t.objectiveId)
     );
   });
+  if (tracked.length !== hero.trackedObjectives.length) hero.trackedObjectives = tracked;
 }
 function advanceStages(hero: Hero, quest: QuestDefinition) {
   const record = hero.quests[quest.id];
@@ -109,13 +112,22 @@ function advanceStages(hero: Hero, quest: QuestDefinition) {
     record.stageId = quest.stages[++index].id;
   }
 }
-export function acceptQuest(hero: Hero, quest: QuestDefinition, content: ContentRegistry) {
+export function acceptQuestDraft(
+  hero: Draft<Hero>,
+  quest: QuestDefinition,
+  content: ContentRegistry,
+) {
   if (hero.quests[quest.id]?.status !== 'available' || !questEligible(hero, quest.prerequisite))
     throw new Error('This quest is not currently eligible for acceptance');
-  const candidate = cloneData(hero);
-  candidate.quests[quest.id] = { status: 'active', stageId: quest.stages[0].id, counts: {} };
-  reconcileQuests(candidate, content);
-  return candidate;
+  hero.quests[quest.id] = { status: 'active', stageId: quest.stages[0].id, counts: {} };
+  reconcileQuests(hero, content);
+}
+export function acceptQuest(
+  hero: HeroSnapshot,
+  quest: QuestDefinition,
+  content: ContentRegistry,
+): HeroSnapshot {
+  return produceState(hero, (draft) => acceptQuestDraft(draft, quest, content));
 }
 export function trackObjective(hero: Hero, quest: QuestDefinition, objectiveId: string) {
   const existing = hero.trackedObjectives.findIndex(
@@ -162,48 +174,59 @@ export function recordQuestWorldEvidence(
   reconcileQuests(hero, content);
 }
 /** Simulate delivery first, then all rewards. Nothing escapes on any rejection. */
-export function claimQuest(hero: Hero, quest: QuestDefinition, content: ContentRegistry): Hero {
+export function claimQuestDraft(
+  hero: Draft<Hero>,
+  quest: QuestDefinition,
+  content: ContentRegistry,
+) {
   if (!questReady(hero, quest)) throw new Error('This quest is not ready to claim');
   if (!questEligible(hero, quest.prerequisite))
     throw new Error('Quest prerequisites no longer hold');
-  let candidate = cloneData(hero);
   for (const o of questStage(hero, quest)!.objectives)
-    if (o.kind === 'deliverItem') removeOwnedItem(candidate, { itemId: o.itemId }, o.target);
+    if (o.kind === 'deliverItem') removeOwnedItem(hero, { itemId: o.itemId }, o.target);
   const rewards = quest.rewards;
   let level = hero.level,
     experience = hero.experience + rewards.experience;
   while (level < MAX_LEVEL && experience >= experienceToNextLevel(level))
     experience -= experienceToNextLevel(level++);
-  if (
-    candidate.gold + rewards.gold > 1000000 ||
-    candidate.ap + rewards.ap + level - hero.level > 1000000
-  )
+  if (hero.gold + rewards.gold > 1000000 || hero.ap + rewards.ap + level - hero.level > 1000000)
     throw new Error('Quest rewards exceed your gold or AP capacity');
-  rewards.items.forEach((r) => addItem(candidate, r.itemId, r.quantity, content));
-  for (const skillId of rewards.skills) candidate = learnSkill(candidate, skillId, content);
-  candidate.gold += rewards.gold;
-  candidate.ap += rewards.ap;
-  grantExperience(candidate, rewards.experience, content);
+  rewards.items.forEach((r) => addItem(hero, r.itemId, r.quantity, content));
+  for (const skillId of rewards.skills) learnSkillDraft(hero, skillId, content);
+  hero.gold += rewards.gold;
+  hero.ap += rewards.ap;
+  grantExperience(hero, rewards.experience, content);
   [...rewards.titles]
     .sort()
-    .forEach((id) => awardTitle(candidate, id, `quest/${quest.id}/once`, content));
+    .forEach((id) => awardTitle(hero, id, `quest/${quest.id}/once`, content));
   rewards.flags.forEach((id) => {
-    if (!candidate.questFlags.includes(id)) candidate.questFlags.push(id);
+    if (!hero.questFlags.includes(id)) hero.questFlags.push(id);
   });
-  candidate.quests[quest.id].status = 'completed';
-  candidate.quests[quest.id].claimId = `quest/${quest.id}/once`;
-  reconcileQuests(candidate, content);
-  return validateHero(candidate, content);
+  hero.quests[quest.id].status = 'completed';
+  hero.quests[quest.id].claimId = `quest/${quest.id}/once`;
+  reconcileQuests(hero, content);
+  validateHero(hero, content);
 }
-export function questClaimProblem(hero: Hero, quest: QuestDefinition, content: ContentRegistry) {
+export function claimQuest(
+  hero: HeroSnapshot,
+  quest: QuestDefinition,
+  content: ContentRegistry,
+): HeroSnapshot {
+  return produceState(hero, (draft) => claimQuestDraft(draft, quest, content));
+}
+export function questClaimProblem(
+  hero: HeroSnapshot,
+  quest: QuestDefinition,
+  content: ContentRegistry,
+) {
   try {
-    claimQuest(hero, quest, content);
+    claimQuest(Object.isFrozen(hero) ? hero : cloneData(hero), quest, content);
     return undefined;
   } catch (error) {
     return error instanceof Error ? error.message : 'Cannot claim this quest';
   }
 }
-export function validateQuestProgression(hero: Hero, content: ContentRegistry) {
+export function validateQuestProgression(hero: HeroSnapshot, content: ContentRegistry) {
   for (const [id, record] of Object.entries(hero.quests)) {
     const quest = content.data.quests.find((q) => q.id === id),
       index = quest?.stages.findIndex((s) => s.id === record.stageId) ?? -1;
@@ -337,7 +360,7 @@ export function mergeQuestEncounter(
   }
   reconcileQuests(hero, content);
 }
-export function questItemNeeds(hero: Hero, content: ContentRegistry, itemId?: string) {
+export function questItemNeeds(hero: HeroSnapshot, content: ContentRegistry, itemId?: string) {
   return content.data.quests.flatMap((quest) =>
     hero.quests[quest.id]?.status === 'active'
       ? (questStage(hero, quest)?.objectives ?? [])

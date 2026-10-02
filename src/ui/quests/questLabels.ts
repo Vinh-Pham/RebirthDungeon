@@ -1,12 +1,12 @@
 import type { QuestCondition, QuestDefinition } from '../../data/schemas/quests';
 import type { ContentRegistry } from '../../engine/data/ContentRegistry';
-import type { Hero } from '../../engine/rpg/Character';
+import type { HeroSnapshot } from '../../engine/rpg/Character';
 import { questReady } from '../../engine/rpg/Quests';
 import type { JourneyView } from '../../game/JourneySession';
 import { distance } from '../../engine/world/TileMap';
 
 export const categoryLabel = { mainstream: 'Story', sidequest: 'Town requests', skill: 'Skills' };
-export function questStatus(hero: Hero, quest: QuestDefinition) {
+export function questStatus(hero: HeroSnapshot, quest: QuestDefinition) {
   const record = hero.quests[quest.id];
   return !record
     ? 'Locked'

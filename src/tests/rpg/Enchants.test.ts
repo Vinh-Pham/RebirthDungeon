@@ -1,3 +1,4 @@
+import { cloneData } from '../../engine/cloneData';
 import { describe, expect, it, vi } from 'vitest';
 import { loadGameContent } from '../../data/content';
 import { SKILL_RANKS } from '../../data/schemas/skillRank';
@@ -39,7 +40,7 @@ import { inventoryRows } from '../../ui/journey/inventoryRows';
 
 const content = loadGameContent();
 function prepared(): Hero {
-  const hero = learnSkill(createHero(content), 'enchant', content);
+  const hero = cloneData(learnSkill(createHero(content), 'enchant', content));
   addItem(hero, 'iron-blade', 2, content);
   addItem(hero, 'moss-mail', 2, content);
   for (const id of [
@@ -182,10 +183,12 @@ describe('atomic protected application and fixed saved values', () => {
       const copy = structuredClone(hero);
       mutate(copy);
       const rejected = structuredClone(copy);
-      expect(() => applyEnchant(copy, request(copy), content)).toThrow();
+      expect(() => cloneData(applyEnchant(copy, request(copy), content))).toThrow();
       expect(copy).toEqual(rejected);
     }
-    expect(() => applyEnchant(hero, { ...request(hero), powderId: 'potion' }, content)).toThrow();
+    expect(() =>
+      cloneData(applyEnchant(hero, { ...request(hero), powderId: 'potion' }, content)),
+    ).toThrow();
     expect(hero).toEqual(before);
   });
   it('replaces only the chosen slot, preserves durability, consumes costs and awards one capped success', () => {
@@ -197,7 +200,7 @@ describe('atomic protected application and fixed saved values', () => {
     const before = structuredClone(hero),
       rng = createGameRandom(hero.enchanting.seed);
     rng.int(0, 9999);
-    const result = applyEnchant(hero, request(hero, 'studious-scroll'), content);
+    const result = cloneData(applyEnchant(hero, request(hero, 'studious-scroll'), content));
     const next = result.hero;
     expect(hero).toEqual(before);
     expect(result.receipt.success).toBe(true);
@@ -226,7 +229,7 @@ describe('atomic protected application and fixed saved values', () => {
     const hero = installed(prepared());
     const chance = previewEnchant(hero, request(hero), content).chanceBp;
     seedFor(hero, (r) => r.int(0, 9999) >= chance);
-    const result = applyEnchant(hero, request(hero), content);
+    const result = cloneData(applyEnchant(hero, request(hero), content));
     expect(result.receipt).toMatchObject({ success: false });
     expect(result.receipt.message).toContain('preserved');
     expect(result.hero.weapons).toEqual(hero.weapons);
@@ -241,7 +244,7 @@ describe('atomic protected application and fixed saved values', () => {
     const rng = createGameRandom(hero.enchanting.seed);
     rng.int(0, 9999);
     const expected = { guard: rng.int(1, 3), resolve: rng.int(1, 2) };
-    const result = applyEnchant(hero, request(hero, 'resilience-scroll'), content).hero;
+    const result = cloneData(applyEnchant(hero, request(hero, 'resilience-scroll'), content)).hero;
     expect(result.weapons['weapon-1'].suffix!.values).toEqual(expected);
     expect(result.enchanting.state).toEqual(rng.snapshot());
     const beforeDefense = heroStats(result, content).combatant.defense;
@@ -276,7 +279,7 @@ describe('atomic protected application and fixed saved values', () => {
     );
     const preview = previewEnchant(hero, request(hero, 'resilience-scroll'), content);
     expect(preview.overwritten!.values).toEqual({ guard: 3, resolve: 2 });
-    const next = applyEnchant(hero, request(hero, 'resilience-scroll'), content).hero;
+    const next = cloneData(applyEnchant(hero, request(hero, 'resilience-scroll'), content)).hero;
     expect(next.weapons['weapon-1'].suffix!.values.guard).toBe(1);
     expect(next.weapons['weapon-1'].prefix).toEqual(hero.weapons['weapon-1'].prefix);
     expect(next.inventory['resilience-scroll']).toBe(29);
@@ -288,7 +291,7 @@ describe('atomic protected application and fixed saved values', () => {
     const selection = { ...request(hero, 'vigor-scroll'), target: { armorId: 'armor-1' } };
     const chance = previewEnchant(hero, selection, content).chanceBp;
     seedFor(hero, (r) => r.int(0, 9999) < chance);
-    const next = applyEnchant(hero, selection, content).hero;
+    const next = cloneData(applyEnchant(hero, selection, content)).hero;
     expect(heroStats(next, content).maxHealth).toBe(123);
     expect(next.health).toBe(100);
     next.health = 113;
@@ -329,7 +332,7 @@ describe('atomic protected application and fixed saved values', () => {
     hero.inventory['enchant-powder'] = 150;
     for (let i = 0; i < 105; i++) {
       hero.mana = 98;
-      hero = applyEnchant(hero, request(hero), content).hero;
+      hero = cloneData(applyEnchant(hero, request(hero), content)).hero;
     }
     expect(hero.enchanting.receipts).toHaveLength(100);
     expect(hero.enchanting.nextOperationId).toBe(106);
@@ -337,7 +340,7 @@ describe('atomic protected application and fixed saved values', () => {
     expect(hero.inventory['keen-scroll']).toBe(45);
     const before = structuredClone(hero);
     expect(() =>
-      applyEnchant(hero, { ...request(hero), operationId: 'enchant-1' }, content),
+      cloneData(applyEnchant(hero, { ...request(hero), operationId: 'enchant-1' }, content)),
     ).toThrow('expired');
     expect(hero).toEqual(before);
     expect(validateHero(hero, content)).toEqual(hero);
@@ -345,12 +348,14 @@ describe('atomic protected application and fixed saved values', () => {
   it('never retrains or recharges a recorded operation, including after saving', () => {
     const hero = prepared(),
       command = request(hero);
-    const accepted = applyEnchant(hero, command, content);
-    expect(applyEnchant(accepted.hero, command, content).hero).toEqual(accepted.hero);
+    const accepted = cloneData(applyEnchant(hero, command, content));
+    expect(cloneData(applyEnchant(accepted.hero, command, content)).hero).toEqual(accepted.hero);
     expect(() =>
-      applyEnchant(accepted.hero, { ...command, operationId: 'enchant-99' }, content),
+      cloneData(applyEnchant(accepted.hero, { ...command, operationId: 'enchant-99' }, content)),
     ).toThrow('expired');
-    expect(() => burnEquipment(accepted.hero, command, content)).toThrow('another action');
+    expect(() => cloneData(burnEquipment(accepted.hero, command, content))).toThrow(
+      'another action',
+    );
   });
 });
 
@@ -370,7 +375,7 @@ describe('destructive burning with reserved output capacity', () => {
         preview = previewBurn(hero, command.target, content);
       expect(preview.outputs.map((o) => o.slot)).toEqual(['prefix', 'suffix']);
       expect(hero).toEqual(before);
-      const result = burnEquipment(hero, command, content),
+      const result = cloneData(burnEquipment(hero, command, content)),
         next = result.hero;
       expect(result.receipt.recovered).toEqual(expected);
       expect(next.weapons['weapon-1']).toBeUndefined();
@@ -388,7 +393,7 @@ describe('destructive burning with reserved output capacity', () => {
       expect(next.gold).toBe(0);
       expect(next.experience).toBe(0);
       expect(hero).toEqual(before);
-      expect(burnEquipment(next, command, content).hero).toEqual(next);
+      expect(cloneData(burnEquipment(next, command, content)).hero).toEqual(next);
       expect(validateHero(next, content)).toEqual(next);
     },
   );
@@ -398,10 +403,8 @@ describe('destructive burning with reserved output capacity', () => {
     seedFor(hero, (r) => r.int(0, 9999) < 5000);
     const random = createGameRandom(hero.enchanting.seed);
     random.int(0, 9999);
-    const next = burnEquipment(
-      hero,
-      { ...request(hero), target: { armorId: 'armor-1' } },
-      content,
+    const next = cloneData(
+      burnEquipment(hero, { ...request(hero), target: { armorId: 'armor-1' } }, content),
     ).hero;
     expect(next.enchanting.state).toEqual(random.snapshot());
     expect(next.inventory['vigor-scroll']).toBe(31);
@@ -411,7 +414,7 @@ describe('destructive burning with reserved output capacity', () => {
     const hero = installed(prepared());
     hero.inventory['resilience-scroll'] = 999;
     const before = structuredClone(hero);
-    expect(() => burnEquipment(hero, request(hero), content)).toThrow('room');
+    expect(() => cloneData(burnEquipment(hero, request(hero), content))).toThrow('room');
     expect(hero).toEqual(before);
     for (const mutate of [
       (h: Hero) => {
@@ -430,7 +433,7 @@ describe('destructive burning with reserved output capacity', () => {
       const copy = installed(prepared());
       mutate(copy);
       const saved = structuredClone(copy);
-      expect(() => burnEquipment(copy, request(copy), content)).toThrow();
+      expect(() => cloneData(burnEquipment(copy, request(copy), content))).toThrow();
       expect(copy).toEqual(saved);
     }
     expect(() => previewBurn(prepared(), { weaponId: 'weapon-1' }, content)).toThrow(
@@ -442,14 +445,14 @@ describe('destructive burning with reserved output capacity', () => {
     hero.ap = 0;
     hero.learnedSkills.enchant.objectiveCounts = { failure: 20, burn: 20, recover: 20 };
     expect(trainingPoints(content.skill('enchant'), hero.learnedSkills.enchant)).toBe(300);
-    expect(() => rankUpSkill(hero, 'enchant', content)).toThrow('AP');
+    expect(() => cloneData(rankUpSkill(hero, 'enchant', content))).toThrow('AP');
     hero.ap = 2;
-    const upgraded = rankUpSkill(hero, 'enchant', content);
+    const upgraded = cloneData(rankUpSkill(hero, 'enchant', content));
     expect(upgraded.learnedSkills.enchant).toEqual({ rank: 'E', objectiveCounts: {} });
     expect(upgraded.ap).toBe(0);
     expect(previewBurn(hero, { weaponId: 'weapon-1' }, content).chanceBp).toBe(5000);
     expect(previewBurn(upgraded, { weaponId: 'weapon-1' }, content).chanceBp).toBe(6500);
-    const next = burnEquipment(hero, request(hero), content).hero;
+    const next = cloneData(burnEquipment(hero, request(hero), content)).hero;
     expect(next.learnedSkills.enchant.objectiveCounts.burn).toBe(20);
     expect(next.learnedSkills.enchant.objectiveCounts.recover).toBe(20);
   });

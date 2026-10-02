@@ -1,6 +1,6 @@
 import type { ItemDefinition } from '../../data/schemas/content';
 import type { ContentRegistry } from '../../engine/data/ContentRegistry';
-import type { Hero, OwnedItem } from '../../engine/rpg/Character';
+import type { HeroSnapshot, OwnedItem } from '../../engine/rpg/Character';
 import type { BattleView } from '../../game/BattleSession';
 
 export type InventoryFilter = 'all' | 'supplies' | 'equipment' | 'books';
@@ -15,7 +15,7 @@ export interface InventoryRow {
 
 /** A view of the battle copy or the campaign pack; never creates item ownership. */
 export function inventoryRows(
-  hero: Hero,
+  hero: HeroSnapshot,
   content: ContentRegistry,
   battle?: BattleView['inventory'],
 ): InventoryRow[] {

@@ -1,3 +1,4 @@
+import type { Immutable } from '../immutableState';
 import type { WorldMap } from '../../data/schemas/world';
 import { decorationContains } from '../../data/schemas/world';
 export interface GridPoint {
@@ -5,7 +6,10 @@ export interface GridPoint {
   y: number;
 }
 /** Derive passage locks from saved victories without changing authored content. */
-export function projectWorldMap(map: WorldMap, cleared: readonly string[]): WorldMap {
+export function projectWorldMap(
+  map: Immutable<WorldMap>,
+  cleared: readonly string[],
+): Immutable<WorldMap> {
   if (!map.objects.some((object) => object.requiresCleared)) return map;
   return {
     ...map,
@@ -19,7 +23,7 @@ export function projectWorldMap(map: WorldMap, cleared: readonly string[]): Worl
     ),
   };
 }
-export function isWalkable(map: WorldMap, point: GridPoint): boolean {
+export function isWalkable(map: Immutable<WorldMap>, point: GridPoint): boolean {
   return (
     Number.isInteger(point.x) &&
     Number.isInteger(point.y) &&
@@ -51,7 +55,7 @@ export function isWalkable(map: WorldMap, point: GridPoint): boolean {
 }
 export const distance = (a: GridPoint, b: GridPoint) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 /** Breadth-first shortest path for these small, uniform-cost maps. No native dependency. */
-export function findPath(map: WorldMap, start: GridPoint, goal: GridPoint): GridPoint[] {
+export function findPath(map: Immutable<WorldMap>, start: GridPoint, goal: GridPoint): GridPoint[] {
   if (!isWalkable(map, start) || !isWalkable(map, goal)) return [];
   const key = (point: GridPoint) => `${point.x},${point.y}`;
   const queue = [start];

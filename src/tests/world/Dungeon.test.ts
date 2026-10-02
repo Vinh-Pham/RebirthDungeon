@@ -1,3 +1,4 @@
+import { cloneData } from '../../engine/cloneData';
 import { afterEach, describe, expect, it } from 'vitest';
 import * as fc from 'fast-check';
 import { loadGameContent } from '../../data/content';
@@ -121,7 +122,7 @@ function resume(session: JourneySession) {
 
 function watchingSeal(session: JourneySession) {
   const saved = session.toSave();
-  saved.hero = learnSkill(saved.hero, 'smash', content);
+  saved.hero = cloneData(learnSkill(saved.hero, 'smash', content));
   saved.hero.quests['refuge-preparations'] = {
     status: 'completed',
     stageId: 'bring-provisions',
@@ -640,9 +641,7 @@ describe('fountains, checkpoints and camera', () => {
     expect(session.toSave().dungeon!.blueprint.world.tiles).not.toEqual(
       detached.dungeon!.blueprint.world.tiles,
     );
-    expect(() => {
-      session.map.tiles[0] = 0;
-    }).toThrow();
+    expect(Reflect.set(session.map.tiles, '0', 0)).toBe(false);
   });
   it('keeps camera bounds and touch coordinates aligned on phone and tablet viewports', () => {
     for (const width of [240, 350, 560])

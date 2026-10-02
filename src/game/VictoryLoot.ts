@@ -1,4 +1,4 @@
-import { itemCount, rollLoot, type Hero } from '../engine/rpg/Character';
+import { itemCount, rollLoot, type HeroSnapshot } from '../engine/rpg/Character';
 import type { ContentRegistry } from '../engine/data/ContentRegistry';
 import type { GameRandom } from '../engine/Random';
 
@@ -11,7 +11,7 @@ export interface VictoryLoot {
 /** Roll the whole encounter once, including a guaranteed small gold reward. */
 export function rollVictoryLoot(
   enemyIds: readonly string[],
-  hero: Hero,
+  hero: HeroSnapshot,
   content: ContentRegistry,
   random: GameRandom,
 ): VictoryLoot {

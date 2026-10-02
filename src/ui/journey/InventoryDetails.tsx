@@ -9,7 +9,7 @@ import {
   ownedEquipment,
   previewEquipment,
   removableCount,
-  type Hero,
+  type HeroSnapshot,
 } from '../../engine/rpg/Character';
 import { consumableRecovery } from '../../engine/rpg/Consumables';
 import type { CharacterReview } from '../../game/BattleSession';
@@ -34,7 +34,7 @@ export default function InventoryDetails({
   dispatch,
 }: {
   row: InventoryRow;
-  hero: Hero;
+  hero: HeroSnapshot;
   host: JourneyHost;
   session: JourneySession;
   characterId: string;

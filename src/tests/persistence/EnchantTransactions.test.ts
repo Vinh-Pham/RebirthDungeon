@@ -1,3 +1,4 @@
+import { cloneData } from '../../engine/cloneData';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { loadGameContent } from '../../data/content';
 import { addItem, type Hero } from '../../engine/rpg/Character';
@@ -21,7 +22,7 @@ function townState(edit?: (hero: Hero) => void) {
     .find((w) => w.id === state.worldId)!
     .objects.find((o) => o.id === 'blacksmith-keeper')!;
   state.position = { x: keeper.x, y: keeper.y + 1 };
-  state.hero = learnSkill(state.hero, 'enchant', content);
+  state.hero = cloneData(learnSkill(state.hero, 'enchant', content));
   addItem(state.hero, 'iron-blade', 2, content);
   state.hero.equipment.weapon = 'weapon-1';
   for (const id of [
@@ -130,10 +131,17 @@ describe('durable enchant operations', () => {
     const initial = host.getSnapshot().session!,
       before = initial.toSave(),
       request = command(host);
-    const expected = applyEnchant(before.hero, request, content).hero;
+    const expected = cloneData(applyEnchant(before.hero, request, content)).hero;
+    const beforeView = initial.getSnapshot();
+    const fork = vi.spyOn(initial, 'progressionCandidate');
     const write = vi.spyOn(storage, 'write').mockRejectedValueOnce(new Error('Disk full'));
     expect(await host.progress(request)).toBe(false);
     expect(write).toHaveBeenCalledTimes(1);
+    const retainedSession = fork.mock.results[0].value as JourneySession;
+    const retainedState = retainedSession.getSnapshot().state;
+    expect(Object.isFrozen(retainedState.hero.enchanting.receipts)).toBe(true);
+    expect(retainedState.hero.armors).toBe(beforeView.state.hero.armors);
+    expect(initial.getSnapshot()).toBe(beforeView);
     const candidate = JSON.parse(write.mock.calls[0][0].payload).campaign;
     expect(candidate.hero).toEqual(expected);
     expect(candidate.randomState).toEqual(before.randomState);
@@ -151,6 +159,9 @@ describe('durable enchant operations', () => {
     expect(await host.flushForExit()).toBe(false);
     expect(await host.retryProgression()).toBe(true);
     expect(write).toHaveBeenCalledTimes(2);
+    expect(fork).toHaveBeenCalledTimes(1);
+    expect(host.getSnapshot().session).toBe(retainedSession);
+    expect(retainedSession.getSnapshot().state).toBe(retainedState);
     expect(JSON.parse(write.mock.calls[1][0].payload).campaign).toEqual(candidate);
     expect(parseSave(JSON.parse(rows.get('auto')!.payload), content).campaign.hero).toEqual(
       expected,
@@ -177,7 +188,7 @@ describe('durable enchant operations', () => {
     const initial = host.getSnapshot().session!,
       before = initial.toSave(),
       request = { ...command(host), type: 'BURN_EQUIPMENT' as const },
-      expected = burnEquipment(before.hero, request, content).hero;
+      expected = cloneData(burnEquipment(before.hero, request, content)).hero;
     const write = vi.spyOn(storage, 'write').mockRejectedValueOnce(new Error('Offline'));
     expect(await host.progress(request)).toBe(false);
     expect(initial.toSave()).toEqual(before);

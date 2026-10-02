@@ -417,22 +417,37 @@ Zod validates dimensions, entry tiles, object positions and all cross-references
 Skia records static tilemaps once; Reanimated animates hero movement and map fades.
 Accessible buttons provide an alternative to canvas touch interactions.
 
+## Immutable campaign checkpoints
+
+Journey snapshots use Immer 11.1.18 with automatic freezing in development and
+production. Each leaf command updates one campaign draft, shares unchanged hero
+and dungeon branches, and publishes only after resolution succeeds. Battle ECS
+entities remain independent mutable copies. Durable candidates share their initial
+immutable checkpoint and retain the same result for failed-save retries.
+
+The host/autosaver retain frozen checkpoints; `toSave()` remains a detached,
+editable export. Save version 11 and its migrations are unchanged. See
+[immutable state ownership and performance](docs/immutable-state.md) for the
+boundaries, regressions and local benchmark tradeoffs. To profile headless state
+updates with Node 24+, run `node --expose-gc scripts/profile-campaign.mjs`.
+
 ## Persistence (Phase 9)
 
 `SaveRepository` validates both outgoing and loaded saves before replacing a
-session. Version 4 saves migrate versions 1–3, supplying legacy audio defaults and
-expanding stacked weapons into full-durability instances; malformed,
+session. Version 11 saves migrate versions 1–10, preserving progression, resources
+and RNG while supplying historical defaults and upgrading equipment ownership; malformed,
 unknown-reference and future-version saves fail with a visible error. Failed loads
 preserve the current session and other slots. Character values, map positions,
 claimed objects, equipment and RNG state are validated against current content.
-JSON data is cloned with a Hermes-compatible helper rather than requiring
-`structuredClone` in the mobile runtime.
+Mutable exports and simulation components are copied with a Hermes-compatible
+JSON helper rather than requiring `structuredClone` in the mobile runtime.
+Campaign observations share frozen data instead of cloning it on every update.
 
 Native `createSaveStorage` uses Expo SQLite, WAL, parameterized upserts and an
 atomic/idempotent database schema migration. Web uses IndexedDB transactions with
 the same schema/repository, avoiding SQLite web's SharedArrayBuffer hosting
 requirements. Save-format migrations and database migrations are separate.
-`AutoSaver` coalesces command bursts (250ms), captures detached data, serializes
+`AutoSaver` coalesces command bursts (250ms), retains frozen checkpoints, serializes
 writes, surfaces storage failures and retries retained data on the next flush.
 Backgrounding/unmount flushes queued changes; host generations prevent stale async
 loads from replacing a remounted session.
@@ -441,7 +456,9 @@ Saving uses exploration and encounter-boundary checkpoints. While an encounter
 is active, loading/restarting the app resumes that encounter from its original
 hero resources and seed. Partial battle turns and animation timers are intentionally
 not serialized. Manual save/load controls are available during exploration;
-returning from a completed battle commits rewards/resources before autosave.
+returning from a completed battle validates and saves one durable candidate with
+rewards, resources, wear, evidence and RNG before publishing success. Failed writes
+retain that candidate for an exact retry.
 An abrupt process kill within the autosave debounce can lose the latest step.
 
 ## Audio and polish (Phase 10)

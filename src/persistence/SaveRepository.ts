@@ -1,6 +1,6 @@
 import type { GrowthTalent } from '../engine/rpg/Stats';
 import type { ContentRegistry } from '../engine/data/ContentRegistry';
-import { encodeSave, parseSave, type CampaignState } from './SaveSchema';
+import { encodeSave, parseSave, type CampaignState, type CampaignSnapshot } from './SaveSchema';
 export type SaveSlot = 'auto' | '1' | '2' | '3';
 export interface SaveRow {
   id: SaveSlot;
@@ -24,7 +24,7 @@ export class SaveRepository {
     private content: ContentRegistry,
     private growthTalent?: GrowthTalent,
   ) {}
-  save(slot: SaveSlot, state: CampaignState): Promise<void> {
+  save(slot: SaveSlot, state: CampaignSnapshot): Promise<void> {
     validateSlot(slot);
     const savedAt = new Date().toISOString();
     const payload = encodeSave(state, this.content, savedAt);

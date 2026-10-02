@@ -1,3 +1,4 @@
+import { cloneData } from '../../engine/cloneData';
 import { describe, expect, it } from 'vitest';
 import { loadGameContent } from '../../data/content';
 import { addItem, createHero, heroStats, previewEquipment } from '../../engine/rpg/Character';
@@ -11,7 +12,7 @@ const content = loadGameContent();
 
 describe('inventory inspection and ownership boundaries', () => {
   it('previews the actual eligible loadout without changing supplies, pools, durability or learned bonuses', () => {
-    const hero = learnSkill(createHero(content), 'sword-mastery', content);
+    const hero = cloneData(learnSkill(createHero(content), 'sword-mastery', content));
     addItem(hero, 'iron-blade', 2, content);
     addItem(hero, 'moss-mail', 2, content);
     Object.assign(hero, { health: 20, mana: 4, stamina: 9, wounds: 15, fullness: 60 });

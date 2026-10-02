@@ -2,7 +2,7 @@ import { useMemo, useState, useSyncExternalStore } from 'react';
 import { FlatList, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { Skill } from '../../data/schemas/content';
-import type { Hero } from '../../engine/rpg/Character';
+import type { HeroSnapshot } from '../../engine/rpg/Character';
 import type { JourneyHost } from '../../game/JourneyHost';
 import type { JourneySession } from '../../game/JourneySession';
 import { gameRank, rankUpReason, trainingPoints } from '../../engine/rpg/Skills';
@@ -33,7 +33,7 @@ function rankEffects(
     .filter(Boolean)
     .join(' · ');
 }
-function progressLabel(hero: Hero, skill: Skill, town: boolean) {
+function progressLabel(hero: HeroSnapshot, skill: Skill, town: boolean) {
   const record = hero.learnedSkills[skill.id];
   if (!skill.gameRanks) return 'Not implemented';
   if (!record)

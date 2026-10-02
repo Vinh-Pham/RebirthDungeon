@@ -1,3 +1,4 @@
+import type { Immutable } from '../immutableState';
 import { z } from 'zod';
 import { WorldMapSchema, type WorldMap } from '../../data/schemas/world';
 import { MapSchema } from '../../data/schemas/content';
@@ -65,6 +66,7 @@ export const DungeonRunSchema = z.strictObject({
 });
 export type DungeonBlueprint = z.infer<typeof DungeonBlueprintSchema>;
 export type DungeonRun = z.infer<typeof DungeonRunSchema>;
+export type DungeonSnapshot = Immutable<DungeonRun>;
 export type DungeonEffects = DungeonRun['effects'];
 export type DungeonRoom = DungeonBlueprint['rooms'][number];
 type ObjectKind = WorldMap['objects'][number]['kind'];
@@ -84,11 +86,11 @@ const directions = [
 ] as const;
 export const inRoom = (room: DungeonRoom, p: GridPoint) =>
   p.x >= room.x && p.y >= room.y && p.x < room.x + room.width && p.y < room.y + room.height;
-export const bossCleared = (run: DungeonRun) =>
+export const bossCleared = (run: DungeonSnapshot) =>
   run.cleared.includes(
     run.blueprint.encounters.find((encounter) => encounter.kind === 'boss')!.objectId,
   );
-export const remainingEnemies = (run: DungeonRun) =>
+export const remainingEnemies = (run: DungeonSnapshot) =>
   run.blueprint.encounters
     .filter((encounter) => encounter.kind !== 'boss' && !run.cleared.includes(encounter.objectId))
     .reduce(
@@ -387,7 +389,7 @@ export function createDungeonRun(
 }
 
 /** Hide mimic identity and update physical gates and drops from authoritative run progress. */
-export function projectDungeonMap(run: DungeonRun): WorldMap {
+export function projectDungeonMap(run: DungeonSnapshot): Immutable<WorldMap> {
   const drops = (['boss', 'treasure'] as const).flatMap((keyType) => {
     const key = keyType === 'boss' ? run.bossKey : run.treasureKey;
     return key.status === 'dropped'
@@ -426,10 +428,10 @@ export function projectDungeonMap(run: DungeonRun): WorldMap {
   return Object.freeze({
     ...run.blueprint.world,
     objects: Object.freeze([...objects, ...drops].map((obj) => Object.freeze(obj))),
-  }) as WorldMap;
+  }) as Immutable<WorldMap>;
 }
 
-export function dungeonObjectClaimed(run: DungeonRun, objectId: string): boolean {
+export function dungeonObjectClaimed(run: DungeonSnapshot, objectId: string): boolean {
   return (
     run.opened.includes(objectId) ||
     run.cleared.includes(objectId) ||
@@ -439,7 +441,7 @@ export function dungeonObjectClaimed(run: DungeonRun, objectId: string): boolean
   );
 }
 
-export function reachableTiles(map: WorldMap): Set<string> {
+export function reachableTiles(map: Immutable<WorldMap>): Set<string> {
   const key = (p: GridPoint) => p.x + ',' + p.y;
   const reached = new Set<string>();
   const queue: GridPoint[] = [];
@@ -459,7 +461,7 @@ export function reachableTiles(map: WorldMap): Set<string> {
 }
 
 /** Validate saved geometry and progress without regenerating layouts or rolling any outcomes. */
-export function validateDungeon(run: DungeonRun, content: ContentRegistry): void {
+export function validateDungeon(run: DungeonSnapshot, content: ContentRegistry): void {
   const fail = (condition: boolean, message: string) => {
     if (condition) throw new Error('Invalid dungeon: ' + message);
   };

@@ -1,3 +1,4 @@
+import { cloneData } from '../../engine/cloneData';
 import { afterEach, describe, expect, it } from 'vitest';
 import { loadGameContent } from '../../data/content';
 import { validateCommand, type GameCommand } from '../../engine/commands';
@@ -85,7 +86,7 @@ describe('inventory drops', () => {
     let hero = createHero(content);
     addItem(hero, recipe.incompleteItemId, 1, content);
     addItem(hero, recipe.pages[0].itemId, 1, content);
-    hero = insertSkillPage(hero, recipe.id, recipe.pages[0].itemId, content);
+    hero = cloneData(insertSkillPage(hero, recipe.id, recipe.pages[0].itemId, content));
     const before = structuredClone(hero);
     dropOwnedItem(hero, { itemId: recipe.incompleteItemId }, 1, content);
     delete before.inventory[recipe.incompleteItemId];
@@ -98,7 +99,7 @@ describe('inventory drops', () => {
       saved = base.toSave(),
       quest = content.data.quests[2];
     reconcileQuests(saved.hero, content, quest.offerNpc);
-    saved.hero = acceptQuest(saved.hero, quest, content);
+    saved.hero = cloneData(acceptQuest(saved.hero, quest, content));
     addItem(saved.hero, 'apple', 2, content);
     const journey = new JourneySession(content, saved);
     sessions.push(journey);

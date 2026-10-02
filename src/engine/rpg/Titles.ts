@@ -2,19 +2,27 @@ import type { TitleCondition, TitleDefinition } from '../../data/schemas/titles'
 import { SKILL_RANKS } from '../../data/schemas/skillRank';
 import type { ContentRegistry } from '../data/ContentRegistry';
 import { cloneData } from '../cloneData';
+import { produceState, readPlain, type Draft } from '../immutableState';
 import { calculateCharacterStats } from './Stats';
-import { clampHeroResources, consumeItem, heroStats, itemCount, type Hero } from './Character';
+import {
+  clampHeroResources,
+  consumeItem,
+  heroStats,
+  itemCount,
+  type Hero,
+  type HeroSnapshot,
+} from './Character';
 import type { EnchantContribution } from './EnchantEffects';
 
 export type TitleSlot = 'first' | 'second';
-export function titleState(hero: Hero, id: string) {
+export function titleState(hero: HeroSnapshot, id: string) {
   return hero.earnedTitles.includes(id)
     ? 'Earned'
     : hero.titleCollection.discovered.includes(id)
       ? 'Known'
       : 'Unknown';
 }
-export function titleEligible(hero: Hero, title: Pick<TitleDefinition, 'eligibility'>) {
+export function titleEligible(hero: HeroSnapshot, title: Pick<TitleDefinition, 'eligibility'>) {
   const requirement = title.eligibility;
   return (
     !requirement ||
@@ -25,7 +33,7 @@ export function titleEligible(hero: Hero, title: Pick<TitleDefinition, 'eligibil
 }
 /** Progression-only basis excludes equipment, titles, enchantments and temporary effects. */
 export function titleConditionProgress(
-  hero: Hero,
+  hero: HeroSnapshot,
   c: TitleCondition,
   content: ContentRegistry,
 ): { met: boolean; text: string } {
@@ -120,16 +128,18 @@ export function reconcileTitles(
   allowAwards = true,
 ) {
   const awarded: string[] = [];
+  // These predicates depend on progression facts, not awards made by this loop.
+  const facts = readPlain(hero);
   for (const title of [...content.data.titles].sort((a, b) => a.id.localeCompare(b.id))) {
     const knownBefore = titleState(hero, title.id) !== 'Unknown';
-    if (!knownBefore && title.hint && titleConditionProgress(hero, title.hint, content).met)
+    if (!knownBefore && title.hint && titleConditionProgress(facts, title.hint, content).met)
       hero.titleCollection.discovered.push(title.id);
     if (
       allowAwards &&
       !hero.earnedTitles.includes(title.id) &&
       title.award &&
       (!title.discoveryFirst || knownBefore) &&
-      titleConditionProgress(hero, title.award, content).met &&
+      titleConditionProgress(facts, title.award, content).met &&
       awardTitle(hero, title.id, source, content)
     )
       awarded.push(title.id);
@@ -150,7 +160,10 @@ export function recordTitleEvidence(hero: Hero, key: string) {
     (hero.titleCollection.evidence[key] ?? 0) + 1,
   );
 }
-export function selectedTitleEffects(hero: Hero, content: ContentRegistry): EnchantContribution[] {
+export function selectedTitleEffects(
+  hero: HeroSnapshot,
+  content: ContentRegistry,
+): EnchantContribution[] {
   return (['first', 'second'] as const).flatMap((slot) => {
     const id = hero.titleCollection.selected[slot],
       title = content.data.titles.find((t) => t.id === id);
@@ -171,7 +184,7 @@ export function selectedTitleEffects(hero: Hero, content: ContentRegistry): Ench
   });
 }
 export function titleSelectionProblem(
-  hero: Hero,
+  hero: HeroSnapshot,
   slot: TitleSlot,
   id: string | undefined,
   content: ContentRegistry,
@@ -184,27 +197,33 @@ export function titleSelectionProblem(
   if (!titleEligible(hero, title))
     return 'The required learned skill rank is not currently eligible.';
 }
-export function selectTitle(
-  hero: Hero,
+export function selectTitleDraft(
+  hero: Draft<Hero>,
   slot: TitleSlot,
   id: string | undefined,
   content: ContentRegistry,
 ) {
   const problem = titleSelectionProblem(hero, slot, id, content);
   if (problem) throw new Error(problem);
-  const candidate = cloneData(hero);
-  if (id) candidate.titleCollection.selected[slot] = id;
-  else delete candidate.titleCollection.selected[slot];
-  clampHeroResources(candidate, content);
-  return candidate;
+  if (id) hero.titleCollection.selected[slot] = id;
+  else delete hero.titleCollection.selected[slot];
+  clampHeroResources(hero, content);
+}
+export function selectTitle(
+  hero: HeroSnapshot,
+  slot: TitleSlot,
+  id: string | undefined,
+  content: ContentRegistry,
+): HeroSnapshot {
+  return produceState(hero, (draft) => selectTitleDraft(draft, slot, id, content));
 }
 export function previewTitle(
-  hero: Hero,
+  hero: HeroSnapshot,
   slot: TitleSlot,
   id: string | undefined,
   content: ContentRegistry,
 ) {
-  const candidate = selectTitle(hero, slot, id, content);
+  const candidate = selectTitle(Object.isFrozen(hero) ? hero : cloneData(hero), slot, id, content);
   return {
     before: heroStats(hero, content),
     after: heroStats(candidate, content),
@@ -216,17 +235,26 @@ export function previewTitle(
     },
   };
 }
-export function unlockTitleCoupon(hero: Hero, itemId: string, content: ContentRegistry) {
+export function unlockTitleCouponDraft(
+  hero: Draft<Hero>,
+  itemId: string,
+  content: ContentRegistry,
+) {
   const item = content.item(itemId),
     title = content.data.titles.find((t) => t.id === item.titleId);
   if (item.kind !== 'titleCoupon' || !title || hero.earnedTitles.includes(title.id))
     throw new Error('Invalid coupon or title already earned. The coupon was kept.');
-  const candidate = cloneData(hero);
-  consumeItem(candidate.inventory, itemId);
-  awardTitle(candidate, title.id, `coupon/${itemId}/once`, content);
-  return candidate;
+  consumeItem(hero.inventory, itemId);
+  awardTitle(hero, title.id, `coupon/${itemId}/once`, content);
 }
-export function validateTitleProgression(hero: Hero, content: ContentRegistry) {
+export function unlockTitleCoupon(
+  hero: HeroSnapshot,
+  itemId: string,
+  content: ContentRegistry,
+): HeroSnapshot {
+  return produceState(hero, (draft) => unlockTitleCouponDraft(draft, itemId, content));
+}
+export function validateTitleProgression(hero: HeroSnapshot, content: ContentRegistry) {
   const { discovered, records, selected } = hero.titleCollection;
   if (
     new Set(discovered).size !== discovered.length ||

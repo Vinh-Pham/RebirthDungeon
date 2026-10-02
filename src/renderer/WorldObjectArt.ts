@@ -1,12 +1,13 @@
+import type { Immutable } from '../engine/immutableState';
 import type { GameContent } from '../data/schemas/content';
 import type { WorldMap } from '../data/schemas/world';
-import type { DungeonRun } from '../engine/dungeon/Dungeon';
+import type { DungeonSnapshot } from '../engine/dungeon/Dungeon';
 
 /** Resolve art at display time so saved dungeon blueprints receive current sprites. */
 export function worldObjectSprite(
-  object: WorldMap['objects'][number],
+  object: Immutable<WorldMap['objects'][number]>,
   content: Pick<GameContent, 'maps' | 'enemies' | 'atlases'>,
-  dungeon?: DungeonRun,
+  dungeon?: DungeonSnapshot,
   claimed = false,
 ) {
   if (object.sprite) return object.sprite;

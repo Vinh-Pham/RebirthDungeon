@@ -13,6 +13,7 @@ This is an Expo/React Native RPG with a deterministic TypeScript game engine, tu
 | Work area                                                                      | Read for implementation details                                                                               |
 | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
 | Architecture, playable loop, session ownership, saves, delivery                | [docs/game-plan.md](docs/game-plan.md)                                                                        |
+| Immutable campaign updates, snapshots, draft composition, state performance    | [docs/immutable-state.md](docs/immutable-state.md)                                                            |
 | Character setup, leveling, AP, cumulative levels, talents, aging/rebirth scope | [docs/gameplay/character.md](docs/gameplay/character.md)                                                      |
 | Attributes, combat stat derivation, resources, wounds, fullness, statuses      | [docs/gameplay/stats.md](docs/gameplay/stats.md)                                                              |
 | Turn flow, targeting, attacks, skills, damage, encounter results               | [docs/gameplay/battle.md](docs/gameplay/battle.md)                                                            |
@@ -101,6 +102,21 @@ Register new artwork in the owning static asset registry, including `src/ui/shar
 - When changing persisted contracts, inspect `src/persistence/SaveSchema.ts`, add a versioned migration when needed, and preserve existing character ownership and earned progress. Campaign-format migrations and storage-database migrations are separate concerns. Corrupt or future saves must not silently replace a character.
 - Reuse HeroUI, `src/ui/shared/DungeonUI.tsx`, and current Uniwind/theme tokens. Provide complete touch interactions, safe-area handling, readable small-screen layouts, and accessible labels; preserve web keyboard behavior.
 - Keep rendering and audio as observers of resolved state/events. Avoid per-frame React updates; clean up subscriptions, timers, sessions, and playback resources on exit/background transitions.
+
+## Immutable campaign state
+
+Read [docs/immutable-state.md](docs/immutable-state.md) before changing campaign updates, RPG candidates, snapshots or save checkpoint ownership. Follow `src/engine/immutableState.ts`, the owning session/RPG modules and `src/tests/world/ImmutableCampaign.test.ts`.
+
+- Route campaign writes through the existing `JourneySession` transition and `produceState` boundary. Use one synchronous producer per leaf command and compose reusable `*Draft` RPG operations inside it; do not call public immutable candidate functions inside another recipe. Preserve `TRAVEL_TO` as individually committed `MOVE` steps.
+- Use `HeroSnapshot`, `CampaignSnapshot` and `DungeonSnapshot` for read-only consumers; mutable schema types describe owned data being constructed, parsed or exported. Never cast a snapshot to a mutable type to bypass ownership. Public RPG candidate functions return frozen heroes; explicitly copy their results when a caller or test needs editable data.
+- Draft only owned plain JSON trees. Keep session instances, Miniplex entities, RNG generators, battle controllers, subscriptions, animation queues, audio and storage objects outside Immer. Avoid cycles and multiple references to the same mutable object within a campaign tree.
+- Reuse the dedicated Immer instance in `immutableState.ts`. Keep automatic freezing enabled in development and production; do not change global Immer settings or introduce patches, Map/Set plugins or class drafting without a demonstrated requirement.
+- Stage RNG draws, messages, service state, respawn requests and outgoing events with the campaign draft. A rejected recipe must leave the committed view, RNG, ECS and metadata unchanged. Synchronize independent ECS components and notify observers only after successful resolution. Notification failures do not roll back or authorize replaying an accepted action; preserve the reentry guard.
+- Keep observation pure. `getSnapshot()` and view projection must not reconcile quests/titles, grant progression or draw randomness. Reconcile through initialization or the owning accepted transition.
+- Drafts must not escape a recipe into entities, observers, retained candidates or asynchronous work. Use `readPlain` only for synchronous read queries that need the latest draft values; never mutate or publish that temporary projection. Obtain returned receipts and other retained references from finalized state.
+- Preserve battle isolation. Copy inventory, learned skills, weapon/enchant values and temporary effect entries through `applyHero` or the existing mutable ownership boundary. Mutable simulation components must not borrow draft proxies or frozen campaign objects.
+- Preserve structural sharing for unchanged hero branches and dungeon geometry. Candidates share their initial immutable checkpoint while owning independent engines. The host and autosaver retain frozen checkpoint references; do not deep-clone campaign data on each notification. Keep complete save validation/serialization and `toSave()` as a genuinely detached mutable export, and parse external inputs into independent data before freezing them.
+- When changing these boundaries, cover frozen old snapshots, unchanged references, late rejection/RNG rollback, draft escape, encounter isolation and exact failed-write retries as applicable. For changes to shared update paths, use `scripts/profile-campaign.mjs` to compare representative small and populated campaigns. Do not disable freezing to hide a regression or treat desktop timings as native device performance evidence.
 
 ## Expo has changed — do not trust your training data
 

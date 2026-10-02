@@ -2,7 +2,8 @@ import { z } from 'zod';
 import { SkillRankSchema, type Skill } from '../../data/schemas/content';
 import type { ContentRegistry } from '../data/ContentRegistry';
 import type { Entity } from '../ecs/Entity';
-import type { Hero } from './Character';
+import type { Hero, HeroSnapshot } from './Character';
+import { produceState, type Draft } from '../immutableState';
 import { consumeItem } from './Inventory';
 import { cloneData } from '../cloneData';
 
@@ -88,7 +89,11 @@ export function trainingPoints(skill: Skill, record: LearnedSkills[string]) {
     0,
   );
 }
-export function rankUpReason(hero: Hero, id: string, content: ContentRegistry): string | undefined {
+export function rankUpReason(
+  hero: HeroSnapshot,
+  id: string,
+  content: ContentRegistry,
+): string | undefined {
   const record = hero.learnedSkills[id];
   if (!record) return 'Learn this skill first';
   const skill = content.skill(id),
@@ -97,38 +102,51 @@ export function rankUpReason(hero: Hero, id: string, content: ContentRegistry): 
   if (trainingPoints(skill, record) < 100) return 'Requires 100 training';
   if (hero.ap < rank.apCost!) return `Training complete · Need ${rank.apCost! - hero.ap} AP`;
 }
-export function rankUpSkill(hero: Hero, id: string, content: ContentRegistry): Hero {
+/** Reusable mutations compose inside one campaign producer. */
+export function rankUpSkillDraft(hero: Draft<Hero>, id: string, content: ContentRegistry) {
   const reason = rankUpReason(hero, id, content);
   if (reason) throw new Error(reason);
-  const candidate = cloneData(hero),
-    rank = gameRank(content.skill(id), hero.learnedSkills[id].rank);
-  candidate.ap -= rank.apCost!;
-  candidate.learnedSkills[id] = { rank: rank.nextRank!, objectiveCounts: {} };
-  return candidate;
+  const rank = gameRank(content.skill(id), hero.learnedSkills[id].rank);
+  hero.ap -= rank.apCost!;
+  hero.learnedSkills[id] = { rank: rank.nextRank!, objectiveCounts: {} };
 }
-export function learnSkill(hero: Hero, id: string, content: ContentRegistry): Hero {
+export function rankUpSkill(
+  hero: HeroSnapshot,
+  id: string,
+  content: ContentRegistry,
+): HeroSnapshot {
+  return produceState(hero, (draft) => rankUpSkillDraft(draft, id, content));
+}
+export function learnSkillDraft(hero: Draft<Hero>, id: string, content: ContentRegistry) {
   const skill = content.skill(id);
   gameRank(skill, 'F');
   if (hero.learnedSkills[id]) throw new Error('This skill is already learned');
-  const candidate = cloneData(hero);
-  candidate.learnedSkills[id] = { rank: 'F', objectiveCounts: {} };
-  if (!candidate.discoveredSkills.includes(id)) candidate.discoveredSkills.push(id);
-  return candidate;
+  hero.learnedSkills[id] = { rank: 'F', objectiveCounts: {} };
+  if (!hero.discoveredSkills.includes(id)) hero.discoveredSkills.push(id);
 }
-export function readSkillBook(hero: Hero, itemId: string, content: ContentRegistry): Hero {
+export function learnSkill(hero: HeroSnapshot, id: string, content: ContentRegistry): HeroSnapshot {
+  return produceState(hero, (draft) => learnSkillDraft(draft, id, content));
+}
+export function readSkillBookDraft(hero: Draft<Hero>, itemId: string, content: ContentRegistry) {
   const item = content.item(itemId);
   if (item.kind !== 'skillBook' || !item.skillId || !hero.inventory[itemId])
     throw new Error('Own a complete skill book first');
-  const candidate = learnSkill(hero, item.skillId, content);
-  consumeItem(candidate.inventory, itemId);
-  return candidate;
+  learnSkillDraft(hero, item.skillId, content);
+  consumeItem(hero.inventory, itemId);
 }
-export function insertSkillPage(
-  hero: Hero,
+export function readSkillBook(
+  hero: HeroSnapshot,
+  itemId: string,
+  content: ContentRegistry,
+): HeroSnapshot {
+  return produceState(hero, (draft) => readSkillBookDraft(draft, itemId, content));
+}
+export function insertSkillPageDraft(
+  hero: Draft<Hero>,
   recipeId: string,
   pageId: string,
   content: ContentRegistry,
-): Hero {
+) {
   const recipe = content.data.skillBookRecipes.find((r) => r.id === recipeId);
   const collection = hero.bookCollections[recipeId];
   if (
@@ -142,21 +160,26 @@ export function insertSkillPage(
     throw new Error(
       'Page is missing, unrelated, already inserted, or the matching book is unavailable',
     );
-  const candidate = cloneData(hero);
-  const next = (candidate.bookCollections[recipeId] ??= { insertedPages: [], completed: false });
+  const next = (hero.bookCollections[recipeId] ??= { insertedPages: [], completed: false });
   next.insertedPages.push(pageId);
-  consumeItem(candidate.inventory, pageId);
+  consumeItem(hero.inventory, pageId);
   if (next.insertedPages.length === recipe.pages.length) {
-    if ((candidate.inventory[recipe.completeItemId] ?? 0) >= 999)
+    if ((hero.inventory[recipe.completeItemId] ?? 0) >= 999)
       throw new Error('Inventory stack is full');
-    candidate.inventory[recipe.completeItemId] =
-      (candidate.inventory[recipe.completeItemId] ?? 0) + 1;
-    consumeItem(candidate.inventory, recipe.incompleteItemId);
+    hero.inventory[recipe.completeItemId] = (hero.inventory[recipe.completeItemId] ?? 0) + 1;
+    consumeItem(hero.inventory, recipe.incompleteItemId);
     next.completed = true;
   }
-  return candidate;
 }
-export function validateSkillProgression(hero: Hero, content: ContentRegistry) {
+export function insertSkillPage(
+  hero: HeroSnapshot,
+  recipeId: string,
+  pageId: string,
+  content: ContentRegistry,
+): HeroSnapshot {
+  return produceState(hero, (draft) => insertSkillPageDraft(draft, recipeId, pageId, content));
+}
+export function validateSkillProgression(hero: HeroSnapshot, content: ContentRegistry) {
   for (const [id, record] of Object.entries(hero.learnedSkills)) {
     const rank = gameRank(content.skill(id), record.rank);
     if (

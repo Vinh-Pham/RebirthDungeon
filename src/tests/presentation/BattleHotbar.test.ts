@@ -1,3 +1,4 @@
+import { cloneData } from '../../engine/cloneData';
 import { afterEach, describe, expect, it } from 'vitest';
 import { loadGameContent } from '../../data/content';
 import { ContentRegistry } from '../../engine/data/ContentRegistry';
@@ -15,7 +16,7 @@ const sessions: BattleSession[] = [];
 function create(registry = content) {
   let hero = createHero(registry);
   for (const id of ['smash', 'combat-mastery', 'sword-mastery'])
-    hero = learnSkill(hero, id, registry);
+    hero = cloneData(learnSkill(hero, id, registry));
   hero.learnedSkills.icebolt.rank = 'E';
   const session = new BattleSession(registry, 12345, 'chamber', hero);
   sessions.push(session);

@@ -1,5 +1,5 @@
 import type { TitleDefinition } from '../../data/schemas/titles';
-import type { Hero } from '../../engine/rpg/Character';
+import type { HeroSnapshot } from '../../engine/rpg/Character';
 import { titleState } from '../../engine/rpg/Titles';
 export const titleStatLabels = {
   strength: 'STR',
@@ -19,7 +19,7 @@ export const titleStatLabels = {
 };
 export const slotLabel = { first: 'First Title', second: 'Second Title' };
 export function visibleTitles(
-  hero: Hero,
+  hero: HeroSnapshot,
   definitions: readonly TitleDefinition[],
   search: string,
   slot: 'all' | TitleDefinition['slot'],

@@ -1,3 +1,4 @@
+import { cloneData } from '../../engine/cloneData';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { loadGameContent } from '../../data/content';
 import { JourneyHost } from '../../game/JourneyHost';
@@ -144,7 +145,7 @@ describe('durable character progression candidates', () => {
   });
   it('spends AP exactly once after successful retry and restores a manual slot as a whole', async () => {
     const state = savedState();
-    state.hero = learnSkill(state.hero, 'smash', content);
+    state.hero = cloneData(learnSkill(state.hero, 'smash', content));
     state.hero.ap = 3;
     state.hero.learnedSkills.smash.objectiveCounts = { uses: 20, hits: 10, defeats: 1 };
     state.hero.health = 30;
@@ -171,7 +172,7 @@ describe('durable character progression candidates', () => {
     async (result) => {
       vi.useFakeTimers();
       const state = savedState();
-      state.hero = learnSkill(state.hero, 'smash', content);
+      state.hero = cloneData(learnSkill(state.hero, 'smash', content));
       addItem(state.hero, 'iron-blade', 1, content);
       state.hero.equipment.weapon = 'weapon-1';
       const { host, storage, rows } = await hostWith(state);

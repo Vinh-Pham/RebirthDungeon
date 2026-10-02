@@ -1,8 +1,8 @@
-import type { CampaignState } from './SaveSchema';
+import type { CampaignSnapshot } from './SaveSchema';
 import type { SaveRepository } from './SaveRepository';
-/** Capture detached state at command boundaries, coalesce bursts, surface failures. */
+/** Retain immutable checkpoints at command boundaries, coalesce bursts, surface failures. */
 export class AutoSaver {
-  private pending?: CampaignState;
+  private pending?: CampaignSnapshot;
   private timer?: ReturnType<typeof setTimeout>;
   private closed = false;
   private inFlight?: Promise<void>;
@@ -10,7 +10,7 @@ export class AutoSaver {
     private repository: SaveRepository,
     private onError: (error: unknown) => void,
   ) {}
-  schedule(state: CampaignState) {
+  schedule(state: CampaignSnapshot) {
     if (this.closed) return;
     this.pending = state;
     if (this.timer) clearTimeout(this.timer);

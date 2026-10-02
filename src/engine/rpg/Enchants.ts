@@ -1,3 +1,4 @@
+import { produceState, type Draft } from '../immutableState';
 import { cloneData } from '../cloneData';
 import type { ContentRegistry } from '../data/ContentRegistry';
 import { createGameRandom } from '../Random';
@@ -11,6 +12,7 @@ import {
   ownedEquipment,
   type EquipmentReference,
   type Hero,
+  type HeroSnapshot,
 } from './Character';
 import { consumeItem } from './Inventory';
 import { gameRank } from './Skills';
@@ -55,7 +57,7 @@ export function compatibleEnchant(
     enchant.tags.every((tag) => item.weaponTags.includes(tag))
   );
 }
-function recipe(hero: Hero, content: ContentRegistry) {
+function recipe(hero: HeroSnapshot, content: ContentRegistry) {
   const learned = hero.learnedSkills.enchant,
     rules = content.data.enchantingRules;
   if (!learned || !rules) throw new Error('Learn Enchant from the refuge keeper first');
@@ -64,12 +66,16 @@ function recipe(hero: Hero, content: ContentRegistry) {
   if (!recipe) throw new Error('Enchant is unsupported at this rank');
   return { learned, rules, recipe };
 }
-function targetEquipment(hero: Hero, target: EquipmentReference, content: ContentRegistry) {
+function targetEquipment(hero: HeroSnapshot, target: EquipmentReference, content: ContentRegistry) {
   const equipment = ownedEquipment(hero, target);
   if (equipment.locked) throw new Error('Unlock this equipment before enchanting or burning');
   return { equipment, item: content.item(equipment.itemId) };
 }
-export function previewEnchant(hero: Hero, selection: EnchantSelection, content: ContentRegistry) {
+export function previewEnchant(
+  hero: HeroSnapshot,
+  selection: EnchantSelection,
+  content: ContentRegistry,
+) {
   const { learned, rules, recipe: costs } = recipe(hero, content);
   const { equipment, item } = targetEquipment(hero, selection.target, content);
   const scroll = content.item(selection.scrollId),
@@ -108,7 +114,11 @@ export function previewEnchant(hero: Hero, selection: EnchantSelection, content:
       : undefined,
   };
 }
-export function previewBurn(hero: Hero, target: EquipmentReference, content: ContentRegistry) {
+export function previewBurn(
+  hero: HeroSnapshot,
+  target: EquipmentReference,
+  content: ContentRegistry,
+) {
   const { recipe: costs, rules } = recipe(hero, content),
     { equipment, item } = targetEquipment(hero, target, content);
   const outputs = (['prefix', 'suffix'] as const).flatMap((slot) => {
@@ -125,7 +135,12 @@ export function previewBurn(hero: Hero, target: EquipmentReference, content: Con
     throw new Error('Burning requires one mana herb and one holy water');
   if (hero.mana < costs.burnManaCost) throw new Error(`Burning requires ${costs.burnManaCost} MP`);
   // Reserve every possible output after input consumption, before any draw or destruction.
-  const after = cloneData(hero);
+  const after = {
+    ...hero,
+    inventory: { ...hero.inventory },
+    weapons: { ...hero.weapons },
+    armors: { ...hero.armors },
+  };
   consumeItem(after.inventory, rules.manaHerbId);
   consumeItem(after.inventory, rules.holyWaterId);
   if ('weaponId' in target) delete after.weapons[target.weaponId];
@@ -161,10 +176,10 @@ function awardTraining(
       );
   }
 }
-export function operationReceipt(hero: Hero, operationId: string) {
+export function operationReceipt(hero: HeroSnapshot, operationId: string) {
   return hero.enchanting.receipts.find((r) => r.id === operationId);
 }
-function requireNewOperation(hero: Hero, operationId: string) {
+function requireNewOperation(hero: HeroSnapshot, operationId: string) {
   if (
     operationId !== `enchant-${hero.enchanting.nextOperationId}` ||
     !Number.isSafeInteger(hero.enchanting.nextOperationId + 1)
@@ -177,32 +192,35 @@ function accept(hero: Hero, receipt: Hero['enchanting']['receipts'][number]) {
   if (hero.enchanting.receipts.length > 100) hero.enchanting.receipts.shift();
 }
 /** Pure durable candidates: callers publish only after the whole result is saved. */
-export function applyEnchant(hero: Hero, request: EnchantRequest, content: ContentRegistry) {
+export function applyEnchantDraft(
+  hero: Draft<Hero>,
+  request: EnchantRequest,
+  content: ContentRegistry,
+) {
   const previous = operationReceipt(hero, request.operationId);
   if (previous) {
     if (previous.kind !== 'apply') throw new Error('Operation ID belongs to another action');
-    return { hero: cloneData(hero), receipt: previous };
+    return previous;
   }
   requireNewOperation(hero, request.operationId);
-  const preview = previewEnchant(hero, request, content),
-    candidate = cloneData(hero);
+  const preview = previewEnchant(hero, request, content);
   const stream = createGameRandom(hero.enchanting.seed);
   stream.restore(hero.enchanting.state);
   const random = stream;
   const success = rollSucceeds(random.int(0, 9999), preview.chanceBp);
-  consumeItem(candidate.inventory, request.scrollId);
-  consumeItem(candidate.inventory, request.powderId);
-  candidate.mana -= preview.costs.manaCost;
+  consumeItem(hero.inventory, request.scrollId);
+  consumeItem(hero.inventory, request.powderId);
+  hero.mana -= preview.costs.manaCost;
   if (success) {
     const installed: InstalledEnchant = { enchantId: preview.enchant.id, values: {} };
     for (const clause of preview.enchant.clauses)
       installed.values[clause.id] =
         clause.min === clause.max ? clause.min : random.int(clause.min, clause.max);
-    ownedEquipment(candidate, request.target)[preview.enchant.slot] = installed;
+    ownedEquipment(hero, request.target)[preview.enchant.slot] = installed;
   }
-  awardTraining(candidate, { [success ? 'enchantSuccess' : 'enchantFailure']: 1 }, content);
-  candidate.enchanting.state = stream.snapshot();
-  clampHeroResources(candidate, content);
+  awardTraining(hero, { [success ? 'enchantSuccess' : 'enchantFailure']: 1 }, content);
+  hero.enchanting.state = stream.snapshot();
+  clampHeroResources(hero, content);
   const message = success
     ? `${preview.enchant.name} installed on ${preview.item.name}. Spent one scroll, one powder and ${preview.costs.manaCost} MP.`
     : `Enchant failed. Spent one scroll, one powder and ${preview.costs.manaCost} MP. ${preview.item.name}, durability and both enchants are preserved.`;
@@ -213,38 +231,52 @@ export function applyEnchant(hero: Hero, request: EnchantRequest, content: Conte
     recovered: [],
     message,
   };
-  accept(candidate, receipt);
-  return { hero: candidate, receipt };
+  accept(hero, receipt);
+  return receipt;
 }
-export function burnEquipment(hero: Hero, request: BurnRequest, content: ContentRegistry) {
+export function applyEnchant(
+  hero: HeroSnapshot,
+  request: EnchantRequest,
+  content: ContentRegistry,
+) {
+  const next = produceState(hero, (draft) => {
+    applyEnchantDraft(draft, request, content);
+  });
+  return { hero: next, receipt: operationReceipt(next, request.operationId)! };
+}
+
+export function burnEquipmentDraft(
+  hero: Draft<Hero>,
+  request: BurnRequest,
+  content: ContentRegistry,
+) {
   const previous = operationReceipt(hero, request.operationId);
   if (previous) {
     if (previous.kind !== 'burn') throw new Error('Operation ID belongs to another action');
-    return { hero: cloneData(hero), receipt: previous };
+    return previous;
   }
   requireNewOperation(hero, request.operationId);
-  const preview = previewBurn(hero, request.target, content),
-    candidate = cloneData(hero);
+  const preview = previewBurn(hero, request.target, content);
   const stream = createGameRandom(hero.enchanting.seed);
   stream.restore(hero.enchanting.state);
   const random = stream;
   const recovered = preview.outputs
     .filter(() => rollSucceeds(random.int(0, 9999), preview.chanceBp))
     .map((o) => o.scrollId);
-  consumeItem(candidate.inventory, preview.rules.manaHerbId);
-  consumeItem(candidate.inventory, preview.rules.holyWaterId);
-  candidate.mana -= preview.costs.burnManaCost;
+  consumeItem(hero.inventory, preview.rules.manaHerbId);
+  consumeItem(hero.inventory, preview.rules.holyWaterId);
+  hero.mana -= preview.costs.burnManaCost;
   if ('weaponId' in request.target) {
-    delete candidate.weapons[request.target.weaponId];
-    if (candidate.equipment.weapon === request.target.weaponId) delete candidate.equipment.weapon;
+    delete hero.weapons[request.target.weaponId];
+    if (hero.equipment.weapon === request.target.weaponId) delete hero.equipment.weapon;
   } else {
-    delete candidate.armors[request.target.armorId];
-    if (candidate.equipment.armor === request.target.armorId) delete candidate.equipment.armor;
+    delete hero.armors[request.target.armorId];
+    if (hero.equipment.armor === request.target.armorId) delete hero.equipment.armor;
   }
-  recovered.forEach((id) => addItem(candidate, id, 1, content));
-  awardTraining(candidate, { burnUse: 1, recovery: recovered.length }, content);
-  candidate.enchanting.state = stream.snapshot();
-  clampHeroResources(candidate, content);
+  recovered.forEach((id) => addItem(hero, id, 1, content));
+  awardTraining(hero, { burnUse: 1, recovery: recovered.length }, content);
+  hero.enchanting.state = stream.snapshot();
+  clampHeroResources(hero, content);
   const message = `Burned ${preview.item.name} permanently. Spent one mana herb, one holy water and ${preview.costs.burnManaCost} MP. Recovered ${recovered.length} scroll${recovered.length === 1 ? '' : 's'}${recovered.length ? ': ' + recovered.map((id) => content.item(id).name).join(', ') : '.'}`;
   const receipt = {
     id: request.operationId,
@@ -253,6 +285,13 @@ export function burnEquipment(hero: Hero, request: BurnRequest, content: Content
     recovered,
     message,
   };
-  accept(candidate, receipt);
-  return { hero: candidate, receipt };
+  accept(hero, receipt);
+  return receipt;
+}
+
+export function burnEquipment(hero: HeroSnapshot, request: BurnRequest, content: ContentRegistry) {
+  const next = produceState(hero, (draft) => {
+    burnEquipmentDraft(draft, request, content);
+  });
+  return { hero: next, receipt: operationReceipt(next, request.operationId)! };
 }

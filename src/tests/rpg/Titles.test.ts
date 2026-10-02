@@ -1,3 +1,4 @@
+import { cloneData } from '../../engine/cloneData';
 import { describe, expect, it } from 'vitest';
 import { loadGameContent } from '../../data/content';
 import { ContentRegistry } from '../../engine/data/ContentRegistry';
@@ -120,7 +121,7 @@ describe('title discovery and committed achievements', () => {
     ]);
     let hero = createHero(registry);
     awardTitle(hero, 'int-source', 'test', registry);
-    hero = selectTitle(hero, 'first', 'int-source', registry);
+    hero = cloneData(selectTitle(hero, 'first', 'int-source', registry));
     expect(heroStats(hero, registry).effective.intelligence).toBeGreaterThan(100);
     expect(reconcileTitles(hero, registry, 'equipment')).toEqual([]);
     expect(hero.earnedTitles).not.toContain('int-threshold');
@@ -181,7 +182,7 @@ describe('title selection and stat sources', () => {
   it('combines both slots, applies penalties, previews exact pools, and removes each source independently', () => {
     let hero = owned();
     const before = heroStats(hero, content);
-    hero = selectTitle(hero, 'first', 'guardian-breaker', content);
+    hero = cloneData(selectTitle(hero, 'first', 'guardian-breaker', content));
     expect(heroStats(hero, content).maxMana).toBe(before.maxMana - 5);
     expect(hero.mana).toBe(before.maxMana - 5);
     expect(heroStats(hero, content).combatant.minDamage).toBe(before.combatant.minDamage! + 3);
@@ -189,16 +190,16 @@ describe('title selection and stat sources', () => {
     const preview = previewTitle(hero, 'second', 'lantern-companion', content);
     expect(preview.after.maxHealth).toBe(before.maxHealth + 5);
     expect(preview.pools.health).toBe(before.maxHealth);
-    hero = selectTitle(hero, 'second', 'lantern-companion', content);
-    hero = selectTitle(hero, 'first', 'first-delver', content);
+    hero = cloneData(selectTitle(hero, 'second', 'lantern-companion', content));
+    hero = cloneData(selectTitle(hero, 'first', 'first-delver', content));
     expect(heroStats(hero, content).maxHealth).toBe(before.maxHealth + 15);
     expect(hero.mana).toBe(before.maxMana - 5);
     hero.health = before.maxHealth + 15;
     hero.wounds = 0;
-    hero = selectTitle(hero, 'first', undefined, content);
+    hero = cloneData(selectTitle(hero, 'first', undefined, content));
     expect(heroStats(hero, content).maxHealth).toBe(before.maxHealth + 5);
     expect(hero.health).toBe(before.maxHealth + 5);
-    hero = selectTitle(hero, 'second', undefined, content);
+    hero = cloneData(selectTitle(hero, 'second', undefined, content));
     expect(heroStats(hero, content)).toEqual(before);
     expect(hero.health).toBe(before.maxHealth);
     expect(hero.mana).toBe(before.maxMana - 5);
@@ -226,24 +227,26 @@ describe('title selection and stat sources', () => {
     hero.wounds = 100;
     hero.health = 10;
     const before = heroStats(hero, registry);
-    hero = selectTitle(hero, 'first', 'tough', registry);
+    hero = cloneData(selectTitle(hero, 'first', 'tough', registry));
     const after = heroStats(hero, registry);
     expect(after.combatant.minDamage! - before.combatant.minDamage!).toBe(10);
     expect(after.combatant.protection).toBe(10);
     expect(after.attributeSources.titles.strength).toBe(30);
     expect(hero).toMatchObject({ health: 1, wounds: 7, mana: 0, stamina: 0 });
-    hero = selectTitle(hero, 'first', undefined, registry);
-    hero = selectTitle(hero, 'first', 'tough', registry);
+    hero = cloneData(selectTitle(hero, 'first', undefined, registry));
+    hero = cloneData(selectTitle(hero, 'first', 'tough', registry));
     expect(hero).toMatchObject({ health: 1, wounds: 7, mana: 0, stamina: 0 });
     validateHero(hero, registry);
   });
   it('rejects wrong slots, known ownership, and unsupported eligibility, without changing the original', () => {
     const hero = owned(),
       original = structuredClone(hero);
-    expect(() => selectTitle(hero, 'second', 'guardian-breaker', content)).toThrow('First');
-    expect(() => selectTitle(createHero(content), 'first', 'first-delver', content)).toThrow(
-      'Earn',
+    expect(() => cloneData(selectTitle(hero, 'second', 'guardian-breaker', content))).toThrow(
+      'First',
     );
+    expect(() =>
+      cloneData(selectTitle(createHero(content), 'first', 'first-delver', content)),
+    ).toThrow('Earn');
     const registry = withTitles([
       {
         id: 'rank-e',
@@ -256,7 +259,7 @@ describe('title selection and stat sources', () => {
     ]);
     const learner = createHero(registry);
     awardTitle(learner, 'rank-e', 'test', registry);
-    expect(() => selectTitle(learner, 'first', 'rank-e', registry)).toThrow('eligible');
+    expect(() => cloneData(selectTitle(learner, 'first', 'rank-e', registry))).toThrow('eligible');
     expect(hero).toEqual(original);
   });
   it('retains achievement ownership after future growth changes and clears an ineligible selection at a saved boundary', () => {
@@ -273,7 +276,7 @@ describe('title selection and stat sources', () => {
     let hero = createHero(registry);
     hero.learnedSkills.smash = { rank: 'E', objectiveCounts: {} };
     awardTitle(hero, 'rank-e', 'test', registry);
-    hero = selectTitle(hero, 'first', 'rank-e', registry);
+    hero = cloneData(selectTitle(hero, 'first', 'rank-e', registry));
     hero.learnedSkills.smash.rank = 'F';
     hero.level = 1;
     hero.cumulativeLevel = 1;
@@ -282,13 +285,13 @@ describe('title selection and stat sources', () => {
     expect(hero.titleCollection.selected.first).toBeUndefined();
     expect(hero.earnedTitles).toEqual(['rank-e']);
     hero.learnedSkills.smash.rank = 'E';
-    expect(() => selectTitle(hero, 'first', 'rank-e', registry)).not.toThrow();
+    expect(() => cloneData(selectTitle(hero, 'first', 'rank-e', registry))).not.toThrow();
   });
   it('redeems exactly one coupon without costs or automatic selection; duplicates and noncoupons stay untouched', () => {
     const hero = createHero(content);
     addItem(hero, 'lantern-title-coupon', 2, content);
     const before = structuredClone(hero),
-      earned = unlockTitleCoupon(hero, 'lantern-title-coupon', content);
+      earned = cloneData(unlockTitleCoupon(hero, 'lantern-title-coupon', content));
     expect(hero).toEqual(before);
     expect(earned.inventory['lantern-title-coupon']).toBe(1);
     expect(earned.earnedTitles).toEqual(['lantern-companion']);
@@ -296,10 +299,10 @@ describe('title selection and stat sources', () => {
     expect(earned.titleCollection.records['lantern-companion'].source).toBe(
       'coupon/lantern-title-coupon/once',
     );
-    expect(() => unlockTitleCoupon(earned, 'lantern-title-coupon', content)).toThrow(
+    expect(() => cloneData(unlockTitleCoupon(earned, 'lantern-title-coupon', content))).toThrow(
       'already earned',
     );
-    expect(() => unlockTitleCoupon(hero, 'potion', content)).toThrow('Invalid');
+    expect(() => cloneData(unlockTitleCoupon(hero, 'potion', content))).toThrow('Invalid');
     expect(heroStats(earned, content)).toEqual(heroStats(hero, content));
   });
 });
@@ -364,7 +367,7 @@ describe('title data, spoiler policy and migrations', () => {
         records: { 'first-delver': { source: 'legacy/ownership' } },
       },
     });
-    state.hero = selectTitle(owned(), 'first', 'first-delver', content);
+    state.hero = cloneData(selectTitle(owned(), 'first', 'first-delver', content));
     state.hero.health = 128;
     const retired = new ContentRegistry({
       ...content.data,
@@ -375,7 +378,9 @@ describe('title data, spoiler policy and migrations', () => {
     expect(restored.earnedTitles).toContain('first-delver');
     expect(heroStats(restored, retired).maxHealth).toBe(118);
     expect(restored.health).toBe(118);
-    expect(() => selectTitle(restored, 'first', 'first-delver', retired)).toThrow('unavailable');
+    expect(() => cloneData(selectTitle(restored, 'first', 'first-delver', retired))).toThrow(
+      'unavailable',
+    );
     expect(
       parseSave(JSON.parse(encodeSave({ ...state, hero: restored }, retired)), retired).campaign
         .hero,

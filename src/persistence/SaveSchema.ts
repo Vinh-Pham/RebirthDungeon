@@ -1,3 +1,4 @@
+import type { Immutable } from '../engine/immutableState';
 import { titleEligible } from '../engine/rpg/Titles';
 import { emptyTitleProgression } from '../engine/rpg/TitleState';
 import { emptyEnchantProgression } from '../engine/rpg/EnchantState';
@@ -117,6 +118,7 @@ const LegacySaveSchema = z.strictObject({
   campaign: LegacyCampaignSchema.omit({ audio: true, dungeon: true }),
 });
 export type CampaignState = z.infer<typeof CampaignSchema>;
+export type CampaignSnapshot = Immutable<CampaignState>;
 export type SaveGame = z.infer<typeof SaveSchema>;
 export function validateCampaign(raw: unknown, content: ContentRegistry): CampaignState {
   const state = CampaignSchema.parse(raw);
@@ -360,7 +362,7 @@ export function parseSave(
   return { ...save, campaign: validateCampaign(save.campaign, content) };
 }
 export function encodeSave(
-  state: CampaignState,
+  state: CampaignSnapshot,
   content: ContentRegistry,
   savedAt = new Date().toISOString(),
 ): string {

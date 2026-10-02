@@ -1,3 +1,4 @@
+import { cloneData } from '../../engine/cloneData';
 import { versionSevenHero } from '../persistence/legacyFixture';
 import { afterEach, describe, expect, it } from 'vitest';
 import { loadGameContent } from '../../data/content';
@@ -59,14 +60,16 @@ function approach(journey: JourneySession, id: string) {
 }
 function activeSide(hero = createHero(content), registry = content) {
   reconcileQuests(hero, registry, side.offerNpc);
-  return acceptQuest(
-    hero,
-    registry.data.quests.find((q) => q.id === side.id)!,
-    registry,
+  return cloneData(
+    acceptQuest(
+      hero,
+      registry.data.quests.find((q) => q.id === side.id)!,
+      registry,
+    ),
   );
 }
 function activeSeal() {
-  let hero = learnSkill(createHero(content), 'smash', content);
+  let hero = cloneData(learnSkill(createHero(content), 'smash', content));
   hero.quests[main.id] = {
     status: 'completed',
     stageId: main.stages[1].id,
@@ -74,7 +77,7 @@ function activeSeal() {
     claimId: `quest/${main.id}/once`,
   };
   reconcileQuests(hero, content);
-  hero = acceptQuest(hero, seal, content);
+  hero = cloneData(acceptQuest(hero, seal, content));
   return hero;
 }
 function outcome(actionId: number): ActionOutcome {
@@ -165,11 +168,11 @@ describe('quest content and prerequisites', () => {
     }
   });
   it('uses explicit AND/OR saved facts and numeric rank order; training alone cannot satisfy a higher rank', () => {
-    let hero = learnSkill(createHero(content), 'sword-mastery', content);
+    let hero = cloneData(learnSkill(createHero(content), 'sword-mastery', content));
     hero.ap = 3;
     hero.learnedSkills['sword-mastery'].objectiveCounts = { hits: 20, defeats: 4 };
     expect(questEligible(hero, milestone.prerequisite)).toBe(false);
-    hero = rankUpSkill(hero, 'sword-mastery', content);
+    hero = cloneData(rankUpSkill(hero, 'sword-mastery', content));
     expect(questEligible(hero, milestone.prerequisite)).toBe(true);
     expect(rankAtLeast('9', 'A')).toBe(true);
     expect(rankAtLeast('F', 'E')).toBe(false);
@@ -270,7 +273,7 @@ describe('ordered town objectives, deliveries and claims', () => {
     expect(questReady(journey.toSave().hero, side)).toBe(false);
     expect(questItemNeeds(journey.toSave().hero, content)[0].count).toBe(1);
     const before = journey.toSave().hero;
-    expect(() => claimQuest(before, side, content)).toThrow('not ready');
+    expect(() => cloneData(claimQuest(before, side, content))).toThrow('not ready');
     expect(journey.toSave().hero).toEqual(before);
     const armored = createHero(content);
     addItem(armored, 'moss-mail', 1, content);
@@ -290,17 +293,19 @@ describe('ordered town objectives, deliveries and claims', () => {
     addItem(hero, 'apple', 2, content);
     hero.inventory.potion = 999;
     const before = structuredClone(hero);
-    expect(() => claimQuest(hero, side, content)).toThrow('full');
+    expect(() => cloneData(claimQuest(hero, side, content))).toThrow('full');
     expect(hero).toEqual(before);
     const raw = structuredClone(content.data);
     raw.quests[2].rewards.items = [{ itemId: 'apple', quantity: 2 }];
     const registry = new ContentRegistry(raw),
       full = activeSide(createHero(registry), registry);
     addItem(full, 'apple', 999, registry);
-    expect(claimQuest(full, registry.data.quests[2], registry).inventory.apple).toBe(999);
+    expect(cloneData(claimQuest(full, registry.data.quests[2], registry)).inventory.apple).toBe(
+      999,
+    );
     hero.inventory.potion = 2;
     hero.gold = 1000000;
-    expect(() => claimQuest(hero, side, content)).toThrow('capacity');
+    expect(() => cloneData(claimQuest(hero, side, content))).toThrow('capacity');
     expect(hero.inventory.apple).toBe(2);
   });
   it('awards XP, per-level AP, restored resources, explicit AP and a title together without equipping it', () => {
@@ -318,7 +323,7 @@ describe('ordered town objectives, deliveries and claims', () => {
     hero.wounds = 20;
     hero.fullness = 50;
     const before = structuredClone(hero),
-      claimed = claimQuest(hero, seal, content);
+      claimed = cloneData(claimQuest(hero, seal, content));
     expect(hero).toEqual(before);
     expect(claimed).toMatchObject({
       level: 2,
@@ -332,7 +337,7 @@ describe('ordered town objectives, deliveries and claims', () => {
     expect(claimed.health).toBeGreaterThan(20);
     expect(claimed.equipment).toEqual(hero.equipment);
     hero.ap = 999998;
-    expect(() => claimQuest(hero, seal, content)).toThrow('capacity');
+    expect(() => cloneData(claimQuest(hero, seal, content))).toThrow('capacity');
     expect(hero.health).toBe(20);
   });
   it('reserves AP for quest-earned levels beyond the former level-99 cap', () => {
@@ -345,10 +350,10 @@ describe('ordered town objectives, deliveries and claims', () => {
       ap: 1000000,
     });
     const before = structuredClone(hero);
-    expect(() => claimQuest(hero, side, content)).toThrow('capacity');
+    expect(() => cloneData(claimQuest(hero, side, content))).toThrow('capacity');
     expect(hero).toEqual(before);
     hero.ap = 999999;
-    expect(claimQuest(hero, side, content)).toMatchObject({
+    expect(cloneData(claimQuest(hero, side, content))).toMatchObject({
       level: 100,
       cumulativeLevel: 100,
       ap: 1000000,
@@ -382,7 +387,7 @@ describe('ordered town objectives, deliveries and claims', () => {
     hero.learnedSkills['sword-mastery'] = { rank: 'E', objectiveCounts: {} };
     hero.discoveredSkills.push('sword-mastery');
     reconcileQuests(hero, content);
-    hero = acceptQuest(hero, milestone, content);
+    hero = cloneData(acceptQuest(hero, milestone, content));
     trackObjective(hero, seal, 'practice-smash');
     trackObjective(hero, side, 'healer-apples');
     trackObjective(hero, milestone, 'mastery-rank-e');
@@ -457,7 +462,7 @@ describe('attempt-local practice and versioned saved progress', () => {
   it('migrates version 6 without restoring depleted resources, replaying evidence, awarding XP/AP or auto-learning', () => {
     const journey = session();
     const campaign = journey.toSave();
-    campaign.hero = learnSkill(campaign.hero, 'sword-mastery', content);
+    campaign.hero = cloneData(learnSkill(campaign.hero, 'sword-mastery', content));
     campaign.hero.learnedSkills['sword-mastery'].rank = 'E';
     campaign.hero.ap = 11;
     campaign.hero.health = 20;

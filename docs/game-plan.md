@@ -1,6 +1,6 @@
 # Rebirth Dungeon: React Native Game Plan
 
-Updated **October 1, 2026**. Target: **Expo SDK 57, React Native 0.86, React 19, TypeScript**, with a portrait, mobile-first experience on iOS and Android and a compatible web build. The repository already implements exploration, turn-based encounters, equipment, character growth, local saves, and audio. This document describes that baseline and the next work; a planned feature is not an implementation claim.
+Updated **October 2, 2026**. Target: **Expo SDK 57, React Native 0.86, React 19, TypeScript**, with a portrait, mobile-first experience on iOS and Android and a compatible web build. The repository already implements exploration, turn-based encounters, equipment, character growth, local saves, and audio. This document describes that baseline and the next work; a planned feature is not an implementation claim.
 
 ## 1. Documentation map
 
@@ -21,20 +21,22 @@ Updated **October 1, 2026**. Target: **Expo SDK 57, React Native 0.86, React 19,
 
 ## 2. Current architecture
 
-| Layer                | Existing location                                                  | Responsibility                                                                       |
-| -------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
-| Routes               | `src/app/`                                                         | Expo Router layouts and thin screen entry points                                     |
-| Screens/shared UI    | `src/ui/`, `src/components/`                                       | React Native/HeroUI controls, theme, accessible actions                              |
-| Session ownership    | `src/game/JourneyHost.ts`, `JourneySession.ts`, `BattleSession.ts` | One selected character's journey, active encounter, copied observations and lifetime |
-| Simulation           | `src/engine/`                                                      | Commands/events, Miniplex ECS, seeded RNG, battle and RPG rules                      |
-| Battle orchestration | `src/engine/battle/`                                               | XState action flow, fixed turn queue, hit/critical/damage and skill resolution       |
-| Content              | `src/data/`                                                        | JSON definitions validated by Zod and `ContentRegistry`                              |
-| Presentation         | `src/renderer/`                                                    | Skia maps/sprites and Reanimated effects from resolved events                        |
-| Persistence          | `src/persistence/`                                                 | Save validation/migration, serialized repository operations and autosave             |
-| Audio/preferences    | `src/audio/`, `src/state/`                                         | Playback and settings; UI preferences are not authoritative gameplay                 |
-| Verification         | `src/tests/`                                                       | Vitest engine, battle, content, RPG, world, persistence and presentation suites      |
+| Layer                | Existing location                                                  | Responsibility                                                                          |
+| -------------------- | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| Routes               | `src/app/`                                                         | Expo Router layouts and thin screen entry points                                        |
+| Screens/shared UI    | `src/ui/`, `src/components/`                                       | React Native/HeroUI controls, theme, accessible actions                                 |
+| Session ownership    | `src/game/JourneyHost.ts`, `JourneySession.ts`, `BattleSession.ts` | One selected character's journey, immutable campaign checkpoints and encounter lifetime |
+| Simulation           | `src/engine/`                                                      | Commands/events, Miniplex ECS, seeded RNG, battle and RPG rules                         |
+| Battle orchestration | `src/engine/battle/`                                               | XState action flow, fixed turn queue, hit/critical/damage and skill resolution          |
+| Content              | `src/data/`                                                        | JSON definitions validated by Zod and `ContentRegistry`                                 |
+| Presentation         | `src/renderer/`                                                    | Skia maps/sprites and Reanimated effects from resolved events                           |
+| Persistence          | `src/persistence/`                                                 | Save validation/migration, serialized repository operations and autosave                |
+| Audio/preferences    | `src/audio/`, `src/state/`                                         | Playback and settings; UI preferences are not authoritative gameplay                    |
+| Verification         | `src/tests/`                                                       | Vitest engine, battle, content, RPG, world, persistence and presentation suites         |
 
-`CharacterGameLayout` provides `CharacterGameContext` and owns the selected character's `JourneyHost`. Feature routes reuse that host; navigation must not instantiate a second campaign. Keep non-route helpers outside `src/app/`. React reads detached snapshots through the existing subscription pattern and dispatches typed intents. Engine/RPG modules remain runnable without React Native, rendering, storage, or a device clock.
+`CharacterGameLayout` provides `CharacterGameContext` and owns the selected character's `JourneyHost`. Feature routes reuse that host; navigation must not instantiate a second campaign. Keep non-route helpers outside `src/app/`. React reads frozen campaign snapshots with shared unchanged branches through the existing subscription pattern and dispatches typed intents. Engine/RPG modules remain runnable without React Native, rendering, storage, or a device clock.
+
+Campaign commands use one synchronous Immer producer per leaf command, staging RNG, messages, service state and events until success. Dungeon geometry and unchanged hero branches remain shared. Read-only observation never reconciles progression. RPG draft operations compose within that campaign producer; battle ECS and session instances remain mutable and independent. See [Immutable campaign state](immutable-state.md) for ownership, rollback, save compatibility and measured tradeoffs.
 
 Simulation state commits before external combat events are delivered. Listener failures do not undo an accepted action, and callers must not replay it. Animations, sound, navigation, and elapsed frames never determine damage, training, inventory ownership, or turns.
 
@@ -52,7 +54,7 @@ Choose/create character → explore refuge → prepare at services
 
 Exploration uses cardinal tile commands, not continuous physics. `MOVE` validates one walkable step, applies an exploration resource tick, and can start an uncleared encounter. `TRAVEL_TO` follows the shortest valid tile path and stops at the first encounter. `INTERACT` requires Manhattan distance at most one to the authored object. The visual movement tween is cosmetic; world coordinates and battle stage coordinates have different meanings.
 
-The authored refuge links to shop interiors and training halls. Procedural dungeon generation stores a validated, frozen blueprint plus mutable encounter/chest/fountain/key state. Offerings are consumed only after a complete dungeon candidate validates. Defeat every nonboss encounter, including mimics, obtain the boss key, open the boss door, defeat the boss and companions, then use the treasure key to choose one of five final chests. The entrance statue permits an early return; the treasure-room exit requires a chosen final chest. Dungeon effects and keys clear on return, while already committed items and encounter rewards remain.
+The authored refuge links to shop interiors and training halls. Procedural dungeon generation stores a validated, frozen blueprint plus encounter/chest/fountain/key progress updated through immutable campaign transitions. Offerings are consumed only after a complete dungeon candidate validates. Defeat every nonboss encounter, including mimics, obtain the boss key, open the boss door, defeat the boss and companions, then use the treasure key to choose one of five final chests. The entrance statue permits an early return; the treasure-room exit requires a chosen final chest. Dungeon effects and keys clear on return, while already committed items and encounter rewards remain.
 
 There is no exploration fog-of-war model today. Discovery/fog would require saved visibility and filtered observations before markers or journals can rely on it. Do not add a navigation/physics library merely to replace the existing small-map pathfinder.
 
@@ -78,7 +80,7 @@ Future enchanting gets an independently persisted stream. Additional RNG streams
 
 A character profile stores identity/setup: ID, name, chosen talent, starting age, and creation time. The character-scoped **campaign hero** stores playable progression, resources, inventory and equipment. Do not put a second independently mutable AP/inventory balance in the profile.
 
-Current wire saves are **version 11**, with migrations from versions 1–10. Version 11 adds an initially empty per-character `itemHotbar`, preserving resources, progression, RNG and pending checkpoints. Hotbar changes use a durable candidate; during encounters the host retains the live BattleSession, saves only configuration on the entry checkpoint, and pauses input until success or exact retry. Version 10 adopts the level-200 normal XP chart, cumulative level tracking and percentage-preserving XP migration; new characters start with 5 AP. Version 6 adds learned skills/AP; version 7 adds quest progress, receipts, tracking and earned story titles. Native storage uses Expo SQLite; web uses IndexedDB through a platform-specific adapter. Slots are `auto`, `1`, `2`, and `3`. Repository operations are serialized. The 250ms autosaver coalesces detached campaign checkpoints, retains failed writes for retry, and flushes on supported exit/background paths. The app must preserve the active session on invalid/corrupt/future saves rather than creating a replacement hero.
+Current wire saves are **version 11**, with migrations from versions 1–10. Version 11 adds an initially empty per-character `itemHotbar`, preserving resources, progression, RNG and pending checkpoints. Hotbar changes use a durable candidate; during encounters the host retains the live BattleSession, saves only configuration on the entry checkpoint, and pauses input until success or exact retry. Version 10 adopts the level-200 normal XP chart, cumulative level tracking and percentage-preserving XP migration; new characters start with 5 AP. Version 6 adds learned skills/AP; version 7 adds quest progress, receipts, tracking and earned story titles. Native storage uses Expo SQLite; web uses IndexedDB through a platform-specific adapter. Slots are `auto`, `1`, `2`, and `3`. Repository operations are serialized. The 250ms autosaver coalesces frozen campaign checkpoint references, retains failed writes for retry, and flushes on supported exit/background paths. The app must preserve the active session on invalid/corrupt/future saves rather than creating a replacement hero.
 
 An active encounter is saved as its entry hero plus pending encounter identity/seed. Loading or relaunching restarts that encounter; partial turns, statuses, presentation timers and battle RNG continuation are **not** serialized. Completed victory commits hero resources/consumptions/weapon wear, XP, gold, drops and encounter clearance together. Defeat commits used supplies/wear, restores resources/wounds/fullness, returns to the refuge, and sets gold to `floor(previousGold / 2)`; it grants no victory loot/XP. Already committed rewards from earlier encounters survive.
 

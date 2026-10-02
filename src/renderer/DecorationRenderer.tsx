@@ -1,3 +1,4 @@
+import type { Immutable } from '../engine/immutableState';
 import { useMemo } from 'react';
 import { Atlas, FilterMode, MipmapMode, Skia, useImage } from '@shopify/react-native-skia';
 import type { SpriteAtlas } from '../data/schemas/content';
@@ -12,7 +13,7 @@ export function DecorationRenderer({
   playerY,
   foreground,
 }: {
-  map: WorldMap;
+  map: Immutable<WorldMap>;
   atlases: SpriteAtlas[];
   playerY: number;
   foreground: boolean;

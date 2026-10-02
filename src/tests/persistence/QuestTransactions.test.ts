@@ -1,3 +1,4 @@
+import { cloneData } from '../../engine/cloneData';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { loadGameContent } from '../../data/content';
 import { JourneyHost, settleJourneySaves } from '../../game/JourneyHost';
@@ -71,7 +72,7 @@ afterEach(async () => {
 describe('saved quest acceptance and item delivery', () => {
   it('persists automatic availability reconciled on load without awarding a milestone reward', async () => {
     const saved = state();
-    saved.hero = learnSkill(saved.hero, 'sword-mastery', content);
+    saved.hero = cloneData(learnSkill(saved.hero, 'sword-mastery', content));
     saved.hero.learnedSkills['sword-mastery'].rank = 'E';
     saved.hero.ap = 11;
     const { host, rows } = await hostWith(saved);
@@ -109,7 +110,7 @@ describe('saved quest acceptance and item delivery', () => {
   it('saves consumed inputs, rewards and receipt together and handles a write that succeeds before reporting failure', async () => {
     const saved = serviceState('healer-interior', 'healer-keeper');
     reconcileQuests(saved.hero, content, side.offerNpc);
-    saved.hero = acceptQuest(saved.hero, side, content);
+    saved.hero = cloneData(acceptQuest(saved.hero, side, content));
     addItem(saved.hero, 'apple', 3, content);
     const { host, storage, rows } = await hostWith(saved);
     await open(host, 'healer-keeper');
@@ -147,7 +148,7 @@ describe('saved quest acceptance and item delivery', () => {
   it('does not write or consume delivery inputs when rewards exceed capacity', async () => {
     const saved = serviceState('healer-interior', 'healer-keeper');
     reconcileQuests(saved.hero, content, side.offerNpc);
-    saved.hero = acceptQuest(saved.hero, side, content);
+    saved.hero = cloneData(acceptQuest(saved.hero, side, content));
     addItem(saved.hero, 'apple', 2, content);
     saved.hero.inventory.potion = 999;
     const { host, storage } = await hostWith(saved);
@@ -294,7 +295,7 @@ describe('durable completed-encounter quest evidence', () => {
     'banks %s practice with resources and loot once, and discards an unfinished attempt on reload',
     async (result) => {
       const saved = state();
-      saved.hero = learnSkill(saved.hero, 'smash', content);
+      saved.hero = cloneData(learnSkill(saved.hero, 'smash', content));
       addItem(saved.hero, 'iron-blade', 1, content);
       saved.hero.equipment.weapon = 'weapon-1';
       saved.hero.quests[main.id] = {
@@ -304,7 +305,7 @@ describe('durable completed-encounter quest evidence', () => {
         claimId: `quest/${main.id}/once`,
       };
       reconcileQuests(saved.hero, content);
-      saved.hero = acceptQuest(saved.hero, seal, content);
+      saved.hero = cloneData(acceptQuest(saved.hero, seal, content));
       const { host, storage } = await hostWith(saved),
         session = host.getSnapshot().session!;
       session.dispatch({ type: 'TRAVEL_TO', x: 7, y: 3 });

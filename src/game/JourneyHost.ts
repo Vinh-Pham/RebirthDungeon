@@ -65,7 +65,7 @@ export class JourneyHost {
     const saver = this.autosaver;
     this.update({ busy: true, error: undefined });
     try {
-      const state = this.snapshot.session.toSave();
+      const state = this.snapshot.session.getSnapshot().state;
       await saver?.flush();
       await repository.save(slot, state);
       const slots = await repository.list();
@@ -95,7 +95,7 @@ export class JourneyHost {
         session.lockMutations();
         await this.persistCandidate();
       } else {
-        this.autosaver?.schedule(session.toSave());
+        this.autosaver?.schedule(session.getSnapshot().state);
         this.update({ notice: `Loaded slot ${slot}.` });
       }
     } catch (error) {
@@ -148,7 +148,7 @@ export class JourneyHost {
     const writing = (async () => {
       try {
         await saver?.flush();
-        await repository.save('auto', candidate.toSave());
+        await repository.save('auto', candidate.getSnapshot().state);
         if (generation !== this.generation) return false;
         this.candidate = undefined;
         const notice = candidate.getSnapshot().message;
@@ -257,7 +257,7 @@ export class JourneyHost {
         if (generation === this.generation) this.fail(error);
       });
       const session = new JourneySession(this.content, state, undefined, this.characterName);
-      const reconciled = session.toSave();
+      const reconciled = session.getSnapshot().state;
       this.attach(session);
       const catchup = session.titleCatchupCandidate();
       if (catchup) {
@@ -271,7 +271,7 @@ export class JourneyHost {
         ((state && JSON.stringify(state) !== JSON.stringify(reconciled)) ||
           (!state && Object.keys(reconciled.hero.quests).length))
       )
-        this.autosaver?.schedule(session.toSave());
+        this.autosaver?.schedule(session.getSnapshot().state);
       const slots = await repository.list();
       if (generation === this.generation) this.update({ slots, busy: false });
     } catch (error) {
@@ -294,7 +294,7 @@ export class JourneyHost {
       if (this.candidate) return;
       const pending = session.getSnapshot().state.pending;
       if (pending && !this.snapshot.battle) this.update({ battle: session.createBattle() });
-      this.autosaver?.schedule(session.toSave());
+      this.autosaver?.schedule(session.getSnapshot().state);
     });
     if (session.getSnapshot().state.pending && !preservedBattle)
       this.update({ battle: session.createBattle() });

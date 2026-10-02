@@ -1,3 +1,4 @@
+import { cloneData } from '../../engine/cloneData';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { loadGameContent } from '../../data/content';
 import { createHero, addItem } from '../../engine/rpg/Character';
@@ -11,7 +12,7 @@ const content = loadGameContent(),
   sessions: BattleSession[] = [];
 function setup(itemId = 'potion') {
   vi.useFakeTimers();
-  const hero = learnSkill(createHero(content), 'combat-mastery', content);
+  const hero = cloneData(learnSkill(createHero(content), 'combat-mastery', content));
   hero.itemHotbar = [itemId];
   hero.inventory[itemId] = 1;
   addItem(hero, 'iron-blade', 1, content);

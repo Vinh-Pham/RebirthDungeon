@@ -1,3 +1,4 @@
+import { cloneData } from '../../engine/cloneData';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { loadGameContent } from '../../data/content';
 import { ContentRegistry } from '../../engine/data/ContentRegistry';
@@ -13,7 +14,7 @@ const journeys: JourneySession[] = [],
 function trainedHero() {
   let hero = createHero(content);
   for (const id of ['smash', 'combat-mastery', 'sword-mastery'])
-    hero = learnSkill(hero, id, content);
+    hero = cloneData(learnSkill(hero, id, content));
   addItem(hero, 'iron-blade', 1, content);
   hero.equipment.weapon = 'weapon-1';
   return hero;
