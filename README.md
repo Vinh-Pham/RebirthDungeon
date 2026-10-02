@@ -37,7 +37,10 @@ Stats, Inventory, Skills, Titles, Quests, Save/Load and Settings. Journey return
 to the selected character's game screen and is disabled without an active character.
 Swipe from the left edge on iOS or Android, or use the menu button
 on every platform. Inventory and Save/Load have separate screens; the Journey and
-Codex tabs remain available in the game. Inventory can add or remove battle
+Codex tabs remain available in the game. Inventory shows an image grid on its route and Journey detail tab. Tap an icon
+for item information, use/equip actions, hotbar assignment, or Drop with a selected
+quantity. Drop saves before removing items and protects equipped/locked gear.
+Inventory can add or remove battle
 consumables from the Items hotbar during encounters; equipment and exploration
 use stay unavailable. Manual save/load waits until the encounter finishes. Three manual slots plus
 an autosave retain character resources, equipment, inventory, XP, gold, world

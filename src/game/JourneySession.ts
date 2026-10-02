@@ -7,7 +7,7 @@ import { createGameEngine } from '../engine/GameEngine';
 import type { ContentRegistry } from '../engine/data/ContentRegistry';
 import { isProgressionCommand, type ProgressionCommand, type GameCommand } from '../engine/commands';
 import type { GameEvent } from '../engine/events';
-import { addItem, clampHeroResources, ownedEquipment, createHero, consumeItem, grantExperience, heroStats, applyHero, ownedDefinition, removeOwnedItem, repairPrice, restoreHero, tickHero } from '../engine/rpg/Character';
+import { addItem, clampHeroResources, ownedEquipment, createHero, consumeItem, grantExperience, heroStats, applyHero, ownedDefinition, removeOwnedItem, dropOwnedItem, repairPrice, restoreHero, tickHero } from '../engine/rpg/Character';
 import { rollVictoryLoot, selectedVictoryItems } from './VictoryLoot';
 import type { GrowthTalent } from '../engine/rpg/Stats';
 import { consumableRecovery } from '../engine/rpg/Consumables';
@@ -205,6 +205,13 @@ export class JourneySession {
       setItemHotbar(this.state.hero, itemId, assigned, content);
       this.message = `${content.item(itemId).name} ${assigned ? 'added to' : 'removed from'} the Items hotbar.`;
       this.commit({ type: 'ITEM_HOTBAR_CHANGED', itemId, assigned });
+    });
+    this.engine.commands.register('DROP_ITEM', ({ item, quantity }) => {
+      this.requireExploring();
+      const definition = ownedDefinition(this.state.hero, item, content);
+      dropOwnedItem(this.state.hero, item, quantity, content);
+      this.message = `Dropped ${definition.name} ×${quantity}.`;
+      this.commit({ type: 'ITEM_DROPPED', itemId: definition.id, quantity });
     });
     this.registerServices();
     this.registerEnchanting();

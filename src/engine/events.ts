@@ -17,6 +17,7 @@ export type GameEvent =
   | { type: 'STATUS_APPLIED' | 'STATUS_EXPIRED'; entityId: EntityId; statusId: string }
   | { type: 'ITEM_USED'; sourceId: EntityId; itemId: string }
   | { type: 'ITEM_HOTBAR_CHANGED'; itemId: string; assigned: boolean }
+  | { type: 'ITEM_DROPPED'; itemId: string; quantity: number }
   | { type: 'WORLD_MOVED'; entityId: EntityId; x: number; y: number }
   | { type: 'MAP_CHANGED'; mapId: string }
   | { type: 'WORLD_INTERACTED'; objectId: string; message: string }

@@ -171,6 +171,15 @@ export function removeOwnedItem(hero: Hero, reference: OwnedItem, quantity: numb
     ids.slice(0, quantity).forEach((id) => delete hero.armors[id]);
   }
 }
+/** Discard owned copies without rewards, ticks, or changing other equipment identities. */
+export function dropOwnedItem(hero: Hero, reference: OwnedItem, quantity: number, content: ContentRegistry) {
+  const item = ownedDefinition(hero, reference, content);
+  if (!Number.isInteger(quantity) || quantity < 1 || quantity > 999 || quantity > removableCount(hero, reference)) throw new Error('Only owned, unlocked, unequipped items may be dropped');
+  removeOwnedItem(hero, reference, quantity);
+  // Inserted pages belong to the unfinished manual and leave with it.
+  if (item.kind === 'incompleteBook') delete hero.bookCollections[item.recipeId!];
+}
+
 /** Upgrade stacked armor while preserving the equipped first copy and depleted pools. */
 export function migrateEquipmentHero(old: z.infer<typeof VersionSevenHeroSchema>, content: ContentRegistry, seed = 12345): Hero {
   const hero: Hero = { ...cloneData(old), itemHotbar: [], cumulativeLevel: old.level, ...emptyTitleProgression(), ...emptyEnchantProgression(seed), armors: {}, nextArmorId: 1 };

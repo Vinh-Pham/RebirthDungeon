@@ -79,7 +79,7 @@ Defend explicitly previews damage reduction until the owner's next turn and rest
 | --- | --- |
 | Character/Stats | Current level/XP, talent, setup age, attributes, combat values, resources, wounds/fullness and equipment; AP/mastery/cumulative level later |
 | Skills, planned | Learned/unlearned, rank/prototype cap, objectives, training/AP, lessons/books/pages and Rank Up from Skills |
-| Inventory | Current item rows, weapon pages of 20, equipment and use controls; grid/bags/locks/overflow later |
+| Inventory | Shared image grid, pages of 20, HeroUI item popovers with quantity/stats/actions; spatial placement/bags/overflow later |
 | Quests, planned | Chapter/Generation and side/skill groups, stages, objective progress, exact rewards and manual claim |
 | Titles, planned | First/Second selections, known/earned collection, benefits/penalties and stat preview |
 | Enchanting, planned | Owned instance/scroll/powder, compatibility, replacement, chance/cost and separate destructive burning |
@@ -88,7 +88,7 @@ Current setup age is static; do not show an aging countdown or lifetime progress
 
 The Character summary shows an XP progress bar using current-level XP and the engine's next-level threshold; at the level cap it shows “Maximum level.” Beneath Stamina, the recovery limit appears on the left and Hunger on the right, wrapping on compact layouts. Hunger displays `100 - fullness` to one decimal place (91.2% fullness displays as 8.8% Hunger); the engine and saved fullness values retain their existing meaning.
 
-Inventory equip/use commands are available during exploration, including between dungeon encounters. During battle it observes live supplies/wear and permits Items hotbar assignments while equip/exploration-use remain disabled. Battle-usable consumable details expose Add to / Remove from Items hotbar; the assigned list permits removing depleted slots. Saving/retry locks dependent actions, and assignment never resets the live battle. Combat use occurs from the Items popover. Future learning/rank-up, quest claims, title changes and enchanting are town-only. Journals may still be inspected during combat without ticking time.
+Inventory equip/use and durable Drop commands are available during exploration, including between dungeon encounters. The route and Journey Inventory tab share an image-only grid; item names, descriptions, counts, stats and existing equipment/book/quest controls live in scrollable HeroUI Native popovers. Drop removes the selected quantity with no rewards or ground loot and protects equipped/locked copies. During battle it observes live supplies/wear and permits Items hotbar assignments while equip/exploration-use/drop remain disabled. Battle-usable consumable details expose Add to / Remove from Items hotbar; the assigned list permits removing depleted slots. Saving/retry locks dependent actions, and assignment never resets the live battle. Combat use occurs from the Items popover. Future learning/rank-up, quest claims, title changes and enchanting are town-only. Journals may still be inspected during combat without ticking time.
 
 For future grids, use tap item → action → destination as a complete mobile path. Dragging may supplement it and cannot be required. Preview every occupied cell, exact quantity and displaced equipment. Invalid commands restore the view to authoritative state; the drag cursor never owns an item. Search identifies the actual container and does not reveal undiscovered quest/title spoilers.
 

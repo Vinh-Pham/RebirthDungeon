@@ -38,6 +38,8 @@ Updated **October 1, 2026**. Target: **Expo SDK 57, React Native 0.86, React 19,
 
 Simulation state commits before external combat events are delivered. Listener failures do not undo an accepted action, and callers must not replay it. Animations, sound, navigation, and elapsed frames never determine damage, training, inventory ownership, or turns.
 
+The Inventory route and Journey detail tab share an image grid with HeroUI Native item popovers. Drop removes a validated quantity through the host's durable candidate operation; spatial item placement, bags and recoverable ground loot remain future work. See [Inventory](gameplay/inventory.md) for ownership, protection and retry rules.
+
 ## 3. Playable loop and exploration
 
 ```text

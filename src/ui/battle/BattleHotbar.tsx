@@ -11,7 +11,7 @@ import GameImage from '../shared/GameImage';
 import type { GameImageReference } from '../shared/gameImages';
 import KeyboardChoiceGroup from '../shared/KeyboardChoiceGroup';
 import { BATTLE_CATEGORIES, battleActionDetails, battleHotbarActions, battleHotbarItems, type BattleSkillCategory } from './battleActionDetails';
-import PopoverAccessibility from './PopoverAccessibility';
+import PopoverAccessibility from '../shared/PopoverAccessibility';
 
 export default function BattleHotbar({ session, view, canChoose, inspected, inspect, selectAction }: {
   session: BattleSession; view: BattleView; canChoose: boolean; inspected?: string;

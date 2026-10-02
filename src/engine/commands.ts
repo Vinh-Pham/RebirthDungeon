@@ -4,6 +4,7 @@ import type { EquipmentReference, OwnedItem } from './rpg/Character';
 import type { BattleAction } from './battle/BattleMachine';
 
 export type GameCommand =
+  | { type: 'DROP_ITEM'; item: OwnedItem; quantity: number }
   | { type: 'SET_ITEM_HOTBAR'; itemId: string; assigned: boolean }
   | { type: 'SELECT_TITLE'; slot: 'first' | 'second'; titleId?: string }
   | { type: 'UNLOCK_TITLE_COUPON'; itemId: string }
@@ -65,6 +66,7 @@ export function validateCommand(command: GameCommand): void {
     case 'INTERACT': valid = id(command.objectId); break;
     case 'BUY_ITEM': valid = id(command.objectId) && id(command.itemId) && quantity(command.quantity); break;
     case 'SELL_ITEM': valid = id(command.objectId) && owned(command.item) && quantity(command.quantity); break;
+    case 'DROP_ITEM': valid = owned(command.item) && quantity(command.quantity); break;
     case 'REPAIR_WEAPON': valid = id(command.objectId) && id(command.weaponId); break;
     case 'HEAL': valid = id(command.objectId); break;
     case 'OFFER_ITEM': valid = id(command.objectId) && owned(command.item); break;
@@ -102,7 +104,7 @@ export function validateCommand(command: GameCommand): void {
   if (!valid) throw new Error('Invalid game command');
 }
 
-export type ProgressionCommand = Extract<GameCommand, { type: 'SET_ITEM_HOTBAR' | 'SELECT_TITLE' | 'UNLOCK_TITLE_COUPON' | 'APPLY_ENCHANT' | 'BURN_EQUIPMENT' | 'LOCK_EQUIPMENT' | 'LEARN_SKILL' | 'READ_SKILL_BOOK' | 'INSERT_SKILL_PAGE' | 'RANK_UP_SKILL' | 'BUY_ITEM' | 'SELL_ITEM' | 'REPAIR_WEAPON' | 'HEAL' | 'OFFER_ITEM' | 'EXIT_DUNGEON' | 'ACCEPT_QUEST' | 'CLAIM_QUEST' | 'TRACK_QUEST_OBJECTIVE' }>;
+export type ProgressionCommand = Extract<GameCommand, { type: 'DROP_ITEM' | 'SET_ITEM_HOTBAR' | 'SELECT_TITLE' | 'UNLOCK_TITLE_COUPON' | 'APPLY_ENCHANT' | 'BURN_EQUIPMENT' | 'LOCK_EQUIPMENT' | 'LEARN_SKILL' | 'READ_SKILL_BOOK' | 'INSERT_SKILL_PAGE' | 'RANK_UP_SKILL' | 'BUY_ITEM' | 'SELL_ITEM' | 'REPAIR_WEAPON' | 'HEAL' | 'OFFER_ITEM' | 'EXIT_DUNGEON' | 'ACCEPT_QUEST' | 'CLAIM_QUEST' | 'TRACK_QUEST_OBJECTIVE' }>;
 export function isProgressionCommand(command: GameCommand): command is ProgressionCommand {
-  return ['SET_ITEM_HOTBAR', 'SELECT_TITLE', 'UNLOCK_TITLE_COUPON', 'APPLY_ENCHANT', 'BURN_EQUIPMENT', 'LOCK_EQUIPMENT', 'LEARN_SKILL', 'READ_SKILL_BOOK', 'INSERT_SKILL_PAGE', 'RANK_UP_SKILL', 'BUY_ITEM', 'SELL_ITEM', 'REPAIR_WEAPON', 'HEAL', 'OFFER_ITEM', 'EXIT_DUNGEON', 'ACCEPT_QUEST', 'CLAIM_QUEST', 'TRACK_QUEST_OBJECTIVE'].includes(command.type);
+  return ['DROP_ITEM', 'SET_ITEM_HOTBAR', 'SELECT_TITLE', 'UNLOCK_TITLE_COUPON', 'APPLY_ENCHANT', 'BURN_EQUIPMENT', 'LOCK_EQUIPMENT', 'LEARN_SKILL', 'READ_SKILL_BOOK', 'INSERT_SKILL_PAGE', 'RANK_UP_SKILL', 'BUY_ITEM', 'SELL_ITEM', 'REPAIR_WEAPON', 'HEAL', 'OFFER_ITEM', 'EXIT_DUNGEON', 'ACCEPT_QUEST', 'CLAIM_QUEST', 'TRACK_QUEST_OBJECTIVE'].includes(command.type);
 }
