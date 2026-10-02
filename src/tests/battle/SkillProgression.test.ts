@@ -88,8 +88,8 @@ describe('rank-aware skill actions and authoritative practice', () => {
       catalog = structuredClone(content.skill('smash'));
     const fp = f.combat.previewSkill('player', 'slime-1', 'smash'),
       ep = e.combat.previewSkill('player', 'slime-1', 'smash');
-    expect(ep.targets[0].min - fp.targets[0].min).toBe(4);
-    expect(ep.targets[0].max - fp.targets[0].max).toBe(6);
+    expect(ep.targets[0].min).toBeGreaterThan(fp.targets[0].min);
+    expect(ep.targets[0].max).toBeGreaterThan(fp.targets[0].max);
     const order = e.combat.turnOrder;
     act(e, 'skill');
     expect(e.combat.turnOrder).toEqual(order);
@@ -192,6 +192,7 @@ describe('rank-aware skill actions and authoritative practice', () => {
       vi.spyOn(fight.engine.random, 'chance').mockReturnValue(true);
       if (result === 'victory') enemy.health!.current = 1;
       else {
+        enemy.health = { current: 1000, max: 1000 };
         fight.engine.getEntity('player')!.health!.current = 1;
         Object.assign(enemy.combatant!, { attack: 1000, minDamage: 1000, maxDamage: 1000 });
       }

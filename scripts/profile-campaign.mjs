@@ -3,7 +3,12 @@
 import { resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 import { performance } from 'node:perf_hooks';
-import { createServer } from 'vite';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+// Vitest owns Vite; resolve it through that package in isolated dependency layouts.
+const { createServer } = await import(
+  require.resolve('vite', { paths: [require.resolve('vitest')] })
+);
 
 const root = resolve(process.argv[2] ?? '.');
 const server = await createServer({
@@ -129,10 +134,11 @@ try {
     item: { itemId: 'potion' },
     quantity: 1,
   });
-  source.dispatch({ type: 'INTERACT', objectId: 'keeper' });
+  source.dispatch({ type: 'TRAVEL_TO', x: 12, y: 4 });
+  source.dispatch({ type: 'INTERACT', objectId: 'combat-instructor' });
   candidateSamples('lesson_candidate', source, {
     type: 'LEARN_SKILL',
-    objectId: 'keeper',
+    objectId: 'combat-instructor',
     skillId: 'smash',
   });
   source.dispatch({ type: 'TRAVEL_TO', x: 7, y: 3 });

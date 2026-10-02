@@ -57,19 +57,24 @@ export function prepareSkill({
   const modern = source.combatant.minDamage !== undefined;
   const magical = skill.element !== 'physical' || skill.effect === 'heal';
   const attack = source.combatant;
+  const multiplier = magical ? 1 : skill.physicalMultiplier;
   const min = magical
     ? (skill.minPower ?? skill.power) +
       Math.floor((attack.magicAttack ?? 0) * skill.minMagicModifier)
-    : (attack.minDamage ?? attack.attack) + (skill.minPower ?? skill.power);
+    : Math.floor(
+        ((attack.minDamage ?? attack.attack) + (skill.minPower ?? skill.power)) * multiplier,
+      );
   const max = magical
     ? (skill.maxPower ?? skill.power) +
       Math.floor((attack.magicAttack ?? 0) * skill.maxMagicModifier)
-    : (attack.maxDamage ?? attack.attack) + (skill.maxPower ?? skill.power);
+    : Math.floor(
+        ((attack.maxDamage ?? attack.attack) + (skill.maxPower ?? skill.power)) * multiplier,
+      );
   const caster = {
     ...source,
     combatant: {
       ...attack,
-      attack: attack.attack + skill.power,
+      attack: Math.floor((attack.attack + skill.power) * multiplier),
       hitChance: skill.hitChance,
       ...(modern ? { minDamage: min, maxDamage: max } : { criticalChance: skill.criticalChance }),
     },

@@ -62,7 +62,7 @@ damage = max(1, floor(mitigated × (1 - reduction)))
 
 This branch multiplies attack before subtracting defense. The legacy branch instead uses `floor(max(1, attack - defense) × criticalMultiplier)` and does not gain the range branch's protection/injury rules. Keep both paths intact; do not combine their formulas in one preview.
 
-Physical skills add their rank-adapted power range to the effective physical range. Magical skills use their skill range plus the authored magic-attack coefficients. Current healing also uses the magical scaling path, then caps actual HP restored at unwounded missing health. A field such as `element: physical` on Healing does not make it a melee attack.
+Physical skills add their rank-adapted power range to the effective physical range, then floor each endpoint after applying `physicalMultiplier` (default 1). Smash uses zero additive power, a multiplier of 2 at F or 2.1 at E, and normal critical/Defense/Protection processing. Magical skills use their skill range plus the authored magic-attack coefficients. Current healing also uses the magical scaling path, then caps actual HP restored at unwounded missing health. A field such as `element: physical` on Healing does not make it a melee attack.
 
 Damage events report actual HP lost, capped at the target's remaining HP. Physical injury can add wounds and further clamp healable HP; wounds are separate from damage. Death handling removes the target from initiative and records death once. There is no shield-absorption pool implemented today.
 
@@ -70,7 +70,7 @@ For area skills, the selected target resolves first for RNG purposes; its succes
 
 ## 5. Defense, recovery and weapon wear
 
-Defend uses one turn, spends no MP/SP, draws no combat randomness, and does not wear a weapon. Until the defender's next turn starts, incoming attack/skill direct damage is `max(1, floor(normalDamage / 2))`. It does not reduce periodic status damage. Its end-of-action resource tick uses the rest rate. The hotbar Defend action uses the Defense identity and this shared resolver. Future learned-rank Defense effects should extend it without a second stacking guard mechanic.
+Defend uses one turn, spends no MP/SP, draws no combat randomness, and does not wear a weapon. Until the defender's next turn starts, incoming attack/skill direct damage is `max(1, floor(normalDamage / 2))`. Skills with `bypassDefend` (currently Smash) skip this guard reduction in both previews and resolved damage; ordinary Defense and Protection still apply. It does not reduce periodic status damage. Its end-of-action resource tick uses the rest rate. The hotbar Defend action uses the Defense identity and this shared resolver. Future learned-rank Defense effects should extend it without a second stacking guard mechanic.
 
 Normal completed actions tick HP/MP/SP/fullness under [Stats](stats.md). Rest and Defend use increased stamina recovery. Defeated actors receive no regeneration and healing does not revive them. Selection, tooltips and animation completion never run a resource tick.
 

@@ -81,7 +81,11 @@ iOS and Android. For a production bundle check, run
 ## Town services and weapon durability
 
 The refuge is now an outdoor town with walkable grocery, blacksmith, healer, and
-general-shop interiors. Tap a building to approach its door, interact to enter,
+general-shop interiors. The northeast Combat School has an instructor standing outside:
+speak to them for a free Rank F Smash lesson with zero training and a one-time 3 AP reward.
+Smash requires a usable melee weapon, costs 4 base stamina, and deals 200% physical
+damage at F (210% at E). It bypasses Defend while retaining normal Defense and Protection.
+F→E still requires 100 training and 3 AP; existing learned ranks and milestone claims are preserved. Tap a building to approach its door, interact to enter,
 and approach the merchant or healer to open services. Close the panel and use
 **Return to town** to exit at the matching doorstep. Larger maps follow the hero;
 movement and interaction buttons remain available without canvas touch input.

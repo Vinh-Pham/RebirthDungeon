@@ -12,15 +12,16 @@ The one-time supply chest grants the starter iron blade only after its item gran
 
 ## 2. Current service catalog
 
-| Refuge service      | Existing actions                                       | Notes                                                                                          |
-| ------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
-| Orchard Grocery     | Buy apples and bread                                   | Food restores authored stamina/fullness; not battle-usable                                     |
-| Ember Forge         | Buy iron blades; repair owned weapons                  | Repair includes an equipped weapon and preserves its instance ID                               |
-| The Wanderer’s Pack | Buy HP/MP/SP potions and moss mail; sell owned items   | The current service that buys items from the player                                            |
-| Healer House        | Paid full recovery                                     | 10 gold; restores HP, MP, SP, wounds and fullness                                              |
-| Refuge keeper       | Free Smash Rank F lesson and quest offers/claims       | The introductory melee lesson awards 3 AP once; rank advancement remains in the Skills journal |
-| Training halls      | Explore/interact with authored NPCs                    | Learned-rank lessons and mastery systems remain planned                                        |
-| Dungeon altar       | Offer an unequipped item and enter a generated dungeon | Owns generation/entry validation rather than a shop transaction                                |
+| Refuge service           | Existing actions                                       | Notes                                                                                |
+| ------------------------ | ------------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| Orchard Grocery          | Buy apples and bread                                   | Food restores authored stamina/fullness; not battle-usable                           |
+| Ember Forge              | Buy iron blades; repair owned weapons                  | Repair includes an equipped weapon and preserves its instance ID                     |
+| The Wanderer’s Pack      | Buy HP/MP/SP potions and moss mail; sell owned items   | The current service that buys items from the player                                  |
+| Healer House             | Paid full recovery                                     | 10 gold; restores HP, MP, SP, wounds and fullness                                    |
+| Combat School instructor | Free Smash Rank F lesson                               | Stands outside the northeast school; grants zero training and 3 introductory AP once |
+| Refuge keeper            | Free Enchant Rank F lesson and quest offers/claims     | Smash directions lead to the school; rank advancement remains in the Skills journal  |
+| Training halls           | Explore/interact with authored NPCs                    | Learned-rank lessons and mastery systems remain planned                              |
+| Dungeon altar            | Offer an unequipped item and enter a generated dungeon | Owns generation/entry validation rather than a shop transaction                      |
 
 Do not describe an existing bank, inn, cooking station, quest board, instructor rank-up service or enchanting bench. Add their content and commands when their feature milestone ships. Display only services supported by the current NPC definition.
 
@@ -61,7 +62,7 @@ Keep the reference-inspired town as a small set of useful destinations rather th
 | Bank                  | Optional future carried/banked economy with a defined migration and defeat policy                         |
 | Rebirth service       | Explicit reset/preserve preview and town-only confirmation after Character is implemented                 |
 
-The first instructor and book/page routes are implemented. The next slice now includes NPC offers, delivery/manual quest claims, a journal/tracker and an earned story title. Title equipment, additional item instances and enchanting materials remain future work. Existing shop IDs, prices and save IDs remain stable unless deliberately migrated.
+The first instructor and book/page routes are implemented. The Combat School exterior replaces the northeast cottage footprint; its outside instructor replaces the blocking bench at (13, 4), preserving previously walkable saved positions. The school has no interior service in this slice. The free lesson uses the existing durable candidate and `intro-melee-lesson` milestone, so older learned ranks/training/AP claims remain intact without a save-version change. The next slice now includes NPC offers, delivery/manual quest claims, a journal/tracker and an earned story title. Title equipment, additional item instances and enchanting materials remain future work. Existing shop IDs, prices and save IDs remain stable unless deliberately migrated.
 
 An optional future bank may offer exact deposits/withdrawals and a protected balance. Gold bags could add carried capacity, with proposed capacities of 10,000/25,000/50,000. These are later economy proposals: they must not retroactively strand current gold, silently change defeat losses or become requirements for the present loop. Validate removing a capacity bag before mutation, and define full-reward handling before the economy ships. Use [Inventory](inventory.md) overflow rules where appropriate.
 

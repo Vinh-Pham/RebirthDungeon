@@ -1061,15 +1061,15 @@ export class JourneySession {
       learnSkillDraft(state.hero, skillId, this.content);
       const hero = state.hero;
       hero.gold -= offer.fee;
-      if (
-        object.id === 'keeper' &&
+      const introductoryReward =
+        object.id === 'combat-instructor' &&
         skillId === 'smash' &&
-        !hero.claimedMilestones.includes('intro-melee-lesson')
-      ) {
+        !hero.claimedMilestones.includes('intro-melee-lesson');
+      if (introductoryReward) {
         hero.claimedMilestones.push('intro-melee-lesson');
         hero.ap = Math.min(1000000, hero.ap + 3);
       }
-      tx.message = `Learned ${this.content.skill(skillId).name} · Rank F. ${skillId === 'smash' && object.id === 'keeper' ? 'Introductory lesson awards 3 AP once.' : 'Training starts at zero.'}`;
+      tx.message = `Learned ${this.content.skill(skillId).name} · Rank F. ${introductoryReward ? 'Introductory lesson awards 3 AP once.' : 'Training starts at zero.'}`;
       this.commit(state, tx, { type: 'SKILL_LEARNED', skillId, rank: 'F' });
     });
     this.registerCommand('READ_SKILL_BOOK', ({ itemId }, state, tx) => {

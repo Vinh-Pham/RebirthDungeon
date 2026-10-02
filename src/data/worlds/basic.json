@@ -30,12 +30,8 @@
         "kind": "npc",
         "x": 2,
         "y": 2,
-        "dialogue": "Welcome to the last refuge. Collect the supplies, explore our shops, or train in the moss halls. Offer an unequipped item at the goddess altar to enter the moss depths.",
+        "dialogue": "Welcome to the last refuge. Collect the supplies, explore our shops, or train in the moss halls. Offer an unequipped item at the goddess altar to enter the moss depths. For a free Smash lesson, speak to the instructor outside the Combat School in the northeast.",
         "lessons": [
-          {
-            "skillId": "smash",
-            "fee": 0
-          },
           {
             "skillId": "enchant",
             "fee": 0
@@ -43,6 +39,24 @@
         ],
         "sprite": {
           "atlas": "npc-keeper",
+          "frame": 0
+        }
+      },
+      {
+        "id": "combat-instructor",
+        "name": "Combat School instructor",
+        "kind": "npc",
+        "x": 13,
+        "y": 4,
+        "dialogue": "Welcome to the Combat School. Smash is a powerful melee strike that breaks through Defend. I can teach you Rank F for free; bring a usable melee weapon to practice in the dungeon. Your first lesson awards 3 AP once.",
+        "lessons": [
+          {
+            "skillId": "smash",
+            "fee": 0
+          }
+        ],
+        "sprite": {
+          "atlas": "npc-combat-instructor",
           "frame": 0
         }
       },
@@ -232,11 +246,11 @@
         "objectId": "general-door"
       },
       {
-        "id": "cottage-home-14-1",
+        "id": "combat-school-14-1",
         "x": 14,
         "y": 1,
         "sprite": {
-          "atlas": "cottage-home",
+          "atlas": "combat-school",
           "frame": 0
         },
         "size": 3,
@@ -251,17 +265,6 @@
           "frame": 0
         },
         "size": 2,
-        "blocking": true
-      },
-      {
-        "id": "garden-bench-13-4",
-        "x": 13,
-        "y": 4,
-        "sprite": {
-          "atlas": "garden-bench",
-          "frame": 0
-        },
-        "size": 1,
         "blocking": true
       },
       {

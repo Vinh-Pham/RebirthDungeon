@@ -130,8 +130,8 @@ export default function BattleHotbar({
               <>
                 <Text className="text-sm text-muted">Self · No MP or SP cost</Text>
                 <Text className="text-sm text-muted">
-                  Halve incoming attack and spell damage until your next turn. Recover stamina at
-                  the rest rate.
+                  Halve incoming attack and spell damage until your next turn, except skills that
+                  bypass Defend. Recover stamina at the rest rate.
                 </Text>
                 <DungeonButton
                   primary
@@ -164,6 +164,16 @@ export default function BattleHotbar({
                       : 'Self'}{' '}
                 · {skill.effect === 'heal' ? 'Healing' : skill.element}
               </Text>
+              {skill.physicalMultiplier !== 1 ? (
+                <Text className="text-sm text-muted">
+                  {Math.round(skill.physicalMultiplier * 100)}% physical damage
+                </Text>
+              ) : null}
+              {skill.bypassDefend ? (
+                <Text className="text-sm text-muted">
+                  Bypasses Defend. Defense and Protection still apply.
+                </Text>
+              ) : null}
               <ActionStats session={session} action={action} />
               <DungeonButton
                 primary

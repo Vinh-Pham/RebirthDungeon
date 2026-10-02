@@ -19,6 +19,8 @@ export const atlasAssets: Record<string, number> = {
   'wayfinder-sign': require('../../assets/game/decorations/wayfinder-sign.png'),
   'ember-lantern': require('../../assets/game/decorations/ember-lantern.png'),
   'garden-bench': require('../../assets/game/decorations/garden-bench.png'),
+  'combat-school': require('../../assets/game/decorations/combat-school.png'),
+  'npc-combat-instructor': require('../../assets/game/npcs/combat-instructor.png'),
   'cottage-home': require('../../assets/game/decorations/cottage-home.png'),
   'orchard-grocery-home': require('../../assets/game/decorations/orchard-grocery-home.png'),
   'ember-forge-home': require('../../assets/game/decorations/ember-forge-home.png'),

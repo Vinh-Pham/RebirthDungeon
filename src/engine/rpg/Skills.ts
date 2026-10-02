@@ -62,6 +62,8 @@ export function resolveLearnedSkill(
     maxPower: rank.maxPower,
     manaCost: rank.manaCost,
     staminaCost: rank.staminaCost,
+    physicalMultiplier: rank.physicalMultiplier,
+    bypassDefend: rank.bypassDefend,
     statBonuses: rank.statBonuses,
   };
 }

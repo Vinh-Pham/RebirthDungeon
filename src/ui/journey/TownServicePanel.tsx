@@ -209,7 +209,10 @@ export default function TownServicePanel({
             <>
               <Text className="text-muted" style={styles.body}>
                 Learn a skill at Rank F. Combat skills train in the dungeon; Enchant trains at the
-                town forge. The introductory Smash lesson awards 3 AP once.
+                town forge.
+                {object.lessons.some((lesson) => lesson.skillId === 'smash')
+                  ? ' The introductory Smash lesson awards 3 AP once.'
+                  : ''}
               </Text>
               {object.lessons.map((offer) => {
                 const skill = content.skill(offer.skillId),

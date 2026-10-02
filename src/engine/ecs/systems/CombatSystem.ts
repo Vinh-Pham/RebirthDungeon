@@ -84,7 +84,7 @@ export class CombatSystem implements GameSystem {
       manaCost: plan.manaCost,
       staminaCost: plan.staminaCost,
       targets: plan.preview.map((p) =>
-        this.defending.has(p.targetId) && skill.effect === 'damage'
+        this.defending.has(p.targetId) && skill.effect === 'damage' && !skill.bypassDefend
           ? {
               ...p,
               min: Math.max(1, Math.floor(p.min / 2)),
@@ -411,9 +411,10 @@ export class CombatSystem implements GameSystem {
             amount: effect.healing,
           });
         } else if (effect.result.hit && skill?.effect !== 'buff') {
-          const damage = this.defending.has(effect.target.id)
-            ? Math.max(1, Math.floor(effect.result.damage / 2))
-            : effect.result.damage;
+          const damage =
+            this.defending.has(effect.target.id) && !skill?.bypassDefend
+              ? Math.max(1, Math.floor(effect.result.damage / 2))
+              : effect.result.damage;
           const amount = applyDamage(effect.target.health!, damage);
           outcomeTarget.damage = amount;
           events.push({

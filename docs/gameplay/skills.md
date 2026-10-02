@@ -1,12 +1,12 @@
 # Rebirth Dungeon: Skills
 
-Updated **October 1, 2026** for the Expo/React Native application in this repository. NPC/book/page acquisition, per-hero ranks, capped training and AP are implemented for the supported pilot skills. This document also records later extensions.
+Updated **October 2, 2026** for the Expo/React Native application in this repository. NPC/book/page acquisition, per-hero ranks, capped training and AP are implemented for the supported pilot skills. This document also records later extensions.
 
 Skills grow through practice and investment. Heroes learn them through **NPC instruction**, **complete skill books**, or **collected pages assembled into a book**. Advancing a learned skill requires **at least 100 training points at its current rank plus the authored AP (Ability Points) cost**. Preserve these requirements while adapting the skills to the application's existing turn-based combat.
 
 ## 1. Current project baseline
 
-Use the TypeScript implementation as the integration baseline. The neighboring [battle specification](battle.md) and [game plan](../game-plan.md) still describe a historical Godot/five-dice design and need separate revision; their roll, pip, combination, and Godot integration rules do not govern this plan. [README](../../README.md) provides broader project context, but inspect the current schemas and resolvers when its older examples differ.
+Use the TypeScript implementation as the integration baseline. The neighboring [battle specification](battle.md) and [game plan](../game-plan.md) describe the deterministic TypeScript implementation; historical Godot/five-dice rules do not govern this game. [README](../../README.md) provides broader project context, but inspect the current schemas and resolvers when its older examples differ.
 
 | Area                | Implemented today                                                                                              | Change required for skills                                               |
 | ------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
@@ -19,7 +19,7 @@ Use the TypeScript implementation as the integration baseline. The neighboring [
 | Saves               | Version 11 campaign saves; SQLite on native, IndexedDB on web                                                  | Preserve lossless migrations from versions 1–10                          |
 | Battle continuation | A pending encounter restarts from its entry hero state and seed                                                | Keep training inside that battle until its result is committed           |
 
-The four starter spells are `firebolt`, `icebolt`, `lightning-bolt`, and `healing`; NPC instruction also enables Smash. Their catalog `rank: F` is a definition value, not the saved hero rank. Class skill IDs supply starter grants, while hero learned records determine battle availability and reconstructed rank bonuses. Smash, Combat Mastery, Sword Mastery, Icebolt and the town-only Enchant skill support F/E progression. Other catalog entries need authored adapters before learning.
+The four starter spells are `firebolt`, `icebolt`, `lightning-bolt`, and `healing`; the instructor outside the northeast Combat School also enables Smash. Their catalog `rank: F` is a definition value, not the saved hero rank. Class skill IDs supply starter grants, while hero learned records determine battle availability and reconstructed rank bonuses. Smash, Combat Mastery, Sword Mastery, Icebolt and the town-only Enchant skill support F/E progression. Other catalog entries need authored adapters before learning.
 
 Implementation anchors: [BattleMachine](../../src/engine/battle/BattleMachine.ts), [BattleController](../../src/engine/battle/BattleController.ts), [CombatSystem](../../src/engine/ecs/systems/CombatSystem.ts), [SkillResolver](../../src/engine/battle/SkillResolver.ts), [Stats](../../src/engine/rpg/Stats.ts), [Hero model](../../src/engine/rpg/Character.ts), [JourneySession](../../src/game/JourneySession.ts), and [SaveSchema](../../src/persistence/SaveSchema.ts).
 
@@ -52,7 +52,7 @@ Targeting uses living encounter membership and allegiance: `self`, `ally` (inclu
 
 Extend [SkillResolver](../../src/engine/battle/SkillResolver.ts) with a resolved definition for the hero's rank; feed it into [AttackResolver](../../src/engine/battle/AttackResolver.ts). Keep existing hit chance, balance-based sampling, physical/magical defenses, protection curves, critical chance, critical multiplier, wounds, and weapon wear. Rank upgrades author their changes to these inputs rather than adding a second damage formula.
 
-The current range-based skill path builds physical power from the effective physical damage range plus skill power, and magical power from the skill range plus magic-attack scaling. Preserve the existing fallback for legacy combatants without ranges. A preview computes ranges/chances from the same prepared inputs without consuming RNG; it cannot promise the exact result before confirmation.
+The current range-based skill path builds physical power from the effective physical damage range plus skill power, then floors each endpoint after its authored physical multiplier, and magical power from the skill range plus magic-attack scaling. Preserve the existing fallback for legacy combatants without ranges. A preview computes ranges/chances from the same prepared inputs without consuming RNG; it cannot promise the exact result before confirmation.
 
 For area damage, preserve the resolver's current selected-target-first RNG evaluation and shared critical result for the remaining targets, with target iteration supplied by `TurnQueue.order`. Do not silently change to one independent critical roll per target or reorder targets for presentation. Any future change needs an explicit combat-rule version and replay fixtures.
 
@@ -115,7 +115,7 @@ trainingPoints = sum(min(completedCount, maximumCount) × pointsPerCompletion)
 
 A skill can advance at 100 points or more without completing every objective. Excess points do not reduce AP cost or carry into the next rank. Each supported nonterminal rank must offer reachable objectives totaling at least 100 points. Retain counts above the eligibility threshold within their objective caps; cap only the progress bar at full.
 
-Illustrative Rank F training for Smash:
+Implemented Rank F training for Smash:
 
 | Objective                                                   | Points each | Maximum count | Available points |
 | ----------------------------------------------------------- | ----------- | ------------- | ---------------- |
@@ -142,7 +142,7 @@ Rank-up requires all of the following:
 - Satisfied advancement prerequisites.
 - Town access with no active dungeon or pending encounter.
 
-On success, deduct AP once, advance exactly one rank, and reset objective counts for the new rank. On failure, change nothing. Reaching 100 never auto-spends AP. For an illustrative F → E cost of 3 AP:
+On success, deduct AP once, advance exactly one rank, and reset objective counts for the new rank. On failure, change nothing. Reaching 100 never auto-spends AP. For Smash’s implemented F → E cost of 3 AP:
 
 | Training | AP before | Result                       |
 | -------- | --------- | ---------------------------- |
@@ -168,7 +168,7 @@ Each is one action, with no loading timer or stored charges. Firebolt does not g
 
 ### Combat skills
 
-Retain the following identities from the earlier plan, adapting them to the current turn scheduler. Availability describes required work, not current implementation status. Smash and several masteries already have reference-only catalog entries; Final Hit, Windmill, Charge, Shield Mastery, and Dual Wield Mastery require new definitions as well as their mechanics.
+Retain the following identities from the earlier plan, adapting them to the current turn scheduler. Availability describes required work, not current implementation status. Smash, Combat Mastery and Sword Mastery already have implemented F/E adapters; Final Hit, Windmill, Charge, Shield Mastery, and Dual Wield Mastery require new definitions as well as their mechanics.
 
 | Skill               | Type                   | Turn-based role and dependency                                                       |
 | ------------------- | ---------------------- | ------------------------------------------------------------------------------------ |
@@ -186,7 +186,7 @@ Retain the following identities from the earlier plan, adapting them to the curr
 | Dual Wield Mastery  | Equipment passive      | Bonus for a legal two-weapon loadout; two-hand equipment model                       |
 | Charge              | Later active attack    | A non-spatial single-target guard-breaking adaptation; authored mitigation extension |
 
-**Smash.** Require a usable compatible melee weapon; target one hostile. Add the rank's physical skill range through the existing resolver, pay SP once, and consume one turn. Apply ordinary defense/protection, Defend reduction, hit/critical rules, injury, and weapon wear. Knockback, splash, and defense bypass are not implicit. Train on uses, positive damage, and direct defeats.
+**Smash.** Learn Rank F for free from the instructor outside the Combat School in the northeast refuge. Require a usable compatible melee weapon and target one hostile. Rank F multiplies the effective physical range by 2; E multiplies it by 2.1. Floor each endpoint before critical damage, Defense and Protection. Smash bypasses Defend's guard reduction, but not ordinary Defense/Protection; retain existing hit/critical, injury and weapon-wear rules. Pay 4 base SP, 0 MP and one turn. The existing 100-point training gate, 3 AP F→E transition and E cap remain authored adaptations. There is no owner-turn cooldown. Knockback, splash, weapon debuffs, racial variants and two-handed bonuses are deferred. Train on uses, positive damage and direct defeats. Source: [Mabinogi Smash](https://wiki.mabinogiworld.com/view/Smash), fetched with Firecrawl October 2, 2026; the source's real-time cooldown, AP and training tables are reference data.
 
 **Combat Mastery.** Derive authored max HP and melee-only damage bonuses from its learned rank. The HP bonus stays active without a weapon. The melee bonus applies to eligible basic melee attacks and skills once, including any later legal paired-weapon action, and does not become magic attack. Train on eligible melee actions, direct hits/defeats, and optionally encounter completion once.
 

@@ -8713,7 +8713,7 @@
     "kind": "active",
     "rank": "F",
     "battleUsable": true,
-    "description": "Human: Damage 200%; Elf: Damage 200%; Giant: Damage 300%",
+    "description": "A powerful melee strike that bypasses Defend. Damage scales with your learned rank; ordinary Defense and Protection still apply.",
     "manaCost": 0,
     "power": 0,
     "element": "physical",
@@ -9100,11 +9100,11 @@
     },
     "staminaCost": 4,
     "requiresWeapon": "melee",
-    "acquisitionHint": "Speak to the keeper in the refuge for a free melee lesson.",
+    "acquisitionHint": "Speak to the instructor outside the Combat School in the northeast refuge for a free Smash lesson.",
     "gameRanks": {
       "F": {
-        "minPower": 10,
-        "maxPower": 14,
+        "minPower": 0,
+        "maxPower": 0,
         "manaCost": 0,
         "staminaCost": 4,
         "objectives": [
@@ -9134,16 +9134,22 @@
           }
         ],
         "nextRank": "E",
-        "apCost": 3
+        "apCost": 3,
+        "physicalMultiplier": 2,
+        "bypassDefend": true
       },
       "E": {
-        "minPower": 14,
-        "maxPower": 20,
+        "minPower": 0,
+        "maxPower": 0,
         "manaCost": 0,
         "staminaCost": 4,
-        "objectives": []
+        "objectives": [],
+        "physicalMultiplier": 2.1,
+        "bypassDefend": true
       }
-    }
+    },
+    "physicalMultiplier": 2,
+    "bypassDefend": true
   },
   {
     "id": "sword-mastery",

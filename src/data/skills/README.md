@@ -14,7 +14,7 @@ the catalog or importing reference percentages, charges, or racial variants.
 
 The four starter spells preserve their existing F ranges, scaling, targets and costs.
 Firebolt, Lightning Bolt and Healing are capped at F. Icebolt has an F/E adapter: 20 casts train 100 points, F → E costs 2 AP, and E uses power 11–21 with +2 INT. Smash, Combat Mastery and Sword
-Mastery implement the gameplay document's F/E pilot. Their E cap is explicit; they
+Mastery implement the gameplay document's F/E pilot. Smash now uses physical multipliers (F: 2, E: 2.1) with zero additive power and bypasses Defend, retaining ordinary Defense/Protection and 4 SP/0 MP costs. The fields are authored game rules; the wiki payload remains historical research. Source rechecked with Firecrawl October 2, 2026: [Smash](https://wiki.mabinogiworld.com/view/Smash). Their E cap is explicit; they
 cannot spend AP on an unimplemented D rank. `human-ranged-attack.json` adds the human archery identity with source URL, October 2, 2026 retrieval date, F–1 effects and unambiguous reference rows from [Human Ranged Attack](https://wiki.mabinogiworld.com/view/Human_Ranged_Attack). Its `battleUsable: false` prevents an unsupported skill cast: the Archery hotbar Attack uses its artwork/name while retaining the existing basic attack rules. Aiming, ammunition, bows/crossbows and new damage formulas are not implemented.
 
 Combat always includes Attack (Warrior: Combat Mastery; Archery: Human Ranged Attack; Mage: Magic Mastery) and Defend (Defense). These identities do not grant learned skills or reference stat bonuses. Saved backing-skill ranks appear only when owned. Items shows saved battle-usable consumable assignments configured in Inventory. Item recovery is engine-owned; item actions do not cast skills or train them.
@@ -23,7 +23,7 @@ Combat always includes Attack (Warrior: Combat Mastery; Archery: Human Ranged At
 
 The keeper teaches Enchant F for free with zero training and no AP award. The blacksmith sells its scrolls and materials and hosts the enchant/burn service.
 
-The keeper offers a free Smash lesson and a one-time 3 AP introductory milestone.
+The instructor outside the northeast Combat School offers a free Smash F lesson with zero training and the existing one-time 3 AP introductory milestone. The keeper points players there and retains its Enchant lesson and quests. Existing learned ranks, objective counts and milestone claims remain unchanged.
 Five guaranteed refuge training coffers provide the Combat manual, unfinished Sword
 manual, and Grip/Balance/Finish pages. Insert pages in any order, then read the complete
 manual in town. These sources remain available independently of dungeon success.
@@ -36,8 +36,8 @@ victory or defeat banks that ledger with resources, durability and rewards. Rest
 an unfinished checkpoint discards its ledger. A host-owned candidate is written to
 the auto slot before learning, page insertion, rank-up or battle completion becomes
 live. Failed writes retain the exact candidate and block dependent mutations until
-Retry save succeeds. Saves use wire version 8, preserving migrations from versions
-1–7; the existing native/web storage adapters need no database schema changes.
+Retry save succeeds. Saves use wire version 11, preserving migrations from versions
+1–10; the existing native/web storage adapters need no database schema changes.
 
 The character-scoped Skills journal is available from the character panel and drawer.
 It lists learned/discovered skills, rank effects, training objectives, AP eligibility,

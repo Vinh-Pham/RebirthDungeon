@@ -23,7 +23,7 @@ function rankEffects(
   if (skill.kind === 'life')
     return `Apply scrolls and burn equipment at the town forge. Permanent Intelligence +${rank.statBonuses?.intelligence ?? 0}. Recipes are shown before each attempt.`;
   if (skill.kind === 'active')
-    return `${skill.effect === 'heal' ? 'Healing' : 'Power'} ${rank.minPower}–${rank.maxPower} · ${rank.manaCost} MP · ${rank.staminaCost} base SP${skill.requiresWeapon ? ` · usable ${skill.requiresWeapon} weapon` : ''}`;
+    return `${rank.physicalMultiplier !== 1 ? `${Math.round(rank.physicalMultiplier * 100)}% physical damage` : `${skill.effect === 'heal' ? 'Healing' : 'Power'} ${rank.minPower}–${rank.maxPower}`} · ${rank.manaCost} MP · ${rank.staminaCost} base SP${skill.requiresWeapon ? ` · usable ${skill.requiresWeapon} weapon` : ''}${rank.bypassDefend ? ' · Bypasses Defend; Defense and Protection still apply' : ''}`;
   return [
     rank.maxHealth ? `Max HP +${rank.maxHealth}` : '',
     rank.meleeMax ? `Melee damage +${rank.meleeMin}–${rank.meleeMax}` : '',

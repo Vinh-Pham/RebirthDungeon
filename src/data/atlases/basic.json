@@ -334,5 +334,19 @@
     "rows": 1,
     "frameWidth": 32,
     "frameHeight": 32
+  },
+  {
+    "id": "combat-school",
+    "columns": 1,
+    "rows": 1,
+    "frameWidth": 32,
+    "frameHeight": 32
+  },
+  {
+    "id": "npc-combat-instructor",
+    "columns": 1,
+    "rows": 1,
+    "frameWidth": 32,
+    "frameHeight": 32
   }
 ]

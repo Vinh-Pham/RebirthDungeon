@@ -5,3 +5,13 @@ http_headers = { "x-heroui-personal-token" = "9159c681-dc97-4f06-86cb-764c6c2a2d
 [mcp_servers.aseprite]
 command = "node"
 args = ["/Users/vinhpham/Projects/aseprite-mcp/build/index.js"]
+
+[mcp_servers.obsidian]
+command = "npx"
+args = ["-y", "obsidian-mcp-server@latest"]
+env_vars = ["OBSIDIAN_API_KEY"]
+
+[mcp_servers.obsidian.env]
+OBSIDIAN_API_KEY = "247d1905b96d1e0b9d06b57236a9ae5cc1ebf6128af8f1ee6ceb3411093b6a8f"
+MCP_TRANSPORT_TYPE = "stdio"
+MCP_LOG_LEVEL = "info"

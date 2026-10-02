@@ -319,6 +319,7 @@ describe('durable completed-encounter quest evidence', () => {
       vi.spyOn(battle.engine.random, 'chance').mockReturnValue(true);
       if (result === 'victory') enemy.health!.current = 1;
       else {
+        enemy.health = { current: 1000, max: 1000 };
         player.health!.current = 1;
         Object.assign(enemy.combatant!, { attack: 1000, minDamage: 1000, maxDamage: 1000 });
       }

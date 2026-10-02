@@ -1,0 +1,5 @@
+allowBuilds:
+  '@shopify/react-native-skia': true
+  '@zowe/secrets-for-zowe-sdk': true
+  heroui-native-pro: true
+  unrs-resolver: true

@@ -58,6 +58,44 @@ afterEach(() => {
 });
 
 describe('town maps and services', () => {
+  it('places the Combat School instructor outside its footprint and learns Smash only through an open nearby lesson', () => {
+    const session = create();
+    const school = session.map.decorations.find((d) => d.sprite.atlas === 'combat-school')!;
+    const instructor = session.map.objects.find((o) => o.id === 'combat-instructor')!;
+    expect(
+      instructor.x < school.x ||
+        instructor.x >= school.x + school.size ||
+        instructor.y < school.y ||
+        instructor.y >= school.y + school.size,
+    ).toBe(true);
+    expect(
+      session.map.objects
+        .find((o) => o.id === 'keeper')!
+        .lessons.some((l) => l.skillId === 'smash'),
+    ).toBe(false);
+    const before = session.getSnapshot();
+    expect(() =>
+      session.dispatch({ type: 'LEARN_SKILL', objectId: instructor.id, skillId: 'smash' }),
+    ).toThrow();
+    expect(session.getSnapshot()).toBe(before);
+    approach(session, instructor.id);
+    expect(session.getSnapshot().activeService).toBe(instructor.id);
+    session.dispatch({ type: 'LEARN_SKILL', objectId: instructor.id, skillId: 'smash' });
+    expect(session.getSnapshot().state.hero.learnedSkills.smash).toEqual({
+      rank: 'F',
+      objectiveCounts: {},
+    });
+    const learned = session.getSnapshot();
+    expect(() =>
+      session.dispatch({ type: 'LEARN_SKILL', objectId: instructor.id, skillId: 'smash' }),
+    ).toThrow('already');
+    expect(session.getSnapshot()).toBe(learned);
+    expect(resume(session).getSnapshot().state.hero.learnedSkills.smash).toEqual({
+      rank: 'F',
+      objectiveCounts: {},
+    });
+  });
+
   it('renders every town object with dedicated art or its associated building sprite', () => {
     const town = content.data.worlds.find((world) => world.id === 'refuge')!;
     for (const object of town.objects) {
@@ -73,7 +111,7 @@ describe('town maps and services', () => {
     const npcs = content.data.worlds.flatMap((map) =>
       map.objects.filter((object) => ['npc', 'merchant', 'healer'].includes(object.kind)),
     );
-    expect(npcs).toHaveLength(5);
+    expect(npcs).toHaveLength(6);
     for (const npc of npcs) {
       expect(npc.sprite).toBeDefined();
       expect(content.data.atlases.find((atlas) => atlas.id === npc.sprite!.atlas)).toMatchObject({
