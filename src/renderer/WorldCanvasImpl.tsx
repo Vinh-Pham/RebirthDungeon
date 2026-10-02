@@ -5,10 +5,11 @@ import { cancelAnimation, useDerivedValue, useSharedValue, withTiming } from 're
 import type { JourneySession } from '../game/JourneySession';
 import { atlasAssets } from './AtlasAssets';
 import { TileRenderer } from './TileRenderer';
+import { DecorationRenderer } from './DecorationRenderer';
 import { spriteRect } from './Atlas';
 import type { GameCommand } from '../engine/commands';
 import { followCamera, screenToWorld } from './Camera';
-import type { ActorDefinition, SpriteAtlas } from '../data/schemas/content';
+import type { SpriteAtlas } from '../data/schemas/content';
 export interface WorldCanvasProps { session: JourneySession; width: number; dispatch(command: GameCommand): void; onObjectPress?(objectId: string): void }
 export default function WorldCanvas({ session, width, dispatch, onObjectPress }: WorldCanvasProps) {
   const { state, map } = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
@@ -43,47 +44,32 @@ export default function WorldCanvas({ session, width, dispatch, onObjectPress }:
   return <GestureDetector gesture={tap}><Canvas style={{ width, height }} accessibilityLabel="Exploration map. Tap objects or use the movement and interaction buttons below.">
     <Group transform={cameraTransform} opacity={opacity}>
       <TileRenderer map={map} />
-      {map.theme === 'town' ? map.objects.filter((obj) => obj.kind === 'portal' && obj.destination?.endsWith('-interior')).map((obj) => {
-        const left = (obj.x - 2) * map.tileSize; const top = (obj.y - 3) * map.tileSize;
-        const labels: Record<string, string> = { grocery: 'GROCERY', blacksmith: 'FORGE', healer: 'HEALER', general: 'GENERAL' };
-        const kind = obj.destination!.replace('-interior', '');
-        const roof = kind === 'blacksmith' ? '#854d3d' : kind === 'healer' ? '#4c7574' : '#756044';
-        return <Group key={`building-${obj.id}`}>
-          <Rect x={left + 4} y={top + 32} width={map.tileSize * 5 - 8} height={map.tileSize * 3 - 4} color="#b39a6b" />
-          <Rect x={left} y={top + 20} width={map.tileSize * 5} height={28} color={roof} />
-          <Rect x={left + 12} y={top + 8} width={map.tileSize * 5 - 24} height={24} color={roof} />
-          <Rect x={left + 28} y={top} width={map.tileSize * 5 - 56} height={14} color={roof} />
-          {[20, 116].map((offset) => <Group key={offset}>
-            <Rect x={left + offset} y={top + 64} width={24} height={24} color="#3b4946" />
-            <Rect x={left + offset + 3} y={top + 67} width={8} height={18} color="#dfbf76" />
-            <Rect x={left + offset + 14} y={top + 67} width={7} height={18} color="#dfbf76" />
-          </Group>)}
-          <Rect x={obj.x * map.tileSize + 3} y={obj.y * map.tileSize - 4} width={26} height={36} color="#302d29" />
-          {font ? <SkiaText x={left + 42} y={top + 59} font={font} text={labels[kind] ?? 'SHOP'} color="#302d29" /> : null}
-        </Group>;
-      }) : null}
+      <DecorationRenderer map={map} atlases={session.content.data.atlases} playerY={state.position.y} foreground={false} />
       {map.objects.map((obj) => {
+        if (map.decorations.some((decoration) => decoration.objectId === obj.id)) return null;
         const cleared = session.isClaimed(obj.id);
         const encounter = obj.kind === 'encounter' ? state.dungeon?.blueprint.encounters.find((entry) => entry.objectId === obj.id)?.map : undefined;
         const spawn = encounter?.spawns.find((entry) => entry.kind === 'enemy');
         const enemySprite = spawn ? session.content.data.enemies.find((entry) => entry.id === spawn.definitionId)?.sprite : undefined;
+        const objectSprite = obj.sprite ?? enemySprite;
         return <Group key={obj.id} opacity={cleared ? 0.25 : 1}>
-          {enemySprite ? <EncounterSprite sprite={enemySprite}
-            atlas={session.content.data.atlases.find((entry) => entry.id === enemySprite.atlas)!}
+          {objectSprite ? <WorldObjectSprite sprite={objectSprite}
+            atlas={session.content.data.atlases.find((entry) => entry.id === objectSprite.atlas)!}
             x={obj.x * map.tileSize} y={obj.y * map.tileSize} /> : obj.kind === 'altar' ? <>
             <Rect x={obj.x * map.tileSize + 2} y={obj.y * map.tileSize + 22} width={28} height={8} color="#ac9667" />
             <Rect x={obj.x * map.tileSize + 8} y={obj.y * map.tileSize + 4} width={16} height={20} color="#ded4b9" />
           </> : <Rect x={obj.x * map.tileSize + 7} y={obj.y * map.tileSize + 7} width={18} height={18} color={obj.kind === 'encounter' || obj.blocked ? '#76483d' : obj.kind === 'key' || obj.kind === 'finalChest' ? '#876d38' : obj.kind === 'fountain' ? '#416b7b' : obj.kind === 'healer' ? '#4c7574' : '#586157'} />}
-          {font && !enemySprite ? <SkiaText x={obj.x * map.tileSize + 12} y={obj.y * map.tileSize + 21} font={font} text={obj.kind === 'gate' ? obj.blocked ? 'B' : '>' : glyph[obj.kind]} color={obj.kind === 'altar' ? '#534735' : '#ead5ab'} /> : null}
+          {font && !objectSprite ? <SkiaText x={obj.x * map.tileSize + 12} y={obj.y * map.tileSize + 21} font={font} text={obj.kind === 'gate' ? obj.blocked ? 'B' : '>' : glyph[obj.kind]} color={obj.kind === 'altar' ? '#534735' : '#ead5ab'} /> : null}
         </Group>;
       })}
       {image ? <Group transform={transform}><Atlas image={image} sprites={[spriteRect(atlas, sprite.frame)]}
         transforms={[Skia.RSXform(1, 0, 0, 0)]} sampling={{ filter: FilterMode.Nearest, mipmap: MipmapMode.None }} /></Group> : null}
+      <DecorationRenderer map={map} atlases={session.content.data.atlases} playerY={state.position.y} foreground />
     </Group>
   </Canvas></GestureDetector>;
 }
 
-function EncounterSprite({ sprite, atlas, x, y }: { sprite: ActorDefinition['sprite']; atlas: SpriteAtlas; x: number; y: number }) {
+function WorldObjectSprite({ sprite, atlas, x, y }: { sprite: { atlas: string; frame: number }; atlas: SpriteAtlas; x: number; y: number }) {
   const source = atlasAssets[sprite.atlas];
   if (!source) throw new Error(`No bundled image registered for atlas: ${sprite.atlas}`);
   const image = useImage(source);

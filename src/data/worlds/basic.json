@@ -388,7 +388,11 @@
             "skillId": "enchant",
             "fee": 0
           }
-        ]
+        ],
+        "sprite": {
+          "atlas": "npc-keeper",
+          "frame": 0
+        }
       },
       {
         "id": "supply-chest",
@@ -493,7 +497,332 @@
         "y": 10
       }
     ],
-    "theme": "town"
+    "theme": "town",
+    "decorations": [
+      {
+        "id": "orchard-grocery-home-3-5",
+        "x": 3,
+        "y": 5,
+        "sprite": {
+          "atlas": "orchard-grocery-home",
+          "frame": 0
+        },
+        "size": 5,
+        "blocking": false,
+        "objectId": "grocery-door"
+      },
+      {
+        "id": "ember-forge-home-12-5",
+        "x": 12,
+        "y": 5,
+        "sprite": {
+          "atlas": "ember-forge-home",
+          "frame": 0
+        },
+        "size": 5,
+        "blocking": false,
+        "objectId": "blacksmith-door"
+      },
+      {
+        "id": "herbalist-home-3-11",
+        "x": 3,
+        "y": 11,
+        "sprite": {
+          "atlas": "herbalist-home",
+          "frame": 0
+        },
+        "size": 5,
+        "blocking": false,
+        "objectId": "healer-door"
+      },
+      {
+        "id": "wanderer-home-12-11",
+        "x": 12,
+        "y": 11,
+        "sprite": {
+          "atlas": "wanderer-home",
+          "frame": 0
+        },
+        "size": 5,
+        "blocking": false,
+        "objectId": "general-door"
+      },
+      {
+        "id": "cottage-home-14-1",
+        "x": 14,
+        "y": 1,
+        "sprite": {
+          "atlas": "cottage-home",
+          "frame": 0
+        },
+        "size": 3,
+        "blocking": true
+      },
+      {
+        "id": "moon-fountain-11-2",
+        "x": 11,
+        "y": 2,
+        "sprite": {
+          "atlas": "moon-fountain",
+          "frame": 0
+        },
+        "size": 2,
+        "blocking": true
+      },
+      {
+        "id": "garden-bench-13-4",
+        "x": 13,
+        "y": 4,
+        "sprite": {
+          "atlas": "garden-bench",
+          "frame": 0
+        },
+        "size": 1,
+        "blocking": true
+      },
+      {
+        "id": "oak-tree-17-1",
+        "x": 17,
+        "y": 1,
+        "sprite": {
+          "atlas": "oak-tree",
+          "frame": 0
+        },
+        "size": 2,
+        "blocking": true
+      },
+      {
+        "id": "oak-tree-1-6",
+        "x": 1,
+        "y": 6,
+        "sprite": {
+          "atlas": "oak-tree",
+          "frame": 0
+        },
+        "size": 2,
+        "blocking": true
+      },
+      {
+        "id": "oak-tree-17-6",
+        "x": 17,
+        "y": 6,
+        "sprite": {
+          "atlas": "oak-tree",
+          "frame": 0
+        },
+        "size": 2,
+        "blocking": true
+      },
+      {
+        "id": "oak-tree-1-12",
+        "x": 1,
+        "y": 12,
+        "sprite": {
+          "atlas": "oak-tree",
+          "frame": 0
+        },
+        "size": 2,
+        "blocking": true
+      },
+      {
+        "id": "oak-tree-17-12",
+        "x": 17,
+        "y": 12,
+        "sprite": {
+          "atlas": "oak-tree",
+          "frame": 0
+        },
+        "size": 2,
+        "blocking": true
+      },
+      {
+        "id": "flowering-bush-11-1",
+        "x": 11,
+        "y": 1,
+        "sprite": {
+          "atlas": "flowering-bush",
+          "frame": 0
+        },
+        "size": 1,
+        "blocking": true
+      },
+      {
+        "id": "flowering-bush-13-1",
+        "x": 13,
+        "y": 1,
+        "sprite": {
+          "atlas": "flowering-bush",
+          "frame": 0
+        },
+        "size": 1,
+        "blocking": true
+      },
+      {
+        "id": "flowering-bush-17-4",
+        "x": 17,
+        "y": 4,
+        "sprite": {
+          "atlas": "flowering-bush",
+          "frame": 0
+        },
+        "size": 1,
+        "blocking": true
+      },
+      {
+        "id": "flowering-bush-18-5",
+        "x": 18,
+        "y": 5,
+        "sprite": {
+          "atlas": "flowering-bush",
+          "frame": 0
+        },
+        "size": 1,
+        "blocking": true
+      },
+      {
+        "id": "flowering-bush-1-8",
+        "x": 1,
+        "y": 8,
+        "sprite": {
+          "atlas": "flowering-bush",
+          "frame": 0
+        },
+        "size": 1,
+        "blocking": true
+      },
+      {
+        "id": "flowering-bush-18-8",
+        "x": 18,
+        "y": 8,
+        "sprite": {
+          "atlas": "flowering-bush",
+          "frame": 0
+        },
+        "size": 1,
+        "blocking": true
+      },
+      {
+        "id": "flowering-bush-1-14",
+        "x": 1,
+        "y": 14,
+        "sprite": {
+          "atlas": "flowering-bush",
+          "frame": 0
+        },
+        "size": 1,
+        "blocking": true
+      },
+      {
+        "id": "flowering-bush-18-14",
+        "x": 18,
+        "y": 14,
+        "sprite": {
+          "atlas": "flowering-bush",
+          "frame": 0
+        },
+        "size": 1,
+        "blocking": true
+      },
+      {
+        "id": "ember-lantern-8-8",
+        "x": 8,
+        "y": 8,
+        "sprite": {
+          "atlas": "ember-lantern",
+          "frame": 0
+        },
+        "size": 1,
+        "blocking": true
+      },
+      {
+        "id": "ember-lantern-11-6",
+        "x": 11,
+        "y": 6,
+        "sprite": {
+          "atlas": "ember-lantern",
+          "frame": 0
+        },
+        "size": 1,
+        "blocking": true
+      },
+      {
+        "id": "ember-lantern-8-12",
+        "x": 8,
+        "y": 12,
+        "sprite": {
+          "atlas": "ember-lantern",
+          "frame": 0
+        },
+        "size": 1,
+        "blocking": true
+      },
+      {
+        "id": "ember-lantern-11-12",
+        "x": 11,
+        "y": 12,
+        "sprite": {
+          "atlas": "ember-lantern",
+          "frame": 0
+        },
+        "size": 1,
+        "blocking": true
+      },
+      {
+        "id": "ember-lantern-11-4",
+        "x": 11,
+        "y": 4,
+        "sprite": {
+          "atlas": "ember-lantern",
+          "frame": 0
+        },
+        "size": 1,
+        "blocking": true
+      },
+      {
+        "id": "ember-lantern-16-4",
+        "x": 16,
+        "y": 4,
+        "sprite": {
+          "atlas": "ember-lantern",
+          "frame": 0
+        },
+        "size": 1,
+        "blocking": true
+      },
+      {
+        "id": "wayfinder-sign-9-4",
+        "x": 9,
+        "y": 4,
+        "sprite": {
+          "atlas": "wayfinder-sign",
+          "frame": 0
+        },
+        "size": 1,
+        "blocking": true
+      },
+      {
+        "id": "wayfinder-sign-11-11",
+        "x": 11,
+        "y": 11,
+        "sprite": {
+          "atlas": "wayfinder-sign",
+          "frame": 0
+        },
+        "size": 1,
+        "blocking": true
+      },
+      {
+        "id": "garden-bench-1-16",
+        "x": 1,
+        "y": 16,
+        "sprite": {
+          "atlas": "garden-bench",
+          "frame": 0
+        },
+        "size": 1,
+        "blocking": true
+      }
+    ]
   },
   {
     "id": "halls",
@@ -709,7 +1038,11 @@
         "kind": "merchant",
         "x": 4,
         "y": 2,
-        "shopId": "grocery"
+        "shopId": "grocery",
+        "sprite": {
+          "atlas": "npc-grocery-keeper",
+          "frame": 0
+        }
       },
       {
         "id": "exit",
@@ -818,7 +1151,11 @@
         "x": 4,
         "y": 2,
         "shopId": "blacksmith",
-        "enchanting": true
+        "enchanting": true,
+        "sprite": {
+          "atlas": "npc-blacksmith-keeper",
+          "frame": 0
+        }
       },
       {
         "id": "exit",
@@ -926,7 +1263,11 @@
         "kind": "healer",
         "x": 4,
         "y": 2,
-        "healingCost": 10
+        "healingCost": 10,
+        "sprite": {
+          "atlas": "npc-healer-keeper",
+          "frame": 0
+        }
       },
       {
         "id": "exit",
@@ -1034,7 +1375,11 @@
         "kind": "merchant",
         "x": 4,
         "y": 2,
-        "shopId": "general"
+        "shopId": "general",
+        "sprite": {
+          "atlas": "npc-general-keeper",
+          "frame": 0
+        }
       },
       {
         "id": "exit",

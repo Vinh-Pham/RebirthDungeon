@@ -34,6 +34,18 @@ function resume(session: JourneySession) {
 afterEach(() => { sessions.splice(0).forEach((session) => session.dispose()); vi.restoreAllMocks(); });
 
 describe('town maps and services', () => {
+  it('gives every NPC a valid dedicated sprite and rejects missing art or frames', () => {
+    const npcs = content.data.worlds.flatMap((map) => map.objects.filter((object) => ['npc', 'merchant', 'healer'].includes(object.kind)));
+    expect(npcs).toHaveLength(5);
+    for (const npc of npcs) {
+      expect(npc.sprite).toBeDefined();
+      expect(content.data.atlases.find((atlas) => atlas.id === npc.sprite!.atlas)).toMatchObject({ columns: 1, rows: 1, frameWidth: 32, frameHeight: 32 });
+    }
+    for (const sprite of [{ atlas: 'missing', frame: 0 }, { atlas: 'npc-keeper', frame: 1 }]) {
+      const raw = structuredClone(content.data); raw.worlds[0].objects[0].sprite = sprite;
+      expect(() => new ContentRegistry(raw)).toThrow('Unknown world object sprite');
+    }
+  });
   it.each(['grocery', 'blacksmith', 'healer', 'general'])('enters %s, reloads inside, and exits to the matching doorstep', (shop) => {
     const session = create(); const door = session.map.objects.find((object) => object.id === `${shop}-door`)!;
     visit(session, shop); expect(session.toSave().worldId).toBe(`${shop}-interior`);
@@ -49,6 +61,30 @@ describe('town maps and services', () => {
     }
     for (const object of map.objects.filter((object) => object.kind === 'portal')) expect(findPath(map, map.entry, object).length).toBeGreaterThan(0);
     expect(map.objects.some((object) => object.kind === 'rest')).toBe(false);
+  });
+  it('blocks solid town props while keeping every service and collectible approachable', () => {
+    const map = content.data.worlds[0];
+    for (const decoration of map.decorations.filter((entry) => entry.blocking)) {
+      for (let y = decoration.y; y < decoration.y + decoration.size; y++) for (let x = decoration.x; x < decoration.x + decoration.size; x++) {
+        expect(isWalkable(map, { x, y })).toBe(false);
+      }
+    }
+    for (const object of map.objects) {
+      const neighbors = [[0, -1], [-1, 0], [1, 0], [0, 1]].map(([dx, dy]) => ({ x: object.x + dx, y: object.y + dy }));
+      expect(neighbors.some((point) => isWalkable(map, point) && (distance(map.entry, point) === 0 || findPath(map, map.entry, point).length > 0))).toBe(true);
+    }
+    expect(map.decorations.filter((entry) => entry.objectId).map((entry) => entry.objectId).sort()).toEqual(['blacksmith-door', 'general-door', 'grocery-door', 'healer-door']);
+  });
+  it('rejects unknown decoration art, invalid footprints, and obstructed entrances or arrivals', () => {
+    for (const mutate of [
+      (raw: typeof content.data) => { raw.worlds[0].decorations[0].sprite.atlas = 'missing'; },
+      (raw: typeof content.data) => { raw.worlds[0].decorations[0].sprite.frame = 1; },
+      (raw: typeof content.data) => { raw.worlds[0].decorations[0].x = 19; },
+      (raw: typeof content.data) => { raw.worlds[0].decorations[0].objectId = 'missing'; },
+      (raw: typeof content.data) => { raw.worlds[0].decorations[0].blocking = true; },
+      (raw: typeof content.data) => { raw.worlds[0].decorations.push({ id: 'bad-entry', ...raw.worlds[0].entry, size: 1, blocking: true, sprite: { atlas: 'oak-tree', frame: 0 } }); },
+      (raw: typeof content.data) => { raw.worlds[0].decorations.push({ id: 'bad-arrival', x: 5, y: 10, size: 1, blocking: true, sprite: { atlas: 'oak-tree', frame: 0 } }); },
+    ]) { const raw = structuredClone(content.data); mutate(raw); expect(() => new ContentRegistry(raw)).toThrow(); }
   });
   it('requires speaking to the current nearby service and closes it on movement', () => {
     const session = create((hero) => { hero.gold = 100; }); const initial = session.toSave();
