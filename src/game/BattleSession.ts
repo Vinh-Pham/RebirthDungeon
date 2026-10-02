@@ -29,6 +29,7 @@ export interface BattleView {
   character?: CharacterReview;
   inventory?: { items: Record<string, number>; weapon?: Weapon & { id: string } };
   phase: BattlePhase;
+  actionCount: number;
   turnId?: string;
   selectedTargetId?: string;
   selectedAction?: BattleAction;
@@ -54,6 +55,7 @@ export class BattleSession {
   private cleanup: Unsubscribe[] = [];
   private log: string[] = [];
   private disposed = false;
+  private submitting = false;
 
   constructor(readonly content: ContentRegistry, seed = 12345, mapId: string | TileMap = 'chamber', hero?: Hero, effects: readonly { statusId: string; stacks: number }[] = [], characterName?: string, readonly encounterId = `arena/${seed}`, eligibleTraining = false) {
     const map = typeof mapId === 'string' ? content.data.maps.find((entry) => entry.id === mapId) : MapSchema.parse(mapId);
@@ -90,6 +92,34 @@ export class BattleSession {
     if (this.disposed) throw new Error('Battle session has been disposed');
     this.engine.dispatch(command);
   }
+  canAcceptPlayerInput(expectedActionCount: number): boolean {
+    return !this.disposed && !this.submitting && !this.presentation.getSnapshot().busy &&
+      expectedActionCount === this.combat.completedActions &&
+      ['selectingAction', 'selectingTarget'].includes(this.battle.phase) &&
+      !!this.engine.getEntity(this.combat.currentTurn() ?? '')?.player;
+  }
+  /** One player intent; retain the controller's authoritative validation and resolution. */
+  executePlayerAction(action: BattleAction, targetId: string, expectedActionCount: number): boolean {
+    if (!this.canAcceptPlayerInput(expectedActionCount)) return false;
+    if (!this.battle.validTargetIds(action).includes(targetId)) throw new Error('Choose a living, valid target');
+    this.submitting = true;
+    try {
+      this.dispatch({ type: 'SELECT_ACTION', ...action });
+      this.dispatch({ type: 'SELECT_TARGET', targetId });
+      this.dispatch({ type: 'CONFIRM_ACTION' });
+      return true;
+    } finally { this.submitting = false; }
+  }
+  /** Self-only actions resolve on selection; other actions wait for a target tap. */
+  selectPlayerAction(action: BattleAction, expectedActionCount: number): boolean {
+    if (!this.canAcceptPlayerInput(expectedActionCount)) return false;
+    const targets = this.battle.validTargetIds(action);
+    if (targets.length === 1 && targets[0] === this.combat.currentTurn()) {
+      return this.executePlayerAction(action, targets[0], expectedActionCount);
+    }
+    this.dispatch({ type: 'SELECT_ACTION', ...action });
+    return true;
+  }
   advanceEnemyTurns(): void {
     // Consecutive enemies resolve immediately; presentation plays separately.
     while (this.battle.phase === 'enemyTurn') this.dispatch({ type: 'ADVANCE_ENEMY_TURN' });
@@ -115,7 +145,7 @@ export class BattleSession {
     const character: CharacterReview | undefined = player && stats ? { source: cloneData(player.statSource!), stats: { ...stats, combatant: { ...effectiveEntity(player, this.content).combatant! } }, health: player.health!.current, mana: player.mana!.current, stamina: player.stamina!.current, wounds: player.wounds!, fullness: player.fullness!,
       statuses: (player.statuses ?? []).map((status) => ({ name: this.content.status(status.id).name, turns: status.remainingTurns, stacks: status.stacks })),
       weapon: player.weapon ? { name: this.content.item(player.weapon.itemId).name, durability: player.weapon.durability, maxDurability: this.content.item(player.weapon.itemId).maxDurability! } : undefined } : undefined;
-    this.snapshot = { character, inventory: player ? { items: { ...player.inventory }, weapon: player.weapon ? cloneData(player.weapon) : undefined } : undefined, phase: this.battle.phase, turnId: this.combat.currentTurn(),
+    this.snapshot = { character, inventory: player ? { items: { ...player.inventory }, weapon: player.weapon ? cloneData(player.weapon) : undefined } : undefined, phase: this.battle.phase, actionCount: this.combat.completedActions, turnId: this.combat.currentTurn(),
       selectedAction: this.battle.context.action ? { ...this.battle.context.action } : undefined, selectedTargetId: this.battle.context.targetId,
       entities: this.projectEntities(), targets: this.battle.validTargetIds(), log: [...this.log], training: this.training.snapshot() };
     this.listeners.forEach((listener) => listener());

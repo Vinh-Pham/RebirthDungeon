@@ -96,11 +96,10 @@ export class BattleController implements GameSystem {
     return () => { cleanups.reverse().forEach((cleanup) => cleanup()); this.actor.stop(); this.engine = undefined; };
   }
 
-  validTargetIds(): string[] {
-    if (!this.engine || !this.context.action) return [];
+  validTargetIds(action = this.context.action): string[] {
+    if (!this.engine || !action) return [];
     const source = this.engine.getEntity(this.combat.currentTurn()!);
     if (!source) return [];
-    const action = this.context.action;
     const mode = ['item', 'rest', 'defend'].includes(action.action) ? 'self' : action.action === 'skill' ? this.content.skill(action.skillId!).target : 'enemy';
     return this.combat.turnOrder.filter((id) => {
       const target = this.engine!.getEntity(id);

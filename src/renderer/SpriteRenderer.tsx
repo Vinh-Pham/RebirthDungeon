@@ -9,8 +9,8 @@ import { spriteRect } from './Atlas';
 const white = [Skia.Color('white')];
 const sampling = { filter: FilterMode.Nearest, mipmap: MipmapMode.None };
 
-export function SpriteRenderer({ entity, image, atlas, active, selected }: {
-  entity: RenderEntity; image: SkImage; atlas: SpriteAtlas; active?: PresentationBatch; selected: boolean;
+export function SpriteRenderer({ entity, image, atlas, active, selected, targetable = false }: {
+  entity: RenderEntity; image: SkImage; atlas: SpriteAtlas; active?: PresentationBatch; selected: boolean; targetable?: boolean;
 }) {
   const idle = useSharedValue(0);
   const lunge = useSharedValue(0);
@@ -60,7 +60,7 @@ export function SpriteRenderer({ entity, image, atlas, active, selected }: {
   return (
     <Group transform={transform} opacity={opacity}>
       <Rect x={6} y={29} width={21} height={3} color="#0b1216" opacity={0.6} />
-      {selected ? <Rect x={-2} y={-2} width={36} height={38} style="stroke" strokeWidth={1} color="#dbb675" /> : null}
+      {selected || targetable ? <Rect x={-2} y={-2} width={36} height={38} style="stroke" strokeWidth={1} color={selected ? '#dbb675' : '#9fbd7e'} /> : null}
       <Atlas image={image} sprites={frames} transforms={transforms} sampling={sampling} />
       <Group opacity={flash}><Atlas image={image} sprites={frames} transforms={transforms} colors={white} colorBlendMode="srcATop" sampling={sampling} /></Group>
       <Rect x={4} y={35} width={24} height={3} color="#10171c" />
