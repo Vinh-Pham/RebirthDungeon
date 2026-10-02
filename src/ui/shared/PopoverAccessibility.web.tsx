@@ -37,7 +37,9 @@ export default function PopoverAccessibility({ children, open, close }: PopoverA
           !node.hasAttribute('disabled') &&
           node.getAttribute('aria-disabled') !== 'true',
       );
-    choices()[0]?.focus();
+    // The panel initially mounts offscreen for measurement. Moving focus must
+    // not scroll the document to that temporary position (or back to a trigger).
+    choices()[0]?.focus({ preventScroll: true });
     const keydown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault();
@@ -48,17 +50,19 @@ export default function PopoverAccessibility({ children, open, close }: PopoverA
       const items = choices();
       const index = items.indexOf(document.activeElement as HTMLElement);
       event.preventDefault();
-      items[(index + (event.shiftKey ? -1 : 1) + items.length) % items.length]?.focus();
+      items[(index + (event.shiftKey ? -1 : 1) + items.length) % items.length]?.focus({
+        preventScroll: true,
+      });
     };
     const focus = (event: FocusEvent) => {
-      if (!element.contains(event.target as Node)) choices()[0]?.focus();
+      if (!element.contains(event.target as Node)) choices()[0]?.focus({ preventScroll: true });
     };
     document.addEventListener('keydown', keydown, true);
     document.addEventListener('focusin', focus);
     return () => {
       document.removeEventListener('keydown', keydown, true);
       document.removeEventListener('focusin', focus);
-      if (previous?.isConnected) previous.focus();
+      if (previous?.isConnected) previous.focus({ preventScroll: true });
     };
   }, [open]);
   return (
