@@ -401,7 +401,11 @@
         "x": 4,
         "y": 3,
         "itemId": "iron-blade",
-        "quantity": 1
+        "quantity": 1,
+        "sprite": {
+          "atlas": "warden-supply-chest",
+          "frame": 0
+        }
       },
       {
         "id": "east",
@@ -409,7 +413,11 @@
         "kind": "portal",
         "x": 8,
         "y": 3,
-        "destination": "halls"
+        "destination": "halls",
+        "sprite": {
+          "atlas": "moss-halls-entrance",
+          "frame": 0
+        }
       },
       {
         "id": "dungeon-entrance",
@@ -417,7 +425,11 @@
         "kind": "altar",
         "x": 8,
         "y": 5,
-        "dungeonId": "moss-depths"
+        "dungeonId": "moss-depths",
+        "sprite": {
+          "atlas": "goddess-altar",
+          "frame": 0
+        }
       },
       {
         "id": "grocery-door",
@@ -458,7 +470,11 @@
         "itemId": "combat-manual",
         "quantity": 1,
         "x": 1,
-        "y": 10
+        "y": 10,
+        "sprite": {
+          "atlas": "training-manual",
+          "frame": 0
+        }
       },
       {
         "id": "sword-binding",
@@ -467,7 +483,11 @@
         "itemId": "sword-manual-unfinished",
         "quantity": 1,
         "x": 2,
-        "y": 10
+        "y": 10,
+        "sprite": {
+          "atlas": "sword-manual-binding",
+          "frame": 0
+        }
       },
       {
         "id": "grip-page",
@@ -476,7 +496,11 @@
         "itemId": "sword-page-1",
         "quantity": 1,
         "x": 3,
-        "y": 10
+        "y": 10,
+        "sprite": {
+          "atlas": "sword-page-grip",
+          "frame": 0
+        }
       },
       {
         "id": "balance-page",
@@ -485,7 +509,11 @@
         "itemId": "sword-page-2",
         "quantity": 1,
         "x": 6,
-        "y": 10
+        "y": 10,
+        "sprite": {
+          "atlas": "sword-page-balance",
+          "frame": 0
+        }
       },
       {
         "id": "finish-page",
@@ -494,7 +522,11 @@
         "itemId": "sword-page-3",
         "quantity": 1,
         "x": 7,
-        "y": 10
+        "y": 10,
+        "sprite": {
+          "atlas": "sword-page-finish",
+          "frame": 0
+        }
       }
     ],
     "theme": "town",

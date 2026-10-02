@@ -145,5 +145,61 @@
     "rows": 1,
     "frameWidth": 32,
     "frameHeight": 32
+  },
+  {
+    "id": "warden-supply-chest",
+    "columns": 1,
+    "rows": 1,
+    "frameWidth": 32,
+    "frameHeight": 32
+  },
+  {
+    "id": "moss-halls-entrance",
+    "columns": 1,
+    "rows": 1,
+    "frameWidth": 32,
+    "frameHeight": 32
+  },
+  {
+    "id": "goddess-altar",
+    "columns": 1,
+    "rows": 1,
+    "frameWidth": 32,
+    "frameHeight": 32
+  },
+  {
+    "id": "training-manual",
+    "columns": 1,
+    "rows": 1,
+    "frameWidth": 32,
+    "frameHeight": 32
+  },
+  {
+    "id": "sword-manual-binding",
+    "columns": 1,
+    "rows": 1,
+    "frameWidth": 32,
+    "frameHeight": 32
+  },
+  {
+    "id": "sword-page-grip",
+    "columns": 1,
+    "rows": 1,
+    "frameWidth": 32,
+    "frameHeight": 32
+  },
+  {
+    "id": "sword-page-balance",
+    "columns": 1,
+    "rows": 1,
+    "frameWidth": 32,
+    "frameHeight": 32
+  },
+  {
+    "id": "sword-page-finish",
+    "columns": 1,
+    "rows": 1,
+    "frameWidth": 32,
+    "frameHeight": 32
   }
 ]

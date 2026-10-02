@@ -21,4 +21,12 @@ export const atlasAssets: Record<string, number> = {
   'npc-blacksmith-keeper': require('../../assets/game/npcs/blacksmith-keeper.png'),
   'npc-healer-keeper': require('../../assets/game/npcs/healer-keeper.png'),
   'npc-general-keeper': require('../../assets/game/npcs/general-keeper.png'),
+  'warden-supply-chest': require('../../assets/game/decorations/warden-supply-chest.png'),
+  'moss-halls-entrance': require('../../assets/game/decorations/moss-halls-entrance.png'),
+  'goddess-altar': require('../../assets/game/decorations/goddess-altar.png'),
+  'training-manual': require('../../assets/game/decorations/training-manual.png'),
+  'sword-manual-binding': require('../../assets/game/decorations/sword-manual-binding.png'),
+  'sword-page-grip': require('../../assets/game/decorations/sword-page-grip.png'),
+  'sword-page-balance': require('../../assets/game/decorations/sword-page-balance.png'),
+  'sword-page-finish': require('../../assets/game/decorations/sword-page-finish.png'),
 };

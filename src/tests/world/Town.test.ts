@@ -34,6 +34,17 @@ function resume(session: JourneySession) {
 afterEach(() => { sessions.splice(0).forEach((session) => session.dispose()); vi.restoreAllMocks(); });
 
 describe('town maps and services', () => {
+  it('renders every town object with dedicated art or its associated building sprite', () => {
+    const town = content.data.worlds.find((world) => world.id === 'refuge')!;
+    for (const object of town.objects) {
+      const decoration = town.decorations.find((entry) => entry.objectId === object.id);
+      const sprite = object.sprite ?? decoration?.sprite;
+      expect(sprite, object.id).toBeDefined();
+      const atlas = content.data.atlases.find((entry) => entry.id === sprite!.atlas)!;
+      expect(atlas).toMatchObject({ frameWidth: 32, frameHeight: 32 });
+      expect(sprite!.frame).toBeLessThan(atlas.columns * atlas.rows);
+    }
+  });
   it('gives every NPC a valid dedicated sprite and rejects missing art or frames', () => {
     const npcs = content.data.worlds.flatMap((map) => map.objects.filter((object) => ['npc', 'merchant', 'healer'].includes(object.kind)));
     expect(npcs).toHaveLength(5);
