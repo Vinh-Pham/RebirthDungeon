@@ -22,7 +22,6 @@ import { type CharacterProfile, type CompleteCharacter } from '../../persistence
 import { CharacterGameContext } from './CharacterGameContext';
 import { MenuButton, MenuError, MenuPage, menu } from './MenuUI';
 import DebugMenu from '../debug/DebugMenu';
-import { DebugMenuTabBarContext } from '../debug/DebugMenuContext';
 
 export default function CharacterGameLayout() {
   const { characterId } = useLocalSearchParams<{ characterId: string }>();
@@ -108,7 +107,6 @@ function GameSession({ profile, retry }: { profile: CompleteCharacter; retry(): 
     (open: boolean) => setDebugMenu({ path, blocked: debugBlocked, open }),
     [path, debugBlocked],
   );
-  const [debugTabBarHeight, setDebugTabBarHeight] = useState(0);
   const [host] = useState(
     () =>
       new JourneyHost(
@@ -166,7 +164,8 @@ function GameSession({ profile, retry }: { profile: CompleteCharacter; retry(): 
           path.endsWith('/save-load') ||
           path.endsWith('/skills') ||
           path.endsWith('/titles') ||
-          path.endsWith('/quests')
+          path.endsWith('/quests') ||
+          path.endsWith('/explore')
         )
           return false;
         const current = host.getSnapshot();
@@ -213,37 +212,31 @@ function GameSession({ profile, retry }: { profile: CompleteCharacter; retry(): 
     );
   return (
     <CharacterGameContext value={{ host, profile }}>
-      <DebugMenuTabBarContext value={__DEV__ ? setDebugTabBarHeight : null}>
-        <View className="flex-1 bg-background">
-          <View
-            className="flex-1"
-            pointerEvents={debugOpen ? 'none' : 'auto'}
-            accessibilityElementsHidden={debugOpen}
-            importantForAccessibility={debugOpen ? 'no-hide-descendants' : 'auto'}
-          >
-            <Stack screenOptions={{ headerShown: false, gestureEnabled: false }}>
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="inventory" />
-              <Stack.Screen name="skills" />
-              <Stack.Screen name="quests" />
-              <Stack.Screen name="titles" />
-              <Stack.Screen name="save-load" />
-            </Stack>
-          </View>
-          {__DEV__ ? (
-            <DebugMenu
-              isOpen={debugOpen}
-              onOpenChange={setDebugOpen}
-              hidden={drawerOpen || statsOpen}
-              tabBarHeight={
-                path === `/game/${profile.id}` || path === `/game/${profile.id}/explore`
-                  ? debugTabBarHeight
-                  : 0
-              }
-            />
-          ) : null}
+      <View className="flex-1 bg-background">
+        <View
+          className="flex-1"
+          pointerEvents={debugOpen ? 'none' : 'auto'}
+          accessibilityElementsHidden={debugOpen}
+          importantForAccessibility={debugOpen ? 'no-hide-descendants' : 'auto'}
+        >
+          <Stack screenOptions={{ headerShown: false, gestureEnabled: false }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="explore" />
+            <Stack.Screen name="inventory" />
+            <Stack.Screen name="skills" />
+            <Stack.Screen name="quests" />
+            <Stack.Screen name="titles" />
+            <Stack.Screen name="save-load" />
+          </Stack>
         </View>
-      </DebugMenuTabBarContext>
+        {__DEV__ ? (
+          <DebugMenu
+            isOpen={debugOpen}
+            onOpenChange={setDebugOpen}
+            hidden={drawerOpen || statsOpen}
+          />
+        ) : null}
+      </View>
     </CharacterGameContext>
   );
 }

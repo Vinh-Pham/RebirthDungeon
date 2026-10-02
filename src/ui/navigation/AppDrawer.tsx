@@ -27,7 +27,7 @@ function AppDrawerContent(props: DrawerContentComponentProps) {
   const open = useDrawerStatus() === 'open';
   const close = useCallback(() => props.navigation.closeDrawer(), [props.navigation]);
   const route = (
-    destination: 'journey' | 'inventory' | 'save-load' | 'skills' | 'quests' | 'titles',
+    destination: 'journey' | 'codex' | 'inventory' | 'save-load' | 'skills' | 'quests' | 'titles',
   ) => {
     if (!game || !ready) return;
     close();
@@ -35,15 +35,17 @@ function AppDrawerContent(props: DrawerContentComponentProps) {
       pathname:
         destination === 'journey'
           ? '/game/[characterId]'
-          : destination === 'titles'
-            ? '/game/[characterId]/titles'
-            : destination === 'quests'
-              ? '/game/[characterId]/quests'
-              : destination === 'skills'
-                ? '/game/[characterId]/skills'
-                : destination === 'inventory'
-                  ? '/game/[characterId]/inventory'
-                  : '/game/[characterId]/save-load',
+          : destination === 'codex'
+            ? '/game/[characterId]/explore'
+            : destination === 'titles'
+              ? '/game/[characterId]/titles'
+              : destination === 'quests'
+                ? '/game/[characterId]/quests'
+                : destination === 'skills'
+                  ? '/game/[characterId]/skills'
+                  : destination === 'inventory'
+                    ? '/game/[characterId]/inventory'
+                    : '/game/[characterId]/save-load',
       params: { characterId: game.profile.id },
     });
   };
@@ -63,6 +65,12 @@ function AppDrawerContent(props: DrawerContentComponentProps) {
             selected={!!game && path === `/game/${game.profile.id}`}
             disabled={!ready}
             onPress={() => route('journey')}
+          />
+          <DungeonButton
+            label="Codex"
+            selected={path.endsWith('/explore')}
+            disabled={!ready}
+            onPress={() => route('codex')}
           />
           <DungeonButton
             label="Characters"

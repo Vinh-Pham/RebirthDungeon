@@ -16,20 +16,23 @@ export default function AppHeader({ title, canGoBack }: { title: string; canGoBa
     path.endsWith('/save-load') ||
     path.endsWith('/skills') ||
     path.endsWith('/titles') ||
-    path.endsWith('/quests');
-  const label = path.endsWith('/titles')
-    ? 'Titles'
-    : path.endsWith('/quests')
-      ? 'Quests'
-      : path.endsWith('/skills')
-        ? 'Skills'
-        : path.endsWith('/inventory')
-          ? 'Inventory'
-          : path.endsWith('/save-load')
-            ? 'Save/Load'
-            : inGame
-              ? (game?.profile.name ?? 'Your journey')
-              : title;
+    path.endsWith('/quests') ||
+    path.endsWith('/explore');
+  const label = path.endsWith('/explore')
+    ? 'Codex'
+    : path.endsWith('/titles')
+      ? 'Titles'
+      : path.endsWith('/quests')
+        ? 'Quests'
+        : path.endsWith('/skills')
+          ? 'Skills'
+          : path.endsWith('/inventory')
+            ? 'Inventory'
+            : path.endsWith('/save-load')
+              ? 'Save/Load'
+              : inGame
+                ? (game?.profile.name ?? 'Your journey')
+                : title;
   const showBack = auxiliary || path === '/settings' || (!inGame && canGoBack);
   const back = () => {
     if (router.canGoBack()) router.back();

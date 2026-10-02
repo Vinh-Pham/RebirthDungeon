@@ -48,13 +48,6 @@ describe('presentation independence', () => {
     expect(vi.getTimerCount()).toBe(0);
     expect(() => session.dispatch({ type: 'SELECT_ACTION', action: 'attack' })).toThrow('disposed');
   });
-  it('keeps UI settings independent of authoritative simulation', () => {
-    const session = create();
-    const before = structuredClone(session.engine.world.entities);
-    session.ui.getState().toggleDebug();
-    expect(session.ui.getState().debugVisible).toBe(true);
-    expect(session.engine.world.entities).toEqual(before);
-  });
   it('supports Strict Mode subscription teardown, recreation and restart', () => {
     const created: BattleSession[] = [];
     const host = new BattleHost(() => {

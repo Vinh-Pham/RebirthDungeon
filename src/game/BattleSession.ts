@@ -18,7 +18,6 @@ import type { TileMap } from '../data/schemas/content';
 import { MapSchema } from '../data/schemas/content';
 import { PresentationQueue } from '../renderer/animations/PresentationQueue';
 import type { RenderEntity } from '../renderer/types';
-import { createUIStore } from '../state/uiStore';
 
 export interface CharacterReview {
   source: StatSource;
@@ -58,7 +57,6 @@ export class BattleSession {
   readonly combat: CombatSystem;
   readonly battle: BattleController;
   readonly presentation;
-  readonly ui = createUIStore();
   readonly map: TileMap;
   readonly initialEntities: readonly RenderEntity[];
   private snapshot!: BattleView;

@@ -6,21 +6,21 @@ Updated **October 1, 2026**. The app uses Expo SDK 57, Expo Router, React Native
 
 Routes remain thin files under src/app. CharacterGameLayout owns one selected character's JourneyHost and provides CharacterGameContext; every feature view shares it. Routes, tabs, sheets and drawers do not create additional campaigns or award gameplay progress. Components/hooks live outside the route directory.
 
-The app drawer lists Journey first. Selecting it closes the drawer and navigates to the selected character's Journey/game screen, preserving the shared host and any active encounter. Journey is disabled until a character session is ready and shows its selected state on the game screen.
+The app drawer lists Journey first, then Codex. Selecting either closes the drawer and navigates within the selected character's stack, preserving the shared host and any active encounter. Both are disabled until a character session is ready and show their selected state on the matching screen. There is no bottom Journey/Codex navigation bar. Codex has a header Back control; Android Back returns from it before leaving the character. Existing `/game/[characterId]` and `/game/[characterId]/explore` links remain valid.
 
 The Journey detail row places Quests immediately after Inventory. Its content is the quest tracker with the existing journal link; the tracker no longer sits below every detail tab. The row scrolls horizontally on narrow screens so labels and touch targets stay readable, and supports keyboard tab switching on web.
 
-| Existing surface          | Owner and purpose                                                                                        |
-| ------------------------- | -------------------------------------------------------------------------------------------------------- |
-| Character selection/setup | CharacterSelectScreen / NewCharacterScreen; independent saved characters                                 |
-| Character game stack      | src/app/(screens)/game/[characterId]/_layout.tsx; shared host/context                                    |
-| Journey tabs              | Explore and character content; Character/Stats/Skills/Inventory/Quests detail tabs inside the journey UI |
-| Exploration/service panel | JourneyScreen / TownServicePanel; world interaction and supported NPC actions                            |
-| Active encounter          | BattleView embedded by the journey; no separate authoritative battle route required                      |
-| Inventory route           | InventoryScreen; same inventory content as the character tab                                             |
-| Stats overlay             | CharacterStatsOverlay / CharacterStatsDetails; selected character's observed stats                       |
-| Save/load route           | SaveLoadScreen; autosave status and manual slots                                                         |
-| App drawer/settings       | Shared navigation, character exit, inventory/save access and global preferences                          |
+| Existing surface          | Owner and purpose                                                                                      |
+| ------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Character selection/setup | CharacterSelectScreen / NewCharacterScreen; independent saved characters                               |
+| Character game stack      | src/app/(screens)/game/[characterId]/_layout.tsx; shared host/context                                  |
+| Journey/Codex routes      | Separate stack screens; Character/Stats/Skills/Inventory/Quests detail tabs stay inside the journey UI |
+| Exploration/service panel | JourneyScreen / TownServicePanel; world interaction and supported NPC actions                          |
+| Active encounter          | BattleView embedded by the journey; no separate authoritative battle route required                    |
+| Inventory route           | InventoryScreen; same inventory content as the character tab                                           |
+| Stats overlay             | CharacterStatsOverlay / CharacterStatsDetails; selected character's observed stats                     |
+| Save/load route           | SaveLoadScreen; autosave status and manual slots                                                       |
+| App drawer/settings       | Shared navigation, character exit, inventory/save access and global preferences                        |
 
 The standalone BattleScreen/BattleHost is also present for the battle surface; campaign features use JourneyHost's actual encounter instead of constructing that standalone session. Reuse shared DungeonUI, ResourceBar and menu components, HeroUI controls and current theme tokens. There is no Godot scene/Control tree or desktop floating-window framework to implement.
 
@@ -30,14 +30,23 @@ New Skills/Quests routes should reuse the same character stack as the existing S
 
 Selected-character screens include a development-only **DBG** floating action
 button. It is 56 logical units across, sits 16 units from the right safe inset,
-and clears the measured Journey/Codex tab bar. It is hidden while the drawer or
+and sits 16 units above the bottom safe inset. It is hidden while the drawer or
 Stats overlay is open. Navigation and character exit close the debug sheet.
 
-The sheet displays the character name, saved gold and **+100**, **+1,000** and
+The sheet uses HeroUI **Character** and **Battle** tabs, with Character selected
+initially. Web tabs support arrow keys, Home and End. Character displays the
+character name, saved gold and **+100**, **+1,000** and
 **+10,000 gold** shortcuts. It stays open after an addition and shows host-owned
 saving/success/error feedback and exact-candidate Retry save. Disable shortcuts
 while saving, awaiting retry, lacking storage, or exceeding the 1,000,000 gold
 cap; show the applicable reason. Closing does not cancel a pending transaction.
+
+Battle displays the active encounter's seed, phase, entity count, current actor,
+turn order, pending visual queue and entity IDs/positions/sprite atlas frames.
+Subscribe to the existing battle and presentation snapshots only while these
+diagnostics are mounted. There is no combat-screen debug toggle or inline overlay.
+Without an active battle, keep the Battle tab available with an empty panel.
+Switching tabs or inspecting diagnostics never draws RNG or dispatches gameplay.
 
 Native uses HeroUI BottomSheet at 50%/85% snap points with scrollable content.
 Web uses a bottom-aligned Modal, capped at 560 units wide and 85% viewport height,

@@ -1,4 +1,5 @@
-import { useEffect, useRef, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { Tabs } from 'heroui-native/tabs';
 import { Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DEBUG_GOLD_CAP, DEBUG_GOLD_SHORTCUTS, debugGoldError } from '../../game/DebugCommands';
@@ -6,17 +7,17 @@ import { useCharacterGame } from '../menu/CharacterGameContext';
 import ProgressionFeedback from '../skills/ProgressionFeedback';
 import { DungeonButton } from '../shared/DungeonUI';
 import DebugSheet from './DebugSheet';
+import KeyboardChoiceGroup from '../shared/KeyboardChoiceGroup';
+import BattleDebugInformation from './BattleDebugInformation';
 
 export default function DebugMenu({
   isOpen,
   onOpenChange,
   hidden,
-  tabBarHeight,
 }: {
   isOpen: boolean;
   onOpenChange(open: boolean): void;
   hidden: boolean;
-  tabBarHeight: number;
 }) {
   const { host, profile } = useCharacterGame();
   const view = useSyncExternalStore(host.subscribe, host.getSnapshot, host.getServerSnapshot);
@@ -24,6 +25,7 @@ export default function DebugMenu({
   const trigger = useRef<View>(null);
   const initialFocus = useRef<View>(null);
   const wasOpen = useRef(false);
+  const [tab, setTab] = useState('character');
   useEffect(() => {
     if (!isOpen && wasOpen.current) trigger.current?.focus();
     wasOpen.current = isOpen;
@@ -47,7 +49,7 @@ export default function DebugMenu({
         className="absolute"
         style={{
           right: insets.right + 16,
-          bottom: Math.max(insets.bottom, tabBarHeight) + 16,
+          bottom: insets.bottom + 16,
         }}
       >
         <DungeonButton
@@ -76,31 +78,62 @@ export default function DebugMenu({
               accessibilityLabel="Close debug menu"
             />
           </View>
-          <Text className="text-base text-muted">{profile.name}</Text>
-          <Text className="text-lg text-accent" accessibilityLiveRegion="polite">
-            {gold.toLocaleString()} gold
-          </Text>
-          <Text className="text-base font-semibold text-foreground">Add gold</Text>
-          <Text className="text-sm text-muted">
-            Saved immediately, including during battles. Gold cap: {DEBUG_GOLD_CAP.toLocaleString()}
-            .
-          </Text>
-          {DEBUG_GOLD_SHORTCUTS.map((amount) => {
-            const reason = unavailable ?? debugGoldError(gold, amount);
-            return (
-              <View key={amount} className="gap-1">
-                <DungeonButton
-                  label={`+${amount.toLocaleString()} gold`}
-                  disabled={!!reason}
-                  onPress={() => {
-                    void host.debug({ type: 'ADD_GOLD', amount });
-                  }}
-                />
-                {reason ? <Text className="text-sm text-muted">{reason}</Text> : null}
-              </View>
-            );
-          })}
-          <ProgressionFeedback host={host} />
+          <Tabs value={tab} onValueChange={setTab} className="w-full gap-4">
+            <KeyboardChoiceGroup itemRole="tab" value={tab}>
+              <Tabs.List
+                accessibilityLabel="Debug options"
+                className="w-full border border-border bg-surface"
+              >
+                <Tabs.Indicator className="rounded-lg bg-surface-tertiary" />
+                <Tabs.Trigger
+                  value="character"
+                  accessibilityLabel="Character"
+                  className="min-h-12 flex-1"
+                >
+                  <Tabs.Label>Character</Tabs.Label>
+                </Tabs.Trigger>
+                <Tabs.Trigger
+                  value="battle"
+                  accessibilityLabel="Battle"
+                  className="min-h-12 flex-1"
+                >
+                  <Tabs.Label>Battle</Tabs.Label>
+                </Tabs.Trigger>
+              </Tabs.List>
+            </KeyboardChoiceGroup>
+            <Tabs.Content value="character" className="gap-4">
+              <Text className="text-base text-muted">{profile.name}</Text>
+              <Text className="text-lg text-accent" accessibilityLiveRegion="polite">
+                {gold.toLocaleString()} gold
+              </Text>
+              <Text className="text-base font-semibold text-foreground">Add gold</Text>
+              <Text className="text-sm text-muted">
+                Saved immediately, including during battles. Gold cap:{' '}
+                {DEBUG_GOLD_CAP.toLocaleString()}.
+              </Text>
+              {DEBUG_GOLD_SHORTCUTS.map((amount) => {
+                const reason = unavailable ?? debugGoldError(gold, amount);
+                return (
+                  <View key={amount} className="gap-1">
+                    <DungeonButton
+                      label={`+${amount.toLocaleString()} gold`}
+                      disabled={!!reason}
+                      onPress={() => {
+                        void host.debug({ type: 'ADD_GOLD', amount });
+                      }}
+                    />
+                    {reason ? <Text className="text-sm text-muted">{reason}</Text> : null}
+                  </View>
+                );
+              })}
+              <ProgressionFeedback host={host} />
+            </Tabs.Content>
+            <Tabs.Content value="battle" className="min-h-24">
+              {tab === 'battle' && view.battle ? (
+                <BattleDebugInformation session={view.battle} />
+              ) : null}
+            </Tabs.Content>
+          </Tabs>
         </View>
       </DebugSheet>
     </>

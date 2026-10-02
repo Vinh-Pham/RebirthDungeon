@@ -1,6 +1,4 @@
-import { DungeonButton as Button, DungeonNotice, DungeonLoading } from '../shared/DungeonUI';
 import { Surface } from 'heroui-native/surface';
-import ResourceBar from '../shared/ResourceBar';
 import {
   Component,
   useEffect,
@@ -11,16 +9,15 @@ import {
 } from 'react';
 import { Platform, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useStore } from 'zustand';
 import { loadGameContent } from '../../data/content';
+import type { BattleAction } from '../../engine/battle/BattleMachine';
+import type { GameCommand } from '../../engine/commands';
 import { BattleHost } from '../../game/BattleHost';
 import { BattleSession, type BattleView as BattleSnapshot } from '../../game/BattleSession';
-import type { GameCommand } from '../../engine/commands';
-import type { BattleAction } from '../../engine/battle/BattleMachine';
-import { skillForEntity } from '../../engine/rpg/Skills';
-import { staminaCost } from '../../engine/rpg/Resources';
 import GameCanvas from '../../renderer/GameCanvas';
+import { DungeonButton as Button, DungeonLoading, DungeonNotice } from '../shared/DungeonUI';
 import GameImage from '../shared/GameImage';
+import ResourceBar from '../shared/ResourceBar';
 import BattleHotbar from './BattleHotbar';
 
 const mono = Platform.OS === 'ios' ? 'Menlo' : 'monospace';
@@ -46,9 +43,6 @@ export default function BattleScreen() {
     return (
       <SafeAreaView className="bg-background" style={styles.screen}>
         <View style={styles.notice}>
-          <Text className="text-foreground" style={styles.title}>
-            Rebirth Dungeon
-          </Text>
           {snapshot.error ? (
             <DungeonNotice message={snapshot.error} />
           ) : (
@@ -80,7 +74,6 @@ export function BattleView({
     session.presentation.getSnapshot,
     session.presentation.getSnapshot,
   );
-  const debug = useStore(session.ui, (state) => state.debugVisible);
   const { width: windowWidth } = useWindowDimensions();
   const width = Math.max(240, Math.min(windowWidth - 40, 560));
   const scroll = useRef<ScrollView>(null);
@@ -143,61 +136,15 @@ export function BattleView({
     if (attempt(() => session.executePlayerAction(action, targetId, expectedActionCount)))
       scroll.current?.scrollTo({ y: 0, animated: true });
   }
-  const source = session.engine.getEntity(view.turnId ?? '');
-  const selectedSkill =
-    action.action === 'skill' && source
-      ? skillForEntity(session.content, source, action.skillId!)
-      : undefined;
-  const skillCost = selectedSkill && source ? staminaCost(source, selectedSkill.staminaCost) : 0;
-  const headline =
-    view.phase === 'victory'
-      ? 'Chamber cleared'
-      : view.phase === 'defeat'
-        ? 'A warden falls'
-        : presentation.busy
-          ? 'Steel, spell & consequence'
-          : inspected
-            ? 'Action details'
-            : selectedSkill
-              ? selectedSkill.name
-              : 'Your move, warden';
-  const hint =
-    view.phase === 'victory'
-      ? victoryContent
-        ? 'Choose your loot, then confirm to continue.'
-        : 'A small victory. The dungeon runs deeper.'
-      : view.phase === 'defeat'
-        ? 'Every descent teaches something.'
-        : presentation.busy
-          ? 'The battle unfolds before you.'
-          : inspected
-            ? 'Review the action, then use it or close to return.'
-            : selectedSkill
-              ? `${selectedSkill.manaCost} MP · ${selectedSkill.effect === 'heal' && selectedSkill.target === 'ally' ? `0 SP ally / ${skillCost} SP self` : `${skillCost} SP`} · ` +
-                (selectedSkill.target === 'allEnemies'
-                  ? `Tap any monster to cast ${selectedSkill.name} against all enemies.`
-                  : `Tap ${selectedSkill.target === 'ally' ? 'an ally' : 'a monster'} to cast ${selectedSkill.name}.`)
-              : view.selectedAction
-                ? 'Tap a monster in the arena to attack.'
-                : session.battle.validTargetIds({ action: 'attack' }).length === 1
-                  ? 'Choose an action below. The last monster is targeted automatically.'
-                  : 'Choose an action below, then tap a monster in the arena.';
 
   return (
-    <SafeAreaView className="bg-background" style={styles.screen} edges={['left', 'right']}>
+    <SafeAreaView
+      className="bg-background"
+      style={styles.screen}
+      edges={['bottom', 'left', 'right']}
+    >
       <ScrollView ref={scroll} contentContainerStyle={styles.scroll}>
         <View style={[styles.content, { width }]}>
-          <View style={styles.headingRow}>
-            <Text className="text-accent" style={styles.eyebrow}>
-              REBIRTH DUNGEON
-            </Text>
-            <Button
-              label="◈"
-              accessibilityLabel="Toggle battle debug overlay"
-              selected={debug}
-              onPress={() => session.ui.getState().toggleDebug()}
-            />
-          </View>
           <Text className="text-foreground" style={styles.title}>
             {session.map.name}
           </Text>
@@ -221,12 +168,6 @@ export function BattleView({
               decisionY.current = event.nativeEvent.layout.y;
             }}
           >
-            <Text className="text-foreground" style={styles.headline}>
-              {headline}
-            </Text>
-            <Text className="text-muted" style={styles.body}>
-              {hint}
-            </Text>
             {!finished ? (
               <BattleActions
                 session={session}
@@ -254,24 +195,6 @@ export function BattleView({
               <DungeonNotice message={error ?? session.battle.context.error} />
             ) : null}
           </View>
-          {debug ? (
-            <Surface className="bg-surface-secondary" style={styles.debug}>
-              <Text className="text-muted" style={styles.debugText}>
-                Seed {session.engine.seed} · {view.phase}
-              </Text>
-              <Text className="text-muted" style={styles.debugText}>
-                Entities {session.engine.world.entities.length} · Turn {view.turnId ?? 'complete'}
-              </Text>
-              <Text className="text-muted" style={styles.debugText}>
-                Order {session.combat.turnOrder.join(' → ')} · Visual queue {presentation.pending}
-              </Text>
-              {view.entities.map((entity) => (
-                <Text className="text-muted" key={entity.id} style={styles.debugText}>
-                  {entity.id} ({entity.x}, {entity.y}) · {entity.sprite.atlas}:{entity.sprite.frame}
-                </Text>
-              ))}
-            </Surface>
-          ) : null}
           <View className="border-border" style={styles.roster}>
             {view.entities
               .filter((entity) => entity.side === 'player')
@@ -416,7 +339,6 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   content: { gap: 18 },
-  headingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   eyebrow: { fontSize: 10, letterSpacing: 2.4, fontFamily: mono },
   title: {
     fontFamily: Platform.OS === 'android' ? 'serif' : 'Georgia',
@@ -444,7 +366,5 @@ const styles = StyleSheet.create({
   log: { borderRadius: 5, padding: 16, gap: 12 },
   logLine: { fontSize: 11, lineHeight: 19 },
   footer: { textAlign: 'center', fontSize: 8, letterSpacing: 1.5, fontFamily: mono },
-  debug: { padding: 12, gap: 4 },
-  debugText: { fontFamily: mono, fontSize: 10 },
   notice: { padding: 24, gap: 20 },
 });

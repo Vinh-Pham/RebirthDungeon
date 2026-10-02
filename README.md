@@ -33,18 +33,19 @@ Each character has an independent autosave and three manual slots. Use
 Existing saves appear as **Imported Adventurer**; complete its character details
 once to continue. Original legacy save rows remain available as recovery copies.
 
-On the Journey tab, speak to the keeper, approach the supplies chest, collect
+On the Journey screen, speak to the keeper, approach the supplies chest, collect
 and equip the iron blade, then use the eastern passage. Challenge the moss guardian,
 return after victory, collect the moss mail, and challenge the elder guardian.
 Movement works with buttons or by tapping a reachable floor tile. You can return
 to the town for supplies, weapon repairs, and paid healing. The Codex shows the content definitions.
 
-The header menu opens a left drawer with Journey first, followed by Characters,
+The header menu opens a left drawer with Journey first, followed by Codex, Characters,
 Stats, Inventory, Skills, Titles, Quests, Save/Load and Settings. Journey returns
 to the selected character's game screen and is disabled without an active character.
 Swipe from the left edge on iOS or Android, or use the menu button
-on every platform. Inventory and Save/Load have separate screens; the Journey and
-Codex tabs remain available in the game. Inventory shows an image grid on its route and Journey detail tab. Tap an icon
+on every platform. Codex, Inventory and Save/Load have separate screens in the same
+character stack. There is no bottom navigation bar; use Journey in the drawer or
+Back to return from Codex. Inventory shows an image grid on its route and Journey detail tab. Tap an icon
 for item information, use/equip actions, hotbar assignment, or Drop with a selected
 quantity. Drop saves before removing items and protects equipped/locked gear.
 Inventory can add or remove battle
@@ -63,8 +64,8 @@ individual component paths. Shared action, card, notice, and loading components
 live in `src/ui/shared/DungeonUI.tsx`; game commands remain in the screen owners.
 Skia world and battle canvases are unchanged.
 
-Expo Router owns the app-wide drawer, root stack, game stack, and Journey/Codex
-tabs. Pathless route groups preserve existing links. The shared header includes a
+Expo Router owns the app-wide drawer, root stack and character game stack.
+Existing Journey and Codex links are preserved. The shared header includes a
 menu button and Back controls for auxiliary screens. Web drawer controls support
 keyboard focus containment, Escape, and focus restoration.
 Stats use a native HeroUI Dialog and a small web Modal adapter for focus trapping,
@@ -82,8 +83,9 @@ iOS and Android. For a production bundle check, run
 
 When running a development session with the local Expo server, select a character
 and use the **DBG** floating button at the bottom-right of any character screen.
-It stays above the Journey/Codex tab bar and opens a Debug menu sheet showing the
-selected character and their saved gold balance. Use **+100**, **+1,000**, or
+It clears the bottom safe inset and opens a Debug menu sheet with **Character**
+and **Battle** tabs. Character shows the selected character and their saved gold
+balance. Use **+100**, **+1,000**, or
 **+10,000 gold** to add gold immediately, including during encounters. A shortcut
 is disabled if its full amount would exceed the 1,000,000 gold cap.
 
@@ -96,7 +98,9 @@ combat changes, and completed defeat still halves the updated gold balance.
 The menu is gated by React Native's `__DEV__` flag, so its controls are not mounted
 in production builds and the host rejects debug requests when disabled. The native sheet uses
 HeroUI BottomSheet with its `@gorhom/bottom-sheet` peer; web uses the existing
-Modal adapter pattern. Gold is the only debug tool currently supported.
+Modal adapter pattern. Battle shows the live seed, phase, entity count, current
+actor, turn order, visual queue and entity positions/sprites. Outside an encounter,
+the Battle tab is empty. Battle diagnostics no longer appear on the combat screen.
 
 ## Town services and weapon durability
 

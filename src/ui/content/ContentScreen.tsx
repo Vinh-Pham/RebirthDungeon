@@ -17,7 +17,11 @@ const targetNames = {
 
 export default function ContentScreen() {
   return (
-    <SafeAreaView className="bg-background" edges={['left', 'right']} style={styles.screen}>
+    <SafeAreaView
+      className="bg-background"
+      edges={['bottom', 'left', 'right']}
+      style={styles.screen}
+    >
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.content}>
           <Text className="text-accent" style={styles.eyebrow}>

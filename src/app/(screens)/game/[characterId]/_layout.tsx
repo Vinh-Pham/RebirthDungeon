@@ -1,2 +1,2 @@
 export { default } from '@/ui/menu/CharacterGameLayout';
-export const unstable_settings = { initialRouteName: '(tabs)' };
+export const unstable_settings = { initialRouteName: 'index' };
