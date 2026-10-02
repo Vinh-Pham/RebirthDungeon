@@ -51,6 +51,44 @@ Extend the existing owner and nearby patterns before creating a new abstraction.
 
 Keep native/web differences in the existing `.web.ts` / `.web.tsx` adapter pattern. Put tests in the corresponding `src/tests/` area instead of route directories. Keep fetched research in ignored `.firecrawl/` files; document durable findings in `docs/` or content source metadata.
 
+## Create game artwork with Aseprite MCP
+
+Use **Aseprite MCP tools whenever a new image is needed or requested for the game**. Include a short description of what the image depicts and its intended in-game use in the task output.
+
+Save each asset in the folder matching its category:
+
+| Asset category | Destination |
+| --- | --- |
+| Consumable items | `assets/game/consumables/` |
+| Town decorations | `assets/game/decorations/` |
+| Enemies | `assets/game/enemies/` |
+| NPCs | `assets/game/npcs/` |
+| Skill icons | `assets/game/skills/` |
+| Weapons | `assets/game/weapons/` |
+
+Name the final image **`{item name}.png`** and keep its editable source as **`{item name}.aseprite`** in the same folder.
+
+Every new image must meet these requirements:
+
+- Exactly **32 × 32 pixels**.
+- Transparent background.
+- Use only colors from [assets/game/lospec500.txt](assets/game/lospec500.txt).
+- Use a dark purple from that palette for outlines instead of pure black.
+- Light the sprite from the top left.
+- Use an RPG pixel-art style.
+- Keep the silhouette and details readable at native resolution.
+
+After drawing, follow this sequence with Aseprite MCP tools:
+
+1. Render the sprite for preview.
+2. Visually inspect it at its native 32 × 32 resolution.
+3. Improve the silhouette.
+4. Reduce unnecessary colors while staying within the palette.
+5. Render and inspect the refined sprite, then export the final transparent PNG at 32 × 32.
+6. Save the original editable `.aseprite` file alongside the PNG.
+
+Register new artwork in the owning static asset registry, including `src/ui/shared/gameImages.ts` when used by item or skill UI, following the existing asset-loading patterns.
+
 ## Implementation boundaries
 
 - Keep engine and RPG rules runnable without React Native, rendering, storage, or a device clock. React displays subscribed snapshots and dispatches typed commands; it does not maintain duplicate gameplay formulas or balances.
