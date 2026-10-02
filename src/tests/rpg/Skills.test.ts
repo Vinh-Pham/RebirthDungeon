@@ -75,7 +75,7 @@ describe('learned ranks and acquisition', () => {
     const { ap, learnedSkills, discoveredSkills, bookCollections, claimedMilestones, quests, earnedTitles, questFlags, trackedObjectives, ...legacy } = versionSevenHero(state.hero);
     void ap; void learnedSkills; void discoveredSkills; void bookCollections; void claimedMilestones; void quests; void earnedTitles; void questFlags; void trackedObjectives;
     const migrated = parseSave({ version: 5, savedAt: new Date().toISOString(), campaign: { ...state, hero: legacy } }, content);
-    expect(migrated.version).toBe(8); expect(migrated.campaign.hero).toMatchObject({ ap: 0, level: 5, health: 17, mana: 4, stamina: 9 });
+    expect(migrated.version).toBe(9); expect(migrated.campaign.hero).toMatchObject({ ap: 0, level: 5, health: 17, mana: 4, stamina: 9 });
     expect(heroStats(migrated.campaign.hero, content).base.intelligence).toBe(52);
     expect(parseSave(JSON.parse(encodeSave(migrated.campaign, content)), content).campaign.hero).toEqual(migrated.campaign.hero);
   });

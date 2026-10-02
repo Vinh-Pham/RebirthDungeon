@@ -32,5 +32,48 @@
     "category": "skill", "delivery": "automatic", "prerequisite": {"kind": "skill", "skillId": "sword-mastery", "rank": "E"},
     "stages": [{"id": "mastery-milestone", "name": "Sword Mastery milestone", "objectives": [{"id": "mastery-rank-e", "kind": "skillRank", "skillId": "sword-mastery", "rank": "E", "label": "Commit Sword Mastery Rank E", "target": 1}]}],
     "rewards": {"ap": 2}
+  },
+  {
+    "id": "lantern-watch",
+    "name": "A light for the watch",
+    "description": "The watch thanks you for the provisions. Speak to the keeper once more, then claim a Lantern Companion title coupon. Redeem it in town from your pack.",
+    "category": "sidequest",
+    "delivery": "npc",
+    "offerNpc": {
+      "worldId": "refuge",
+      "objectId": "keeper"
+    },
+    "claimNpc": {
+      "worldId": "refuge",
+      "objectId": "keeper"
+    },
+    "prerequisite": {
+      "kind": "quest",
+      "questId": "refuge-preparations"
+    },
+    "stages": [
+      {
+        "id": "watch-thanks",
+        "name": "Receive the watch’s thanks",
+        "objectives": [
+          {
+            "id": "watch-greeting",
+            "kind": "interact",
+            "worldId": "refuge",
+            "objectId": "keeper",
+            "label": "Speak to the keeper after accepting",
+            "target": 1
+          }
+        ]
+      }
+    ],
+    "rewards": {
+      "items": [
+        {
+          "itemId": "lantern-title-coupon",
+          "quantity": 1
+        }
+      ]
+    }
   }
 ]

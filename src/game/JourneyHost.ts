@@ -50,8 +50,11 @@ export class JourneyHost {
       await saver?.flush(); const state = await repository.load(slot);
       if (generation !== this.generation) return;
       if (!state) throw new Error('This slot is empty');
-      this.attach(new JourneySession(this.content, state, undefined, this.characterName));
-      this.autosaver?.schedule(this.snapshot.session!.toSave()); this.update({ notice: `Loaded slot ${slot}.` });
+      const session = new JourneySession(this.content, state, undefined, this.characterName);
+      this.attach(session);
+      const catchup = session.titleCatchupCandidate();
+      if (catchup) { this.candidate = catchup; session.lockMutations(); await this.persistCandidate(); }
+      else { this.autosaver?.schedule(session.toSave()); this.update({ notice: `Loaded slot ${slot}.` }); }
     } catch (error) { if (generation === this.generation) this.fail(error); } finally { if (generation === this.generation) this.update({ busy: false }); }
   }
   progress = async (command: ProgressionCommand): Promise<boolean> => {
@@ -135,8 +138,10 @@ export class JourneyHost {
       const session = new JourneySession(this.content, state, undefined, this.characterName);
       const reconciled = session.toSave();
       this.attach(session);
+      const catchup = session.titleCatchupCandidate();
+      if (catchup) { this.candidate = catchup; session.lockMutations(); await this.persistCandidate(); }
       // Save newly discovered automatic offers/state-stage advancement after a load.
-      if ((state && JSON.stringify(state) !== JSON.stringify(reconciled)) || (!state && Object.keys(reconciled.hero.quests).length)) this.autosaver?.schedule(session.toSave());
+      if (!catchup && ((state && JSON.stringify(state) !== JSON.stringify(reconciled)) || (!state && Object.keys(reconciled.hero.quests).length))) this.autosaver?.schedule(session.toSave());
       const slots = await repository.list();
       if (generation === this.generation) this.update({ slots, busy: false });
     } catch (error) {

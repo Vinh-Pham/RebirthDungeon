@@ -1,8 +1,10 @@
+import { titleEligible } from '../engine/rpg/Titles';
+import { emptyTitleProgression } from '../engine/rpg/TitleState';
 import { emptyEnchantProgression } from '../engine/rpg/EnchantState';
 import { emptyQuestProgression } from '../engine/rpg/Quests';
 import { starterProgression } from '../engine/rpg/Skills';
 import { z } from 'zod';
-import { HeroSchema, LegacyHeroSchema, VersionFourHeroSchema, VersionFiveHeroSchema, VersionSixHeroSchema, VersionSevenHeroSchema, migrateEquipmentHero, migrateHero, restoreHero, validateHero } from '../engine/rpg/Character';
+import { HeroSchema, LegacyHeroSchema, VersionFourHeroSchema, VersionFiveHeroSchema, VersionSixHeroSchema, VersionSevenHeroSchema, VersionEightHeroSchema, clampHeroResources, migrateEquipmentHero, migrateHero, restoreHero, validateHero } from '../engine/rpg/Character';
 import type { GrowthTalent } from '../engine/rpg/Stats';
 import type { ContentRegistry } from '../engine/data/ContentRegistry';
 import { isWalkable } from '../engine/world/TileMap';
@@ -18,7 +20,8 @@ export const CampaignSchema = z.strictObject({
   audio: z.strictObject({ music: z.number().min(0).max(1), sfx: z.number().min(0).max(1), enabled: z.boolean() }),
   dungeon: DungeonRunSchema.optional(),
 });
-export const SaveSchema = z.strictObject({ version: z.literal(8), savedAt: z.string().datetime(), campaign: CampaignSchema });
+export const SaveSchema = z.strictObject({ version: z.literal(9), savedAt: z.string().datetime(), campaign: CampaignSchema });
+const VersionEightSchema = z.strictObject({ version: z.literal(8), savedAt: z.string().datetime(), campaign: CampaignSchema.extend({ hero: VersionEightHeroSchema }) });
 const VersionSevenSchema = z.strictObject({ version: z.literal(7), savedAt: z.string().datetime(), campaign: CampaignSchema.extend({ hero: VersionSevenHeroSchema }) });
 const VersionSixSchema = z.strictObject({ version: z.literal(6), savedAt: z.string().datetime(), campaign: CampaignSchema.extend({ hero: VersionSixHeroSchema }) });
 const VersionFiveSchema = z.strictObject({ version: z.literal(5), savedAt: z.string().datetime(), campaign: CampaignSchema.extend({ hero: VersionFiveHeroSchema }) });
@@ -75,15 +78,27 @@ export function parseSave(raw: unknown, content: ContentRegistry, growthTalent?:
     const hero = version >= 4 ? migrateEquipmentHero(olderHero as z.infer<typeof VersionSevenHeroSchema>, content, legacy.campaign.seed) : olderHero as z.infer<typeof HeroSchema>;
     if (version < 4) hero.enchanting = emptyEnchantProgression(legacy.campaign.seed).enchanting;
     if (version < 5) restoreHero(hero, content);
-    migrated = { ...legacy, version: 8, campaign: { ...legacy.campaign,
+    migrated = { ...legacy, version: 9, campaign: { ...legacy.campaign,
       audio: 'audio' in legacy.campaign ? legacy.campaign.audio : { music: 0.3, sfx: 0.7, enabled: false },
       hero,
     } };
   }
+  if (version === 8) {
+    const old = VersionEightSchema.parse(raw);
+    migrated = { ...old, version: 9, campaign: { ...old.campaign, hero: { ...old.campaign.hero, ...emptyTitleProgression() } } };
+  }
   const save = SaveSchema.parse(migrated);
+  if (typeof version === 'number' && version < 9) {
+    for (const id of save.campaign.hero.earnedTitles) {
+      save.campaign.hero.titleCollection.discovered.push(id);
+      save.campaign.hero.titleCollection.records[id] = { source: 'legacy/ownership' };
+    }
+  }
+  const selected = Object.values(save.campaign.hero.titleCollection.selected);
+  if (selected.some((id) => { const title = content.data.titles.find((t) => t.id === id); return !title || !titleEligible(save.campaign.hero, title); })) clampHeroResources(save.campaign.hero, content);
   if (growthTalent && save.campaign.hero.growthTalent !== growthTalent) throw new Error('Saved talent does not match this character');
   return { ...save, campaign: validateCampaign(save.campaign, content) };
 }
 export function encodeSave(state: CampaignState, content: ContentRegistry, savedAt = new Date().toISOString()): string {
-  return JSON.stringify(parseSave({ version: 8, savedAt, campaign: state }, content));
+  return JSON.stringify(parseSave({ version: 9, savedAt, campaign: state }, content));
 }

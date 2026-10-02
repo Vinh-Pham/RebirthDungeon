@@ -1,3 +1,92 @@
 [
-  {"id": "seals-witness", "name": "the Seal’s Witness", "description": "Witnessed the broken seal in Chapter 1, Generation 1. An earned story title; title equipment is not yet available.", "slot": "first"}
+  {
+    "id": "first-delver",
+    "name": "the First Delver",
+    "description": "Returned from the moss depths with its final treasure.",
+    "slot": "first",
+    "category": "General",
+    "hint": {
+      "kind": "enteredDungeon",
+      "dungeonId": "moss-depths"
+    },
+    "award": {
+      "kind": "clearDungeon",
+      "dungeonId": "moss-depths"
+    },
+    "effects": [
+      {
+        "stat": "maxHealth",
+        "value": 10
+      }
+    ]
+  },
+  {
+    "id": "guardian-breaker",
+    "name": "the Guardian Breaker",
+    "description": "Defeated the elder guardian of the moss depths.",
+    "slot": "first",
+    "category": "Combat",
+    "hint": {
+      "kind": "encounteredBoss",
+      "dungeonId": "moss-depths",
+      "enemyId": "elder-slime"
+    },
+    "award": {
+      "kind": "bossVictory",
+      "dungeonId": "moss-depths",
+      "enemyId": "elder-slime"
+    },
+    "effects": [
+      {
+        "stat": "physicalAttack",
+        "value": 3
+      },
+      {
+        "stat": "maxMana",
+        "value": -5
+      }
+    ]
+  },
+  {
+    "id": "seals-witness",
+    "name": "the Seal’s Witness",
+    "description": "Witnessed the broken seal in Chapter 1, Generation 1, and claimed the keeper’s final reward.",
+    "slot": "first",
+    "category": "Story",
+    "hint": {
+      "kind": "questKnown",
+      "questId": "broken-seal"
+    },
+    "award": {
+      "kind": "questClaimed",
+      "questId": "broken-seal"
+    },
+    "effects": [
+      {
+        "stat": "magicAttack",
+        "value": 3
+      },
+      {
+        "stat": "defense",
+        "value": -1
+      }
+    ]
+  },
+  {
+    "id": "lantern-companion",
+    "name": "Lantern Companion",
+    "description": "Helped supply the refuge watch and redeemed its lantern coupon.",
+    "slot": "second",
+    "category": "General",
+    "hint": {
+      "kind": "item",
+      "itemId": "lantern-title-coupon"
+    },
+    "effects": [
+      {
+        "stat": "maxHealth",
+        "value": 5
+      }
+    ]
+  }
 ]

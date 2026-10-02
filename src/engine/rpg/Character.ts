@@ -1,3 +1,5 @@
+import { TitleProgressionSchema, emptyTitleProgression } from './TitleState';
+import { selectedTitleEffects, validateTitleProgression } from './Titles';
 import { EquipmentEnchantFields, EnchantProgressionSchema, emptyEnchantProgression } from './EnchantState';
 import { equipmentEnchantEffects } from './EnchantEffects';
 import { cloneData } from '../cloneData';
@@ -31,10 +33,11 @@ export const VersionFourHeroSchema = LegacyHeroSchema.extend({
 export const VersionFiveHeroSchema = VersionFourHeroSchema.extend({ growthTalent: z.enum(TALENTS), stamina: amount, wounds: amount, fullness: z.number().min(50).max(100).refine((n) => Math.abs(n * 10 - Math.round(n * 10)) < 1e-8) });
 export const VersionSixHeroSchema = VersionFiveHeroSchema.extend(SkillProgressionSchema.shape);
 export const VersionSevenHeroSchema = VersionSixHeroSchema.extend(QuestProgressionSchema.shape);
-export const HeroSchema = VersionSevenHeroSchema.extend({ ...EnchantProgressionSchema.shape,
+export const VersionEightHeroSchema = VersionSevenHeroSchema.extend({ ...EnchantProgressionSchema.shape,
   weapons: z.record(z.string().regex(/^weapon-[1-9]\d*$/), WeaponSchema),
   armors: z.record(z.string().regex(/^armor-[1-9]\d*$/), ArmorSchema), nextArmorId: z.number().int().min(1).max(Number.MAX_SAFE_INTEGER),
 });
+export const HeroSchema = VersionEightHeroSchema.extend(TitleProgressionSchema.shape);
 export type Hero = z.infer<typeof HeroSchema>;
 export type EquipmentReference = { weaponId: string } | { armorId: string };
 export type OwnedItem = { itemId: string } | EquipmentReference;
@@ -46,7 +49,7 @@ export function ownedEquipment(hero: Hero, reference: EquipmentReference) {
 export const experienceToNextLevel = (level: number) => level * 20;
 export function heroStatSource(hero: Hero, effects: readonly { statusId: string; stacks: number }[] | undefined, content: ContentRegistry): StatSource {
   const weapon = hero.equipment.weapon ? hero.weapons[hero.equipment.weapon] : undefined;
-  return { classId: hero.classId, level: hero.level, growthTalent: hero.growthTalent, weaponItemId: weapon && weapon.durability > 0 ? weapon.itemId : undefined, armorItemId: hero.equipment.armor ? hero.armors[hero.equipment.armor]?.itemId : undefined, effects: effects ?? [], learnedSkills: cloneData(hero.learnedSkills), enchantments: [...(weapon && weapon.durability > 0 ? equipmentEnchantEffects(hero.equipment.weapon!, weapon, hero, content) : []), ...(hero.equipment.armor && hero.armors[hero.equipment.armor] ? equipmentEnchantEffects(hero.equipment.armor, hero.armors[hero.equipment.armor], hero, content) : [])] };
+  return { classId: hero.classId, level: hero.level, growthTalent: hero.growthTalent, weaponItemId: weapon && weapon.durability > 0 ? weapon.itemId : undefined, armorItemId: hero.equipment.armor ? hero.armors[hero.equipment.armor]?.itemId : undefined, effects: effects ?? [], learnedSkills: cloneData(hero.learnedSkills), titles: selectedTitleEffects(hero, content), enchantments: [...(weapon && weapon.durability > 0 ? equipmentEnchantEffects(hero.equipment.weapon!, weapon, hero, content) : []), ...(hero.equipment.armor && hero.armors[hero.equipment.armor] ? equipmentEnchantEffects(hero.equipment.armor, hero.armors[hero.equipment.armor], hero, content) : [])] };
 }
 export function heroStats(hero: Hero, content: ContentRegistry, effects: readonly { statusId: string; stacks: number }[] = []) {
   for (const [slot, reference] of Object.entries(hero.equipment)) {
@@ -82,6 +85,7 @@ export function validateHero(raw: unknown, content: ContentRegistry): Hero {
   const hero = HeroSchema.parse(raw);
   validateSkillProgression(hero, content);
   validateQuestProgression(hero, content);
+  validateTitleProgression(hero, content);
   const stats = heroStats(hero, content);
   if (hero.health > stats.maxHealth - hero.wounds || hero.wounds >= stats.maxHealth || hero.mana > stats.maxMana || hero.stamina > stats.maxStamina ||
       (hero.level < 99 && hero.experience >= experienceToNextLevel(hero.level)) || (hero.level === 99 && hero.experience !== 0)) throw new Error('Invalid character resources or experience');
@@ -114,7 +118,7 @@ export function clampHeroResources(hero: Hero, content: ContentRegistry) {
 export function createHero(content: ContentRegistry, growthTalent: GrowthTalent = 'warrior', seed = 12345): Hero {
   const definition = content.data.classes[0];
   if (!definition) throw new Error('A character class is required');
-  const hero: Hero = { ...emptyEnchantProgression(seed), armors: {}, nextArmorId: 1, ...emptyQuestProgression(), ...starterProgression(definition.id, content), growthTalent, stamina: 0, wounds: 0, fullness: 100, classId: definition.id, level: 1, experience: 0, gold: 0, health: definition.maxHealth,
+  const hero: Hero = { ...emptyTitleProgression(), ...emptyEnchantProgression(seed), armors: {}, nextArmorId: 1, ...emptyQuestProgression(), ...starterProgression(definition.id, content), growthTalent, stamina: 0, wounds: 0, fullness: 100, classId: definition.id, level: 1, experience: 0, gold: 0, health: definition.maxHealth,
     mana: definition.maxMana, inventory: { potion: 2 }, equipment: {}, weapons: {}, nextWeaponId: 1 };
   restoreHero(hero, content); return hero;
 }
@@ -159,7 +163,7 @@ export function removeOwnedItem(hero: Hero, reference: OwnedItem, quantity: numb
 }
 /** Upgrade stacked armor while preserving the equipped first copy and depleted pools. */
 export function migrateEquipmentHero(old: z.infer<typeof VersionSevenHeroSchema>, content: ContentRegistry, seed = 12345): Hero {
-  const hero: Hero = { ...cloneData(old), ...emptyEnchantProgression(seed), armors: {}, nextArmorId: 1 };
+  const hero: Hero = { ...cloneData(old), ...emptyTitleProgression(), ...emptyEnchantProgression(seed), armors: {}, nextArmorId: 1 };
   for (const itemId of Object.keys(old.inventory).sort()) if (content.item(itemId).kind === 'armor') {
     delete hero.inventory[itemId]; const first = `armor-${hero.nextArmorId}`;
     addItem(hero, itemId, old.inventory[itemId], content);
@@ -173,7 +177,7 @@ export function repairPrice(weapon: Weapon, content: ContentRegistry) {
 }
 export function migrateHero(raw: unknown, content: ContentRegistry, growthTalent: GrowthTalent = 'warrior'): Hero {
   const legacy = LegacyHeroSchema.parse(raw);
-  const hero: Hero = { ...emptyEnchantProgression(), armors: {}, nextArmorId: 1, ...emptyQuestProgression(), ...starterProgression(legacy.classId, content), growthTalent, stamina: 0, wounds: 0, fullness: 100, ...legacy, inventory: { ...legacy.inventory }, equipment: { ...legacy.equipment }, weapons: {}, nextWeaponId: 1 };
+  const hero: Hero = { ...emptyTitleProgression(), ...emptyEnchantProgression(), armors: {}, nextArmorId: 1, ...emptyQuestProgression(), ...starterProgression(legacy.classId, content), growthTalent, stamina: 0, wounds: 0, fullness: 100, ...legacy, inventory: { ...legacy.inventory }, equipment: { ...legacy.equipment }, weapons: {}, nextWeaponId: 1 };
   for (const itemId of Object.keys(legacy.inventory).sort()) {
     const kind = content.item(itemId).kind;
     if (!['weapon', 'armor'].includes(kind)) continue;

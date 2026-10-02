@@ -135,6 +135,27 @@ The same deterministic combat tests simulate 100 seeds per talent for both a
 starter slime and an equipped level-5 elder encounter with two companion slimes.
 Enemy damage is calibrated to keep both encounters viable for all talents.
 
+## Titles and achievements
+
+Open **Character → Title collection** or **Titles** in the navigation menu to
+inspect discovered and earned titles. In town, choose one First and one Second
+Title for their combined flat bonuses and penalties. Selections cost no gold/AP,
+never refill resources, and are captured when the next encounter starts.
+
+The elder guardian awards **the Guardian Breaker**; the final treasure exit
+awards **the First Delver**. Claiming The Broken Seal awards **the Seal’s Witness**.
+After the provisions quest, the keeper’s **A light for the watch** sidequest gives
+a **Lantern Companion** coupon. Redeem it from inventory in town; this follow-up
+also works for older heroes who already claimed provisions. Earned records never
+automatically equip a title and survive completed defeat and early return.
+
+Campaign save version 9 preserves earlier ownership, progression, equipment and
+enchants through versions 1–8. Accepted title operations and load catch-up save
+before success; failed writes retain the exact result for Retry. Missing title
+definitions preserve the achievement identity with effects disabled. Rank 1
+mastery, aging, rebirth, vanity, favorites and talent display labels remain later
+work. See [Titles](docs/gameplay/titles.md).
+
 ## Generated dungeons
 
 In the refuge, approach the **Goddess altar**, interact, select an unequipped

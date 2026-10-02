@@ -1,3 +1,4 @@
+import { EncounterTitles } from '../engine/rpg/Titles';
 import { cloneData } from '../engine/cloneData';
 import { EncounterTraining, type TrainingLedger } from '../engine/rpg/Skills';
 import { EncounterQuests } from '../engine/rpg/Quests';
@@ -41,6 +42,7 @@ export class BattleSession {
   readonly engine;
   readonly training: EncounterTraining;
   readonly quests: EncounterQuests;
+  readonly titles: EncounterTitles;
   readonly combat: CombatSystem;
   readonly battle: BattleController;
   readonly presentation;
@@ -64,6 +66,7 @@ export class BattleSession {
     if (characterName) for (const entity of this.engine.world.entities) if (entity.player) entity.name = characterName;
     this.training = new EncounterTraining(encounterId, cloneData((hero ?? createHero(content)).learnedSkills), content, eligibleTraining);
     this.quests = new EncounterQuests(encounterId, cloneData(hero ?? createHero(content)), content, eligibleTraining);
+    this.titles = new EncounterTitles(encounterId, eligibleTraining);
     this.combat = new CombatSystem(map.spawns.map((spawn) => spawn.entityId), { content,
       canAct: () => this.battle.isResolving, encounterId, onOutcome: (outcome) => { this.training.record(outcome); this.quests.record(outcome); } });
     this.battle = new BattleController(this.combat, content);
@@ -120,6 +123,7 @@ export class BattleSession {
   private record(event: GameEvent) {
     const name = (id: string) => this.engine.getEntity(id)?.name ?? id;
     let line: string | undefined;
+    if (event.type === 'DAMAGE_DEALT') this.titles.damage(event.targetId, event.amount);
     if (event.type === 'DAMAGE_DEALT') line = `${name(event.targetId)} loses ${event.amount} HP${event.critical ? ' · critical' : ''}.`;
     if (event.type === 'ATTACK_MISSED') line = `${name(event.sourceId)} misses.`;
     if (event.type === 'HEALTH_RESTORED') line = `${name(event.targetId)} recovers ${event.amount} HP.`;

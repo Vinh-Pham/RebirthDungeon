@@ -1,6 +1,6 @@
 # Rebirth Dungeon: Character Progression
 
-Updated **October 1, 2026**. The React Native application implements saved characters, growth talents, XP/leveling, resources, equipment, and defeat recovery. AP/learned ranks follow the planned [Skills](skills.md) work. Talent mastery, aging and deliberate rebirth remain later features. Read with [Stats](stats.md), [Battle](battle.md), [Titles](titles.md), and the [game plan](../game-plan.md).
+Updated **October 1, 2026**. The React Native application implements saved characters, growth talents, XP/leveling, resources, equipment, and defeat recovery. AP/learned ranks follow the implemented [Skills](skills.md) slice. First/Second selections and their earned collection follow [Titles](titles.md). Talent mastery, aging and deliberate rebirth remain later features. Read with [Stats](stats.md), [Battle](battle.md), [Titles](titles.md), and the [game plan](../game-plan.md).
 
 ## 1. Identity and ownership
 

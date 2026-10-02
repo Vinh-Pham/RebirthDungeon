@@ -76,7 +76,7 @@ function GameSession({ profile, retry }: { profile: CompleteCharacter; retry(): 
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
       if (drawerOpen) { navigation.dispatch(DrawerActions.closeDrawer()); return true; }
       if (statsOpen) { closeStats(); return true; }
-      if (path.endsWith('/inventory') || path.endsWith('/save-load') || path.endsWith('/skills') || path.endsWith('/quests')) return false;
+      if (path.endsWith('/inventory') || path.endsWith('/save-load') || path.endsWith('/skills') || path.endsWith('/titles') || path.endsWith('/quests')) return false;
       const current = host.getSnapshot();
       if (!current.battle && current.session?.getSnapshot().activeService) {
         if (!current.busy) current.session.dispatch({ type: 'CLOSE_SERVICE' });
@@ -98,6 +98,7 @@ function GameSession({ profile, retry }: { profile: CompleteCharacter; retry(): 
       <Stack.Screen name="inventory" />
       <Stack.Screen name="skills" />
       <Stack.Screen name="quests" />
+      <Stack.Screen name="titles" />
       <Stack.Screen name="save-load" />
     </Stack>
   </View></CharacterGameContext>;

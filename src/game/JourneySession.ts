@@ -1,3 +1,4 @@
+import { mergeTitleEncounter, reconcileTitles, recordTitleEvidence, selectTitle, unlockTitleCoupon } from '../engine/rpg/Titles';
 import { applyEnchant, burnEquipment, operationReceipt } from '../engine/rpg/Enchants';
 import { learnSkill, readSkillBook, insertSkillPage, rankUpSkill, mergeTraining } from '../engine/rpg/Skills';
 import { acceptQuest, claimQuest, mergeQuestEncounter, reconcileQuests, recordQuestWorldEvidence, trackObjective } from '../engine/rpg/Quests';
@@ -193,6 +194,7 @@ export class JourneySession {
     this.registerEnchanting();
     this.registerProgression();
     this.registerQuests();
+    this.registerTitles();
     this.refresh();
   }
   get map() { return this.state.dungeon ? this.dungeonMap ??= projectDungeonMap(this.state.dungeon) : this.content.data.worlds.find((map) => map.id === this.state.worldId)!; }
@@ -246,6 +248,11 @@ export class JourneySession {
     if (this.hostManaged) throw new Error('Use the host durable battle operation');
     if (this.disposed || !this.state.pending || !battle.combat.result || battle.engine.seed !== this.state.pending.seed || battle.map.id !== this.state.pending.mapId || battle.encounterId !== this.encounterIdentity) throw new Error('Encounter is not ready to finish');
     const hero = cloneData(this.state.hero);
+    const runEncounter = this.state.dungeon?.blueprint.encounters.find((e) => e.objectId === this.state.pending!.objectId);
+    const guardian = runEncounter?.kind === 'boss' ? { dungeonId: this.state.dungeon!.blueprint.definitionId, enemyId: this.content.data.dungeons.find((d) => d.id === this.state.dungeon!.blueprint.definitionId)!.bossId } : undefined;
+    const evidence = battle.titles.snapshot();
+    if (evidence.encounterId !== this.encounterIdentity) throw new Error('Title evidence belongs to another encounter');
+    mergeTitleEncounter(hero, evidence, battle.combat.result, battle.map.id, this.content, guardian);
     mergeTraining(hero, battle.training.snapshot(), this.content);
     mergeQuestEncounter(hero, battle.quests.snapshot(), battle.combat.result, battle.map.id, this.content);
     const entity = battle.engine.world.entities.find((entity) => entity.player)!;
@@ -303,11 +310,16 @@ export class JourneySession {
     const obj = this.state.dungeon?.blueprint.world.objects.find((obj) => obj.id === objectId) ?? this.map.objects.find((obj) => obj.id === objectId)!;
     const encounter = this.state.dungeon?.blueprint.encounters.find((entry) => entry.objectId === objectId);
     this.state.pending = { objectId, worldId: this.map.id, mapId: obj.encounterMap!, seed: encounter?.seed ?? this.engine.random.int(-2147483648, 2147483647) };
+    if (encounter?.kind === 'boss' && this.state.dungeon) {
+      const dungeon = this.content.data.dungeons.find((d) => d.id === this.state.dungeon!.blueprint.definitionId)!;
+      recordTitleEvidence(this.state.hero, `guardian/${dungeon.id}/${dungeon.bossId}`);
+    }
     this.state.encounterCount++; this.commit({ type: 'ENCOUNTER_STARTED', objectId });
   }
   private leaveDungeon(completed = false) {
     const run = this.state.dungeon;
     if (!run) throw new Error('You are not inside a dungeon');
+    if (completed) recordTitleEvidence(this.state.hero, `clear/${run.blueprint.definitionId}`);
     if (completed) recordQuestWorldEvidence(this.state.hero, { kind: 'clearDungeon', dungeonId: run.blueprint.definitionId }, this.content);
     this.state.worldId = run.returnTo.worldId; this.state.position = { ...run.returnTo.position }; this.state.dungeon = undefined;
     this.dungeonMap = undefined; this.spawnWorld(); this.message = 'Returned to the refuge. Your earned loot is safe; dungeon effects and keys have faded.';
@@ -339,6 +351,7 @@ export class JourneySession {
       if (!content.data.shops.find((shop) => shop.id === object.shopId)!.buysItems) throw new Error('This merchant does not buy items');
       const item = ownedDefinition(this.state.hero, reference, content);
       if (item.kind === 'armor' && 'itemId' in reference) throw new Error('Choose an individual armor copy');
+      if (item.kind === 'titleCoupon') throw new Error('Keep title coupons for town redemption; they cannot be sold');
       if (item.kind === 'incompleteBook') throw new Error('Unfinished books cannot be sold');
       const total = Math.floor(item.price / 2) * quantity;
       if (this.state.hero.gold + total > 1000000) throw new Error('Your gold purse is full');
@@ -370,6 +383,7 @@ export class JourneySession {
       if (!definition) throw new Error('This dungeon is unavailable');
       const hero = cloneData(this.state.hero); const item = ownedDefinition(hero, reference, content);
       if (item.kind === 'armor' && 'itemId' in reference) throw new Error('Choose an individual armor copy');
+      if (item.kind === 'titleCoupon') throw new Error('Keep title coupons for town redemption; they cannot be offered');
       if (item.kind === 'incompleteBook') throw new Error('Keep the unfinished book for its collection');
       removeOwnedItem(hero, reference, 1);
       // Stage RNG and the entire run before spending the offering or changing the live campaign.
@@ -450,6 +464,12 @@ export class JourneySession {
   }
   private commit(event: GameEvent) {
     if (event.type === 'MAP_CHANGED') recordQuestWorldEvidence(this.state.hero, { kind: 'visit', worldId: event.mapId }, this.content);
+    if (this.state.dungeon) recordEnteredDungeon(this.state.hero, this.state.dungeon.blueprint.definitionId);
+    reconcileQuests(this.state.hero, this.content);
+    const previousTitles = { ...this.state.hero.titleCollection.selected };
+    const awarded = reconcileTitles(this.state.hero, this.content, event.type === 'QUEST_CLAIMED' ? `quest/${event.questId}/once` : event.type === 'LOOT_RECEIVED' ? `encounter/${this.state.encounterCount}` : `progression/${event.type}`, this.staging || !this.hostManaged);
+    this.message += clearedTitleMessage(previousTitles, this.state.hero);
+    if (awarded.length) this.message += ` Earned: ${awarded.map((id) => this.content.data.titles.find((t) => t.id === id)!.name).join(', ')}.`;
     this.state.randomState = this.engine.random.snapshot(); this.refresh();
     if (this.staging) this.committedEvents.push(event); else this.engine.events.emit(event);
   }
@@ -460,6 +480,33 @@ export class JourneySession {
     if (player) applyHero(player, this.state.hero, this.content, this.state.dungeon?.effects);
     this.snapshot = { state: cloneData(this.state), map: this.map, message: this.message, revision: ++nextViewRevision, activeService: this.activeService };
     this.listeners.forEach((listener) => listener());
+  }
+  titleCatchupCandidate() {
+    const candidate = new JourneySession(this.content, this.toSave(), undefined, this.characterName);
+    candidate.staging = true;
+    if (candidate.state.dungeon) recordEnteredDungeon(candidate.state.hero, candidate.state.dungeon.blueprint.definitionId);
+    const awards = reconcileTitles(candidate.state.hero, this.content, 'load/progression');
+    candidate.message = (awards.length ? `Earned: ${awards.map((id) => this.content.data.titles.find((t) => t.id === id)!.name).join(', ')}.` : 'Title collection restored.') + clearedTitleMessage(this.state.hero.titleCollection.selected, candidate.state.hero);
+    candidate.refresh();
+    if (JSON.stringify(candidate.state.hero.titleCollection) === JSON.stringify(this.state.hero.titleCollection) && JSON.stringify(candidate.state.hero.earnedTitles) === JSON.stringify(this.state.hero.earnedTitles)) { candidate.dispose(); return undefined; }
+    validateCampaign(candidate.toSave(), this.content); return candidate;
+  }
+  private registerTitles() {
+    const town = () => {
+      if (this.hostManaged) throw new Error('Use the host durable progression operation');
+      this.requireExploring();
+      if (this.state.dungeon || !this.map.theme) throw new Error('Change titles in town');
+    };
+    this.engine.commands.register('SELECT_TITLE', ({ slot, titleId }) => {
+      town(); this.state.hero = selectTitle(this.state.hero, slot, titleId, this.content);
+      this.message = titleId ? `Selected ${this.content.data.titles.find((t) => t.id === titleId)!.name}.` : `Cleared ${slot === 'first' ? 'First' : 'Second'} Title.`;
+      this.commit({ type: 'EQUIPMENT_CHANGED' });
+    });
+    this.engine.commands.register('UNLOCK_TITLE_COUPON', ({ itemId }) => {
+      town(); this.state.hero = unlockTitleCoupon(this.state.hero, itemId, this.content);
+      this.message = `Earned ${this.content.data.titles.find((t) => t.id === this.content.item(itemId).titleId)!.name}. Choose it in the title collection.`;
+      this.commit({ type: 'EQUIPMENT_CHANGED' });
+    });
   }
   private registerQuests() {
     const quest = (id: string) => {
@@ -487,7 +534,7 @@ export class JourneySession {
       town(); const definition = quest(questId);
       if (definition.claimNpc) atNpc(definition.claimNpc, objectId);
       this.state.hero = claimQuest(this.state.hero, definition, this.content);
-      this.message = `Completed ${definition.name}. Rewards saved.`;
+      this.message = `Completed ${definition.name}. Rewards saved.${definition.rewards.titles.length ? ` Earned: ${definition.rewards.titles.map((id) => this.content.data.titles.find((t) => t.id === id)!.name).join(', ')}.` : ''}`;
       this.commit({ type: 'QUEST_CLAIMED', questId });
     });
     this.engine.commands.register('TRACK_QUEST_OBJECTIVE', ({ questId, objectiveId }) => {
@@ -497,4 +544,10 @@ export class JourneySession {
       this.commit({ type: 'QUEST_TRACKING_CHANGED' });
     });
   }
+}
+
+function recordEnteredDungeon(hero: CampaignState['hero'], id: string) { hero.titleCollection.evidence[`entered/${id}`] = 1; }
+
+function clearedTitleMessage(previous: CampaignState['hero']['titleCollection']['selected'], hero: CampaignState['hero']) {
+  return (['first', 'second'] as const).filter((slot) => previous[slot] && !hero.titleCollection.selected[slot]).map((slot) => ` Cleared ${slot === 'first' ? 'First' : 'Second'} Title: its required skill rank is no longer eligible. The earned achievement is preserved.`).join('');
 }

@@ -53,7 +53,7 @@ export default function TownServicePanel({ session, objectId, busy, dispatch, pr
     ...Object.entries(hero.armors).map(([armorId, armor]) => ({ reference: { armorId } as OwnedItem, item: content.item(armor.itemId), key: armorId, detail: `Armor copy ${armorId.slice(6)}` })),
     ...Object.entries(hero.weapons).map(([weaponId, weapon], index) => ({ reference: { weaponId } as OwnedItem, item: content.item(weapon.itemId), key: weaponId,
       detail: `Weapon ${index + 1} · ${weapon.durability}/${content.item(weapon.itemId).maxDurability} durability${weapon.durability === 0 ? ' · broken' : ''}` })),
-  ].filter((entry) => entry.item.kind !== 'incompleteBook' && removableCount(hero, entry.reference) > 0);
+  ].filter((entry) => !['incompleteBook', 'titleCoupon'].includes(entry.item.kind) && removableCount(hero, entry.reference) > 0);
   const weapons = Object.entries(hero.weapons);
   const repairStart = inventoryPage(repairPage, weapons.length) * INVENTORY_PAGE_SIZE;
   const tradeStart = inventoryPage(tradePage, inventory.length) * INVENTORY_PAGE_SIZE;

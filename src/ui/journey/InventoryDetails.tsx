@@ -55,13 +55,18 @@ export default function InventoryDetails({ row, hero, host, session, review, dis
           onPress={() => { if (!('itemId' in row.reference)) void host.progress({ type: 'LOCK_EQUIPMENT', target: row.reference, locked: !equipment.locked }); }} />
         <Text className="text-muted" style={menu.body}>{equipment.locked ? 'Locked: cannot be sold, offered, enchanted or burned. You can still equip it.' : 'Visit the town blacksmith to apply enchants or burn this copy for scrolls.'}</Text>
       </> : null}
-      {item.kind === 'skillBook'  ? <>
+      {item.kind === 'titleCoupon' ? <>
+        <DungeonButton label={hero.earnedTitles.includes(item.titleId!) ? 'Title already earned · coupon kept' : 'Redeem title coupon'} disabled={disabled || !town || hero.earnedTitles.includes(item.titleId!)} onPress={() => { void host.progress({ type: 'UNLOCK_TITLE_COUPON', itemId: item.id }); }} />
+        {!town ? <Text className="text-muted" style={menu.body}>Redeem title coupons in town.</Text> : null}
+        <DungeonButton label="View title collection" onPress={() => router.navigate({ pathname: '/game/[characterId]/titles', params: { characterId: profile.id } })} />
+      </> : null}
+      {item.kind === 'skillBook'   ? <>
         <DungeonButton label={hero.learnedSkills[item.skillId!] ? 'Skill already learned' : `Read ${item.name}`} disabled={disabled || !town || !!hero.learnedSkills[item.skillId!]}
           onPress={() => { void host.progress({ type: 'READ_SKILL_BOOK', itemId: item.id }); }} />
         {!town ? <Text className="text-muted" style={menu.body}>Return to town to read skill books.</Text> : null}
       </> : null}
       {['skillPage', 'incompleteBook', 'skillBook'].includes(item.kind) ? <DungeonButton label="View skill and book collection" onPress={openJournal} /> : null}
-      <Text className="text-muted" style={menu.body}>Buy, sell and repair through a nearby town service.</Text>
+      <Text className="text-muted" style={menu.body}>{item.kind === 'titleCoupon' ? 'This quest gift does not expire and cannot be sold or offered. Redeem it in town.' : 'Buy, sell and repair through a nearby town service.'}</Text>
     </DungeonCard>
     {needs.length ? <DungeonCard>
       <Text className="text-accent" style={menu.heading}>Quest supplies</Text>

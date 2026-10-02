@@ -93,7 +93,7 @@ export function InventoryContent({ host, session }: { host: JourneyHost; session
         <Text className="text-muted" accessibilityLiveRegion="polite" style={menu.body}>{visible.length} {visible.length === 1 ? 'entry' : 'entries'} · Sorted by name</Text>
         {!visible.length ? <Text className="text-muted" style={menu.body}>{!rows.length ? 'Your pack is empty.' : 'No items match this search and filter.'}</Text> : null}
         {visible.slice(start, start + INVENTORY_PAGE_SIZE).map((row) => <DungeonButton key={row.key} label={inventoryRowLabel(row)}
-          detail={`Character pack · ${row.item.kind === 'weapon' ? `${row.durability} / ${row.item.maxDurability} durability${row.durability === 0 ? ' · Broken' : ''}` : row.item.kind === 'consumable' ? 'Supply' : row.item.kind === 'armor' ? 'Armor' : ['material', 'enchantScroll'].includes(row.item.kind) ? 'Enchant supplies' : 'Skill collection'}`}
+          detail={`Character pack · ${row.item.kind === 'weapon' ? `${row.durability} / ${row.item.maxDurability} durability${row.durability === 0 ? ' · Broken' : ''}` : row.item.kind === 'consumable' ? 'Supply' : row.item.kind === 'armor' ? 'Armor' : row.item.kind === 'titleCoupon' ? 'Title coupon' : ['material', 'enchantScroll'].includes(row.item.kind) ? 'Enchant supplies' : 'Skill collection'}`}
           onPress={() => { setSelectedKey(row.key); setError(undefined); }} />)}
         <InventoryPager label="Pack entries" page={currentPage} count={visible.length} onPage={setPage} />
       </DungeonCard>

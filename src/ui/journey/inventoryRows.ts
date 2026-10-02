@@ -26,7 +26,7 @@ export function inventoryRows(hero: Hero, content: ContentRegistry, battle?: Bat
 export function visibleInventoryRows(rows: readonly InventoryRow[], filter: InventoryFilter, search: string) {
   const query = search.trim().toLowerCase();
   return rows.filter((row) => {
-    const matches = filter === 'all' || (filter === 'supplies' ? ['consumable', 'enchantScroll', 'material'].includes(row.item.kind) : filter === 'equipment' ? ['weapon', 'armor'].includes(row.item.kind) : ['skillBook', 'incompleteBook', 'skillPage'].includes(row.item.kind));
+    const matches = filter === 'all' || (filter === 'supplies' ? ['consumable', 'enchantScroll', 'material', 'titleCoupon'].includes(row.item.kind) : filter === 'equipment' ? ['weapon', 'armor'].includes(row.item.kind) : ['skillBook', 'incompleteBook', 'skillPage'].includes(row.item.kind));
     return matches && (!query || `${row.item.name} ${row.item.id} ${'itemId' in row.reference ? '' : Object.values(row.reference)[0]}`.toLowerCase().includes(query));
   }).sort((left, right) => left.item.name.localeCompare(right.item.name) || left.key.localeCompare(right.key, undefined, { numeric: true }));
 }

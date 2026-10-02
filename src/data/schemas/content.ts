@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { validateTitleReferences } from './titles';
 import { EnchantSchema, EnchantRulesSchema } from './enchants';
 import { WorldMapSchema, validateWorldReferences } from './world';
 import { DungeonDefinitionSchema } from './dungeon';
@@ -74,8 +75,8 @@ export const EnemySchema = z.strictObject({ ...actor, experience: uint.max(10000
   loot: z.array(z.strictObject({ itemId: id, chance: probability, min: positive.max(99), max: positive.max(99) })
     .refine((drop) => drop.min <= drop.max)).default([]) });
 export const ClassSchema = z.strictObject(actor);
-export const ItemSchema = z.strictObject({ id, name: id, kind: z.enum(['consumable', 'weapon', 'armor', 'skillBook', 'incompleteBook', 'skillPage', 'enchantScroll', 'material']),
-  enchantId: id.optional(),
+export const ItemSchema = z.strictObject({ id, name: id, kind: z.enum(['consumable', 'weapon', 'armor', 'skillBook', 'incompleteBook', 'skillPage', 'enchantScroll', 'material', 'titleCoupon']),
+  enchantId: id.optional(), titleId: id.optional(),
   price: uint.max(100000), power: uint.max(10000), description: z.string(),
   weaponTags: z.array(z.enum(['melee', 'sword'])).default([]), skillId: id.optional(), recipeId: id.optional(),
   stat: z.enum(['attack', 'defense', 'speed']).optional(),
@@ -86,7 +87,7 @@ export const ItemSchema = z.strictObject({ id, name: id, kind: z.enum(['consumab
   staminaRecovery: uint.max(10000).default(0), fullnessRecovery: z.number().min(0).max(50).default(0),
 }).refine((item) => item.kind === 'weapon' ? item.maxDurability !== undefined : item.maxDurability === undefined,
   { message: 'Only weapons require maximum durability' }).refine((item) =>
-    ((item.kind === 'enchantScroll') === !!item.enchantId) && (!['enchantScroll', 'material'].includes(item.kind) || !item.battleUsable) &&
+    ((item.kind === 'titleCoupon') === !!item.titleId) && (item.kind !== 'titleCoupon' || !item.battleUsable) && ((item.kind === 'enchantScroll') === !!item.enchantId) && (!['enchantScroll', 'material'].includes(item.kind) || !item.battleUsable) &&
     ((item.kind === 'skillBook') === !!item.skillId) &&
     (['incompleteBook', 'skillPage'].includes(item.kind) === !!item.recipeId) &&
     (item.kind !== 'skillBook' || (!!item.skillId && !item.battleUsable)) &&
@@ -190,6 +191,7 @@ export const ContentSchema = z.strictObject({ skills: z.array(SkillSchema), enem
     !content.skills.find((s) => s.id === offer.skillId)?.gameRanks?.F) || (object.lessons.length && (object.kind !== 'npc' || !world.theme))) issue('Invalid instructor lesson');
   validateWorldReferences(content, ctx);
   validateQuestReferences(content, ctx);
+  validateTitleReferences(content, ctx);
   content.shops.forEach((shop) => {
     if (shop.items.some((itemId) => !content.items.some((item) => item.id === itemId)) ||
         (shop.buysItems && shop.kind !== 'general')) ctx.addIssue({ code: 'custom', message: 'Invalid shop catalog' });

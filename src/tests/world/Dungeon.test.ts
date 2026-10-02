@@ -111,12 +111,15 @@ describe('dungeon progression', () => {
   it('counts the successful final exit once, excludes statue returns, and requires a later keeper report before the title claim', () => {
     const early = watchingSeal(create()); interact(early, 'goddess-statue');
     expect(early.toSave().hero.quests['broken-seal'].counts['clear-moss-depths']).toBeUndefined();
+    expect(early.toSave().hero.earnedTitles).not.toContain('first-delver');
     const session = watchingSeal(create()); clearOrdinary(session); interact(session, 'boss-key'); interact(session, 'boss-gate');
     const gate = session.map.objects.find((obj) => obj.id === 'boss-gate')!; travel(session, { x: 50, y: gate.y }); win(session); interact(session, 'treasure-key');
     interact(session, 'final-chest-1');
     expect(session.toSave().hero.quests['broken-seal'].stageId).toBe('seal-depths');
     const statueReturn = resume(session); interact(statueReturn, 'goddess-statue');
     expect(statueReturn.toSave().hero.quests['broken-seal'].counts['clear-moss-depths']).toBeUndefined();
+    expect(statueReturn.toSave().hero.earnedTitles).toEqual(['guardian-breaker']);
+    expect(session.toSave().hero.earnedTitles).toEqual(['guardian-breaker']);
     const before = session.toSave(), candidate = session.progressionCandidate({ type: 'EXIT_DUNGEON' }); sessions.push(candidate);
     expect(session.toSave()).toEqual(before);
     expect(candidate.toSave().hero.quests['broken-seal']).toMatchObject({ stageId: 'seal-report', counts: { 'clear-moss-depths': 1 } });
@@ -125,7 +128,7 @@ describe('dungeon progression', () => {
     expect(questReady(session.toSave().hero, content.data.quests[1])).toBe(false);
     interact(session, 'keeper'); expect(questReady(session.toSave().hero, content.data.quests[1])).toBe(true);
     session.dispatch({ type: 'CLAIM_QUEST', questId: 'broken-seal', objectId: 'keeper' });
-    expect(session.toSave().hero.earnedTitles).toEqual(['seals-witness']);
+    expect(session.toSave().hero.earnedTitles).toEqual(['first-delver', 'guardian-breaker', 'seals-witness']);
     expect(resume(session).toSave().hero.quests['broken-seal'].status).toBe('completed');
   });
   it('starts beside the goddess and ends runs while retaining resources and generating a fresh layout', () => {
@@ -179,7 +182,10 @@ describe('dungeon progression', () => {
     const before = session.toSave(); expect(() => session.dispatch({ type: 'INTERACT', objectId: finalChest.id })).toThrow('only one'); expect(session.toSave()).toEqual(before);
     expect(blueprint.world.objects.filter((obj) => obj.kind === 'finalChest').every((obj) => session.isClaimed(obj.id))).toBe(true);
     session.dispatch({ type: 'EXIT_DUNGEON' });
-    expect(session.toSave().hero).toEqual(before.hero); expect(session.toSave().dungeon).toBeUndefined();
+    const { earnedTitles, titleCollection, ...afterHero } = session.toSave().hero;
+    const { earnedTitles: beforeTitles, titleCollection: beforeCollection, ...beforeHero } = before.hero;
+    expect(afterHero).toEqual(beforeHero); expect(earnedTitles).toEqual([...beforeTitles, 'first-delver'].sort());
+    expect(titleCollection.evidence).toEqual({ ...beforeCollection.evidence, 'clear/moss-depths': 1 }); expect(session.toSave().dungeon).toBeUndefined();
     expect(session.toSave().worldId).toBe('refuge');
   });
   it('keeps treasure locked if the boss dies before its companions', () => {
@@ -254,7 +260,7 @@ describe('fountains, checkpoints and camera', () => {
   });
   it('migrates version 2 and rejects corrupt progress, effects, key states, references and bypass corridors', () => {
     const legacy = new JourneySession(content); sessions.push(legacy);
-    expect(parseSave({ version: 2, savedAt: new Date().toISOString(), campaign: legacyCampaign(legacy.toSave()) }, content)).toMatchObject({ version: 8, campaign: legacy.toSave() });
+    expect(parseSave({ version: 2, savedAt: new Date().toISOString(), campaign: legacyCampaign(legacy.toSave()) }, content)).toMatchObject({ version: 9, campaign: legacy.toSave() });
     const session = create();
     for (const mutate of [
       (run: NonNullable<ReturnType<JourneySession['toSave']>['dungeon']>) => { run.bossKey.status = 'held'; },

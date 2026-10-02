@@ -207,5 +207,15 @@
     "power": 0,
     "battleUsable": false,
     "description": "One vial is consumed when burning enchanted equipment."
+  },
+  {
+    "id": "lantern-title-coupon",
+    "name": "Lantern Companion title coupon",
+    "kind": "titleCoupon",
+    "titleId": "lantern-companion",
+    "price": 0,
+    "power": 0,
+    "battleUsable": false,
+    "description": "A gift from the refuge watch. Redeem in town to earn Lantern Companion (Second Title: Max HP +5). Already-earned coupons are kept; they grant no duplicate reward."
   }
 ]

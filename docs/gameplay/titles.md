@@ -1,12 +1,12 @@
 # Rebirth Dungeon: Titles and Achievements
 
-Updated **October 1, 2026**. Titles are **planned**; the current hero schema and UI have no title collection or equipped-title effects. Add them to the existing character progression and stat resolver, using committed turn-based outcomes. Read with [Character](character.md), [Skills](skills.md), [Stats](stats.md), [Quests](quests.md), and [Inventory](inventory.md).
+Updated **October 1, 2026**. The starter title collection is **implemented** on the existing character progression and stat resolver. First/Second selection, four authored titles, quest/coupon/guardian/treasure-exit awards, typed flat effects and v9 saves use committed outcomes. Mastery, aging, rebirth, vanity, favorites and cosmetic talent labels remain future work. Read with [Character](character.md), [Skills](skills.md), [Stats](stats.md), [Quests](quests.md), and [Inventory](inventory.md).
 
 ## 1. Collection and selection
 
-The proposed collection belongs to one campaign hero. Earned titles survive completed defeat, early dungeon return and future rebirth; a later lower level/age does not erase an achievement. Account sharing is separate future work. [Mabinogi inspiration](https://wiki.mabinogiworld.com/view/Titles) informs the slots and mastery concept; this document defines the game's rules.
+The collection belongs to one campaign hero. Earned titles survive completed defeat, early dungeon return and future rebirth; a later lower level/age does not erase an achievement. Account sharing is separate future work. [Mabinogi inspiration](https://wiki.mabinogiworld.com/view/Titles) informs the slots and mastery concept; this document defines the game's rules.
 
-| Selection | Planned behavior |
+| Selection | Current / future behavior |
 | --- | --- |
 | First Title | One earned primary title or empty; supplies its authored effects |
 | Second Title | One earned secondary title or empty; effects combine with the First |
@@ -58,9 +58,9 @@ Higher maxima never refill resources; lower maxima clamp current HP/MP/SP to the
 
 Keep combat achievement evidence inside the active battle until its result completes. Merge eligible counters/awards once with hero resources, consumptions, wear and rewards. Victory-only conditions require victory; participation or survival practice may have a separately authored defeat rule. Restarting an unfinished encounter discards its evidence. Permanent awards never subscribe directly to hit animations or sound events.
 
-Already committed counters and awards survive later dungeon defeat/early return. Dungeon-wide challenge evidence can live in the saved run, but awards only on its named completion and is discarded on failure. This is different from retaining ordinary encounter progress. Title effects use the next encounter's hero state; there is no whole-run profile/title snapshot owner.
+Already committed counters and awards survive later dungeon defeat/early return. Dungeon-wide challenge evidence can live in the saved run, but awards only on its named completion and is discarded on failure. This is different from retaining ordinary encounter progress. Saved generic encounter counters use authored map IDs; generated encounters record guardian evidence under stable dungeon/enemy IDs, avoiding a growing list of run-specific IDs. Title effects use the next encounter's hero state; there is no whole-run profile/title snapshot owner.
 
-Quest/title rewards, coupon consumption and title selection each use one validated campaign candidate. Save before publishing success, retain the exact failed-write candidate and prevent duplicate awards on retry. Process simultaneous awards in stable title-ID order. Awarding a title does not equip it or trigger another award through new effects. This durable host coordination is planned, not already supplied by the current v5 autosaver.
+Quest/title rewards, coupon consumption and title selection each use one validated campaign candidate. Save before publishing success, retain the exact failed-write candidate and prevent duplicate awards on retry. Process simultaneous awards in stable title-ID order. Awarding a title does not equip it or trigger another award through new effects. The durable JourneyHost saves accepted candidates before publishing success and retains failed candidates for an exact retry. Load catch-up also saves before publishing awards; ordinary exploration only updates discovery hints.
 
 RP scenarios later use their own NPC template. Hero titles and their progress are excluded unless a named scenario-completion reward explicitly awards a hero title. Borrowed NPC stats cannot satisfy an ordinary hero milestone.
 
@@ -74,14 +74,14 @@ Future ordinary rebirth preserves skills and therefore their eligibility. If a s
 
 ## 6. Illustrative starter catalog
 
-These are original placeholders, not implemented content or copied reference rewards. Named quests/encounters must exist before definitions can ship.
+The first four entries below are original implemented rewards. The Guardian Breaker names the elder-slime boss of moss-depths; the story title follows the broken-seal claim. The lantern-watch sidequest gives the Lantern Companion coupon after refuge-preparations, so older campaigns that already claimed provisions can still earn it. This one-time quest gift does not expire and cannot be sold or offered. The age entry remains deferred.
 
 | Title | Slot/category | Hint | Award | Equipped effect |
 | --- | --- | --- | --- | --- |
 | the First Delver | First / General | Enter the introductory dungeon | Complete its final treasure exit | Max HP +10 |
 | the Guardian Breaker | First / Combat | Encounter its guardian | Win that named guardian encounter | Physical Attack +3, Max MP -5 |
 | the Seal’s Witness | First / Story | Discover G1's final quest | Claim its final reward | Magic Attack +3, Physical Defense -1 |
-| Lantern Companion | Second / General | Inspect its town-quest coupon | Consume that coupon | Max HP +5 |
+| Lantern Companion | Second / General | Obtain its town-quest coupon | Consume that coupon | Max HP +5 |
 | the Seasoned, later | First / Character | Reach actual age 18 | Commit actual age 20 | Max SP +10 |
 
 Guardian victory and dungeon completion are distinct boundaries; both awards may eventually be earned but do not require a second reward reconciliation at exit. The age title waits for aging and remains earned after rebirth to a younger age. Start with two competing First Titles and one Second so combined effects and choice are visible.
@@ -99,3 +99,11 @@ Missing/retired definitions need a migration policy: preserve the achievement re
 ## 8. Acceptance
 
 Verify Unknown → Known → Earned and direct awards; hints without ownership; wrong-slot/ineligible selection; two-slot benefits and penalties; no stats from unequipped/favorite/vanity titles; no resource refill; progression-only thresholds; boss encounter versus successful dungeon exit; completed defeat rules and unfinished-attempt discard; quest/coupon claim once; saved retry without duplicate reward; and collection persistence through rebirth/migration. Add complete Rank 1 mastery checklist tests when mastery ships, then validate collection navigation on small iOS/Android screens and web with large text.
+
+## 9. Implemented slice and verification
+
+Character → Title collection and the navigation menu share the selected character’s host. First/Second slots, category/slot filters, spoiler-safe search, hints, exact effects, acquisition sources and engine-derived stat/resource previews are available. Redeem the Lantern Companion coupon from its inventory detail in town; ownership never automatically equips a title. Missing definitions preserve records and selected identity with effects disabled.
+
+Version 9 migrates versions 1–8, preserving previous title ownership, installed enchants, equipment copies, ranks, resources and RNG. Title discovery and committed evidence are saved on the hero; unfinished damage evidence belongs to BattleSession. Rank 1 mastery, aging, rebirth, dungeon-wide challenge checklists, favorites, vanity and cosmetic talent labels have no acquisition controls in this slice.
+
+Verification includes title/stat/content/migration tests, failed-write and uncertain-write retries, guardian-versus-exit integration, attempt discard, and encounter snapshots. Small mobile web layouts and native production exports are checked; exports do not replace physical iOS/Android device testing.

@@ -25,9 +25,9 @@ export default function CharacterStatsDetails({ host, session }: { host: Journey
   const review: CharacterReview = battle?.character ?? { source: heroStatSource(hero, campaign.state.dungeon?.effects, host.content), stats: heroStats(hero, host.content, campaign.state.dungeon?.effects), health: hero.health, mana: hero.mana, stamina: hero.stamina, wounds: hero.wounds, fullness: hero.fullness, statuses: [],
     weapon: weapon ? { name: host.content.item(weapon.itemId).name, durability: weapon.durability, maxDurability: host.content.item(weapon.itemId).maxDurability! } : undefined };
   const { stats } = review; const combat = stats.combatant;
-  const { base: baseCombat, equipment: equippedCombat, dungeon: dungeonCombat } = characterStatBreakdown(review.source, host.content);
+  const { base: baseCombat, titles: titleCombat, equipment: equippedCombat, dungeon: dungeonCombat } = characterStatBreakdown(review.source, host.content);
   const signed = (value: number) => `${value >= 0 ? '+' : ''}${number(value)}`;
-  const breakdown = (key: 'attack' | 'defense' | 'speed' | 'minDamage' | 'maxDamage') => `Base ${number(baseCombat[key]!)} · Equipment ${signed(equippedCombat[key]! - baseCombat[key]!)} · Dungeon ${signed(dungeonCombat[key]! - equippedCombat[key]!)} · Statuses ${signed(combat[key]! - dungeonCombat[key]!)}`;
+  const breakdown = (key: 'attack' | 'defense' | 'speed' | 'minDamage' | 'maxDamage') => `Base ${number(baseCombat[key]!)} · Titles ${signed(titleCombat[key]! - baseCombat[key]!)} · Equipment ${signed(equippedCombat[key]! - titleCombat[key]!)} · Dungeon ${signed(dungeonCombat[key]! - equippedCombat[key]!)} · Statuses ${signed(combat[key]! - dungeonCombat[key]!)}`;
   return <View className="gap-1">
     <Text className="text-accent" style={styles.section}>PROGRESSION</Text>
     <Row label="Level" value={`${hero.level} / 99`} />
@@ -42,7 +42,7 @@ export default function CharacterStatsDetails({ host, session }: { host: Journey
     <Row label="Fullness" value={`${number(review.fullness)}%`} />
     <Text className="text-accent" style={styles.section}>ATTRIBUTES</Text>
     <Text className="text-muted" style={styles.note}>Starting attributes, talent, earned levels and current learned ranks contribute once. Effective attributes cap at 1,500.</Text>
-    {ATTRIBUTE_KEYS.map((key) => <Row key={key} label={key[0].toUpperCase() + key.slice(1)} value={number(stats.effective[key])} note={`Starting ${number(stats.attributeSources.starting[key])} · Talent ${signed(stats.attributeSources.talent[key])} · Levels ${signed(stats.attributeSources.levels[key])} · Skills ${signed(stats.attributeSources.skills[key])} · Equipment ${signed(stats.equipment[key])}`} />)}
+    {ATTRIBUTE_KEYS.map((key) => <Row key={key} label={key[0].toUpperCase() + key.slice(1)} value={number(stats.effective[key])} note={`Starting ${number(stats.attributeSources.starting[key])} · Talent ${signed(stats.attributeSources.talent[key])} · Levels ${signed(stats.attributeSources.levels[key])} · Skills ${signed(stats.attributeSources.skills[key])} · Titles ${signed(stats.attributeSources.titles[key])} · Equipment ${signed(stats.equipment[key])}`} />)}
     <Text className="text-accent" style={styles.section}>COMBAT</Text>
     <Row label="Physical damage" value={`${combat.minDamage}–${combat.maxDamage}`} note={`Minimum: ${breakdown('minDamage')}\nMaximum: ${breakdown('maxDamage')}`} />
     <Row label="Balance" value={percent(combat.balance ?? 0)} />

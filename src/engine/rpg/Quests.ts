@@ -1,3 +1,4 @@
+import { awardTitle } from './Titles';
 import { z } from 'zod';
 import { SkillRankSchema, SKILL_RANKS } from '../../data/schemas/skillRank';
 import type { QuestCondition, QuestDefinition, QuestObjective } from '../../data/schemas/quests';
@@ -97,7 +98,7 @@ export function claimQuest(hero: Hero, quest: QuestDefinition, content: ContentR
   for (const skillId of rewards.skills) candidate = learnSkill(candidate, skillId, content);
   candidate.gold += rewards.gold; candidate.ap += rewards.ap;
   grantExperience(candidate, rewards.experience, content);
-  rewards.titles.forEach((id) => { if (!candidate.earnedTitles.includes(id)) candidate.earnedTitles.push(id); });
+  [...rewards.titles].sort().forEach((id) => awardTitle(candidate, id, `quest/${quest.id}/once`, content));
   rewards.flags.forEach((id) => { if (!candidate.questFlags.includes(id)) candidate.questFlags.push(id); });
   candidate.quests[quest.id].status = 'completed'; candidate.quests[quest.id].claimId = `quest/${quest.id}/once`;
   reconcileQuests(candidate, content); return validateHero(candidate, content);
@@ -118,7 +119,7 @@ export function validateQuestProgression(hero: Hero, content: ContentRegistry) {
       if (stage.objectives.some((o) => !['ownItem', 'deliverItem', 'skillRank'].includes(o.kind) && (record.counts[o.id] ?? 0) !== o.target)) throw new Error('Quest bypasses an unfinished stage');
     }
   }
-  if (new Set(hero.earnedTitles).size !== hero.earnedTitles.length || hero.earnedTitles.some((id) => !content.data.titles.some((t) => t.id === id)) ||
+  if (new Set(hero.earnedTitles).size !== hero.earnedTitles.length ||
     new Set(hero.questFlags).size !== hero.questFlags.length || hero.questFlags.some((id) => !content.data.questFlags.includes(id))) throw new Error('Invalid quest awards');
   const tracked = new Set<string>();
   for (const t of hero.trackedObjectives) {

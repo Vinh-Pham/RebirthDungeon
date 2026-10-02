@@ -43,7 +43,7 @@ function outcome(actionId: number): ActionOutcome {
 
 describe('quest content and prerequisites', () => {
   it('authors a reachable story chain, side request, rank milestone and title award', () => {
-    expect(content.data.quests.map((q) => q.category)).toEqual(['mainstream', 'mainstream', 'sidequest', 'skill']);
+    expect(content.data.quests.map((q) => q.category)).toEqual(['mainstream', 'mainstream', 'sidequest', 'skill', 'sidequest']);
     expect(seal.generation?.id).toBe('generation-1'); expect(seal.rewards.titles).toEqual(['seals-witness']);
     expect(content.data.shops.some((s) => s.items.includes('apple'))).toBe(true);
     expect(content.data.shops.some((s) => s.items.includes('bread'))).toBe(true);
@@ -180,7 +180,7 @@ describe('attempt-local practice and versioned saved progress', () => {
     campaign.hero.learnedSkills['sword-mastery'].rank = 'E'; campaign.hero.ap = 11; campaign.hero.health = 20; campaign.hero.mana = 3; campaign.hero.stamina = 5;
     const { quests, earnedTitles, questFlags, trackedObjectives, ...old } = versionSevenHero(campaign.hero); void quests; void earnedTitles; void questFlags; void trackedObjectives;
     const migrated = parseSave({ version: 6, savedAt: new Date().toISOString(), campaign: { ...campaign, hero: old } }, content);
-    expect(migrated.version).toBe(8); expect(migrated.campaign.hero).toMatchObject({ health: 20, mana: 3, stamina: 5, ap: 11, quests: {}, earnedTitles: [] });
+    expect(migrated.version).toBe(9); expect(migrated.campaign.hero).toMatchObject({ health: 20, mana: 3, stamina: 5, ap: 11, quests: {}, earnedTitles: [] });
     const restored = new JourneySession(content, migrated.campaign); sessions.push(restored);
     expect(restored.toSave().hero.quests[milestone.id].status).toBe('available'); expect(restored.toSave().hero.ap).toBe(11);
     restored.dispatch({ type: 'ACCEPT_QUEST', questId: milestone.id }); expect(questReady(restored.toSave().hero, milestone)).toBe(true);
@@ -195,7 +195,7 @@ describe('attempt-local practice and versioned saved progress', () => {
       (h: Hero) => { h.quests[seal.id].counts['practice-smash'] = 4; },
       (h: Hero) => { h.quests[seal.id].counts.unknown = 1; },
       (h: Hero) => { h.quests[seal.id].claimId = 'forged'; },
-      (h: Hero) => { h.earnedTitles.push('missing'); },
+      (h: Hero) => { h.earnedTitles.push('missing', 'missing'); },
       (h: Hero) => { h.trackedObjectives = [{ questId: seal.id, objectiveId: 'practice-smash' }, { questId: seal.id, objectiveId: 'practice-smash' }]; },
     ];
     for (const mutate of mutations) { const state = journey.toSave(); mutate(state.hero); expect(() => validateCampaign(state, content)).toThrow(); }

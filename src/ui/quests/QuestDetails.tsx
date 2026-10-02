@@ -46,7 +46,7 @@ export default function QuestDetails({ session, quest, busy, readOnly = false, p
       <Text className="text-foreground" style={menu.heading}>{record?.status === 'completed' ? 'Rewards claimed' : 'One-time rewards'}</Text>
       {rewardLabels(quest, content).map((label, index) => <Text key={index} className="text-muted" style={menu.body}>{label}</Text>)}
       {quest.rewards.experience ? <Text className="text-muted" style={menu.body}>Each earned level adds 1 AP and restores resources.</Text> : null}
-      {quest.rewards.titles.length ? <Text className="text-muted" style={menu.body}>Earned titles are recorded here. Title equipment is not yet available.</Text> : null}
+      {quest.rewards.titles.length ? <Text className="text-muted" style={menu.body}>Earning a title never selects it automatically. Choose earned titles from Character → Title collection while in town.</Text> : null}
     </DungeonCard>
     {record?.status === 'available' ? <>
       <Text className="text-muted" style={menu.body}>{quest.offerNpc && !canAccept ? `Speak to ${npcLabel(content, quest.offerNpc)} to accept.` : 'Acceptance starts new progress; earlier encounters and visits do not count.'}</Text>

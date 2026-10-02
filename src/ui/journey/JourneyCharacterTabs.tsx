@@ -66,6 +66,8 @@ function CharacterSummary({ host, session, dispatch }: {
     <Text className="text-muted" style={styles.body}>Damage {stats.combatant.minDamage}–{stats.combatant.maxDamage} · Defense {stats.combatant.defense} · Speed {stats.combatant.speed}</Text>
     <Text className="text-muted" style={styles.body}>{state.hero.level < 99 ? `${state.hero.experience}/${experienceToNextLevel(state.hero.level)} XP to next level` : 'Maximum level'}</Text>
     <Text className="text-muted" style={styles.body}>{state.hero.fullness.toFixed(1)}% fullness · Rest recovers stamina up to {Math.floor(stats.maxStamina * state.hero.fullness / 100)}</Text>
+    <Text className="text-muted" style={styles.body}>First: {session.content.data.titles.find((t) => t.id === state.hero.titleCollection.selected.first)?.name ?? 'None'} · Second: {session.content.data.titles.find((t) => t.id === state.hero.titleCollection.selected.second)?.name ?? 'None'}</Text>
+    <DungeonButton label="Title collection" onPress={() => router.navigate({ pathname: '/game/[characterId]/titles', params: { characterId: profile.id } })} />
     <DungeonButton label="Skills journal" onPress={() => router.navigate({ pathname: '/game/[characterId]/skills', params: { characterId: profile.id } })} />
     <DungeonButton label="Rest · recover stamina" disabled={hosted.busy} onPress={() => dispatch({ type: 'REST', entityId: 'player' })} />
   </DungeonCard>;

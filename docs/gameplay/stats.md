@@ -1,6 +1,6 @@
 # Rebirth Dungeon: Stats, Resources, and Status Effects
 
-Updated **October 1, 2026** for the TypeScript engine in the Expo/React Native app. Resources, attributes, damage ranges, Balance, hit/critical resolution, wounds, fullness, equipment and statuses are implemented. Learned-rank passives, titles, enchants and additional effect types are planned extensions. Read with [Battle](battle.md), [Character](character.md), [Skills](skills.md), and [Inventory](inventory.md).
+Updated **October 1, 2026** for the TypeScript engine in the Expo/React Native app. Resources, attributes, damage ranges, Balance, hit/critical resolution, wounds, fullness, equipment and statuses are implemented. Learned-rank passives, First/Second title effects and F/E enchants also use the shared resolver. Additional effect types remain future work. Read with [Battle](battle.md), [Character](character.md), [Skills](skills.md), and [Inventory](inventory.md).
 
 ## 1. Authoritative stat model
 

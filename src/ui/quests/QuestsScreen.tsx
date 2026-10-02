@@ -34,7 +34,7 @@ function QuestJournal({ host, session }: { host: JourneyHost; session: JourneySe
       {content.data.quests.filter((q) => category === 'all' || q.category === category).map((q) => <DungeonButton key={q.id} label={q.name}
         detail={`${categoryLabel[q.category]} · ${questStatus(hero, q)}`} onPress={() => setSelectedId(q.id)} />)}
       {hero.earnedTitles.length ? <DungeonCard><Text className="text-accent" style={menu.heading}>Earned titles</Text>
-        {hero.earnedTitles.map((id) => { const title = content.data.titles.find((t) => t.id === id)!; return <View key={id} className="gap-1"><Text className="text-foreground" style={menu.body}>{title.name}</Text><Text className="text-muted" style={menu.body}>{title.description}</Text></View>; })}
+        {hero.earnedTitles.map((id) => { const title = content.data.titles.find((t) => t.id === id); return <View key={id} className="gap-1"><Text className="text-foreground" style={menu.body}>{title?.name ?? 'Unavailable earned title'}</Text><Text className="text-muted" style={menu.body}>{title?.description ?? 'Achievement preserved; effects disabled.'}</Text></View>; })}
       </DungeonCard> : null}
     </>}
     {readOnly ? <DungeonNotice status="accent" message="Quest journal is read-only during encounters. Practice progress is saved after the encounter finishes." /> : null}

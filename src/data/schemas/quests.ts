@@ -54,7 +54,7 @@ export const QuestSchema = z.strictObject({
   const deliveries = quest.stages.flatMap((s) => s.objectives.filter((o) => o.kind === 'deliverItem').map((o) => o.itemId));
   if (new Set(deliveries).size !== deliveries.length) ctx.addIssue({ code: 'custom', message: 'Combine delivery quantities per item' });
 });
-export const TitleAwardSchema = z.strictObject({ id, name: id, description: id, slot: z.enum(['first', 'second']) });
+export { TitleSchema as TitleAwardSchema } from './titles';
 export type QuestDefinition = z.infer<typeof QuestSchema>;
 export type QuestObjective = z.infer<typeof QuestObjectiveSchema>;
 

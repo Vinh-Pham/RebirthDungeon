@@ -1,6 +1,6 @@
 # Rebirth Dungeon: React Native User Interface
 
-Updated **October 1, 2026**. The app uses Expo SDK 57, Expo Router, React Native, HeroUI, Uniwind and Skia/Reanimated presentation. Existing screens cover character selection/setup, exploration, combat, stats, inventory, save/load and sound settings. Skills, quests, titles, enchanting, aging and deliberate rebirth are planned screens/services. The [game plan](../game-plan.md) owns delivery; this document owns interaction and mobile acceptance.
+Updated **October 1, 2026**. The app uses Expo SDK 57, Expo Router, React Native, HeroUI, Uniwind and Skia/Reanimated presentation. Existing screens cover character selection/setup, exploration, combat, stats, inventory, save/load and sound settings. Skills, quests, titles and the town enchanting service are implemented. Aging and deliberate rebirth remain planned screens/services. The [game plan](../game-plan.md) owns delivery; this document owns interaction and mobile acceptance.
 
 ## 1. Composition and navigation
 
@@ -109,7 +109,7 @@ Manual save/load uses slots 1–3 and is blocked during active combat; autosave 
 
 App background/character exit requests a flush through the host. Background duration and animation time do not advance turns or resource ticks. The current 250ms autosave is coalesced and may lose the most recent change on abrupt termination; show actual save errors without claiming every action was synchronously durable.
 
-Skills/quests/titles/enchanting add the planned durable operation states: confirm → saving candidate → saved success, or failed-write candidate with Retry. Suppress dependent gameplay while unresolved, and retry the same result. A persistent save failure cannot offer a new free random attempt. Keep authoritative busy/error observations in the host rather than unrelated button-local flags.
+Skills/quests/titles/enchanting use the durable operation states: confirm → saving candidate → saved success, or failed-write candidate with Retry. Suppress dependent gameplay while unresolved, and retry the same result. A persistent save failure cannot offer a new free random attempt. Keep authoritative busy/error observations in the host rather than unrelated button-local flags.
 
 Missing characters, corrupt/unsupported saves and render/audio failures are separate errors. Preserve the loaded campaign when a replacement load is invalid; offer only implemented retry/back/recovery options. Never silently replace a damaged save with a fresh hero. Audio failure affects playback only; global sound settings are independent of character slots and web playback may require an explicit user gesture.
 

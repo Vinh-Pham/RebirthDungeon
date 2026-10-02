@@ -8,10 +8,10 @@ export type GrowthTalent = typeof TALENTS[number];
 export const ATTRIBUTE_KEYS = ['strength', 'intelligence', 'dexterity', 'will', 'luck'] as const;
 export type Attributes = Record<typeof ATTRIBUTE_KEYS[number], number>;
 export type StatEffect = { statusId: string; stacks: number };
-export interface StatSource { classId: string; level: number; growthTalent: GrowthTalent; weaponItemId?: string; armorItemId?: string; enchantments?: readonly EnchantContribution[]; effects: readonly StatEffect[]; learnedSkills: LearnedSkills }
+export interface StatSource { classId: string; level: number; growthTalent: GrowthTalent; weaponItemId?: string; armorItemId?: string; enchantments?: readonly EnchantContribution[]; titles?: readonly EnchantContribution[]; effects: readonly StatEffect[]; learnedSkills: LearnedSkills }
 export interface CharacterStats {
   base: Attributes; equipment: Attributes; effective: Attributes;
-  attributeSources: { starting: Attributes; talent: Attributes; levels: Attributes; skills: Attributes };
+  attributeSources: { starting: Attributes; talent: Attributes; levels: Attributes; skills: Attributes; titles: Attributes };
   combatant: CombatStats; maxHealth: number; maxMana: number; maxStamina: number;
   modifiers: { name: string; description: string }[];
 }
@@ -24,7 +24,7 @@ export function protectionReduction(value: number) {
 }
 export function calculateCharacterStats(source: StatSource, content: ContentRegistry): CharacterStats {
   if (!Number.isInteger(source.level) || source.level < 1 || source.level > 99 || !TALENTS.includes(source.growthTalent)) throw new Error('Invalid character growth');
-  const attributeSources = { starting: { strength: 55, intelligence: 48, dexterity: 58, will: 57, luck: 47 }, talent: zero(), levels: zero(), skills: zero() };
+  const attributeSources = { starting: { strength: 55, intelligence: 48, dexterity: 58, will: 57, luck: 47 }, talent: zero(), levels: zero(), skills: zero(), titles: zero() };
   const base: Attributes = { ...attributeSources.starting };
   let maxHealth = 118, maxMana = 98, maxStamina = 113;
   const attribute = source.growthTalent === 'warrior' ? 'strength' : source.growthTalent === 'mage' ? 'intelligence' : 'dexterity';
@@ -55,16 +55,20 @@ export function calculateCharacterStats(source: StatSource, content: ContentRegi
   }
   const enchantTotals: Partial<Record<EnchantContribution['stat'], number>> = {};
   const seen = new Set<string>();
-  for (const clause of source.enchantments ?? []) {
+  for (const clause of [...(source.enchantments ?? []), ...(source.titles ?? [])]) {
     if (seen.has(clause.sourceId)) continue; seen.add(clause.sourceId);
     modifiers.push({ name: clause.name, description: `${clause.value >= 0 ? '+' : ''}${clause.value} ${clause.stat}${clause.condition ? ` · ${clause.active ? 'Active' : 'Inactive'}: ${clause.condition}` : ''}` });
     if (clause.active) enchantTotals[clause.stat] = (enchantTotals[clause.stat] ?? 0) + clause.value;
   }
-  for (const key of ATTRIBUTE_KEYS) equipment[key] += enchantTotals[key] ?? 0;
+  for (const key of ATTRIBUTE_KEYS) {
+    const titleBonus = (source.titles ?? []).filter((c) => c.active && c.stat === key).reduce((sum, c) => sum + c.value, 0);
+    attributeSources.titles[key] = titleBonus;
+    equipment[key] += (enchantTotals[key] ?? 0) - titleBonus;
+  }
   maxHealth = Math.max(1, maxHealth + (enchantTotals.maxHealth ?? 0)); maxMana = Math.max(0, maxMana + (enchantTotals.maxMana ?? 0)); maxStamina = Math.max(0, maxStamina + (enchantTotals.maxStamina ?? 0));
   const physicalAttack = enchantTotals.physicalAttack ?? 0;
   const effective = zero();
-  for (const key of ATTRIBUTE_KEYS) { base[key] = clamp(base[key], 1500); effective[key] = clamp(base[key] + equipment[key], 1500); }
+  for (const key of ATTRIBUTE_KEYS) { base[key] = clamp(base[key], 1500); effective[key] = clamp(base[key] + attributeSources.titles[key] + equipment[key], 1500); }
   const str = Math.max(0, effective.strength - 10), dex = Math.max(0, effective.dexterity - 10), int = Math.max(0, effective.intelligence - 10);
   const will = Math.max(0, effective.will - 10);
   const w = weapon?.weaponStats;
@@ -110,7 +114,8 @@ export function calculateCharacterStats(source: StatSource, content: ContentRegi
 /** Compare source stages using the same derivation, including live weapon eligibility. */
 export function characterStatBreakdown(source: StatSource, content: ContentRegistry) {
   return {
-    base: calculateCharacterStats({ ...source, weaponItemId: undefined, armorItemId: undefined, enchantments: [], effects: [] }, content).combatant,
+    base: calculateCharacterStats({ ...source, weaponItemId: undefined, armorItemId: undefined, enchantments: [], titles: [], effects: [] }, content).combatant,
+    titles: calculateCharacterStats({ ...source, weaponItemId: undefined, armorItemId: undefined, enchantments: [], effects: [] }, content).combatant,
     equipment: calculateCharacterStats({ ...source, effects: [] }, content).combatant,
     dungeon: calculateCharacterStats(source, content).combatant,
   };
