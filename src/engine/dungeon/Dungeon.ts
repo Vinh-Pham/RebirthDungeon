@@ -102,7 +102,7 @@ export function generateDungeon(rawDefinition: DungeonDefinition, dungeonSeed: n
   };
   const encounter = (room: DungeonRoom, p: GridPoint, enemyIds: string[]) => {
     const objectId = room.id + '-encounter'; const mapId = worldId + '/' + objectId;
-    const map = MapSchema.parse({ id: mapId, name: room.kind === 'boss' ? 'The elder guardian' : room.kind === 'mimic' ? 'Hungry mimic' : 'Moss guardians', width: 10, height: 7, tileSize: 32,
+    const map = MapSchema.parse({ id: mapId, name: room.kind === 'boss' ? 'Giant black spider' : room.kind === 'mimic' ? 'Spider ambush' : 'Spider nest', width: 10, height: 7, tileSize: 32,
       tiles: Array.from({ length: 70 }, (_, i) => i % 10 === 0 || i % 10 === 9 || i < 10 || i >= 60 ? 1 : 0),
       spawns: [{ entityId: 'player', kind: 'player', definitionId: classId, x: 2, y: 3 }, ...enemyIds.map((definitionId, i) => ({ entityId: objectId + '-enemy-' + i, kind: 'enemy', definitionId, x: 7, y: i + 2 }))] });
     encounters.push({ objectId, roomId: room.id, kind: room.kind as 'monster' | 'mimic' | 'boss', seed: random.int(-2147483648, 2147483647), map });

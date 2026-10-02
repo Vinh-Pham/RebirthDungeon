@@ -19,10 +19,10 @@ describe('title discovery and committed achievements', () => {
     recordTitleEvidence(hero, 'entered/moss-depths'); reconcileTitles(hero, content, 'entry');
     expect(titleState(hero, 'first-delver')).toBe('Known'); expect(hero.earnedTitles).toEqual([]);
     expect(titleState(hero, 'guardian-breaker')).toBe('Unknown');
-    recordTitleEvidence(hero, 'guardian/moss-depths/elder-slime'); reconcileTitles(hero, content, 'guardian');
+    recordTitleEvidence(hero, 'guardian/moss-depths/giant-black-spider'); reconcileTitles(hero, content, 'guardian');
     expect(titleState(hero, 'guardian-breaker')).toBe('Known');
     const attempt = new EncounterTitles('attempt-1', true);
-    mergeTitleEncounter(hero, attempt.snapshot(), 'victory', 'generated-boss-map', content, { dungeonId: 'moss-depths', enemyId: 'elder-slime' });
+    mergeTitleEncounter(hero, attempt.snapshot(), 'victory', 'generated-boss-map', content, { dungeonId: 'moss-depths', enemyId: 'giant-black-spider' });
     reconcileTitles(hero, content, 'encounter/1');
     expect(titleState(hero, 'guardian-breaker')).toBe('Earned'); expect(titleState(hero, 'first-delver')).toBe('Known');
     expect(hero.titleCollection.selected).toEqual({}); expect(heroStats(hero, content)).toEqual(before);
@@ -136,7 +136,7 @@ describe('title data, spoiler policy and migrations', () => {
     const hero = createHero(content);
     expect(visibleTitles(hero, content.data.titles, 'guardian', 'all', 'all')).toEqual([]);
     expect(visibleTitles(hero, content.data.titles, '', 'first', 'all')).toEqual([]);
-    recordTitleEvidence(hero, 'guardian/moss-depths/elder-slime'); reconcileTitles(hero, content, 'entry');
+    recordTitleEvidence(hero, 'guardian/moss-depths/giant-black-spider'); reconcileTitles(hero, content, 'entry');
     expect(visibleTitles(hero, content.data.titles, 'guardian', 'first', 'Combat')).toHaveLength(1);
     const hidden = TitleSchema.parse({ id: 'hidden', name: 'Secret', description: 'Hidden', slot: 'first', spoiler: 'hidden' });
     expect(visibleTitles(hero, [hidden], '', 'all', 'all')).toEqual([]);

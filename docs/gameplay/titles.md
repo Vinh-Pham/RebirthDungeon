@@ -74,7 +74,7 @@ Future ordinary rebirth preserves skills and therefore their eligibility. If a s
 
 ## 6. Illustrative starter catalog
 
-The first four entries below are original implemented rewards. The Guardian Breaker names the elder-slime boss of moss-depths; the story title follows the broken-seal claim. The lantern-watch sidequest gives the Lantern Companion coupon after refuge-preparations, so older campaigns that already claimed provisions can still earn it. This one-time quest gift does not expire and cannot be sold or offered. The age entry remains deferred.
+The first four entries below are original implemented rewards. The Guardian Breaker names the giant-black-spider boss of moss-depths; the story title follows the broken-seal claim. The lantern-watch sidequest gives the Lantern Companion coupon after refuge-preparations, so older campaigns that already claimed provisions can still earn it. This one-time quest gift does not expire and cannot be sold or offered. The age entry remains deferred.
 
 | Title | Slot/category | Hint | Award | Equipped effect |
 | --- | --- | --- | --- | --- |

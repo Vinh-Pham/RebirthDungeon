@@ -23,18 +23,18 @@
   {
     "id": "guardian-breaker",
     "name": "the Guardian Breaker",
-    "description": "Defeated the elder guardian of the moss depths.",
+    "description": "Defeated the giant black spider of the moss depths.",
     "slot": "first",
     "category": "Combat",
     "hint": {
       "kind": "encounteredBoss",
       "dungeonId": "moss-depths",
-      "enemyId": "elder-slime"
+      "enemyId": "giant-black-spider"
     },
     "award": {
       "kind": "bossVictory",
       "dungeonId": "moss-depths",
-      "enemyId": "elder-slime"
+      "enemyId": "giant-black-spider"
     },
     "effects": [
       {

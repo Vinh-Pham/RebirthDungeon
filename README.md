@@ -149,7 +149,7 @@ inspect discovered and earned titles. In town, choose one First and one Second
 Title for their combined flat bonuses and penalties. Selections cost no gold/AP,
 never refill resources, and are captured when the next encounter starts.
 
-The elder guardian awards **the Guardian Breaker**; the final treasure exit
+The giant black spider in the moss depths awards **the Guardian Breaker**; the final treasure exit
 awards **the First Delver**. Claiming The Broken Seal awards **the Seal’s Witness**.
 After the provisions quest, the keeper’s **A light for the watch** sidequest gives
 a **Lantern Companion** coupon. Redeem it from inventory in town; this follow-up

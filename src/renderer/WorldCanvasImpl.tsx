@@ -8,6 +8,7 @@ import { TileRenderer } from './TileRenderer';
 import { spriteRect } from './Atlas';
 import type { GameCommand } from '../engine/commands';
 import { followCamera, screenToWorld } from './Camera';
+import type { ActorDefinition, SpriteAtlas } from '../data/schemas/content';
 export interface WorldCanvasProps { session: JourneySession; width: number; dispatch(command: GameCommand): void; onObjectPress?(objectId: string): void }
 export default function WorldCanvas({ session, width, dispatch, onObjectPress }: WorldCanvasProps) {
   const { state, map } = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
@@ -63,16 +64,29 @@ export default function WorldCanvas({ session, width, dispatch, onObjectPress }:
       }) : null}
       {map.objects.map((obj) => {
         const cleared = session.isClaimed(obj.id);
+        const encounter = obj.kind === 'encounter' ? state.dungeon?.blueprint.encounters.find((entry) => entry.objectId === obj.id)?.map : undefined;
+        const spawn = encounter?.spawns.find((entry) => entry.kind === 'enemy');
+        const enemySprite = spawn ? session.content.data.enemies.find((entry) => entry.id === spawn.definitionId)?.sprite : undefined;
         return <Group key={obj.id} opacity={cleared ? 0.25 : 1}>
-          {obj.kind === 'altar' ? <>
+          {enemySprite ? <EncounterSprite sprite={enemySprite}
+            atlas={session.content.data.atlases.find((entry) => entry.id === enemySprite.atlas)!}
+            x={obj.x * map.tileSize} y={obj.y * map.tileSize} /> : obj.kind === 'altar' ? <>
             <Rect x={obj.x * map.tileSize + 2} y={obj.y * map.tileSize + 22} width={28} height={8} color="#ac9667" />
             <Rect x={obj.x * map.tileSize + 8} y={obj.y * map.tileSize + 4} width={16} height={20} color="#ded4b9" />
           </> : <Rect x={obj.x * map.tileSize + 7} y={obj.y * map.tileSize + 7} width={18} height={18} color={obj.kind === 'encounter' || obj.blocked ? '#76483d' : obj.kind === 'key' || obj.kind === 'finalChest' ? '#876d38' : obj.kind === 'fountain' ? '#416b7b' : obj.kind === 'healer' ? '#4c7574' : '#586157'} />}
-          {font ? <SkiaText x={obj.x * map.tileSize + 12} y={obj.y * map.tileSize + 21} font={font} text={obj.kind === 'gate' ? obj.blocked ? 'B' : '>' : glyph[obj.kind]} color={obj.kind === 'altar' ? '#534735' : '#ead5ab'} /> : null}
+          {font && !enemySprite ? <SkiaText x={obj.x * map.tileSize + 12} y={obj.y * map.tileSize + 21} font={font} text={obj.kind === 'gate' ? obj.blocked ? 'B' : '>' : glyph[obj.kind]} color={obj.kind === 'altar' ? '#534735' : '#ead5ab'} /> : null}
         </Group>;
       })}
       {image ? <Group transform={transform}><Atlas image={image} sprites={[spriteRect(atlas, sprite.frame)]}
         transforms={[Skia.RSXform(1, 0, 0, 0)]} sampling={{ filter: FilterMode.Nearest, mipmap: MipmapMode.None }} /></Group> : null}
     </Group>
   </Canvas></GestureDetector>;
+}
+
+function EncounterSprite({ sprite, atlas, x, y }: { sprite: ActorDefinition['sprite']; atlas: SpriteAtlas; x: number; y: number }) {
+  const source = atlasAssets[sprite.atlas];
+  if (!source) throw new Error(`No bundled image registered for atlas: ${sprite.atlas}`);
+  const image = useImage(source);
+  return image ? <Atlas image={image} sprites={[spriteRect(atlas, sprite.frame)]}
+    transforms={[Skia.RSXform(1, 0, x, y)]} sampling={{ filter: FilterMode.Nearest, mipmap: MipmapMode.None }} /> : null;
 }

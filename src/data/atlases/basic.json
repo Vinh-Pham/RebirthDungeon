@@ -5,5 +5,33 @@
     "rows": 1,
     "frameWidth": 32,
     "frameHeight": 32
+  },
+  {
+    "id": "white-spider",
+    "columns": 1,
+    "rows": 1,
+    "frameWidth": 32,
+    "frameHeight": 32
+  },
+  {
+    "id": "black-spider",
+    "columns": 1,
+    "rows": 1,
+    "frameWidth": 32,
+    "frameHeight": 32
+  },
+  {
+    "id": "red-spider",
+    "columns": 1,
+    "rows": 1,
+    "frameWidth": 32,
+    "frameHeight": 32
+  },
+  {
+    "id": "giant-black-spider",
+    "columns": 1,
+    "rows": 1,
+    "frameWidth": 32,
+    "frameHeight": 32
   }
 ]

@@ -2,7 +2,7 @@
   {
     "id": "moss-depths", "name": "The moss depths", "minRooms": 8, "maxRooms": 12,
     "roomWeights": { "monster": 50, "chest": 25, "mimic": 15, "fountain": 10 },
-    "monsterIds": ["slime"], "mimicId": "mimic", "bossId": "elder-slime", "companionIds": ["slime"],
+    "monsterIds": ["white-spider", "black-spider", "red-spider"], "mimicId": "black-spider", "bossId": "giant-black-spider", "companionIds": ["white-spider", "black-spider", "red-spider"],
     "fountainIds": ["focus", "weakness"],
     "ordinaryRewards": [
       { "itemId": "potion", "min": 1, "max": 3, "weight": 3 },

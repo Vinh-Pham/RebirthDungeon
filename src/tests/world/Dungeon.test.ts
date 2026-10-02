@@ -78,6 +78,29 @@ function watchingSeal(session: JourneySession) {
 }
 
 describe('seeded dungeon geometry and content', () => {
+  it('spawns spider encounters and a giant black spider boss with their own sprites', () => {
+    const spiderIds = ['white-spider', 'black-spider', 'red-spider'];
+    const seen = new Set<string>();
+    for (let seed = 0; seed < 20; seed++) {
+      const blueprint = generateDungeon(definition, seed);
+      for (const encounter of blueprint.encounters) {
+        const enemies = encounter.map.spawns.filter((spawn) => spawn.kind === 'enemy');
+        expect(enemies.filter((spawn) => spawn.definitionId === 'giant-black-spider')).toHaveLength(encounter.kind === 'boss' ? 1 : 0);
+        for (const spawn of enemies) {
+          const entity = content.spawn(spawn.definitionId, spawn.entityId, 'enemy', spawn.x, spawn.y);
+          expect(entity.sprite).toMatchObject({ atlas: spawn.definitionId, frame: 0 });
+          expect(content.data.atlases.find((atlas) => atlas.id === entity.sprite!.atlas)).toMatchObject({ columns: 1, rows: 1, frameWidth: 32, frameHeight: 32 });
+          if (spawn.definitionId !== 'giant-black-spider') {
+            expect(spiderIds).toContain(spawn.definitionId); seen.add(spawn.definitionId);
+          } else {
+            expect(entity.name).toBe('Giant black spider');
+            expect(entity.health!.max).toBeGreaterThan(content.spawn('black-spider', 'regular', 'enemy', 0, 0).health!.max);
+          }
+        }
+      }
+    }
+    expect([...seen].sort()).toEqual([...spiderIds].sort());
+  });
   it('generates deterministic connected layouts with required room types and isolated gates', () => {
     fc.assert(fc.property(fc.integer(), (seed) => {
       const blueprint = generateDungeon(definition, seed);
@@ -196,7 +219,7 @@ describe('dungeon progression', () => {
     travel(session, { x: bossRoom.x, y: bossRoom.y + 4 });
     const battle = session.createBattle(); battles.push(battle);
     const player = battle.engine.getEntity('player')!; player.combatant!.attack = 10000; player.combatant!.hitChance = 1;
-    const boss = battle.map.spawns.find((spawn) => spawn.definitionId === 'elder-slime')!; battle.engine.getEntity(boss.entityId)!.health!.current = 1;
+    const boss = battle.map.spawns.find((spawn) => spawn.definitionId === 'giant-black-spider')!; battle.engine.getEntity(boss.entityId)!.health!.current = 1;
     battle.dispatch({ type: 'SELECT_ACTION', action: 'attack' }); battle.dispatch({ type: 'SELECT_TARGET', targetId: boss.entityId }); battle.dispatch({ type: 'CONFIRM_ACTION' });
     expect(battle.combat.result).toBeUndefined(); expect(session.toSave().dungeon!.treasureKey.status).toBe('absent');
     expect(() => session.finishBattle(battle)).toThrow('ready');

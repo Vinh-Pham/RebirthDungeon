@@ -108,7 +108,7 @@ export class JourneySession {
         case 'mimic':
           if (!run || this.isClaimed(obj.id)) throw new Error('This chest is empty');
           run.revealedMimics.push(obj.id); this.dungeonMap = undefined;
-          this.message = 'The chest opens its jaws. A mimic attacks!'; this.beginEncounter(obj.id); return;
+          this.message = this.state.dungeon ? 'Spiders spring from the chest!' : 'The chest opens its jaws. A mimic attacks!'; this.beginEncounter(obj.id); return;
         case 'fountain': {
           if (!run || this.isClaimed(obj.id)) throw new Error('This fountain has run dry');
           const fountain = run.blueprint.fountains.find((fountain) => fountain.objectId === obj.id)!;
