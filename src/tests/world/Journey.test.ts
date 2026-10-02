@@ -4,6 +4,7 @@ import { JourneySession } from '../../game/JourneySession';
 import { loadGameContent } from '../../data/content';
 import { findPath, isWalkable, distance } from '../../engine/world/TileMap';
 import { ContentRegistry } from '../../engine/data/ContentRegistry';
+import { validateCampaign } from '../../persistence/SaveSchema';
 const content = loadGameContent(); const sessions: JourneySession[] = [];
 function create() { const session = new JourneySession(content); sessions.push(session); return session; }
 function enterHalls(session: JourneySession) {
@@ -42,6 +43,61 @@ describe('world exploration', () => {
     expect(() => session.dispatch({ type: 'MOVE', entityId: 'player', dx: 1, dy: 0 })).toThrow('Finish');
     expect(() => session.dispatch({ type: 'EQUIP_ARMOR', armorId: 'potion' })).toThrow('Finish');
     const resumed = new JourneySession(content, session.toSave()); sessions.push(resumed); expect(resumed.toSave()).toEqual(session.toSave());
+  });
+  it('opens an onward route after clearing Moss Halls, including an already-cleared saved game', () => {
+    vi.useFakeTimers(); const session = create(); enterHalls(session);
+    for (const objectId of ['slime-guard', 'elder-guard']) {
+      const object = session.map.objects.find((entry) => entry.id === objectId)!;
+      session.dispatch({ type: 'TRAVEL_TO', x: object.x, y: object.y });
+      const battle = session.createBattle();
+      try {
+        for (const entity of battle.engine.world.entities) if (entity.enemy) entity.health!.current = 1;
+        battle.engine.getEntity('player')!.combatant!.hitChance = 1;
+        while (!battle.combat.result) {
+          if (battle.battle.phase === 'enemyTurn') battle.advanceEnemyTurns();
+          else {
+            battle.dispatch({ type: 'SELECT_ACTION', action: 'attack' });
+            battle.dispatch({ type: 'SELECT_TARGET', targetId: battle.battle.validTargetIds()[0] });
+            battle.dispatch({ type: 'CONFIRM_ACTION' });
+          }
+        }
+        expect(battle.combat.result).toBe('victory'); session.finishBattle(battle);
+      } finally { battle.dispose(); }
+    }
+    const saved = session.toSave();
+    const resumed = new JourneySession(content, saved); sessions.push(resumed);
+    const onward = resumed.map.objects.find((object) => object.kind === 'portal' && (object.dungeonId || object.destination !== 'refuge'));
+    expect(onward, 'Cleared Moss Halls must have a route to more dungeon rooms').toBeDefined();
+    expect(onward!.blocked).toBe(false);
+    const approach = { x: onward!.x - 1, y: onward!.y };
+    expect(isWalkable(resumed.map, approach)).toBe(true);
+    resumed.dispatch({ type: 'TRAVEL_TO', ...approach });
+    const hero = resumed.toSave().hero;
+    resumed.dispatch({ type: 'INTERACT', objectId: onward!.id });
+    const run = resumed.toSave().dungeon!;
+    expect(run).toBeDefined();
+    expect(run.blueprint.rooms.length).toBeGreaterThan(3);
+    expect(run.blueprint.encounters.find((encounter) => encounter.kind === 'boss')!.map.spawns.some((spawn) => spawn.definitionId === 'giant-black-spider')).toBe(true);
+    expect(resumed.toSave().hero).toMatchObject({ inventory: hero.inventory, weapons: hero.weapons, equipment: hero.equipment,
+      gold: hero.gold, health: hero.health, mana: hero.mana, stamina: hero.stamina });
+    expect(resumed.toSave().hero.titleCollection.evidence['entered/moss-depths']).toBe(1);
+  });
+  it('keeps the onward passage locked until both guardians are cleared and preserves ordinary map returns', () => {
+    const session = create(); enterHalls(session);
+    for (const cleared of [[], ['halls/slime-guard'], ['halls/elder-guard']]) {
+      const saved = session.toSave(); saved.cleared = cleared; saved.position = { x: 8, y: 3 };
+      const resumed = new JourneySession(content, saved); sessions.push(resumed);
+      const passage = resumed.map.objects.find((object) => object.id === 'depths-passage')!;
+      expect(passage.blocked).toBe(true); expect(isWalkable(resumed.map, passage)).toBe(false);
+      const before = resumed.toSave();
+      expect(() => resumed.dispatch({ type: 'INTERACT', objectId: passage.id })).toThrow('Defeat both guardians');
+      expect(resumed.toSave()).toEqual(before);
+      expect(() => validateCampaign({ ...before, position: { x: passage.x, y: passage.y } }, content)).toThrow('position');
+    }
+    session.dispatch({ type: 'INTERACT', objectId: 'west' });
+    expect(session.map.id).toBe('refuge');
+    expect(session.engine.getEntity('keeper')).toBeDefined();
+    expect(session.engine.getEntity('slime-guard')).toBeUndefined();
   });
   it('carries equipment into battles and awards XP, gold and loot exactly once', () => {
     vi.useFakeTimers(); const session = create(); session.dispatch({ type: 'MOVE', entityId: 'player', dx: 1, dy: 0 });
@@ -82,6 +138,9 @@ describe('world exploration', () => {
       (raw: ReturnType<typeof loadGameContent>['data']) => { raw.worlds[0].objects[0].x = 500; },
       (raw: ReturnType<typeof loadGameContent>['data']) => { raw.worlds[0].objects.push(raw.worlds[0].objects[0]); },
       (raw: ReturnType<typeof loadGameContent>['data']) => { raw.worlds[0].objects[3].destination = 'missing'; },
+      (raw: ReturnType<typeof loadGameContent>['data']) => { raw.worlds.find((map) => map.id === 'halls')!.objects.at(-1)!.requiresCleared = ['missing']; },
+      (raw: ReturnType<typeof loadGameContent>['data']) => { raw.worlds.find((map) => map.id === 'halls')!.objects.at(-1)!.requiresCleared = ['slime-guard', 'slime-guard']; },
+      (raw: ReturnType<typeof loadGameContent>['data']) => { raw.worlds.find((map) => map.id === 'halls')!.objects.at(-1)!.requiresCleared = ['west']; },
     ]) { const raw = JSON.parse(JSON.stringify(content.data)); mutate(raw); expect(() => new ContentRegistry(raw)).toThrow(); }
   });
 });

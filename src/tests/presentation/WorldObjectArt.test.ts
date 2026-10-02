@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { loadGameContent } from '../../data/content';
 import { createDungeonRun, dungeonObjectClaimed, generateDungeon, projectDungeonMap } from '../../engine/dungeon/Dungeon';
 import { worldObjectSprite } from '../../renderer/WorldObjectArt';
+import { projectWorldMap } from '../../engine/world/TileMap';
 
 const content = loadGameContent().data;
 
@@ -82,6 +83,14 @@ describe('exploration object art', () => {
     expect(gateArt()).toEqual(['dungeon-boss-gate-open', 'dungeon-treasure-gate']);
     run.cleared.push(run.blueprint.encounters.find((entry) => entry.kind === 'boss')!.objectId);
     expect(gateArt()).toEqual(['dungeon-boss-gate-open', 'dungeon-treasure-gate-open']);
+  });
+
+  it('shows a sealed passage in Moss Halls and an open gate after both saved victories', () => {
+    const halls = content.worlds.find((world) => world.id === 'halls')!;
+    const art = (cleared: string[]) => worldObjectSprite(projectWorldMap(halls, cleared).objects.find((object) => object.id === 'depths-passage')!, content);
+    expect(art([])).toEqual({ atlas: 'dungeon-boss-gate', frame: 0 });
+    expect(art(['halls/slime-guard'])).toEqual({ atlas: 'dungeon-boss-gate', frame: 0 });
+    expect(art(['halls/slime-guard', 'halls/elder-guard'])).toEqual({ atlas: 'dungeon-boss-gate-open', frame: 0 });
   });
 
   it('opens only the chosen final reward, even though all alternatives become claimed', () => {

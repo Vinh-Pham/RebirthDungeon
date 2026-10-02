@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { HeroSchema, LegacyHeroSchema, VersionFourHeroSchema, VersionFiveHeroSchema, VersionSixHeroSchema, VersionSevenHeroSchema, VersionEightHeroSchema, clampHeroResources, migrateEquipmentHero, migrateHero, restoreHero, validateHero } from '../engine/rpg/Character';
 import type { GrowthTalent } from '../engine/rpg/Stats';
 import type { ContentRegistry } from '../engine/data/ContentRegistry';
-import { isWalkable } from '../engine/world/TileMap';
+import { isWalkable, projectWorldMap } from '../engine/world/TileMap';
 import { DungeonRunSchema, inRoom, projectDungeonMap, reachableTiles, validateDungeon } from '../engine/dungeon/Dungeon';
 const point = z.strictObject({ x: z.number().int().min(0), y: z.number().int().min(0) });
 const id = z.string().min(1);
@@ -37,7 +37,8 @@ export function validateCampaign(raw: unknown, content: ContentRegistry): Campai
   const state = CampaignSchema.parse(raw);
   validateHero(state.hero, content);
   if (state.dungeon) validateDungeon(state.dungeon, content);
-  const map = state.dungeon ? projectDungeonMap(state.dungeon) : content.data.worlds.find((map) => map.id === state.worldId);
+  const authoredMap = content.data.worlds.find((map) => map.id === state.worldId);
+  const map = state.dungeon ? projectDungeonMap(state.dungeon) : authoredMap && projectWorldMap(authoredMap, state.cleared);
   if (state.dungeon && state.worldId !== state.dungeon.blueprint.world.id) throw new Error('Save has an invalid dungeon world');
   if (!map || !isWalkable(map, state.position)) throw new Error('Save has an invalid map or position');
   if (state.dungeon && !reachableTiles(map).has(state.position.x + ',' + state.position.y)) throw new Error('Save position bypasses a dungeon gate');

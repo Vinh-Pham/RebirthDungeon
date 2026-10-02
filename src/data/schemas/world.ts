@@ -24,6 +24,7 @@ export const WorldMapSchema = z.strictObject({
     lessons: z.array(z.strictObject({ skillId: id, fee: z.number().int().min(0).max(100000) })).default([]),
     dialogue: z.string().default(''), itemId: id.optional(), quantity: z.number().int().min(1).max(99).default(1),
     destination: id.optional(), encounterMap: id.optional(),
+    requiresCleared: z.array(id).min(1).max(32).optional(),
     destinationPosition: z.strictObject(point).optional(), shopId: id.optional(),
     healingCost: z.number().int().min(1).max(100000).optional(),
     dungeonId: id.optional(), gateType: z.enum(['boss', 'treasure']).optional(), keyType: z.enum(['boss', 'treasure']).optional(), blocked: z.boolean().default(false),
@@ -43,6 +44,10 @@ export const WorldMapSchema = z.strictObject({
         (obj.destinationPosition && obj.kind !== 'portal') ||
         (obj.kind === 'gate' && !obj.gateType) || (obj.kind === 'key' && !obj.keyType)) {
       ctx.addIssue({ code: 'custom', message: 'World object is missing its content reference' });
+    }
+    if (obj.requiresCleared && (obj.kind !== 'portal' || new Set(obj.requiresCleared).size !== obj.requiresCleared.length ||
+        obj.requiresCleared.some((required) => !map.objects.some((other) => other.id === required && other.kind === 'encounter')))) {
+      ctx.addIssue({ code: 'custom', message: 'Passage unlock requires unique encounter IDs from this world' });
     }
     seen.add(obj.id); positions.add(pos);
   }

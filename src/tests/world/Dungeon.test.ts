@@ -131,6 +131,28 @@ describe('seeded dungeon geometry and content', () => {
 });
 
 describe('dungeon progression', () => {
+  it('continues from cleared Moss Halls without an offering through rooms, the spider boss, treasure and a safe return', () => {
+    const initial = new JourneySession(content); sessions.push(initial);
+    const saved = initial.toSave(); saved.worldId = 'halls'; saved.position = { x: 8, y: 3 };
+    saved.cleared = ['halls/slime-guard', 'halls/elder-guard']; saved.hero.inventory = {};
+    let session = new JourneySession(content, saved); sessions.push(session);
+    session.dispatch({ type: 'INTERACT', objectId: 'depths-passage' });
+    expect(session.toSave().hero.inventory).toEqual({});
+    expect(session.toSave().dungeon!.returnTo).toEqual({ worldId: 'refuge', position: { x: 7, y: 3 } });
+    const earlyReturn = resume(session); interact(earlyReturn, 'goddess-statue');
+    expect(earlyReturn.map.id).toBe('refuge'); expect(earlyReturn.toSave().dungeon).toBeUndefined();
+    session = resume(session); clearOrdinary(session); interact(session, 'boss-key'); interact(session, 'boss-gate');
+    const gate = session.map.objects.find((object) => object.id === 'boss-gate')!;
+    travel(session, { x: 50, y: gate.y });
+    const bossBattle = session.createBattle(); battles.push(bossBattle);
+    expect(bossBattle.engine.world.entities.some((entity) => entity.enemy && entity.name === 'Giant black spider')).toBe(true);
+    bossBattle.dispose();
+    win(session); interact(session, 'treasure-key'); interact(session, 'final-chest-1');
+    session = resume(session); session.dispatch({ type: 'EXIT_DUNGEON' });
+    expect(session.map.id).toBe('refuge'); expect(session.toSave().position).toEqual({ x: 7, y: 3 });
+    expect(session.toSave().cleared).toEqual(saved.cleared);
+    expect(resume(session).toSave().dungeon).toBeUndefined();
+  });
   it('counts the successful final exit once, excludes statue returns, and requires a later keeper report before the title claim', () => {
     const early = watchingSeal(create()); interact(early, 'goddess-statue');
     expect(early.toSave().hero.quests['broken-seal'].counts['clear-moss-depths']).toBeUndefined();

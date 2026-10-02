@@ -9,7 +9,8 @@ import { cn } from 'heroui-native/utils';
 import GameImage from './GameImage';
 import type { GameImageReference } from './gameImages';
 
-type DungeonButtonProps = Omit<ButtonRootProps, 'children' | 'isDisabled' | 'variant' | 'feedbackVariant' | 'animation'> & {
+type DungeonButtonProps = Omit<ButtonRootProps, 'children' | 'isDisabled' | 'variant' | 'feedbackVariant' | 'animation' | 'accessibilityState'> & {
+  accessibilityState?: ComponentProps<typeof View>['accessibilityState'];
   ref?: Ref<View>;
   label: string;
   detail?: string;
@@ -34,7 +35,8 @@ export function DungeonButton({
   return <Button {...props}
     variant={filled || Platform.OS === 'web' ? 'primary' : 'outline'}
     isDisabled={disabled || busy}
-    aria-pressed={selected}
+    aria-pressed={props.accessibilityRole === 'checkbox' ? undefined : selected}
+    aria-checked={props.accessibilityRole === 'checkbox' ? accessibilityState?.checked : undefined}
     accessibilityLabel={props.accessibilityLabel ?? label}
     accessibilityState={{ ...accessibilityState, disabled: disabled || busy, busy, selected }}
     className={cn('h-auto min-h-12 rounded-lg px-4 py-3',

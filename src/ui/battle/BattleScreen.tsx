@@ -36,13 +36,15 @@ export default function BattleScreen() {
   return <BattleView key={snapshot.revision} session={snapshot.session} restart={host.restart} />;
 }
 
-export function BattleView({ session, restart, finishedLabel = 'Descend again', busy = false }: { session: BattleSession; restart(): void; finishedLabel?: string; busy?: boolean }) {
+export function BattleView({ session, restart, finishedLabel = 'Descend again', busy = false, victoryContent }: { session: BattleSession; restart(): void; finishedLabel?: string; busy?: boolean; victoryContent?: ReactNode }) {
   const view = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
   const presentation = useSyncExternalStore(session.presentation.subscribe, session.presentation.getSnapshot, session.presentation.getSnapshot);
   const debug = useStore(session.ui, (state) => state.debugVisible);
   const { width: windowWidth } = useWindowDimensions();
   const width = Math.max(240, Math.min(windowWidth - 40, 560));
   const scroll = useRef<ScrollView>(null);
+  const decisionY = useRef(0);
+  const hasVictoryLoot = !!victoryContent;
   const turnKey = `${view.turnId}:${view.actionCount}`;
   const [errorState, setErrorState] = useState<{ turn: string; value?: string }>({ turn: turnKey });
   const [menuState, setMenuState] = useState<{ turn: string; value?: 'skill' | 'item' }>({ turn: turnKey });
@@ -56,6 +58,9 @@ export function BattleView({ session, restart, finishedLabel = 'Descend again', 
     // Simulation advances independently of presentation completion.
     if (view.phase === 'enemyTurn') session.advanceEnemyTurns();
   }, [session, view.phase]);
+  useEffect(() => {
+    if (view.phase === 'victory' && hasVictoryLoot && !presentation.busy) scroll.current?.scrollTo({ y: decisionY.current, animated: true });
+  }, [view.phase, hasVictoryLoot, presentation.busy]);
   function attempt(run: () => boolean): boolean {
     try { const accepted = run(); if (accepted) setError(undefined); return accepted; }
     catch (error) { setError(error instanceof Error ? error.message : 'Action could not resolve'); return false; }
@@ -95,7 +100,7 @@ export function BattleView({ session, restart, finishedLabel = 'Descend again', 
   const skillCost = selectedSkill && source ? staminaCost(source, selectedSkill.staminaCost) : 0;
   const headline = view.phase === 'victory' ? 'Chamber cleared' : view.phase === 'defeat' ? 'A warden falls' :
     presentation.busy ? 'Steel, spell & consequence' : menu ? `Choose a ${menu}` : selectedSkill ? selectedSkill.name : 'Your move, warden';
-  const hint = view.phase === 'victory' ? 'A small victory. The dungeon runs deeper.' : view.phase === 'defeat' ? 'Every descent teaches something.' :
+  const hint = view.phase === 'victory' ? victoryContent ? 'Choose your loot, then confirm to continue.' : 'A small victory. The dungeon runs deeper.' : view.phase === 'defeat' ? 'Every descent teaches something.' :
     presentation.busy ? 'The battle unfolds before you.' : menu ? 'Targeting pauses while you choose. Cancel to return to basic attack.' :
     selectedSkill ? `${selectedSkill.manaCost} MP · ${selectedSkill.effect === 'heal' && selectedSkill.target === 'ally' ? `0 SP ally / ${skillCost} SP self` : `${skillCost} SP`} · ` +
       (selectedSkill.target === 'allEnemies' ? `Tap any monster to cast ${selectedSkill.name} against all enemies.` :
@@ -112,9 +117,9 @@ export function BattleView({ session, restart, finishedLabel = 'Descend again', 
         <View className="border-border" style={styles.arena}>
           <ArenaBoundary><GameCanvas session={session} width={width} targetIds={targetIds} inputEnabled={inputEnabled} onTargetPress={execute} /></ArenaBoundary>
         </View>
-        <View style={styles.decision}>
+        <View style={styles.decision} onLayout={(event) => { decisionY.current = event.nativeEvent.layout.y; }}>
           <Text className="text-foreground" style={styles.headline}>{headline}</Text><Text className="text-muted" style={styles.body}>{hint}</Text>
-          {!finished ? <BattleActions key={`${view.turnId}:${view.actionCount}`} session={session} view={view} canChoose={canChoose} menu={menu} chooseGroup={chooseGroup} selectAction={selectAction} cancel={cancel} targetIds={targetIds} execute={execute} /> :
+          {!finished ? <BattleActions key={`${view.turnId}:${view.actionCount}`} session={session} view={view} canChoose={canChoose} menu={menu} chooseGroup={chooseGroup} selectAction={selectAction} cancel={cancel} targetIds={targetIds} execute={execute} /> : view.phase === 'victory' && victoryContent ? victoryContent :
             <View style={styles.actions}><Button primary label={finishedLabel} disabled={presentation.busy || busy} busy={busy} onPress={restart} /></View>}
           {error || session.battle.context.error ? <DungeonNotice message={error ?? session.battle.context.error} /> : null}
         </View>

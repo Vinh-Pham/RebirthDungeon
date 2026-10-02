@@ -902,7 +902,7 @@
       0,
       0,
       0,
-      1,
+      0,
       1,
       0,
       0,
@@ -975,6 +975,23 @@
         "x": 8,
         "y": 4,
         "encounterMap": "elder-chamber"
+      },
+      {
+        "id": "depths-passage",
+        "name": "Eastern passage to the moss depths",
+        "kind": "portal",
+        "x": 9,
+        "y": 3,
+        "destination": "refuge",
+        "destinationPosition": {
+          "x": 7,
+          "y": 3
+        },
+        "dungeonId": "moss-depths",
+        "requiresCleared": [
+          "slime-guard",
+          "elder-guard"
+        ]
       }
     ]
   },

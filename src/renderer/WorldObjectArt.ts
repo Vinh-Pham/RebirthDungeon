@@ -20,7 +20,7 @@ export function worldObjectSprite(object: WorldMap['objects'][number], content: 
       atlas = opened ? 'dungeon-chest-open' : 'dungeon-chest'; break;
     case 'finalChest':
       atlas = opened ? 'sealed-treasure-chest-open' : 'sealed-treasure-chest'; break;
-    case 'portal': atlas = 'dungeon-exit'; break;
+    case 'portal': atlas = object.dungeonId ? object.blocked ? 'dungeon-boss-gate' : 'dungeon-boss-gate-open' : 'dungeon-exit'; break;
     case 'gate':
       if (object.gateType) atlas = `dungeon-${object.gateType}-gate${object.blocked ? '' : '-open'}`;
       break;

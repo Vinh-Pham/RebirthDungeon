@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { JourneyHost } from '../../game/JourneyHost';
 import { useCharacterGame } from '../menu/CharacterGameContext';
 import { BattleView, ArenaBoundary } from '../battle/BattleScreen';
+import VictoryLootPanel from '../battle/VictoryLootPanel';
 import { distance, findPath, isWalkable } from '../../engine/world/TileMap';
 import type { GameCommand } from '../../engine/commands';
 import WorldCanvas from '../../renderer/WorldCanvas';
@@ -20,7 +21,8 @@ export default function JourneyScreen() {
   const session = snapshot.session;
   const [error, setError] = useState<string>();
   if (!session) return <SafeAreaView className="bg-background" style={styles.screen}><View style={styles.loading}><Text className="text-foreground" style={styles.title}>Rebirth Dungeon</Text>{snapshot.error ? <DungeonNotice message={snapshot.error} /> : <DungeonLoading label="Loading your journey" />}</View></SafeAreaView>;
-  if (snapshot.battle) return <View className="flex-1"><View className="px-4"><ProgressionFeedback host={host} /></View><BattleView session={snapshot.battle} busy={snapshot.busy} restart={() => { void host.returnFromBattle(); }} finishedLabel={snapshot.retryAvailable ? 'Retry save and return' : 'Return to the journey'} /></View>;
+  if (snapshot.battle) return <View className="flex-1"><View className="px-4"><ProgressionFeedback host={host} showNotice={false} /></View><BattleView session={snapshot.battle} busy={snapshot.busy} restart={() => { void host.returnFromBattle(); }} finishedLabel={snapshot.retryAvailable ? 'Retry save and return' : 'Return to the journey'}
+    victoryContent={<VictoryLootPanel key={snapshot.battle.encounterId} journey={session} battle={snapshot.battle} busy={snapshot.busy} retryAvailable={snapshot.retryAvailable} confirm={(selected) => { void host.returnFromBattle(selected); }} />} /></View>;
   return <Exploration key={snapshot.revision} host={host} session={session} error={error} setError={setError} />;
 }
 function Exploration({ host, session, error, setError }: {
@@ -35,6 +37,8 @@ function Exploration({ host, session, error, setError }: {
   }, host.getSnapshot, host.getServerSnapshot);
   const { width: windowWidth } = useWindowDimensions(); const width = Math.max(240, Math.min(windowWidth - 40, 560));
   const { state, map } = view; const run = state.dungeon;
+  const onward = !run ? map.objects.find((object) => object.kind === 'portal' && object.dungeonId) : undefined;
+  const guardiansLeft = onward?.requiresCleared?.filter((id) => !state.cleared.includes(`${map.id}/${id}`)).length ?? 0;
   const currentRoom = run?.blueprint.rooms.find((room) => inRoom(room, state.position));
   const dispatch = (command: GameCommand) => { if (hostView.busy) return false; try { setError(undefined); session.dispatch(command); return true; } catch (error) { setError(error instanceof Error ? error.message : 'Action failed'); return false; } };
   const approach = (objectId: string) => {
@@ -62,6 +66,10 @@ function Exploration({ host, session, error, setError }: {
     <Text className="text-muted" style={styles.body}>Tap a floor tile to move. Tap an object to approach it, then tap again to interact.</Text>
     <View className="border-border" style={styles.map}><ArenaBoundary><WorldCanvas key={map.id} session={session} width={width} dispatch={dispatch} onObjectPress={interact} /></ArenaBoundary></View>
     <Text className="text-muted" style={styles.legend}>{map.theme ? 'Goddess altar · Merchants · Healer · Doors · Supplies' : 'Chests · Monsters · Goddess · Fountains · Gates · Keys · Passages'}</Text>
+    {onward ? <DungeonCard><Text className="text-accent" style={styles.heading}>The way deeper</Text>
+      <Text className="text-muted" accessibilityLiveRegion="polite" style={styles.body}>{onward.blocked ? `Defeat both guardians to open the eastern passage. ${guardiansLeft} ${guardiansLeft === 1 ? 'remains' : 'remain'}.` : 'The eastern passage is open. More chambers and the giant black spider await.'}</Text>
+      <Button label={distance(onward, state.position) <= 1 ? 'Enter the moss depths' : 'Approach eastern passage'} disabled={onward.blocked || hostView.busy || !!hostView.retryAvailable} onPress={() => interact(onward.id)} />
+    </DungeonCard> : null}
     {run ? <DungeonCard><Text className="text-accent" style={styles.heading}>{currentRoom ? currentRoom.kind === 'start' ? 'Goddess sanctuary' : currentRoom.kind === 'boss' ? 'Boss chamber' : currentRoom.kind === 'treasure' ? 'Final treasure room' : 'Dungeon chamber' : 'Corridor'}</Text>
       <Text className="text-muted" accessibilityLiveRegion="polite" style={styles.body}>{remainingEnemies(run)} enemies remain · {bossCleared(run) ? 'Boss defeated' : run.bossDoorOpened ? 'Boss room open' : 'Boss room locked'}</Text>
       <Text className="text-muted" style={styles.body}>Boss key: {run.bossKey.status} · Treasure key: {run.treasureKey.status}</Text>

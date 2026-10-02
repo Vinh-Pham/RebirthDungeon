@@ -1,6 +1,12 @@
 import type { WorldMap } from '../../data/schemas/world';
 import { decorationContains } from '../../data/schemas/world';
 export interface GridPoint { x: number; y: number }
+/** Derive passage locks from saved victories without changing authored content. */
+export function projectWorldMap(map: WorldMap, cleared: readonly string[]): WorldMap {
+  if (!map.objects.some((object) => object.requiresCleared)) return map;
+  return { ...map, objects: map.objects.map((object) => object.requiresCleared ? { ...object,
+    blocked: !object.requiresCleared.every((id) => cleared.includes(`${map.id}/${id}`)) } : object) };
+}
 export function isWalkable(map: WorldMap, point: GridPoint): boolean {
   return Number.isInteger(point.x) && Number.isInteger(point.y) && point.x >= 0 && point.y >= 0 &&
     point.x < map.width && point.y < map.height && map.tiles[point.y * map.width + point.x] !== 1 &&

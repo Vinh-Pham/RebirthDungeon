@@ -93,12 +93,12 @@ export class JourneyHost {
     this.durableWrite = writing;
     return writing;
   }
-  returnFromBattle = async (): Promise<boolean> => {
+  returnFromBattle = async (selectedItemIds?: readonly string[]): Promise<boolean> => {
     const { battle, session } = this.snapshot;
     if (this.candidate) return this.retryProgression();
     if (!battle || !session || !battle.combat.result || this.snapshot.busy) return false;
     if (!this.repository) { this.fail(new Error('Save storage is required to commit this encounter')); return false; }
-    try { this.candidate = session.battleCandidate(battle); } catch (error) { this.fail(error); return false; }
+    try { this.candidate = session.battleCandidate(battle, selectedItemIds); } catch (error) { this.fail(error); return false; }
     session.lockMutations(); return this.persistCandidate();
   };
   async flush() {
