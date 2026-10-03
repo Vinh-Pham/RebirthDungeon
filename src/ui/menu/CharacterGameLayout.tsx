@@ -115,7 +115,15 @@ function GameSession({ profile, retry }: { profile: CompleteCharacter; retry(): 
         profile.name,
         profile.talent,
         preferences.getSettings,
-        { debugEnabled: __DEV__ },
+        {
+          debugEnabled: __DEV__,
+          restClock: {
+            schedule(callback, delayMs) {
+              const timer = setTimeout(callback, delayMs);
+              return () => clearTimeout(timer);
+            },
+          },
+        },
       ),
   );
   const snapshot = useSyncExternalStore(host.subscribe, host.getSnapshot, host.getServerSnapshot);
@@ -123,7 +131,10 @@ function GameSession({ profile, retry }: { profile: CompleteCharacter; retry(): 
   const leavePending = useRef(false);
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
-      if (state !== 'active') void host.flush();
+      if (state !== 'active') {
+        host.stopRest();
+        void host.flush();
+      }
     });
     return () => subscription.remove();
   }, [host]);

@@ -88,6 +88,7 @@ interface CampaignTransition {
   activeService?: string;
   events: GameEvent[];
   respawn: boolean;
+  resting: boolean;
 }
 
 let nextViewRevision = 0;
@@ -97,6 +98,7 @@ export interface JourneyView {
   readonly message: string;
   readonly revision: number;
   readonly activeService?: string;
+  readonly resting: boolean;
 }
 /** Owns immutable campaign checkpoints; ECS and presentation are independent observers. */
 export class JourneySession {
@@ -115,6 +117,7 @@ export class JourneySession {
   private committedEvents: GameEvent[] = [];
   private projectedMap?: Immutable<WorldMap>;
   private activeService?: string;
+  private resting = false;
   constructor(
     readonly content: ContentRegistry,
     restored?: CampaignState,
@@ -143,7 +146,7 @@ export class JourneySession {
     this.engine.random.restore(this.state.randomState);
     this.spawnWorld();
     this.registerCommand('MOVE', ({ entityId, dx, dy }, state, tx) => {
-      this.requireExploring(state);
+      this.requireMobile(state);
       if (
         entityId !== 'player' ||
         !Number.isInteger(dx) ||
@@ -173,6 +176,18 @@ export class JourneySession {
         this.beginEncounter(state, tx, encounter.id);
       } else this.commit(state, tx, { type: 'WORLD_MOVED', entityId: 'player', ...position });
     });
+    this.registerCommand('START_REST', (_command, state, tx) => {
+      this.requireExploring(state);
+      if (tx.activeService || !state.hero.learnedSkills.rest)
+        throw new Error('Rest is unavailable. Close the town service first.');
+      if (tx.resting) throw new Error('Already resting');
+      tx.resting = true;
+      tx.message = 'You are resting. Stop before moving.';
+    });
+    this.registerCommand('STOP_REST', (_command, _state, tx) => {
+      tx.resting = false;
+      tx.message = 'You stop resting.';
+    });
     this.registerCommand('REST', ({ entityId }, state, tx) => {
       this.requireExploring(state);
       if (entityId !== 'player' || tx.activeService)
@@ -181,8 +196,17 @@ export class JourneySession {
       tx.message = 'You rest and recover stamina. Wounds require healer treatment.';
       this.commit(state, tx, { type: 'RESTED', entityId });
     });
+    this.registerCommand('USE_LIFE_SKILL', ({ skillId }, state, tx) => {
+      this.requireExploring(state);
+      if (skillId !== 'rest' || !state.hero.learnedSkills[skillId])
+        throw new Error('This life skill is unavailable');
+      if (tx.activeService) throw new Error('Close the town service before resting');
+      tickHero(state.hero, content, true);
+      tx.message = 'You rest and recover stamina. Wounds require healer treatment.';
+      this.commit(state, tx, { type: 'RESTED', entityId: 'player' });
+    });
     this.engine.commands.register('TRAVEL_TO', ({ x, y }) => {
-      this.requireExploring();
+      this.requireMobile();
       if (distance(this.state.position, { x, y }) === 0) return;
       const path = findPath(this.map, this.state.position, { x, y });
       if (!path.length) throw new Error('No reachable path to that tile');
@@ -197,7 +221,7 @@ export class JourneySession {
       }
     });
     this.registerCommand('INTERACT', ({ objectId }, state, tx) => {
-      this.requireExploring(state);
+      this.requireMobile(state);
       const visible = this.mapFor(state).objects.find((obj) => obj.id === objectId);
       if (!visible || distance(visible, state.position) > 1)
         throw new Error('Move next to this object first');
@@ -351,7 +375,7 @@ export class JourneySession {
     });
     this.registerCommand('EXIT_DUNGEON', (_command, state, tx) => {
       if (this.hostManaged) throw new Error('Use the host durable progression operation');
-      this.requireExploring(state);
+      this.requireMobile(state);
       const run = state.dungeon;
       const room = run?.blueprint.rooms.find((room) => room.kind === 'treasure');
       if (!run?.selectedChest || !room || !inRoom(room, state.position))
@@ -463,6 +487,7 @@ export class JourneySession {
       activeService: this.activeService,
       events: [],
       respawn: false,
+      resting: this.resting,
     };
     this.resolving = true;
     try {
@@ -484,6 +509,7 @@ export class JourneySession {
       this.engine.random.restore(next.randomState);
       this.message = tx.message;
       this.activeService = tx.activeService;
+      this.resting = tx.resting;
       if (mapChanged(previous, next)) this.projectedMap = undefined;
       if (tx.respawn) this.spawnWorld();
       this.refresh();
@@ -522,6 +548,7 @@ export class JourneySession {
     candidate.state = this.state;
     candidate.engine.random.restore(this.state.randomState);
     candidate.activeService = this.activeService;
+    candidate.resting = this.resting;
     candidate.projectedMap = this.map;
     candidate.staging = true;
     candidate.spawnWorld();
@@ -567,7 +594,8 @@ export class JourneySession {
     return cloneData(this.snapshot.state);
   }
   dispatch(command: GameCommand) {
-    if (this.mutationsLocked) throw new Error('Save pending. Retry before continuing.');
+    if (this.mutationsLocked && command.type !== 'STOP_REST')
+      throw new Error('Save pending. Retry before continuing.');
     if (this.hostManaged && isProgressionCommand(command))
       throw new Error('Use the host durable progression operation');
     if (this.disposed || this.dispatching)
@@ -596,6 +624,7 @@ export class JourneySession {
     if (command.type === 'APPLY_ENCHANT' || command.type === 'BURN_EQUIPMENT')
       command = { ...command, revision: candidate.getSnapshot().revision };
     candidate.activeService = this.activeService;
+    candidate.resting = this.resting;
     candidate.staging = true;
     try {
       candidate.dispatch(command);
@@ -913,6 +942,10 @@ export class JourneySession {
       'Returned to the refuge. Your earned loot is safe; dungeon effects and keys have faded.';
     this.commit(state, tx, { type: 'MAP_CHANGED', mapId: this.mapFor(state).id });
   }
+  private requireMobile(state: CampaignSnapshot = this.state) {
+    this.requireExploring(state);
+    if (this.resting) throw new Error('Stop resting before moving or interacting.');
+  }
   private requireExploring(state: CampaignSnapshot = this.state) {
     if (this.mutationsLocked) throw new Error('Save pending. Retry before continuing.');
     if (state.pending) throw new Error('Finish the encounter before exploring');
@@ -1191,6 +1224,7 @@ export class JourneySession {
       message: this.message,
       revision: ++nextViewRevision,
       activeService: this.activeService,
+      resting: this.resting,
     });
   }
   titleCatchupCandidate() {

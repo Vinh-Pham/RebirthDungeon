@@ -9,7 +9,12 @@ import type { BattleSession } from './BattleSession';
 import type { AudioSettings } from '../audio/AudioManager';
 import type { DebugCommand } from './DebugCommands';
 
+export const REST_RECOVERY_INTERVAL_MS = 1000;
+export interface RestClock {
+  schedule(callback: () => void, delayMs: number): () => void;
+}
 export interface JourneyHostOptions {
+  restClock?: RestClock;
   debugEnabled?: boolean;
 }
 interface HostView {
@@ -39,6 +44,7 @@ export class JourneyHost {
   private candidate?: JourneySession;
   private candidateBattle?: BattleSession;
   private durableWrite?: Promise<boolean>;
+  private cancelRestTick?: () => void;
   constructor(
     readonly content: ContentRegistry,
     private createStorage: () => Promise<SaveStorage>,
@@ -84,6 +90,7 @@ export class JourneyHost {
   }
   async load(slot: SaveSlot) {
     if (this.candidate || this.snapshot.busy || !this.repository || this.snapshot.battle) return;
+    this.stopRest();
     const generation = this.generation;
     const repository = this.repository;
     const saver = this.autosaver;
@@ -109,6 +116,45 @@ export class JourneyHost {
     } finally {
       if (generation === this.generation) this.update({ busy: false });
     }
+  }
+  toggleRest = (): boolean => {
+    const { session, busy, battle } = this.snapshot;
+    if (session?.getSnapshot().resting) {
+      this.stopRest();
+      return true;
+    }
+    if (!session || busy || battle || this.candidate) return false;
+    if (!this.repository) {
+      this.fail(new Error('Save storage is required for Rest recovery'));
+      return false;
+    }
+    try {
+      session.dispatch({ type: 'START_REST' });
+      return true;
+    } catch (error) {
+      this.fail(error);
+      return false;
+    }
+  };
+  stopRest = () => {
+    this.cancelRestTick?.();
+    this.cancelRestTick = undefined;
+    for (const session of [this.snapshot.session, this.candidate])
+      if (session?.getSnapshot().resting) session.dispatch({ type: 'STOP_REST' });
+  };
+  private scheduleRestTick() {
+    const { session, busy, battle } = this.snapshot;
+    if (!session?.getSnapshot().resting || busy || battle || this.candidate) {
+      this.cancelRestTick?.();
+      this.cancelRestTick = undefined;
+      return;
+    }
+    if (this.cancelRestTick || !this.options.restClock) return;
+    this.cancelRestTick = this.options.restClock.schedule(() => {
+      this.cancelRestTick = undefined;
+      if (!this.snapshot.session?.getSnapshot().resting) return;
+      void this.progress({ type: 'USE_LIFE_SKILL', skillId: 'rest' });
+    }, REST_RECOVERY_INTERVAL_MS);
   }
   progress = async (command: ProgressionCommand): Promise<boolean> => {
     const { session, busy, battle } = this.snapshot;
@@ -236,6 +282,7 @@ export class JourneyHost {
     }
   }
   async flushForExit() {
+    this.stopRest();
     if (this.snapshot.busy) return false;
     this.update({ busy: true });
     try {
@@ -313,17 +360,26 @@ export class JourneyHost {
     if (this.snapshot.battle !== preservedBattle) this.snapshot.battle?.dispose();
     this.snapshot.session?.dispose();
     this.update({ session, battle: preservedBattle, revision: this.snapshot.revision + 1 });
+    let checkpoint = session.getSnapshot().state;
     this.unsubscribe = session.subscribe(() => {
       // Audio preference refreshes may arrive while a retained candidate is saving.
       if (this.candidate) return;
       const pending = session.getSnapshot().state.pending;
       if (pending && !this.snapshot.battle) this.update({ battle: session.createBattle() });
-      this.autosaver?.schedule(session.getSnapshot().state);
+      const state = session.getSnapshot().state;
+      // Runtime posture changes notify the UI without queuing unchanged saves.
+      if (state !== checkpoint) {
+        checkpoint = state;
+        this.autosaver?.schedule(state);
+      }
+      this.scheduleRestTick();
     });
     if (session.getSnapshot().state.pending && !preservedBattle)
       this.update({ battle: session.createBattle() });
   }
   private async stop() {
+    this.cancelRestTick?.();
+    this.cancelRestTick = undefined;
     ++this.generation;
     this.unsubscribe?.();
     this.unsubscribe = undefined;
@@ -361,5 +417,6 @@ export class JourneyHost {
   private update(patch: Partial<HostView>) {
     this.snapshot = { ...this.snapshot, ...patch };
     this.listeners.forEach((listener) => listener());
+    this.scheduleRestTick();
   }
 }

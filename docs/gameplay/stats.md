@@ -143,7 +143,7 @@ real-time loading, higher ranks and two-arrow Elf volleys remain unimplemented.
 
 ## 7. Recovery and consumables
 
-A resource tick occurs after a completed battle action and on accepted exploration movement/rest. It does not occur from selecting a panel, reading Inventory, shop browsing, or passive wall-clock time.
+A resource tick occurs after a completed battle action and on accepted exploration movement/rest. It does not occur from selecting a panel, reading Inventory, shop browsing, or passive wall-clock time. Explicitly starting exploration Rest enables an injected host clock to request one durable recovery tick per second until Stop. Saves serialize ticks; callbacks do not catch up delayed or background time. Backgrounding, exit, load and disposal stop Rest.
 
 For living actors with the resource model, normal ticks recover up to 1 HP and 1 MP within limits. Stamina recovers toward `floor(maxSP × fullness / 100)`, normally by 1 and at the Rest/Defend base rate of 10; the current function also applies its above-fullness-threshold adjustment. Player fullness drops by 0.1 per tick with a 50 floor. Rest does not clear wounds. `TRAVEL_TO` may execute multiple valid steps, so each step has its normal tick and encounter checks.
 

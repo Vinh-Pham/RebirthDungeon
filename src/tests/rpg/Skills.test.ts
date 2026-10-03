@@ -47,7 +47,7 @@ const outcome = (actionId: number, override: Partial<ActionOutcome> = {}): Actio
 describe('learned ranks and acquisition', () => {
   it('grants explicit starter ownership once and derives stats without refilling on learning or rank-up', () => {
     let hero = createHero(content);
-    expect(Object.keys(hero.learnedSkills)).toEqual(content.data.classes[0].skills);
+    expect(Object.keys(hero.learnedSkills)).toEqual([...content.data.classes[0].skills, 'rest']);
     expect(heroStats(hero, content).base.intelligence).toBe(52);
     hero.health = 30;
     hero.mana = 2;
@@ -190,7 +190,7 @@ describe('learned ranks and acquisition', () => {
       { version: 5, savedAt: new Date().toISOString(), campaign: { ...state, hero: legacy } },
       content,
     );
-    expect(migrated.version).toBe(12);
+    expect(migrated.version).toBe(13);
     expect(migrated.campaign.hero).toMatchObject({
       ap: 0,
       level: 5,

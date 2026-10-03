@@ -72,6 +72,17 @@ export function battleHotbarActions(
       : [];
   return [
     ...basic,
+    ...(category === 'combat' && source.player && source.learnedSkills?.rest
+      ? [
+          {
+            id: 'rest',
+            label: 'Rest',
+            skill: session.content.skill('rest'),
+            rank: source.learnedSkills.rest.rank,
+            action: { action: 'rest' as const },
+          },
+        ]
+      : []),
     ...battleSkills(session)
       .filter((skill) => skill.category === category)
       .map((skill) => ({

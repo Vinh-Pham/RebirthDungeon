@@ -36,8 +36,8 @@ victory or defeat banks that ledger with resources, durability and rewards. Rest
 an unfinished checkpoint discards its ledger. A host-owned candidate is written to
 the auto slot before learning, page insertion, rank-up or battle completion becomes
 live. Failed writes retain the exact candidate and block dependent mutations until
-Retry save succeeds. Saves use wire version 12, preserving migrations from versions
-1–11; the existing native/web storage adapters need no database schema changes.
+Retry save succeeds. Saves use wire version 13, preserving migrations from versions
+1–12; the existing native/web storage adapters need no database schema changes.
 
 The character-scoped Skills journal is available from the character panel and drawer.
 It lists learned/discovered skills, rank effects, training objectives, AP eligibility,
@@ -53,3 +53,5 @@ large-text, suspension and native persistence still require device verification.
 
 Advanced reactions, new defensive/armor passives, Final Hit, Windmill, charge loading,
 shield/dual-wield equipment, HP costs and life skills remain future authored extensions.
+
+`rest.json` adds the default Rank F Rest life skill. It keeps the verified [Rest](https://wiki.mabinogiworld.com/view/Rest) reference separate from its single supported F adapter. Use/Stop toggles resting in town and between dungeon encounters. An injected host clock requests one durable, fullness-limited recovery tick per second (up to 10 stamina), without overlapping saves or catching up elapsed/offline time. Movement and interactions are blocked while resting; Stop remains available during saving or failed recovery writes. Background, character exit, load and disposal end resting. There is no higher-rank training. Journey's Life card and journal details expose durable Use outside battle, and Combat exposes the existing Rest self action. Version 13 grants old characters missing Rest ownership/discovery without changing resources or progress. The original transparent 32×32 seated-adventurer icon and editable source are `assets/game/skills/rest.png` and `rest.aseprite`.

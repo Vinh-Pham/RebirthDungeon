@@ -33,6 +33,7 @@ const skillImages: Record<string, number> = {
   'meteor-strike': require('../../../assets/game/skills/meteor-strike.png'),
   'potion-making': require('../../../assets/game/skills/potion-making.png'),
   'range-attack': require('../../../assets/game/skills/range-attack.png'),
+  rest: require('../../../assets/game/skills/rest.png'),
   shockwave: require('../../../assets/game/skills/shockwave.png'),
   smash: require('../../../assets/game/skills/smash.png'),
   'sword-mastery': require('../../../assets/game/skills/sword-mastery.png'),

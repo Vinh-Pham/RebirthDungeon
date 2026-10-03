@@ -3,6 +3,7 @@ import worlds from './worlds/basic.json';
 import enchants from './enchants/basic.json';
 import enchantingRules from './enchants/rules.json';
 import enchantSkills from './skills/enchant.json';
+import restSkills from './skills/rest.json';
 import skills from './skills/basic.json';
 import humanRangedAttack from './skills/human-ranged-attack.json';
 import mossHallsEnemies from './enemies/dungeons/moss-halls/basic.json';
@@ -23,7 +24,7 @@ export function loadGameContent(): ContentRegistry {
   return new ContentRegistry({
     enchants,
     enchantingRules,
-    skills: [...skills, ...enchantSkills, ...humanRangedAttack],
+    skills: [...skills, ...enchantSkills, ...humanRangedAttack, ...restSkills],
     enemies: [...mossHallsEnemies, ...sharedEnemies, ...spiderNestEnemies],
     classes,
     items,

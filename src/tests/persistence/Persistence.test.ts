@@ -58,7 +58,7 @@ describe('save validation and migrations', () => {
       { version: 1, savedAt: new Date().toISOString(), campaign: legacy },
       content,
     );
-    expect(migrated.version).toBe(12);
+    expect(migrated.version).toBe(13);
     expect(migrated.campaign.audio).toEqual({ enabled: false, music: 0.3, sfx: 0.7 });
     expect(() => parseSave({ ...migrated, version: 99 }, content)).toThrow();
   });

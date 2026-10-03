@@ -660,7 +660,7 @@ describe('goddess offerings and save migration', () => {
         },
         content,
       );
-      expect(save.version).toBe(12);
+      expect(save.version).toBe(13);
       expect(save.campaign.hero).toMatchObject({
         gold: 37,
         nextWeaponId: 4,
@@ -713,7 +713,7 @@ describe('goddess offerings and save migration', () => {
       mutate(state.hero);
       expect(() => validateCampaign(state, content)).toThrow();
     }
-    expect(() => parseSave({ ...save, version: 13 }, content)).toThrow();
+    expect(() => parseSave({ ...save, version: 14 }, content)).toThrow();
     expect(heroStats(save.campaign.hero, content).combatant.attack).toBe(38);
   });
 });

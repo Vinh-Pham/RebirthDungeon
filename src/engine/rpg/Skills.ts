@@ -28,12 +28,13 @@ export function starterProgression(
 ): z.infer<typeof SkillProgressionSchema> {
   const definition = content.data.classes.find((c) => c.id === classId);
   if (!definition) throw new Error('Unknown character class');
+  const skills = [...definition.skills];
+  if (content.data.skills.some((skill) => skill.id === 'rest' && skill.gameRanks?.F))
+    skills.push('rest');
   return {
     ap: 0,
-    learnedSkills: Object.fromEntries(
-      definition.skills.map((id) => [id, { rank: 'F', objectiveCounts: {} }]),
-    ),
-    discoveredSkills: [...definition.skills],
+    learnedSkills: Object.fromEntries(skills.map((id) => [id, { rank: 'F', objectiveCounts: {} }])),
+    discoveredSkills: skills,
     bookCollections: {},
     claimedMilestones: [],
   };

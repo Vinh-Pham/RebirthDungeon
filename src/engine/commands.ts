@@ -15,6 +15,9 @@ export type GameCommand =
   | { type: 'READ_SKILL_BOOK'; itemId: string }
   | { type: 'INSERT_SKILL_PAGE'; recipeId: string; pageId: string }
   | { type: 'RANK_UP_SKILL'; skillId: string }
+  | { type: 'USE_LIFE_SKILL'; skillId: string }
+  | { type: 'START_REST' }
+  | { type: 'STOP_REST' }
   | { type: 'REST'; entityId: EntityId }
   | { type: 'DEFEND'; entityId: EntityId }
   | { type: 'INTERACT'; objectId: string }
@@ -85,6 +88,7 @@ export function validateCommand(command: GameCommand): void {
       valid = id(command.recipeId) && id(command.pageId);
       break;
     case 'RANK_UP_SKILL':
+    case 'USE_LIFE_SKILL':
       valid = id(command.skillId);
       break;
     case 'REST':
@@ -151,6 +155,8 @@ export function validateCommand(command: GameCommand): void {
       valid = Number.isInteger(command.x) && Number.isInteger(command.y);
       break;
     case 'START_BATTLE':
+    case 'START_REST':
+    case 'STOP_REST':
     case 'CLOSE_SERVICE':
     case 'EXIT_DUNGEON':
     case 'CONFIRM_ACTION':
@@ -189,6 +195,7 @@ export type ProgressionCommand = Extract<
   GameCommand,
   {
     type:
+      | 'USE_LIFE_SKILL'
       | 'DROP_ITEM'
       | 'EQUIP_AMMUNITION'
       | 'SET_ITEM_HOTBAR'
@@ -214,6 +221,7 @@ export type ProgressionCommand = Extract<
 >;
 export function isProgressionCommand(command: GameCommand): command is ProgressionCommand {
   return [
+    'USE_LIFE_SKILL',
     'DROP_ITEM',
     'EQUIP_AMMUNITION',
     'SET_ITEM_HOTBAR',

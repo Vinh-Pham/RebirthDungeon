@@ -43,8 +43,11 @@ describe('battle hotbar details', () => {
       expect(actions.map(({ id, skill, action }) => [id, skill.id, action])).toEqual([
         ['attack', attackSkill, { action: 'attack' }],
         ['defend', 'defense', { action: 'defend' }],
+        ['rest', 'rest', { action: 'rest' }],
       ]);
-      expect(actions.every(({ rank }) => rank === undefined)).toBe(true);
+      expect(
+        actions.filter(({ id }) => id !== 'rest').every(({ rank }) => rank === undefined),
+      ).toBe(true);
       expect(battleHotbarActions(session, 'magic').map(({ id }) => id)).toEqual([
         'firebolt',
         'icebolt',
@@ -67,7 +70,7 @@ describe('battle hotbar details', () => {
       player = session.engine.getEntity('player')!;
     player.learnedSkills!['combat-mastery'].rank = 'E';
     const actions = battleHotbarActions(session, 'combat');
-    expect(actions.map(({ id }) => id)).toEqual(['attack', 'defend', 'smash']);
+    expect(actions.map(({ id }) => id)).toEqual(['attack', 'defend', 'rest', 'smash']);
     expect(actions[0]).toMatchObject({
       rank: 'E',
       skill: { id: 'combat-mastery' },

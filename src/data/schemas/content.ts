@@ -509,7 +509,8 @@ export const ContentSchema = z
         for (const rank of Object.values(skill.gameRanks)) {
           if (
             skill.kind === 'life' &&
-            (skill.id !== 'enchant' ||
+            ((skill.id !== 'enchant' && skill.id !== 'rest') ||
+              (skill.id === 'rest' && rank.objectives.length !== 0) ||
               rank.objectives.some(
                 (o) =>
                   !['enchantSuccess', 'enchantFailure', 'burnUse', 'recovery'].includes(o.event) ||
@@ -525,6 +526,21 @@ export const ContentSchema = z
           )
             issue('Town objectives require a town skill');
         }
+    const rest = content.skills.find((skill) => skill.id === 'rest');
+    if (
+      rest &&
+      (rest.category !== 'life' ||
+        rest.kind !== 'life' ||
+        rest.target !== 'self' ||
+        rest.effect !== 'buff' ||
+        rest.battleUsable !== false ||
+        !rest.gameRanks?.F ||
+        Object.keys(rest.gameRanks).length !== 1 ||
+        rest.gameRanks.F.nextRank !== undefined ||
+        rest.gameRanks.F.manaCost !== 0 ||
+        rest.gameRanks.F.staminaCost !== 0)
+    )
+      issue('Rest requires the supported, free Rank F life adapter');
     for (const recipe of content.skillBookRecipes) {
       if (
         !content.skills.find((s) => s.id === recipe.skillId)?.gameRanks?.F ||

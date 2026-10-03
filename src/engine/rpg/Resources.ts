@@ -1,5 +1,6 @@
 import type { Entity } from '../ecs/Entity';
 import type { GameEvent } from '../events';
+export const REST_STAMINA_RECOVERY = 10;
 export function healableHealth(target: { health?: { max: number }; wounds?: number }) {
   return Math.max(0, (target.health?.max ?? 0) - (target.wounds ?? 0));
 }
@@ -23,7 +24,9 @@ export function resourceTick(entity: Entity, rest = false): GameEvent[] {
   entity.health.current = Math.min(healableHealth(entity), entity.health.current + 1);
   if (entity.mana) entity.mana.current = Math.min(entity.mana.max, entity.mana.current + 1);
   const threshold = Math.floor((entity.stamina.max * (entity.fullness ?? 100)) / 100);
-  const amount = Math.floor((rest ? 10 : 1) * (entity.stamina.current > threshold ? 0.8 : 1));
+  const amount = Math.floor(
+    (rest ? REST_STAMINA_RECOVERY : 1) * (entity.stamina.current > threshold ? 0.8 : 1),
+  );
   entity.stamina.current += Math.max(0, Math.min(amount, threshold - entity.stamina.current));
   return [
     {

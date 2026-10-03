@@ -18,12 +18,12 @@ Select action → select target → Confirm action
     → tick next actor's turn start → next actor or result
 ```
 
-| UI action              | Existing engine intent | Behavior                                                            |
-| ---------------------- | ---------------------- | ------------------------------------------------------------------- |
-| Attack                 | `ATTACK`               | One basic physical strike against one hostile                       |
-| Skill                  | `USE_SKILL`            | One owned, battle-usable skill with its authored target/cost/effect |
-| Defend                 | `DEFEND`               | Self; damage reduction and rest-rate stamina recovery               |
-| Rest, engine-supported | `REST`                 | Self; rest-rate resource tick without Defend mitigation             |
+| UI action          | Existing engine intent | Behavior                                                            |
+| ------------------ | ---------------------- | ------------------------------------------------------------------- |
+| Attack             | `ATTACK`               | One basic physical strike against one hostile                       |
+| Skill              | `USE_SKILL`            | One owned, battle-usable skill with its authored target/cost/effect |
+| Defend             | `DEFEND`               | Self; damage reduction and rest-rate stamina recovery               |
+| Rest, learned at F | `REST`                 | Self; rest-rate resource tick without Defend mitigation             |
 
 `BattleController` receives `SELECT_ACTION`, `SELECT_TARGET`, `CONFIRM_ACTION`, and `CANCEL_ACTION`. It submits combat intents only while the XState machine is executing. Direct combat commands cannot bypass this flow inside a normal BattleSession. The low-level standalone CombatSystem can still be exercised by engine tests.
 
@@ -101,7 +101,7 @@ For area skills, the selected target resolves first for RNG purposes; its succes
 
 Defend uses one turn, spends no MP/SP, draws no combat randomness, and does not wear a weapon. Until the defender's next turn starts, incoming attack/skill direct damage is `max(1, floor(normalDamage / 2))`. Skills with `bypassDefend` (currently Smash) skip this guard reduction in both previews and resolved damage; ordinary Defense and Protection still apply. It does not reduce periodic status damage. Its end-of-action resource tick uses the rest rate. The hotbar Defend action uses the Defense identity and this shared resolver. Future learned-rank Defense effects should extend it without a second stacking guard mechanic.
 
-Normal completed actions tick HP/MP/SP/fullness under [Stats](stats.md). Rest and Defend use increased stamina recovery. Defeated actors receive no regeneration and healing does not revive them. Selection, tooltips and animation completion never run a resource tick.
+The learned Rest life skill has an icon in Combat with Use Rest. This confirms the existing self-only basic action, not a USE_SKILL cast, and spends one turn without RNG or training. Normal completed actions tick HP/MP/SP/fullness under [Stats](stats.md). Rest and Defend use increased stamina recovery. Defeated actors receive no regeneration and healing does not revive them. Selection, tooltips and animation completion never run a resource tick.
 
 A usable weapon loses one durability after an eligible physical action with at least one successful hit. Area hits do not multiply wear by target count. Magic/healing/rest/defend, misses and exhausted bare-hand fallback do not wear it. At zero durability its stat contribution is removed for subsequent actions; the item remains owned and can be repaired at the blacksmith.
 

@@ -4,7 +4,7 @@ import { type ReactNode, useState } from 'react';
 import { Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { BattleAction } from '../../engine/battle/BattleMachine';
-import { staminaCost } from '../../engine/rpg/Resources';
+import { staminaCost, REST_STAMINA_RECOVERY } from '../../engine/rpg/Resources';
 import { prepareBasicAttack } from '../../engine/battle/BasicAttack';
 import type { BattleSession, BattleView } from '../../game/BattleSession';
 import { DungeonButton } from '../shared/DungeonUI';
@@ -104,7 +104,7 @@ export default function BattleHotbar({
         contentContainerStyle={{ gap: 8, paddingVertical: 4 }}
       >
         {actions.map(({ id, label, skill, rank, action }) => {
-          const title = `${label}${action.action === 'skill' ? '' : ` · ${skill.name}`}${rank ? ` · Rank ${rank}` : ''}`;
+          const title = `${label}${action.action === 'skill' || label === skill.name ? '' : ` · ${skill.name}`}${rank ? ` · Rank ${rank}` : ''}`;
           if (action.action === 'attack')
             return actionIcon(
               id,
@@ -143,6 +143,25 @@ export default function BattleHotbar({
                 <DungeonButton
                   primary
                   label="Use Defend"
+                  disabled={!canChoose}
+                  onPress={() => selectAction(action)}
+                />
+              </>,
+            );
+          if (action.action === 'rest')
+            return actionIcon(
+              id,
+              title,
+              { kind: 'skill', id: skill.id },
+              <>
+                <Text className="text-sm text-muted">Self · No MP or SP cost · Uses one turn</Text>
+                <Text className="text-sm text-muted">
+                  Recover up to {REST_STAMINA_RECOVERY} stamina within your fullness recovery limit,
+                  with the normal HP/MP recovery tick.
+                </Text>
+                <DungeonButton
+                  primary
+                  label="Use Rest"
                   disabled={!canChoose}
                   onPress={() => selectAction(action)}
                 />

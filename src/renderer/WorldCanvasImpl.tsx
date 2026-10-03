@@ -19,6 +19,7 @@ import {
   withTiming,
 } from 'react-native-reanimated';
 import type { JourneySession } from '../game/JourneySession';
+import RestingIndicator from './RestingIndicator';
 import { atlasAssets } from './AtlasAssets';
 import { TileRenderer } from './TileRenderer';
 import { DecorationRenderer } from './DecorationRenderer';
@@ -34,7 +35,7 @@ export interface WorldCanvasProps {
   onObjectPress?(objectId: string): void;
 }
 export default function WorldCanvas({ session, width, dispatch, onObjectPress }: WorldCanvasProps) {
-  const { state, map } = useSyncExternalStore(
+  const { state, map, resting } = useSyncExternalStore(
     session.subscribe,
     session.getSnapshot,
     session.getSnapshot,
@@ -86,6 +87,7 @@ export default function WorldCanvas({ session, width, dispatch, onObjectPress }:
     [cameraX, cameraY],
   );
   const tap = Gesture.Tap()
+    .enabled(!resting)
     .runOnJS(true)
     .onEnd((event, success) => {
       if (!success) return;
@@ -116,7 +118,11 @@ export default function WorldCanvas({ session, width, dispatch, onObjectPress }:
     <GestureDetector gesture={tap}>
       <Canvas
         style={{ width, height }}
-        accessibilityLabel="Exploration map. Tap objects or use the movement and interaction buttons below."
+        accessibilityLabel={
+          resting
+            ? 'Exploration map. Your character is sleeping. Stop resting before moving.'
+            : 'Exploration map. Tap objects or use the movement and interaction buttons below.'
+        }
       >
         <Group transform={cameraTransform} opacity={opacity}>
           <TileRenderer map={map} />
@@ -210,6 +216,11 @@ export default function WorldCanvas({ session, width, dispatch, onObjectPress }:
             playerY={state.position.y}
             foreground
           />
+          {resting && font ? (
+            <Group transform={transform}>
+              <RestingIndicator font={font} />
+            </Group>
+          ) : null}
         </Group>
       </Canvas>
     </GestureDetector>

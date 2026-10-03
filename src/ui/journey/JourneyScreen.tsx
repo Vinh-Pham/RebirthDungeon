@@ -5,7 +5,7 @@ import {
   DungeonLoading,
   DungeonNotice,
 } from '../shared/DungeonUI';
-import { useState, useSyncExternalStore } from 'react';
+import { useRef, useState, useSyncExternalStore, type RefObject } from 'react';
 import { Platform, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { JourneyHost } from '../../game/JourneyHost';
@@ -24,6 +24,8 @@ export default function JourneyScreen() {
   const snapshot = useSyncExternalStore(host.subscribe, host.getSnapshot, host.getServerSnapshot);
   const session = snapshot.session;
   const [error, setError] = useState<string>();
+  const [characterTab, setCharacterTab] = useState('character');
+  const scrollPositionRef = useRef<{ mapId: string; y: number } | undefined>(undefined);
   if (!session)
     return (
       <SafeAreaView className="bg-background" style={styles.screen}>
@@ -71,11 +73,13 @@ export default function JourneyScreen() {
     );
   return (
     <Exploration
-      key={snapshot.revision}
       host={host}
       session={session}
       error={error}
       setError={setError}
+      characterTab={characterTab}
+      setCharacterTab={setCharacterTab}
+      scrollPositionRef={scrollPositionRef}
     />
   );
 }
@@ -84,14 +88,21 @@ function Exploration({
   session,
   error,
   setError,
+  characterTab,
+  setCharacterTab,
+  scrollPositionRef,
 }: {
   host: JourneyHost;
   session: NonNullable<ReturnType<JourneyHost['getSnapshot']>['session']>;
   error?: string;
   setError(error?: string): void;
+  characterTab: string;
+  setCharacterTab(value: string): void;
+  scrollPositionRef: RefObject<{ mapId: string; y: number } | undefined>;
 }) {
-  const [characterTab, setCharacterTab] = useState('character');
   const view = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
+  const scroll = useRef<ScrollView>(null);
+  const scrollRestored = useRef(false);
   const hostView = useSyncExternalStore(
     (listener) => {
       // The parent owns the host lifetime; this subscription only observes its UI notices.
@@ -181,7 +192,23 @@ function Exploration({
       edges={['bottom', 'left', 'right']}
       style={styles.screen}
     >
-      <ScrollView key={map.id} contentContainerStyle={styles.scroll}>
+      <ScrollView
+        key={map.id}
+        ref={scroll}
+        contentContainerStyle={styles.scroll}
+        scrollEventThrottle={80}
+        onScroll={(event) => {
+          if (!scrollRestored.current) return;
+          scrollPositionRef.current = { mapId: map.id, y: event.nativeEvent.contentOffset.y };
+        }}
+        onContentSizeChange={() => {
+          if (scrollRestored.current) return;
+          const saved = scrollPositionRef.current;
+          scrollRestored.current = true;
+          if (saved?.mapId === map.id && saved.y > 0)
+            scroll.current?.scrollTo({ y: saved.y, animated: false });
+        }}
+      >
         <View style={[styles.content, { width }]}>
           <Text className="text-accent" style={styles.eyebrow}>
             REBIRTH DUNGEON · JOURNEY
@@ -190,7 +217,9 @@ function Exploration({
             {map.name}
           </Text>
           <Text className="text-muted" style={styles.body}>
-            Tap a floor tile to move. Tap an object to approach it, then tap again to interact.
+            {view.resting
+              ? 'You are resting. Press Stop to move and interact again.'
+              : 'Tap a floor tile to move. Tap an object to approach it, then tap again to interact.'}
           </Text>
           <View className="border-border" style={styles.map}>
             <ArenaBoundary>
@@ -224,7 +253,9 @@ function Exploration({
                     ? 'Enter the moss depths'
                     : 'Approach eastern passage'
                 }
-                disabled={onward.blocked || hostView.busy || !!hostView.retryAvailable}
+                disabled={
+                  view.resting || onward.blocked || hostView.busy || !!hostView.retryAvailable
+                }
                 onPress={() => interact(onward.id)}
               />
             </DungeonCard>
@@ -276,7 +307,7 @@ function Exploration({
               {run.selectedChest && currentRoom?.kind === 'treasure' ? (
                 <Button
                   label="Return to the refuge"
-                  disabled={hostView.busy || !!hostView.retryAvailable}
+                  disabled={view.resting || hostView.busy || !!hostView.retryAvailable}
                   onPress={() => {
                     void host.progress({ type: 'EXIT_DUNGEON' });
                   }}
@@ -289,7 +320,6 @@ function Exploration({
             session={session}
             value={characterTab}
             onValueChange={setCharacterTab}
-            dispatch={dispatch}
           />
           {view.message ? <DungeonNotice status="accent" message={view.message} /> : null}
           <DungeonNotice message={error} />

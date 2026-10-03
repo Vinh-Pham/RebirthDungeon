@@ -12,6 +12,8 @@ import { MenuPage, menu } from '../menu/MenuUI';
 import { DungeonButton, DungeonCard, DungeonLoading, DungeonNotice } from '../shared/DungeonUI';
 import GameImage from '../shared/GameImage';
 import ProgressionFeedback from './ProgressionFeedback';
+import RestSkillUse from './RestSkillUse';
+import { REST_STAMINA_RECOVERY } from '../../engine/rpg/Resources';
 
 const noSubscribe = () => () => {};
 const noSnapshot = () => undefined;
@@ -20,6 +22,8 @@ function rankEffects(
   rank: NonNullable<Skill['gameRanks']>[keyof NonNullable<Skill['gameRanks']>],
 ) {
   if (!rank) return '';
+  if (skill.id === 'rest')
+    return `Use outside battle, including dungeons, to rest until Stop is pressed. Recover up to ${REST_STAMINA_RECOVERY} stamina each second within the fullness recovery limit. Movement is blocked while resting. Includes the normal HP/MP recovery tick; wounds require healer treatment. No AP, MP or SP cost.`;
   if (skill.kind === 'life')
     return `Apply scrolls and burn equipment at the town forge. Permanent Intelligence +${rank.statBonuses?.intelligence ?? 0}. Recipes are shown before each attempt.`;
   if (skill.id === 'human-ranged-attack' || skill.id === 'elf-ranged-attack')
@@ -234,6 +238,7 @@ function SkillDetails({
             <Text className="text-muted" style={menu.body}>
               {rankEffects(skill, rank)}
             </Text>
+            {skill.id === 'rest' && record ? <RestSkillUse host={host} session={session} /> : null}
             {inactive ? (
               <Text className="text-muted" style={menu.body}>
                 Inactive · Equip a usable sword

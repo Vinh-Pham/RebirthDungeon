@@ -5,7 +5,6 @@ import { Tabs } from 'heroui-native/tabs';
 import { useSyncExternalStore } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { heroStats, MAX_LEVEL, experienceToNextLevel } from '../../engine/rpg/Character';
-import type { GameCommand } from '../../engine/commands';
 import type { JourneyHost } from '../../game/JourneyHost';
 import type { JourneySession } from '../../game/JourneySession';
 import CharacterStatsDetails from '../shared/CharacterStatsDetails';
@@ -21,13 +20,11 @@ export default function JourneyCharacterTabs({
   session,
   value,
   onValueChange,
-  dispatch,
 }: {
   host: JourneyHost;
   session: JourneySession;
   value: string;
   onValueChange(value: string): void;
-  dispatch(command: GameCommand): boolean;
 }) {
   return (
     <Tabs value={value} onValueChange={onValueChange} className="w-full gap-4">
@@ -60,7 +57,7 @@ export default function JourneyCharacterTabs({
         </Tabs.List>
       </KeyboardChoiceGroup>
       <Tabs.Content value="character">
-        <CharacterSummary host={host} session={session} dispatch={dispatch} />
+        <CharacterSummary session={session} />
       </Tabs.Content>
       <Tabs.Content value="stats">
         <DungeonCard>
@@ -83,22 +80,13 @@ export default function JourneyCharacterTabs({
   );
 }
 
-function CharacterSummary({
-  host,
-  session,
-  dispatch,
-}: {
-  host: JourneyHost;
-  session: JourneySession;
-  dispatch(command: GameCommand): boolean;
-}) {
+function CharacterSummary({ session }: { session: JourneySession }) {
   const { profile } = useCharacterGame();
   const { state } = useSyncExternalStore(
     session.subscribe,
     session.getSnapshot,
     session.getSnapshot,
   );
-  const hosted = useSyncExternalStore(host.subscribe, host.getSnapshot, host.getServerSnapshot);
   const stats = heroStats(state.hero, session.content, state.dungeon?.effects);
   const name = session.characterName ?? 'Warden';
   return (
@@ -176,11 +164,6 @@ function CharacterSummary({
             params: { characterId: profile.id },
           })
         }
-      />
-      <DungeonButton
-        label="Rest · recover stamina"
-        disabled={hosted.busy}
-        onPress={() => dispatch({ type: 'REST', entityId: 'player' })}
       />
     </DungeonCard>
   );

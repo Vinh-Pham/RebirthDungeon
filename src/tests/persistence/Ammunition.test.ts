@@ -67,7 +67,7 @@ describe('secondary-hand ammunition ownership and saves', () => {
       { version: 11, savedAt: '2026-10-02T12:00:00.000Z', campaign: saved },
       content,
     );
-    expect(migrated.version).toBe(12);
+    expect(migrated.version).toBe(13);
     expect(migrated.campaign).toEqual(saved);
     expect(migrated.campaign.hero.equipment.secondaryHand).toBeUndefined();
     expect(parseSave(JSON.parse(encodeSave(migrated.campaign, content)), content).campaign).toEqual(
@@ -86,7 +86,7 @@ describe('secondary-hand ammunition ownership and saves', () => {
     ])
       expect(() => validateHero({ ...saved.hero, ...patch }, content)).toThrow();
     expect(() =>
-      parseSave({ version: 13, savedAt: '2026-10-02T12:00:00.000Z', campaign: saved }, content),
+      parseSave({ version: 14, savedAt: '2026-10-02T12:00:00.000Z', campaign: saved }, content),
     ).toThrow();
   });
   it('rejects invalid equip commands with frozen checkpoint, ECS and RNG unchanged', () => {

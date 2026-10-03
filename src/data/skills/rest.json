@@ -1,0 +1,73 @@
+[
+  {
+    "id": "rest",
+    "name": "Rest",
+    "category": "life",
+    "kind": "life",
+    "rank": "F",
+    "battleUsable": false,
+    "description": "Sit down and catch your breath. Use/Stop toggles resting outside battle, including dungeons. While resting you cannot move, and recover up to 10 stamina each second within your fullness recovery limit, with normal HP/MP recovery. Wounds require healer treatment.",
+    "acquisitionHint": "Every adventurer starts with Rest at Rank F.",
+    "manaCost": 0,
+    "staminaCost": 0,
+    "power": 0,
+    "element": "physical",
+    "target": "self",
+    "effect": "buff",
+    "reference": {
+      "url": "https://wiki.mabinogiworld.com/view/Rest",
+      "retrievedAt": "2026-10-02",
+      "ranks": ["F", "E", "D", "C", "B", "A", "9", "8", "7", "6", "5", "4", "3", "2", "1"],
+      "rows": [
+        {
+          "label": "Stamina regeneration (%)",
+          "values": [
+            "150",
+            "200",
+            "250",
+            "275",
+            "300",
+            "325",
+            "350",
+            "375",
+            "400",
+            "425",
+            "450",
+            "475",
+            "500",
+            "550",
+            "600"
+          ]
+        }
+      ],
+      "effects": {
+        "F": [
+          "Maximum HP +5; HP regeneration 120%; stamina regeneration 150%; wound recovery 0.1/sec."
+        ],
+        "E": ["Stamina regeneration 200%."],
+        "D": ["Stamina regeneration 250%."],
+        "C": ["Stamina regeneration 275%."],
+        "B": ["Stamina regeneration 300%."],
+        "A": ["Stamina regeneration 325%."],
+        "9": ["Stamina regeneration 350%."],
+        "8": ["Stamina regeneration 375%."],
+        "7": ["Stamina regeneration 400%."],
+        "6": ["Stamina regeneration 425%."],
+        "5": ["Stamina regeneration 450%."],
+        "4": ["Stamina regeneration 475%."],
+        "3": ["Stamina regeneration 500%."],
+        "2": ["Stamina regeneration 550%."],
+        "1": ["Stamina regeneration 600%."]
+      }
+    },
+    "gameRanks": {
+      "F": {
+        "minPower": 0,
+        "maxPower": 0,
+        "manaCost": 0,
+        "staminaCost": 0,
+        "objectives": []
+      }
+    }
+  }
+]
