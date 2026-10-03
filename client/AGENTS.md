@@ -128,24 +128,24 @@ Expo ships breaking changes every SDK release. APIs you remember are likely rena
 
 ## Commands
 
-The project currently uses npm with `package-lock.json`. Use the scripts in `package.json`; use `bunx` instead of `npx` if the project adopts Bun (`bun.lock` present).
+The project uses pnpm 12.6.0 with Turborepo and a single workspace lockfile in the parent directory. Install dependencies at the workspace root; run client package scripts here or filtered Turbo scripts from the root. See [../README.md](../README.md) for workspace commands.
 
 ```bash
-npx expo install <package>  # ALWAYS use instead of npm/yarn/pnpm/bun add — resolves SDK-compatible versions
-npx expo start              # start the dev server
-npx expo lint               # lint
-npx tsc --noEmit            # typecheck
-npx expo-doctor             # diagnose dependency and config issues
-npx expo install --fix      # fix incompatible package versions
-npm test                   # run the Vitest suite
-npm run test:watch         # iterate on tests
-npm run format             # format the project with oxfmt
-npm run format:check       # check formatting without writing changes
+pnpm exec expo install <package>  # ALWAYS use instead of npm/yarn/pnpm/bun add — resolves SDK-compatible versions
+pnpm start              # start the dev server
+pnpm lint               # lint
+pnpm typecheck            # typecheck
+pnpm dlx expo-doctor             # diagnose dependency and config issues
+pnpm exec expo install --fix      # fix incompatible package versions
+pnpm test                   # run the Vitest suite
+ppnpm test:watch         # iterate on tests
+pnpm format             # format the project with oxfmt
+pnpm format:check       # check formatting without writing changes
 ```
 
-After every file creation or update, immediately run `npm run format` before continuing with further work. This runs oxfmt using `.oxfmtrc.json` and the project's existing ignore rules. Do not defer formatting until the end of the task.
+After every file creation or update, immediately run `pnpm format` before continuing with further work. This runs oxfmt using `.oxfmtrc.json` and the project's existing ignore rules. Do not defer formatting until the end of the task.
 
-Run `npm run format:check`, lint, and typecheck before declaring any task done.
+Run `pnpm format:check`, lint, and typecheck before declaring any task done.
 
 Run focused tests for changed gameplay, content, or persistence rules. Add meaningful regressions for changed behavior, including invalid commands, deterministic results, migration preservation, and failed-write retries where relevant. Run the full suite for changes spanning shared progression, stat resolution, or save contracts. Use the runtime required by the README for storage integration tests. For UI changes, verify the affected interaction on compact layouts and applicable native/web platforms; report any checks that could not be performed.
 
@@ -154,7 +154,7 @@ Run focused tests for changed gameplay, content, or persistence rules. Add meani
 Use **agent-browser** to debug, inspect, and interactively verify the Expo web app. Use **Firecrawl** to fetch current official agent-browser documentation before relying on its commands: [overview](https://agent-browser.dev/), [debugging](https://agent-browser.dev/debugging), [network inspection](https://agent-browser.dev/network), and [React inspection](https://agent-browser.dev/react). Keep fetched documentation in ignored `.firecrawl/` files.
 
 - Read the agent-browser skill and run `agent-browser skills get core` before browser work. Check the installed CLI's help when documentation and available commands differ.
-- Start the app with `npm run web` and open the web URL printed by Expo. Use an isolated named session for the task; keep the same `--session` value on every command, or set `AGENT_BROWSER_SESSION` in each shell invocation. Derive a session ID with `agent-browser session id --scope worktree --prefix rebirth-debug` rather than using the shared default session.
+- Start the app with `pnpm web` and open the web URL printed by Expo. Use an isolated named session for the task; keep the same `--session` value on every command, or set `AGENT_BROWSER_SESSION` in each shell invocation. Derive a session ID with `agent-browser session id --scope worktree --prefix rebirth-debug` rather than using the shared default session.
 - Reproduce the issue through the UI. Use `agent-browser snapshot -i` to discover interactive elements, act on observed `@eN` refs, and take a fresh snapshot after navigation or UI changes. Wait for expected text, elements, or URLs rather than fixed delays or generic `networkidle` waits; Expo's development connection can stay active.
 - Inspect `agent-browser console`, `agent-browser errors`, and `agent-browser network requests` when diagnosing failures. Use `agent-browser network request <requestId>` for a request observed in the log, and `agent-browser inspect` when the live Chrome DevTools frontend helps.
 - For React component/state or excessive-render issues, open the app with `agent-browser open --enable react-devtools "<web-url>"`, then use `react tree`, `react inspect <fiberId>`, and `react renders start` / `react renders stop` as needed. Read props/hooks/state for diagnosis; keep gameplay changes routed through the app's existing commands and host.
@@ -169,7 +169,7 @@ Use **agent-browser** to debug, inspect, and interactively verify the Expo web a
 
 ## Building with EAS
 
-Use EAS to build, sign, and submit the app in the cloud (`eas build`, `eas submit`) and to ship over-the-air updates (`eas update`) — no local Xcode or Android Studio required. Run EAS CLI as `bunx eas-cli <command>` in Bun projects, or `npx eas-cli@latest <command>` otherwise; substitute that for bare `eas` in docs examples.
+Use EAS to build, sign, and submit the app in the cloud (`eas build`, `eas submit`) and to ship over-the-air updates (`eas update`) — no local Xcode or Android Studio required. Run EAS CLI as `bunx eas-cli <command>` in Bun projects, or `pnpm dlx eas-cli@latest <command>` otherwise; substitute that for bare `eas` in docs examples.
 Docs: https://docs.expo.dev/eas/index.md
 
 ## Rules

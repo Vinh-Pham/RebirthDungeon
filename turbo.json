@@ -1,0 +1,111 @@
+{
+  "$schema": "https://turborepo.dev/schema.json",
+  "ui": "tui",
+  "globalEnv": ["NODE_ENV"],
+  "tasks": {
+    "dev": {
+      "cache": false,
+      "persistent": true,
+      "interactive": true
+    },
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
+    },
+    "transit": {
+      "dependsOn": ["^transit"]
+    },
+    "lint": {
+      "dependsOn": ["transit"],
+      "outputs": []
+    },
+    "typecheck": {
+      "dependsOn": ["transit"],
+      "outputs": []
+    },
+    "test": {
+      "dependsOn": ["transit"],
+      "outputs": []
+    },
+    "format:check": {
+      "dependsOn": ["transit"],
+      "outputs": []
+    },
+    "format": {
+      "cache": false
+    },
+    "android": {
+      "cache": false,
+      "persistent": true,
+      "interactive": true
+    },
+    "ios": {
+      "cache": false,
+      "persistent": true,
+      "interactive": true
+    },
+    "web": {
+      "cache": false,
+      "persistent": true,
+      "interactive": true
+    },
+    "test:watch": {
+      "cache": false,
+      "persistent": true,
+      "interactive": true
+    },
+    "email:dev": {
+      "cache": false,
+      "persistent": true,
+      "interactive": true
+    },
+    "db:generate": {
+      "cache": false
+    },
+    "db:migrate": {
+      "cache": false
+    },
+    "db:migrate:local": {
+      "cache": false
+    },
+    "db:baseline:local": {
+      "cache": false
+    },
+    "db:check:remote": {
+      "cache": false
+    },
+    "db:migrate:remote": {
+      "cache": false
+    },
+    "db:seed": {
+      "cache": false
+    },
+    "db:seed:local": {
+      "cache": false
+    },
+    "db:setup": {
+      "cache": false
+    },
+    "cf-typegen": {
+      "cache": false
+    },
+    "deploy": {
+      "cache": false
+    },
+    "deploy:dry-run": {
+      "cache": false
+    },
+    "test:smoke": {
+      "cache": false
+    },
+    "test:migrations": {
+      "cache": false
+    },
+    "test:seed": {
+      "cache": false
+    },
+    "email:test": {
+      "cache": false
+    }
+  }
+}

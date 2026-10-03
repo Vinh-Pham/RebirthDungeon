@@ -1,0 +1,29 @@
+{
+  "$schema": "https://turborepo.dev/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "env": ["EXPO_PUBLIC_*"],
+      "inputs": ["$TURBO_DEFAULT$", ".env", ".env.*"]
+    },
+    "dev": {
+      "passThroughEnv": ["EXPO_*", "REACT_NATIVE_*", "BROWSER", "REACT_EDITOR", "CI"]
+    },
+    "android": {
+      "passThroughEnv": [
+        "EXPO_*",
+        "REACT_NATIVE_*",
+        "ANDROID_HOME",
+        "ANDROID_SDK_ROOT",
+        "JAVA_HOME",
+        "CI"
+      ]
+    },
+    "ios": {
+      "passThroughEnv": ["EXPO_*", "REACT_NATIVE_*", "CI"]
+    },
+    "web": {
+      "passThroughEnv": ["EXPO_*", "BROWSER", "REACT_EDITOR", "CI"]
+    }
+  }
+}

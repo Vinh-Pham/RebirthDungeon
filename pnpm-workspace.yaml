@@ -1,5 +1,16 @@
+packages:
+  - client
+  - server
+
+# Expo SDK 57 supports isolated dependencies; keep each app's React version separate.
+nodeLinker: isolated
+
 allowBuilds:
-  '@shopify/react-native-skia': true
-  '@zowe/secrets-for-zowe-sdk': true
+  "@shopify/react-native-skia": true
+  "@zowe/secrets-for-zowe-sdk": true
   heroui-native-pro: true
   unrs-resolver: true
+  esbuild: true
+  workerd: true
+
+minimumReleaseAge: 0
