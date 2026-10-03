@@ -1,9 +1,10 @@
+import { gameHref } from '../navigation/gameHref';
 import { router } from 'expo-router';
 import { useRef, useSyncExternalStore, type RefObject } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import type { JourneyHost } from '../../game/JourneyHost';
-import type { CompleteCharacter } from '../../persistence/CharacterProfile';
+import type { GameplayHost as JourneyHost } from '../../game/Gameplay';
+import type { GameplayProfile as CompleteCharacter } from '../../game/Gameplay';
 import { TALENT_LABELS } from '../../persistence/CharacterProfile';
 import { menu } from './MenuUI';
 import { DungeonButton } from '../shared/DungeonUI';
@@ -73,20 +74,14 @@ function CharacterStatsContent({
           label="Title collection"
           onPress={() => {
             close();
-            router.navigate({
-              pathname: '/game/[characterId]/titles',
-              params: { characterId: profile.id },
-            });
+            router.navigate(gameHref(host.source, profile.id, 'titles'));
           }}
         />
         <DungeonButton
           label="Skills"
           onPress={() => {
             close();
-            router.navigate({
-              pathname: '/game/[characterId]/skills',
-              params: { characterId: profile.id },
-            });
+            router.navigate(gameHref(host.source, profile.id, 'skills'));
           }}
         />
       </ScrollView>

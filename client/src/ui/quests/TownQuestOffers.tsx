@@ -1,8 +1,9 @@
+import { gameHref } from '../navigation/gameHref';
 import { useState } from 'react';
 import { router } from 'expo-router';
 import { Text, View } from 'react-native';
 import type { ProgressionCommand } from '../../engine/commands';
-import type { JourneySession } from '../../game/JourneySession';
+import type { GameplayJourney as JourneySession } from '../../game/Gameplay';
 import { useCharacterGame } from '../menu/CharacterGameContext';
 import { menu } from '../menu/MenuUI';
 import { DungeonButton, DungeonCard } from '../shared/DungeonUI';
@@ -58,12 +59,7 @@ export default function TownQuestOffers({
       )}
       <DungeonButton
         label="Open quest journal"
-        onPress={() =>
-          router.navigate({
-            pathname: '/game/[characterId]/quests',
-            params: { characterId: profile.id },
-          })
-        }
+        onPress={() => router.navigate(gameHref(session.source, profile.id, 'quests'))}
       />
     </View>
   );

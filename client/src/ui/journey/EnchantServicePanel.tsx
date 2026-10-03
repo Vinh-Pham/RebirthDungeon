@@ -1,23 +1,29 @@
+import type { z } from 'zod';
+import type { PreviewResponseSchema } from '@rebirth/game-core/online/Contracts';
 import GameImage from '../shared/GameImage';
 import { trainingPoints } from '../../engine/rpg/Skills';
+import { useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 import { Text, View } from 'react-native';
-import type { ProgressionCommand } from '../../engine/commands';
+import type { GameplayProgressionCommand as ProgressionCommand } from '../../game/Gameplay';
 import { ownedEquipment, type EquipmentReference } from '../../engine/rpg/Character';
-import { compatibleEnchant, previewBurn, previewEnchant } from '../../engine/rpg/Enchants';
+import { compatibleEnchant } from '../../engine/rpg/Enchants';
 import { clauseActive, conditionText } from '../../engine/rpg/EnchantEffects';
-import type { JourneySession } from '../../game/JourneySession';
+import type { GameplayJourney as JourneySession } from '../../game/Gameplay';
 import { menu } from '../menu/MenuUI';
 import { DungeonButton as Button, DungeonCard, DungeonNotice } from '../shared/DungeonUI';
 import EquipmentEnchants, { enchantStatLabel } from './EquipmentEnchants';
 import InventoryPager, { INVENTORY_PAGE_SIZE, inventoryPage } from './InventoryPager';
 import { inventoryRowLabel, inventoryRows } from './inventoryRows';
 
-type ApplyQuote = ReturnType<typeof previewEnchant> & {
+type ApplyQuote = Extract<z.infer<typeof PreviewResponseSchema>['preview'], { type: 'ENCHANT' }> & {
   mode: 'apply';
   command: ProgressionCommand;
 };
-type BurnQuote = ReturnType<typeof previewBurn> & { mode: 'burn'; command: ProgressionCommand };
+type BurnQuote = Extract<z.infer<typeof PreviewResponseSchema>['preview'], { type: 'BURN' }> & {
+  mode: 'burn';
+  command: ProgressionCommand;
+};
 type Quote = ApplyQuote | BurnQuote;
 export default function EnchantServicePanel({
   session,
@@ -55,39 +61,50 @@ export default function EnchantServicePanel({
   const powders = Object.keys(hero.inventory)
     .map((id) => content.item(id))
     .filter((i) => content.data.enchantingRules?.powderBonusBp[i.id] !== undefined);
-  const makeQuote = (mode: 'apply' | 'burn') => {
-    if (!target || busy) return;
+  const queries = useQueryClient();
+  const [previewBusy, setPreviewBusy] = useState(false);
+  const makeQuote = async (mode: 'apply' | 'burn') => {
+    if (!target || busy || previewBusy) return;
     try {
       setError(undefined);
-      const operationId = `enchant-${hero.enchanting.nextOperationId}`;
-      const next: Quote =
+      setPreviewBusy(true);
+      const selection =
         mode === 'burn'
-          ? {
-              ...previewBurn(hero, target, content),
-              mode,
-              command: { type: 'BURN_EQUIPMENT', objectId, target, revision, operationId },
-            }
-          : {
-              ...previewEnchant(
-                hero,
-                { target, scrollId: scrollId ?? '', powderId: powderId ?? '' },
-                content,
-              ),
-              mode,
-              command: {
-                type: 'APPLY_ENCHANT',
-                objectId,
-                target,
-                scrollId: scrollId!,
-                powderId: powderId!,
-                revision,
-                operationId,
-              },
-            };
+          ? { type: 'BURN' as const, target }
+          : { type: 'ENCHANT' as const, target, scrollId: scrollId!, powderId: powderId! };
+      const result = await queries.fetchQuery({
+        queryKey: session.previewKey(selection),
+        queryFn: ({ signal }) => session.preview(selection, revision, signal),
+        staleTime: Infinity,
+        retry: false,
+        networkMode: session.source === 'local' ? 'always' : 'online',
+      });
+      if (session.getSnapshot().revision !== revision)
+        throw new Error('This preview is out of date. Preview again.');
+      let next: Quote;
+      if (mode === 'burn') {
+        if (result.preview.type !== 'BURN') throw new Error('Unexpected preview response.');
+        next = { ...result.preview, mode, command: { type: 'BURN_EQUIPMENT', objectId, target } };
+      } else {
+        if (result.preview.type !== 'ENCHANT') throw new Error('Unexpected preview response.');
+        next = {
+          ...result.preview,
+          mode,
+          command: {
+            type: 'APPLY_ENCHANT',
+            objectId,
+            target,
+            scrollId: scrollId!,
+            powderId: powderId!,
+          },
+        };
+      }
       pending.current = next;
       setQuote(next);
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : 'This operation is unavailable.');
+    } finally {
+      setPreviewBusy(false);
     }
   };
   const cancel = () => {
@@ -95,7 +112,12 @@ export default function EnchantServicePanel({
     setQuote(undefined);
   };
   const confirm = () => {
-    if (!pending.current || busy) return;
+    if (!pending.current || busy || previewBusy) return;
+    if (session.getSnapshot().revision !== revision) {
+      cancel();
+      setError('Preview again after the character changed.');
+      return;
+    }
     const next = pending.current;
     pending.current = undefined;
     setQuote(undefined);
@@ -196,10 +218,10 @@ export default function EnchantServicePanel({
                 ? `Burn ${quote.item.name} permanently`
                 : 'Confirm enchant attempt'
             }
-            disabled={busy}
+            disabled={busy || previewBusy}
             onPress={confirm}
           />
-          <Button label="Cancel without spending" disabled={busy} onPress={cancel} />
+          <Button label="Cancel without spending" disabled={busy || previewBusy} onPress={cancel} />
         </DungeonCard>
       ) : equipment && target ? (
         <>
@@ -215,7 +237,7 @@ export default function EnchantServicePanel({
                 ? 'This copy is locked; unlock it in inventory.'
                 : 'This copy is unlocked.'}
             </Text>
-            <Button label="Choose another copy" disabled={busy} onPress={reset} />
+            <Button label="Choose another copy" disabled={busy || previewBusy} onPress={reset} />
           </DungeonCard>
           <Text className="text-accent" style={menu.heading}>
             Choose a scroll
@@ -261,9 +283,16 @@ export default function EnchantServicePanel({
           <Button
             label="Preview enchant attempt"
             disabled={
-              busy || !scrollId || !powderId || !hero.learnedSkills.enchant || equipment.locked
+              busy ||
+              previewBusy ||
+              !scrollId ||
+              !powderId ||
+              !hero.learnedSkills.enchant ||
+              equipment.locked
             }
-            onPress={() => makeQuote('apply')}
+            onPress={() => {
+              void makeQuote('apply');
+            }}
           />
           <DungeonCard>
             <Text className="text-accent" style={menu.heading}>
@@ -277,11 +306,14 @@ export default function EnchantServicePanel({
               label="Preview burning this copy"
               disabled={
                 busy ||
+                previewBusy ||
                 !hero.learnedSkills.enchant ||
                 equipment.locked ||
                 (!equipment.prefix && !equipment.suffix)
               }
-              onPress={() => makeQuote('burn')}
+              onPress={() => {
+                void makeQuote('burn');
+              }}
             />
           </DungeonCard>
         </>
@@ -311,7 +343,7 @@ export default function EnchantServicePanel({
                     ? 'Locked · unlock in inventory'
                     : 'Unlocked'
                 }
-                disabled={busy}
+                disabled={busy || previewBusy}
                 onPress={() => {
                   setTarget(row.reference as EquipmentReference);
                   setError(undefined);
@@ -322,14 +354,14 @@ export default function EnchantServicePanel({
             label="Enchant equipment"
             page={inventoryPage(page, rows.length)}
             count={rows.length}
-            disabled={busy}
+            disabled={busy || previewBusy}
             onPage={setPage}
           />
         </>
       )}
       <Button
         label="Back to forge supplies"
-        disabled={busy}
+        disabled={busy || previewBusy}
         onPress={() => {
           cancel();
           back();

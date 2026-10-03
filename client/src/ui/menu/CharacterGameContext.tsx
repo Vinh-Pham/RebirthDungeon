@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react';
-import type { JourneyHost } from '../../game/JourneyHost';
-import type { CompleteCharacter } from '../../persistence/CharacterProfile';
+import type { GameplayHost as JourneyHost } from '../../game/Gameplay';
+import type { GameplayProfile as CompleteCharacter } from '../../game/Gameplay';
 
 export const CharacterGameContext = createContext<{
   host: JourneyHost;

@@ -409,7 +409,25 @@ it('persists battle boundaries and settles a single server reward offer exactly 
       intent,
       Date.now(),
     ).state;
-    result = await accepted(cookie, id, result.view.character.revision, intent);
+    const commandId = crypto.randomUUID(),
+      baseRevision = result.view.character.revision;
+    const response = await command(cookie, id, baseRevision, intent, commandId);
+    expect(response.status, await response.clone().text()).toBe(200);
+    result = CommandResponseSchema.parse(await response.json());
+    expect(result.receipt.outcome.presentation?.batches.length).toBeGreaterThan(
+      0,
+    );
+    const duplicate = await command(
+      cookie,
+      id,
+      baseRevision,
+      intent,
+      commandId,
+    );
+    expect(duplicate.status).toBe(200);
+    expect(CommandResponseSchema.parse(await duplicate.json()).receipt).toEqual(
+      result.receipt,
+    );
     checkpoint = await new GameRepository(env.DB, user.id).load(id);
     expect(checkpoint.state).toEqual(reference);
   }

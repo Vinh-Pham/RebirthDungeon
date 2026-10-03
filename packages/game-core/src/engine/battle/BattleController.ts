@@ -78,29 +78,7 @@ export class BattleController implements GameSystem {
       cleanups.push(
         engine.commands.register('SELECT_ACTION', ({ action, skillId, itemId }) => {
           this.requirePhase('selectingAction', 'selectingTarget');
-          const source = engine.getEntity(this.combat.currentTurn()!);
-          validateCombatEntity(source);
-          if (action === 'item') prepareBattleItem(source, itemId!, this.content);
-          if (action === 'skill') {
-            const skill = skillForEntity(this.content, source, skillId!);
-            const reason = skillEquipmentReason(source, skill, this.content);
-            if (reason) throw new Error(reason);
-            if ((source.cooldowns?.[skill.id] ?? 0) > 0) throw new Error('Skill is on cooldown');
-            if (
-              skill.battleUsable === false ||
-              !source.skills?.includes(skill.id) ||
-              !source.mana ||
-              source.mana.current < skill.manaCost
-            ) {
-              throw new Error('Skill is unavailable or mana is insufficient');
-            }
-            const cost =
-              skill.effect === 'heal' && skill.target === 'ally'
-                ? 0
-                : staminaCost(source, skill.staminaCost);
-            if (source.stamina && source.stamina.current < cost)
-              throw new Error('Insufficient stamina');
-          }
+          this.validatePlayerAction({ action, skillId, itemId });
           this.actor.send({ type: 'SELECT_ACTION', action: { action, skillId, itemId } });
         }),
       );
@@ -165,6 +143,33 @@ export class BattleController implements GameSystem {
       this.enemyBattle.dispose();
       this.engine = undefined;
     };
+  }
+
+  /** Read-only action eligibility uses exactly the selection checks. */
+  validatePlayerAction(action: BattleAction): void {
+    this.requirePhase('selectingAction', 'selectingTarget');
+    const source = this.engine!.getEntity(this.combat.currentTurn()!);
+    validateCombatEntity(source);
+    if (action.action === 'item') prepareBattleItem(source, action.itemId!, this.content);
+    if (action.action === 'skill') {
+      const skill = skillForEntity(this.content, source, action.skillId!);
+      const reason = skillEquipmentReason(source, skill, this.content);
+      if (reason) throw new Error(reason);
+      if ((source.cooldowns?.[skill.id] ?? 0) > 0) throw new Error('Skill is on cooldown');
+      if (
+        skill.battleUsable === false ||
+        !source.skills?.includes(skill.id) ||
+        !source.mana ||
+        source.mana.current < skill.manaCost
+      ) {
+        throw new Error('Skill is unavailable or mana is insufficient');
+      }
+      const cost =
+        skill.effect === 'heal' && skill.target === 'ally'
+          ? 0
+          : staminaCost(source, skill.staminaCost);
+      if (source.stamina && source.stamina.current < cost) throw new Error('Insufficient stamina');
+    }
   }
 
   validTargetIds(action = this.context.action): string[] {

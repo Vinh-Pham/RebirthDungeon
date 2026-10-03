@@ -1,3 +1,4 @@
+import { useCharacterGame } from '../menu/CharacterGameContext';
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 import type { QuestDefinition } from '../../data/schemas/quests';
@@ -9,7 +10,7 @@ import {
   questReady,
   questStage,
 } from '../../engine/rpg/Quests';
-import type { JourneySession } from '../../game/JourneySession';
+import type { GameplayJourney as JourneySession } from '../../game/Gameplay';
 import { menu } from '../menu/MenuUI';
 import { DungeonButton, DungeonCard, DungeonNotice } from '../shared/DungeonUI';
 import {
@@ -44,7 +45,11 @@ export default function QuestDetails({
     eligible = questEligible(hero, quest.prerequisite);
   const canAccept =
     record?.status === 'available' && eligible && questNpcOpen(view, quest.offerNpc);
-  const claimProblem = ready ? questClaimProblem(hero, quest, content) : undefined;
+  // Full local preflight uses its owned campaign. Online claims are validated atomically by the server.
+  const { host } = useCharacterGame();
+  const localHero = host.localHost?.getSnapshot().session?.getSnapshot().state.hero;
+  const claimProblem =
+    ready && localHero ? questClaimProblem(localHero, quest, content) : undefined;
   const canClaim = ready && !claimProblem && questNpcOpen(view, quest.claimNpc);
   const disabled = busy || readOnly;
   const deliveries = stage?.objectives.filter((o) => o.kind === 'deliverItem') ?? [];

@@ -6,7 +6,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { BattleAction } from '../../engine/battle/BattleMachine';
 import { staminaCost, REST_STAMINA_RECOVERY } from '../../engine/rpg/Resources';
 import { prepareBasicAttack } from '../../engine/battle/BasicAttack';
-import type { BattleSession, BattleView } from '../../game/BattleSession';
+import type {
+  GameplayBattle as BattleSession,
+  GameplayBattleView as BattleView,
+} from '../../game/Gameplay';
 import { DungeonButton } from '../shared/DungeonUI';
 import GameImage from '../shared/GameImage';
 import type { GameImageReference } from '../shared/gameImages';
@@ -36,7 +39,7 @@ export default function BattleHotbar({
   selectAction(action: BattleAction): void;
 }) {
   const [category, setCategory] = useState<BattleSkillCategory>('combat');
-  const source = session.engine.getEntity(view.turnId ?? '');
+  const source = session.getActor(view.turnId ?? '');
   const actions = battleHotbarActions(session, category);
   const items = category === 'items' ? battleHotbarItems(session) : [];
   const basicAttack = source ? prepareBasicAttack(source, session.content) : undefined;

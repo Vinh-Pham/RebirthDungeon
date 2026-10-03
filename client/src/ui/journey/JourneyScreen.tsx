@@ -8,14 +8,13 @@ import {
 import { useRef, useState, useSyncExternalStore, type RefObject } from 'react';
 import { Platform, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { JourneyHost } from '../../game/JourneyHost';
+import type { GameplayHost as JourneyHost } from '../../game/Gameplay';
 import { useCharacterGame } from '../menu/CharacterGameContext';
 import { BattleView, ArenaBoundary } from '../battle/BattleScreen';
 import VictoryLootPanel from '../battle/VictoryLootPanel';
 import { distance, findPath, isWalkable } from '../../engine/world/TileMap';
 import type { GameCommand } from '../../engine/commands';
 import WorldCanvas from '../../renderer/WorldCanvas';
-import { bossCleared, inRoom, remainingEnemies } from '../../engine/dungeon/Dungeon';
 import TownServicePanel from './TownServicePanel';
 import JourneyCharacterTabs from './JourneyCharacterTabs';
 import { useAppScreenChrome } from '../navigation/AppScreenChrome';
@@ -57,7 +56,7 @@ export default function JourneyScreen() {
             void host.returnFromBattle();
           }}
           finishedLabel={
-            snapshot.retryAvailable ? 'Retry save and return' : 'Return to the journey'
+            snapshot.retryAvailable ? 'Recover pending action' : 'Return to the journey'
           }
           victoryContent={
             <VictoryLootPanel
@@ -125,7 +124,8 @@ function Exploration({
     : undefined;
   const guardiansLeft =
     onward?.requiresCleared?.filter((id) => !state.cleared.includes(`${map.id}/${id}`)).length ?? 0;
-  const currentRoom = run?.blueprint.rooms.find((room) => inRoom(room, state.position));
+  const currentRoom =
+    run && run.currentRoomKind !== 'corridor' ? { kind: run.currentRoomKind } : undefined;
   const dispatch = (command: GameCommand) => {
     if (hostView.busy) return false;
     try {
@@ -170,7 +170,7 @@ function Exploration({
         <ScrollView contentContainerStyle={styles.scroll}>
           <View style={[styles.content, { width }]}>
             <TownServicePanel
-              key={view.activeService}
+              key={`${view.activeService}:${view.revision}`}
               session={session}
               objectId={view.activeService}
               busy={hostView.busy || !!hostView.retryAvailable}
@@ -270,15 +270,15 @@ function Exploration({
                   : 'Corridor'}
               </Text>
               <Text className="text-muted" accessibilityLiveRegion="polite" style={styles.body}>
-                {remainingEnemies(run)} enemies remain ·{' '}
-                {bossCleared(run)
+                {run.remainingEnemies} enemies remain ·{' '}
+                {run.bossCleared
                   ? 'Boss defeated'
                   : run.bossDoorOpened
                     ? 'Boss room open'
                     : 'Boss room locked'}
               </Text>
               <Text className="text-muted" style={styles.body}>
-                Boss key: {run.bossKey.status} · Treasure key: {run.treasureKey.status}
+                Boss key: {run.bossKey} · Treasure key: {run.treasureKey}
               </Text>
               <Text className="text-muted" style={styles.body}>
                 Find every enemy, including hidden mimics. Pick up dropped keys before using them.
@@ -321,8 +321,7 @@ function Exploration({
           <DungeonNotice message={error} />
           <ProgressionFeedback host={host} showNotice={false} />
           <Text className="text-muted" style={styles.legend}>
-            Position {state.position.x}, {state.position.y} · Seed{' '}
-            {run?.blueprint.seed ?? state.seed}
+            Position {state.position.x}, {state.position.y}
           </Text>
         </View>
       </ScrollView>

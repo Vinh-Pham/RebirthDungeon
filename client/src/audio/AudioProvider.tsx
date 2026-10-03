@@ -10,8 +10,8 @@ import {
 } from 'react';
 import { AppState, Platform } from 'react-native';
 import { loadGameContent } from '../data/content';
-import type { JourneySession } from '../game/JourneySession';
-import type { BattleSession } from '../game/BattleSession';
+import type { GameplayJourney as JourneySession } from '../game/Gameplay';
+import type { GameplayBattle as BattleSession } from '../game/Gameplay';
 import { createSaveStorage } from '../persistence/createSaveStorage';
 import { AudioSettingsRepository } from '../persistence/AudioSettingsRepository';
 import { AudioPreferences } from '../state/AudioPreferences';
@@ -75,10 +75,8 @@ export function AudioProvider({ children }: PropsWithChildren) {
       manager?.suspend(true);
       return;
     }
-    const disconnectJourney = manager.connect(binding.session.engine.events);
-    const disconnectBattle = binding.battle
-      ? manager.connect(binding.battle.engine.events)
-      : undefined;
+    const disconnectJourney = manager.connect(binding.session.events);
+    const disconnectBattle = binding.battle ? manager.connect(binding.battle.events) : undefined;
     manager.setScene(binding.battle ? 'battle' : 'exploration');
     manager.suspend(AppState.currentState !== 'active');
     const lifecycle = AppState.addEventListener('change', (state) =>
@@ -94,15 +92,7 @@ export function AudioProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     manager?.setSettings(view.settings);
     const session = binding?.session;
-    if (session) {
-      const current = session.getSnapshot().state.audio;
-      if (
-        current.enabled !== view.settings.enabled ||
-        current.music !== view.settings.music ||
-        current.sfx !== view.settings.sfx
-      )
-        session.setAudio(view.settings);
-    }
+    session?.setAudio?.(view.settings);
   }, [manager, binding?.session, view.settings]);
   useEffect(() => {
     if (manager && view.ready && view.settings.enabled && Platform.OS !== 'web') {

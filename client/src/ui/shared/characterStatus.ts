@@ -3,14 +3,14 @@ import {
   experienceToNextLevel,
   heroStats,
   heroStatSource,
-  type HeroSnapshot,
+  type HeroFacts,
 } from '../../engine/rpg/Character';
 import type { ContentRegistry } from '../../engine/data/ContentRegistry';
 import type { CharacterReview } from '../../game/BattleSession';
 
 /** Prefer the isolated encounter's live resources without publishing them to the campaign. */
 export function characterReview(
-  hero: HeroSnapshot,
+  hero: HeroFacts,
   content: ContentRegistry,
   effects: readonly { statusId: string; stacks: number }[] = [],
   battle?: CharacterReview,
@@ -37,7 +37,7 @@ export function characterReview(
 }
 
 /** Current-level XP uses the engine chart; the cap is a filled presentation-only track. */
-export function characterExperience(hero: Pick<HeroSnapshot, 'level' | 'experience'>) {
+export function characterExperience(hero: Pick<HeroFacts, 'level' | 'experience'>) {
   const capped = hero.level === MAX_LEVEL;
   const max = capped ? 1 : experienceToNextLevel(hero.level);
   const value = capped ? 1 : hero.experience;

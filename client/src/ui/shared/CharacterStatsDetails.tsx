@@ -5,9 +5,10 @@ import {
   characterStatBreakdown,
   protectionReduction,
 } from '../../engine/rpg/Stats';
-import { TALENT_LABELS, type CompleteCharacter } from '../../persistence/CharacterProfile';
-import type { JourneyHost } from '../../game/JourneyHost';
-import type { JourneySession } from '../../game/JourneySession';
+import type { GameplayProfile as CompleteCharacter } from '../../game/Gameplay';
+import { TALENT_LABELS } from '../../persistence/CharacterProfile';
+import type { GameplayHost as JourneyHost } from '../../game/Gameplay';
+import type { GameplayJourney as JourneySession } from '../../game/Gameplay';
 
 import { useCharacterStatus } from './useCharacterStatus';
 const percent = (value: number) => `${Math.round(value * 1000) / 10}%`;

@@ -1,7 +1,6 @@
 import type { TitleCondition, TitleDefinition } from '../../data/schemas/titles';
 import { SKILL_RANKS } from '../../data/schemas/skillRank';
 import type { ContentRegistry } from '../data/ContentRegistry';
-import { cloneData } from '../cloneData';
 import { produceState, readPlain, type Draft } from '../immutableState';
 import { calculateCharacterStats } from './Stats';
 import {
@@ -11,18 +10,19 @@ import {
   itemCount,
   type Hero,
   type HeroSnapshot,
+  type HeroFacts,
 } from './Character';
 import type { EnchantContribution } from './EnchantEffects';
 
 export type TitleSlot = 'first' | 'second';
-export function titleState(hero: HeroSnapshot, id: string) {
+export function titleState(hero: HeroFacts, id: string) {
   return hero.earnedTitles.includes(id)
     ? 'Earned'
     : hero.titleCollection.discovered.includes(id)
       ? 'Known'
       : 'Unknown';
 }
-export function titleEligible(hero: HeroSnapshot, title: Pick<TitleDefinition, 'eligibility'>) {
+export function titleEligible(hero: HeroFacts, title: Pick<TitleDefinition, 'eligibility'>) {
   const requirement = title.eligibility;
   return (
     !requirement ||
@@ -33,7 +33,7 @@ export function titleEligible(hero: HeroSnapshot, title: Pick<TitleDefinition, '
 }
 /** Progression-only basis excludes equipment, titles, enchantments and temporary effects. */
 export function titleConditionProgress(
-  hero: HeroSnapshot,
+  hero: HeroFacts,
   c: TitleCondition,
   content: ContentRegistry,
 ): { met: boolean; text: string } {
@@ -161,7 +161,7 @@ export function recordTitleEvidence(hero: Hero, key: string) {
   );
 }
 export function selectedTitleEffects(
-  hero: HeroSnapshot,
+  hero: HeroFacts,
   content: ContentRegistry,
 ): EnchantContribution[] {
   return (['first', 'second'] as const).flatMap((slot) => {
@@ -184,7 +184,7 @@ export function selectedTitleEffects(
   });
 }
 export function titleSelectionProblem(
-  hero: HeroSnapshot,
+  hero: HeroFacts,
   slot: TitleSlot,
   id: string | undefined,
   content: ContentRegistry,
@@ -218,20 +218,27 @@ export function selectTitle(
   return produceState(hero, (draft) => selectTitleDraft(draft, slot, id, content));
 }
 export function previewTitle(
-  hero: HeroSnapshot,
+  hero: HeroFacts,
   slot: TitleSlot,
   id: string | undefined,
   content: ContentRegistry,
 ) {
-  const candidate = selectTitle(Object.isFrozen(hero) ? hero : cloneData(hero), slot, id, content);
+  const problem = titleSelectionProblem(hero, slot, id, content);
+  if (problem) throw new Error(problem);
+  const selected = { ...hero.titleCollection.selected };
+  if (id) selected[slot] = id;
+  else delete selected[slot];
+  const candidate = { ...hero, titleCollection: { ...hero.titleCollection, selected } };
+  const after = heroStats(candidate, content);
+  const wounds = Math.min(hero.wounds, after.maxHealth - 1);
   return {
     before: heroStats(hero, content),
-    after: heroStats(candidate, content),
+    after,
     pools: {
-      health: candidate.health,
-      mana: candidate.mana,
-      stamina: candidate.stamina,
-      wounds: candidate.wounds,
+      health: Math.min(hero.health, after.maxHealth - wounds),
+      mana: Math.min(hero.mana, after.maxMana),
+      stamina: Math.min(hero.stamina, after.maxStamina),
+      wounds,
     },
   };
 }

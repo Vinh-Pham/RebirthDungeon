@@ -1,6 +1,6 @@
 import { useMemo, useSyncExternalStore } from 'react';
-import type { JourneyHost } from '../../game/JourneyHost';
-import type { JourneySession } from '../../game/JourneySession';
+import type { GameplayHost as JourneyHost } from '../../game/Gameplay';
+import type { GameplayJourney as JourneySession } from '../../game/Gameplay';
 import { characterExperience, characterReview } from './characterStatus';
 
 const noSubscribe = () => () => {};

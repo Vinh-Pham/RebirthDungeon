@@ -35,6 +35,8 @@ fixes. The engine deliberately snapshots mutable collections before dispatch, so
 without unused-variable warnings. Type checking uses `tsc --noEmit` with the Expo
 TypeScript configuration. ESLint and `expo lint` are no longer used.
 
+For account sign-in and fresh server-owned characters, choose **Play online** or **Account**. Configure `EXPO_PUBLIC_API_URL` using [online play setup and architecture](docs/online-play.md). Local play remains available without a server; online progression requires a verified connection and has no manual rewind.
+
 Press **Play**, then choose a saved character or **Create New Character**. Enter a
 name (1–24 characters), choose Warrior, Archery or Mage, and select an age from
 10–17. Talent determines starting bonuses and attribute growth; age is cosmetic.

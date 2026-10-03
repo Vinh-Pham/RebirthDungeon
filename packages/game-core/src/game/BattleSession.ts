@@ -270,6 +270,24 @@ export class BattleSession {
     this.titles.restoreState(state.titles);
     this.refresh();
   }
+  get events() {
+    return this.engine.events;
+  }
+  get error() {
+    return this.battle.context.error;
+  }
+  getActor(id: string) {
+    return this.engine.getEntity(id);
+  }
+  validTargetIds(action?: BattleAction) {
+    return this.battle.validTargetIds(action);
+  }
+  previewSkill(sourceId: string, targetId: string, skillId: string) {
+    return this.combat.previewSkill(sourceId, targetId, skillId);
+  }
+  previewBasic(sourceId: string, targetId: string) {
+    return this.combat.previewBasic(sourceId, targetId);
+  }
   getSnapshot = (): BattleView => this.snapshot;
   subscribe = (listener: () => void): Unsubscribe => {
     this.listeners.add(listener);

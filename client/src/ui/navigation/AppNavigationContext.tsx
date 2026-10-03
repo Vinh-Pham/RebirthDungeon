@@ -9,8 +9,8 @@ import {
 } from 'react';
 import { View } from 'react-native';
 import { router } from 'expo-router';
-import type { JourneyHost } from '../../game/JourneyHost';
-import type { CompleteCharacter } from '../../persistence/CharacterProfile';
+import type { GameplayHost as JourneyHost } from '../../game/Gameplay';
+import type { GameplayProfile as CompleteCharacter } from '../../game/Gameplay';
 import { CharacterWindow } from '../menu/CharacterWindow';
 
 export interface ActiveGame {

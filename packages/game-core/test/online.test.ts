@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { newOnlineState, execute, publicView, validateOnlineState } from '../src/online/Runtime';
-import { CommandSchema, GAME_CONTENT_VERSION, CommandRequestSchema } from '../src/online/Contracts';
+import {
+  ResolvedPresentationSchema,
+  CommandSchema,
+  GAME_CONTENT_VERSION,
+  CommandRequestSchema,
+} from '../src/online/Contracts';
 import { JourneySession } from '../src/game/JourneySession';
 import { gameContent } from '../src/online/Runtime';
 import { BattleSession } from '../src/game/BattleSession';
@@ -28,6 +33,47 @@ function encounter() {
   return state;
 }
 describe('authoritative portable execution', () => {
+  it('projects legal actions and deterministic damage without consuming RNG or changing state', () => {
+    const state = encounter(),
+      checkpoint = structuredClone(state);
+    const first = publicView(state, metadata),
+      second = publicView(state, metadata);
+    expect(first).toEqual(second);
+    expect(state).toEqual(checkpoint);
+    expect(
+      first.encounter!.actions.find((a) => a.action.action === 'attack')!.previews.length,
+    ).toBeGreaterThan(0);
+    const attack = first.encounter!.actions.find((a) => a.action.action === 'attack')!;
+    const resolved = execute(
+      state,
+      'Player',
+      { type: 'BATTLE_ACTION', action: { action: 'attack' }, targetId: attack.targets[0] },
+      2000,
+    );
+    expect(resolved.outcome.presentation!.encounterId).toBe(first.encounter!.id);
+    expect(resolved.outcome.presentation!.fromActionSequence).toBe(first.encounter!.actionSequence);
+    expect(resolved.outcome.presentation!.toActionSequence).toBe(
+      resolved.state.battle!.combat.actionSequence,
+    );
+    expect(resolved.outcome.presentation!.batches.length).toBeGreaterThan(0);
+    expect(() => ResolvedPresentationSchema.parse(resolved.outcome.presentation)).not.toThrow();
+    expect(JSON.stringify(resolved.outcome)).not.toMatch(/randomState|seed/);
+    expect(state).toEqual(checkpoint);
+  });
+  it('uses exploration consumables through the same rules and rejects forged targets', () => {
+    const state = newOnlineState(12345, 'Player', 'warrior');
+    state.campaign.hero.health = 1;
+    const quantity = state.campaign.hero.inventory.potion;
+    const result = execute(state, 'Player', { type: 'USE_ITEM', itemId: 'potion' }, 1000);
+    expect(result.state.campaign.hero.health).toBeGreaterThan(1);
+    expect(result.state.campaign.hero.inventory.potion).toBe(quantity - 1);
+    expect(
+      CommandSchema.safeParse({ type: 'USE_ITEM', itemId: 'potion', targetId: 'enemy' }).success,
+    ).toBe(false);
+    expect(() =>
+      execute(encounter(), 'Player', { type: 'USE_ITEM', itemId: 'potion' }, 1000),
+    ).toThrow();
+  });
   it('rejects forged state, raw combat, debug and presentation commands', () => {
     for (const type of [
       'REST',

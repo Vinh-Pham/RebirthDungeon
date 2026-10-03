@@ -13,6 +13,7 @@ import {
   type EquipmentReference,
   type Hero,
   type HeroSnapshot,
+  type HeroFacts,
 } from './Character';
 import { consumeItem } from './Inventory';
 import { gameRank } from './Skills';
@@ -57,7 +58,7 @@ export function compatibleEnchant(
     enchant.tags.every((tag) => item.weaponTags.includes(tag))
   );
 }
-function recipe(hero: HeroSnapshot, content: ContentRegistry) {
+function recipe(hero: HeroFacts, content: ContentRegistry) {
   const learned = hero.learnedSkills.enchant,
     rules = content.data.enchantingRules;
   if (!learned || !rules) throw new Error('Learn Enchant from the refuge keeper first');
@@ -66,13 +67,13 @@ function recipe(hero: HeroSnapshot, content: ContentRegistry) {
   if (!recipe) throw new Error('Enchant is unsupported at this rank');
   return { learned, rules, recipe };
 }
-function targetEquipment(hero: HeroSnapshot, target: EquipmentReference, content: ContentRegistry) {
+function targetEquipment(hero: HeroFacts, target: EquipmentReference, content: ContentRegistry) {
   const equipment = ownedEquipment(hero, target);
   if (equipment.locked) throw new Error('Unlock this equipment before enchanting or burning');
   return { equipment, item: content.item(equipment.itemId) };
 }
 export function previewEnchant(
-  hero: HeroSnapshot,
+  hero: HeroFacts,
   selection: EnchantSelection,
   content: ContentRegistry,
 ) {
@@ -114,11 +115,7 @@ export function previewEnchant(
       : undefined,
   };
 }
-export function previewBurn(
-  hero: HeroSnapshot,
-  target: EquipmentReference,
-  content: ContentRegistry,
-) {
+export function previewBurn(hero: HeroFacts, target: EquipmentReference, content: ContentRegistry) {
   const { recipe: costs, rules } = recipe(hero, content),
     { equipment, item } = targetEquipment(hero, target, content);
   const outputs = (['prefix', 'suffix'] as const).flatMap((slot) => {

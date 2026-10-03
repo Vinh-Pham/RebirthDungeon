@@ -8,6 +8,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Uniwind } from 'uniwind';
 
+import { OnlineProvider } from '@/online/OnlineProvider';
 import { AudioProvider } from '@/audio/AudioProvider';
 import { AppNavigationProvider } from '@/ui/navigation/AppNavigationContext';
 import AppDrawer from '@/ui/navigation/AppDrawer';
@@ -20,9 +21,11 @@ Uniwind.setTheme('dark');
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <HeroUINativeProvider config={{ toast: false }}>
-        <RootNavigator />
-      </HeroUINativeProvider>
+      <OnlineProvider>
+        <HeroUINativeProvider config={{ toast: false }}>
+          <RootNavigator />
+        </HeroUINativeProvider>
+      </OnlineProvider>
     </GestureHandlerRootView>
   );
 }

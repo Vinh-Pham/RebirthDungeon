@@ -1,7 +1,7 @@
 # Rebirth Dungeon API
 
 Hono on Cloudflare Workers, with Better Auth 1.7.7, Drizzle/D1, KV, Queues, and email bindings.
-The Expo app is still a local game; its authentication UI is follow-up work.
+The Expo app supports Better Auth accounts and separate authoritative online characters, alongside existing local play.
 
 ## Local setup
 
@@ -159,58 +159,21 @@ sign-up, sign-in, replacement, and sign-out before restoring traffic. Existing
 accounts must register again. Review password hashing against the deployed Worker's
 CPU budget. This implementation does not deploy or change remote data/secrets.
 
-## Expo follow-up design
+## Expo integration
 
-No Expo source or UI changes are included. When implementing the client, install
-Better Auth and its Expo plugin at matching versions and install native dependencies
-through `pnpm exec expo install expo-secure-store expo-network` in `client/`, using
-SDK 57-compatible versions. Reuse the existing `rebirthdungeon` scheme.
+The client now includes Account registration/sign-in/sign-out and separate online
+character routes. React Query owns validated session reads, account-scoped game
+queries, previews, and confirmed command mutations. Native uses the official Expo
+plugin with SecureStore and awaits `authClient.getCookie()` for custom API calls
+with `credentials: 'omit'`; web uses browser cookies and `credentials: 'include'`.
+Startup, reconnect and foreground revalidate before allowing progression.
 
-Use a native auth module outside Expo Router's route directory:
-
-```ts
-import { createAuthClient } from 'better-auth/react';
-import { expoClient } from '@better-auth/expo/client';
-import * as SecureStore from 'expo-secure-store';
-
-export const authClient = createAuthClient({
-  baseURL: process.env.EXPO_PUBLIC_API_URL,
-  plugins: [
-    expoClient({
-      scheme: 'rebirthdungeon',
-      storagePrefix: 'rebirthdungeon-auth',
-      storage: SecureStore,
-    }),
-  ],
-});
-```
-
-Use a `.web.ts` counterpart with `createAuthClient` and browser-managed cookies,
-without SecureStore. Validate the public API URL at startup; physical devices need
-a reachable LAN or HTTPS tunnel URL rather than the device's localhost.
-
-```ts
-await authClient.signUp.email({ name: 'Player', email, password });
-await authClient.signIn.email({ email, password });
-const { data: session, isPending, error } = authClient.useSession();
-await authClient.signOut();
-
-// Native application API calls:
-const response = await fetch(`${apiURL}/cache/entries/example`, {
-  headers: { Cookie: await authClient.getCookie() },
-  credentials: 'omit',
-});
-// Web application API calls instead use credentials: 'include'.
-```
-
-Treat SecureStore's cached session data as provisional. Revalidate at startup and
-foregrounding. Clear local auth state after an authoritative missing-session/401
-result, while preserving credentials during temporary network failures. Replaced
-sessions should show a sign-in-again message on the old device.
-
-Start with an optional Account screen for registration/sign-in/sign-out. Local
-play remains available offline; signing out does not remove characters or saves.
-Cloud saves and account ownership of game data are separate future features.
+Configure `EXPO_PUBLIC_API_URL` as the API origin and explicitly approve the web
+origin and `rebirthdungeon://` server-side. Native devices need a reachable LAN or
+tunnel URL. See [client online setup and architecture](../client/docs/online-play.md)
+for cache policy, durable request recovery, battle presentation, Rest leases, and
+device checks. Signing out preserves local saves. Cloud/local save synchronization
+remains future work.
 
 JWTs remain possible by adding `jwt()` and `jwtClient()`, then requesting a token
 with `authClient.token()`. These JWTs supplement the Better Auth session; external
@@ -356,7 +319,7 @@ revisions 409, and unavailable/corrupt storage 503. No client-provided damage,
 rewards, enemy turns, RNG, debug actions, state uploads, or rewinds are accepted.
 
 Commands cover movement/travel, world interactions, town services and shops,
-repair/healing/offerings, item dropping/hotbar assignments, equipment and locks,
+repair/healing/offerings, exploration item use, dropping/hotbar assignments, equipment and locks,
 skill lessons/books/pages/rank advancement, quest acceptance/claims/tracking,
 title selection/coupons, enchanting/burning, and leaving dungeons. The contract's
 `CommandSchema` is the complete current allowlist. Enchant operation IDs and
@@ -369,6 +332,10 @@ complete `BATTLE_ACTION` with `action` and `targetId`; presentation selection an
 cancellation stay local. One command commits that action and every ensuing enemy
 turn until the next player turn or terminal result. The view exposes actors,
 resources, cooldowns, statuses, action sequence, and the committed reward offer.
+The encounter also exposes read-only action availability, legal targets, and combat
+previews. Committed receipts optionally include version 1 resolved animation facts
+for client presentation, without timers or gameplay commands. Dungeon HUD and
+visible art are projected before stripping private blueprint fields.
 RNG, enemy decision history, checkpoint seeds, and unrevealed dungeon blueprint
 outcomes stay private. Victory rolls the offer once at the terminal boundary;
 `SETTLE_ENCOUNTER` accepts optional offered item IDs and atomically merges loot,
@@ -389,8 +356,8 @@ Their owner references Better Auth `user.id`. The additive `game_` migrations
 preserve Better Auth accounts and unrelated tables. The earlier auth-reset
 migration still applies only when upgrading the original custom-auth schema.
 Apply pending migrations before releasing this Worker; remote migration and
-production deployment remain separate release actions. Expo online UI and save
-synchronization are follow-up work. Existing SQLite/IndexedDB local saves retain
+production deployment remain separate release actions. The Expo UI consumes these
+contracts; cloud/local save synchronization remains future work. Existing SQLite/IndexedDB local saves retain
 format 13 and their existing storage schemas.
 
 Hero progression, campaign state, equipment instances, loadout references,

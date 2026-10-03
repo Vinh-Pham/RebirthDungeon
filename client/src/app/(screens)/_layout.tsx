@@ -19,6 +19,10 @@ export default function ScreensLayout() {
         <Stack.Screen name="characters/index" options={{ title: 'Characters' }} />
         <Stack.Screen name="characters/new" options={{ title: 'New Character' }} />
         <Stack.Screen name="game/[characterId]" />
+        <Stack.Screen name="account" options={{ title: 'Account' }} />
+        <Stack.Screen name="online/characters/index" />
+        <Stack.Screen name="online/characters/new" />
+        <Stack.Screen name="online/game/[characterId]" />
         <Stack.Screen name="settings" options={{ title: 'Settings' }} />
       </Stack>
     </AppScreenShell>

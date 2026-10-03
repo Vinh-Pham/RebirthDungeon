@@ -18,12 +18,11 @@ import {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import type { JourneySession } from '../game/JourneySession';
+import type { GameplayJourney as JourneySession } from '../game/Gameplay';
 import RestingIndicator from './RestingIndicator';
 import { atlasAssets } from './AtlasAssets';
 import { TileRenderer } from './TileRenderer';
 import { DecorationRenderer } from './DecorationRenderer';
-import { worldObjectSprite } from './WorldObjectArt';
 import { spriteRect } from './Atlas';
 import type { GameCommand } from '../engine/commands';
 import { followCamera, screenToWorld } from './Camera';
@@ -49,7 +48,7 @@ export default function WorldCanvas({ session, width, dispatch, onObjectPress }:
     { width, height },
     scale,
   );
-  const sprite = session.engine.getEntity('player')!.sprite!;
+  const sprite = session.playerSprite();
   const atlas = session.content.data.atlases.find((entry) => entry.id === sprite.atlas)!;
   const source = atlasAssets[sprite.atlas];
   if (!source) throw new Error(`No bundled image registered for atlas: ${sprite.atlas}`);
@@ -135,12 +134,7 @@ export default function WorldCanvas({ session, width, dispatch, onObjectPress }:
           {map.objects.map((obj) => {
             if (map.decorations.some((decoration) => decoration.objectId === obj.id)) return null;
             const cleared = session.isClaimed(obj.id);
-            const objectSprite = worldObjectSprite(
-              obj,
-              session.content.data,
-              state.dungeon,
-              cleared,
-            );
+            const objectSprite = session.objectSprite(obj);
             return (
               <Group key={obj.id} opacity={cleared ? 0.25 : 1}>
                 {objectSprite ? (

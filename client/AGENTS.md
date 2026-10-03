@@ -2,7 +2,7 @@
 
 This is an Expo/React Native RPG with a deterministic TypeScript game engine, turn-based combat, dungeon exploration, character progression, and local saves. Prioritize mobile-first patterns, performance, and compatibility across iOS, Android, and web.
 
-Portable engine rules, bundled JSON content, content/save validators, and headless journey/battle sessions now live in `../packages/game-core/src`. The corresponding client modules re-export that package; edit its owning modules for rule changes. Client session wrappers inject animation presentation. UI, audio, storage, host lifecycles, and local save behavior remain in this client. See `../packages/game-core/README.md` and `../server/README.md` for the separate authoritative online contracts; this Expo UI currently continues to use local characters.
+Portable engine rules, bundled JSON content, content/save validators, and headless journey/battle sessions now live in `../packages/game-core/src`. The corresponding client modules re-export that package; edit its owning modules for rule changes. Client session wrappers inject animation presentation. UI, audio, storage, host lifecycles, and local save behavior remain in this client. See `../packages/game-core/README.md` and `../server/README.md` for the separate authoritative online contracts; the Expo UI now supports separate local and online characters through read-only gameplay ports. Read [docs/online-play.md](docs/online-play.md) for authentication, React Query, connection lifecycle, server presentation, and durable command recovery.
 
 ## Read the project docs before implementation
 
@@ -46,6 +46,7 @@ Extend the existing owner and nearby patterns before creating a new abstraction.
 | `src/engine/world/`, `src/engine/dungeon/`       | World traversal, dungeon generation, and dungeon state validation                                                 |
 | `src/data/`, `src/data/schemas/`                 | Authored JSON content, content loading, Zod schemas, and cross-reference validation                               |
 | `src/persistence/`                               | Character profiles, save schemas/migrations, repositories, autosave, and platform storage adapters                |
+| `src/online/`                                    | Better Auth platform adapters, React Query, public gameplay hosts, and separate command recovery storage          |
 | `src/renderer/`                                  | Skia worlds/sprites, targeting presentation, cameras, and animation queues                                        |
 | `src/audio/`, `src/state/`                       | Audio lifecycle and UI/preferences state; authoritative gameplay stays in the session/engine                      |
 | `src/tests/`                                     | Vitest suites grouped by engine, RPG, battle, world, data, persistence, presentation, and audio                   |

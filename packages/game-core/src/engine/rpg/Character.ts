@@ -79,6 +79,8 @@ export const HeroSchema = VersionElevenHeroSchema.extend({
 });
 export type Hero = z.infer<typeof HeroSchema>;
 export type HeroSnapshot = Immutable<Hero>;
+/** Public observations never need the private enchant random stream. */
+export type HeroFacts = Omit<HeroSnapshot, 'enchanting'>;
 export type EquipmentReference = { weaponId: string } | { armorId: string };
 export type OwnedItem = { itemId: string } | EquipmentReference;
 export function ownedEquipment(
@@ -86,17 +88,17 @@ export function ownedEquipment(
   reference: EquipmentReference,
 ): Weapon | z.infer<typeof ArmorSchema>;
 export function ownedEquipment(
-  hero: HeroSnapshot,
+  hero: HeroFacts,
   reference: EquipmentReference,
 ): Immutable<Weapon | z.infer<typeof ArmorSchema>>;
-export function ownedEquipment(hero: HeroSnapshot, reference: EquipmentReference) {
+export function ownedEquipment(hero: HeroFacts, reference: EquipmentReference) {
   const item =
     'weaponId' in reference ? hero.weapons[reference.weaponId] : hero.armors[reference.armorId];
   if (!item) throw new Error('This equipment is not in your pack');
   return item;
 }
 export function heroStatSource(
-  hero: HeroSnapshot,
+  hero: HeroFacts,
   effects: readonly { statusId: string; stacks: number }[] | undefined,
   content: ContentRegistry,
 ): StatSource {
@@ -127,7 +129,7 @@ export function heroStatSource(
   };
 }
 export function heroStats(
-  hero: HeroSnapshot,
+  hero: HeroFacts,
   content: ContentRegistry,
   effects: readonly { statusId: string; stacks: number }[] = [],
 ) {
@@ -153,7 +155,7 @@ export function heroStats(
 }
 /** Inspect a loadout without changing ownership, resources, durability or RNG. */
 export function previewEquipment(
-  hero: HeroSnapshot,
+  hero: HeroFacts,
   reference: OwnedItem | { slot: 'weapon' | 'armor' | 'secondaryHand' },
   content: ContentRegistry,
   effects: readonly { statusId: string; stacks: number }[] = [],
@@ -320,7 +322,7 @@ export function createHero(
   restoreHero(hero, content);
   return hero;
 }
-export function itemCount(hero: HeroSnapshot, itemId: string) {
+export function itemCount(hero: HeroFacts, itemId: string) {
   return (
     (hero.inventory[itemId] ?? 0) +
     Object.values(readPlain(hero.weapons)).filter((weapon) => weapon.itemId === itemId).length +
@@ -353,16 +355,12 @@ export function addItem(hero: Hero, itemId: string, quantity: number, content: C
       hero.discoveredSkills.push(discovered);
   }
 }
-export function ownedDefinition(
-  hero: HeroSnapshot,
-  reference: OwnedItem,
-  content: ContentRegistry,
-) {
+export function ownedDefinition(hero: HeroFacts, reference: OwnedItem, content: ContentRegistry) {
   return content.item(
     'itemId' in reference ? reference.itemId : ownedEquipment(hero, reference).itemId,
   );
 }
-export function removableCount(hero: HeroSnapshot, reference: OwnedItem): number {
+export function removableCount(hero: HeroFacts, reference: OwnedItem): number {
   if ('weaponId' in reference)
     return hero.weapons[reference.weaponId] &&
       !hero.weapons[reference.weaponId].locked &&
@@ -525,7 +523,7 @@ export function rollLoot(enemyId: string, content: ContentRegistry, random: Game
 }
 export function applyHero(
   entity: Entity,
-  hero: HeroSnapshot,
+  hero: HeroFacts,
   content: ContentRegistry,
   effects: readonly { statusId: string; stacks: number }[] = [],
 ) {

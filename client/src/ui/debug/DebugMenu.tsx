@@ -121,7 +121,7 @@ export default function DebugMenu({
                       label={`+${amount.toLocaleString()} gold`}
                       disabled={!!reason}
                       onPress={() => {
-                        void host.debug({ type: 'ADD_GOLD', amount });
+                        void host.localHost?.debug({ type: 'ADD_GOLD', amount });
                       }}
                     />
                     {reason ? <Text className="text-sm text-muted">{reason}</Text> : null}
@@ -131,8 +131,8 @@ export default function DebugMenu({
               <ProgressionFeedback host={host} />
             </Tabs.Content>
             <Tabs.Content value="battle" className="min-h-24">
-              {tab === 'battle' && view.battle ? (
-                <BattleDebugInformation session={view.battle} />
+              {tab === 'battle' && host.localHost?.getSnapshot().battle ? (
+                <BattleDebugInformation session={host.localHost!.getSnapshot().battle!} />
               ) : null}
             </Tabs.Content>
           </Tabs>

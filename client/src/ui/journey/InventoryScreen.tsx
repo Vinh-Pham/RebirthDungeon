@@ -1,3 +1,4 @@
+import { gameHref } from '../navigation/gameHref';
 import ProgressionFeedback from '../skills/ProgressionFeedback';
 import { router } from 'expo-router';
 import { questItemNeeds } from '../../engine/rpg/Quests';
@@ -6,8 +7,8 @@ import { Input } from 'heroui-native/input';
 import { useMemo, useState, useSyncExternalStore } from 'react';
 import { Text, View } from 'react-native';
 import type { GameCommand } from '../../engine/commands';
-import type { JourneyHost } from '../../game/JourneyHost';
-import type { JourneySession } from '../../game/JourneySession';
+import type { GameplayHost as JourneyHost } from '../../game/Gameplay';
+import type { GameplayJourney as JourneySession } from '../../game/Gameplay';
 import { useCharacterGame } from '../menu/CharacterGameContext';
 import { MenuPage, menu } from '../menu/MenuUI';
 import { DungeonButton, DungeonCard, DungeonLoading, DungeonNotice } from '../shared/DungeonUI';
@@ -82,9 +83,9 @@ export function InventoryContent({
   const currentPage = inventoryPage(page, visible.length);
   const start = currentPage * INVENTORY_PAGE_SIZE;
   const disabled =
-    hosted.busy || !!hosted.battle || !!hosted.retryAvailable || !!view.state.pending;
+    hosted.busy || !!hosted.battle || !!hosted.retryAvailable || !!view.state.inEncounter;
   const hotbarDisabled = hosted.busy || !!hosted.retryAvailable || !hosted.storageAvailable;
-  const town = !view.state.dungeon && !view.state.pending && !!view.map.theme;
+  const town = !view.state.dungeon && !view.state.inEncounter && !!view.map.theme;
   const equippedWeapon = rows.find((row) => row.equipped && row.item.kind === 'weapon');
   const equippedArmor = rows.find((row) => row.equipped && row.item.kind === 'armor');
   const equippedArrows = rows.find((row) => row.equipped && row.item.kind === 'ammunition');
@@ -195,8 +196,8 @@ export function InventoryContent({
         ) : null}
         {view.state.dungeon ? (
           <Text className="text-muted" style={menu.body}>
-            Dungeon keys · Boss: {view.state.dungeon.bossKey.status} · Treasure:{' '}
-            {view.state.dungeon.treasureKey.status}
+            Dungeon keys · Boss: {view.state.dungeon.bossKey} · Treasure:{' '}
+            {view.state.dungeon.treasureKey}
           </Text>
         ) : null}
       </DungeonCard>
@@ -249,12 +250,7 @@ export function InventoryContent({
         )}
         <DungeonButton
           label="Quest journal"
-          onPress={() =>
-            router.navigate({
-              pathname: '/game/[characterId]/quests',
-              params: { characterId: profile.id },
-            })
-          }
+          onPress={() => router.navigate(gameHref(session.source, profile.id, 'quests'))}
         />
       </DungeonCard>
       <DungeonCard>

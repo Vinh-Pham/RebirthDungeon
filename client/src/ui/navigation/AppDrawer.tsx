@@ -10,6 +10,7 @@ import { useThemeColor } from 'heroui-native/hooks';
 import { Text, View, useWindowDimensions } from 'react-native';
 import { DungeonButton, DungeonNotice } from '../shared/DungeonUI';
 import { useAppNavigation } from './AppNavigationContext';
+import { gameHref } from './gameHref';
 import DrawerAccessibility from './DrawerAccessibility';
 
 const noSubscribe = () => () => {};
@@ -39,25 +40,13 @@ function AppDrawerContent(props: DrawerContentComponentProps) {
   ) => {
     if (!game || !ready) return;
     close();
-    router.navigate({
-      pathname:
-        destination === 'journey'
-          ? '/game/[characterId]'
-          : destination === 'codex'
-            ? '/game/[characterId]/explore'
-            : destination === 'logs'
-              ? '/game/[characterId]/logs'
-              : destination === 'titles'
-                ? '/game/[characterId]/titles'
-                : destination === 'quests'
-                  ? '/game/[characterId]/quests'
-                  : destination === 'skills'
-                    ? '/game/[characterId]/skills'
-                    : destination === 'inventory'
-                      ? '/game/[characterId]/inventory'
-                      : '/game/[characterId]/save-load',
-      params: { characterId: game.profile.id },
-    });
+    router.navigate(
+      gameHref(
+        game.host.source,
+        game.profile.id,
+        destination === 'journey' ? '' : destination === 'codex' ? 'explore' : destination,
+      ),
+    );
   };
   return (
     <DrawerAccessibility open={open} close={close}>
@@ -72,7 +61,10 @@ function AppDrawerContent(props: DrawerContentComponentProps) {
         <View className="gap-3">
           <DungeonButton
             label="Journey"
-            selected={!!game && path === `/game/${game.profile.id}`}
+            selected={
+              !!game &&
+              path === `${game.host.source === 'online' ? '/online' : ''}/game/${game.profile.id}`
+            }
             disabled={!ready}
             onPress={() => route('journey')}
           />
@@ -130,11 +122,22 @@ function AppDrawerContent(props: DrawerContentComponentProps) {
             disabled={!ready}
             onPress={() => route('logs')}
           />
+          {game?.host.source !== 'online' ? (
+            <DungeonButton
+              label="Save/Load"
+              selected={path.endsWith('/save-load')}
+              disabled={!ready}
+              onPress={() => route('save-load')}
+            />
+          ) : (
+            <Text className="text-sm text-muted">Online progress saves automatically.</Text>
+          )}
           <DungeonButton
-            label="Save/Load"
-            selected={path.endsWith('/save-load')}
-            disabled={!ready}
-            onPress={() => route('save-load')}
+            label="Account"
+            onPress={() => {
+              close();
+              router.navigate('/account');
+            }}
           />
           <DungeonButton
             label="Settings"

@@ -7,8 +7,8 @@ import {
   titleSelectionProblem,
   titleState,
 } from '../../engine/rpg/Titles';
-import type { JourneyHost } from '../../game/JourneyHost';
-import type { JourneySession } from '../../game/JourneySession';
+import type { GameplayHost as JourneyHost } from '../../game/Gameplay';
+import type { GameplayJourney as JourneySession } from '../../game/Gameplay';
 import { useCharacterGame } from '../menu/CharacterGameContext';
 import { MenuPage, menu } from '../menu/MenuUI';
 import { DungeonButton, DungeonCard, DungeonLoading, DungeonNotice } from '../shared/DungeonUI';
@@ -37,7 +37,7 @@ function TitleCollection({ host, session }: { host: JourneyHost; session: Journe
   const hero = view.state.hero,
     content = session.content;
   const selected = content.data.titles.find((t) => t.id === selectedId);
-  const town = !hosted.battle && !view.state.pending && !view.state.dungeon && !!view.map.theme;
+  const town = !hosted.battle && !view.state.inEncounter && !view.state.dungeon && !!view.map.theme;
   const busy = hosted.busy || !!hosted.retryAvailable;
   const entries = visibleTitles(hero, content.data.titles, search, slot, category);
   const knownSelected =

@@ -2,9 +2,9 @@ import { useMemo, useState, useSyncExternalStore } from 'react';
 import { FlatList, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { Skill } from '../../data/schemas/content';
-import type { HeroSnapshot } from '../../engine/rpg/Character';
-import type { JourneyHost } from '../../game/JourneyHost';
-import type { JourneySession } from '../../game/JourneySession';
+import type { HeroFacts } from '../../engine/rpg/Character';
+import type { GameplayHost as JourneyHost } from '../../game/Gameplay';
+import type { GameplayJourney as JourneySession } from '../../game/Gameplay';
 import { gameRank, rankUpReason, trainingPoints } from '../../engine/rpg/Skills';
 import { distance } from '../../engine/world/TileMap';
 import { useCharacterGame } from '../menu/CharacterGameContext';
@@ -40,7 +40,7 @@ function rankEffects(
     .filter(Boolean)
     .join(' · ');
 }
-function progressLabel(hero: HeroSnapshot, skill: Skill, town: boolean) {
+function progressLabel(hero: HeroFacts, skill: Skill, town: boolean) {
   const record = hero.learnedSkills[skill.id];
   if (skill.enemyOnly) return 'Enemy-only passive';
   if (!skill.gameRanks) return 'Not implemented';
@@ -83,7 +83,7 @@ function SkillJournal({ host, session }: { host: JourneyHost; session: JourneySe
   const [selectedId, setSelectedId] = useState<string>();
   const skills = useMemo(() => session.content.data.skills, [session]);
   const hero = view.state.hero,
-    town = !view.state.pending && !view.state.dungeon && !!view.map.theme;
+    town = !view.state.inEncounter && !view.state.dungeon && !!view.map.theme;
   const rows = skills.filter(
     (skill) =>
       filter === 'catalog' ||
@@ -196,7 +196,7 @@ function SkillDetails({
   );
   const hero = view.state.hero,
     record = hero.learnedSkills[skill.id];
-  const town = !view.state.pending && !view.state.dungeon && !!view.map.theme;
+  const town = !view.state.inEncounter && !view.state.dungeon && !!view.map.theme;
   const rank = skill.gameRanks?.[record?.rank ?? 'F'];
   const recipe = session.content.data.skillBookRecipes.find((r) => r.skillId === skill.id);
   const collection = recipe ? hero.bookCollections[recipe.id] : undefined;
@@ -210,7 +210,7 @@ function SkillDetails({
     rank?.objectives.reduce((total, o) => total + (pending[o.id] ?? 0) * o.points, 0) ?? 0;
   const disabled = hosted.busy || !!hosted.retryAvailable || !town;
   const weapon = hosted.battle
-    ? hosted.battle.engine.getEntity('player')?.weapon
+    ? hosted.battle.getActor('player')?.weapon
     : hero.equipment.weapon
       ? hero.weapons[hero.equipment.weapon]
       : undefined;

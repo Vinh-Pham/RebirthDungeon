@@ -1,9 +1,10 @@
+import { gameHref } from '../navigation/gameHref';
 import { router } from 'expo-router';
 import { useCharacterGame } from '../menu/CharacterGameContext';
 import { Tabs } from 'heroui-native/tabs';
 import { StyleSheet, Text } from 'react-native';
-import type { JourneyHost } from '../../game/JourneyHost';
-import type { JourneySession } from '../../game/JourneySession';
+import type { GameplayHost as JourneyHost } from '../../game/Gameplay';
+import type { GameplayJourney as JourneySession } from '../../game/Gameplay';
 import CharacterStatsDetails from '../shared/CharacterStatsDetails';
 import { DungeonButton, DungeonCard } from '../shared/DungeonUI';
 import KeyboardChoiceGroup from '../shared/KeyboardChoiceGroup';
@@ -68,21 +69,11 @@ export default function JourneyCharacterTabs({
           <CharacterStatsDetails host={host} session={session} profile={profile} />
           <DungeonButton
             label="Title collection"
-            onPress={() =>
-              router.navigate({
-                pathname: '/game/[characterId]/titles',
-                params: { characterId: profile.id },
-              })
-            }
+            onPress={() => router.navigate(gameHref(session.source, profile.id, 'titles'))}
           />
           <DungeonButton
             label="Skills journal"
-            onPress={() =>
-              router.navigate({
-                pathname: '/game/[characterId]/skills',
-                params: { characterId: profile.id },
-              })
-            }
+            onPress={() => router.navigate(gameHref(session.source, profile.id, 'skills'))}
           />
         </DungeonCard>
       </Tabs.Content>

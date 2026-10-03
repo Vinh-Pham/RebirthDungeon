@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { SkillRankSchema, type Skill } from '../../data/schemas/content';
 import type { ContentRegistry } from '../data/ContentRegistry';
 import type { Entity } from '../ecs/Entity';
-import type { Hero, HeroSnapshot } from './Character';
+import type { Hero, HeroSnapshot, HeroFacts } from './Character';
 import { produceState, type Draft } from '../immutableState';
 import { consumeItem } from './Inventory';
 import { cloneData } from '../cloneData';
@@ -93,7 +93,7 @@ export function trainingPoints(skill: Skill, record: LearnedSkills[string]) {
   );
 }
 export function rankUpReason(
-  hero: HeroSnapshot,
+  hero: HeroFacts,
   id: string,
   content: ContentRegistry,
 ): string | undefined {

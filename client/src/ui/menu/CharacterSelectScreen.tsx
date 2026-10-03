@@ -47,10 +47,10 @@ function CharacterSelectContent({ retry }: { retry(): void }) {
         REBIRTH DUNGEON
       </Text>
       <Text className="text-foreground" accessibilityRole="header" style={menu.title}>
-        Choose your character
+        Local characters
       </Text>
       <Text className="text-muted" style={menu.body}>
-        Continue a journey, or begin a new life.
+        Saved on this device. Play offline, or choose online characters for server progress.
       </Text>
       {loading ? (
         <DungeonLoading label="Loading characters" />
@@ -109,6 +109,11 @@ function CharacterSelectContent({ retry }: { retry(): void }) {
         </DungeonCard>
       )}
       <MenuButton label="Create New Character" onPress={() => router.push('/characters/new')} />
+      <MenuButton
+        label="Online characters"
+        secondary
+        onPress={() => router.navigate('/online/characters')}
+      />
       <MenuButton label="Back to Title" secondary onPress={() => router.navigate('/')} />
     </MenuPage>
   );

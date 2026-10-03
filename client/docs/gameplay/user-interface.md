@@ -2,6 +2,8 @@
 
 Updated **October 2, 2026**. The app uses Expo SDK 57, Expo Router, React Native, HeroUI, Uniwind and Skia/Reanimated presentation. Existing screens cover character selection/setup, exploration, combat, stats, inventory, save/load, transient action logs and sound settings. Skills, quests, titles and the town enchanting service are implemented. Aging and deliberate rebirth remain planned screens/services. The [game plan](../game-plan.md) owns delivery; this document owns interaction and mobile acceptance.
 
+Account registration/sign-in and separate online character creation are available from the title screen. Online routes under `/online/game/[characterId]` share the existing journals, service and battle screens through an authoritative public-view host. Their drawer omits Save/Load and debug controls; progression feedback offers explicit pending-action recovery and Rest resumes only on request after an interruption. Local routes and saves retain their existing behavior. See [online play](../online-play.md).
+
 ## 1. Composition and navigation
 
 Routes remain thin files under src/app. CharacterGameLayout owns one selected character's JourneyHost and provides CharacterGameContext; every feature view shares it. Routes, tabs, sheets and drawers do not create additional campaigns or award gameplay progress. Components/hooks live outside the route directory.

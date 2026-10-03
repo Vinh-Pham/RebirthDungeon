@@ -1,8 +1,8 @@
 import { useState, useSyncExternalStore } from 'react';
 import { Text, View } from 'react-native';
 import type { QuestDefinition } from '../../data/schemas/quests';
-import type { JourneyHost } from '../../game/JourneyHost';
-import type { JourneySession } from '../../game/JourneySession';
+import type { GameplayHost as JourneyHost } from '../../game/Gameplay';
+import type { GameplayJourney as JourneySession } from '../../game/Gameplay';
 import { useCharacterGame } from '../menu/CharacterGameContext';
 import { MenuPage, menu } from '../menu/MenuUI';
 import { DungeonButton, DungeonCard, DungeonLoading, DungeonNotice } from '../shared/DungeonUI';
@@ -29,7 +29,7 @@ function QuestJournal({ host, session }: { host: JourneyHost; session: JourneySe
   const hero = view.state.hero,
     content = session.content;
   const selected = content.data.quests.find((q) => q.id === selectedId);
-  const readOnly = !!hosted.battle || !!view.state.pending;
+  const readOnly = !!hosted.battle || !!view.state.inEncounter;
   return (
     <MenuPage>
       {selected ? (

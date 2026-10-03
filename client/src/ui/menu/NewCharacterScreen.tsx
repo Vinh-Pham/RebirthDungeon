@@ -29,8 +29,17 @@ export default function NewCharacterScreen() {
   const [attempt, setAttempt] = useState(0);
   return <NewCharacterForm key={attempt} retry={() => setAttempt((value) => value + 1)} />;
 }
-function NewCharacterForm({ retry }: { retry(): void }) {
-  const { importId } = useLocalSearchParams<{ importId?: string }>();
+export function NewCharacterForm({
+  retry,
+  create,
+  blocked = false,
+}: {
+  retry(): void;
+  create?: (details: CharacterDetails) => Promise<void>;
+  blocked?: boolean;
+}) {
+  const params = useLocalSearchParams<{ importId?: string }>();
+  const importId = create ? undefined : params.importId;
   const [name, setName] = useState('');
   const [nameTouched, setNameTouched] = useState(false);
   const [talent, setTalent] = useState<CharacterDetails['talent']>();
@@ -73,7 +82,7 @@ function NewCharacterForm({ retry }: { retry(): void }) {
   const nameError =
     nameTouched && !nameValidation.success ? nameValidation.error.issues[0]?.message : undefined;
   async function submit() {
-    if (submitting.current || !ready) return;
+    if (submitting.current || !ready || blocked) return;
     const result = CharacterDetailsSchema.safeParse({ name, talent, age });
     if (!result.success) {
       setError('Enter a name, choose a talent, and select an age from 10 to 17.');
@@ -83,6 +92,10 @@ function NewCharacterForm({ retry }: { retry(): void }) {
     setBusy(true);
     setError(undefined);
     try {
+      if (create) {
+        await create(result.data);
+        return;
+      }
       const profile = await withCharacters((repository) =>
         importId
           ? repository.completeImport(importId, result.data)
@@ -113,7 +126,9 @@ function NewCharacterForm({ retry }: { retry(): void }) {
       <Text className="text-muted" style={menu.body}>
         {importId
           ? 'Complete your character details to continue your saved journey.'
-          : 'Who will answer the dungeon’s call?'}
+          : create
+            ? 'A fresh online journey. A connection is required to progress.'
+            : 'Who will answer the dungeon’s call?'}
       </Text>
       {!ready ? (
         <View style={menu.section}>
@@ -224,7 +239,7 @@ function NewCharacterForm({ retry }: { retry(): void }) {
           <MenuButton
             label={busy ? 'Saving Character…' : importId ? 'Save Character' : 'Create Character'}
             busy={busy}
-            disabled={!valid}
+            disabled={!valid || blocked}
             onPress={() => {
               void submit();
             }}
@@ -235,7 +250,7 @@ function NewCharacterForm({ retry }: { retry(): void }) {
         label="Cancel"
         secondary
         disabled={busy}
-        onPress={() => router.dismissTo('/characters')}
+        onPress={() => router.dismissTo(create ? '/online/characters' : '/characters')}
       />
     </MenuPage>
   );

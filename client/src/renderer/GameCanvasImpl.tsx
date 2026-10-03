@@ -12,7 +12,7 @@ import {
 } from 'react-native-reanimated';
 import type { SpriteAtlas } from '../data/schemas/content';
 import type { PresentationBatch } from './animations/PresentationQueue';
-import type { BattleSession } from '../game/BattleSession';
+import type { GameplayBattle as BattleSession } from '../game/Gameplay';
 import { TileRenderer } from './TileRenderer';
 import { SpriteRenderer } from './SpriteRenderer';
 import { ParticleRenderer } from './ParticleRenderer';
@@ -94,7 +94,7 @@ export default function GameCanvas({
         .maxDistance(11)
         .runOnJS(true)
         .onBegin(() => {
-          const count = session.combat.completedActions;
+          const count = session.getSnapshot().actionCount;
           gestureCount.set(inputEnabled && session.canAcceptPlayerInput(count) ? count : -1);
           gestureAction.set(actionKey);
         })

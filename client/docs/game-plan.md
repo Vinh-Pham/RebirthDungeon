@@ -1,6 +1,8 @@
 # Rebirth Dungeon: React Native Game Plan
 
-Updated **October 2, 2026**. Target: **Expo SDK 57, React Native 0.86, React 19, TypeScript**, with a portrait, mobile-first experience on iOS and Android and a compatible web build. The repository already implements exploration, turn-based encounters, equipment, character growth, local saves, and audio. This document describes that baseline and the next work; a planned feature is not an implementation claim.
+Updated **October 3, 2026**. Target: **Expo SDK 57, React Native 0.86, React 19, TypeScript**, with a portrait, mobile-first experience on iOS and Android and a compatible web build. The repository already implements exploration, turn-based encounters, equipment, character growth, local saves, and audio. This document describes that baseline and the next work; a planned feature is not an implementation claim.
+
+The app also supports optional account authentication and separate server-owned online characters. Shared read-only gameplay ports preserve local saves while online actions commit through React Query and recover exact pending requests. See [online play](online-play.md) for setup, ownership, battle resume, and validation. Online characters do not use the local encounter-entry rewind described below.
 
 ## 1. Documentation map
 

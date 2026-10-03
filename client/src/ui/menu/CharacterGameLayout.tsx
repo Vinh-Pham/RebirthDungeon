@@ -16,6 +16,7 @@ import { useAudio } from '../../audio/AudioProvider';
 import { useAppNavigation } from '../navigation/AppNavigationContext';
 import { DungeonLoading } from '../shared/DungeonUI';
 import { loadGameContent } from '../../data/content';
+import { LocalGameplayHost } from '../../game/LocalGameplayHost';
 import { JourneyHost } from '../../game/JourneyHost';
 import { createSaveStorage } from '../../persistence/createSaveStorage';
 import { withCharacters } from '../../persistence/characters';
@@ -108,7 +109,7 @@ function GameSession({ profile, retry }: { profile: CompleteCharacter; retry(): 
     (open: boolean) => setDebugMenu({ path, blocked: debugBlocked, open }),
     [path, debugBlocked],
   );
-  const [host] = useState(
+  const [localHost] = useState(
     () =>
       new JourneyHost(
         loadGameContent(),
@@ -129,6 +130,7 @@ function GameSession({ profile, retry }: { profile: CompleteCharacter; retry(): 
         },
       ),
   );
+  const [host] = useState(() => new LocalGameplayHost(localHost, profile.id));
   const snapshot = useSyncExternalStore(host.subscribe, host.getSnapshot, host.getServerSnapshot);
   const ready = !!snapshot.session;
   const lastLoggedPath = useRef<string | undefined>(undefined);

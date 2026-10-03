@@ -2,7 +2,7 @@ import type { BattleAction } from '../../engine/battle/BattleMachine';
 import type { Skill } from '../../data/schemas/content';
 import type { GrowthTalent } from '../../engine/rpg/Stats';
 import { skillEquipmentReason, skillForEntity } from '../../engine/rpg/Skills';
-import type { BattleSession } from '../../game/BattleSession';
+import type { GameplayBattle as BattleSession } from '../../game/Gameplay';
 import { prepareBattleItem } from '../../engine/rpg/Consumables';
 import { prepareBasicAttack } from '../../engine/battle/BasicAttack';
 
@@ -27,7 +27,10 @@ export interface BattleHotbarAction {
 }
 
 export function battleHotbarItems(session: BattleSession) {
-  const source = session.engine.world.entities.find((entity) => entity.player);
+  const source = session
+    .getSnapshot()
+    .entities.map((e) => session.getActor(e.id)!)
+    .find((entity) => entity.player);
   return (source?.itemHotbar ?? []).map((itemId) => {
     const item = session.content.item(itemId);
     try {
@@ -52,7 +55,7 @@ export function battleHotbarActions(
   category: BattleSkillCategory,
 ): BattleHotbarAction[] {
   if (category === 'items') return [];
-  const source = session.engine.getEntity(session.getSnapshot().turnId ?? '');
+  const source = session.getActor(session.getSnapshot().turnId ?? '');
   if (!source) return [];
   const basic =
     category === 'combat'
@@ -101,7 +104,7 @@ export function battleHotbarActions(
 }
 
 export function battleSkills(session: BattleSession) {
-  const source = session.engine.getEntity(session.getSnapshot().turnId ?? '');
+  const source = session.getActor(session.getSnapshot().turnId ?? '');
   if (!source) return [];
   return (source.skills ?? [])
     .filter((id) => session.content.skill(id).battleUsable !== false)
@@ -111,8 +114,8 @@ export function battleSkills(session: BattleSession) {
 /** Read the engine's target-aware previews without selecting or resolving an action. */
 export function battleActionDetails(session: BattleSession, action: BattleAction) {
   const sourceId = session.getSnapshot().turnId;
-  const source = sourceId ? session.engine.getEntity(sourceId) : undefined;
-  type Preview = ReturnType<BattleSession['combat']['previewSkill']>;
+  const source = sourceId ? session.getActor(sourceId) : undefined;
+  type Preview = ReturnType<BattleSession['previewSkill']>;
   const previews: Preview[] = [];
   const failures: { targetId: string; reason: string }[] = [];
   if (!source || !sourceId) return { previews, failures, unavailableReason: 'Wait for your turn.' };
@@ -128,13 +131,26 @@ export function battleActionDetails(session: BattleSession, action: BattleAction
           equipmentReason ?? `Cooldown: ${cooldown} ${cooldown === 1 ? 'turn' : 'turns'}`,
       };
   }
-  const targets = session.battle.validTargetIds(action);
+  if (session.availability) {
+    const server = session.availability.find(
+      (a) =>
+        a.action.action === action.action &&
+        ('skillId' in a.action ? a.action.skillId : undefined) === action.skillId &&
+        ('itemId' in a.action ? a.action.itemId : undefined) === action.itemId,
+    );
+    return {
+      previews: server?.previews ?? [],
+      failures,
+      unavailableReason: server?.reason ?? (!server ? 'Action unavailable.' : undefined),
+    };
+  }
+  const targets = session.validTargetIds(action);
   for (const targetId of targets) {
     try {
       const preview =
         action.action === 'skill'
-          ? session.combat.previewSkill(sourceId, targetId, action.skillId!)
-          : session.combat.previewBasic(sourceId, targetId);
+          ? session.previewSkill(sourceId, targetId, action.skillId!)
+          : session.previewBasic(sourceId, targetId);
       previews.push(preview);
       if (preview.area) break;
     } catch (error) {

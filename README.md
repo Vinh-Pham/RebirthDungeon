@@ -30,6 +30,8 @@ Then initialize local D1:
 pnpm db:setup
 ```
 
+To connect the Expo app, copy `client/.env.example` to `client/.env.local` when absent and configure `EXPO_PUBLIC_API_URL`. See [online play setup](client/docs/online-play.md) for native LAN URLs, approved browser origins, and separate local/online characters.
+
 ## Run the apps
 
 | Command                    | Runs                                      |

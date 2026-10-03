@@ -1,12 +1,12 @@
 import type { QuestCondition, QuestDefinition } from '../../data/schemas/quests';
 import type { ContentRegistry } from '../../engine/data/ContentRegistry';
-import type { HeroSnapshot } from '../../engine/rpg/Character';
+import type { HeroFacts } from '../../engine/rpg/Character';
 import { questReady } from '../../engine/rpg/Quests';
-import type { JourneyView } from '../../game/JourneySession';
+import type { JourneyObservation as JourneyView } from '../../game/Gameplay';
 import { distance } from '../../engine/world/TileMap';
 
 export const categoryLabel = { mainstream: 'Story', sidequest: 'Town requests', skill: 'Skills' };
-export function questStatus(hero: HeroSnapshot, quest: QuestDefinition) {
+export function questStatus(hero: HeroFacts, quest: QuestDefinition) {
   const record = hero.quests[quest.id];
   return !record
     ? 'Locked'
@@ -23,8 +23,19 @@ export function npcLabel(content: ContentRegistry, npc?: { worldId: string; obje
   const object = world?.objects.find((o) => o.id === npc?.objectId);
   return object ? `${object.name} · ${world!.name}` : 'town';
 }
-export function questNpcOpen(view: JourneyView, npc?: { worldId: string; objectId: string }) {
-  if (view.state.pending || view.state.dungeon || !view.map.theme) return false;
+export function questNpcOpen(
+  view: Pick<JourneyView, 'map' | 'activeService'> & {
+    state: {
+      position: Readonly<{ x: number; y: number }>;
+      dungeon?: unknown;
+      inEncounter?: boolean;
+      pending?: unknown;
+    };
+  },
+  npc?: { worldId: string; objectId: string },
+) {
+  if (view.state.inEncounter || view.state.pending || view.state.dungeon || !view.map.theme)
+    return false;
   if (!npc) return true;
   const object = view.map.objects.find((o) => o.id === npc.objectId);
   return (

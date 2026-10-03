@@ -13,6 +13,7 @@ import { loadGameContent } from '../../data/content';
 import type { BattleAction } from '../../engine/battle/BattleMachine';
 import type { GameCommand } from '../../engine/commands';
 import { BattleHost } from '../../game/BattleHost';
+import type { GameplayBattle } from '../../game/Gameplay';
 import { BattleSession, type BattleView as BattleSnapshot } from '../../game/BattleSession';
 import GameCanvas from '../../renderer/GameCanvas';
 import { DungeonButton as Button, DungeonLoading, DungeonNotice } from '../shared/DungeonUI';
@@ -65,7 +66,7 @@ export function BattleView({
   victoryContent,
   hideCharacterResources = false,
 }: {
-  session: BattleSession;
+  session: GameplayBattle;
   restart(): void;
   finishedLabel?: string;
   busy?: boolean;
@@ -135,7 +136,7 @@ export function BattleView({
   }
   const action: BattleAction = view.selectedAction ?? { action: 'attack' };
   const inputEnabled = canChoose && !inspected && !!view.selectedAction;
-  const targetIds = inputEnabled ? session.battle.validTargetIds(action) : [];
+  const targetIds = inputEnabled ? session.validTargetIds(action) : [];
   function execute(targetId: string, expectedActionCount = view.actionCount) {
     if (!inputEnabled) return;
     if (attempt(() => session.executePlayerAction(action, targetId, expectedActionCount)))
@@ -192,9 +193,7 @@ export function BattleView({
                 />
               </View>
             )}
-            {error || session.battle.context.error ? (
-              <DungeonNotice message={error ?? session.battle.context.error} />
-            ) : null}
+            {error || session.error ? <DungeonNotice message={error ?? session.error} /> : null}
           </View>
           <View className="border-border" style={styles.roster}>
             {view.entities
@@ -267,7 +266,7 @@ export function BattleView({
                       ) : null}
                     </View>
                   ) : null}
-                  {(session.engine.getEntity(entity.id)?.statuses ?? []).map((status) => (
+                  {(session.getActor(entity.id)?.statuses ?? []).map((status) => (
                     <Text className="text-muted" key={status.id} style={styles.resource}>
                       {session.content.status(status.id).name} · {status.remainingTurns} turns
                     </Text>
@@ -311,7 +310,7 @@ function BattleActions({
   selectAction,
   cancel,
 }: {
-  session: BattleSession;
+  session: GameplayBattle;
   view: BattleSnapshot;
   canChoose: boolean;
   inspected?: string;

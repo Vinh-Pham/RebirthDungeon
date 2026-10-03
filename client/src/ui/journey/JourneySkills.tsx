@@ -1,10 +1,11 @@
+import { gameHref } from '../navigation/gameHref';
 import { router } from 'expo-router';
 import { ProgressBar } from 'heroui-native-pro/progress-bar';
 import { Tabs } from 'heroui-native/tabs';
 import { useState, useSyncExternalStore } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { gameRank, rankUpReason, trainingPoints } from '../../engine/rpg/Skills';
-import type { JourneySession } from '../../game/JourneySession';
+import type { GameplayJourney as JourneySession } from '../../game/Gameplay';
 import { useCharacterGame } from '../menu/CharacterGameContext';
 import GameImage from '../shared/GameImage';
 import { DungeonButton, DungeonCard } from '../shared/DungeonUI';
@@ -23,7 +24,7 @@ export default function JourneySkills({ session }: { session: JourneySession }) 
   const hero = state.hero;
   const skills = session.content.data.skills.filter((skill) => !!hero.learnedSkills[skill.id]);
   const categorySkills = skills.filter((skill) => (skill.category ?? 'combat') === category);
-  const town = !state.pending && !state.dungeon && !!map.theme;
+  const town = !state.inEncounter && !state.dungeon && !!map.theme;
 
   return (
     <View className="gap-3">
@@ -40,12 +41,7 @@ export default function JourneySkills({ session }: { session: JourneySession }) 
         </Text>
         <DungeonButton
           label="Open skills journal"
-          onPress={() =>
-            router.navigate({
-              pathname: '/game/[characterId]/skills',
-              params: { characterId: profile.id },
-            })
-          }
+          onPress={() => router.navigate(gameHref(session.source, profile.id, 'skills'))}
         />
       </DungeonCard>
       <ProgressionFeedback host={host} showNotice={false} />

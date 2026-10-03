@@ -1,6 +1,7 @@
+import { gameHref } from '../navigation/gameHref';
 import { router } from 'expo-router';
 import { Text } from 'react-native';
-import type { JourneySession } from '../../game/JourneySession';
+import type { GameplayJourney as JourneySession } from '../../game/Gameplay';
 import { objectiveProgress, questStage } from '../../engine/rpg/Quests';
 import { useCharacterGame } from '../menu/CharacterGameContext';
 import { menu } from '../menu/MenuUI';
@@ -37,12 +38,7 @@ export default function QuestTracker({ session }: { session: JourneySession }) {
       <DungeonButton
         label={`Quest journal · More${Math.max(0, objectiveCount - hero.trackedObjectives.length) ? ` (${objectiveCount - hero.trackedObjectives.length})` : ''}`}
         detail={`${active.length} active quests · ${available} available`}
-        onPress={() =>
-          router.navigate({
-            pathname: '/game/[characterId]/quests',
-            params: { characterId: profile.id },
-          })
-        }
+        onPress={() => router.navigate(gameHref(session.source, profile.id, 'quests'))}
       />
     </DungeonCard>
   );

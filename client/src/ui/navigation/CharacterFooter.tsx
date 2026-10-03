@@ -3,7 +3,7 @@ import { DrawerActions } from 'expo-router/react-navigation';
 import { useSyncExternalStore } from 'react';
 import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { JourneySession } from '../../game/JourneySession';
+import type { GameplayJourney as JourneySession } from '../../game/Gameplay';
 import { DungeonButton } from '../shared/DungeonUI';
 import ResourceBar from '../shared/ResourceBar';
 import { useCharacterStatus } from '../shared/useCharacterStatus';

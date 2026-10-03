@@ -1,3 +1,8 @@
+import { worldObjectSprite } from '../game/WorldObjectArt';
+import { PresentationCollector } from '../game/PresentationCollector';
+import { battleAvailability } from './BattleAvailability';
+import { bossCleared, remainingEnemies, inRoom } from '../engine/dungeon/Dungeon';
+import type { ResolvedPresentation } from './Contracts';
 import { createGameRandom } from '../engine/Random';
 import { cloneData } from '../engine/cloneData';
 import { loadGameContent } from '../data/content';
@@ -32,7 +37,7 @@ export interface OnlineState {
 }
 export interface Execution {
   state: OnlineState;
-  outcome: { message: string; events: string[] };
+  outcome: { message: string; events: string[]; presentation?: ResolvedPresentation };
 }
 function open(state: OnlineState, name: string) {
   const journey = new JourneySession(gameContent, cloneData(state.campaign), undefined, name);
@@ -97,7 +102,15 @@ export function execute(
   let battle = restored;
   const events: string[] = [];
   const cleanup = journey.engine.events.subscribe((event) => events.push(event.type));
-  let battleCleanup = battle?.engine.events.subscribe((event) => events.push(event.type));
+  const fromActionSequence = battle?.combat.completedActions ?? 0;
+  let collector = battle
+    ? new PresentationCollector((id) => battle?.engine.getEntity(id)?.health)
+    : undefined;
+  const observeBattle = (event: import('../engine/events').GameEvent) => {
+    events.push(event.type);
+    collector?.accept(event);
+  };
+  let battleCleanup = battle?.engine.events.subscribe(observeBattle);
   const context = { ...state.context };
   let rewards = state.rewards ? cloneData(state.rewards) : undefined;
   try {
@@ -155,6 +168,8 @@ export function execute(
           revision: journey.getSnapshot().revision,
         });
       } else if (command.type === 'MOVE') journey.dispatch({ ...command, entityId: 'player' });
+      else if (command.type === 'USE_ITEM')
+        journey.dispatch({ ...command, sourceId: 'player', targetId: 'player' });
       else journey.dispatch(command);
       if (command.type === 'SET_ITEM_HOTBAR' && battle)
         battle.setItemHotbar(journey.toSave().hero.itemHotbar);
@@ -168,7 +183,8 @@ export function execute(
       }
       if (!battle && journey.toSave().pending) {
         battle = journey.createBattle();
-        battleCleanup = battle.engine.events.subscribe((event) => events.push(event.type));
+        collector = new PresentationCollector((id) => battle?.engine.getEntity(id)?.health);
+        battleCleanup = battle.engine.events.subscribe(observeBattle);
         battle.advanceEnemyTurns();
       }
     }
@@ -188,6 +204,17 @@ export function execute(
       outcome: {
         message: battle ? (battle.combat.result ?? 'Battle action committed') : view.message,
         events: [...new Set(events)].slice(0, 100),
+        ...(battle && collector?.batches.length
+          ? {
+              presentation: {
+                version: 1 as const,
+                encounterId: `encounter:${candidate.campaign.encounterCount}`,
+                fromActionSequence,
+                toActionSequence: battle.combat.completedActions,
+                batches: collector.batches,
+              },
+            }
+          : {}),
       },
     };
   } finally {
@@ -230,7 +257,10 @@ export function publicView(state: OnlineState, character: CharacterMetadata) {
     if (run) {
       map.id = `dungeon:${character.id}`;
       map.objects = map.objects.map((object) => {
-        const copy = { ...object };
+        const copy = {
+          ...object,
+          sprite: worldObjectSprite(object, gameContent.data, run, journey.isClaimed(object.id)),
+        };
         delete copy.encounterMap;
         if (copy.kind === 'encounter') copy.encounterMap = 'unrevealed';
         if (copy.kind === 'finalChest' || copy.kind === 'chest') {
@@ -252,12 +282,23 @@ export function publicView(state: OnlineState, character: CharacterMetadata) {
       cleared: state.campaign.cleared,
       activeService: view.activeService,
       resting: view.resting,
+      claimedObjectIds: map.objects
+        .filter((object) => journey.isClaimed(object.id))
+        .map((object) => object.id),
       ...(run
         ? {
             dungeon: {
               definitionId: run.blueprint.definitionId,
               bossDoorOpened: run.bossDoorOpened,
               selectedChest: run.selectedChest,
+              currentRoomKind: (() => {
+                const room = run.blueprint.rooms.find((room) =>
+                  inRoom(room, state.campaign.position),
+                );
+                return room?.kind === 'mimic' ? 'chest' : (room?.kind ?? 'corridor');
+              })(),
+              remainingEnemies: remainingEnemies(run),
+              bossCleared: bossCleared(run),
               effects: run.effects,
               bossKey: run.bossKey.status,
               treasureKey: run.treasureKey.status,
@@ -267,7 +308,7 @@ export function publicView(state: OnlineState, character: CharacterMetadata) {
       ...(battle
         ? {
             encounter: {
-              id: `${character.id}:encounter:${state.campaign.encounterCount}`,
+              id: `encounter:${state.campaign.encounterCount}`,
               phase: battle.battle.phase,
               map: run ? { ...battle.map, id: `${character.id}:battle` } : battle.map,
               actionSequence: battle.combat.completedActions,
@@ -294,6 +335,7 @@ export function publicView(state: OnlineState, character: CharacterMetadata) {
                 itemHotbar: entity.itemHotbar ?? [],
                 position: entity.position,
               })),
+              actions: battleAvailability(battle),
               rewards: state.rewards?.loot,
             },
           }

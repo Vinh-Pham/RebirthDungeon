@@ -3,8 +3,9 @@ import EnchantServicePanel from './EnchantServicePanel';
 import { DungeonButton as Button, DungeonCard } from '../shared/DungeonUI';
 import { useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import type { JourneySession } from '../../game/JourneySession';
-import type { GameCommand, ProgressionCommand } from '../../engine/commands';
+import type { GameplayJourney as JourneySession } from '../../game/Gameplay';
+import type { GameplayProgressionCommand as ProgressionCommand } from '../../game/Gameplay';
+import type { GameCommand } from '../../engine/commands';
 import {
   heroStats,
   itemCount,

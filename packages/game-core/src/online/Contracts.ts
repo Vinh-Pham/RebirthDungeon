@@ -31,6 +31,7 @@ export const CommandSchema = z.discriminatedUnion('type', [
   z.strictObject({ ...type('TRAVEL_TO'), x: integer, y: integer }),
   z.strictObject({ ...type('INTERACT'), objectId: id }),
   z.strictObject(type('CLOSE_SERVICE')),
+  z.strictObject({ ...type('USE_ITEM'), itemId: id }),
   z.strictObject(type('EXIT_DUNGEON')),
   z.strictObject(type('START_REST')),
   z.strictObject(type('STOP_REST')),
@@ -101,13 +102,75 @@ export const MetadataSchema = CharacterDetailsSchema.extend({
   createdAt: integer,
   updatedAt: integer,
 });
+export const PresentationBatchSchema = z.strictObject({
+  id: integer,
+  sourceId: id,
+  targetId: id,
+  animation: z.enum(['attack', 'skill', 'defend']),
+  skillId: id.optional(),
+  impacts: z
+    .array(
+      z.strictObject({
+        targetId: id,
+        amount: integer,
+        healing: z.boolean(),
+        critical: z.boolean(),
+        healthAfter: integer,
+        maxHealth: integer,
+      }),
+    )
+    .max(64),
+  deaths: z.array(id).max(64),
+  missed: z.boolean(),
+});
+export const ResolvedPresentationSchema = z.strictObject({
+  version: z.literal(1),
+  encounterId: id,
+  fromActionSequence: integer,
+  toActionSequence: integer,
+  batches: z.array(PresentationBatchSchema).max(512),
+});
+export type ResolvedPresentation = z.infer<typeof ResolvedPresentationSchema>;
+export const BattlePreviewSchema = z.strictObject({
+  healing: z.boolean(),
+  area: z.boolean(),
+  manaCost: integer,
+  staminaCost: integer,
+  ammunitionCost: integer.optional(),
+  fallbackReason: z.string().optional(),
+  targets: z
+    .array(
+      z.strictObject({
+        targetId: id,
+        min: integer,
+        max: integer,
+        criticalMin: integer,
+        criticalMax: integer,
+        hitChance: z.number().min(0).max(1),
+        criticalChance: z.number().min(0).max(1),
+        balance: z.number().min(0).max(1).optional(),
+      }),
+    )
+    .max(64),
+});
+export const BattleAvailabilitySchema = z.strictObject({
+  action: BattleActionSchema,
+  targets: z.array(id).max(64),
+  reason: z.string().optional(),
+  previews: z.array(BattlePreviewSchema).max(64),
+});
+export type BattleAvailability = z.infer<typeof BattleAvailabilitySchema>;
 export const ReceiptSchema = z.strictObject({
   commandId: z.string().uuid(),
   characterId: id,
   baseRevision: integer,
   committedRevision: integer,
   createdAt: integer,
-  outcome: z.strictObject({ message: z.string(), events: z.array(z.string()).max(100) }),
+  outcome: z.strictObject({
+    message: z.string(),
+    events: z.array(z.string()).max(100),
+    presentation: ResolvedPresentationSchema.optional(),
+  }),
 });
 // Public hero state deliberately excludes the private enchant RNG and operation counter.
 export const PublicHeroSchema = HeroSchema.omit({ enchanting: true });
@@ -122,27 +185,23 @@ export const DerivedCombatStatsSchema = z.strictObject({
   attack: integer,
   defense: integer,
   speed: integer,
-  ...Object.fromEntries(
-    [
-      'minDamage',
-      'maxDamage',
-      'balance',
-      'magicAttack',
-      'magicDefense',
-      'protection',
-      'magicProtection',
-      'magicBalance',
-      'criticalRating',
-      'magicCriticalChance',
-      'minInjury',
-      'maxInjury',
-      'armorPierce',
-      'hitChance',
-      'evasion',
-      'criticalChance',
-      'criticalMultiplier',
-    ].map((key) => [key, z.number().finite().nonnegative().optional()]),
-  ),
+  minDamage: z.number().finite().nonnegative().optional(),
+  maxDamage: z.number().finite().nonnegative().optional(),
+  balance: z.number().finite().nonnegative().optional(),
+  magicAttack: z.number().finite().nonnegative().optional(),
+  magicDefense: z.number().finite().nonnegative().optional(),
+  protection: z.number().finite().nonnegative().optional(),
+  magicProtection: z.number().finite().nonnegative().optional(),
+  magicBalance: z.number().finite().nonnegative().optional(),
+  criticalRating: z.number().finite().nonnegative().optional(),
+  magicCriticalChance: z.number().finite().nonnegative().optional(),
+  minInjury: z.number().finite().nonnegative().optional(),
+  maxInjury: z.number().finite().nonnegative().optional(),
+  armorPierce: z.number().finite().nonnegative().optional(),
+  hitChance: z.number().finite().nonnegative().optional(),
+  evasion: z.number().finite().nonnegative().optional(),
+  criticalChance: z.number().finite().nonnegative().optional(),
+  criticalMultiplier: z.number().finite().nonnegative().optional(),
 });
 export const CharacterStatsSchema = z.strictObject({
   base: attributes,
@@ -243,11 +302,15 @@ export const PublicViewSchema = z.strictObject({
   cleared: z.array(id),
   activeService: id.optional(),
   resting: z.boolean(),
+  claimedObjectIds: z.array(id).default([]),
   dungeon: z
     .strictObject({
       definitionId: id,
       bossDoorOpened: z.boolean(),
       selectedChest: id.optional(),
+      currentRoomKind: z.string(),
+      remainingEnemies: integer,
+      bossCleared: z.boolean(),
       effects: z.array(z.strictObject({ statusId: id, stacks: integer })),
       bossKey: z.enum(['absent', 'dropped', 'held', 'spent']),
       treasureKey: z.enum(['absent', 'dropped', 'held', 'spent']),
@@ -261,6 +324,7 @@ export const PublicViewSchema = z.strictObject({
       actionSequence: integer,
       turnId: id.optional(),
       actors: z.array(PublicActorSchema),
+      actions: z.array(BattleAvailabilitySchema).max(128),
       rewards: LootSchema.optional(),
     })
     .optional(),

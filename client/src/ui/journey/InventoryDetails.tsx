@@ -1,3 +1,5 @@
+import { gameHref } from '../navigation/gameHref';
+import { useGameplayPreview } from '../../hooks/useGameplayPreview';
 import { useState } from 'react';
 import EquipmentEnchants, { enchantStatLabel } from './EquipmentEnchants';
 import { router } from 'expo-router';
@@ -7,14 +9,13 @@ import {
   heroStats,
   itemCount,
   ownedEquipment,
-  previewEquipment,
   removableCount,
-  type HeroSnapshot,
+  type HeroFacts,
 } from '../../engine/rpg/Character';
 import { consumableRecovery } from '../../engine/rpg/Consumables';
 import type { CharacterReview } from '../../game/BattleSession';
-import type { JourneyHost } from '../../game/JourneyHost';
-import type { JourneySession } from '../../game/JourneySession';
+import type { GameplayHost as JourneyHost } from '../../game/Gameplay';
+import type { GameplayJourney as JourneySession } from '../../game/Gameplay';
 import { menu } from '../menu/MenuUI';
 import { DungeonButton, DungeonCard, DungeonNotice } from '../shared/DungeonUI';
 import type { InventoryRow } from './inventoryRows';
@@ -34,7 +35,7 @@ export default function InventoryDetails({
   dispatch,
 }: {
   row: InventoryRow;
-  hero: HeroSnapshot;
+  hero: HeroFacts;
   host: JourneyHost;
   session: JourneySession;
   characterId: string;
@@ -64,18 +65,22 @@ export default function InventoryDetails({
   const equippedWeapon = hero.equipment.weapon ? hero.weapons[hero.equipment.weapon] : undefined;
   const hasBow =
     !!equippedWeapon && session.content.item(equippedWeapon.itemId).weaponTags.includes('bow');
-  const comparison =
+  const preview = useGameplayPreview(
+    session,
     !review && (['weapon', 'armor'].includes(item.kind) || (item.kind === 'ammunition' && hasBow))
-      ? previewEquipment(hero, row.equipped ? { slot } : row.reference, session.content, effects)
-      : undefined;
-  const openJournal = () =>
-    router.navigate({ pathname: '/game/[characterId]/skills', params: { characterId } });
+      ? { type: 'EQUIPMENT', item: row.equipped ? { slot } : row.reference }
+      : undefined,
+    !disabled,
+  );
+  const comparison = preview.data?.preview.type === 'EQUIPMENT' ? preview.data.preview : undefined;
+  const openJournal = () => router.navigate(gameHref(session.source, characterId, 'skills'));
   const needs = questItemNeeds(hero, session.content, item.id);
   const [dropQuantity, setDropQuantity] = useState(1);
   const droppable = removableCount(hero, row.reference);
   const count = Math.max(1, Math.min(dropQuantity, droppable));
   return (
     <View className="gap-3">
+      <DungeonNotice message={preview.error?.message} />
       <View className="gap-3">
         <Text className="text-muted" style={menu.body}>
           {item.description}
@@ -311,9 +316,7 @@ export default function InventoryDetails({
             ) : null}
             <DungeonButton
               label="View title collection"
-              onPress={() =>
-                router.navigate({ pathname: '/game/[characterId]/titles', params: { characterId } })
-              }
+              onPress={() => router.navigate(gameHref(session.source, characterId, 'titles'))}
             />
           </>
         ) : null}
@@ -368,9 +371,7 @@ export default function InventoryDetails({
           </Text>
           <DungeonButton
             label="View quest journal"
-            onPress={() =>
-              router.navigate({ pathname: '/game/[characterId]/quests', params: { characterId } })
-            }
+            onPress={() => router.navigate(gameHref(session.source, characterId, 'quests'))}
           />
         </DungeonCard>
       ) : null}

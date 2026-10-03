@@ -1,4 +1,4 @@
-import type { JourneyHost } from '../../game/JourneyHost';
+import type { GameplayHost as JourneyHost } from '../../game/Gameplay';
 import { useSyncExternalStore } from 'react';
 import { View } from 'react-native';
 import { DungeonButton, DungeonNotice } from '../shared/DungeonUI';
@@ -14,19 +14,30 @@ export default function ProgressionFeedback({
   return (
     <View className="gap-2">
       <DungeonNotice
-        message={view.error ?? (view.busy ? 'Saving progress…' : view.notice)}
+        message={
+          view.error ??
+          (view.busy
+            ? host.source === 'online'
+              ? 'Connecting or resolving action…'
+              : 'Saving progress…'
+            : view.notice)
+        }
         status={view.error ? 'danger' : 'accent'}
       />
       {view.retryAvailable && view.pendingResult ? (
         <DungeonNotice
           status="accent"
-          message={`Waiting to save: ${view.pendingResult} Retry saves this same result without another roll or charge.`}
+          message={
+            host.source === 'online'
+              ? `Pending: ${view.pendingResult}. Recovery checks the original request without charging or rolling again.`
+              : `Waiting to save: ${view.pendingResult} Retry saves this same result without another roll or charge.`
+          }
         />
       ) : null}
       {view.retryAvailable ? (
         <DungeonButton
           primary
-          label="Retry save"
+          label={host.source === 'online' ? 'Recover pending action' : 'Retry save'}
           busy={view.busy}
           onPress={() => {
             void host.retryProgression();

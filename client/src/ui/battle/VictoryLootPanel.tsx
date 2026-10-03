@@ -1,7 +1,7 @@
 import { useState, useSyncExternalStore } from 'react';
 import { Text, View } from 'react-native';
-import type { BattleSession } from '../../game/BattleSession';
-import type { JourneySession } from '../../game/JourneySession';
+import type { GameplayBattle as BattleSession } from '../../game/Gameplay';
+import type { GameplayJourney as JourneySession } from '../../game/Gameplay';
 import { DungeonButton as Button, DungeonCard } from '../shared/DungeonUI';
 
 export default function VictoryLootPanel({
