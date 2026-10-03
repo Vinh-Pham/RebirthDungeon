@@ -1,3 +1,5 @@
+import { LogEngine, appendLogs, type LogCategory } from '../engine/logging/LogEngine';
+import { COMMAND_LABELS } from './logging/GameActionLogging';
 import type { ProgressionCommand } from '../engine/commands';
 import { setItemHotbar } from '../engine/rpg/Inventory';
 import type { ContentRegistry } from '../engine/data/ContentRegistry';
@@ -16,6 +18,8 @@ export interface RestClock {
 export interface JourneyHostOptions {
   restClock?: RestClock;
   debugEnabled?: boolean;
+  logs?: LogEngine;
+  characterId?: string;
 }
 interface HostView {
   session?: JourneySession;
@@ -35,6 +39,7 @@ export async function settleJourneySaves() {
   await Promise.all([...pendingStops]);
 }
 export class JourneyHost {
+  readonly logs: LogEngine;
   private snapshot: HostView = empty;
   private listeners = new Set<() => void>();
   private repository?: SaveRepository;
@@ -52,7 +57,31 @@ export class JourneyHost {
     private growthTalent?: GrowthTalent,
     private audioSettings?: () => AudioSettings,
     private options: JourneyHostOptions = {},
-  ) {}
+  ) {
+    this.logs = options.logs ?? new LogEngine(() => 0);
+  }
+  recordLog(category: LogCategory, type: string, message: string) {
+    appendLogs(this.logs, [
+      {
+        category,
+        type,
+        message,
+        characterId: this.options.characterId,
+        characterName: this.characterName,
+      },
+    ]);
+  }
+  private readonly logSink = {
+    append: (entries: readonly import('../engine/logging/LogEngine').LogInput[]) =>
+      appendLogs(
+        this.logs,
+        entries.map((entry) => ({
+          ...entry,
+          characterId: this.options.characterId,
+          characterName: this.characterName,
+        })),
+      ),
+  };
   getSnapshot = () => this.snapshot;
   getServerSnapshot = () => empty;
   subscribe = (listener: () => void) => {
@@ -64,14 +93,21 @@ export class JourneyHost {
     };
   };
   async save(slot: SaveSlot) {
+    this.recordLog('user', 'SAVE_REQUESTED', `Save requested for slot ${slot}.`);
     if (
       this.candidate ||
       this.snapshot.busy ||
       !this.snapshot.session ||
       !this.repository ||
       this.snapshot.battle
-    )
+    ) {
+      this.recordLog(
+        'user',
+        'SAVE_REJECTED',
+        'Save unavailable during another operation or encounter.',
+      );
       return;
+    }
     const generation = this.generation;
     const repository = this.repository;
     const saver = this.autosaver;
@@ -81,7 +117,10 @@ export class JourneyHost {
       await saver?.flush();
       await repository.save(slot, state);
       const slots = await repository.list();
-      if (generation === this.generation) this.update({ slots, notice: `Saved to slot ${slot}.` });
+      if (generation === this.generation) {
+        this.recordLog('user', 'SAVE_COMPLETED', `Saved to slot ${slot}.`);
+        this.update({ slots, notice: `Saved to slot ${slot}.` });
+      }
     } catch (error) {
       if (generation === this.generation) this.fail(error);
     } finally {
@@ -89,7 +128,15 @@ export class JourneyHost {
     }
   }
   async load(slot: SaveSlot) {
-    if (this.candidate || this.snapshot.busy || !this.repository || this.snapshot.battle) return;
+    this.recordLog('user', 'LOAD_REQUESTED', `Load requested for slot ${slot}.`);
+    if (this.candidate || this.snapshot.busy || !this.repository || this.snapshot.battle) {
+      this.recordLog(
+        'user',
+        'LOAD_REJECTED',
+        'Load unavailable during another operation or encounter.',
+      );
+      return;
+    }
     this.stopRest();
     const generation = this.generation;
     const repository = this.repository;
@@ -100,8 +147,16 @@ export class JourneyHost {
       const state = await repository.load(slot);
       if (generation !== this.generation) return;
       if (!state) throw new Error('This slot is empty');
-      const session = new JourneySession(this.content, state, undefined, this.characterName);
+      const session = new JourneySession(
+        this.content,
+        state,
+        undefined,
+        this.characterName,
+        this.growthTalent,
+        this.logSink,
+      );
       this.attach(session);
+      this.recordLog('user', 'LOAD_COMPLETED', `Loaded slot ${slot}.`);
       const catchup = session.titleCatchupCandidate();
       if (catchup) {
         this.candidate = catchup;
@@ -158,8 +213,19 @@ export class JourneyHost {
   }
   progress = async (command: ProgressionCommand): Promise<boolean> => {
     const { session, busy, battle } = this.snapshot;
-    if (!session || busy || (battle && command.type !== 'SET_ITEM_HOTBAR') || this.candidate)
+    this.recordLog(
+      command.type === 'USE_LIFE_SKILL' ? 'system' : 'user',
+      'PROGRESSION_REQUESTED',
+      `${COMMAND_LABELS[command.type]} requested.`,
+    );
+    if (!session || busy || (battle && command.type !== 'SET_ITEM_HOTBAR') || this.candidate) {
+      this.recordLog(
+        'user',
+        'PROGRESSION_REJECTED',
+        `${COMMAND_LABELS[command.type]} unavailable while another operation or encounter is active.`,
+      );
       return false;
+    }
     if (!this.repository) {
       this.fail(new Error('Save storage is required for town services and progression'));
       return false;
@@ -180,6 +246,11 @@ export class JourneyHost {
       this.candidateBattle = battle;
       battle?.setInputLocked(true);
     } catch (error) {
+      this.recordLog(
+        'user',
+        'PROGRESSION_REJECTED',
+        `${COMMAND_LABELS[command.type]}: ${error instanceof Error ? error.message : 'Action rejected'}`,
+      );
       this.fail(error);
       return false;
     }
@@ -187,14 +258,23 @@ export class JourneyHost {
     return this.persistCandidate();
   };
   debug = async (command: DebugCommand): Promise<boolean> => {
+    this.recordLog('user', 'DEBUG_REQUESTED', `Debug gold requested: ${command.amount}.`);
     const { session, busy, battle } = this.snapshot;
-    if (!this.options.debugEnabled || !session || busy || this.candidate) return false;
+    if (!this.options.debugEnabled || !session || busy || this.candidate) {
+      this.recordLog('user', 'DEBUG_REJECTED', 'Debug change unavailable.');
+      return false;
+    }
     if (!this.repository) {
       this.fail(new Error('Save storage is required for debug changes'));
       return false;
     }
     try {
       this.candidate = session.debugCandidate(command);
+      this.candidate.stageLog({
+        category: 'user',
+        type: 'DEBUG_COMPLETED',
+        message: `Added ${command.amount} debug gold.`,
+      });
       this.candidateBattle = battle;
       battle?.setInputLocked(true);
     } catch (error) {
@@ -206,6 +286,7 @@ export class JourneyHost {
   };
   retryProgression = async (): Promise<boolean> => {
     if (!this.candidate || this.snapshot.busy) return false;
+    this.recordLog('user', 'SAVE_RETRY', 'Retrying the retained save candidate.');
     return this.persistCandidate();
   };
   private persistCandidate(): Promise<boolean> {
@@ -264,6 +345,11 @@ export class JourneyHost {
       this.fail(error);
       return false;
     }
+    this.candidate.stageLog({
+      category: 'combat',
+      type: 'ENCOUNTER_SETTLED',
+      message: `Encounter ${battle.combat.result}: resources and results committed.`,
+    });
     session.lockMutations();
     return this.persistCandidate();
   };
@@ -324,12 +410,31 @@ export class JourneyHost {
       if (this.characterName && !state)
         throw new Error('No journey save was found for this character.');
       if (generation !== this.generation) return;
-      this.autosaver = new AutoSaver(repository, (error) => {
-        if (generation === this.generation) this.fail(error);
-      });
-      const session = new JourneySession(this.content, state, undefined, this.characterName);
+      this.autosaver = new AutoSaver(
+        repository,
+        (error) => {
+          if (generation === this.generation) this.fail(error);
+        },
+        () => {
+          if (generation === this.generation)
+            this.recordLog(
+              'system',
+              'AUTOSAVE_COMPLETED',
+              'Journey checkpoint saved automatically.',
+            );
+        },
+      );
+      const session = new JourneySession(
+        this.content,
+        state,
+        undefined,
+        this.characterName,
+        this.growthTalent,
+        this.logSink,
+      );
       const reconciled = session.getSnapshot().state;
       this.attach(session);
+      this.recordLog('system', 'JOURNEY_READY', 'Character journey ready.');
       const catchup = session.titleCatchupCandidate();
       if (catchup) {
         this.candidate = catchup;
@@ -348,7 +453,17 @@ export class JourneyHost {
     } catch (error) {
       if (generation !== this.generation) return;
       // Selected characters must never silently become fresh campaigns after a load failure.
-      if (!this.characterName) this.attach(new JourneySession(this.content));
+      if (!this.characterName)
+        this.attach(
+          new JourneySession(
+            this.content,
+            undefined,
+            undefined,
+            this.characterName,
+            this.growthTalent,
+            this.logSink,
+          ),
+        );
       this.fail(error);
       this.update({ busy: false });
     }
@@ -381,6 +496,7 @@ export class JourneyHost {
     this.cancelRestTick?.();
     this.cancelRestTick = undefined;
     ++this.generation;
+    this.logs.clear();
     this.unsubscribe?.();
     this.unsubscribe = undefined;
     this.snapshot.battle?.dispose();
@@ -412,6 +528,11 @@ export class JourneyHost {
     }
   }
   private fail(error: unknown) {
+    this.recordLog(
+      'system',
+      'OPERATION_FAILED',
+      error instanceof Error ? error.message : 'Save operation failed.',
+    );
     this.update({ error: error instanceof Error ? error.message : 'Save operation failed' });
   }
   private update(patch: Partial<HostView>) {

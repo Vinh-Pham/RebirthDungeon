@@ -95,7 +95,13 @@ function SkillJournal({ host, session }: { host: JourneyHost; session: JourneySe
   if (selected)
     return (
       <MenuPage>
-        <DungeonButton label="Back to skills" onPress={() => setSelectedId(undefined)} />
+        <DungeonButton
+          label="Back to skills"
+          onPress={() => {
+            host.recordLog('user', 'SKILL_DETAILS', 'Returned to skills.');
+            setSelectedId(undefined);
+          }}
+        />
         <SkillDetails host={host} session={session} skill={selected} />
       </MenuPage>
     );
@@ -135,7 +141,10 @@ function SkillJournal({ host, session }: { host: JourneyHost; session: JourneySe
                         : 'Catalog'
                   }
                   selected={filter === value}
-                  onPress={() => setFilter(value)}
+                  onPress={() => {
+                    host.recordLog('user', 'SKILL_FILTER', `Viewing ${value} skills.`);
+                    setFilter(value);
+                  }}
                 />
               ))}
             </View>
@@ -159,7 +168,10 @@ function SkillJournal({ host, session }: { host: JourneyHost; session: JourneySe
             label={`${skill.name}${hero.learnedSkills[skill.id] ? ` · Rank ${hero.learnedSkills[skill.id].rank}` : ''}`}
             detail={`${skill.category ?? 'combat'} · ${skill.kind ?? 'active'} · ${progressLabel(hero, skill, town)}`}
             accessibilityLabel={`${skill.name}. ${progressLabel(hero, skill, town)}. View details.`}
-            onPress={() => setSelectedId(skill.id)}
+            onPress={() => {
+              host.recordLog('user', 'SKILL_DETAILS', `Opened ${skill.name} details.`);
+              setSelectedId(skill.id);
+            }}
           />
         )}
       />

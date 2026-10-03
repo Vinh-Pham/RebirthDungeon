@@ -108,13 +108,13 @@ Keep the roadmap incremental: grid storage, banks, expanded slots, aging, rebirt
 
 Use Expo Router, existing HeroUI/shared components, Uniwind and theme tokens. Preserve the portrait baseline in `app.json`. Compact devices use list/detail navigation and scrollable panels; wider web/tablet layouts may add comparisons. Safe areas, 48-unit touch targets, larger text, canvas targeting after action confirmation, keyboard action controls and screen-reader feedback are acceptance work, not assumptions from rendering a control.
 
-Keep Skia/Reanimated for map/sprite presentation and UI-thread motion where already used; avoid per-frame React updates and repeated map/catalog work. Render only needed long-list rows, retain stable keys, and bound battle logs/animation queues. Screen navigation and overlays gate world input; Android Back closes the appropriate surface without spending resources or abandoning an encounter.
+Keep Skia/Reanimated for map/sprite presentation and UI-thread motion where already used; avoid per-frame React updates and repeated map/catalog work. Render only needed long-list rows, retain stable keys, and bound the compact battle chronicle and animation queues. The character journal retains all messages until manual clear or character exit and virtualizes rows; see [logging](gameplay/logging.md). Screen navigation and overlays gate world input; Android Back closes the appropriate surface without spending resources or abandoning an encounter.
 
 `AudioManager` observes simulation events. Global sound settings persist separately from save slots; loading a character does not replace them. The Expo backend owns bounded playback resources and pauses on background/character exit. Browser audio resumes through an explicit user gesture when needed. Playback failures do not change simulation. Haptics and additional native modules are optional feature work.
 
 ## 9. Development and release verification
 
-Use the npm workflow currently recorded by `package-lock.json`; switch to `bunx` commands only if a Bun lockfile is adopted. Required implementation checks:
+Use the existing npm scripts; dependencies are currently locked in `pnpm-lock.yaml` and Expo install selects that package manager; switch to `bunx` commands only if a Bun lockfile is adopted. Required implementation checks:
 
 ```sh
 npm test

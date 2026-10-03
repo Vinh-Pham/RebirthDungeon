@@ -56,3 +56,13 @@ export type {
   EnemyBattleContext,
   EnemyTurnDecision,
 } from './battle/enemies/EnemyBattleBehavior';
+
+export { LogEngine, LOG_CATEGORIES, selectLogEntries } from './logging/LogEngine';
+export type {
+  LogEntry,
+  LogInput,
+  LogCategory,
+  LogFilter,
+  LogSnapshot,
+  LogSink,
+} from './logging/LogEngine';

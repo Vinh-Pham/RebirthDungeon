@@ -562,6 +562,7 @@ export class CombatSystem implements GameSystem {
       // Internal training commits before any fallible external notification.
       this.options.onOutcome?.(outcome);
       events.unshift({ type: 'ACTION_RESOLVED', outcome });
+      engine.commands.markCommitted();
       // Commit HP, death, turn and outcome before notifying presentation consumers.
       this.publish(engine, events);
     } finally {

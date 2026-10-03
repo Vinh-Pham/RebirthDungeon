@@ -60,7 +60,13 @@ export default function BattleHotbar({
         unavailable={unavailable}
         selected={selected}
         open={canChoose && inspected === id}
-        onOpenChange={(open) => inspect(open ? id : undefined)}
+        onOpenChange={(open) => {
+          session.recordInspection(
+            'BATTLE_DETAILS',
+            `${open ? 'Opened' : 'Closed'} ${label} details.`,
+          );
+          inspect(open ? id : undefined);
+        }}
       >
         {children}
       </ActionPopover>
@@ -84,6 +90,10 @@ export default function BattleHotbar({
               className={`min-h-12 justify-center border-b-2 px-1 ${category === tab ? 'border-accent' : 'border-transparent'}`}
               onPress={() => {
                 inspect(undefined);
+                session.recordInspection(
+                  'BATTLE_FILTER',
+                  `Viewing ${BATTLE_CATEGORIES[tab]} actions.`,
+                );
                 setCategory(tab);
               }}
             >

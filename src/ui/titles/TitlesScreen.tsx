@@ -42,6 +42,16 @@ function TitleCollection({ host, session }: { host: JourneyHost; session: Journe
   const entries = visibleTitles(hero, content.data.titles, search, slot, category);
   const knownSelected =
     selected && titleState(hero, selected.id) !== 'Unknown' ? selected : undefined;
+  const inspectTitle = (id?: string) => {
+    host.recordLog(
+      'user',
+      'TITLE_DETAILS',
+      id
+        ? `Opened ${titleState(hero, id) === 'Unknown' ? 'undiscovered title' : (content.data.titles.find((t) => t.id === id)?.name ?? 'unavailable title')} details.`
+        : 'Returned to titles.',
+    );
+    setSelectedId(id);
+  };
   const choose = (titleId: string | undefined, titleSlot: TitleDefinition['slot']) => {
     void host.progress({ type: 'SELECT_TITLE', slot: titleSlot, titleId });
   };
@@ -83,7 +93,7 @@ function TitleCollection({ host, session }: { host: JourneyHost; session: Journe
               {id ? (
                 <DungeonButton
                   label={`Inspect ${slotLabel[value]}`}
-                  onPress={() => setSelectedId(id)}
+                  onPress={() => inspectTitle(id)}
                 />
               ) : null}
               {id ? (
@@ -109,10 +119,7 @@ function TitleCollection({ host, session }: { host: JourneyHost; session: Journe
       ) : null}
       {knownSelected ? (
         <>
-          <DungeonButton
-            label="Back to title collection"
-            onPress={() => setSelectedId(undefined)}
-          />
+          <DungeonButton label="Back to title collection" onPress={() => inspectTitle(undefined)} />
           <DungeonCard>
             <Text className="text-accent" accessibilityRole="header" style={menu.heading}>
               {knownSelected.name}
@@ -230,10 +237,7 @@ function TitleCollection({ host, session }: { host: JourneyHost; session: Journe
         </>
       ) : selectedId ? (
         <>
-          <DungeonButton
-            label="Back to title collection"
-            onPress={() => setSelectedId(undefined)}
-          />
+          <DungeonButton label="Back to title collection" onPress={() => inspectTitle(undefined)} />
           <DungeonNotice
             status="accent"
             message={
@@ -255,6 +259,7 @@ function TitleCollection({ host, session }: { host: JourneyHost; session: Journe
                 label={value === 'all' ? 'All slots' : slotLabel[value]}
                 selected={slot === value}
                 onPress={() => {
+                  host.recordLog('user', 'TITLE_FILTER', `Viewing ${value} title slots.`);
                   setSlot(value);
                   setOffset(0);
                 }}
@@ -271,6 +276,7 @@ function TitleCollection({ host, session }: { host: JourneyHost; session: Journe
                 label={value === 'all' ? 'All categories' : value}
                 selected={category === value}
                 onPress={() => {
+                  host.recordLog('user', 'TITLE_FILTER', `Viewing ${value} titles.`);
                   setCategory(value);
                   setOffset(0);
                 }}
@@ -302,7 +308,7 @@ function TitleCollection({ host, session }: { host: JourneyHost; session: Journe
                     ? 'Undiscovered title'
                     : `${slotLabel[t.slot]} · ${t.category} · ${state}${hero.titleCollection.selected[t.slot] === t.id ? ' · Selected' : ''}`
                 }
-                onPress={() => setSelectedId(t.id)}
+                onPress={() => inspectTitle(t.id)}
               />
             );
           })}
@@ -332,7 +338,7 @@ function TitleCollection({ host, session }: { host: JourneyHost; session: Journe
                 key={id}
                 label="Unavailable earned title"
                 detail="Achievement preserved · no effects"
-                onPress={() => setSelectedId(id)}
+                onPress={() => inspectTitle(id)}
               />
             ))}
         </>

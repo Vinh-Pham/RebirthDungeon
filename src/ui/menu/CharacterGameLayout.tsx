@@ -1,3 +1,4 @@
+import { LogEngine } from '../../engine/logging/LogEngine';
 import {
   Redirect,
   router,
@@ -117,6 +118,8 @@ function GameSession({ profile, retry }: { profile: CompleteCharacter; retry(): 
         preferences.getSettings,
         {
           debugEnabled: __DEV__,
+          logs: new LogEngine(Date.now),
+          characterId: profile.id,
           restClock: {
             schedule(callback, delayMs) {
               const timer = setTimeout(callback, delayMs);
@@ -128,10 +131,26 @@ function GameSession({ profile, retry }: { profile: CompleteCharacter; retry(): 
   );
   const snapshot = useSyncExternalStore(host.subscribe, host.getSnapshot, host.getServerSnapshot);
   const ready = !!snapshot.session;
+  const lastLoggedPath = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (!ready || lastLoggedPath.current === path) return;
+    lastLoggedPath.current = path;
+    if (!path.endsWith('/logs'))
+      host.recordLog(
+        'user',
+        'NAVIGATION',
+        `Opened ${path.split('/').at(-1) === profile.id ? 'Journey' : path.split('/').at(-1)}.`,
+      );
+  }, [host, path, profile.id, ready]);
   const leavePending = useRef(false);
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
       if (state !== 'active') {
+        host.recordLog(
+          'system',
+          'APP_BACKGROUND',
+          'App left the foreground; Rest stopped and a save flush was requested.',
+        );
         host.stopRest();
         void host.flush();
       }
@@ -143,6 +162,7 @@ function GameSession({ profile, retry }: { profile: CompleteCharacter; retry(): 
     leavePending.current = true;
     try {
       if (!(await host.flushForExit())) return false;
+      host.logs.clear();
       router.dismissTo('/characters');
       return true;
     } finally {
@@ -176,6 +196,7 @@ function GameSession({ profile, retry }: { profile: CompleteCharacter; retry(): 
           path.endsWith('/skills') ||
           path.endsWith('/titles') ||
           path.endsWith('/quests') ||
+          path.endsWith('/logs') ||
           path.endsWith('/explore')
         )
           return false;
@@ -232,6 +253,7 @@ function GameSession({ profile, retry }: { profile: CompleteCharacter; retry(): 
         >
           <Stack screenOptions={{ headerShown: false, gestureEnabled: false }}>
             <Stack.Screen name="index" />
+            <Stack.Screen name="logs" />
             <Stack.Screen name="explore" />
             <Stack.Screen name="inventory" />
             <Stack.Screen name="skills" />

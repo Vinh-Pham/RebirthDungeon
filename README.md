@@ -40,7 +40,7 @@ Movement works with buttons or by tapping a reachable floor tile. You can return
 to the town for supplies, weapon repairs, and paid healing. The Codex shows the content definitions.
 
 The footer menu opens a left drawer with Journey first, followed by Codex, Characters,
-Stats, Inventory, Skills, Titles, Quests, Save/Load and Settings. Journey returns
+Stats, Inventory, Skills, Titles, Quests, Logs, Save/Load and Settings. Journey returns
 to the selected character's game screen and is disabled without an active character.
 Swipe from the left edge on iOS or Android, or use the menu button
 on every platform. Codex, Inventory and Save/Load have separate screens in the same
@@ -58,6 +58,12 @@ use stay unavailable. Manual save/load waits until the encounter finishes. Three
 an autosave retain character resources, equipment, inventory, XP, gold, world
 flags, map position, encounter checkpoints and exact exploration RNG state.
 Native runtime testing requires a development build after adding native modules.
+
+The **Logs** journal shows timestamped actions in All, Combat, Movement, User and
+System tabs. Each message belongs to one category. Clear logs empties the current
+journal; successfully leaving a character clears it too. Logs are immutable and
+kept only in memory, never in save slots. See [logging](docs/gameplay/logging.md)
+for coverage, extension and durable retry behavior.
 
 ## UI system
 

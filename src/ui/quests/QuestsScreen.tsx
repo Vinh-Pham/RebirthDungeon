@@ -34,7 +34,13 @@ function QuestJournal({ host, session }: { host: JourneyHost; session: JourneySe
     <MenuPage>
       {selected ? (
         <>
-          <DungeonButton label="Back to quests" onPress={() => setSelectedId(undefined)} />
+          <DungeonButton
+            label="Back to quests"
+            onPress={() => {
+              host.recordLog('user', 'QUEST_DETAILS', 'Returned to quests.');
+              setSelectedId(undefined);
+            }}
+          />
           <QuestDetails
             key={selected.id}
             session={session}
@@ -61,7 +67,10 @@ function QuestJournal({ host, session }: { host: JourneyHost; session: JourneySe
                 key={value}
                 label={value === 'all' ? 'All' : categoryLabel[value]}
                 selected={category === value}
-                onPress={() => setCategory(value)}
+                onPress={() => {
+                  host.recordLog('user', 'QUEST_FILTER', `Viewing ${value} quests.`);
+                  setCategory(value);
+                }}
               />
             ))}
           </View>
@@ -72,7 +81,10 @@ function QuestJournal({ host, session }: { host: JourneyHost; session: JourneySe
                 key={q.id}
                 label={q.name}
                 detail={`${categoryLabel[q.category]} · ${questStatus(hero, q)}`}
-                onPress={() => setSelectedId(q.id)}
+                onPress={() => {
+                  host.recordLog('user', 'QUEST_DETAILS', `Opened ${q.name} details.`);
+                  setSelectedId(q.id);
+                }}
               />
             ))}
           {hero.earnedTitles.length ? (

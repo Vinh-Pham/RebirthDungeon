@@ -1,3 +1,5 @@
+import { useAppNavigation } from '../navigation/AppNavigationContext';
+import type { AudioSettings } from '../../audio/AudioManager';
 import { Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useAppScreenChrome } from '../navigation/AppScreenChrome';
@@ -8,6 +10,19 @@ import { MenuPage, menu } from './MenuUI';
 export default function SettingsScreen() {
   const { hasFooter } = useAppScreenChrome();
   const audio = useAudio();
+  const { game } = useAppNavigation();
+  const setSettings = (next: AudioSettings) => {
+    audio.setSettings(next);
+    game?.host.recordLog(
+      'user',
+      'AUDIO_SETTINGS',
+      `Sound ${next.enabled ? 'enabled' : 'muted'}; music ${Math.round(next.music * 100)}%, effects ${Math.round(next.sfx * 100)}%.`,
+    );
+  };
+  const resume = () => {
+    audio.resume();
+    game?.host.recordLog('user', 'AUDIO_RESUME', 'Requested sound playback.');
+  };
   const { settings, ready, soundReady } = audio;
   return (
     <MenuPage>
@@ -28,8 +43,8 @@ export default function SettingsScreen() {
             label={settings.enabled ? (soundReady ? 'Mute sound' : 'Resume sound') : 'Enable sound'}
             selected={settings.enabled}
             onPress={() => {
-              if (settings.enabled && !soundReady) audio.resume();
-              else audio.setSettings({ ...settings, enabled: !settings.enabled });
+              if (settings.enabled && !soundReady) resume();
+              else setSettings({ ...settings, enabled: !settings.enabled });
             }}
           />
           {(['music', 'sfx'] as const).map((channel) => (
@@ -42,7 +57,7 @@ export default function SettingsScreen() {
                   label={`Lower ${channel} volume`}
                   disabled={settings[channel] === 0}
                   onPress={() =>
-                    audio.setSettings({
+                    setSettings({
                       ...settings,
                       [channel]: Math.round(Math.max(0, settings[channel] - 0.1) * 10) / 10,
                     })
@@ -52,7 +67,7 @@ export default function SettingsScreen() {
                   label={`Raise ${channel} volume`}
                   disabled={settings[channel] === 1}
                   onPress={() =>
-                    audio.setSettings({
+                    setSettings({
                       ...settings,
                       [channel]: Math.round(Math.min(1, settings[channel] + 0.1) * 10) / 10,
                     })
@@ -78,7 +93,7 @@ export default function SettingsScreen() {
           label="Retry sound preferences"
           onPress={() => {
             void audio.preferences.retry();
-            if (settings.enabled) audio.resume();
+            if (settings.enabled) resume();
           }}
         />
       ) : null}

@@ -1,6 +1,6 @@
 # Rebirth Dungeon: React Native User Interface
 
-Updated **October 2, 2026**. The app uses Expo SDK 57, Expo Router, React Native, HeroUI, Uniwind and Skia/Reanimated presentation. Existing screens cover character selection/setup, exploration, combat, stats, inventory, save/load and sound settings. Skills, quests, titles and the town enchanting service are implemented. Aging and deliberate rebirth remain planned screens/services. The [game plan](../game-plan.md) owns delivery; this document owns interaction and mobile acceptance.
+Updated **October 2, 2026**. The app uses Expo SDK 57, Expo Router, React Native, HeroUI, Uniwind and Skia/Reanimated presentation. Existing screens cover character selection/setup, exploration, combat, stats, inventory, save/load, transient action logs and sound settings. Skills, quests, titles and the town enchanting service are implemented. Aging and deliberate rebirth remain planned screens/services. The [game plan](../game-plan.md) owns delivery; this document owns interaction and mobile acceptance.
 
 ## 1. Composition and navigation
 
@@ -143,6 +143,10 @@ For future grids, use tap item → action → destination as a complete mobile p
 
 Quest details distinguish “Return to [NPC]” from “Claim in town.” Title previews include penalties and resource clamping without recovery. Enchant application states material loss on failure and equipment protection; Burn names the destroyed item and possible zero recoveries. Rebirth/RP preview reset/preserved or borrowed state only when those later features exist.
 
+## Action journal
+
+**Logs** in the drawer navigates inside the active character stack and stays available during an encounter. It observes the shared host journal without spending turns. All is first, followed by Combat, Movement, User and System; messages belong to one category. Scrollable HeroUI tabs support touch and web arrow keys, and a virtualized newest-first list displays category, immutable text and a date-fns local date/time. Clear logs empties every category; it is disabled when empty. Clearing or reading the journal produces no messages. Successful character exit clears it; blocked exit retains it. Logs never go to storage. See [logging](logging.md) for producer/category contracts and durable publication.
+
 ## 5. Size, style and performance
 
 Keep the portrait baseline configured in app.json. Use available width/height after safe insets and text scaling, rather than treating all web layouts as desktop. Small screens use one scrollable list/detail surface; wider tablets/web can add comparisons. The arena may shrink before labels/confirm controls become unusable.
@@ -151,7 +155,7 @@ Target at least 48 logical units for primary touch areas, 8-unit spacing and rea
 
 Use the installed safe-area integration and avoid double-insetting nested surfaces. Keep bottom actions above system bars/keyboards, wrap long names, and allow large text/details to scroll. Pixel-art camera scale and UI text scale are separate concerns. [Expo safe-area guidance](https://docs.expo.dev/develop/user-interface/safe-areas/).
 
-Retain cached map/catalog work and existing Skia/Reanimated motion. Do not send every animation frame through React or Zustand. Subscribe to detached host/session observations, use stable item/entity IDs and virtualize long future journals/inventory lists. Bound logs, presentation queues and playback resources. Backgrounding or leaving a character cleans subscriptions/gestures without making gameplay outcomes depend on cleanup timing.
+Retain cached map/catalog work and existing Skia/Reanimated motion. Do not send every animation frame through React or Zustand. Subscribe to detached host/session observations, use stable item/entity IDs and virtualize long future journals/inventory lists. Bound the compact battle chronicle, presentation queues and playback resources. The action journal retains its current-visit history without eviction and virtualizes visible rows. Backgrounding or leaving a character cleans subscriptions/gestures without making gameplay outcomes depend on cleanup timing.
 
 ## 6. Input and accessibility
 

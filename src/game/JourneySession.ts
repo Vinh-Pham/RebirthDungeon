@@ -1,3 +1,5 @@
+import { appendLogs, copyLogInput, type LogInput, type LogSink } from '../engine/logging/LogEngine';
+import { commandLog, observeGameLogging } from './logging/GameActionLogging';
 import { current } from 'immer';
 import {
   immutableData,
@@ -115,6 +117,8 @@ export class JourneySession {
   private hostManaged = false;
   private staging = false;
   private committedEvents: GameEvent[] = [];
+  private committedLogs: LogInput[] = [];
+  private logCleanup?: () => void;
   private projectedMap?: Immutable<WorldMap>;
   private activeService?: string;
   private resting = false;
@@ -124,8 +128,13 @@ export class JourneySession {
     seed = 12345,
     readonly characterName?: string,
     growthTalent: GrowthTalent = 'warrior',
+    private readonly logSink?: LogSink,
   ) {
     this.engine = createGameEngine({ seed: restored?.seed ?? seed });
+    if (logSink)
+      this.logCleanup = observeGameLogging(this.engine, content, {
+        append: (entries) => this.recordLogs(entries),
+      });
     const first = content.data.worlds[0];
     if (!first) throw new Error('No exploration map defined');
     this.state = restored
@@ -506,6 +515,7 @@ export class JourneySession {
           state.randomState = words;
       });
       this.state = next;
+      this.engine.commands.markCommitted();
       this.engine.random.restore(next.randomState);
       this.message = tx.message;
       this.activeService = tx.activeService;
@@ -544,6 +554,7 @@ export class JourneySession {
       this.state.seed,
       this.characterName,
       this.state.hero.growthTalent,
+      this.logSink,
     );
     candidate.state = this.state;
     candidate.engine.random.restore(this.state.randomState);
@@ -594,12 +605,32 @@ export class JourneySession {
     return cloneData(this.snapshot.state);
   }
   dispatch(command: GameCommand) {
-    if (this.mutationsLocked && command.type !== 'STOP_REST')
-      throw new Error('Save pending. Retry before continuing.');
-    if (this.hostManaged && isProgressionCommand(command))
-      throw new Error('Use the host durable progression operation');
-    if (this.disposed || this.dispatching)
-      throw new Error('Journey is disposed or a command is already resolving');
+    try {
+      if (this.mutationsLocked && command.type !== 'STOP_REST')
+        throw new Error('Save pending. Retry before continuing.');
+      if (this.hostManaged && isProgressionCommand(command))
+        throw new Error('Use the host durable progression operation');
+      if (this.disposed || this.dispatching)
+        throw new Error('Journey is disposed or a command is already resolving');
+    } catch (error) {
+      if (!this.disposed) {
+        try {
+          this.recordLogs([
+            commandLog(
+              {
+                command,
+                committed: false,
+                error: error instanceof Error ? error.message : 'Action rejected',
+              },
+              false,
+            ),
+          ]);
+        } catch {
+          /* Preserve the original command rejection if diagnostics fail. */
+        }
+      }
+      throw error;
+    }
     this.dispatching = true;
     try {
       this.engine.dispatch(command);
@@ -673,10 +704,25 @@ export class JourneySession {
       throw error;
     }
   }
+  stageLog(entry: LogInput) {
+    this.recordLogs([entry]);
+  }
+  private recordLogs(entries: readonly LogInput[]) {
+    if (this.disposed) return;
+    try {
+      if (this.staging) this.committedLogs.push(...entries.map(copyLogInput));
+      else appendLogs(this.logSink, entries);
+    } catch {
+      /* Diagnostics cannot reject a candidate. */
+    }
+  }
   publishCommittedEvents() {
     const events = this.committedEvents;
     this.committedEvents = [];
     this.staging = false;
+    const logs = this.committedLogs;
+    this.committedLogs = [];
+    appendLogs(this.logSink, logs);
     const failures: unknown[] = [];
     for (const event of events)
       try {
@@ -705,6 +751,7 @@ export class JourneySession {
       this.characterName,
       this.encounterIdentity,
       true,
+      this.logSink,
     );
   }
   private requireFinishedBattle(battle: BattleSession) {
@@ -856,6 +903,8 @@ export class JourneySession {
   dispose() {
     if (this.disposed) return;
     this.disposed = true;
+    this.logCleanup?.();
+    this.committedLogs = [];
     this.engine.dispose();
     this.listeners.clear();
   }

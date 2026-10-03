@@ -27,7 +27,15 @@ function AppDrawerContent(props: DrawerContentComponentProps) {
   const open = useDrawerStatus() === 'open';
   const close = useCallback(() => props.navigation.closeDrawer(), [props.navigation]);
   const route = (
-    destination: 'journey' | 'codex' | 'inventory' | 'save-load' | 'skills' | 'quests' | 'titles',
+    destination:
+      | 'journey'
+      | 'codex'
+      | 'inventory'
+      | 'save-load'
+      | 'skills'
+      | 'quests'
+      | 'titles'
+      | 'logs',
   ) => {
     if (!game || !ready) return;
     close();
@@ -37,15 +45,17 @@ function AppDrawerContent(props: DrawerContentComponentProps) {
           ? '/game/[characterId]'
           : destination === 'codex'
             ? '/game/[characterId]/explore'
-            : destination === 'titles'
-              ? '/game/[characterId]/titles'
-              : destination === 'quests'
-                ? '/game/[characterId]/quests'
-                : destination === 'skills'
-                  ? '/game/[characterId]/skills'
-                  : destination === 'inventory'
-                    ? '/game/[characterId]/inventory'
-                    : '/game/[characterId]/save-load',
+            : destination === 'logs'
+              ? '/game/[characterId]/logs'
+              : destination === 'titles'
+                ? '/game/[characterId]/titles'
+                : destination === 'quests'
+                  ? '/game/[characterId]/quests'
+                  : destination === 'skills'
+                    ? '/game/[characterId]/skills'
+                    : destination === 'inventory'
+                      ? '/game/[characterId]/inventory'
+                      : '/game/[characterId]/save-load',
       params: { characterId: game.profile.id },
     });
   };
@@ -86,6 +96,7 @@ function AppDrawerContent(props: DrawerContentComponentProps) {
             disabled={!ready}
             onPress={() => {
               close();
+              game?.host.recordLog('user', 'STATS_OPENED', 'Opened character stats.');
               openStats();
             }}
           />
@@ -112,6 +123,12 @@ function AppDrawerContent(props: DrawerContentComponentProps) {
             selected={path.endsWith('/quests')}
             disabled={!ready}
             onPress={() => route('quests')}
+          />
+          <DungeonButton
+            label="Logs"
+            selected={path.endsWith('/logs')}
+            disabled={!ready}
+            onPress={() => route('logs')}
           />
           <DungeonButton
             label="Save/Load"

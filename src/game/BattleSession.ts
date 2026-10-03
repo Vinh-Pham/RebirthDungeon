@@ -1,3 +1,5 @@
+import { appendLogs, type LogSink } from '../engine/logging/LogEngine';
+import { commandLog, observeGameLogging } from './logging/GameActionLogging';
 import type { Immutable } from '../engine/immutableState';
 import { EncounterTitles } from '../engine/rpg/Titles';
 import { cloneData } from '../engine/cloneData';
@@ -76,6 +78,7 @@ export class BattleSession {
     characterName?: string,
     readonly encounterId = `arena/${seed}`,
     eligibleTraining = false,
+    private readonly logSink?: LogSink,
   ) {
     const map =
       typeof mapId === 'string'
@@ -84,6 +87,8 @@ export class BattleSession {
     if (!map) throw new Error(`Unknown map: ${mapId}`);
     this.map = map;
     this.engine = createGameEngine({ seed });
+    if (logSink)
+      this.cleanup.push(observeGameLogging(this.engine, content, logSink, true, encounterId));
     for (const spawn of map.spawns)
       this.engine.spawn(
         content.spawn(
@@ -153,9 +158,37 @@ export class BattleSession {
     };
   };
   dispatch(command: GameCommand): void {
-    if (this.disposed) throw new Error('Battle session has been disposed');
-    if (this.inputLocked) throw new Error('Save pending. Retry before continuing.');
+    if (this.disposed || this.inputLocked) {
+      const error = this.disposed
+        ? 'Battle session has been disposed'
+        : 'Save pending. Retry before continuing.';
+      if (!this.disposed)
+        appendLogs(this.logSink, [
+          {
+            ...commandLog({ command, committed: false, error }, true),
+            encounterId: this.encounterId,
+          },
+        ]);
+      throw new Error(error);
+    }
     this.engine.dispatch(command);
+  }
+  recordInspection(type: string, message: string) {
+    if (!this.disposed)
+      appendLogs(this.logSink, [
+        { category: 'user', type, message, encounterId: this.encounterId },
+      ]);
+  }
+  private rejectPlayerInput(message: string) {
+    if (!this.disposed)
+      appendLogs(this.logSink, [
+        {
+          category: 'combat',
+          type: 'BATTLE_INPUT_REJECTED',
+          message,
+          encounterId: this.encounterId,
+        },
+      ]);
   }
   canAcceptPlayerInput(expectedActionCount: number): boolean {
     return (
@@ -174,9 +207,16 @@ export class BattleSession {
     targetId: string,
     expectedActionCount: number,
   ): boolean {
-    if (!this.canAcceptPlayerInput(expectedActionCount)) return false;
-    if (!this.battle.validTargetIds(action).includes(targetId))
+    if (!this.canAcceptPlayerInput(expectedActionCount)) {
+      this.rejectPlayerInput(
+        'Battle input unavailable while saving, presenting, or waiting for another turn.',
+      );
+      return false;
+    }
+    if (!this.battle.validTargetIds(action).includes(targetId)) {
+      this.rejectPlayerInput('Choose a living, valid target');
       throw new Error('Choose a living, valid target');
+    }
     this.submitting = true;
     try {
       this.dispatch({ type: 'SELECT_ACTION', ...action });
@@ -189,7 +229,12 @@ export class BattleSession {
   }
   /** Use confirms self-only actions and attacks/skills against the last living enemy. */
   selectPlayerAction(action: BattleAction, expectedActionCount: number): boolean {
-    if (!this.canAcceptPlayerInput(expectedActionCount)) return false;
+    if (!this.canAcceptPlayerInput(expectedActionCount)) {
+      this.rejectPlayerInput(
+        'Battle input unavailable while saving, presenting, or waiting for another turn.',
+      );
+      return false;
+    }
     const targets = this.battle.validTargetIds(action);
     const soleEnemy =
       targets.length === 1 &&

@@ -9,6 +9,7 @@ export class AutoSaver {
   constructor(
     private repository: SaveRepository,
     private onError: (error: unknown) => void,
+    private onSaved?: () => void,
   ) {}
   schedule(state: CampaignSnapshot) {
     if (this.closed) return;
@@ -36,6 +37,11 @@ export class AutoSaver {
         writing = this.repository.save('auto', state);
         this.inFlight = writing;
         await writing;
+        try {
+          this.onSaved?.();
+        } catch {
+          /* Observation cannot reject a saved checkpoint. */
+        }
       } catch (error) {
         if (!this.pending) this.pending = state;
         throw error;

@@ -49,7 +49,14 @@ export default function JourneySkills({ session }: { session: JourneySession }) 
         />
       </DungeonCard>
       <ProgressionFeedback host={host} showNotice={false} />
-      <Tabs value={category} onValueChange={setCategory} className="w-full gap-3">
+      <Tabs
+        value={category}
+        onValueChange={(next) => {
+          host.recordLog('user', 'SKILL_FILTER', `Viewing ${next} skills.`);
+          setCategory(next);
+        }}
+        className="w-full gap-3"
+      >
         <KeyboardChoiceGroup itemRole="tab" value={category}>
           <Tabs.List
             accessibilityLabel="Skill categories"

@@ -24,7 +24,14 @@ export default function JourneyCharacterTabs({
 }) {
   const { profile } = useCharacterGame();
   return (
-    <Tabs value={value} onValueChange={onValueChange} className="w-full gap-4">
+    <Tabs
+      value={value}
+      onValueChange={(next) => {
+        host.recordLog('user', 'CHARACTER_TAB', `Opened character ${next}.`);
+        onValueChange(next);
+      }}
+      className="w-full gap-4"
+    >
       <KeyboardChoiceGroup itemRole="tab" value={value}>
         <Tabs.List
           accessibilityLabel="Character details"

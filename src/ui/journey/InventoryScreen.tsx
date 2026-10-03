@@ -110,6 +110,11 @@ export function InventoryContent({
         row={row}
         open={selectedKey === key}
         onOpenChange={(open) => {
+          host.recordLog(
+            'user',
+            'ITEM_DETAILS',
+            `${open ? 'Opened' : 'Closed'} ${row.item.name} details.`,
+          );
           setSelectedKey(open ? key : undefined);
           setError(undefined);
         }}
