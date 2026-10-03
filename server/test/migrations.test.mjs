@@ -1,70 +1,197 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { getPlatformProxy } from 'wrangler';
+import { readMigrationFiles } from 'drizzle-orm/migrator';
 import { migrateLocal } from '../tools/migrate-local.mjs';
+import { localDatabase } from './local-db.mjs';
 
-test('local migrations are idempotent and preserve accounts and history', async (t) => {
-  const proxy = await getPlatformProxy({
-    configPath: 'wrangler.jsonc',
-    remoteBindings: false,
-    persist: false,
-  });
-  t.after(() => proxy.dispose());
-  const db = proxy.env.DB;
-  await migrateLocal(db);
-  const history = await db.prepare('SELECT * FROM __drizzle_migrations').all();
-  assert.equal(history.results.length, 1);
+const migrations = readMigrationFiles({ migrationsFolder: 'drizzle' });
+const [legacy] = migrations;
+async function legacyDatabase(t) {
+  const db = await localDatabase(t);
+  await db.batch(legacy.sql.map((sql) => db.prepare(sql)));
   await db
     .prepare('INSERT INTO users VALUES (?, ?, ?, ?, ?)')
-    .bind('preserved', 'preserved@example.invalid', 'test-hash', 123, 456)
+    .bind('legacy', 'legacy@example.invalid', 'old-hash', 123, 456)
     .run();
-  const user = await db.prepare('SELECT * FROM users').first();
-  await migrateLocal(db);
-  assert.deepEqual(
-    (await db.prepare('SELECT * FROM __drizzle_migrations').all()).results,
-    history.results,
-  );
-  assert.deepEqual(await db.prepare('SELECT * FROM users').first(), user);
-});
-
-test('baselining requires explicit opt-in and exact schema, and preserves account data', async (t) => {
-  const proxy = await getPlatformProxy({
-    configPath: 'wrangler.jsonc',
-    remoteBindings: false,
-    persist: false,
-  });
-  t.after(() => proxy.dispose());
-  const db = proxy.env.DB;
-  await migrateLocal(db);
   await db
-    .prepare('INSERT INTO users VALUES (?, ?, ?, ?, ?)')
-    .bind('preserved', 'preserved@example.invalid', 'test-hash', 123, 456)
+    .prepare('INSERT INTO auth_sessions VALUES (?, ?, ?, ?, ?, ?)')
+    .bind(
+      'legacy',
+      'old-session',
+      'old-token-hash',
+      Date.now() + 86400000,
+      123,
+      456,
+    )
     .run();
-  const user = await db.prepare('SELECT * FROM users').first();
-  await db.prepare('DELETE FROM __drizzle_migrations').run();
-  await assert.rejects(() => migrateLocal(db), /no migration history/);
-  await migrateLocal(db, true);
-  assert.deepEqual(await db.prepare('SELECT * FROM users').first(), user);
-  assert.equal(
+  return db;
+}
+
+test(
+  'fresh migrations are idempotent and preserve new accounts and history',
+  { timeout: 20000 },
+  async (t) => {
+    const db = await localDatabase(t);
+    await migrateLocal(db);
+    const history = (
+      await db.prepare('SELECT * FROM __drizzle_migrations').all()
+    ).results;
+    assert.equal(history.length, migrations.length);
     await db
-      .prepare('SELECT COUNT(*) AS count FROM __drizzle_migrations')
-      .first('count'),
-    1,
-  );
-  await db.prepare('DELETE FROM __drizzle_migrations').run();
-  await db.prepare('ALTER TABLE users ADD COLUMN extra TEXT').run();
-  await assert.rejects(
-    () => migrateLocal(db, true),
-    /differs from the original migration/,
-  );
-  assert.equal(
+      .prepare(
+        'INSERT INTO user (id, name, email, email_verified, created_at, updated_at) VALUES (?, ?, ?, 0, ?, ?)',
+      )
+      .bind('preserved', 'Player', 'preserved@example.invalid', 123, 456)
+      .run();
+    const user = await db.prepare('SELECT * FROM user').first();
     await db
-      .prepare('SELECT COUNT(*) AS count FROM __drizzle_migrations')
-      .first('count'),
-    0,
-  );
-  assert.equal(
-    await db.prepare('SELECT id FROM users').first('id'),
-    'preserved',
-  );
-});
+      .prepare(
+        'INSERT INTO game_characters (id,user_id,name,talent,age,revision,content_version,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?)',
+      )
+      .bind(
+        'online-preserved',
+        'preserved',
+        'Player',
+        'warrior',
+        12,
+        7,
+        'rebirth-13.1',
+        123,
+        456,
+      )
+      .run();
+    const character = await db.prepare('SELECT * FROM game_characters').first();
+    await migrateLocal(db);
+    assert.deepEqual(
+      (await db.prepare('SELECT * FROM __drizzle_migrations').all()).results,
+      history,
+    );
+    assert.deepEqual(await db.prepare('SELECT * FROM user').first(), user);
+    assert.deepEqual(
+      await db.prepare('SELECT * FROM game_characters').first(),
+      character,
+    );
+    assert.equal(
+      await db
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type='trigger' AND name='session_replace_previous'",
+        )
+        .first('name'),
+      'session_replace_previous',
+    );
+  },
+);
+
+test(
+  'baselines the original schema, resets legacy auth, and preserves unrelated data',
+  { timeout: 20000 },
+  async (t) => {
+    const db = await legacyDatabase(t);
+    await db.prepare('CREATE TABLE unrelated (value TEXT)').run();
+    await db.prepare("INSERT INTO unrelated VALUES ('keep me')").run();
+    await assert.rejects(() => migrateLocal(db), /no migration history/);
+    assert.equal(
+      await db.prepare('SELECT id FROM users').first('id'),
+      'legacy',
+    );
+    await migrateLocal(db, true);
+    assert.equal(
+      await db.prepare('SELECT COUNT(*) AS count FROM user').first('count'),
+      0,
+    );
+    assert.equal(
+      await db.prepare('SELECT value FROM unrelated').first('value'),
+      'keep me',
+    );
+    assert.equal(
+      await db
+        .prepare(
+          "SELECT COUNT(*) AS count FROM sqlite_master WHERE name IN ('users', 'auth_sessions')",
+        )
+        .first('count'),
+      0,
+    );
+    const history = (
+      await db
+        .prepare('SELECT * FROM __drizzle_migrations ORDER BY created_at')
+        .all()
+    ).results;
+    assert.equal(history.length, migrations.length);
+    assert.equal(history[0].hash, legacy.hash);
+    assert.equal(history[0].name, legacy.name);
+  },
+);
+
+test(
+  'upgrades an existing ledger without rewriting its original entry',
+  { timeout: 20000 },
+  async (t) => {
+    const db = await legacyDatabase(t);
+    await db.batch([
+      db.prepare(
+        'CREATE TABLE __drizzle_migrations (id INTEGER PRIMARY KEY, hash TEXT NOT NULL, created_at NUMERIC, name TEXT, applied_at TEXT)',
+      ),
+      db
+        .prepare(
+          'INSERT INTO __drizzle_migrations (hash, created_at, name, applied_at) VALUES (?, ?, ?, ?)',
+        )
+        .bind(legacy.hash, legacy.folderMillis, legacy.name, 'original'),
+    ]);
+    const original = await db
+      .prepare('SELECT * FROM __drizzle_migrations')
+      .first();
+    await migrateLocal(db);
+    assert.deepEqual(
+      await db
+        .prepare(
+          'SELECT * FROM __drizzle_migrations ORDER BY created_at LIMIT 1',
+        )
+        .first(),
+      original,
+    );
+    assert.equal(
+      await db.prepare('SELECT COUNT(*) AS count FROM user').first('count'),
+      0,
+    );
+  },
+);
+
+test(
+  'refuses baselining a different legacy schema without changing data',
+  { timeout: 20000 },
+  async (t) => {
+    const db = await legacyDatabase(t);
+    await db.prepare('ALTER TABLE users ADD COLUMN extra TEXT').run();
+    await assert.rejects(
+      () => migrateLocal(db, true),
+      /differs from the original migration/,
+    );
+    assert.equal(
+      await db.prepare('SELECT id FROM users').first('id'),
+      'legacy',
+    );
+    assert.equal(
+      await db
+        .prepare(
+          "SELECT COUNT(*) AS count FROM sqlite_master WHERE name='__drizzle_migrations'",
+        )
+        .first('count'),
+      0,
+    );
+  },
+);
+
+test(
+  'refuses untracked Better Auth tables instead of treating them as a fresh database',
+  { timeout: 20000 },
+  async (t) => {
+    const db = await localDatabase(t);
+    await migrateLocal(db);
+    await db.prepare('DELETE FROM __drizzle_migrations').run();
+    await assert.rejects(() => migrateLocal(db), /no migration history/);
+    await assert.rejects(
+      () => migrateLocal(db, true),
+      /differs from the original migration/,
+    );
+  },
+);

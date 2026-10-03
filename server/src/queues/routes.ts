@@ -79,8 +79,8 @@ queueRoutes.openapi(
     tags: ['Queues'],
     summary: 'Enqueue an example background job',
     description:
-      'Requires a current bearer session. Accepts a message of 1–256 characters and rejects unknown fields. Limited to 10 requests per user per minute, approximately per Cloudflare location; maximum request size is 4 KiB. A 202 confirms queue acceptance, not completion. Find queue_job_completed in Worker logs using jobId or X-Request-Id. Delivery is at least once and ordering is not guaranteed; duplicate delivery can create duplicate logs. Retrying an HTTP request can enqueue another job. Logout does not cancel accepted jobs. This example has no persistent side effects or status endpoint.',
-    security: [{ bearerAuth: [] }],
+      'Requires a current cookie session. Accepts a message of 1–256 characters and rejects unknown fields. Limited to 10 requests per user per minute, approximately per Cloudflare location; maximum request size is 4 KiB. A 202 confirms queue acceptance, not completion. Find queue_job_completed in Worker logs using jobId or X-Request-Id. Delivery is at least once and ordering is not guaranteed; duplicate delivery can create duplicate logs. Retrying an HTTP request can enqueue another job. Logout does not cancel accepted jobs. This example has no persistent side effects or status endpoint.',
+    security: [{ cookieAuth: [] }],
     middleware: [requireAuth, rateLimitQueue] as const,
     request: {
       body: {
@@ -110,10 +110,15 @@ queueRoutes.openapi(
         },
       },
       400: errorResponse(400, 'Bad Request', 'Invalid request body'),
+      403: errorResponse(403, 'Forbidden', 'Untrusted request origin'),
+      415: errorResponse(
+        415,
+        'Unsupported Media Type',
+        'JSON request body required',
+      ),
       401: {
         ...errorResponse(401, 'Unauthorized', 'Session expired or revoked'),
-        description:
-          'Missing, invalid, expired, or revoked bearer authentication.',
+        description: 'Missing, invalid, expired, or revoked session cookie.',
       },
       413: errorResponse(
         413,

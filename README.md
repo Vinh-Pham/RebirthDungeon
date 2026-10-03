@@ -1,8 +1,9 @@
 # Rebirth Dungeon workspace
 
-A pnpm + Turborepo workspace containing two applications:
+A pnpm + Turborepo workspace containing two applications and a shared game package:
 
 - `client/`: Expo SDK 57 / React Native game, package `rebirth-dungeon`.
+- `packages/game-core/`: portable catalog, validators, deterministic RPG and headless game execution, package `@rebirth/game-core`.
 - `server/`: Hono API on Cloudflare Workers, with Drizzle, D1, KV, Queues, and email bindings, package `rebirth-dungeon-server`.
 
 ## Setup
@@ -15,14 +16,15 @@ pnpm install
 ```
 
 The root `pnpm-workspace.yaml` owns workspace settings and allowed dependency
-builds, and the root `pnpm-lock.yaml` locks both apps. Dependencies use pnpm's
+builds, and the root `pnpm-lock.yaml` locks all workspace packages. Dependencies use pnpm's
 isolated layout so the Expo app and server email templates retain their own React
 versions. Expo's existing `expo/metro-config` handles the workspace automatically.
 Skia's installation hook still prepares the client's native libraries and web WASM.
 
 For a new local server setup, copy `server/.dev.vars.example` to
-`server/.dev.vars` and set `JWT_ACCESS_SECRET` to a secret with at least 32 random
-bytes. Preserve an existing `.dev.vars`. Then initialize local D1:
+`server/.dev.vars` and set `BETTER_AUTH_SECRET` to a secret with at least 32 random
+bytes. Preserve an existing `.dev.vars`. Add `BETTER_AUTH_URL` and `BETTER_AUTH_TRUSTED_ORIGINS` from the example as well.
+Then initialize local D1:
 
 ```sh
 pnpm db:setup
@@ -50,7 +52,10 @@ pnpm exec turbo run dev --filter=rebirth-dungeon-server -- --port 8790
 pnpm exec turbo run web --filter=rebirth-dungeon -- --clear
 ```
 
-The API reference is at [localhost:8787/docs](http://localhost:8787/docs).
+The API reference is at [localhost:8787/docs](http://localhost:8787/docs), with
+Application and Authentication sources. Better Auth uses `/api/auth/*` and session
+cookies. See the [server README](server/README.md) for the contract and Expo follow-up design.
+The server also exposes authoritative online gameplay under `/api/game/*`.
 The client remains a local game; starting both apps does not add API integration.
 
 ## Database tasks
@@ -69,14 +74,15 @@ its Wrangler configuration, local D1 state, and Drizzle migration paths.
 | `pnpm db:migrate:remote`                     | Verify remote history, then apply pending reviewed migrations                        |
 
 The local fixture login is `player@example.invalid` with password
-`local-development-password`. The seed stores a real Argon2id hash and leaves an
+`local-development-password`. The seed stores a real Better Auth scrypt credential and leaves an
 existing account and its sessions unchanged. Run migrations before a standalone
 seed command. Seeding uses local D1 only; it accepts no CLI arguments.
 `LOCAL_D1_STATE=/absolute/path pnpm db:setup` selects a custom local state folder;
 use the same state directory for the corresponding Worker session.
 
 The existing `__drizzle_migrations` ledger and migration safeguards remain in
-place. For remote commands, keep migration credentials in `server/.env`, using
+place. The Better Auth reset migration discards legacy accounts and sessions;
+existing users must register again. Unrelated data is preserved. For remote commands, keep migration credentials in `server/.env`, using
 `server/.env.example` as a template. Exported `CLOUDFLARE_*` and `WRANGLER_*`
 variables are also forwarded through Turbo. Local Worker secrets stay in
 `server/.dev.vars`; Turbo does not load `.env` files itself.

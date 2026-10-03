@@ -17,8 +17,8 @@ import { createDungeonRun, generateDungeon } from '../../engine/dungeon/Dungeon'
 import { findPath, isWalkable } from '../../engine/world/TileMap';
 import { JourneySession } from '../../game/JourneySession';
 import type { BattleSession } from '../../game/BattleSession';
-import type { CampaignState } from '../../persistence/SaveSchema';
-import * as SaveSchema from '../../persistence/SaveSchema';
+import type { CampaignState } from '@rebirth/game-core/persistence/SaveSchema';
+import * as SaveSchema from '@rebirth/game-core/persistence/SaveSchema';
 import { AutoSaver } from '../../persistence/AutoSaver';
 import { SaveRepository, type SaveRow } from '../../persistence/SaveRepository';
 

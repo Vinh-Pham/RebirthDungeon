@@ -3,6 +3,7 @@ import { drizzle } from 'drizzle-orm/d1';
 import { migrate } from 'drizzle-orm/d1/migrator';
 import { readMigrationFiles } from 'drizzle-orm/migrator';
 import { pathToFileURL } from 'node:url';
+import { join } from 'node:path';
 
 function normalizeSql(sql) {
   return sql.trim().replace(/;$/, '').replace(/\s+/g, ' ');
@@ -11,7 +12,7 @@ function normalizeSql(sql) {
 async function baselineExistingTables(db, allowBaseline) {
   const { results: tables } = await db
     .prepare(
-      "SELECT name, sql FROM sqlite_master WHERE type='table' AND name IN ('users', 'auth_sessions', '__drizzle_migrations')",
+      "SELECT name, sql FROM sqlite_master WHERE type='table' AND name IN ('users', 'auth_sessions', 'user', 'session', 'account', 'verification', '__drizzle_migrations')",
     )
     .all();
   const hasHistory = tables.some(
@@ -73,7 +74,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
     configPath: 'wrangler.jsonc',
     remoteBindings: false,
     persist: process.env.LOCAL_D1_STATE
-      ? { path: process.env.LOCAL_D1_STATE }
+      ? { path: join(process.env.LOCAL_D1_STATE, 'v3') }
       : true,
   });
   try {

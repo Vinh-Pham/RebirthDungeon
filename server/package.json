@@ -31,9 +31,12 @@
     "test:seed": "node --test test/seed.test.mjs"
   },
   "dependencies": {
+    "@better-auth/drizzle-adapter": "1.7.7",
+    "@better-auth/expo": "1.7.7",
     "@hono/zod-openapi": "^1.6.3",
+    "@rebirth/game-core": "workspace:*",
     "@scalar/hono-api-reference": "^0.12.5",
-    "argon2-wasm-edge": "1.0.23",
+    "better-auth": "1.7.7",
     "drizzle-orm": "1.0.0-rc.4",
     "hono": "^4.13.9",
     "react": "19.3.0",

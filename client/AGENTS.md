@@ -2,6 +2,8 @@
 
 This is an Expo/React Native RPG with a deterministic TypeScript game engine, turn-based combat, dungeon exploration, character progression, and local saves. Prioritize mobile-first patterns, performance, and compatibility across iOS, Android, and web.
 
+Portable engine rules, bundled JSON content, content/save validators, and headless journey/battle sessions now live in `../packages/game-core/src`. The corresponding client modules re-export that package; edit its owning modules for rule changes. Client session wrappers inject animation presentation. UI, audio, storage, host lifecycles, and local save behavior remain in this client. See `../packages/game-core/README.md` and `../server/README.md` for the separate authoritative online contracts; this Expo UI currently continues to use local characters.
+
 ## Read the project docs before implementation
 
 - Start with [README.md](README.md) for setup and [docs/game-plan.md](docs/game-plan.md) for architecture, ownership, and the delivery roadmap.

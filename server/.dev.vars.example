@@ -1,2 +1,4 @@
 # Runtime secret: use at least 32 random bytes. Never commit real values.
-JWT_ACCESS_SECRET=
+BETTER_AUTH_SECRET=
+BETTER_AUTH_URL=http://localhost:8787
+BETTER_AUTH_TRUSTED_ORIGINS=["rebirthdungeon://","http://localhost:8081","http://127.0.0.1:8081"]

@@ -1,7 +1,13 @@
 import type { Job } from './queues/schemas.js';
-import type { User } from './db/repository.js';
+import type { AuthSession } from './auth/auth.js';
+import type { AuthBindings } from './auth/config.js';
 
 export type AppEnv = {
-  Bindings: Omit<CloudflareBindings, 'APP_QUEUE'> & { APP_QUEUE: Queue<Job> };
-  Variables: { user: User; sessionId: string; requestId: string };
+  Bindings: Omit<CloudflareBindings, 'APP_QUEUE' | keyof AuthBindings> &
+    AuthBindings & { APP_QUEUE: Queue<Job> };
+  Variables: {
+    user: AuthSession['user'];
+    sessionId: string;
+    requestId: string;
+  };
 };

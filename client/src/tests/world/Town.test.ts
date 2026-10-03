@@ -7,7 +7,7 @@ import { addItem, heroStats, itemCount, repairPrice, type Hero } from '../../eng
 import { distance, findPath, isWalkable } from '../../engine/world/TileMap';
 import { encodeSave, parseSave, validateCampaign } from '../../persistence/SaveSchema';
 import { legacyCampaign } from '../persistence/legacyFixture';
-import * as Dungeon from '../../engine/dungeon/Dungeon';
+import * as Dungeon from '@rebirth/game-core/engine/dungeon/Dungeon';
 
 const content = loadGameContent();
 const sessions: JourneySession[] = [];

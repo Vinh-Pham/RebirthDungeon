@@ -1,6 +1,7 @@
 packages:
   - client
   - server
+  - packages/*
 
 # Expo SDK 57 supports isolated dependencies; keep each app's React version separate.
 nodeLinker: isolated

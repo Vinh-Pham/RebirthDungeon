@@ -1,2 +1,2 @@
-export * from './schema/auth-sessions.js';
-export * from './schema/users.js';
+export * from './schema/auth.js';
+export * from './schema/game.js';

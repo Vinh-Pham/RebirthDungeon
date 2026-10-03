@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { loadGameContent } from '../../data/content';
 import { ContentRegistry } from '../../engine/data/ContentRegistry';
 import { ContentSchema } from '../../data/schemas/content';
-import catalog from '../../data/skills/basic.json';
+import catalog from '@rebirth/game-core/data/skills/basic.json';
 
 function data() {
   return structuredClone(loadGameContent().data);

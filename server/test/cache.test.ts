@@ -9,7 +9,8 @@ import {
   cachePutSchema,
   storedResponseSchema,
 } from '../src/kv/schemas.js';
-import { errorSchema, type AuthResponse } from '../src/auth/schemas.js';
+import { errorSchema } from '../src/auth/schemas.js';
+import { register } from './auth-helpers.js';
 
 declare global {
   namespace Cloudflare {
@@ -24,25 +25,9 @@ beforeEach(async () => {
 });
 afterEach(() => vi.restoreAllMocks());
 
-async function register(email = 'cache-test@example.com') {
-  const response = await exports.default.fetch(
-    'https://example.com/auth/register',
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email,
-        password: 'cache test long password',
-      }),
-    },
-  );
-  expect(response.status).toBe(201);
-  return response.json<AuthResponse>();
-}
-
 function request(
   path: string,
-  init: { method: string; token?: string; body?: unknown },
+  init: { method: string; cookie?: string; body?: unknown },
 ) {
   return app.request(
     path,
@@ -50,7 +35,7 @@ function request(
       method: init.method,
       headers: {
         'Content-Type': 'application/json',
-        ...(init.token ? { Authorization: `Bearer ${init.token}` } : {}),
+        ...(init.cookie ? { Cookie: init.cookie } : {}),
       },
       ...(init.body !== undefined ? { body: JSON.stringify(init.body) } : {}),
     },
@@ -119,7 +104,7 @@ it('stores, reads, and deletes entries through the API', async () => {
   const auth = await register();
   const put = await request('/cache/entries', {
     method: 'PUT',
-    token: auth.accessToken,
+    cookie: auth.cookie,
     body: { name: 'daily-greeting', value: 'Hello from the game client' },
   });
   expect(put.status).toBe(200);
@@ -133,7 +118,7 @@ it('stores, reads, and deletes entries through the API', async () => {
 
   const get = await request('/cache/entries/daily-greeting', {
     method: 'GET',
-    token: auth.accessToken,
+    cookie: auth.cookie,
   });
   expect(get.status).toBe(200);
   expect(cacheEntryResponseSchema.parse(await get.json())).toEqual({
@@ -143,13 +128,13 @@ it('stores, reads, and deletes entries through the API', async () => {
 
   const remove = await request('/cache/entries/daily-greeting', {
     method: 'DELETE',
-    token: auth.accessToken,
+    cookie: auth.cookie,
   });
   expect(remove.status).toBe(204);
 
   const missing = await request('/cache/entries/daily-greeting', {
     method: 'GET',
-    token: auth.accessToken,
+    cookie: auth.cookie,
   });
   expect(missing.status).toBe(404);
   expect(errorSchema.parse(await missing.json())).toEqual({
@@ -164,12 +149,12 @@ it('scopes entries to the authenticated user', async () => {
   const bob = await register('other-player@example.com');
   await request('/cache/entries', {
     method: 'PUT',
-    token: alice.accessToken,
+    cookie: alice.cookie,
     body: { name: 'daily-greeting', value: 'private to alice' },
   });
   const response = await request('/cache/entries/daily-greeting', {
     method: 'GET',
-    token: bob.accessToken,
+    cookie: bob.cookie,
   });
   expect(response.status).toBe(404);
   expect(
@@ -189,7 +174,7 @@ it('requires authentication and rejects invalid input', async () => {
   const auth = await register();
   const badName = await request('/cache/entries', {
     method: 'PUT',
-    token: auth.accessToken,
+    cookie: auth.cookie,
     body: { name: 'Bad_Name', value: 'Hello from the game client' },
   });
   expect(badName.status).toBe(400);
@@ -199,14 +184,14 @@ it('requires authentication and rejects invalid input', async () => {
 
   const shortTtl = await request('/cache/entries', {
     method: 'PUT',
-    token: auth.accessToken,
+    cookie: auth.cookie,
     body: { name: 'daily-greeting', value: 'Hello', ttlSeconds: 30 },
   });
   expect(shortTtl.status).toBe(400);
 
   const badPath = await request('/cache/entries/Bad_Name', {
     method: 'GET',
-    token: auth.accessToken,
+    cookie: auth.cookie,
   });
   expect(badPath.status).toBe(400);
 });
@@ -217,7 +202,7 @@ it('returns 503 without leaking details when a write fails', async () => {
   const auth = await register();
   const response = await request('/cache/entries', {
     method: 'PUT',
-    token: auth.accessToken,
+    cookie: auth.cookie,
     body: { name: 'daily-greeting', value: 'Hello from the game client' },
   });
   expect(response.status).toBe(503);
@@ -227,6 +212,96 @@ it('returns 503 without leaking details when a write fails', async () => {
     error: 'Service Unavailable',
   });
   expect(errors.mock.calls.flat().join('')).not.toContain('secret');
+});
+
+it('rejects untrusted browser writes and form bodies without changing the cache', async () => {
+  const auth = await register();
+  const write = vi.spyOn(env.CACHE, 'put');
+  const remove = vi.spyOn(env.CACHE, 'delete');
+  const origins: Record<string, string>[] = [
+    { Origin: 'https://evil.example' },
+    { Origin: 'null' },
+    { 'Sec-Fetch-Site': 'cross-site' },
+  ];
+  for (const headers of origins) {
+    const response = await app.request(
+      '/cache/entries',
+      {
+        method: 'PUT',
+        headers: {
+          Cookie: auth.cookie,
+          'Content-Type': 'application/json',
+          ...headers,
+        },
+        body: JSON.stringify({ name: 'private', value: 'keep' }),
+      },
+      env,
+    );
+    expect(response.status).toBe(403);
+    expect(response.headers.get('Cache-Control')).toBe('no-store');
+  }
+  const form = await app.request(
+    '/cache/entries',
+    {
+      method: 'PUT',
+      headers: { Cookie: auth.cookie, 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ name: 'private', value: 'keep' }),
+    },
+    env,
+  );
+  expect(form.status).toBe(415);
+  const deleted = await app.request(
+    '/cache/entries/private',
+    {
+      method: 'DELETE',
+      headers: { Cookie: auth.cookie, Origin: 'https://evil.example' },
+    },
+    env,
+  );
+  expect(deleted.status).toBe(403);
+  expect(write).not.toHaveBeenCalled();
+  expect(remove).not.toHaveBeenCalled();
+});
+
+it('allows writes from an approved web origin and limits by authenticated user', async () => {
+  const auth = await register();
+  const response = await app.request(
+    '/cache/entries',
+    {
+      method: 'PUT',
+      headers: {
+        Cookie: auth.cookie,
+        Origin: 'https://app.example.com',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name: 'private', value: 'hello' }),
+    },
+    env,
+  );
+  expect(response.status).toBe(200);
+  expect(response.headers.get('Access-Control-Allow-Origin')).toBe(
+    'https://app.example.com',
+  );
+  expect(response.headers.get('Access-Control-Allow-Credentials')).toBe('true');
+  const limit = vi
+    .spyOn(env.CACHE_RATE_LIMIT, 'limit')
+    .mockResolvedValue({ success: false });
+  const limited = await request('/cache/entries/private', {
+    method: 'DELETE',
+    cookie: auth.cookie,
+  });
+  expect(limited.status).toBe(429);
+  expect(limited.headers.get('Retry-After')).toBe('60');
+  expect(limit).toHaveBeenCalledWith({ key: auth.user.id });
+  limit.mockRejectedValue(new Error('private limiter details'));
+  expect(
+    (
+      await request('/cache/entries/private', {
+        method: 'DELETE',
+        cookie: auth.cookie,
+      })
+    ).status,
+  ).toBe(503);
 });
 
 it('documents the cache contract', async () => {
@@ -258,14 +333,16 @@ it('documents the cache contract', async () => {
   const get = spec.paths['/cache/entries/{name}']?.get;
   const del = spec.paths['/cache/entries/{name}']?.delete;
   expect(put?.operationId).toBe('storeCacheEntry');
-  expect(put?.security).toEqual([{ bearerAuth: [] }]);
+  expect(put?.security).toEqual([{ cookieAuth: [] }]);
   expect(get?.operationId).toBe('getCacheEntry');
   expect(del?.operationId).toBe('deleteCacheEntry');
   expect(Object.keys(put?.responses ?? {}).sort()).toEqual([
     '200',
     '400',
     '401',
+    '403',
     '413',
+    '415',
     '429',
     '500',
     '503',
@@ -276,11 +353,13 @@ it('documents the cache contract', async () => {
     '401',
     '404',
     '500',
+    '503',
   ]);
   expect(Object.keys(del?.responses ?? {}).sort()).toEqual([
     '204',
     '400',
     '401',
+    '403',
     '429',
     '500',
     '503',

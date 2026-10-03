@@ -42,11 +42,18 @@
     },
   ],
   "vars": {
+    "BETTER_AUTH_URL": "",
+    "BETTER_AUTH_TRUSTED_ORIGINS": "[\"rebirthdungeon://\"]",
     "EMAIL_FROM": "noreply@rebirthdungeon.com",
     "EMAIL_FROM_NAME": "Rebirth Dungeon",
   },
-  "secrets": { "required": ["JWT_ACCESS_SECRET"] },
+  "secrets": { "required": ["BETTER_AUTH_SECRET"] },
   "ratelimits": [
+    {
+      "name": "GAME_RATE_LIMIT",
+      "namespace_id": "2026100301",
+      "simple": { "limit": 300, "period": 60 },
+    },
     {
       "name": "CACHE_RATE_LIMIT",
       "namespace_id": "2026092501",
@@ -61,11 +68,6 @@
       "name": "AUTH_RATE_LIMIT",
       "namespace_id": "2026092301",
       "simple": { "limit": 10, "period": 60 },
-    },
-    {
-      "name": "REFRESH_RATE_LIMIT",
-      "namespace_id": "2026092302",
-      "simple": { "limit": 30, "period": 60 },
     },
   ],
   "observability": {

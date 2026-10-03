@@ -1,0 +1,68 @@
+export { GameEngine, createGameEngine } from './GameEngine';
+export type { GameEngineOptions } from './GameEngine';
+export { CommandBus } from './CommandBus';
+export { EventBus } from './EventBus';
+export type { Unsubscribe } from './EventBus';
+export { createGameRandom } from './Random';
+export type { GameRandom } from './Random';
+export type { GameSystem } from './GameSystem';
+export type { GameCommand } from './commands';
+export type { GameEvent } from './events';
+export type { Entity, EntityId } from './ecs/Entity';
+export { createGameWorld } from './ecs/World';
+export type { GameWorld } from './ecs/World';
+export type { Health } from './ecs/components/Health';
+export { createHealth, applyDamage, validateHealth } from './ecs/components/Health';
+export type { CombatStats } from './ecs/components/CombatStats';
+export { validateCombatStats } from './ecs/components/CombatStats';
+export { calculateDamage } from './battle/DamageCalculator';
+export type { DamageInput } from './battle/DamageCalculator';
+export { calculateHitChance, rollHit } from './battle/HitCalculator';
+export { rollCritical } from './battle/CriticalCalculator';
+export { resolveAttack } from './battle/AttackResolver';
+export type { AttackResult, CombatEntity } from './battle/AttackResolver';
+export { TurnQueue } from './battle/TurnQueue';
+export type { TurnScheduler } from './battle/TurnQueue';
+export { handleDeath } from './ecs/systems/DeathSystem';
+export { CombatSystem } from './ecs/systems/CombatSystem';
+export type { BattleResult } from './ecs/systems/CombatSystem';
+export { createBattleMachine } from './battle/BattleMachine';
+export type { BattleAction, BattleContext } from './battle/BattleMachine';
+export { BattleController } from './battle/BattleController';
+export type { BattlePhase } from './battle/BattleController';
+export { prepareSkill } from './battle/SkillResolver';
+export { ContentRegistry } from './data/ContentRegistry';
+
+export {
+  createHero,
+  heroStats,
+  validateHero,
+  grantExperience,
+  rollLoot,
+  experienceToNextLevel,
+} from './rpg/Character';
+export type { Hero } from './rpg/Character';
+export { applyStatus, tickStatuses, effectiveEntity } from './rpg/StatusEffects';
+export type { ActiveStatus } from './rpg/StatusEffects';
+export { findPath, isWalkable } from './world/TileMap';
+
+export { EnemyBattleEngine } from './battle/enemies/EnemyBattleEngine';
+export {
+  EnemyBattleRegistry,
+  createEnemyBattleRegistry,
+} from './battle/enemies/EnemyBattleRegistry';
+export type {
+  EnemyBattleBehavior,
+  EnemyBattleContext,
+  EnemyTurnDecision,
+} from './battle/enemies/EnemyBattleBehavior';
+
+export { LogEngine, LOG_CATEGORIES, selectLogEntries } from './logging/LogEngine';
+export type {
+  LogEntry,
+  LogInput,
+  LogCategory,
+  LogFilter,
+  LogSnapshot,
+  LogSink,
+} from './logging/LogEngine';

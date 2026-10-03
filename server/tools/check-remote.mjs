@@ -1,10 +1,10 @@
 import 'dotenv/config';
-import { readFile } from 'node:fs/promises';
+import { unstable_readConfig } from 'wrangler';
 import { pathToFileURL } from 'node:url';
 import { readMigrationFiles } from 'drizzle-orm/migrator';
 
 export async function checkRemote() {
-  const config = JSON.parse(await readFile('wrangler.jsonc', 'utf8'));
+  const config = unstable_readConfig({ config: 'wrangler.jsonc' });
   const {
     CLOUDFLARE_ACCOUNT_ID: account,
     CLOUDFLARE_DATABASE_ID: database,

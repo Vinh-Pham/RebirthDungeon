@@ -84,8 +84,8 @@ cacheRoutes.openapi(
     tags: ['Cache'],
     summary: 'Store a personal cache entry',
     description:
-      'Requires a current bearer session. Stores a value under the given name in Cloudflare Workers KV, scoped to the authenticated user, with a time-to-live of 60–2,592,000 seconds (default 300). Writing an existing name overwrites its value and restarts the TTL. Names are lowercase slugs of 1–64 characters and values are 1–2048 characters; unknown fields are rejected and request bodies are limited to 4 KiB. Limited to 30 write requests per user per minute, approximately per Cloudflare location. KV is eventually consistent: a read from another Cloudflare location can return the previous value, or 404 for a new entry, for up to about 60 seconds. Sustained writes to a single key are limited to roughly one per second. Never store authentication, session, or other read-after-write data here; D1 remains the system of record.',
-    security: [{ bearerAuth: [] }],
+      'Requires a current cookie session. Stores a value under the given name in Cloudflare Workers KV, scoped to the authenticated user, with a time-to-live of 60–2,592,000 seconds (default 300). Writing an existing name overwrites its value and restarts the TTL. Names are lowercase slugs of 1–64 characters and values are 1–2048 characters; unknown fields are rejected and request bodies are limited to 4 KiB. Limited to 30 write requests per user per minute, approximately per Cloudflare location. KV is eventually consistent: a read from another Cloudflare location can return the previous value, or 404 for a new entry, for up to about 60 seconds. Sustained writes to a single key are limited to roughly one per second. Never store authentication, session, or other read-after-write data here; D1 remains the system of record.',
+    security: [{ cookieAuth: [] }],
     middleware: [requireAuth, rateLimitCache] as const,
     request: {
       body: {
@@ -123,10 +123,15 @@ cacheRoutes.openapi(
         },
       },
       400: errorResponse(400, 'Bad Request', 'Invalid request'),
+      403: errorResponse(403, 'Forbidden', 'Untrusted request origin'),
+      415: errorResponse(
+        415,
+        'Unsupported Media Type',
+        'JSON request body required',
+      ),
       401: {
         ...errorResponse(401, 'Unauthorized', 'Session expired or revoked'),
-        description:
-          'Missing, invalid, expired, or revoked bearer authentication.',
+        description: 'Missing, invalid, expired, or revoked session cookie.',
       },
       413: errorResponse(
         413,
@@ -178,8 +183,8 @@ cacheRoutes.openapi(
     tags: ['Cache'],
     summary: 'Read a personal cache entry',
     description:
-      "Requires a current bearer session. Returns the authenticated user's entry with the given name, or 404 when it was never stored, has expired, or no longer matches the expected shape. Cache reads fail open: if KV is unavailable the endpoint reports 404 rather than an error, because the cache is an optimization and never a source of truth. KV is eventually consistent: a value just written, especially from another Cloudflare location, can remain unreadable for up to about 60 seconds.",
-    security: [{ bearerAuth: [] }],
+      "Requires a current cookie session. Returns the authenticated user's entry with the given name, or 404 when it was never stored, has expired, or no longer matches the expected shape. Cache reads fail open: if KV is unavailable the endpoint reports 404 rather than an error, because the cache is an optimization and never a source of truth. KV is eventually consistent: a value just written, especially from another Cloudflare location, can remain unreadable for up to about 60 seconds.",
+    security: [{ cookieAuth: [] }],
     middleware: [requireAuth] as const,
     request: { params: cacheEntryParams },
     responses: {
@@ -202,14 +207,18 @@ cacheRoutes.openapi(
       },
       401: {
         ...errorResponse(401, 'Unauthorized', 'Session expired or revoked'),
-        description:
-          'Missing, invalid, expired, or revoked bearer authentication.',
+        description: 'Missing, invalid, expired, or revoked session cookie.',
       },
       404: {
         ...errorResponse(404, 'Not Found', 'Entry not found'),
         description: 'No readable entry exists for this user and name.',
       },
       500: errorResponse(500, 'Internal Server Error', 'Internal server error'),
+      503: errorResponse(
+        503,
+        'Service Unavailable',
+        'Authentication unavailable',
+      ),
     },
   }),
   async (c) => {
@@ -230,8 +239,8 @@ cacheRoutes.openapi(
     tags: ['Cache'],
     summary: 'Delete a personal cache entry',
     description:
-      "Requires a current bearer session. Deletes the authenticated user's entry with the given name and returns 204; deleting an absent or expired entry is also successful. Limited to 30 write requests per user per minute, approximately per Cloudflare location. KV deletes are eventually consistent: a read from another Cloudflare location can still return the deleted value for up to about 60 seconds.",
-    security: [{ bearerAuth: [] }],
+      "Requires a current cookie session. Deletes the authenticated user's entry with the given name and returns 204; deleting an absent or expired entry is also successful. Limited to 30 write requests per user per minute, approximately per Cloudflare location. KV deletes are eventually consistent: a read from another Cloudflare location can still return the deleted value for up to about 60 seconds.",
+    security: [{ cookieAuth: [] }],
     middleware: [requireAuth, rateLimitCache] as const,
     request: { params: cacheEntryParams },
     responses: {
@@ -243,10 +252,10 @@ cacheRoutes.openapi(
         ...errorResponse(400, 'Bad Request', 'Invalid request'),
         description: 'The entry name does not match the required format.',
       },
+      403: errorResponse(403, 'Forbidden', 'Untrusted request origin'),
       401: {
         ...errorResponse(401, 'Unauthorized', 'Session expired or revoked'),
-        description:
-          'Missing, invalid, expired, or revoked bearer authentication.',
+        description: 'Missing, invalid, expired, or revoked session cookie.',
       },
       429: {
         ...errorResponse(429, 'Too Many Requests', 'Too many requests'),

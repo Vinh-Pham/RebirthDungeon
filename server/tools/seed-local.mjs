@@ -1,46 +1,35 @@
-import { randomBytes, randomUUID } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
-import { createRequire } from 'node:module';
+import { randomUUID } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
-import { argon2id, setWASMModules } from 'argon2-wasm-edge';
+import { join } from 'node:path';
+import { hashPassword } from 'better-auth/crypto';
 import { getPlatformProxy } from 'wrangler';
 
-const require = createRequire(import.meta.url);
 export const SEED_EMAIL = 'player@example.invalid';
 export const SEED_PASSWORD = 'local-development-password';
 
 export async function seedLocal(db) {
   const existing = await db
-    .prepare('SELECT id FROM users WHERE email = ?')
+    .prepare('SELECT id FROM user WHERE email = ?')
     .bind(SEED_EMAIL)
     .first();
   if (existing) return false;
-
-  const [argon2WASM, blake2bWASM] = await Promise.all(
-    ['argon2', 'blake2b'].map(async (name) =>
-      WebAssembly.compile(
-        await readFile(require.resolve(`argon2-wasm-edge/wasm/${name}.wasm`)),
-      ),
-    ),
-  );
-  await setWASMModules({ argon2WASM, blake2bWASM });
-  const passwordHash = await argon2id({
-    password: SEED_PASSWORD,
-    salt: randomBytes(16),
-    memorySize: 19456,
-    iterations: 2,
-    parallelism: 1,
-    hashLength: 32,
-    outputType: 'encoded',
-  });
+  const password = await hashPassword(SEED_PASSWORD);
+  const userId = randomUUID();
   const now = Date.now();
-  const result = await db
-    .prepare(
-      'INSERT INTO users (id, email, password_hash, created_at, updated_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(email) DO NOTHING',
-    )
-    .bind(randomUUID(), SEED_EMAIL, passwordHash, now, now)
-    .run();
-  return result.meta.changes > 0;
+  // Both inserts share a D1 transaction; a concurrent seed cannot attach credentials to another user.
+  const results = await db.batch([
+    db
+      .prepare(
+        'INSERT INTO user (id, name, email, email_verified, created_at, updated_at) VALUES (?, ?, ?, 0, ?, ?) ON CONFLICT(email) DO NOTHING',
+      )
+      .bind(userId, 'Player', SEED_EMAIL, now, now),
+    db
+      .prepare(
+        "INSERT INTO account (id, account_id, provider_id, user_id, password, created_at, updated_at) SELECT ?, id, 'credential', id, ?, ?, ? FROM user WHERE id = ?",
+      )
+      .bind(randomUUID(), password, now, now, userId),
+  ]);
+  return results[0].meta.changes > 0;
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
@@ -53,7 +42,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
     configPath: 'wrangler.jsonc',
     remoteBindings: false,
     persist: process.env.LOCAL_D1_STATE
-      ? { path: process.env.LOCAL_D1_STATE }
+      ? { path: join(process.env.LOCAL_D1_STATE, 'v3') }
       : true,
   });
   try {

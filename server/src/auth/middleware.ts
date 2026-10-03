@@ -1,35 +1,54 @@
 import { createMiddleware } from 'hono/factory';
 import { HTTPException } from 'hono/http-exception';
 import type { AppEnv } from '../env.js';
-import { createRepository } from '../db/repository.js';
-import { verifyAccessToken } from './tokens.js';
+import { createAuth } from './auth.js';
+import { authConfiguration } from './config.js';
 
 export const requireAuth = createMiddleware<AppEnv>(async (c, next) => {
-  const match = /^Bearer ([^\s]+)$/i.exec(c.req.header('Authorization') ?? '');
-  if (!match)
-    throw new HTTPException(401, { message: 'Bearer access token required' });
-  const claims = await verifyAccessToken(match[1]!, c.env.JWT_ACCESS_SECRET);
-  const user = await createRepository(c.env.DB).activeUser(
-    claims.sub,
-    claims.sid,
-  );
-  if (!user)
+  let session;
+  try {
+    session = await createAuth(c.env, c.get('requestId')).api.getSession({
+      headers: c.req.raw.headers,
+    });
+  } catch {
+    throw new HTTPException(503, { message: 'Authentication unavailable' });
+  }
+  if (!session)
     throw new HTTPException(401, { message: 'Session expired or revoked' });
-  c.set('user', user);
-  c.set('sessionId', claims.sid);
+  c.set('user', session.user);
+  c.set('sessionId', session.session.id);
   await next();
 });
 
+export const protectApplicationWrites = createMiddleware<AppEnv>(
+  async (c, next) => {
+    if (['GET', 'HEAD', 'OPTIONS'].includes(c.req.method)) return next();
+    const origin = c.req.header('Origin');
+    const fetchSite = c.req.header('Sec-Fetch-Site');
+    const { trustedOrigins } = authConfiguration(c.env);
+    if (
+      (origin && !trustedOrigins.includes(origin)) ||
+      (!origin && fetchSite === 'cross-site')
+    ) {
+      throw new HTTPException(403, { message: 'Untrusted request origin' });
+    }
+    // Browser forms cannot impersonate native JSON requests without an allowed preflight.
+    if (
+      ['POST', 'PUT', 'PATCH'].includes(c.req.method) &&
+      c.req.header('Content-Type')?.split(';')[0].trim().toLowerCase() !==
+        'application/json'
+    ) {
+      throw new HTTPException(415, { message: 'JSON request body required' });
+    }
+    await next();
+  },
+);
+
 export const rateLimitAuth = createMiddleware<AppEnv>(async (c, next) => {
-  const limiter =
-    c.req.path === '/auth/refresh'
-      ? c.env.REFRESH_RATE_LIMIT
-      : c.env.AUTH_RATE_LIMIT;
-  // Cloudflare ingress owns this header. Do not trust X-Forwarded-For.
   const ip = c.req.header('CF-Connecting-IP') ?? 'local';
   let allowed: boolean;
   try {
-    ({ success: allowed } = await limiter.limit({
+    ({ success: allowed } = await c.env.AUTH_RATE_LIMIT.limit({
       key: `${c.req.path}:${ip}`,
     }));
   } catch {

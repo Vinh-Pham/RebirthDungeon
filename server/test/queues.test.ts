@@ -8,7 +8,6 @@ import {
   type D1Migration,
 } from 'cloudflare:test';
 import { beforeEach, afterEach, expect, it, vi } from 'vitest';
-import { sign, decode } from 'hono/jwt';
 import { app } from '../src/index.js';
 import { consumeJobs } from '../src/queues/consumer.js';
 import { enqueueExampleJob } from '../src/queues/producer.js';
@@ -18,7 +17,8 @@ import {
   queuedResponseSchema,
   type Job,
 } from '../src/queues/schemas.js';
-import { errorSchema, type AuthResponse } from '../src/auth/schemas.js';
+import { errorSchema } from '../src/auth/schemas.js';
+import { register, expireSessions, authRequest } from './auth-helpers.js';
 
 declare global {
   namespace Cloudflare {
@@ -33,23 +33,8 @@ beforeEach(async () => {
 });
 afterEach(() => vi.restoreAllMocks());
 
-async function register() {
-  const response = await exports.default.fetch(
-    'https://example.com/auth/register',
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: 'queue-test@example.com',
-        password: 'queue test long password',
-      }),
-    },
-  );
-  expect(response.status).toBe(201);
-  return response.json<AuthResponse>();
-}
 function request(
-  token?: string,
+  cookie?: string,
   body: unknown = { message: 'Hello from the game client' },
   bindings = env,
 ) {
@@ -59,7 +44,7 @@ function request(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(cookie ? { Cookie: cookie } : {}),
       },
       body: JSON.stringify(body),
     },
@@ -89,7 +74,7 @@ it('publishes validated JSON with server-owned identity and correlation metadata
       },
     },
   });
-  const response = await request(auth.accessToken);
+  const response = await request(auth.cookie);
   expect(response.status).toBe(202);
   const result = queuedResponseSchema.parse(await response.json());
   expect(send).toHaveBeenCalledTimes(1);
@@ -109,7 +94,7 @@ it('waits for publication confirmation and returns 503 on failure', async () => 
     .spyOn(env.APP_QUEUE, 'send')
     .mockRejectedValue(new Error('secret details'));
   const auth = await register();
-  const response = await request(auth.accessToken);
+  const response = await request(auth.cookie);
   expect(response.status).toBe(503);
   expect(await response.json()).toEqual({
     statusCode: 503,
@@ -152,17 +137,11 @@ it('rejects missing, expired, and revoked credentials without publishing', async
   const send = vi.spyOn(env.APP_QUEUE, 'send');
   expect((await request()).status).toBe(401);
   const auth = await register();
-  const expired = await sign(
-    { ...decode(auth.accessToken).payload, exp: 1 },
-    env.JWT_ACCESS_SECRET,
-    'HS256',
-  );
-  expect((await request(expired)).status).toBe(401);
-  await exports.default.fetch('https://example.com/auth/logout', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${auth.accessToken}` },
-  });
-  expect((await request(auth.accessToken)).status).toBe(401);
+  await expireSessions();
+  expect((await request(auth.cookie)).status).toBe(401);
+  const active = await register('active@example.com');
+  await authRequest('/sign-out', {}, active.cookie);
+  expect((await request(active.cookie)).status).toBe(401);
   expect(send).not.toHaveBeenCalled();
 });
 
@@ -175,16 +154,16 @@ it('rejects invalid, oversized, and malformed request bodies', async () => {
     { message: 'a'.repeat(257) },
     { message: 'test', userId: auth.user.id },
   ])
-    expect((await request(auth.accessToken, body)).status).toBe(400);
+    expect((await request(auth.cookie, body)).status).toBe(400);
   expect(
-    (await request(auth.accessToken, { message: 'a'.repeat(5000) })).status,
+    (await request(auth.cookie, { message: 'a'.repeat(5000) })).status,
   ).toBe(413);
   const response = await app.request(
     '/queues/example',
     {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${auth.accessToken}`,
+        Cookie: auth.cookie,
         'Content-Type': 'application/json',
       },
       body: '{',
@@ -195,18 +174,45 @@ it('rejects invalid, oversized, and malformed request bodies', async () => {
   expect(send).not.toHaveBeenCalled();
 });
 
+it('rejects browser CSRF and non-JSON writes without publishing', async () => {
+  const auth = await register();
+  const send = vi.spyOn(env.APP_QUEUE, 'send');
+  for (const [headers, status] of [
+    [{ Origin: 'https://evil.example' }, 403],
+    [{ 'Sec-Fetch-Site': 'cross-site' }, 403],
+    [{ 'Content-Type': 'text/plain' }, 415],
+  ] as const) {
+    const response = await app.request(
+      '/queues/example',
+      {
+        method: 'POST',
+        headers: {
+          Cookie: auth.cookie,
+          'Content-Type': 'application/json',
+          ...headers,
+        },
+        body: JSON.stringify({ message: 'must not publish' }),
+      },
+      env,
+    );
+    expect(response.status).toBe(status);
+    expect(response.headers.get('Cache-Control')).toBe('no-store');
+  }
+  expect(send).not.toHaveBeenCalled();
+});
+
 it('limits by authenticated user and fails closed when the limiter fails', async () => {
   const auth = await register();
   const limit = vi
     .spyOn(env.QUEUE_RATE_LIMIT, 'limit')
     .mockResolvedValue({ success: false });
   const send = vi.spyOn(env.APP_QUEUE, 'send');
-  const response = await request(auth.accessToken);
+  const response = await request(auth.cookie);
   expect(response.status).toBe(429);
   expect(response.headers.get('Retry-After')).toBe('60');
   expect(limit).toHaveBeenCalledWith({ key: auth.user.id });
   limit.mockRejectedValue(new Error('unavailable'));
-  expect((await request(auth.accessToken)).status).toBe(503);
+  expect((await request(auth.cookie)).status).toBe(503);
   expect(send).not.toHaveBeenCalled();
 });
 
@@ -289,12 +295,14 @@ it('documents the queue contract and preserves unique operation IDs', async () =
   }>();
   const route = spec.paths['/queues/example'].post;
   expect(route.operationId).toBe('enqueueExampleJob');
-  expect(route.security).toEqual([{ bearerAuth: [] }]);
+  expect(route.security).toEqual([{ cookieAuth: [] }]);
   expect(Object.keys(route.responses).sort()).toEqual([
     '202',
     '400',
     '401',
+    '403',
     '413',
+    '415',
     '429',
     '500',
     '503',

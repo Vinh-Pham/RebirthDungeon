@@ -1,3 +1,5 @@
+Authored skill JSON now lives in `packages/game-core/src/data/skills` at the workspace root. Edit that shared catalog so client and server rules remain identical.
+
 # Skill catalog
 
 `basic.json` retains the 33 reference skill identities, source URLs, retrieval dates,

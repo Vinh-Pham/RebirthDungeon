@@ -48,7 +48,7 @@
       "passThroughEnv": ["LOCAL_D1_STATE", "CI"]
     },
     "test:smoke": {
-      "passThroughEnv": ["LOCAL_API_ORIGIN", "CI"]
+      "passThroughEnv": ["LOCAL_API_ORIGIN", "LOCAL_D1_STATE", "CI"]
     },
     "test": {
       "cache": false,
