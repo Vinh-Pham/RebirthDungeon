@@ -42,6 +42,7 @@ function rankEffects(
 }
 function progressLabel(hero: HeroSnapshot, skill: Skill, town: boolean) {
   const record = hero.learnedSkills[skill.id];
+  if (skill.enemyOnly) return 'Enemy-only passive';
   if (!skill.gameRanks) return 'Not implemented';
   if (!record)
     return hero.discoveredSkills.includes(skill.id)
@@ -220,17 +221,24 @@ function SkillDetails({
         </Text>
       </View>
       <Text className="text-muted" style={menu.body}>
-        {skill.category} · {skill.kind} · {record ? `Rank ${record.rank}` : 'Unlearned'}
+        {skill.category} · {skill.kind} ·{' '}
+        {skill.enemyOnly ? 'Enemy only' : record ? `Rank ${record.rank}` : 'Unlearned'}
       </Text>
       <Text className="text-accent" style={menu.heading}>
         {hero.ap} AP · {progressLabel(hero, skill, town)}
       </Text>
       <ProgressionFeedback host={host} />
-      {!town ? (
+      {!town && !skill.enemyOnly ? (
         <DungeonNotice status="accent" message="Return to town to rank up or learn skills" />
       ) : null}
       {!rank ? (
-        <DungeonNotice message="Not implemented. This skill needs authored game ranks and resolver support." />
+        <DungeonNotice
+          message={
+            skill.enemyOnly
+              ? (skill.description ?? 'Enemy-only skill. Cannot be learned.')
+              : 'Not implemented. This skill needs authored game ranks and resolver support.'
+          }
+        />
       ) : (
         <>
           <DungeonCard>

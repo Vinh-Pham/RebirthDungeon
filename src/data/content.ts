@@ -3,6 +3,7 @@ import worlds from './worlds/basic.json';
 import enchants from './enchants/basic.json';
 import enchantingRules from './enchants/rules.json';
 import enchantSkills from './skills/enchant.json';
+import poisonAttack from './skills/poison-attack.json';
 import restSkills from './skills/rest.json';
 import skills from './skills/basic.json';
 import humanRangedAttack from './skills/human-ranged-attack.json';
@@ -24,7 +25,7 @@ export function loadGameContent(): ContentRegistry {
   return new ContentRegistry({
     enchants,
     enchantingRules,
-    skills: [...skills, ...enchantSkills, ...humanRangedAttack, ...restSkills],
+    skills: [...skills, ...enchantSkills, ...humanRangedAttack, ...restSkills, ...poisonAttack],
     enemies: [...mossHallsEnemies, ...sharedEnemies, ...spiderNestEnemies],
     classes,
     items,

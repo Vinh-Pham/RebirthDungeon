@@ -1,0 +1,22 @@
+[
+  {
+    "id": "poison-attack",
+    "name": "Poison Attack",
+    "category": "combat",
+    "kind": "passive",
+    "enemyOnly": true,
+    "battleUsable": false,
+    "manaCost": 0,
+    "staminaCost": 0,
+    "power": 0,
+    "element": "physical",
+    "target": "enemy",
+    "effect": "damage",
+    "description": "Enemy passive: successful unguarded melee hits have a 5% chance to poison. Poison drains 5% of current HP at the end of three affected turns, cannot kill, and refreshes without stacking. Defense blocks new applications but does not cure poison.",
+    "enemyUse": {
+      "type": "onMeleeHit",
+      "statusId": "poison",
+      "chance": 0.05
+    }
+  }
+]

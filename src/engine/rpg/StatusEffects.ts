@@ -56,8 +56,14 @@ export function tickStatuses(
     const definition = content.status(active.id);
     if (definition.tickTiming !== timing) continue;
     const power = definition.power * active.stacks;
-    if (definition.effect === 'damage') {
-      const amount = Math.min(entity.health.current, power);
+    if (definition.effect === 'damage' || definition.effect === 'poison') {
+      const amount =
+        definition.effect === 'poison'
+          ? Math.min(
+              entity.health.current - 1,
+              Math.max(1, Math.floor(entity.health.current * definition.healthFraction!)),
+            )
+          : Math.min(entity.health.current, power);
       entity.health.current -= amount;
       events.push({
         type: 'DAMAGE_DEALT',

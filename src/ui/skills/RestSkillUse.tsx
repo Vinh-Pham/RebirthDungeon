@@ -17,7 +17,7 @@ export default function RestSkillUse({
   const hosted = useSyncExternalStore(host.subscribe, host.getSnapshot, host.getServerSnapshot);
   const reason =
     hosted.battle || view.state.pending
-      ? 'Use Rest from the Combat hotbar during battle.'
+      ? 'Use Rest from the Life hotbar during battle.'
       : view.activeService
         ? 'Close the town service before resting.'
         : !view.state.hero.learnedSkills.rest

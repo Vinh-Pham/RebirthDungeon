@@ -128,6 +128,15 @@ export const SkillBookRecipeSchema = z.strictObject({
     .min(1)
     .max(20),
 });
+export const BattleAISchema = z.strictObject({
+  engineId: id,
+  config: z.record(z.string(), z.json()).default({}),
+});
+export type BattleAI = z.infer<typeof BattleAISchema>;
+const EnemyUseSchema = z.discriminatedUnion('type', [
+  z.strictObject({ type: z.literal('defend') }),
+  z.strictObject({ type: z.literal('onMeleeHit'), statusId: id, chance: probability }),
+]);
 export const SkillSchema = z
   .strictObject({
     id,
@@ -157,6 +166,8 @@ export const SkillSchema = z
     gameRanks: z.partialRecord(SkillRankSchema, GameRankSchema).optional(),
     requiresWeapon: z.enum(['melee', 'sword']).optional(),
     acquisitionHint: z.string().optional(),
+    enemyOnly: z.boolean().optional(),
+    enemyUse: EnemyUseSchema.optional(),
   })
   .refine(
     (skill) =>
@@ -184,6 +195,7 @@ const actor = {
 };
 export const EnemySchema = z.strictObject({
   ...actor,
+  battleAI: BattleAISchema.optional(),
   experience: uint.max(10000).default(0),
   gold: uint.max(10000).default(0),
   loot: z
@@ -278,14 +290,22 @@ export const StatusEffectSchema = z
     duration: positive.max(100),
     tickTiming: z.enum(['turnStart', 'turnEnd']),
     stacking: z.enum(['refresh', 'stack', 'ignore']),
-    effect: z.enum(['damage', 'heal', 'stat']),
+    effect: z.enum(['damage', 'heal', 'stat', 'poison']),
+    healthFraction: probability.optional(),
     power: uint.max(10000),
     stat: z.enum(['attack', 'defense', 'speed']).optional(),
     modifier: z.number().int().min(-1000).max(1000).default(0),
   })
   .refine((status) => status.effect !== 'stat' || !!status.stat, {
     message: 'Stat effects require a stat',
-  });
+  })
+  .refine(
+    (status) =>
+      status.effect === 'poison'
+        ? !!status.healthFraction && status.stacking === 'refresh' && status.power === 0
+        : status.healthFraction === undefined,
+    { message: 'Invalid percentage poison effect' },
+  );
 export const AtlasSchema = z.strictObject({
   id,
   columns: positive,
@@ -391,6 +411,12 @@ export const ContentSchema = z
     }
     for (const key of ['enemies', 'classes'] as const)
       content[key].forEach((entry, index) => {
+        if (new Set(entry.skills).size !== entry.skills.length)
+          ctx.addIssue({
+            code: 'custom',
+            message: 'Duplicate actor skill',
+            path: [key, index, 'skills'],
+          });
         for (const skillId of entry.skills) {
           const skill = content.skills.find((skill) => skill.id === skillId);
           if (!skill)
@@ -430,6 +456,34 @@ export const ContentSchema = z
         }
       });
     const issue = (message: string) => ctx.addIssue({ code: 'custom', message });
+    for (const skill of content.skills) {
+      const adapter = skill.enemyUse;
+      if (
+        adapter?.type === 'defend' &&
+        (skill.kind !== 'active' ||
+          skill.target !== 'self' ||
+          skill.effect !== 'buff' ||
+          skill.manaCost ||
+          skill.staminaCost)
+      )
+        issue('Defense adapter requires a free self-targeted active buff');
+      if (
+        adapter?.type === 'onMeleeHit' &&
+        (skill.kind !== 'passive' ||
+          skill.battleUsable !== false ||
+          skill.manaCost ||
+          skill.staminaCost ||
+          !content.statusEffects.some((s) => s.id === adapter.statusId))
+      )
+        issue('Invalid passive on-hit adapter');
+      if (
+        skill.enemyOnly &&
+        (skill.gameRanks ||
+          content.classes.some((c) => c.skills.includes(skill.id)) ||
+          content.skillBookRecipes.some((r) => r.skillId === skill.id))
+      )
+        issue('Enemy-only skills cannot grant hero progression');
+    }
     const rankOrder = SKILL_RANKS;
     for (const skill of content.skills)
       if (skill.gameRanks) {

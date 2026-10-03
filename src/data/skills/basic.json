@@ -3730,12 +3730,13 @@
   },
   {
     "id": "defense",
+    "enemyUse": { "type": "defend" },
     "name": "Defense",
     "category": "combat",
     "kind": "active",
     "rank": "F",
     "battleUsable": false,
-    "description": "Defense \u2014 see rank tables for its effects.",
+    "description": "Defense uses the free Defend action for enemies, halving direct damage until their next turn and recovering stamina. Learned hero ranks remain unavailable.",
     "manaCost": 0,
     "power": 0,
     "element": "physical",
@@ -4052,7 +4053,7 @@
         "1": []
       }
     },
-    "staminaCost": 1
+    "staminaCost": 0
   },
   {
     "id": "elf-ranged-attack",

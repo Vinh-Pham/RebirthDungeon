@@ -445,6 +445,32 @@ export class CombatSystem implements GameSystem {
         } else if (!effect.result.hit) {
           events.push({ type: 'ATTACK_MISSED', sourceId: attackerId, targetId: effect.target.id });
         }
+        if (
+          physicalAction &&
+          tags.includes('melee') &&
+          effect.result.hit &&
+          !effect.target.dead &&
+          outcomeTarget.hostile &&
+          !(this.defending.has(effect.target.id) && !skill?.bypassDefend) &&
+          this.options.content
+        ) {
+          for (const id of attacker.skills ?? []) {
+            const passive = this.options.content.skill(id);
+            const adapter = passive.enemyUse;
+            if (
+              adapter?.type === 'onMeleeHit' &&
+              (!passive.enemyOnly || attacker.enemy) &&
+              engine.random.chance(adapter.chance)
+            )
+              applyStatus(
+                effect.target,
+                adapter.statusId,
+                attackerId,
+                this.options.content,
+                events,
+              );
+          }
+        }
         if (effect.result.hit && !effect.target.dead && skill && this.options.content) {
           for (const statusId of skill.statuses)
             applyStatus(effect.target, statusId, attackerId, this.options.content, events);

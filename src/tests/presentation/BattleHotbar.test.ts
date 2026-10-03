@@ -43,11 +43,16 @@ describe('battle hotbar details', () => {
       expect(actions.map(({ id, skill, action }) => [id, skill.id, action])).toEqual([
         ['attack', attackSkill, { action: 'attack' }],
         ['defend', 'defense', { action: 'defend' }],
-        ['rest', 'rest', { action: 'rest' }],
       ]);
-      expect(
-        actions.filter(({ id }) => id !== 'rest').every(({ rank }) => rank === undefined),
-      ).toBe(true);
+      expect(actions.every(({ rank }) => rank === undefined)).toBe(true);
+      expect(battleHotbarActions(session, 'life')).toMatchObject([
+        {
+          id: 'rest',
+          skill: { id: 'rest', category: 'life' },
+          rank: 'F',
+          action: { action: 'rest' },
+        },
+      ]);
       expect(battleHotbarActions(session, 'magic').map(({ id }) => id)).toEqual([
         'firebolt',
         'icebolt',
@@ -70,12 +75,25 @@ describe('battle hotbar details', () => {
       player = session.engine.getEntity('player')!;
     player.learnedSkills!['combat-mastery'].rank = 'E';
     const actions = battleHotbarActions(session, 'combat');
-    expect(actions.map(({ id }) => id)).toEqual(['attack', 'defend', 'rest', 'smash']);
+    expect(actions.map(({ id }) => id)).toEqual(['attack', 'defend', 'smash']);
     expect(actions[0]).toMatchObject({
       rank: 'E',
       skill: { id: 'combat-mastery' },
       action: { action: 'attack' },
     });
+  });
+
+  it('keeps Life empty without owned Rest and does not expose unsupported life skills', () => {
+    const hero = cloneData(learnSkill(createHero(content), 'enchant', content));
+    delete hero.learnedSkills.rest;
+    const session = new BattleSession(content, 12345, 'chamber', hero);
+    sessions.push(session);
+    const player = session.engine.getEntity('player')!;
+    const before = structuredClone(player);
+    const random = session.engine.random.snapshot();
+    expect(battleHotbarActions(session, 'life')).toEqual([]);
+    expect(player).toEqual(before);
+    expect(session.engine.random.snapshot()).toEqual(random);
   });
 
   it('shows learned active skills in their authored categories with saved ranks', () => {

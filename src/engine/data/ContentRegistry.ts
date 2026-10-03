@@ -1,22 +1,29 @@
-import {
-  ContentSchema,
-  type GameContent,
-  type ActorDefinition,
-  type Skill,
-} from '../../data/schemas/content';
+import { ContentSchema, type GameContent, type Skill } from '../../data/schemas/content';
 import type { Entity } from '../ecs/Entity';
+import {
+  createEnemyBattleRegistry,
+  type EnemyBattleRegistry,
+} from '../battle/enemies/EnemyBattleRegistry';
 import { createHealth } from '../ecs/components/Health';
 
 /** All external definitions pass through one validating boundary before use. */
 export class ContentRegistry {
   readonly data: GameContent;
-  constructor(raw: unknown) {
+  constructor(
+    raw: unknown,
+    readonly enemyBattleRegistry: EnemyBattleRegistry = createEnemyBattleRegistry(),
+  ) {
     this.data = ContentSchema.parse(raw);
     const freeze = (value: unknown): void => {
       if (!value || typeof value !== 'object' || Object.isFrozen(value)) return;
       Object.values(value).forEach(freeze);
       Object.freeze(value);
     };
+    for (const enemy of this.data.enemies) {
+      const ai = this.enemyBattleRegistry.validate(enemy.battleAI);
+      if (enemy.battleAI) enemy.battleAI = ai;
+      freeze(enemy.battleAI);
+    }
     this.data.enchants.forEach(freeze);
     freeze(this.data.enchantingRules);
     this.data.quests.forEach(freeze);
@@ -57,10 +64,12 @@ export class ContentRegistry {
     x: number,
     y: number,
   ): Entity {
-    const definitions = side === 'player' ? this.data.classes : this.data.enemies;
-    const definition: ActorDefinition | undefined = definitions.find(
-      (entry) => entry.id === definitionId,
-    );
+    const enemyDefinition =
+      side === 'enemy' ? this.data.enemies.find((entry) => entry.id === definitionId) : undefined;
+    const definition =
+      side === 'player'
+        ? this.data.classes.find((entry) => entry.id === definitionId)
+        : enemyDefinition;
     if (!definition) throw new Error(`Unknown ${side} definition: ${definitionId}`);
     return {
       id: entityId,
@@ -78,6 +87,7 @@ export class ContentRegistry {
       mana: { current: definition.maxMana, max: definition.maxMana },
       combatant: { ...definition.combatant },
       skills: [...definition.skills],
+      ...(enemyDefinition?.battleAI ? { battleAI: enemyDefinition.battleAI } : {}),
       sprite: {
         ...definition.sprite,
         idleFrames: definition.sprite.idleFrames ? [...definition.sprite.idleFrames] : undefined,

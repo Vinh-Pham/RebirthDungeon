@@ -36,7 +36,7 @@ SELECT_ACTION { action: 'skill', skillId }
     → next scheduled actor or battle result
 ```
 
-The battle action menu lists **learned, implemented active skills**. Combat also contains the always-available Attack and Defend basic actions. Their icons/details use the talent’s Combat Mastery/Human Ranged Attack/Magic Mastery identity and Defense respectively, while keeping existing attack/guard rules. Loaded bows instead use Human Ranged Attack or owned Elf Ranged Attack independently of talent, with a one-arrow cost and ranged rank inputs. Empty/broken bows use fist damage and Combat Mastery presentation. This does not cast a passive or grant a learned rank. Other passive skills do not appear as selectable actions. Owned Rest appears in Combat and resolves the existing self-only Rest basic action. Items contains the character’s saved battle-usable consumable assignments, configured through Inventory; these do not grant skill training.
+The battle action menu lists **learned, implemented active skills**. Combat also contains the always-available Attack and Defend basic actions. Their icons/details use the talent’s Combat Mastery/Human Ranged Attack/Magic Mastery identity and Defense respectively, while keeping existing attack/guard rules. Loaded bows instead use Human Ranged Attack or owned Elf Ranged Attack independently of talent, with a one-arrow cost and ranged rank inputs. Empty/broken bows use fist damage and Combat Mastery presentation. This does not cast a passive or grant a learned rank. Other passive skills do not appear as selectable actions. Owned Rest appears in the separate Life category and resolves the existing self-only Rest basic action. Items contains the character’s saved battle-usable consumable assignments, configured through Inventory; these do not grant skill training.
 
 Selection and targeting are reversible. Neither spends resources nor draws gameplay randomness. `CANCEL_ACTION` returns to action selection without using the turn or awarding training. Confirmation revalidates ownership, rank, implementation support, equipment, cooldown, resource affordability, and living targets before any mutation or RNG draw. A rejected command changes none of those values and leaves the player able to correct the selection.
 
@@ -312,6 +312,19 @@ Use section 4's Smash objectives for F. Combat Mastery F can award 2 points for 
 
 Keep the introductory AP milestone and page sources distinct from repeatable battle rewards, with persisted claim IDs. Do not require a learned skill to produce an otherwise impossible acquisition/training event. Add no arbitrary racial variants or class locks to this slice.
 
+## Enemy skill adapters
+
+Enemy skills remain independent of hero learned ranks. Authored `enemyUse` adapters
+map Defense to the existing free Defend action and Poison Attack to a passive
+`onMeleeHit` status proc. Generic active damage/healing/buff skills use their authored
+defaults and existing resolvers. Family plugins only select/score legal actions;
+they do not implement separate damage or progression rules.
+
+Poison Attack is enemy-only, has no game ranks or learning route, and appears in
+catalog details as an enemy passive. Its reference has no F–1 table, so none is
+fabricated. Defense's historical tables remain intact; its enemy adapter does not
+enable learned player Defense progression. See [Battle](battle.md#enemy-battle-engines-and-spider-skills).
+
 ## 10. Implementation order
 
 1. **Content and progression foundation:** Separate reference tables from game rank definitions; add hero progression fields, pure helpers, starter grants, schema validation, and legacy migration. Replace class-derived ownership/stat grants with explicit learned ranks. Existing starter battles and stats must remain equivalent.
@@ -373,4 +386,4 @@ Enchant is a town-only life skill, learned at F for free from the refuge keeper.
 
 New characters learn and discover F automatically. Version 13 migrates older saves by adding missing ownership/discovery once without refilling resources, spending AP or changing other skill progress, inventory, gear, RNG or encounter checkpoints. F is the explicit current cap.
 
-Outside battle, Life's Rest card and journal details expose Use/Stop and current stamina in towns, authored halls and generated dungeons. START_REST/STOP_REST stage runtime posture without changing the campaign checkpoint. MOVE, TRAVEL_TO, INTERACT and dungeon exit reject while resting; Stop is immediate even while a recovery candidate saves or waits for retry. The candidate carries posture across accepted ticks, but posture is not serialized. Backgrounding, character exit, load and host disposal stop it without offline gains. `USE_LIFE_SKILL` validates owned Rest and exploration context, rejects active services/pending encounters, and goes through JourneyHost's durable candidate. Failed writes retain the same recovery tick for Retry save; they never add another tick. Stopping a retained/in-flight candidate prevents future recovery without discarding its already resolved tick. Rest can be used between dungeon encounters. In battle, the Combat Rest icon confirms the existing self-only `REST` action and consumes one turn, with recovery isolated until encounter settlement. Rest remains excluded from generic battle skill casting.
+Outside battle, Life's Rest card and journal details expose Use/Stop and current stamina in towns, authored halls and generated dungeons. START_REST/STOP_REST stage runtime posture without changing the campaign checkpoint. MOVE, TRAVEL_TO, INTERACT and dungeon exit reject while resting; Stop is immediate even while a recovery candidate saves or waits for retry. The candidate carries posture across accepted ticks, but posture is not serialized. Backgrounding, character exit, load and host disposal stop it without offline gains. `USE_LIFE_SKILL` validates owned Rest and exploration context, rejects active services/pending encounters, and goes through JourneyHost's durable candidate. Failed writes retain the same recovery tick for Retry save; they never add another tick. Stopping a retained/in-flight candidate prevents future recovery without discarding its already resolved tick. Rest can be used between dungeon encounters. In battle, the Life Rest icon confirms the existing self-only `REST` action and consumes one turn, with recovery isolated until encounter settlement. Rest remains excluded from generic battle skill casting.

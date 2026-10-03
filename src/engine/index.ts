@@ -45,3 +45,14 @@ export type { Hero } from './rpg/Character';
 export { applyStatus, tickStatuses, effectiveEntity } from './rpg/StatusEffects';
 export type { ActiveStatus } from './rpg/StatusEffects';
 export { findPath, isWalkable } from './world/TileMap';
+
+export { EnemyBattleEngine } from './battle/enemies/EnemyBattleEngine';
+export {
+  EnemyBattleRegistry,
+  createEnemyBattleRegistry,
+} from './battle/enemies/EnemyBattleRegistry';
+export type {
+  EnemyBattleBehavior,
+  EnemyBattleContext,
+  EnemyTurnDecision,
+} from './battle/enemies/EnemyBattleBehavior';

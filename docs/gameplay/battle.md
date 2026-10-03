@@ -101,7 +101,7 @@ For area skills, the selected target resolves first for RNG purposes; its succes
 
 Defend uses one turn, spends no MP/SP, draws no combat randomness, and does not wear a weapon. Until the defender's next turn starts, incoming attack/skill direct damage is `max(1, floor(normalDamage / 2))`. Skills with `bypassDefend` (currently Smash) skip this guard reduction in both previews and resolved damage; ordinary Defense and Protection still apply. It does not reduce periodic status damage. Its end-of-action resource tick uses the rest rate. The hotbar Defend action uses the Defense identity and this shared resolver. Future learned-rank Defense effects should extend it without a second stacking guard mechanic.
 
-The learned Rest life skill has an icon in Combat with Use Rest. This confirms the existing self-only basic action, not a USE_SKILL cast, and spends one turn without RNG or training. Normal completed actions tick HP/MP/SP/fullness under [Stats](stats.md). Rest and Defend use increased stamina recovery. Defeated actors receive no regeneration and healing does not revive them. Selection, tooltips and animation completion never run a resource tick.
+The learned Rest life skill has an icon in the separate Life category with Use Rest. This confirms the existing self-only basic action, not a USE_SKILL cast, and spends one turn without RNG or training. Normal completed actions tick HP/MP/SP/fullness under [Stats](stats.md). Rest and Defend use increased stamina recovery. Defeated actors receive no regeneration and healing does not revive them. Selection, tooltips and animation completion never run a resource tick.
 
 A usable weapon loses one durability after an eligible physical action with at least one successful hit. Area hits do not multiply wear by target count. Magic/healing/rest/defend, misses and exhausted bare-hand fallback do not wear it. At zero durability its stat contribution is removed for subsequent actions; the item remains owned and can be repaired at the blacksmith.
 
@@ -131,11 +131,68 @@ enable other exploration/progression mutations or serialize partial combat state
 
 ## 8. UI and future extensions
 
-Battle controls show HP/MP/SP, wounds/fullness, selected targets, statuses, weapon durability, error reasons and a bounded combat log. One horizontally scrollable hotbar has minimal Combat/Magic/Items label tabs. Combat includes Attack and Defend even without learned combat skills. Attack uses the current talent: Warrior → Combat Mastery, Archery → Human Ranged Attack, Mage → Magic Mastery. Defend uses Defense. A loaded bow uses Human Ranged Attack, or the owned Elf Ranged Attack, regardless of talent; an empty or broken bow shows Combat Mastery for its fist fallback. Other loadouts keep these talent identities. Defend mitigation and recovery remain unchanged. Show a saved backing-skill rank only when owned; do not grant progression or reference stat bonuses. Items shows assigned consumables with quantity and engine-derived capped recovery in its popovers. Empty slots remain inspectable with an Out of stock reason; the empty category directs the player to Inventory. HeroUI Native popovers show saved ranks, target-aware costs, engine-derived damage/healing ranges and equipment/cooldown/resource reasons. The action's Use button confirms selection; Attack and enemy-targeted skills resolve immediately against the sole living enemy, while multiple living enemies still require a monster tap in the game canvas. Self-only actions resolve from Use. Canvas targeting is paused until an action is confirmed and while a popover is open. Inspecting or closing a popover preserves the previous action and spends nothing; Cancel clears it. There is no Targets button or named target list. Richer enemy intent remains proposed.
+Battle controls show HP/MP/SP, wounds/fullness, selected targets, statuses, weapon durability, error reasons and a bounded combat log. One horizontally scrollable hotbar has minimal Combat/Magic/Life/Items label tabs. Combat includes Attack and Defend even without learned combat skills. Attack uses the current talent: Warrior → Combat Mastery, Archery → Human Ranged Attack, Mage → Magic Mastery. Defend uses Defense. A loaded bow uses Human Ranged Attack, or the owned Elf Ranged Attack, regardless of talent; an empty or broken bow shows Combat Mastery for its fist fallback. Other loadouts keep these talent identities. Defend mitigation and recovery remain unchanged. Show a saved backing-skill rank only when owned; do not grant progression or reference stat bonuses. Items shows assigned consumables with quantity and engine-derived capped recovery in its popovers. Empty slots remain inspectable with an Out of stock reason; the empty category directs the player to Inventory. HeroUI Native popovers show saved ranks, target-aware costs, engine-derived damage/healing ranges and equipment/cooldown/resource reasons. The action's Use button confirms selection; Attack and enemy-targeted skills resolve immediately against the sole living enemy, while multiple living enemies still require a monster tap in the game canvas. Self-only actions resolve from Use. Canvas targeting is paused until an action is confirmed and while a popover is open. Inspecting or closing a popover preserves the previous action and spends nothing; Cancel clears it. There is no Targets button or named target list. Richer enemy intent remains proposed.
 
 The UI may delay new player input while presentation is busy, but simulation and enemy turn execution must not wait for animation completion. Skipping/reducing motion changes only presentation. During battle, Inventory may edit hotbar assignments; exploration use and equipment changes remain unavailable. Battle gameplay pauses while an assignment candidate is saving or waiting for retry. Consumable use occurs through the combat Items popover.
 
 Follow [Skills](skills.md) for the F/E pilot, passive action tags, cooldown owner turns, Final Hit timing, Counterattack reactions and Windmill. Critical rolls and area resolver support already exist; those mechanics are not reasons to defer the entire skill system. Shield/dual-wield equipment, HP costs, charge loading, extra attacks, battle movement, dynamic initiative, revival and exact mid-battle saves require separate extensions.
+
+## Enemy battle engines and spider skills
+
+`src/engine/battle/enemies/` contains the encounter coordinator, plugin contract,
+registry, shared candidate preparation, generic engine and spider engine. Enemy
+JSON optionally supplies `battleAI: { engineId, config }`; omission selects
+`generic`. ContentRegistry accepts an injected registry, validates each family's
+configuration before spawning, and freezes authored config. Unknown IDs and
+malformed config fail loading. Plugins expose `id`, `configSchema` and
+`score(context)`, returning one nonnegative safe-integer weight per supplied
+candidate. Context contains immutable resource/status projections, legal candidates,
+family config and the actor's last accepted action, without mutable ECS or RNG.
+The coordinator rejects malformed/all-zero weights, draws once when multiple
+positive candidates remain, and selects directly when there is one.
+
+BattleController submits the decision through existing combat commands, restores
+selection RNG on uncommitted rejection, and records accepted history before routing
+the next phase, including committed notification errors. History is per actor and
+cleared on removal/disposal. There is no second turn queue or combat simulation.
+
+Generic AI considers Attack, owned Defense, and supported active damage/heal/buff
+skills, respecting ownership, equipment, cooldowns and target-dependent costs.
+Attack targets the lowest current-HP hostile (queue-order ties); healing targets the
+most depleted ally below half its healable capacity; buffs require a missing effect.
+Area skills retain existing selected-target/shared-critical evaluation. Damage,
+healing and buff weights are 100, 120 and 40. Generic Attack/Defense weights are
+80/20. Defense takes priority when stamina is below the normal attack cost and its
+capacity permits recovery; consecutive guarding is otherwise excluded.
+
+All four spiders know Defense. Only black, red and giant black spiders know
+enemy-only Poison Attack; white spiders never roll to apply poison. White/black/red/giant
+Attack/Defense weights are 60/40, 80/20, 90/10 and 80/20; their temperaments are
+`defensive`, `balanced`, `aggressive` and `survival`. Mana maxima are 20 for ordinary
+spiders and 40 for the giant; stamina remains 40/80. Defense weight triples at
+35% HP, 25% stamina, or when the selected hostile is poisoned (conditions do not
+multiply together). The giant uses a sixfold weight below 50% HP instead.
+Defense routes through the existing free Defend action, not a second buff or a
+learned player rank. It blocks poison application on hits it actually mitigates;
+Smash's guard bypass remains effective. Existing poison is not cured.
+
+Poison Attack is a passive with no cast, payment, cooldown or extra action. After
+existing direct hit/damage/injury resolution, successful melee hits against a living
+hostile roll a 5% application chance. Misses, lethal hits, spells, ranged attacks,
+and guard-mitigated hits do not roll. Poison refreshes one shared status ID to three
+affected-owner turn-end ticks, never stacking damage. Each tick loses
+`min(currentHP - 1, max(1, floor(currentHP * 0.05)))`; at 1 HP damage is zero.
+It ignores Defense/Protection, is noncritical, causes no wounds, and cannot kill.
+Ordinary regeneration follows the tick. Passive application/status ticks do not
+produce direct skill training. Poison and AI history disappear on encounter restart;
+suffered HP loss commits through the ordinary completed-result boundary.
+
+Source fetched with Firecrawl **October 2, 2026**:
+[Poison Attack](https://wiki.mabinogiworld.com/view/Poison_Attack).
+The passive melee identity, defense blocking, current-HP damage and nonlethal floor
+follow that reference. The 5% proc, 5% tick and three-turn duration are authored
+turn-based values. Resistance/immunity equipment, antidotes, Counterattack, weapon
+poisoning and persistent illness are outside this implementation.
 
 ## 9. Implementation and acceptance
 

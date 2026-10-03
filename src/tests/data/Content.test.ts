@@ -10,7 +10,7 @@ function data() {
 describe('validated game content', () => {
   it('preserves every normalized skill and its full source tables', () => {
     const content = loadGameContent();
-    expect(content.data.skills).toHaveLength(36);
+    expect(content.data.skills).toHaveLength(37);
     for (const source of catalog) {
       const skill = content.skill(source.id);
       expect(skill.reference).toEqual(source.reference);

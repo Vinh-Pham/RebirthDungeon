@@ -29,5 +29,15 @@
     "power": 0,
     "stat": "attack",
     "modifier": -3
+  },
+  {
+    "id": "poison",
+    "name": "Poison",
+    "duration": 3,
+    "tickTiming": "turnEnd",
+    "stacking": "refresh",
+    "effect": "poison",
+    "power": 0,
+    "healthFraction": 0.05
   }
 ]

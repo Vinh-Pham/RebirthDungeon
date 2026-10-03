@@ -179,12 +179,12 @@ describe('Rest life skill', () => {
     expect(without.getSnapshot()).toBe(before);
   });
 
-  it('exposes the owned Rest basic action in Combat and confirms exactly one self turn', () => {
+  it('exposes the owned Rest basic action in Life and confirms exactly one self turn', () => {
     const hero = createHero(content);
     hero.stamina = 4;
     const battle = new BattleSession(content, 12345, 'chamber', hero);
     battles.push(battle);
-    const action = battleHotbarActions(battle, 'combat').find((entry) => entry.id === 'rest')!;
+    const action = battleHotbarActions(battle, 'life').find((entry) => entry.id === 'rest')!;
     expect(action).toMatchObject({
       rank: 'F',
       action: { action: 'rest' },

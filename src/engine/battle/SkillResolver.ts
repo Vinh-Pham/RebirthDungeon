@@ -23,7 +23,11 @@ export function prepareSkill({
   selectedTargetId?: string;
 }) {
   validateCombatEntity(source);
-  if (skill.battleUsable === false || skill.kind === 'passive')
+  if (
+    skill.battleUsable === false ||
+    skill.kind === 'passive' ||
+    (skill.enemyOnly && !source.enemy)
+  )
     throw new Error('Skill is unavailable in battle');
   if (!source.skills?.includes(skill.id)) throw new Error('Source does not know this skill');
   const mana = source.mana;

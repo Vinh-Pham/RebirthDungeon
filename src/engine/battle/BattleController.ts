@@ -1,4 +1,5 @@
 import { skillForEntity, skillEquipmentReason } from '../rpg/Skills';
+import { EnemyBattleEngine } from './enemies/EnemyBattleEngine';
 import { createActor } from 'xstate';
 import type { GameEngine } from '../GameEngine';
 import type { GameSystem } from '../GameSystem';
@@ -22,10 +23,13 @@ export type BattlePhase =
 export class BattleController implements GameSystem {
   private actor = createActor(createBattleMachine());
   private engine?: GameEngine;
+  private readonly enemyBattle: EnemyBattleEngine;
   constructor(
     readonly combat: CombatSystem,
     readonly content: ContentRegistry,
-  ) {}
+  ) {
+    this.enemyBattle = new EnemyBattleEngine(content);
+  }
 
   get phase(): BattlePhase {
     const snapshot = this.actor.getSnapshot();
@@ -121,28 +125,37 @@ export class BattleController implements GameSystem {
           this.requirePhase('enemyTurn');
           const source = engine.getEntity(this.combat.currentTurn()!);
           validateCombatEntity(source);
-          const target = this.combat.turnOrder
-            .map((id) => engine.getEntity(id)!)
-            .find((entity) => entity.player && !entity.dead);
-          if (!target) throw new Error('No living player target');
-          this.actor.send({ type: 'ENEMY_EXECUTE' });
-          this.resolve({ action: 'attack' }, target.id);
+          const randomState = engine.random.snapshot();
+          const completed = this.combat.completedActions;
+          try {
+            const decision = this.enemyBattle.decide(engine, this.combat, source);
+            if (!this.validTargetIds(decision.action).includes(decision.targetId))
+              throw new Error('Invalid enemy target');
+            this.actor.send({ type: 'ENEMY_EXECUTE' });
+            this.resolve(decision.action, decision.targetId);
+          } catch (error) {
+            if (this.combat.completedActions === completed) engine.random.restore(randomState);
+            throw error;
+          }
         }),
       );
       cleanups.push(
-        engine.events.on('ENTITY_REMOVED', () => {
+        engine.events.on('ENTITY_REMOVED', ({ entityId }) => {
+          this.enemyBattle.forget(entityId);
           this.actor.send({ type: 'SYNC', ...this.summary() });
         }),
       );
     } catch (error) {
       cleanups.reverse().forEach((cleanup) => cleanup());
       this.actor.stop();
+      this.enemyBattle.dispose();
       this.engine = undefined;
       throw error;
     }
     return () => {
       cleanups.reverse().forEach((cleanup) => cleanup());
       this.actor.stop();
+      this.enemyBattle.dispose();
       this.engine = undefined;
     };
   }
@@ -196,6 +209,11 @@ export class BattleController implements GameSystem {
       );
     } catch (error) {
       if (
+        this.engine!.getEntity(sourceId)?.enemy &&
+        this.combat.completedActions !== completedActions
+      )
+        this.enemyBattle.recordAcceptedAction(sourceId, action);
+      if (
         this.combat.completedActions !== completedActions ||
         this.combat.result ||
         this.combat.currentTurn() !== sourceId
@@ -208,6 +226,8 @@ export class BattleController implements GameSystem {
         });
       throw error;
     }
+    if (this.engine!.getEntity(sourceId)?.enemy)
+      this.enemyBattle.recordAcceptedAction(sourceId, action);
     this.actor.send({ type: 'RESOLVED', ...this.summary() });
   }
 }

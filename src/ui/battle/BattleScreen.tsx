@@ -288,7 +288,7 @@ export function BattleView({
                 ))
               ) : (
                 <Text className="text-muted" style={styles.logLine}>
-                  A moss slime stirs in the dark.
+                  Enemies stir in the dark.
                 </Text>
               )}
             </View>

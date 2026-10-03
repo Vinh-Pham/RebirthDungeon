@@ -6,7 +6,12 @@ import type { BattleSession } from '../../game/BattleSession';
 import { prepareBattleItem } from '../../engine/rpg/Consumables';
 import { prepareBasicAttack } from '../../engine/battle/BasicAttack';
 
-export const BATTLE_CATEGORIES = { combat: 'Combat', magic: 'Magic', items: 'Items' } as const;
+export const BATTLE_CATEGORIES = {
+  combat: 'Combat',
+  magic: 'Magic',
+  life: 'Life',
+  items: 'Items',
+} as const;
 export type BattleSkillCategory = keyof typeof BATTLE_CATEGORIES;
 const attackSkills: Record<GrowthTalent, string> = {
   warrior: 'combat-mastery',
@@ -72,7 +77,7 @@ export function battleHotbarActions(
       : [];
   return [
     ...basic,
-    ...(category === 'combat' && source.player && source.learnedSkills?.rest
+    ...(category === 'life' && source.player && source.learnedSkills?.rest
       ? [
           {
             id: 'rest',

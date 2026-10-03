@@ -1,3 +1,4 @@
+import type { BattleAI } from '../../data/schemas/content';
 import type { LearnedSkills } from '../rpg/Skills';
 import type { ActiveStatus } from '../rpg/StatusEffects';
 import type { Health } from './components/Health';
@@ -31,4 +32,5 @@ export type Entity = {
   dead?: true;
   player?: true;
   enemy?: true;
+  battleAI?: BattleAI;
 };

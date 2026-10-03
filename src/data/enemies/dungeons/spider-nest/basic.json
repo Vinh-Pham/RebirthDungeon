@@ -3,7 +3,7 @@
     "id": "white-spider",
     "name": "White spider",
     "maxHealth": 55,
-    "maxMana": 0,
+    "maxMana": 20,
     "combatant": {
       "attack": 14,
       "defense": 2,
@@ -20,7 +20,7 @@
       "minInjury": 0.05,
       "maxInjury": 0.1
     },
-    "skills": [],
+    "skills": ["defense"],
     "sprite": {
       "atlas": "white-spider",
       "frame": 0
@@ -35,13 +35,19 @@
         "max": 1
       }
     ],
-    "maxStamina": 40
+    "maxStamina": 40,
+    "battleAI": {
+      "engineId": "spider",
+      "config": {
+        "temperament": "defensive"
+      }
+    }
   },
   {
     "id": "black-spider",
     "name": "Black spider",
     "maxHealth": 55,
-    "maxMana": 0,
+    "maxMana": 20,
     "combatant": {
       "attack": 14,
       "defense": 2,
@@ -58,7 +64,7 @@
       "minInjury": 0.05,
       "maxInjury": 0.1
     },
-    "skills": [],
+    "skills": ["defense", "poison-attack"],
     "sprite": {
       "atlas": "black-spider",
       "frame": 0
@@ -73,13 +79,19 @@
         "max": 1
       }
     ],
-    "maxStamina": 40
+    "maxStamina": 40,
+    "battleAI": {
+      "engineId": "spider",
+      "config": {
+        "temperament": "balanced"
+      }
+    }
   },
   {
     "id": "red-spider",
     "name": "Red spider",
     "maxHealth": 55,
-    "maxMana": 0,
+    "maxMana": 20,
     "combatant": {
       "attack": 14,
       "defense": 2,
@@ -96,7 +108,7 @@
       "minInjury": 0.05,
       "maxInjury": 0.1
     },
-    "skills": [],
+    "skills": ["defense", "poison-attack"],
     "sprite": {
       "atlas": "red-spider",
       "frame": 0
@@ -111,13 +123,19 @@
         "max": 1
       }
     ],
-    "maxStamina": 40
+    "maxStamina": 40,
+    "battleAI": {
+      "engineId": "spider",
+      "config": {
+        "temperament": "aggressive"
+      }
+    }
   },
   {
     "id": "giant-black-spider",
     "name": "Giant black spider",
     "maxHealth": 150,
-    "maxMana": 0,
+    "maxMana": 40,
     "combatant": {
       "attack": 28,
       "defense": 5,
@@ -133,7 +151,7 @@
       "minInjury": 0.1,
       "maxInjury": 0.2
     },
-    "skills": [],
+    "skills": ["defense", "poison-attack"],
     "sprite": {
       "atlas": "giant-black-spider",
       "frame": 0
@@ -148,6 +166,12 @@
         "max": 1
       }
     ],
-    "maxStamina": 80
+    "maxStamina": 80,
+    "battleAI": {
+      "engineId": "spider",
+      "config": {
+        "temperament": "survival"
+      }
+    }
   }
 ]

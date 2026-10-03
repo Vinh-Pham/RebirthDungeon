@@ -122,6 +122,7 @@ export function rankUpSkill(
 }
 export function learnSkillDraft(hero: Draft<Hero>, id: string, content: ContentRegistry) {
   const skill = content.skill(id);
+  if (skill.enemyOnly) throw new Error('Enemy-only skills cannot be learned');
   gameRank(skill, 'F');
   if (hero.learnedSkills[id]) throw new Error('This skill is already learned');
   hero.learnedSkills[id] = { rank: 'F', objectiveCounts: {} };

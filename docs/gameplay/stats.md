@@ -141,6 +141,18 @@ References checked with Firecrawl on October 2, 2026:
 Only the requested bow/ammunition and F/E damage inputs are translated; aiming,
 real-time loading, higher ranks and two-arrow Elf volleys remain unimplemented.
 
+## Spider poison
+
+Only black, red and giant black spiders have Poison Attack; white spiders cannot
+apply poison. The `poison` status uses a typed `effect: poison`, `healthFraction: 0.05`, zero flat
+power, refresh stacking and three affected-owner turn-end ticks. Damage is recomputed
+from current HP each tick, floored with a one-damage minimum above 1 HP, and capped
+at current HP minus one. At 1 HP it emits zero damage. It ignores mitigation, cannot
+crit, wound or kill, and ordinary resource regeneration follows it. Defend blocks
+new applications on mitigated hits but leaves existing poison active. It remains
+encounter-local. See [Battle](battle.md#enemy-battle-engines-and-spider-skills) for
+passive application, RNG and authored/source distinctions.
+
 ## 7. Recovery and consumables
 
 A resource tick occurs after a completed battle action and on accepted exploration movement/rest. It does not occur from selecting a panel, reading Inventory, shop browsing, or passive wall-clock time. Explicitly starting exploration Rest enables an injected host clock to request one durable recovery tick per second until Stop. Saves serialize ticks; callbacks do not catch up delayed or background time. Backgrounding, exit, load and disposal stop Rest.

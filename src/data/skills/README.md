@@ -55,3 +55,18 @@ Advanced reactions, new defensive/armor passives, Final Hit, Windmill, charge lo
 shield/dual-wield equipment, HP costs and life skills remain future authored extensions.
 
 `rest.json` adds the default Rank F Rest life skill. It keeps the verified [Rest](https://wiki.mabinogiworld.com/view/Rest) reference separate from its single supported F adapter. Use/Stop toggles resting in town and between dungeon encounters. An injected host clock requests one durable, fullness-limited recovery tick per second (up to 10 stamina), without overlapping saves or catching up elapsed/offline time. Movement and interactions are blocked while resting; Stop remains available during saving or failed recovery writes. Background, character exit, load and disposal end resting. There is no higher-rank training. Journey's Life card and journal details expose durable Use outside battle, and Combat exposes the existing Rest self action. Version 13 grants old characters missing Rest ownership/discovery without changing resources or progress. The original transparent 32×32 seated-adventurer icon and editable source are `assets/game/skills/rest.png` and `rest.aseprite`.
+
+## Enemy combat adapters
+
+`poison-attack.json` adds an unranked, enemy-only passive owned by black, red and
+giant black spiders. White spiders do not own this skill or roll poison chance. Source verified with
+Firecrawl October 2, 2026: [Poison Attack](https://wiki.mabinogiworld.com/view/Poison_Attack).
+Its `enemyUse: onMeleeHit` adapter rolls a 5% chance on successful unguarded melee
+hits. Authored poison drains 5% of current HP for three owner-end ticks with a
+nonlethal floor, refreshes without stacking and clears with the encounter. These
+numeric values adapt the wiki's passive identity to turn-based combat.
+
+Defense's `enemyUse: defend` adapter invokes the existing free basic Defend action;
+its reference tables and unsupported player rank progression remain separate.
+Enemy family engines only score shared legal candidates and use authored defaults
+for ordinary active skills. See `docs/gameplay/battle.md` for the plugin contract.
