@@ -133,12 +133,13 @@ The project uses pnpm 12.6.0 with Turborepo and a single workspace lockfile in t
 ```bash
 pnpm exec expo install <package>  # ALWAYS use instead of npm/yarn/pnpm/bun add — resolves SDK-compatible versions
 pnpm start              # start the dev server
-pnpm lint               # lint
-pnpm typecheck            # typecheck
+pnpm lint               # lint with oxlint
+pnpm lint:fix           # apply safe oxlint fixes
+pnpm typecheck          # typecheck with TypeScript (tsc --noEmit)
 pnpm dlx expo-doctor             # diagnose dependency and config issues
 pnpm exec expo install --fix      # fix incompatible package versions
 pnpm test                   # run the Vitest suite
-ppnpm test:watch         # iterate on tests
+pnpm test:watch         # iterate on tests
 pnpm format             # format the project with oxfmt
 pnpm format:check       # check formatting without writing changes
 ```

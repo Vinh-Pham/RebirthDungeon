@@ -362,7 +362,7 @@ Use the existing Vitest engine, data, RPG, battle, and persistence suites; add f
 
 ```sh
 npm test
-npx expo lint
+pnpm lint
 npx tsc --noEmit
 ```
 

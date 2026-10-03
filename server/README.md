@@ -119,6 +119,11 @@ pnpm format:check
 pnpm deploy:dry-run
 ```
 
+Formatting uses Oxfmt (`pnpm format` / `pnpm format:check`), linting uses Oxlint
+(`pnpm lint` / `pnpm lint:fix`), and type checking uses TypeScript (`tsc --noEmit`).
+The workspace pins compatible versions of these tools in both app manifests;
+root Turbo commands run the corresponding checks in both apps.
+
 Integration tests execute in Workers with isolated local D1 and the real SQL migrations. They cover legacy password/JWT compatibility, validation, transaction rollback, concurrent registration and refresh, expiry, replacement/logout revocation, cascading deletion, rate limits, and failure handling. A password benchmark exercises the actual WASM implementation; local timing is not a production CPU guarantee.
 
 With `pnpm dev` running, a separate terminal can exercise all five endpoints over HTTP:

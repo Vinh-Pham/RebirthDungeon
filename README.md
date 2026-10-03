@@ -85,12 +85,19 @@ variables are also forwarded through Turbo. Local Worker secrets stay in
 
 ```sh
 pnpm lint
+pnpm lint:fix
 pnpm typecheck
 pnpm test
 pnpm format
 pnpm format:check
 pnpm build
 ```
+
+Both apps use the same versions of Oxfmt, Oxlint, and TypeScript. `format` writes
+with Oxfmt, `format:check` checks formatting, `lint` runs Oxlint, `lint:fix` applies
+safe fixes, and `typecheck` runs `tsc --noEmit` with each app's own configuration.
+Use `lint:fix:client` or `lint:fix:server` to fix one app. Formatting and lint fixes
+always execute without caching. The client no longer uses ESLint.
 
 `build` exports Expo web into `client/dist/` and performs a Worker dry-run build
 into `server/dist/`. Native release builds still use Expo/EAS from `client/`.

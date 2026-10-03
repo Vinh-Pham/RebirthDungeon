@@ -40,7 +40,10 @@
     "test:migrations": "turbo run test:migrations --filter=rebirth-dungeon-server",
     "test:seed": "turbo run test:seed --filter=rebirth-dungeon-server",
     "email:dev": "turbo run email:dev --filter=rebirth-dungeon-server --ui=tui",
-    "email:test": "turbo run email:test --filter=rebirth-dungeon-server"
+    "email:test": "turbo run email:test --filter=rebirth-dungeon-server",
+    "lint:fix": "turbo run lint:fix",
+    "lint:fix:client": "turbo run lint:fix --filter=rebirth-dungeon",
+    "lint:fix:server": "turbo run lint:fix --filter=rebirth-dungeon-server"
   },
   "devDependencies": {
     "turbo": "2.11.7"

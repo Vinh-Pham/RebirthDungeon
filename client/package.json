@@ -49,12 +49,11 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
-    "eslint": "^9.0.0",
-    "eslint-config-expo": "~57.0.2",
     "fast-check": "^4.10.2",
     "oxfmt": "^0.71.0",
     "typescript": "~6.0.3",
-    "vitest": "^5.0.2"
+    "vitest": "^5.0.2",
+    "oxlint": "^1.85.0"
   },
   "scripts": {
     "start": "expo start",
@@ -62,7 +61,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "BROWSER=none expo start --web",
-    "lint": "expo lint",
+    "lint": "oxlint .",
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
     "test": "vitest run",
@@ -70,7 +69,8 @@
     "typecheck": "tsc --noEmit",
     "postinstall": "install-skia && setup-skia-web public",
     "dev": "expo start",
-    "build": "expo export --platform web"
+    "build": "expo export --platform web",
+    "lint:fix": "oxlint --fix ."
   },
   "private": true,
   "packageManager": "pnpm@12.6.0"

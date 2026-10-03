@@ -46,7 +46,7 @@ Battle rows show saved ranks, effective costs, equipment/cooldown reasons and co
 target previews without RNG draws. Existing damage branches and shared area critical
 sampling remain intact.
 
-Run `npm test`, `npx expo lint`, and `npx tsc --noEmit`. Focused progression suites cover
+Run `pnpm test`, `pnpm lint`, and `pnpm typecheck`. Focused progression suites cover
 acquisition, gates, attribution, checkpoints and failed-save retries. Browser testing
 covers compact journal navigation, saved learning and reload. iOS/Android touch,
 large-text, suspension and native persistence still require device verification.

@@ -118,7 +118,7 @@ Use the existing npm scripts; dependencies are currently locked in `pnpm-lock.ya
 
 ```sh
 npm test
-npx expo lint
+pnpm lint
 npx tsc --noEmit
 ```
 

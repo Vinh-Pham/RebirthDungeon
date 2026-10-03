@@ -28,6 +28,13 @@ in `.oxfmtrc.json`. Run `pnpm format` to format the project or
 `pnpm format:check` to check it without writing changes. Git-ignored build,
 research, and dependency files, lockfiles, and generated Uniwind types are skipped.
 
+Linting uses [Oxlint](https://oxc.rs/docs/guide/usage/linter.html), configured in
+`.oxlintrc.json`, including React Hooks checks. Run `pnpm lint:fix` for safe automatic
+fixes. The engine deliberately snapshots mutable collections before dispatch, so
+`unicorn/no-useless-spread` is disabled. Rest-destructured UI props may be discarded
+without unused-variable warnings. Type checking uses `tsc --noEmit` with the Expo
+TypeScript configuration. ESLint and `expo lint` are no longer used.
+
 Press **Play**, then choose a saved character or **Create New Character**. Enter a
 name (1–24 characters), choose Warrior, Archery or Mage, and select an age from
 10–17. Talent determines starting bonuses and attribute growth; age is cosmetic.
@@ -543,7 +550,7 @@ isolation. Run tests with Node 24 or newer for the SQLite integration suite.
 ```bash
 pnpm test
 npx tsc --noEmit
-npx expo lint
+pnpm lint
 npx expo-doctor
 npx expo install --check
 npx expo export --platform ios --platform android --platform web
