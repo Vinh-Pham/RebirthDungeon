@@ -29,7 +29,7 @@ Press **Play**, then choose a saved character or **Create New Character**. Enter
 name (1–24 characters), choose Warrior, Archery or Mage, and select an age from
 10–17. Talent determines starting bonuses and attribute growth; age is cosmetic.
 Each character has an independent autosave and three manual slots. Use
-**Characters** in the header menu to save progress and return to the roster.
+**Characters** in the footer menu to save progress and return to the roster.
 Existing saves appear as **Imported Adventurer**; complete its character details
 once to continue. Original legacy save rows remain available as recovery copies.
 
@@ -39,13 +39,17 @@ return after victory, collect the moss mail, and challenge the elder guardian.
 Movement works with buttons or by tapping a reachable floor tile. You can return
 to the town for supplies, weapon repairs, and paid healing. The Codex shows the content definitions.
 
-The header menu opens a left drawer with Journey first, followed by Codex, Characters,
+The footer menu opens a left drawer with Journey first, followed by Codex, Characters,
 Stats, Inventory, Skills, Titles, Quests, Save/Load and Settings. Journey returns
 to the selected character's game screen and is disabled without an active character.
 Swipe from the left edge on iOS or Android, or use the menu button
 on every platform. Codex, Inventory and Save/Load have separate screens in the same
-character stack. There is no bottom navigation bar; use Journey in the drawer or
-Back to return from Codex. Inventory shows an image grid on its route and Journey detail tab. Tap an icon
+character stack. Use Journey in the drawer to return from Codex; browser and
+Android Back keep their normal behavior. The persistent footer shows the menu
+button, stacked HP/Mana/Stamina, name, level and XP. It stays visible during
+exploration, shops, battle and character journals, and on Settings with an active
+character. It is absent on title/roster/setup and Settings without a character.
+The Journey detail tabs are Stats (selected initially), Skills, Inventory and Quests. Inventory shows an image grid on its route and Journey detail tab. Tap an icon
 for item information, use/equip actions, hotbar assignment, or Drop with a selected
 quantity. Drop saves before removing items and protects equipped/locked gear.
 Inventory can add or remove battle
@@ -65,9 +69,12 @@ live in `src/ui/shared/DungeonUI.tsx`; game commands remain in the screen owners
 Skia world and battle canvases are unchanged.
 
 Expo Router owns the app-wide drawer, root stack and character game stack.
-Existing Journey and Codex links are preserved. The shared header includes a
-menu button and Back controls for auxiliary screens. Web drawer controls support
-keyboard focus containment, Escape, and focus restoration.
+Existing Journey and Codex links are preserved. Shared page headers are removed;
+the footer's far-left menu button opens the drawer, which handles character-page
+navigation. Existing detail Back/Close and roster/setup controls remain. The title
+menu includes Settings, whose no-character view has an in-page Back action.
+Web drawer controls support keyboard focus containment, Escape, and focus restoration
+to the footer menu. Drawers, dialogs and popovers may cover the footer.
 Stats use a native HeroUI Dialog and a small web Modal adapter for focus trapping,
 Escape, and background isolation. Web choice groups add arrow-key navigation.
 Component CSS is placed in Tailwind’s components layer so app utilities can
@@ -83,7 +90,7 @@ iOS and Android. For a production bundle check, run
 
 When running a development session with the local Expo server, select a character
 and use the **DBG** floating button at the bottom-right of any character screen.
-It clears the bottom safe inset and opens a Debug menu sheet with **Character**
+It sits above the character footer and opens a Debug menu sheet with **Character**
 and **Battle** tabs. Character shows the selected character and their saved gold
 balance. Use **+100**, **+1,000**, or
 **+10,000 gold** to add gold immediately, including during encounters. A shortcut
@@ -149,7 +156,7 @@ prices, recovery rules, and maximum durability live in `src/data/items`.
 
 ## Character stats and recovery
 
-Use **Stats** in the header menu to open the character window from exploration,
+Use **Stats** in the footer menu to open the character window from exploration,
 shops, battle, or the Codex. It shows current battle resources, base and equipment
 attributes, combat formulas, active effects and weapon durability. Closing it
 preserves your selected action and target. Phones use the full screen; larger
@@ -192,7 +199,7 @@ and 0/100 for Archery/Mage. Attack and enemy balance remain unchanged.
 
 ## Titles and achievements
 
-Open **Character → Title collection** or **Titles** in the navigation menu to
+Open **Stats → Title collection** or **Titles** in the navigation menu to
 inspect discovered and earned titles. In town, choose one First and one Second
 Title for their combined flat bonuses and penalties. Selections cost no gold/AP,
 never refill resources, and are captured when the next encounter starts.

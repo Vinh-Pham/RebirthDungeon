@@ -19,6 +19,7 @@ import { DungeonButton as Button, DungeonLoading, DungeonNotice } from '../share
 import GameImage from '../shared/GameImage';
 import ResourceBar from '../shared/ResourceBar';
 import BattleHotbar from './BattleHotbar';
+import { useAppScreenChrome } from '../navigation/AppScreenChrome';
 
 const mono = Platform.OS === 'ios' ? 'Menlo' : 'monospace';
 
@@ -37,11 +38,12 @@ export class ArenaBoundary extends Component<{ children: ReactNode }, { failed: 
 }
 
 export default function BattleScreen() {
+  const { edges } = useAppScreenChrome();
   const [host] = useState(() => new BattleHost(() => new BattleSession(loadGameContent())));
   const snapshot = useSyncExternalStore(host.subscribe, host.getSnapshot, host.getServerSnapshot);
   if (!snapshot.session)
     return (
-      <SafeAreaView className="bg-background" style={styles.screen}>
+      <SafeAreaView edges={edges} className="bg-background" style={styles.screen}>
         <View style={styles.notice}>
           {snapshot.error ? (
             <DungeonNotice message={snapshot.error} />
@@ -61,13 +63,16 @@ export function BattleView({
   finishedLabel = 'Descend again',
   busy = false,
   victoryContent,
+  hideCharacterResources = false,
 }: {
   session: BattleSession;
   restart(): void;
   finishedLabel?: string;
   busy?: boolean;
   victoryContent?: ReactNode;
+  hideCharacterResources?: boolean;
 }) {
+  const { edges } = useAppScreenChrome();
   const view = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
   const presentation = useSyncExternalStore(
     session.presentation.subscribe,
@@ -138,11 +143,7 @@ export function BattleView({
   }
 
   return (
-    <SafeAreaView
-      className="bg-background"
-      style={styles.screen}
-      edges={['bottom', 'left', 'right']}
-    >
+    <SafeAreaView className="bg-background" style={styles.screen} edges={edges}>
       <ScrollView ref={scroll} contentContainerStyle={styles.scroll}>
         <View style={[styles.content, { width }]}>
           <Text className="text-foreground" style={styles.title}>
@@ -203,36 +204,42 @@ export function BattleView({
                   <Text className="text-accent" style={styles.unitLabel}>
                     {entity.name}
                   </Text>
-                  <ResourceBar
-                    label="HP"
-                    value={entity.health}
-                    max={entity.maxHealth}
-                    name={entity.name}
-                  />
-                  {entity.maxMana > 0 ? (
-                    <ResourceBar
-                      label="Mana"
-                      value={entity.mana}
-                      max={entity.maxMana}
-                      name={entity.name}
-                    />
-                  ) : (
-                    <Text className="text-muted" style={styles.resource}>
-                      {entity.dead ? 'DEFEATED' : 'ENEMY'}
-                    </Text>
-                  )}
-                  {entity.maxStamina !== undefined ? (
+                  {!hideCharacterResources ||
+                  entity.id !== view.entities.find((unit) => unit.side === 'player')?.id ? (
                     <>
                       <ResourceBar
-                        label="Stamina"
-                        value={entity.stamina ?? 0}
-                        max={entity.maxStamina}
+                        label="HP"
+                        value={entity.health}
+                        max={entity.maxHealth}
                         name={entity.name}
                       />
-                      <Text className="text-muted" style={styles.resource}>
-                        {entity.wounds ?? 0} WOUNDS · {entity.fullness?.toFixed(1)}% FULLNESS
-                      </Text>
+                      {entity.maxMana > 0 ? (
+                        <ResourceBar
+                          label="Mana"
+                          value={entity.mana}
+                          max={entity.maxMana}
+                          name={entity.name}
+                        />
+                      ) : (
+                        <Text className="text-muted" style={styles.resource}>
+                          {entity.dead ? 'DEFEATED' : 'ENEMY'}
+                        </Text>
+                      )}
+                      {entity.maxStamina !== undefined ? (
+                        <ResourceBar
+                          label="Stamina"
+                          value={entity.stamina ?? 0}
+                          max={entity.maxStamina}
+                          name={entity.name}
+                        />
+                      ) : null}
                     </>
+                  ) : null}
+                  {entity.maxStamina !== undefined ? (
+                    <Text className="text-muted" style={styles.resource}>
+                      {entity.wounds ?? 0} WOUNDS · {(100 - (entity.fullness ?? 100)).toFixed(1)}%
+                      HUNGER
+                    </Text>
                   ) : null}
                   {entity.weapon || entity.secondaryHand ? (
                     <View className="flex-row flex-wrap gap-x-6 gap-y-2">

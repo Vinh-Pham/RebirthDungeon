@@ -18,17 +18,19 @@ import WorldCanvas from '../../renderer/WorldCanvas';
 import { bossCleared, inRoom, remainingEnemies } from '../../engine/dungeon/Dungeon';
 import TownServicePanel from './TownServicePanel';
 import JourneyCharacterTabs from './JourneyCharacterTabs';
+import { useAppScreenChrome } from '../navigation/AppScreenChrome';
 
 export default function JourneyScreen() {
+  const { edges } = useAppScreenChrome();
   const { host } = useCharacterGame();
   const snapshot = useSyncExternalStore(host.subscribe, host.getSnapshot, host.getServerSnapshot);
   const session = snapshot.session;
   const [error, setError] = useState<string>();
-  const [characterTab, setCharacterTab] = useState('character');
+  const [characterTab, setCharacterTab] = useState('stats');
   const scrollPositionRef = useRef<{ mapId: string; y: number } | undefined>(undefined);
   if (!session)
     return (
-      <SafeAreaView className="bg-background" style={styles.screen}>
+      <SafeAreaView edges={edges} className="bg-background" style={styles.screen}>
         <View style={styles.loading}>
           <Text className="text-foreground" style={styles.title}>
             Rebirth Dungeon
@@ -48,6 +50,7 @@ export default function JourneyScreen() {
           <ProgressionFeedback host={host} showNotice={false} />
         </View>
         <BattleView
+          hideCharacterResources
           session={snapshot.battle}
           busy={snapshot.busy || !!snapshot.retryAvailable}
           restart={() => {
@@ -100,6 +103,7 @@ function Exploration({
   setCharacterTab(value: string): void;
   scrollPositionRef: RefObject<{ mapId: string; y: number } | undefined>;
 }) {
+  const { edges } = useAppScreenChrome();
   const view = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
   const scroll = useRef<ScrollView>(null);
   const scrollRestored = useRef(false);
@@ -162,11 +166,7 @@ function Exploration({
   };
   if (view.activeService)
     return (
-      <SafeAreaView
-        className="bg-background"
-        edges={['bottom', 'left', 'right']}
-        style={styles.screen}
-      >
+      <SafeAreaView className="bg-background" edges={edges} style={styles.screen}>
         <ScrollView contentContainerStyle={styles.scroll}>
           <View style={[styles.content, { width }]}>
             <TownServicePanel
@@ -187,11 +187,7 @@ function Exploration({
       </SafeAreaView>
     );
   return (
-    <SafeAreaView
-      className="bg-background"
-      edges={['bottom', 'left', 'right']}
-      style={styles.screen}
-    >
+    <SafeAreaView className="bg-background" edges={edges} style={styles.screen}>
       <ScrollView
         key={map.id}
         ref={scroll}

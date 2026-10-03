@@ -12,6 +12,7 @@ import { MenuPage, menu } from '../menu/MenuUI';
 import { DungeonButton, DungeonCard, DungeonLoading, DungeonNotice } from '../shared/DungeonUI';
 import GameImage from '../shared/GameImage';
 import ProgressionFeedback from './ProgressionFeedback';
+import { useAppScreenChrome } from '../navigation/AppScreenChrome';
 import RestSkillUse from './RestSkillUse';
 import { REST_STAMINA_RECOVERY } from '../../engine/rpg/Resources';
 
@@ -75,6 +76,7 @@ export default function SkillsScreen() {
   );
 }
 function SkillJournal({ host, session }: { host: JourneyHost; session: JourneySession }) {
+  const { edges } = useAppScreenChrome();
   const view = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
   const [filter, setFilter] = useState<'learned' | 'discovered' | 'catalog'>('learned');
   const [selectedId, setSelectedId] = useState<string>();
@@ -97,7 +99,7 @@ function SkillJournal({ host, session }: { host: JourneyHost; session: JourneySe
       </MenuPage>
     );
   return (
-    <SafeAreaView edges={['bottom', 'left', 'right']} className="flex-1 bg-background">
+    <SafeAreaView edges={edges} className="flex-1 bg-background">
       <FlatList
         data={rows}
         keyExtractor={(skill) => skill.id}

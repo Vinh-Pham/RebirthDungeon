@@ -9,6 +9,7 @@ import { DungeonButton } from '../shared/DungeonUI';
 import DebugSheet from './DebugSheet';
 import KeyboardChoiceGroup from '../shared/KeyboardChoiceGroup';
 import BattleDebugInformation from './BattleDebugInformation';
+import { useAppScreenChrome } from '../navigation/AppScreenChrome';
 
 export default function DebugMenu({
   isOpen,
@@ -22,6 +23,7 @@ export default function DebugMenu({
   const { host, profile } = useCharacterGame();
   const view = useSyncExternalStore(host.subscribe, host.getSnapshot, host.getServerSnapshot);
   const insets = useSafeAreaInsets();
+  const { hasFooter } = useAppScreenChrome();
   const trigger = useRef<View>(null);
   const initialFocus = useRef<View>(null);
   const wasOpen = useRef(false);
@@ -49,7 +51,7 @@ export default function DebugMenu({
         className="absolute"
         style={{
           right: insets.right + 16,
-          bottom: insets.bottom + 16,
+          bottom: (hasFooter ? 0 : insets.bottom) + 16,
         }}
       >
         <DungeonButton

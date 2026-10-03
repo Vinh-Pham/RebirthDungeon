@@ -5,6 +5,7 @@ import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { calculateCharacterStats } from '../../engine/rpg/Stats';
 import { loadGameContent } from '../../data/content';
+import { useAppScreenChrome } from '../navigation/AppScreenChrome';
 
 const registry = loadGameContent();
 const content = registry.data;
@@ -16,12 +17,9 @@ const targetNames = {
 };
 
 export default function ContentScreen() {
+  const { edges } = useAppScreenChrome();
   return (
-    <SafeAreaView
-      className="bg-background"
-      edges={['bottom', 'left', 'right']}
-      style={styles.screen}
-    >
+    <SafeAreaView className="bg-background" edges={edges} style={styles.screen}>
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.content}>
           <Text className="text-accent" style={styles.eyebrow}>

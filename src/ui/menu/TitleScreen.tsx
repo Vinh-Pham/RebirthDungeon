@@ -32,6 +32,7 @@ export default function TitleScreen() {
         </Text>
       </View>
       <MenuButton label="Play" onPress={() => router.navigate('/characters')} />
+      <MenuButton label="Settings" secondary onPress={() => router.navigate('/settings')} />
       <Text style={styles.footer}>THE EMBER WAITS FOR YOU</Text>
     </MenuPage>
   );

@@ -11,6 +11,9 @@ export default function SaveLoadScreen() {
   const disabled = view.busy || !!view.retryAvailable || !view.storageAvailable || !!view.battle;
   return (
     <MenuPage>
+      <Text accessibilityRole="header" className="text-foreground" style={menu.title}>
+        Save/Load
+      </Text>
       <Text className="text-muted" style={menu.body}>
         {view.storageAvailable
           ? 'Autosave follows your steps. Encounters resume at their starting checkpoint.'

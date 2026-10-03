@@ -68,7 +68,17 @@ function CharacterStatsContent({
         />
       </View>
       <ScrollView contentContainerStyle={styles.content}>
-        <CharacterStatsDetails host={host} session={journey} />
+        <CharacterStatsDetails host={host} session={journey} profile={profile} />
+        <DungeonButton
+          label="Title collection"
+          onPress={() => {
+            close();
+            router.navigate({
+              pathname: '/game/[characterId]/titles',
+              params: { characterId: profile.id },
+            });
+          }}
+        />
         <DungeonButton
           label="Skills"
           onPress={() => {

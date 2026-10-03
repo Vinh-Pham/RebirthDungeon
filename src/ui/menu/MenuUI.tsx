@@ -2,10 +2,12 @@ import type { PropsWithChildren } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { DungeonButton, DungeonNotice } from '../shared/DungeonUI';
+import { useAppScreenChrome } from '../navigation/AppScreenChrome';
 
 export function MenuPage({ children }: PropsWithChildren) {
+  const { edges } = useAppScreenChrome();
   return (
-    <SafeAreaView edges={['bottom', 'left', 'right']} className="flex-1 bg-background">
+    <SafeAreaView edges={edges} className="flex-1 bg-background">
       <KeyboardAvoidingView
         style={menu.fill}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

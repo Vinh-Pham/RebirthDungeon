@@ -6,9 +6,13 @@ Updated **October 2, 2026**. The app uses Expo SDK 57, Expo Router, React Native
 
 Routes remain thin files under src/app. CharacterGameLayout owns one selected character's JourneyHost and provides CharacterGameContext; every feature view shares it. Routes, tabs, sheets and drawers do not create additional campaigns or award gameplay progress. Components/hooks live outside the route directory.
 
-The app drawer lists Journey first, then Codex. Selecting either closes the drawer and navigates within the selected character's stack, preserving the shared host and any active encounter. Both are disabled until a character session is ready and show their selected state on the matching screen. There is no bottom Journey/Codex navigation bar. Codex has a header Back control; Android Back returns from it before leaving the character. Existing `/game/[characterId]` and `/game/[characterId]/explore` links remain valid.
+The app drawer lists Journey first, then Codex. Selecting either closes the drawer and navigates within the selected character's stack, preserving the shared host and any active encounter. Both are disabled until a character session is ready and show their selected state on the matching screen. Shared page headers are removed throughout the app. The footer menu and drawer handle navigation from character pages; browser and Android Back return from auxiliary routes before leaving the character. Detail-level Back/Close controls remain. Existing `/game/[characterId]` and `/game/[characterId]/explore` links remain valid.
 
-The Journey detail row places Quests immediately after Inventory. Its content is the quest tracker with the existing journal link; the tracker no longer sits below every detail tab. The row scrolls horizontally on narrow screens so labels and touch targets stay readable, and supports keyboard tab switching on web.
+A shared screen shell inside the drawer keeps one full-width character footer outside page scrolling, reserving its height instead of covering page content. It appears on every selected-character route, including shops and encounters, and on Settings while a character session remains active. Title, roster and character creation/import setup never show it; Settings without a character also hides it and provides an in-page Back action. The title menu retains access to Settings. Loading character routes show the menu and a status placeholder without borrowing another character's values. Drawers, dialogs and popovers may cover the footer.
+
+The footer places a 48-unit menu button at the far left, three compact HP/Mana/Stamina bars stacked next to it, then name, level and XP filling the remaining width. It uses the existing dark theme with red/blue/yellow resources and light-blue XP. The compact tracks scale with text. No shortcut/collapse buttons are included. Name truncation retains the full accessible label; HP/Mana/Stamina omit visible labels and place white current/max values inside each track, aligned left. Values use a subtle text shadow for readability; accessible labels still identify each resource. Stamina also shows live Hunger as a right-aligned percentage inside its track, using `100 - fullness` to one decimal place and including it in the accessible value. The shell handles the top safe inset, the footer handles the bottom inset, and nested pages avoid double padding. Footer height grows with text scaling. Save/navigation errors remain visible above page content. Its observers use the registered JourneyHost and existing campaign/battle snapshots, never a second campaign or gameplay command.
+
+The Character tab is removed. The Journey detail row now contains Stats (initially selected), Skills, Inventory and Quests, with Quests immediately after Inventory. Its content is the quest tracker with the existing journal link; the tracker no longer sits below every detail tab. The row scrolls horizontally on narrow screens so labels and touch targets stay readable, and supports keyboard tab switching on web.
 
 Selecting Skills in that row shows the learned-skills summary and journal link,
 followed by Life, Combat and Magic category tabs, with Life selected initially.
@@ -18,17 +22,17 @@ training details remain on each skill card. The category controls use HeroUI tab
 with 48-unit touch targets and web arrow-key, Home and End navigation. Switching
 categories only changes presentation and never advances gameplay.
 
-| Existing surface          | Owner and purpose                                                                                      |
-| ------------------------- | ------------------------------------------------------------------------------------------------------ |
-| Character selection/setup | CharacterSelectScreen / NewCharacterScreen; independent saved characters                               |
-| Character game stack      | src/app/(screens)/game/[characterId]/_layout.tsx; shared host/context                                  |
-| Journey/Codex routes      | Separate stack screens; Character/Stats/Skills/Inventory/Quests detail tabs stay inside the journey UI |
-| Exploration/service panel | JourneyScreen / TownServicePanel; world interaction and supported NPC actions                          |
-| Active encounter          | BattleView embedded by the journey; no separate authoritative battle route required                    |
-| Inventory route           | InventoryScreen; same inventory content as the character tab                                           |
-| Stats overlay             | CharacterStatsOverlay / CharacterStatsDetails; selected character's observed stats                     |
-| Save/load route           | SaveLoadScreen; autosave status and manual slots                                                       |
-| App drawer/settings       | Shared navigation, character exit, inventory/save access and global preferences                        |
+| Existing surface          | Owner and purpose                                                                            |
+| ------------------------- | -------------------------------------------------------------------------------------------- |
+| Character selection/setup | CharacterSelectScreen / NewCharacterScreen; independent saved characters                     |
+| Character game stack      | src/app/(screens)/game/[characterId]/_layout.tsx; shared host/context                        |
+| Journey/Codex routes      | Separate stack screens; Stats/Skills/Inventory/Quests detail tabs stay inside the journey UI |
+| Exploration/service panel | JourneyScreen / TownServicePanel; world interaction and supported NPC actions                |
+| Active encounter          | BattleView embedded by the journey; no separate authoritative battle route required          |
+| Inventory route           | InventoryScreen; same inventory content as the Journey Inventory tab                         |
+| Stats overlay             | CharacterStatsOverlay / CharacterStatsDetails; selected character's observed stats           |
+| Save/load route           | SaveLoadScreen; autosave status and manual slots                                             |
+| App drawer/settings       | Shared navigation, character exit, inventory/save access and global preferences              |
 
 The standalone BattleScreen/BattleHost is also present for the battle surface; campaign features use JourneyHost's actual encounter instead of constructing that standalone session. Reuse shared DungeonUI, ResourceBar and menu components, HeroUI controls and current theme tokens. There is no Godot scene/Control tree or desktop floating-window framework to implement.
 
@@ -38,7 +42,7 @@ New Skills/Quests routes should reuse the same character stack as the existing S
 
 Selected-character screens include a development-only **DBG** floating action
 button. It is 56 logical units across, sits 16 units from the right safe inset,
-and sits 16 units above the bottom safe inset. It is hidden while the drawer or
+and sits 16 units above the reserved character footer. It is hidden while the drawer or
 Stats overlay is open. Navigation and character exit close the debug sheet.
 
 The sheet uses HeroUI **Character** and **Battle** tabs, with Character selected
@@ -85,7 +89,8 @@ Use a readable portrait stack with reachable action controls and canvas targets 
 ```text
 Encounter name / active actor / turn order
 Hero and enemy presentation
-Current character HP/MP/SP, wounds, fullness and weapon wear
+Wounds, hunger, weapon wear, ammunition and statuses
+Persistent footer: current character HP/MP/SP, level and XP
 Selected action / rank / target / costs / status details
 Combat / Magic / Items label tabs → horizontally scrollable action icons
 Combat: talent-based Attack / Defense-based Defend / learned combat skills
@@ -109,7 +114,7 @@ Browsing details pauses arena targeting without selecting or cancelling the exis
 | Presenting             | Show committed events; duplicate inputs remain gated                          |
 | Victory/defeat         | Show the completed encounter outcome and its return/continue action           |
 
-The combat resource summary shows the weapon icon/name and durability alongside the equipped secondary-hand item icon/name and remaining quantity. Both read the live battle snapshot, so spent arrows update immediately, including on misses; depletion clears the secondary-hand item. Equipment summaries wrap onto separate rows on compact screens.
+The selected character’s scrolling battle summary no longer duplicates the footer resource bars; ally bars and the standalone BattleScreen remain available. The combat equipment summary shows the weapon icon/name and durability alongside the equipped secondary-hand item icon/name and remaining quantity. Both read the live battle snapshot, so spent arrows update immediately, including on misses; depletion clears the secondary-hand item. Equipment summaries wrap onto separate rows on compact screens.
 
 The current BattleView gates player choices while presentation is busy; enemy turns advance from simulation phase independently of animation completion. Keep that separation. Rendering, audio and skipped/reduced animation must produce the same result and RNG continuation.
 
@@ -119,18 +124,18 @@ Defend explicitly previews damage reduction until the owner's next turn and rest
 
 ## 4. Character, progression and inventory views
 
-| Feature             | Existing baseline / planned extension                                                                                                       |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Character/Stats     | Current level/XP, talent, setup age, attributes, combat values, resources, wounds/fullness and equipment; AP/mastery/cumulative level later |
-| Skills, planned     | Learned/unlearned, rank/prototype cap, objectives, training/AP, lessons/books/pages and Rank Up from Skills                                 |
-| Inventory           | Shared image grid, pages of 20, HeroUI item popovers with quantity/stats/actions; spatial placement/bags/overflow later                     |
-| Quests, planned     | Chapter/Generation and side/skill groups, stages, objective progress, exact rewards and manual claim                                        |
-| Titles, planned     | First/Second selections, known/earned collection, benefits/penalties and stat preview                                                       |
-| Enchanting, planned | Owned instance/scroll/powder, compatibility, replacement, chance/cost and separate destructive burning                                      |
+| Feature             | Existing baseline / planned extension                                                                                                                                                                                |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Character/Stats     | Footer level/XP and live resources; Stats retains talent, class, setup age, gold/AP, cumulative level, titles, attributes, combat values, wounds/fullness/hunger, equipment and journal links; mastery remains later |
+| Skills, planned     | Learned/unlearned, rank/prototype cap, objectives, training/AP, lessons/books/pages and Rank Up from Skills                                                                                                          |
+| Inventory           | Shared image grid, pages of 20, HeroUI item popovers with quantity/stats/actions; spatial placement/bags/overflow later                                                                                              |
+| Quests, planned     | Chapter/Generation and side/skill groups, stages, objective progress, exact rewards and manual claim                                                                                                                 |
+| Titles, planned     | First/Second selections, known/earned collection, benefits/penalties and stat preview                                                                                                                                |
+| Enchanting, planned | Owned instance/scroll/powder, compatibility, replacement, chance/cost and separate destructive burning                                                                                                               |
 
-Current setup age is static; do not show an aging countdown or lifetime progression until those fields exist. Current gold is one balance; no bank capacity display is available. Avoid showing implemented combat values as deferred merely because a related feature is not present.
+Current setup age is static; do not show an aging countdown until it exists. Cumulative level is implemented. Current gold is one balance; no bank capacity display is available. Avoid showing implemented combat values as deferred merely because a related feature is not present.
 
-The Character summary shows an XP progress bar using current-level XP and the engine's next-level threshold; at the level cap it shows “Maximum level.” Beneath Stamina, the recovery limit appears on the left and Hunger on the right, wrapping on compact layouts. Hunger displays `100 - fullness` to one decimal place (91.2% fullness displays as 8.8% Hunger); the engine and saved fullness values retain their existing meaning.
+The footer XP progress bar uses current-level XP and the engine’s next-level threshold; at the engine’s level cap it is filled and shows “Maximum level.” The footer presents percentage progress and exposes exact XP to accessibility and Stats. Stats preserves the healable HP/wound state and stamina recovery limit alongside fullness and Hunger. Hunger displays `100 - fullness` to one decimal place (91.2% fullness displays as 8.8% Hunger); the engine and saved fullness values retain their existing meaning.
 
 Inventory equip/use and durable Drop commands are available during exploration, including between dungeon encounters. The route and Journey Inventory tab share an image-only grid; item names, descriptions, counts, stats and existing equipment/book/quest controls live in scrollable HeroUI Native popovers. Drop removes the selected quantity with no rewards or ground loot and protects equipped/locked copies. During battle it observes live supplies/wear and permits Items hotbar assignments while equip/exploration-use/drop remain disabled. Battle-usable consumable details expose Add to / Remove from Items hotbar; the assigned list permits removing depleted slots. Saving/retry locks dependent actions, and assignment never resets the live battle. Combat use occurs from the Items popover. Future learning/rank-up, quest claims, title changes and enchanting are town-only. Journals may still be inspected during combat without ticking time.
 

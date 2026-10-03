@@ -102,7 +102,7 @@ Verify Unknown → Known → Earned and direct awards; hints without ownership; 
 
 ## 9. Implemented slice and verification
 
-Character → Title collection and the navigation menu share the selected character’s host. First/Second slots, category/slot filters, spoiler-safe search, hints, exact effects, acquisition sources and engine-derived stat/resource previews are available. Redeem the Lantern Companion coupon from its inventory detail in town; ownership never automatically equips a title. Missing definitions preserve records and selected identity with effects disabled.
+Stats → Title collection and the footer navigation menu share the selected character’s host. First/Second slots, category/slot filters, spoiler-safe search, hints, exact effects, acquisition sources and engine-derived stat/resource previews are available. Redeem the Lantern Companion coupon from its inventory detail in town; ownership never automatically equips a title. Missing definitions preserve records and selected identity with effects disabled.
 
 Version 9 migrates versions 1–8, preserving previous title ownership, installed enchants, equipment copies, ranks, resources and RNG. Title discovery and committed evidence are saved on the hero; unfinished damage evidence belongs to BattleSession. Rank 1 mastery, aging, rebirth, dungeon-wide challenge checklists, favorites, vanity and cosmetic talent labels have no acquisition controls in this slice.
 

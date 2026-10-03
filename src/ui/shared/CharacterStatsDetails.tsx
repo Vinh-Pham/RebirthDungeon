@@ -1,23 +1,15 @@
-import { useSyncExternalStore } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import {
-  MAX_LEVEL,
-  experienceToNextLevel,
-  heroStats,
-  heroStatSource,
-} from '../../engine/rpg/Character';
+import { MAX_LEVEL, experienceToNextLevel } from '../../engine/rpg/Character';
 import {
   ATTRIBUTE_KEYS,
   characterStatBreakdown,
   protectionReduction,
 } from '../../engine/rpg/Stats';
-import { TALENT_LABELS } from '../../persistence/CharacterProfile';
-import type { CharacterReview } from '../../game/BattleSession';
+import { TALENT_LABELS, type CompleteCharacter } from '../../persistence/CharacterProfile';
 import type { JourneyHost } from '../../game/JourneyHost';
 import type { JourneySession } from '../../game/JourneySession';
 
-const noSubscribe = () => () => {};
-const noSnapshot = () => undefined;
+import { useCharacterStatus } from './useCharacterStatus';
 const percent = (value: number) => `${Math.round(value * 1000) / 10}%`;
 const number = (value: number) => String(Math.round(value * 10) / 10);
 function Row({ label, value, note }: { label: string; value: string; note?: string }) {
@@ -44,40 +36,13 @@ function Row({ label, value, note }: { label: string; value: string; note?: stri
 export default function CharacterStatsDetails({
   host,
   session,
+  profile,
 }: {
   host: JourneyHost;
   session: JourneySession;
+  profile: CompleteCharacter;
 }) {
-  const hosted = useSyncExternalStore(host.subscribe, host.getSnapshot, host.getServerSnapshot);
-  const campaign = useSyncExternalStore(
-    session.subscribe,
-    session.getSnapshot,
-    session.getSnapshot,
-  );
-  const battle = useSyncExternalStore(
-    hosted.battle?.subscribe ?? noSubscribe,
-    hosted.battle?.getSnapshot ?? noSnapshot,
-    noSnapshot,
-  );
-  const hero = campaign.state.hero;
-  const weapon = hero.equipment.weapon ? hero.weapons[hero.equipment.weapon] : undefined;
-  const review: CharacterReview = battle?.character ?? {
-    source: heroStatSource(hero, campaign.state.dungeon?.effects, host.content),
-    stats: heroStats(hero, host.content, campaign.state.dungeon?.effects),
-    health: hero.health,
-    mana: hero.mana,
-    stamina: hero.stamina,
-    wounds: hero.wounds,
-    fullness: hero.fullness,
-    statuses: [],
-    weapon: weapon
-      ? {
-          name: host.content.item(weapon.itemId).name,
-          durability: weapon.durability,
-          maxDurability: host.content.item(weapon.itemId).maxDurability!,
-        }
-      : undefined,
-  };
+  const { hero, review } = useCharacterStatus(host, session);
   const { stats } = review;
   const combat = stats.combatant;
   const {
@@ -91,6 +56,32 @@ export default function CharacterStatsDetails({
     `Base ${number(baseCombat[key]!)} · Titles ${signed(titleCombat[key]! - baseCombat[key]!)} · Equipment ${signed(equippedCombat[key]! - titleCombat[key]!)} · Dungeon ${signed(dungeonCombat[key]! - equippedCombat[key]!)} · Statuses ${signed(combat[key]! - dungeonCombat[key]!)}`;
   return (
     <View className="gap-1">
+      <Text className="text-accent" style={styles.section}>
+        CHARACTER
+      </Text>
+      <Row label="Name" value={profile.name} />
+      <Row
+        label="Class"
+        value={
+          host.content.data.classes.find((entry) => entry.id === hero.classId)?.name ?? hero.classId
+        }
+      />
+      <Row label="Starting age" value={String(profile.age)} note="Setup age does not advance" />
+      <Row
+        label="First title"
+        value={
+          host.content.data.titles.find((title) => title.id === hero.titleCollection.selected.first)
+            ?.name ?? 'None'
+        }
+      />
+      <Row
+        label="Second title"
+        value={
+          host.content.data.titles.find(
+            (title) => title.id === hero.titleCollection.selected.second,
+          )?.name ?? 'None'
+        }
+      />
       <Text className="text-accent" style={styles.section}>
         PROGRESSION
       </Text>
@@ -135,6 +126,7 @@ export default function CharacterStatsDetails({
         note={`${Math.floor((stats.maxStamina * review.fullness) / 100)} recoverable through rest`}
       />
       <Row label="Fullness" value={`${number(review.fullness)}%`} />
+      <Row label="Hunger" value={`${(100 - review.fullness).toFixed(1)}%`} />
       <Text className="text-accent" style={styles.section}>
         ATTRIBUTES
       </Text>

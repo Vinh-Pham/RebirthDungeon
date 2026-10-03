@@ -96,7 +96,7 @@ Existing profiles fix talent and age metadata, so the implementation must define
 
 ## 7. UI and implementation
 
-Reuse the selected character's `CharacterGameContext`, existing Character/Stats/Inventory views and [CharacterStatsDetails](../../src/ui/shared/CharacterStatsDetails.tsx). Show implemented level/XP, talent, age metadata, resource/wound/fullness state, gold, equipment and stat sources. Show cumulative level and AP; label future mastery, next age reward or rebirth only when their data/rules exist. The mobile screen should not claim a live aging countdown from a static setup age.
+Reuse the selected character's `CharacterGameContext`, persistent character footer, Stats/Inventory views and [CharacterStatsDetails](../../src/ui/shared/CharacterStatsDetails.tsx). The footer shows live resources and committed level/XP; Stats preserves talent, class, age metadata, resource/wound/fullness/hunger state, gold, equipment, selected titles and stat sources. Show cumulative level and AP; label future mastery, next age reward or rebirth only when their data/rules exist. The mobile screen should not claim a live aging countdown from a static setup age.
 
 Keep rules in [Character.ts](../../src/engine/rpg/Character.ts) and [Stats.ts](../../src/engine/rpg/Stats.ts), progression ownership in [JourneySession](../../src/game/JourneySession.ts), identity in [CharacterProfile](../../src/persistence/CharacterProfile.ts), and versioning in [SaveSchema](../../src/persistence/SaveSchema.ts). Future pure mastery/aging/rebirth modules can live in `src/engine/rpg/`; route files remain thin.
 

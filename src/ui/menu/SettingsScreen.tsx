@@ -1,13 +1,19 @@
 import { Text, View } from 'react-native';
+import { router } from 'expo-router';
+import { useAppScreenChrome } from '../navigation/AppScreenChrome';
 import { useAudio } from '../../audio/AudioProvider';
 import { DungeonButton, DungeonCard, DungeonLoading, DungeonNotice } from '../shared/DungeonUI';
 import { MenuPage, menu } from './MenuUI';
 
 export default function SettingsScreen() {
+  const { hasFooter } = useAppScreenChrome();
   const audio = useAudio();
   const { settings, ready, soundReady } = audio;
   return (
     <MenuPage>
+      <Text accessibilityRole="header" className="text-foreground" style={menu.title}>
+        Settings
+      </Text>
       <Text className="text-muted" style={menu.body}>
         Sound preferences apply to every character.
       </Text>
@@ -57,6 +63,15 @@ export default function SettingsScreen() {
           ))}
         </DungeonCard>
       )}
+      {!hasFooter ? (
+        <DungeonButton
+          label="Back"
+          onPress={() => {
+            if (router.canGoBack()) router.back();
+            else router.replace('/');
+          }}
+        />
+      ) : null}
       <DungeonNotice message={audio.error} />
       {audio.error ? (
         <DungeonButton
