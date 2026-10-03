@@ -1,0 +1,58 @@
+{
+  "$schema": "https://turborepo.dev/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "dev": {
+      "passThroughEnv": ["CLOUDFLARE_*", "WRANGLER_*", "CI"]
+    },
+    "build": {
+      "passThroughEnv": ["CLOUDFLARE_*", "WRANGLER_*", "CI"]
+    },
+    "deploy": {
+      "passThroughEnv": ["CLOUDFLARE_*", "WRANGLER_*", "CI"]
+    },
+    "deploy:dry-run": {
+      "passThroughEnv": ["CLOUDFLARE_*", "WRANGLER_*", "CI"]
+    },
+    "cf-typegen": {
+      "passThroughEnv": ["CLOUDFLARE_*", "WRANGLER_*", "CI"]
+    },
+    "db:generate": {
+      "passThroughEnv": ["CLOUDFLARE_*", "WRANGLER_*", "CI"]
+    },
+    "db:check:remote": {
+      "passThroughEnv": ["CLOUDFLARE_*", "WRANGLER_*", "CI"]
+    },
+    "db:migrate:remote": {
+      "passThroughEnv": ["CLOUDFLARE_*", "WRANGLER_*", "CI"]
+    },
+    "email:test": {
+      "passThroughEnv": ["CLOUDFLARE_*", "WRANGLER_*", "CI"]
+    },
+    "db:migrate": {
+      "passThroughEnv": ["LOCAL_D1_STATE", "CI"]
+    },
+    "db:migrate:local": {
+      "passThroughEnv": ["LOCAL_D1_STATE", "CI"]
+    },
+    "db:baseline:local": {
+      "passThroughEnv": ["LOCAL_D1_STATE", "CI"]
+    },
+    "db:seed": {
+      "passThroughEnv": ["LOCAL_D1_STATE", "CI"]
+    },
+    "db:seed:local": {
+      "passThroughEnv": ["LOCAL_D1_STATE", "CI"]
+    },
+    "db:setup": {
+      "passThroughEnv": ["LOCAL_D1_STATE", "CI"]
+    },
+    "test:smoke": {
+      "passThroughEnv": ["LOCAL_API_ORIGIN", "CI"]
+    },
+    "test": {
+      "cache": false,
+      "passThroughEnv": ["CI"]
+    }
+  }
+}

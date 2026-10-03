@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "printWidth": 80,
+  "singleQuote": true,
+  "trailingComma": "all",
+  "ignorePatterns": [
+    "node_modules/",
+    "dist/",
+    ".wrangler/",
+    ".firecrawl/",
+    "drizzle/",
+    "worker-configuration.d.ts",
+    "pnpm-lock.yaml",
+    ".react-email/"
+  ]
+}

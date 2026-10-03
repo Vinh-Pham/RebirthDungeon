@@ -1,0 +1,2 @@
+# Runtime secret: use at least 32 random bytes. Never commit real values.
+JWT_ACCESS_SECRET=
