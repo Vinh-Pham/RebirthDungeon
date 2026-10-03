@@ -5,6 +5,7 @@ import { requireAPIURL } from './config';
 function createClient() {
   return createAuthClient({
     baseURL: requireAPIURL(),
+    fetchOptions: { timeout: 15000 },
     plugins: [
       expoClient({
         scheme: 'rebirthdungeon',

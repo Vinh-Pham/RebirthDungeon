@@ -27,8 +27,8 @@ function CharacterList() {
         Online characters
       </Text>
       <Text className="text-muted" style={menu.body}>
-        Progress is saved on the server after every accepted action. Local characters remain
-        separate.
+        Progress is saved on the server after every accepted action. A connection is required to
+        play.
       </Text>
       {query.isPending ? <DungeonLoading label="Loading online characters" /> : null}
       <MenuError message={query.error?.message} />
@@ -52,7 +52,7 @@ function CharacterList() {
             </Text>
             <MenuButton
               label={`Continue ${character.name}`}
-              onPress={() => router.push(gameHref('online', character.id))}
+              onPress={() => router.push(gameHref(character.id))}
             />
           </DungeonCard>
         ))}
@@ -67,11 +67,7 @@ function CharacterList() {
         onPress={() => router.push('/online/characters/new')}
       />
       <MenuButton label="Account" secondary onPress={() => router.navigate('/account')} />
-      <MenuButton
-        label="Local characters"
-        secondary
-        onPress={() => router.dismissTo('/characters')}
-      />
+      <MenuButton label="Back to title" secondary onPress={() => router.navigate('/')} />
     </MenuPage>
   );
 }

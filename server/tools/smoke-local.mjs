@@ -1,12 +1,19 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { getPlatformProxy } from 'wrangler';
-import { join } from 'node:path';
+import { withLocalD1 } from './online-database.mjs';
+import { addresses } from './online-config.mjs';
+import { resolve } from 'node:path';
 
 const origin = new URL(process.env.LOCAL_API_ORIGIN ?? 'http://localhost:8787');
 if (
-  !['127.0.0.1', 'localhost', '[::1]'].includes(origin.hostname) ||
-  origin.protocol !== 'http:'
+  (!['127.0.0.1', 'localhost', '[::1]'].includes(origin.hostname) &&
+    !addresses().some((entry) => entry.address === origin.hostname)) ||
+  origin.protocol !== 'http:' ||
+  origin.username ||
+  origin.password ||
+  origin.search ||
+  origin.hash ||
+  origin.pathname !== '/'
 )
   throw new Error('The smoke test only accepts a local HTTP server.');
 const email = `smoke-${randomUUID()}@example.invalid`;
@@ -152,18 +159,11 @@ try {
   );
 } finally {
   // Only this run's synthetic account is removed, through the local D1 binding.
-  const proxy = await getPlatformProxy({
-    configPath: 'wrangler.jsonc',
-    remoteBindings: false,
-    persist: process.env.LOCAL_D1_STATE
-      ? { path: join(process.env.LOCAL_D1_STATE, 'v3') }
-      : true,
-  });
-  try {
-    await proxy.env.DB.prepare('DELETE FROM user WHERE email = ?')
-      .bind(email)
-      .run();
-  } finally {
-    await proxy.dispose();
-  }
+  await withLocalD1(
+    process.cwd(),
+    process.env.LOCAL_D1_STATE && resolve(process.env.LOCAL_D1_STATE),
+    async (db) => {
+      await db.prepare('DELETE FROM user WHERE email = ?').bind(email).run();
+    },
+  );
 }

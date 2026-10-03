@@ -1,0 +1,61 @@
+diff --git a/lib/module/primitives/popover/popover.js b/lib/module/primitives/popover/popover.js
+index ecab555194425851331eae665a8d180ec586e67e..1340e855a9e0197c16990967c6156693b4676037 100644
+--- a/lib/module/primitives/popover/popover.js
++++ b/lib/module/primitives/popover/popover.js
+@@ -1,7 +1,7 @@
+ "use strict";
+ 
+ import React, { forwardRef, useContext, useEffect, useId, useLayoutEffect, useState } from 'react';
+-import { BackHandler, Pressable, View, useWindowDimensions } from 'react-native';
++import { Platform, BackHandler, Pressable, View, useWindowDimensions } from 'react-native';
+ import { useAugmentedRef, useControllableState, useRelativePosition } from "../../helpers/internal/hooks/index.js";
+ import { Portal as PrimitivePortal } from "../portal/index.js";
+ import * as Slot from "../slot/index.js";
+@@ -252,7 +252,7 @@ const Content = /*#__PURE__*/forwardRef(({
+     triggerPosition
+   } = useRootContext();
+   useEffect(() => {
+-    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
++    const backHandler = Platform.OS === 'web' ? undefined : BackHandler.addEventListener('hardwareBackPress', () => {
+       onOpenChange(false);
+       setTriggerPosition(null);
+       setContentLayout(null);
+@@ -260,7 +260,7 @@ const Content = /*#__PURE__*/forwardRef(({
+     });
+     return () => {
+       setContentLayout(null);
+-      backHandler.remove();
++      backHandler?.remove();
+     };
+     // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, []);
+diff --git a/src/primitives/popover/popover.tsx b/src/primitives/popover/popover.tsx
+index ab45f8ab5bcefd7379142b452e5f7fa148fda347..b21be9f4076682b0b91db3922da74d6b1a9b41db 100644
+--- a/src/primitives/popover/popover.tsx
++++ b/src/primitives/popover/popover.tsx
+@@ -8,6 +8,7 @@ import React, {
+ } from 'react';
+ import {
+   BackHandler,
++  Platform,
+   Pressable,
+   View,
+   useWindowDimensions,
+@@ -293,7 +294,7 @@ const Content = forwardRef<ContentRef, ContentProps>(
+     } = useRootContext();
+ 
+     useEffect(() => {
+-      const backHandler = BackHandler.addEventListener(
++      const backHandler = Platform.OS === 'web' ? undefined : BackHandler.addEventListener(
+         'hardwareBackPress',
+         () => {
+           onOpenChange(false);
+@@ -305,7 +306,7 @@ const Content = forwardRef<ContentRef, ContentProps>(
+ 
+       return () => {
+         setContentLayout(null);
+-        backHandler.remove();
++        backHandler?.remove();
+       };
+       // eslint-disable-next-line react-hooks/exhaustive-deps
+     }, []);

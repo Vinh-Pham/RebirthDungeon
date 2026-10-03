@@ -1,1 +1,5 @@
-export { default } from '@/ui/menu/NewCharacterScreen';
+import { Redirect } from 'expo-router';
+
+export default function LegacyCharacterRedirect() {
+  return <Redirect href="/online/characters/new" />;
+}

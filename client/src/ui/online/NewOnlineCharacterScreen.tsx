@@ -1,11 +1,10 @@
-import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { randomUUID } from 'expo-crypto';
+import { createCommandId } from '../../online/commandId';
 import { router } from 'expo-router';
 import { View } from 'react-native';
 import { useOnline } from '../../online/OnlineProvider';
 import { gameKeys } from '../../online/queries';
-import { NewCharacterForm } from '../menu/NewCharacterScreen';
+import { NewCharacterForm } from './NewCharacterForm';
 import { MenuButton, MenuError } from '../menu/MenuUI';
 import type { CharacterDetails } from '../../persistence/CharacterProfile';
 import { gameHref } from '../navigation/gameHref';
@@ -20,7 +19,6 @@ export default function NewOnlineCharacterScreen() {
 function CreateCharacter() {
   const { api, session, commands } = useOnline(),
     queries = useQueryClient();
-  const [attempt, setAttempt] = useState(0);
   const key = [...gameKeys.account(api!.origin, session!.user.id), 'pending-creation'];
   const pending = useQuery({
     queryKey: key,
@@ -32,8 +30,8 @@ function CreateCharacter() {
     retry: false,
     networkMode: 'always',
     mutationFn: (details?: CharacterDetails) =>
-      details ? commands!.create({ commandId: randomUUID(), ...details }) : commands!.retry(),
-    onSuccess: (result) => router.dismissTo(gameHref('online', result.view.character.id)),
+      details ? commands!.create({ commandId: createCommandId(), ...details }) : commands!.retry(),
+    onSuccess: (result) => router.dismissTo(gameHref(result.view.character.id)),
     onSettled: async () => {
       await queries.invalidateQueries({ queryKey: key });
     },
@@ -60,8 +58,6 @@ function CreateCharacter() {
         </View>
       ) : null}
       <NewCharacterForm
-        key={attempt}
-        retry={() => setAttempt((v) => v + 1)}
         blocked={pending.isPending || !!pending.data || !!pending.error || mutation.isPending}
         create={async (details) => {
           await mutation.mutateAsync(details);

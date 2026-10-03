@@ -54,7 +54,7 @@ export function AppNavigationProvider({ children }: PropsWithChildren) {
     setStatsOpen(false);
     setError(undefined);
     if (!game) {
-      router.dismissTo('/characters');
+      router.dismissTo('/online/characters');
       return;
     }
     try {

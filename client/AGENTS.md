@@ -1,8 +1,8 @@
 # Rebirth Dungeon project guidelines
 
-This is an Expo/React Native RPG with a deterministic TypeScript game engine, turn-based combat, dungeon exploration, character progression, and local saves. Prioritize mobile-first patterns, performance, and compatibility across iOS, Android, and web.
+This is an Expo/React Native RPG with a deterministic TypeScript game engine, turn-based combat, dungeon exploration, character progression, and authoritative online progress. Prioritize mobile-first patterns, performance, and compatibility across iOS, Android, and web.
 
-Portable engine rules, bundled JSON content, content/save validators, and headless journey/battle sessions now live in `../packages/game-core/src`. The corresponding client modules re-export that package; edit its owning modules for rule changes. Client session wrappers inject animation presentation. UI, audio, storage, host lifecycles, and local save behavior remain in this client. See `../packages/game-core/README.md` and `../server/README.md` for the separate authoritative online contracts; the Expo UI now supports separate local and online characters through read-only gameplay ports. Read [docs/online-play.md](docs/online-play.md) for authentication, React Query, connection lifecycle, server presentation, and durable command recovery.
+Portable engine rules, bundled JSON content, content/save validators, and headless journey/battle sessions now live in `../packages/game-core/src`. The corresponding client modules re-export that package; edit its owning modules for rule changes. Client session wrappers inject animation presentation. UI, audio, preferences, command recovery storage, and online host lifecycles remain in this client. Legacy local save/host modules remain for compatibility tests and are not mounted by the app. See `../packages/game-core/README.md` and `../server/README.md` for the separate authoritative online contracts; the Expo UI supports online characters only through read-only gameplay ports. Read [docs/online-play.md](docs/online-play.md) for authentication, React Query, connection lifecycle, server presentation, and durable command recovery.
 
 ## Read the project docs before implementation
 
@@ -96,7 +96,7 @@ Register new artwork in the owning static asset registry, including `src/ui/shar
 ## Implementation boundaries
 
 - Keep engine and RPG rules runnable without React Native, rendering, storage, or a device clock. React displays subscribed snapshots and dispatches typed commands; it does not maintain duplicate gameplay formulas or balances.
-- Reuse the selected character's `CharacterGameContext` and `JourneyHost`. Feature routes, tabs, overlays, and journals must not create a second campaign or grant progression on render/navigation.
+- Reuse the selected character's `CharacterGameContext` and `OnlineGameplayHost`. Feature routes, tabs, overlays, and journals must not create a second campaign or grant progression on render/navigation.
 - Use the existing seeded `GameRandom` streams for gameplay. Preserve draw order and saved state; animations, sound, elapsed frames, and global random functions must not determine gameplay outcomes. Supply an explicit clock to any new time-dependent rule.
 - Preserve encounter isolation and checkpoint semantics. Commit encounter resources, wear, training, and rewards through the owning session/host; restarting an unfinished encounter must not retain uncommitted gains.
 - Use the host's durable candidate/save operation for progression and transactions. Validate the whole candidate before publication, retain it on a failed write, and retry the same candidate without charging costs, granting rewards, or drawing RNG again.

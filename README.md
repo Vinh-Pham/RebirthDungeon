@@ -21,28 +21,49 @@ isolated layout so the Expo app and server email templates retain their own Reac
 versions. Expo's existing `expo/metro-config` handles the workspace automatically.
 Skia's installation hook still prepares the client's native libraries and web WASM.
 
-For a new local server setup, copy `server/.dev.vars.example` to
-`server/.dev.vars` and set `BETTER_AUTH_SECRET` to a secret with at least 32 random
-bytes. Preserve an existing `.dev.vars`. Add `BETTER_AUTH_URL` and `BETTER_AUTH_TRUSTED_ORIGINS` from the example as well.
-Then initialize local D1:
+For local online play, run the guided setup once, then start both apps:
 
 ```sh
-pnpm db:setup
+pnpm online:setup
+pnpm online:dev
 ```
 
-To connect the Expo app, copy `client/.env.example` to `client/.env.local` when absent and configure `EXPO_PUBLIC_API_URL`. See [online play setup](client/docs/online-play.md) for native LAN URLs, approved browser origins, and separate local/online characters.
+Choose a detected LAN address for a physical phone and web, or `localhost` for this
+computer only. Setup writes ignored local settings, keeps valid existing secrets,
+and initializes local D1 without resetting accounts, characters, or migration history.
+It refuses legacy auth resets and automatic baselining. Existing connection changes
+require confirmation. Noninteractive setup requires an explicit host; add `--yes`
+to confirm changes:
+
+```sh
+pnpm online:setup --host 192.168.1.20 --api-port 8787 --web-port 8081 --yes
+```
+
+Use your computer’s current address. The launcher prints the canonical browser URL;
+open that exact hostname so browser session cookies work. Ports must be free. Rerun
+setup after changing networks. Restart development sessions and fully reload the app
+after setup changes; published bundles need rebuilding because Expo embeds public
+variables. See [online play setup](client/docs/online-play.md) for phone instructions,
+connection troubleshooting, and online characters.
+
+The existing manual server setup remains available: preserve `server/.dev.vars`,
+copy its example when absent, set an explicit API URL, trusted origins and a secret
+of at least 32 bytes, then run `pnpm db:setup`. Client configuration belongs in
+`client/.env.local`, using `client/.env.example` as a template.
 
 ## Run the apps
 
-| Command                    | Runs                                      |
-| -------------------------- | ----------------------------------------- |
-| `pnpm dev` or `pnpm start` | Expo and the local Worker together        |
-| `pnpm dev:client`          | Expo only                                 |
-| `pnpm dev:server`          | Local Worker only, normally on port 8787  |
-| `pnpm android`             | Expo with Android launch                  |
-| `pnpm ios`                 | Expo with iOS launch                      |
-| `pnpm web`                 | Expo web only                             |
-| `pnpm email:dev`           | Server's React Email preview on port 3000 |
+| Command                    | Runs                                          |
+| -------------------------- | --------------------------------------------- |
+| `pnpm online:setup`        | Configure local online play and initialize D1 |
+| `pnpm online:dev`          | Validate setup and start API + Expo on LAN    |
+| `pnpm dev` or `pnpm start` | Expo and the local Worker together            |
+| `pnpm dev:client`          | Expo only                                     |
+| `pnpm dev:server`          | Local Worker only, normally on port 8787      |
+| `pnpm android`             | Expo with Android launch                      |
+| `pnpm ios`                 | Expo with iOS launch                          |
+| `pnpm web`                 | Expo web only                                 |
+| `pnpm email:dev`           | Server's React Email preview on port 3000     |
 
 Turbo runs independent apps concurrently. Its terminal UI lets you select the
 Expo task and interact with its keyboard shortcuts. Stop the run with Ctrl+C.
@@ -56,9 +77,9 @@ pnpm exec turbo run web --filter=rebirth-dungeon -- --clear
 
 The API reference is at [localhost:8787/docs](http://localhost:8787/docs), with
 Application and Authentication sources. Better Auth uses `/api/auth/*` and session
-cookies. See the [server README](server/README.md) for the contract and Expo follow-up design.
+cookies. See the [server README](server/README.md) for authentication and gameplay contracts.
 The server also exposes authoritative online gameplay under `/api/game/*`.
-The client remains a local game; starting both apps does not add API integration.
+The client is online-only. Better Auth sessions and React Query connect account-owned characters to authoritative server progress; a verified session and connection are required to play.
 
 ## Database tasks
 

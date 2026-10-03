@@ -69,11 +69,11 @@ export default function JourneyCharacterTabs({
           <CharacterStatsDetails host={host} session={session} profile={profile} />
           <DungeonButton
             label="Title collection"
-            onPress={() => router.navigate(gameHref(session.source, profile.id, 'titles'))}
+            onPress={() => router.navigate(gameHref(profile.id, 'titles'))}
           />
           <DungeonButton
             label="Skills journal"
-            onPress={() => router.navigate(gameHref(session.source, profile.id, 'skills'))}
+            onPress={() => router.navigate(gameHref(profile.id, 'skills'))}
           />
         </DungeonCard>
       </Tabs.Content>

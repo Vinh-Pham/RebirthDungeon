@@ -162,6 +162,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  heroui-native@1.0.10: ae38b3f54029cc2e228580ddf858c5e1a885e55062b357662dd31a7b0a296c93
+
 importers:
 
   .:
@@ -255,7 +258,7 @@ importers:
         version: 57.0.3(expo@57.0.26)(react-native@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.87.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.18)(react@19.2.3)(supports-color@8.1.1))
       heroui-native:
         specifier: ^1.0.10
-        version: 1.0.10(2608778e84e46a67f8bd8c396a192191)
+        version: 1.0.10(patch_hash=ae38b3f54029cc2e228580ddf858c5e1a885e55062b357662dd31a7b0a296c93)(2608778e84e46a67f8bd8c396a192191)
       heroui-native-pro:
         specifier: ^1.0.0-beta.11
         version: 1.0.0-beta.11
@@ -10575,7 +10578,7 @@ snapshots:
       chalk: 5.6.2
       heroui-pro: 1.0.0-beta.14
 
-  heroui-native@1.0.10(2608778e84e46a67f8bd8c396a192191):
+  heroui-native@1.0.10(patch_hash=ae38b3f54029cc2e228580ddf858c5e1a885e55062b357662dd31a7b0a296c93)(2608778e84e46a67f8bd8c396a192191):
     dependencies:
       react: 19.2.3
       react-native: 0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.87.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.18)(react@19.2.3)(supports-color@8.1.1)

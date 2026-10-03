@@ -74,14 +74,14 @@ function CharacterStatsContent({
           label="Title collection"
           onPress={() => {
             close();
-            router.navigate(gameHref(host.source, profile.id, 'titles'));
+            router.navigate(gameHref(profile.id, 'titles'));
           }}
         />
         <DungeonButton
           label="Skills"
           onPress={() => {
             close();
-            router.navigate(gameHref(host.source, profile.id, 'skills'));
+            router.navigate(gameHref(profile.id, 'skills'));
           }}
         />
       </ScrollView>

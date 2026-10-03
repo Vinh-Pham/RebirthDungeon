@@ -1,7 +1,7 @@
 import { createAuthClient } from 'better-auth/react';
 import { requireAPIURL } from './config';
 function createClient() {
-  return createAuthClient({ baseURL: requireAPIURL() });
+  return createAuthClient({ baseURL: requireAPIURL(), fetchOptions: { timeout: 15000 } });
 }
 let client: ReturnType<typeof createClient> | undefined;
 export function getAuthClient() {

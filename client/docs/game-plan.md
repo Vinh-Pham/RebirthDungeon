@@ -1,8 +1,8 @@
 # Rebirth Dungeon: React Native Game Plan
 
-Updated **October 3, 2026**. Target: **Expo SDK 57, React Native 0.86, React 19, TypeScript**, with a portrait, mobile-first experience on iOS and Android and a compatible web build. The repository already implements exploration, turn-based encounters, equipment, character growth, local saves, and audio. This document describes that baseline and the next work; a planned feature is not an implementation claim.
+Updated **October 3, 2026**. Target: **Expo SDK 57, React Native 0.86, React 19, TypeScript**, with a portrait, mobile-first experience on iOS and Android and a compatible web build. The repository already implements exploration, turn-based encounters, equipment, character growth, authoritative online progress, and audio. This document describes that baseline and the next work; a planned feature is not an implementation claim.
 
-The app also supports optional account authentication and separate server-owned online characters. Shared read-only gameplay ports preserve local saves while online actions commit through React Query and recover exact pending requests. See [online play](online-play.md) for setup, ownership, battle resume, and validation. Online characters do not use the local encounter-entry rewind described below.
+The app requires account authentication and a verified connection for server-owned characters. Read-only gameplay ports submit online actions through React Query and recover exact pending requests. Legacy local save/host modules remain for headless compatibility testing, but no client route mounts them. See [online play](online-play.md) for setup, ownership, battle resume, and validation. Online characters do not use the local encounter-entry rewind described below.
 
 ## 1. Documentation map
 
@@ -36,7 +36,7 @@ The app also supports optional account authentication and separate server-owned 
 | Audio/preferences    | `src/audio/`, `src/state/`                                         | Playback and settings; UI preferences are not authoritative gameplay                    |
 | Verification         | `src/tests/`                                                       | Vitest engine, battle, content, RPG, world, persistence and presentation suites         |
 
-`CharacterGameLayout` provides `CharacterGameContext` and owns the selected character's `JourneyHost`. Feature routes reuse that host; navigation must not instantiate a second campaign. Keep non-route helpers outside `src/app/`. React reads frozen campaign snapshots with shared unchanged branches through the existing subscription pattern and dispatches typed intents. Engine/RPG modules remain runnable without React Native, rendering, storage, or a device clock.
+`OnlineGameLayout` provides `CharacterGameContext` and owns the selected character's `OnlineGameplayHost`. Feature routes reuse that host; navigation must not instantiate a second campaign. Keep non-route helpers outside `src/app/`. React reads frozen campaign snapshots with shared unchanged branches through the existing subscription pattern and dispatches typed intents. Engine/RPG modules remain runnable without React Native, rendering, storage, or a device clock.
 
 Campaign commands use one synchronous Immer producer per leaf command, staging RNG, messages, service state and events until success. Dungeon geometry and unchanged hero branches remain shared. Read-only observation never reconciles progression. RPG draft operations compose within that campaign producer; battle ECS and session instances remain mutable and independent. See [Immutable campaign state](immutable-state.md) for ownership, rollback, save compatibility and measured tradeoffs.
 
@@ -47,7 +47,7 @@ The Inventory route and Journey detail tab share an image grid with HeroUI Nativ
 ## 3. Playable loop and exploration
 
 ```text
-Choose/create character → explore refuge → prepare at services
+Sign in → choose/create online character → explore refuge → prepare at services
     → offer an unequipped item at the altar → generated dungeon
     → enter encounter → select action/target → confirm → enemy response
     → commit encounter result → continue exploration
@@ -78,7 +78,9 @@ Maintain stable IDs and typed definitions for skills, actors, items, statuses, m
 
 Future enchanting gets an independently persisted stream. Additional RNG streams, algorithm/content revisions, and compatibility checks must be introduced with explicit migrations; they are not fields already present in version 5. Save generated layouts instead of assuming a seed will regenerate identical content after a catalog change.
 
-## 6. Saves, ownership, and durability
+## 6. Legacy saves, ownership, and durability
+
+Local save behavior below describes retained headless compatibility infrastructure, not available client gameplay. Current online persistence and battle resume are defined in [online play](online-play.md).
 
 A character profile stores identity/setup: ID, name, chosen talent, starting age, and creation time. The character-scoped **campaign hero** stores playable progression, resources, inventory and equipment. Do not put a second independently mutable AP/inventory balance in the profile.
 

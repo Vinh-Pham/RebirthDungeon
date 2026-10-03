@@ -35,15 +35,9 @@ fixes. The engine deliberately snapshots mutable collections before dispatch, so
 without unused-variable warnings. Type checking uses `tsc --noEmit` with the Expo
 TypeScript configuration. ESLint and `expo lint` are no longer used.
 
-For account sign-in and fresh server-owned characters, choose **Play online** or **Account**. Configure `EXPO_PUBLIC_API_URL` using [online play setup and architecture](docs/online-play.md). Local play remains available without a server; online progression requires a verified connection and has no manual rewind.
+The client is online-only. Configure `EXPO_PUBLIC_API_URL` using [online play setup and architecture](docs/online-play.md). Press **Play**, sign in or create an account, then choose or create a server-owned character. A verified session and connection are required to play.
 
-Press **Play**, then choose a saved character or **Create New Character**. Enter a
-name (1–24 characters), choose Warrior, Archery or Mage, and select an age from
-10–17. Talent determines starting bonuses and attribute growth; age is cosmetic.
-Each character has an independent autosave and three manual slots. Use
-**Characters** in the footer menu to save progress and return to the roster.
-Existing saves appear as **Imported Adventurer**; complete its character details
-once to continue. Original legacy save rows remain available as recovery copies.
+Enter a name (1–24 characters), choose Warrior, Archery or Mage, and select an age from 10–17. Talent determines starting bonuses and attribute growth; age is cosmetic. Progress saves automatically on the server after accepted actions. **Characters** in the footer menu returns to the online roster. There are no manual save/load slots or debug controls in the client. Existing device saves remain untouched but cannot be played or imported. Old local character links redirect to online selection/creation; old local gameplay links redirect to the roster.
 
 On the Journey screen, speak to the keeper, approach the supplies chest, collect
 and equip the iron blade, then use the eastern passage. Challenge the moss guardian,
@@ -52,10 +46,10 @@ Movement works with buttons or by tapping a reachable floor tile. You can return
 to the town for supplies, weapon repairs, and paid healing. The Codex shows the content definitions.
 
 The footer menu opens a left drawer with Journey first, followed by Codex, Characters,
-Stats, Inventory, Skills, Titles, Quests, Logs, Save/Load and Settings. Journey returns
+Stats, Inventory, Skills, Titles, Quests, Logs, Account and Settings. Journey returns
 to the selected character's game screen and is disabled without an active character.
 Swipe from the left edge on iOS or Android, or use the menu button
-on every platform. Codex, Inventory and Save/Load have separate screens in the same
+on every platform. Codex and Inventory have separate screens in the same
 character stack. Use Journey in the drawer to return from Codex; browser and
 Android Back keep their normal behavior. The persistent footer shows the menu
 button, stacked HP/Mana/Stamina, name, level and XP. It stays visible during
@@ -66,9 +60,7 @@ for item information, use/equip actions, hotbar assignment, or Drop with a selec
 quantity. Drop saves before removing items and protects equipped/locked gear.
 Inventory can add or remove battle
 consumables from the Items hotbar during encounters; equipment and exploration
-use stay unavailable. Manual save/load waits until the encounter finishes. Three manual slots plus
-an autosave retain character resources, equipment, inventory, XP, gold, world
-flags, map position, encounter checkpoints and exact exploration RNG state.
+use stay unavailable. Server state retains resources, equipment, inventory, XP, gold, world flags, map position, active battle state and RNG; reload resumes current authoritative progress.
 Native runtime testing requires a development build after adding native modules.
 
 The **Logs** journal shows timestamped actions in All, Combat, Movement, User and
@@ -103,29 +95,6 @@ variant avoid HeroUI color parsing errors during web rendering.
 After changing native dependencies, use a development build and validate on both
 iOS and Android. For a production bundle check, run
 `npx expo export --platform all --output-dir .artifacts/ui-export`.
-
-## Local development debug menu
-
-When running a development session with the local Expo server, select a character
-and use the **DBG** floating button at the bottom-right of any character screen.
-It sits above the character footer and opens a Debug menu sheet with **Character**
-and **Battle** tabs. Character shows the selected character and their saved gold
-balance. Use **+100**, **+1,000**, or
-**+10,000 gold** to add gold immediately, including during encounters. A shortcut
-is disabled if its full amount would exceed the 1,000,000 gold cap.
-
-Each addition saves before updating the balance. Failed saves offer **Retry save**
-for the same addition; closing the sheet does not cancel a pending save. Battle
-turns, selections, resources, wear and RNG remain live and unchanged by the debug
-operation. Restarting that encounter retains the debug gold but discards unfinished
-combat changes, and completed defeat still halves the updated gold balance.
-
-The menu is gated by React Native's `__DEV__` flag, so its controls are not mounted
-in production builds and the host rejects debug requests when disabled. The native sheet uses
-HeroUI BottomSheet with its `@gorhom/bottom-sheet` peer; web uses the existing
-Modal adapter pattern. Battle shows the live seed, phase, entity count, current
-actor, turn order, visual queue and entity positions/sprites. Outside an encounter,
-the Battle tab is empty. Battle diagnostics no longer appear on the combat screen.
 
 ## Town services and weapon durability
 
@@ -489,7 +458,9 @@ editable export. Save version 13 adds default Rank F Rest to existing characters
 boundaries, regressions and local benchmark tradeoffs. To profile headless state
 updates with Node 24+, run `node --expose-gc scripts/profile-campaign.mjs`.
 
-## Persistence (Phase 9)
+## Legacy persistence (headless compatibility)
+
+The following local persistence infrastructure remains for engine/compatibility tests. The client no longer mounts local gameplay, save/load, imports or debug screens. Current client persistence is described in [Online play](docs/online-play.md).
 
 `SaveRepository` validates both outgoing and loaded saves before replacing a
 session. Version 13 saves migrate versions 1–12, preserving progression, resources
@@ -580,3 +551,7 @@ affected turns, cannot kill, and refreshes without stacking. Defense blocks new
 applications, while existing poison keeps ticking. Logs and existing status details
 show the effects. Reload restarts an unfinished encounter from its saved entry state
 and seed; completed results retain the existing durable retry behavior.
+
+The workspace applies `patches/heroui-native@1.0.10.patch` during installation to prevent popovers from calling the unsupported web BackHandler API. It covers both HeroUI source and compiled module entry points; native Back dismissal remains enabled. Restart Expo after dependency patch changes.
+
+For guided local web/mobile online play, run `pnpm online:setup` then `pnpm online:dev` from the workspace root. Open the launcher’s printed browser URL. See [online play](docs/online-play.md) for setup, native development builds, and reconnect behavior.

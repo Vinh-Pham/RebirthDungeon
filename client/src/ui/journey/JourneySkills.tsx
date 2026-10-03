@@ -41,7 +41,7 @@ export default function JourneySkills({ session }: { session: JourneySession }) 
         </Text>
         <DungeonButton
           label="Open skills journal"
-          onPress={() => router.navigate(gameHref(session.source, profile.id, 'skills'))}
+          onPress={() => router.navigate(gameHref(profile.id, 'skills'))}
         />
       </DungeonCard>
       <ProgressionFeedback host={host} showNotice={false} />

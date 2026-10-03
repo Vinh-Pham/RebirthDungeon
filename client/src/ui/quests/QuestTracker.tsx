@@ -38,7 +38,7 @@ export default function QuestTracker({ session }: { session: JourneySession }) {
       <DungeonButton
         label={`Quest journal · More${Math.max(0, objectiveCount - hero.trackedObjectives.length) ? ` (${objectiveCount - hero.trackedObjectives.length})` : ''}`}
         detail={`${active.length} active quests · ${available} available`}
-        onPress={() => router.navigate(gameHref(session.source, profile.id, 'quests'))}
+        onPress={() => router.navigate(gameHref(profile.id, 'quests'))}
       />
     </DungeonCard>
   );

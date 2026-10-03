@@ -43,7 +43,9 @@
     "email:test": "turbo run email:test --filter=rebirth-dungeon-server",
     "lint:fix": "turbo run lint:fix",
     "lint:fix:client": "turbo run lint:fix --filter=rebirth-dungeon",
-    "lint:fix:server": "turbo run lint:fix --filter=rebirth-dungeon-server"
+    "lint:fix:server": "turbo run lint:fix --filter=rebirth-dungeon-server",
+    "online:setup": "node server/tools/online-setup.mjs",
+    "online:dev": "node server/tools/online-dev.mjs"
   },
   "devDependencies": {
     "turbo": "2.11.7"

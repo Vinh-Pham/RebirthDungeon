@@ -28,21 +28,12 @@ function AppDrawerContent(props: DrawerContentComponentProps) {
   const open = useDrawerStatus() === 'open';
   const close = useCallback(() => props.navigation.closeDrawer(), [props.navigation]);
   const route = (
-    destination:
-      | 'journey'
-      | 'codex'
-      | 'inventory'
-      | 'save-load'
-      | 'skills'
-      | 'quests'
-      | 'titles'
-      | 'logs',
+    destination: 'journey' | 'codex' | 'inventory' | 'skills' | 'quests' | 'titles' | 'logs',
   ) => {
     if (!game || !ready) return;
     close();
     router.navigate(
       gameHref(
-        game.host.source,
         game.profile.id,
         destination === 'journey' ? '' : destination === 'codex' ? 'explore' : destination,
       ),
@@ -61,10 +52,7 @@ function AppDrawerContent(props: DrawerContentComponentProps) {
         <View className="gap-3">
           <DungeonButton
             label="Journey"
-            selected={
-              !!game &&
-              path === `${game.host.source === 'online' ? '/online' : ''}/game/${game.profile.id}`
-            }
+            selected={!!game && path === gameHref(game.profile.id)}
             disabled={!ready}
             onPress={() => route('journey')}
           />
@@ -76,7 +64,7 @@ function AppDrawerContent(props: DrawerContentComponentProps) {
           />
           <DungeonButton
             label="Characters"
-            selected={path === '/characters'}
+            selected={path === '/online/characters'}
             busy={!!snapshot?.busy}
             onPress={() => {
               close();
@@ -122,16 +110,7 @@ function AppDrawerContent(props: DrawerContentComponentProps) {
             disabled={!ready}
             onPress={() => route('logs')}
           />
-          {game?.host.source !== 'online' ? (
-            <DungeonButton
-              label="Save/Load"
-              selected={path.endsWith('/save-load')}
-              disabled={!ready}
-              onPress={() => route('save-load')}
-            />
-          ) : (
-            <Text className="text-sm text-muted">Online progress saves automatically.</Text>
-          )}
+          <Text className="text-sm text-muted">Progress saves automatically online.</Text>
           <DungeonButton
             label="Account"
             onPress={() => {

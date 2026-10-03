@@ -1,16 +1,16 @@
 # Rebirth Dungeon: React Native User Interface
 
-Updated **October 2, 2026**. The app uses Expo SDK 57, Expo Router, React Native, HeroUI, Uniwind and Skia/Reanimated presentation. Existing screens cover character selection/setup, exploration, combat, stats, inventory, save/load, transient action logs and sound settings. Skills, quests, titles and the town enchanting service are implemented. Aging and deliberate rebirth remain planned screens/services. The [game plan](../game-plan.md) owns delivery; this document owns interaction and mobile acceptance.
+Updated **October 2, 2026**. The app uses Expo SDK 57, Expo Router, React Native, HeroUI, Uniwind and Skia/Reanimated presentation. Existing screens cover character selection/setup, exploration, combat, stats, inventory, transient action logs and sound settings. Skills, quests, titles and the town enchanting service are implemented. Aging and deliberate rebirth remain planned screens/services. The [game plan](../game-plan.md) owns delivery; this document owns interaction and mobile acceptance.
 
-Account registration/sign-in and separate online character creation are available from the title screen. Online routes under `/online/game/[characterId]` share the existing journals, service and battle screens through an authoritative public-view host. Their drawer omits Save/Load and debug controls; progression feedback offers explicit pending-action recovery and Rest resumes only on request after an interruption. Local routes and saves retain their existing behavior. See [online play](../online-play.md).
+The client is online-only. Play opens the online roster behind verified account/connection access; Account provides registration and sign-in. Online routes under `/online/game/[characterId]` share the existing journals, service and battle screens through an authoritative public-view host. Their drawer omits Save/Load and debug controls; progression feedback offers explicit pending-action recovery and Rest resumes only on request after an interruption. Old local character links redirect to online selection/creation, and old `/game/...` links redirect to the online roster. Existing device saves remain untouched and inaccessible in the client. See [online play](../online-play.md).
 
 ## 1. Composition and navigation
 
-Routes remain thin files under src/app. CharacterGameLayout owns one selected character's JourneyHost and provides CharacterGameContext; every feature view shares it. Routes, tabs, sheets and drawers do not create additional campaigns or award gameplay progress. Components/hooks live outside the route directory.
+Routes remain thin files under src/app. OnlineGameLayout owns one selected character's OnlineGameplayHost and provides CharacterGameContext; every feature view shares it. Routes, tabs, sheets and drawers do not create additional campaigns or award gameplay progress. Components/hooks live outside the route directory.
 
-The app drawer lists Journey first, then Codex. Selecting either closes the drawer and navigates within the selected character's stack, preserving the shared host and any active encounter. Both are disabled until a character session is ready and show their selected state on the matching screen. Shared page headers are removed throughout the app. The footer menu and drawer handle navigation from character pages; browser and Android Back return from auxiliary routes before leaving the character. Detail-level Back/Close controls remain. Existing `/game/[characterId]` and `/game/[characterId]/explore` links remain valid.
+The app drawer lists Journey first, then Codex. Selecting either closes the drawer and navigates within the selected character's stack, preserving the shared host and any active encounter. Both are disabled until a character session is ready and show their selected state on the matching screen. Shared page headers are removed throughout the app. The footer menu and drawer handle navigation from character pages; browser and Android Back return from auxiliary routes before leaving the character. Detail-level Back/Close controls remain. Game links use `/online/game/[characterId]` and its journal routes.
 
-A shared screen shell inside the drawer keeps one full-width character footer outside page scrolling, reserving its height instead of covering page content. It appears on every selected-character route, including shops and encounters, and on Settings while a character session remains active. Title, roster and character creation/import setup never show it; Settings without a character also hides it and provides an in-page Back action. The title menu retains access to Settings. Loading character routes show the menu and a status placeholder without borrowing another character's values. Drawers, dialogs and popovers may cover the footer.
+A shared screen shell inside the drawer keeps one full-width character footer outside page scrolling, reserving its height instead of covering page content. It appears on every selected-character route, including shops and encounters, and on Settings while a character session remains active. Title, roster and character creation never show it; Settings without a character also hides it and provides an in-page Back action. The title menu retains access to Settings. Loading character routes show the menu and a status placeholder without borrowing another character's values. Drawers, dialogs and popovers may cover the footer.
 
 The footer places a 48-unit menu button at the far left, three compact HP/Mana/Stamina bars stacked next to it, then name, level and XP filling the remaining width. It uses the existing dark theme with red/blue/yellow resources and light-blue XP. The compact tracks scale with text. No shortcut/collapse buttons are included. Name truncation retains the full accessible label; HP/Mana/Stamina omit visible labels and place white current/max values inside each track, aligned left. Values use a subtle text shadow for readability; accessible labels still identify each resource. Stamina also shows live Hunger as a right-aligned percentage inside its track, using `100 - fullness` to one decimal place and including it in the accessible value. The shell handles the top safe inset, the footer handles the bottom inset, and nested pages avoid double padding. Footer height grows with text scaling. Save/navigation errors remain visible above page content. Its observers use the registered JourneyHost and existing campaign/battle snapshots, never a second campaign or gameplay command.
 
@@ -26,53 +26,22 @@ categories only changes presentation and never advances gameplay.
 
 | Existing surface          | Owner and purpose                                                                            |
 | ------------------------- | -------------------------------------------------------------------------------------------- |
-| Character selection/setup | CharacterSelectScreen / NewCharacterScreen; independent saved characters                     |
-| Character game stack      | src/app/(screens)/game/[characterId]/_layout.tsx; shared host/context                        |
+| Character selection/setup | OnlineCharactersScreen / NewOnlineCharacterScreen; account-owned characters                  |
+| Character game stack      | src/app/(screens)/online/game/[characterId]/_layout.tsx; shared host/context                 |
 | Journey/Codex routes      | Separate stack screens; Stats/Skills/Inventory/Quests detail tabs stay inside the journey UI |
 | Exploration/service panel | JourneyScreen / TownServicePanel; world interaction and supported NPC actions                |
 | Active encounter          | BattleView embedded by the journey; no separate authoritative battle route required          |
 | Inventory route           | InventoryScreen; same inventory content as the Journey Inventory tab                         |
 | Stats overlay             | CharacterStatsOverlay / CharacterStatsDetails; selected character's observed stats           |
-| Save/load route           | SaveLoadScreen; autosave status and manual slots                                             |
 | App drawer/settings       | Shared navigation, character exit, inventory/save access and global preferences              |
 
 The standalone BattleScreen/BattleHost is also present for the battle surface; campaign features use JourneyHost's actual encounter instead of constructing that standalone session. Reuse shared DungeonUI, ResourceBar and menu components, HeroUI controls and current theme tokens. There is no Godot scene/Control tree or desktop floating-window framework to implement.
 
 New Skills/Quests routes should reuse the same character stack as the existing Skills plan. Titles can begin as Character list/detail content; enchanting can begin as a town service. Expose destinations only when their commands/data exist. [Expo Router guidance](https://docs.expo.dev/router/introduction/).
 
-### Development debug sheet
+### Online-only controls
 
-Selected-character screens include a development-only **DBG** floating action
-button. It is 56 logical units across, sits 16 units from the right safe inset,
-and sits 16 units above the reserved character footer. It is hidden while the drawer or
-Stats overlay is open. Navigation and character exit close the debug sheet.
-
-The sheet uses HeroUI **Character** and **Battle** tabs, with Character selected
-initially. Web tabs support arrow keys, Home and End. Character displays the
-character name, saved gold and **+100**, **+1,000** and
-**+10,000 gold** shortcuts. It stays open after an addition and shows host-owned
-saving/success/error feedback and exact-candidate Retry save. Disable shortcuts
-while saving, awaiting retry, lacking storage, or exceeding the 1,000,000 gold
-cap; show the applicable reason. Closing does not cancel a pending transaction.
-
-Battle displays the active encounter's seed, phase, entity count, current actor,
-turn order, pending visual queue and entity IDs/positions/sprite atlas frames.
-Subscribe to the existing battle and presentation snapshots only while these
-diagnostics are mounted. There is no combat-screen debug toggle or inline overlay.
-Without an active battle, keep the Battle tab available with an empty panel.
-Switching tabs or inspecting diagnostics never draws RNG or dispatches gameplay.
-
-Native uses HeroUI BottomSheet at 50%/85% snap points with scrollable content.
-Web uses a bottom-aligned Modal, capped at 560 units wide and 85% viewport height,
-with keyboard focus containment, Escape and focus restoration. Close, backdrop,
-native swipe and Android Back dismiss before the parent character exit. Background
-touch and accessibility traversal are blocked while open. Opening the sheet never
-advances gameplay; adding gold uses the current host's durable checkpoint operation.
-
-`__DEV__` enables both the UI and the host's injected debug capability. Production
-does not mount debug controls. Gold additions are available during encounters,
-preserving the live battle while saving only updated checkpoint gold. Restart keeps
-that gold; normal victory rewards and the defeat half-gold penalty still apply.
+The client has no Save/Load route, local character import/setup, or development debug menu. Pending server commands expose explicit recovery; loss of a verified session or connection blocks gameplay through the online gate.
 
 ## 2. Exploration surface
 
@@ -103,7 +72,7 @@ Recent battle feedback
 
 Attack and Defend live inside the Combat hotbar, followed by learned combat skills. Owned Rest lives in the separate Life category. Attack uses the talent’s backing skill: Warrior → Combat Mastery, Archery → Human Ranged Attack, Mage → Magic Mastery. Defend uses Defense. Loaded bows instead show Human Ranged Attack or owned Elf Ranged Attack regardless of talent; empty or broken bows show Combat Mastery for fist damage. Attack popovers show one-arrow cost and the live remaining count, or the reason for fist fallback. Saved ranks appear only when owned. Minimal Combat, Magic, Life and Items label tabs do not use HeroUI Tabs. Items contains assigned battle-usable consumables. Its popovers show remaining quantity, capped recovery, wounds and Use Item; out-of-stock icons stay inspectable with use disabled. An empty category points to Inventory. The skill row scrolls horizontally on overflow. Other passive, life and unsupported skills do not become action icons; Rest is an explicit life-skill exception routed through the basic Rest action; the basic Attack/Defend identities are explicit exceptions without granting skill ownership. Icons retain accessible names and selected states; unavailable skills remain inspectable with their equipment, cooldown or resource reason.
 
-Every icon opens a HeroUI Native Popover. Skill details show saved rank, effective costs, targeting and engine-derived damage/healing previews, with a **Use Skill** button. Basic actions use **Use Attack** and **Use Defend**. Popover content scrolls within safe viewport bounds; Close, outside tap, Android Back and web Escape dismiss it. The web adapter refreshes HeroUI's initial offscreen measurement after positioning, since RN Web's size observer does not report moves. Web focus stays inside the panel and returns to its trigger on dismissal. All focus transfers use `preventScroll` so opening, tabbing, focus containment and dismissal preserve page scroll even while HeroUI measures the panel offscreen. The same adapter handles inventory item popovers. Tab labels support keyboard arrows, Home and End.
+Every icon opens a HeroUI Native Popover. Skill details show saved rank, effective costs, targeting and engine-derived damage/healing previews, with a **Use Skill** button. Basic actions use **Use Attack** and **Use Defend**. Popover content scrolls within safe viewport bounds; Close, outside tap, Android Back and web Escape dismiss it. The web adapter refreshes HeroUI's initial offscreen measurement after positioning, since RN Web's size observer does not report moves. Web focus stays inside the panel and returns to its trigger on dismissal. All focus transfers use `preventScroll` so opening, tabbing, focus containment and dismissal preserve page scroll even while HeroUI measures the panel offscreen. The same adapter handles inventory item popovers. The workspace pnpm patch for `heroui-native@1.0.10` skips the primitive’s hardware Back subscription on web while retaining native dismissal and layout cleanup. The game layout also registers its hardware Back listener only on native; browser navigation and popover Escape remain handled separately. Tab labels support keyboard arrows, Home and End.
 
 Browsing details pauses arena targeting without selecting or cancelling the existing engine action. Closing resumes targeting only when an action has already been confirmed. Confirm Attack or an enemy-targeted skill with its Use button. With exactly one living enemy, select and resolve against it immediately through the existing controller flow; with multiple enemies, tap a monster in the game canvas. Ally targeting keeps its own selection rules. Before confirmation, canvas target taps are disabled. There is no Targets button or named target list. Cancel clears the selection and pauses targeting again. Self-only actions resolve once from their Use button. Owned Rest has a Life icon with Use Rest; it resolves one self turn with rest-rate recovery and no guard mitigation. No dice slots, kept markers, rerolls, reserved pools or paid Pass controls belong in this interface.
 
@@ -187,7 +156,7 @@ First preserve the existing shared host, exploration/service panels, battle acti
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | Rules versus presentation | Identical accepted commands with varied animation timing yield identical state/RNG                                     |
 | Small portrait touch      | Canvas targeting after action confirmation, reachable confirmation, no panel click-through, safe insets and large text |
-| iOS/Android installation  | Full refuge → dungeon → encounter → return loop, sound, local saves and suspend/relaunch                               |
+| iOS/Android installation  | Full refuge → dungeon → encounter → return loop, sound, server progress and suspend/relaunch                           |
 | Web                       | Keyboard action controls, canvas target selection, responsive panels, explicit audio resume and IndexedDB saves        |
 | Persistence               | Pending-encounter restart, failed load preserving session, candidate retry without duplicate costs/rewards             |
 | Accessibility             | Labels/state, readable cues, reduced motion, screen-reader traversal and focus restoration                             |

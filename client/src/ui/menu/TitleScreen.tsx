@@ -31,12 +31,7 @@ export default function TitleScreen() {
           Every journey begins with a name.
         </Text>
       </View>
-      <MenuButton label="Play" onPress={() => router.navigate('/characters')} />
-      <MenuButton
-        label="Play online"
-        secondary
-        onPress={() => router.navigate('/online/characters')}
-      />
+      <MenuButton label="Play" onPress={() => router.navigate('/online/characters')} />
       <MenuButton label="Account" secondary onPress={() => router.navigate('/account')} />
       <MenuButton label="Settings" secondary onPress={() => router.navigate('/settings')} />
       <Text style={styles.footer}>THE EMBER WAITS FOR YOU</Text>

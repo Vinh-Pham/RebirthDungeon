@@ -73,7 +73,7 @@ export default function InventoryDetails({
     !disabled,
   );
   const comparison = preview.data?.preview.type === 'EQUIPMENT' ? preview.data.preview : undefined;
-  const openJournal = () => router.navigate(gameHref(session.source, characterId, 'skills'));
+  const openJournal = () => router.navigate(gameHref(characterId, 'skills'));
   const needs = questItemNeeds(hero, session.content, item.id);
   const [dropQuantity, setDropQuantity] = useState(1);
   const droppable = removableCount(hero, row.reference);
@@ -316,7 +316,7 @@ export default function InventoryDetails({
             ) : null}
             <DungeonButton
               label="View title collection"
-              onPress={() => router.navigate(gameHref(session.source, characterId, 'titles'))}
+              onPress={() => router.navigate(gameHref(characterId, 'titles'))}
             />
           </>
         ) : null}
@@ -371,7 +371,7 @@ export default function InventoryDetails({
           </Text>
           <DungeonButton
             label="View quest journal"
-            onPress={() => router.navigate(gameHref(session.source, characterId, 'quests'))}
+            onPress={() => router.navigate(gameHref(characterId, 'quests'))}
           />
         </DungeonCard>
       ) : null}

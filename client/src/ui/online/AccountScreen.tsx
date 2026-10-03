@@ -6,6 +6,9 @@ import { Label } from 'heroui-native/label';
 import { TextField } from 'heroui-native/text-field';
 import { useOnline, useOnlineAccess } from '../../online/OnlineProvider';
 import { MenuButton, MenuError, MenuPage, menu } from '../menu/MenuUI';
+import { connectionMessages } from '../../online/ConnectionStatus';
+import { openOnlineWebAddress } from '../../online/localWeb';
+import { apiConfiguration } from '../../online/config';
 import { DungeonLoading } from '../shared/DungeonUI';
 export default function AccountScreen() {
   const online = useOnline(),
@@ -15,6 +18,10 @@ export default function AccountScreen() {
     [password, setPassword] = useState('');
   const [error, setError] = useState<string>();
   const connected = connection.online && connection.foreground;
+  const status = online.connectionStatus;
+  const needsSetup = status === 'missing-configuration' || status === 'invalid-configuration';
+  const retryable = status === 'unreachable' || status === 'server-error' || status === 'offline';
+  const usable = status === 'ready' || status === 'signed-out';
   const run = async (operation: () => Promise<void>) => {
     setError(undefined);
     try {
@@ -34,18 +41,58 @@ export default function AccountScreen() {
         REBIRTH DUNGEON · ACCOUNT
       </Text>
       <Text className="text-foreground" accessibilityRole="header" style={menu.title}>
-        {online.session ? 'Your account' : mode === 'sign-up' ? 'Create an account' : 'Sign in'}
+        {needsSetup
+          ? 'Set up online play'
+          : !usable
+            ? 'Connect to online play'
+            : online.session
+              ? 'Your account'
+              : mode === 'sign-up'
+                ? 'Create an account'
+                : 'Sign in'}
       </Text>
       <Text className="text-muted" style={menu.body}>
-        Online characters start fresh and need a connection to progress. Your local characters and
-        saves stay on this device.
+        Sign in to play. A connection is required, and your progress is saved on the server.
       </Text>
       {online.loading ? <DungeonLoading label="Checking session" /> : null}
-      {!connected ? (
-        <MenuError message="Reconnect to manage your account. Saved credentials are kept during connection failures." />
+      <MenuError message={connectionMessages[status]} />
+      {usable ? <MenuError message={error ?? online.error} /> : null}
+      {needsSetup && __DEV__ ? (
+        <View style={menu.section}>
+          <Text className="text-foreground" style={menu.body}>
+            From the project folder, run pnpm online:setup, then pnpm online:dev. Restart Expo and
+            fully reload this app after setup.
+          </Text>
+          {apiConfiguration.error ? <MenuError message={apiConfiguration.error} /> : null}
+        </View>
       ) : null}
-      <MenuError message={error ?? online.error} />
-      {online.session ? (
+      {__DEV__ && apiConfiguration.url ? (
+        <Text className="text-muted" style={menu.body}>
+          Server: {apiConfiguration.url}
+        </Text>
+      ) : null}
+      {__DEV__ && online.webAddress ? (
+        <View style={menu.section}>
+          <Text className="text-foreground" style={menu.body}>
+            Online play: {new URL(online.webAddress).origin}
+          </Text>
+          <Text className="text-muted" style={menu.body}>
+            Open this address to connect to the game server and sign in.
+          </Text>
+          <MenuButton label="Open online play address" onPress={openOnlineWebAddress} />
+        </View>
+      ) : null}
+      {retryable ? (
+        <MenuButton
+          label="Retry connection"
+          secondary
+          disabled={!connected || online.changing}
+          onPress={() => {
+            void run(online.refreshSession);
+          }}
+        />
+      ) : null}
+      {usable && online.session ? (
         <View style={menu.section}>
           <Text className="text-foreground" style={menu.body}>
             {online.session.user.email}
@@ -65,7 +112,7 @@ export default function AccountScreen() {
             }}
           />
         </View>
-      ) : online.loading ? null : (
+      ) : status !== 'signed-out' ? null : (
         <View style={menu.section}>
           <TextField isRequired isDisabled={online.changing}>
             <Label>Email</Label>
@@ -112,7 +159,7 @@ export default function AccountScreen() {
             }}
           />
           <MenuButton
-            label="Check session again"
+            label="Retry connection"
             secondary
             disabled={!connected || !online.api || online.changing}
             onPress={() => {
@@ -121,11 +168,6 @@ export default function AccountScreen() {
           />
         </View>
       )}
-      <MenuButton
-        label="Local characters"
-        secondary
-        onPress={() => router.dismissTo('/characters')}
-      />
       <MenuButton label="Back to title" secondary onPress={() => router.navigate('/')} />
     </MenuPage>
   );

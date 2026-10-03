@@ -59,7 +59,7 @@ export default function TownQuestOffers({
       )}
       <DungeonButton
         label="Open quest journal"
-        onPress={() => router.navigate(gameHref(session.source, profile.id, 'quests'))}
+        onPress={() => router.navigate(gameHref(profile.id, 'quests'))}
       />
     </View>
   );

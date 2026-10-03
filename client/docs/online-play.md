@@ -1,22 +1,74 @@
 # Online play
 
-The Expo app supports independent local and online characters. **Play** opens local saves; **Play online** opens the account-owned roster. **Account** supports email/password registration, sign-in, and sign-out. Registration uses the initial account name `Player`. Character names, talents, and ages use the existing setup form.
+The Expo app is online-only. **Play** opens the account-owned roster, showing the account screen until the session and connection are verified. **Account** supports email/password registration, sign-in, and sign-out. Registration uses the initial account name `Player`. Character names, talents, and ages use the existing setup form.
 
-Local characters and format 13 saves remain on the device. Online characters start fresh and require a verified session and connection to progress. They have one current server state and no manual slots, save uploads, debug menu, offline queue, or rewind. Signing out preserves local saves and any account-scoped unresolved command journal.
+Existing local characters and format 13 saves remain untouched on the device but cannot be played or imported by the client. Characters require a verified session and connection to progress. They have one current server state and no manual slots, save uploads, debug menu, offline queue, or rewind. Signing out preserves any account-scoped unresolved command journal. Old `/characters` and `/characters/new` links redirect to online selection/creation, and every `/game/...` link redirects to the online roster without interpreting local character IDs as server IDs.
 
 ## Setup
 
-Initialize the server using [its README](../../server/README.md). Copy `client/.env.example` to `client/.env.local` when absent, or add the variable to your existing environment:
+Run these commands from the workspace root:
 
-```dotenv
-EXPO_PUBLIC_API_URL=http://localhost:8787
+```sh
+pnpm online:setup
+pnpm online:dev
 ```
 
-This is the API **origin**, without `/api`, credentials, query parameters, or fragments. Missing configuration leaves local play available and explains that online play is unconfigured. Invalid configuration displays an error. Restart Expo after changing it; the public variable is embedded in the app bundle.
+Setup lists private IPv4 addresses with interface names. Choose the interface that
+shares a network with your phone. `localhost` is explicitly computer-only. Default
+ports are API **8787** and Expo **8081**; override them with `--api-port` and
+`--web-port`. A noninteractive run needs `--host`; changed existing connection
+settings need `--yes`:
 
-Run the Worker on port 8787 and Expo web on port 8081. The server's explicit `BETTER_AUTH_TRUSTED_ORIGINS` must include the actual browser origin (including its port) and `rebirthdungeon://`. If Expo chooses another port, update the approved list. Production web and API should share a site and use HTTPS. Physical devices need a reachable LAN or tunnel API URL, with matching server `BETTER_AUTH_URL`; a phone's localhost points at the phone.
+```sh
+pnpm online:setup --host 192.168.1.20 --api-port 8787 --web-port 8081 --yes
+```
 
-Better Auth and its Expo plugin use matching 1.7.7 versions. SecureStore, Network, and Crypto were installed through Expo's SDK 57 installer. Build a fresh native development client for the SecureStore config plugin; do not edit generated native directories. Device validation remains necessary even when all platform exports pass.
+Use your actual detected address. Setup writes `EXPO_PUBLIC_API_URL` and the
+launcher-only `LOCAL_ONLINE_WEB_PORT` to ignored `client/.env.local`. It sets matching
+`BETTER_AUTH_URL` and explicit trusted origins for the chosen browser address and
+`rebirthdungeon://` in ignored `server/.dev.vars`. Unrelated settings and valid
+secrets are preserved. Missing/blank secrets get 32 cryptographically random bytes;
+invalid nonblank secrets require explicit correction. Secrets are never printed.
+
+Database initialization uses the existing Drizzle migrations and seed against local
+D1 only. Reruns preserve accounts, sessions, characters, and migration history.
+Legacy auth tables cause refusal before the historical reset can run. Current tables
+without migration history require explicit operator review; setup never baselines
+them. `LOCAL_D1_STATE=/absolute/path` selects the same state folder for setup and
+launcher. No remote database or deployment is involved.
+
+`online:dev` checks configuration and occupied ports before starting installed
+Wrangler with local bindings and Expo with LAN access. In LAN mode, a Node listener on the selected interface forwards to a loopback Worker, avoiding a reproduced macOS workerd LAN stall. Its internal port is temporary; the configured public API port stays fixed. Worker inspection/storage routes remain loopback-only. Open the printed canonical
+**browser URL with the same hostname as the API**. A LAN API with a localhost web
+page breaks session cookies even when CORS allows it. Automatic browser opening is
+suppressed. If you open Expo’s localhost link with LAN setup, the development account screen identifies the address mismatch and offers **Open online play address** instead of retrying a blocked session request. Local characters and saves belong to their original browser origin; return to that address to use them. Ctrl+C or either application's exit stops both process groups.
+The original development commands remain available.
+
+For a physical phone, use an **SDK 57 native development build** with the existing
+SecureStore config plugin and `rebirthdungeon` scheme. Connect phone and computer to
+the same network, open the Expo development server through your development client,
+and allow local network access when prompted. This launcher does not create or
+install native builds. A phone's localhost points at the phone. If a selected LAN
+address disappears, rerun setup. Restrictive guest networks or a firewall may block
+access even on the same Wi-Fi.
+
+The API URL is an HTTP(S) **origin**, without `/api`, credentials, queries, or
+fragments. The account screen shows a setup notice when it is missing or invalid.
+Disconnected devices, unreachable servers, and server errors have separate feedback
+with **Retry connection** for recoverable failures. Stored credentials survive
+connection failures. Authentication mutations never automatically retry. Local
+characters remain accessible. Setup commands and server addresses appear only in
+development builds.
+
+The launcher rejects conflicting shell and active Expo env-file overrides, including
+settings that disable public variable loading. Remove the conflicting override and
+rerun setup. Fully reload the app and restart development sessions after changing
+configuration. Expo embeds public variables; rebuild published bundles to change
+their API URL. See [Expo environment variables](https://docs.expo.dev/guides/environment-variables/)
+and [Wrangler local configuration](https://developers.cloudflare.com/workers/local-development/environment-variables/).
+Production addresses must remain explicit, with HTTPS and web/API on the same site.
+Runtime server switching, public deployment, tunnels, and cloud/local save
+synchronization are separate work.
 
 ## Authentication and queries
 
@@ -38,7 +90,7 @@ Game caches are memory-only. Reads have bounded retries for network and server f
 
 ## Gameplay ownership
 
-`src/game/Gameplay.ts` defines the read-only host, journey, and battle ports used by shared screens, renderers, and audio. `LocalGameplayHost` wraps the original local simulation and save lifecycle. `OnlineGameplayHost` subscribes to React Query's public server view, maps existing UI intents to the public command allowlist, and updates only after a confirmed server response. It never constructs a journey engine or advances enemies locally.
+`src/game/Gameplay.ts` defines the read-only host, journey, and battle ports used by shared screens, renderers, and audio. `LocalGameplayHost` remains only as a headless compatibility adapter for the original simulation/save tests; no app route imports or mounts it. `OnlineGameplayHost` subscribes to React Query's public server view, maps existing UI intents to the public command allowlist, and updates only after a confirmed server response. It never constructs a journey engine or advances enemies locally.
 
 Movement, interactions, services, equipment, exploration consumables, hotbar changes, skills, quests, titles, enchants, dungeons, battle actions, and encounter settlement go through the server. Equipment/enchant/burn previews use revision-bound server calculations. Enchant operation identity and RNG remain server-owned. Battle action selection and cancellation stay local, while action availability, valid targets, and combat estimates come from the server's read-only projection.
 
@@ -46,7 +98,7 @@ Battle receipts optionally contain version 1 presentation batches for the commit
 
 ## Durable action recovery
 
-Every deliberate action receives a UUID and the currently observed character revision. The coordinator writes that exact request to a separate recovery store **before** sending it: `rebirth-online-commands.db` on native and `rebirth-online-commands` IndexedDB on web. Keys include API origin, account, and character (or a separate character-creation key). Atomic insertion prevents another tab from overwriting an unresolved action; clearing compares command identity so a late acknowledgment cannot delete a newer request.
+On web, command UUIDs use cryptographic [`getRandomValues`](https://w3c.github.io/webcrypto/#Crypto-method-getRandomValues), which works on LAN HTTP where `randomUUID` requires a secure context. Native keeps Expo Crypto. Every deliberate action receives a UUID and the currently observed character revision. The coordinator writes that exact request to a separate recovery store **before** sending it: `rebirth-online-commands.db` on native and `rebirth-online-commands` IndexedDB on web. Keys include API origin, account, and character (or a separate character-creation key). Atomic insertion prevents another tab from overwriting an unresolved action; clearing compares command identity so a late acknowledgment cannot delete a newer request.
 
 Only one unresolved request per character is allowed. Unknown outcomes, disconnects, 401s, server failures, and rate limits retain the request. **Recover pending action** explicitly resends the same ID, revision, and body. The server returns its original receipt if it already committed. No retry invents a new ID, rebases an old choice, spends resources optimistically, or rerolls outcomes. Character creation uses the same recovery path.
 
@@ -58,8 +110,14 @@ Rest pulses are the exception: they are ephemeral foreground lease renewals, nev
 
 Automated coverage includes account/connection isolation, request bounds, monotonic cache revisions, persist-before-send, storage failures, exact retries after a lost response/restart, simultaneous command coordinators, character creation recovery, rest leases, public battle targets/previews, presentation deduplication, and online host lifecycle. Shared core and Worker tests verify deterministic battles and receipt replay; the existing local save and gameplay suites remain required.
 
-Manual checks should exercise registration, sign-in/out and replacement; separate rosters and local-save preservation; movement, collection, equipment previews and use; services and journals; battle action/target confirmation, reload resume, rewards and defeat; command interruption and explicit recovery; foreground/offline behavior and Rest; compact and wide layouts. Run these in native development builds on iOS and Android as well as web. Exports verify bundling, not device behavior.
+Manual checks should exercise registration, sign-in/out and replacement; online-only navigation, legacy-link redirects and untouched local saves; movement, collection, equipment previews and use; services and journals; battle action/target confirmation, reload resume, rewards and defeat; command interruption and explicit recovery; foreground/offline behavior and Rest; compact and wide layouts. Run these in native development builds on iOS and Android as well as web. Exports verify bundling, not device behavior.
 
 Validated on October 3, 2026: workspace formatting, lint with zero warnings, type checks, and all 707 tests passed (611 client, 9 shared core, 87 server). The Worker dry-run build, local HTTP authentication/game smoke test, SDK dependency check, and web/iOS/Android exports passed. Web QA at `http://localhost:8081` against the local Worker used 390×844 and 1280×900 layouts. It covered registration, online character creation, movement and collection, equipment preview/equip, interrupted-action recovery across reload, battle damage/wear resume, retained victory loot and settlement, sign-out, and preservation of a local character/manual slot. The existing development-only HeroUI BackHandler warning remains on web. Native device interaction was not performed.
+
+Guided local setup validated on October 3, 2026: all **727 tests** passed (617 client, 9 shared core, 101 server), plus formatting, lint, type checks, Worker dry-run build, and web/iOS/Android exports. Setup reruns against the existing local database preserved data and an active session. The canonical LAN browser URL `http://192.168.4.38:8081` passed registration, sign-in, online character creation, movement committed through the server, position persistence after reload, connection-failure retry without signing in again, and sign-out with a local character and manual slot preserved. A temporary HTTP 503 fixture verified the separate server-failure notice. The SDK 57 iOS manifest advertised the selected LAN host. Physical-device interaction and native SecureStore/reconnect checks remain unverified: the paired iPhone inspection timed out and no Android device was connected. The existing HeroUI BackHandler warning remains on web.
+
+The localhost/LAN mismatch follow-up reproduced the unreachable account screen at `http://localhost:8081/account` with a LAN API. After the fix, that screen offers the configured online address without sending session requests. Clicking the link reached `http://192.168.4.38:8081/account`, returned HTTP 200 for session lookup, and displayed the sign-in form. Local storage is not moved between browser origins.
+
+Online-only client validation on October 3, 2026: all 626 client tests, formatting, lint and type checks passed. Browser QA at `http://192.168.4.38:8081` used 390×844 and 1280×900 layouts and covered Play → sign-in, the seeded development account, creating an online character, opening the game/menu, returning to the roster, and legacy character/setup/save-load redirects. The drawer has no Save/Load or debug controls. Emulated disconnection during a game showed the connection gate with no local fallback. Existing local saves were not read, migrated or deleted by these changes. Native device interaction was not performed. Screenshots are in ignored `client/.artifacts/online-only/`.
 
 Cloud/local save synchronization, social sign-in, email verification/reset, multiplayer, JWT issuance, and content administration remain future work.

@@ -15,13 +15,20 @@ import {
   useMutation,
   useQuery,
 } from '@tanstack/react-query';
-import { randomUUID } from 'expo-crypto';
+import { createCommandId } from './commandId';
 import { Platform } from 'react-native';
 import { z } from 'zod';
 import { OnlineAccess } from './Access';
-import { APIError, GameAPI, StaleAccessError, retryRead } from './API';
+import { GameAPI, StaleAccessError, retryRead } from './API';
 import { getAuthClient, requestCredentials } from './auth-client';
 import { apiConfiguration, requireAPIURL } from './config';
+import {
+  authenticationError,
+  connectionStatus,
+  withConnectionTimeout,
+  type ConnectionStatus,
+} from './ConnectionStatus';
+import { onlineWebAddress } from './localWeb';
 import { observeConnection } from './lifecycle';
 import { createCommandJournal } from './createCommandJournal';
 import { CommandCoordinator } from './CommandCoordinator';
@@ -37,6 +44,8 @@ interface OnlineContextValue {
   commands?: CommandCoordinator;
   session?: AccountSession;
   loading: boolean;
+  connectionStatus: ConnectionStatus;
+  webAddress?: string;
   changing: boolean;
   error?: string;
   refreshSession(): Promise<void>;
@@ -73,6 +82,7 @@ function OnlineServices({
     () => true,
     () => false,
   );
+  const webAddress = started ? onlineWebAddress() : undefined;
   const [changing, setChanging] = useState(false);
   const [authError, setAuthError] = useState<string>();
   const activeChange = useRef(false);
@@ -100,7 +110,7 @@ function OnlineServices({
           api,
           access,
           queries,
-          uuid: randomUUID,
+          uuid: createCommandId,
           journal: () =>
             (journal ??= createCommandJournal().catch((error) => {
               journal = undefined;
@@ -111,21 +121,20 @@ function OnlineServices({
   });
   const session = useQuery({
     queryKey: ['auth', apiConfiguration.url ?? 'unconfigured', 'session'],
-    enabled: started && !!api && !changing && snapshot.online && snapshot.foreground,
+    enabled: started && !!api && !webAddress && !changing && snapshot.online && snapshot.foreground,
     staleTime: 30000,
     retry: retryRead,
     queryFn: async ({ signal }) => {
       const lease = access.getSnapshot();
-      const result = await getAuthClient().getSession({
-        query: { disableCookieCache: true },
-        fetchOptions: { signal },
-      });
+      const result = await withConnectionTimeout(signal, (requestSignal) =>
+        getAuthClient().getSession({
+          query: { disableCookieCache: true },
+          fetchOptions: { signal: requestSignal },
+        }),
+      );
       if (!access.matches(lease)) throw new StaleAccessError();
       if (result.error && result.error.status !== 401)
-        throw new APIError(
-          result.error.status ?? 503,
-          result.error.message ?? 'Authentication unavailable',
-        );
+        throw authenticationError(result.error, 'Authentication unavailable');
       const parsed = result.data && !result.error ? sessionSchema.parse(result.data) : undefined;
       return {
         lease,
@@ -168,6 +177,8 @@ function OnlineServices({
     if (activeChange.current) throw new Error('An account request is already pending.');
     if (!access.getSnapshot().online || !access.getSnapshot().foreground)
       throw new Error('Connect to the server to manage your account.');
+    if (webAddress)
+      throw new Error('Open the configured online play address to manage your account.');
     requireAPIURL();
     activeChange.current = true;
     setChanging(true);
@@ -180,7 +191,7 @@ function OnlineServices({
   const finishChange = async () => {
     activeChange.current = false;
     setChanging(false);
-    if (api && access.getSnapshot().online && access.getSnapshot().foreground)
+    if (api && !webAddress && access.getSnapshot().online && access.getSnapshot().foreground)
       await session.refetch();
   };
   const signIn = useMutation({
@@ -206,7 +217,7 @@ function OnlineServices({
               password,
             })
           : await client.signIn.email({ email: email.trim().toLowerCase(), password });
-      if (result.error) throw new Error(result.error.message ?? 'Unable to sign in.');
+      if (result.error) throw authenticationError(result.error, 'Unable to sign in.');
     },
     onError: (error) => setAuthError(error.message),
     onSettled: finishChange,
@@ -218,7 +229,7 @@ function OnlineServices({
     onMutate: beginChange,
     mutationFn: async () => {
       const result = await getAuthClient().signOut();
-      if (result.error) throw new Error(result.error.message ?? 'Sign-out failed. Try again.');
+      if (result.error) throw authenticationError(result.error, 'Sign-out failed. Try again.');
     },
     onError: (error) => setAuthError(error.message),
     onSettled: finishChange,
@@ -230,14 +241,32 @@ function OnlineServices({
         api,
         commands,
         session: snapshot.verified ? session.data?.account : undefined,
-        loading: started && !!api && !snapshot.verified && session.isFetching && snapshot.online,
+        webAddress,
+        loading:
+          started &&
+          !!api &&
+          !webAddress &&
+          !snapshot.verified &&
+          session.isFetching &&
+          snapshot.online,
         changing,
+        connectionStatus: connectionStatus({
+          webAddress,
+          configured: !!api,
+          configurationError: apiConfiguration.error,
+          online: snapshot.online,
+          foreground: snapshot.foreground,
+          fetching: session.isFetching || (started && !!api && session.isPending),
+          verified: snapshot.verified,
+          error: session.error,
+        }),
         error:
           apiConfiguration.error ??
           (!api ? 'Online play is not configured for this app.' : undefined) ??
           authError ??
           (session.error instanceof StaleAccessError ? undefined : session.error?.message),
         refreshSession: async () => {
+          if (webAddress) return;
           access.invalidate();
           await session.refetch();
         },

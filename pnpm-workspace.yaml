@@ -15,3 +15,6 @@ allowBuilds:
   workerd: true
 
 minimumReleaseAge: 0
+
+patchedDependencies:
+  heroui-native@1.0.10: patches/heroui-native@1.0.10.patch

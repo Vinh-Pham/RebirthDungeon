@@ -11,14 +11,9 @@ import CharacterFooter from './CharacterFooter';
 export default function AppScreenShell({ children }: PropsWithChildren) {
   const path = usePathname();
   const { game, error } = useAppNavigation();
-  const source = path.startsWith('/online/game/') ? 'online' : 'local';
-  const characterId = path.startsWith('/online/game/')
-    ? path.split('/')[3]
-    : path.startsWith('/game/')
-      ? path.split('/')[2]
-      : undefined;
+  const characterId = path.startsWith('/online/game/') ? path.split('/')[3] : undefined;
   const activeGame =
-    characterId && (game?.profile.id !== characterId || game.host.source !== source)
+    characterId && (game?.profile.id !== characterId || game.host.source !== 'online')
       ? undefined
       : game;
   const hasFooter = !!characterId || (path === '/settings' && !!activeGame);

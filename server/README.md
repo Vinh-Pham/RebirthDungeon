@@ -420,3 +420,7 @@ CPU/memory and D1 billing capacity checks before release. Local measurements are
 latency, billing, and concurrency still need measurement on the target account.
 See [D1 limits](https://developers.cloudflare.com/d1/platform/limits/) and
 [atomic D1 batches](https://developers.cloudflare.com/d1/worker-api/d1-database/#batch).
+
+## Guided local online play
+
+From the workspace root, run `pnpm online:setup` followed by `pnpm online:dev`. Setup configures ignored client/server files and initializes local D1 with the existing migrations and seed, preserving current accounts and characters. It refuses legacy authentication resets and automatic baselining. The launcher validates settings and ports, starts local bindings on the selected interface, and prints a browser URL with the API’s hostname. See [client online play](../client/docs/online-play.md) for flags and device setup. Run the HTTP smoke check against that interface with `LOCAL_API_ORIGIN=http://<selected-address>:8787 pnpm test:smoke`; only loopback and addresses currently assigned to this computer are accepted.
