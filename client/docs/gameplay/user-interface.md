@@ -51,6 +51,8 @@ Current maps have no fog-of-war/discovered-room filter. Do not promise hidden ro
 
 Town panels show supported actions and exact prices: grocery food, general-store items/sales, blacksmith weapons/repair and paid full recovery. Close or disable a panel when its NPC/context becomes invalid. Shop browsing, stats inspection and inventory scrolling never perform a resource tick; accepted movement and explicit Rest do.
 
+Shops use HeroUI Native Buy and Sell tabs, with Buy selected initially. Buy shows merchant stock and Sell shows the character inventory; both use the same image-only tiles and item popovers as Inventory. Popovers contain the description, owned count, quantity controls, price, total and a Buy or Sell button that confirms through the shared host and closes the details. The selected tab remains after a transaction. Unaffordable/full-pack offers and protected or unsupported sales stay inspectable with explanations and disabled trade controls. Sale details preserve equipment-copy identity/durability and quest warnings; the character inventory uses 20-item pages. Merchants that do not buy items expose inventory inspection with selling disabled. The tabs support web arrows, Home and End. Popovers stay within safe viewport bounds, scroll on compact layouts, and retain Close, outside tap, Android Back, web Escape and keyboard focus behavior. Other NPC services keep their existing layouts.
+
 When an encounter starts, replace exploration input with the battle surface. Map coordinates and battle staging are separate; a sprite's visual distance does not make a target legal. Block world gestures behind panels, drawer, stats overlay and active battle.
 
 ## 3. Portrait battle layout and flow

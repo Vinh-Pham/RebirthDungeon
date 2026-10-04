@@ -1,3 +1,6 @@
+import { Tabs } from 'heroui-native/tabs';
+import KeyboardChoiceGroup from '../shared/KeyboardChoiceGroup';
+import { inventoryRows, inventoryRowLabel, visibleInventoryRows } from './inventoryRows';
 import FeatureGate from '../shared/FeatureGate';
 import { heroFeatures, characterReviewFeature } from '../../game/FeatureReads';
 import GameImage from '../shared/GameImage';
@@ -18,70 +21,9 @@ import {
 import InventoryPager, { INVENTORY_PAGE_SIZE, inventoryPage } from './InventoryPager';
 import TownQuestOffers from '../quests/TownQuestOffers';
 import { questItemNeeds } from '../../engine/rpg/Quests';
-import { purchasePrice, shopOffers } from '../../engine/world/Shop';
+import { shopOffers } from '../../engine/world/Shop';
+import ShopItemPopover from './ShopItemPopover';
 
-function TradeRow({
-  itemId,
-  name,
-  detail,
-  price,
-  bundleSize = 1,
-  maximum,
-  verb,
-  disabled,
-  choose,
-}: {
-  itemId: string;
-  name: string;
-  detail: string;
-  price: number;
-  bundleSize?: number;
-  maximum: number;
-  verb: string;
-  disabled: boolean;
-  choose(quantity: number): void;
-}) {
-  const [quantity, setQuantity] = useState(1);
-  const count = Math.max(1, Math.min(quantity, maximum));
-  return (
-    <DungeonCard>
-      <View className="flex-row items-center gap-3">
-        <GameImage kind="item" id={itemId} />
-        <Text className="min-w-0 flex-1 text-foreground" style={styles.name}>
-          {name}
-        </Text>
-      </View>
-      <Text className="text-muted" style={styles.body}>
-        {detail}
-      </Text>
-      <Text className="text-muted" style={styles.body}>
-        {price} gold {bundleSize > 1 ? 'per bundle' : 'each'} · Total {price * count} gold
-      </Text>
-      <View style={styles.actions}>
-        <Button
-          label="−"
-          accessibilityLabel={`${verb} fewer ${name}`}
-          disabled={disabled || count <= 1}
-          onPress={() => setQuantity(count - 1)}
-        />
-        <Text className="text-foreground" accessibilityLiveRegion="polite" style={styles.quantity}>
-          ×{count}
-        </Text>
-        <Button
-          label="+"
-          accessibilityLabel={`${verb} more ${name}`}
-          disabled={disabled || count >= maximum}
-          onPress={() => setQuantity(count + 1)}
-        />
-      </View>
-      <Button
-        label={`${verb} ${name} ×${count}`}
-        disabled={disabled || maximum < 1}
-        onPress={() => choose(count)}
-      />
-    </DungeonCard>
-  );
-}
 type Quote = { command: ProgressionCommand; label: string; goldChange: number; detail: string };
 
 function TownServicePanelLoaded({
@@ -90,17 +32,23 @@ function TownServicePanelLoaded({
   busy,
   dispatch,
   progress,
+  tradeTab,
+  onTradeTabChange,
 }: {
   session: JourneySession;
   objectId: string;
   busy: boolean;
   dispatch(command: GameCommand): boolean;
   progress(command: ProgressionCommand): void;
+  tradeTab: string;
+  onTradeTabChange(value: string): void;
 }) {
   const [enchanting, setEnchanting] = useState(false);
   const [quote, setQuote] = useState<Quote>();
+  const [openOffer, setOpenOffer] = useState<string>();
   const [repairPage, setRepairPage] = useState(0);
   const [tradePage, setTradePage] = useState(0);
+  const [salePage, setSalePage] = useState(0);
   const pending = useRef<Quote | undefined>(undefined);
   const view = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
   const { map } = view;
@@ -152,6 +100,8 @@ function TownServicePanelLoaded({
       !['incompleteBook', 'titleCoupon'].includes(entry.item.kind) &&
       removableCount(hero, entry.reference) > 0,
   );
+  const saleInventory = visibleInventoryRows(inventoryRows(hero, content), 'all', '');
+  const saleStart = inventoryPage(salePage, saleInventory.length) * INVENTORY_PAGE_SIZE;
   const weapons = Object.entries(hero.weapons);
   const repairStart = inventoryPage(repairPage, weapons.length) * INVENTORY_PAGE_SIZE;
   const tradeStart = inventoryPage(tradePage, inventory.length) * INVENTORY_PAGE_SIZE;
@@ -248,56 +198,149 @@ function TownServicePanelLoaded({
             </>
           ) : null}
           {shop ? (
-            <>
-              <Text className="text-accent" style={styles.section}>
-                Buy supplies
-              </Text>
-              {shopOffers(shop, content).map((offer) => {
-                const { itemId, price, quantity: bundleSize } = offer;
-                const item = content.item(itemId);
-                const capacity = 999 - itemCount(hero, itemId);
-                const maximum = Math.min(
-                  Math.floor(capacity / bundleSize),
-                  price > 0 ? Math.floor(hero.gold / price) : 999,
-                );
-                return (
-                  <TradeRow
-                    itemId={itemId}
-                    key={`${itemId}:${bundleSize}`}
-                    name={`${item.name}${bundleSize > 1 ? ` x${bundleSize}` : ''}`}
-                    detail={`${item.description} · ${itemCount(hero, itemId)} owned`}
-                    price={price}
-                    bundleSize={bundleSize}
-                    maximum={maximum}
-                    verb="Buy"
-                    disabled={busy}
-                    choose={(quantity) =>
-                      choose({
-                        command: {
-                          type: 'BUY_ITEM',
-                          objectId,
-                          itemId,
-                          quantity: quantity * bundleSize,
-                          ...(bundleSize > 1 ? { bundleSize } : {}),
-                        },
-                        label: `Buy ${item.name} ×${quantity * bundleSize}?`,
-                        goldChange: -purchasePrice(
-                          shop,
-                          content,
-                          itemId,
-                          quantity * bundleSize,
-                          bundleSize,
-                        ),
-                        detail:
-                          item.kind === 'weapon'
-                            ? 'Each weapon has its own durability and arrives fully repaired.'
-                            : item.description,
-                      })
-                    }
-                  />
-                );
-              })}
-            </>
+            <Tabs
+              value={tradeTab}
+              onValueChange={(next) => {
+                setOpenOffer(undefined);
+                onTradeTabChange(next);
+              }}
+              className="w-full gap-3"
+            >
+              <KeyboardChoiceGroup itemRole="tab" value={tradeTab}>
+                <Tabs.List
+                  accessibilityLabel="Shop inventory"
+                  className="w-full border border-border bg-surface"
+                >
+                  <Tabs.Indicator className="rounded-lg bg-surface-tertiary" />
+                  {(['Buy', 'Sell'] as const).map((label) => (
+                    <Tabs.Trigger
+                      key={label}
+                      value={label.toLowerCase()}
+                      accessibilityLabel={label}
+                      className="min-h-12 flex-1"
+                    >
+                      <Tabs.Label>{label}</Tabs.Label>
+                    </Tabs.Trigger>
+                  ))}
+                </Tabs.List>
+              </KeyboardChoiceGroup>
+              <Tabs.Content value="buy" className="gap-3">
+                <Text className="text-accent" style={styles.section}>
+                  Buy supplies
+                </Text>
+                <View className="flex-row flex-wrap gap-2">
+                  {shopOffers(shop, content).map((offer) => {
+                    const { itemId, price, quantity: bundleSize } = offer;
+                    const item = content.item(itemId);
+                    const owned = itemCount(hero, itemId);
+                    const capacity = 999 - owned;
+                    const maximum = Math.min(
+                      Math.floor(capacity / bundleSize),
+                      price > 0 ? Math.floor(hero.gold / price) : 999,
+                    );
+                    const key = `${itemId}:${bundleSize}`;
+                    return (
+                      <ShopItemPopover
+                        key={key}
+                        item={item}
+                        owned={owned}
+                        price={price}
+                        bundleSize={bundleSize}
+                        maximum={maximum}
+                        busy={busy}
+                        open={openOffer === key}
+                        onOpenChange={(open) => setOpenOffer(open ? key : undefined)}
+                        trade={(quantity) =>
+                          progress({
+                            type: 'BUY_ITEM',
+                            objectId,
+                            itemId,
+                            quantity: quantity * bundleSize,
+                            ...(bundleSize > 1 ? { bundleSize } : {}),
+                          })
+                        }
+                      />
+                    );
+                  })}
+                </View>
+              </Tabs.Content>
+              <Tabs.Content value="sell" className="gap-3">
+                <Text className="text-accent" style={styles.section}>
+                  Your inventory
+                </Text>
+                <Text className="text-muted" style={styles.body}>
+                  {shop.buysItems
+                    ? 'Sell spare items for half their purchase price. Equipped and locked items stay in your pack.'
+                    : 'This merchant does not buy items. You can sell spare items at the general shop.'}
+                </Text>
+                {saleInventory.length === 0 ? (
+                  <Text className="text-muted" style={styles.body}>
+                    Your pack is empty.
+                  </Text>
+                ) : null}
+                <View className="flex-row flex-wrap gap-2">
+                  {saleInventory.slice(saleStart, saleStart + INVENTORY_PAGE_SIZE).map((row) => {
+                    const price = Math.floor(row.item.price / 2);
+                    const locked =
+                      'weaponId' in row.reference
+                        ? hero.weapons[row.reference.weaponId].locked
+                        : 'armorId' in row.reference
+                          ? hero.armors[row.reference.armorId].locked
+                          : false;
+                    const unavailableReason = !shop.buysItems
+                      ? 'This merchant does not buy items.'
+                      : row.equipped
+                        ? 'Unequip this item before selling it.'
+                        : locked
+                          ? 'Unlock this item in Inventory before selling it.'
+                          : row.item.kind === 'titleCoupon'
+                            ? 'Keep title coupons for town redemption; they cannot be sold.'
+                            : row.item.kind === 'incompleteBook'
+                              ? 'Unfinished books cannot be sold.'
+                              : undefined;
+                    const maximum = unavailableReason
+                      ? 0
+                      : Math.min(
+                          removableCount(hero, row.reference),
+                          price > 0 ? Math.floor((1000000 - hero.gold) / price) : 999,
+                        );
+                    const key = `sell:${row.key}`;
+                    return (
+                      <ShopItemPopover
+                        key={key}
+                        item={row.item}
+                        label={inventoryRowLabel(row)}
+                        highlighted={row.equipped}
+                        owned={itemCount(hero, row.item.id)}
+                        detail={
+                          row.durability !== undefined
+                            ? `${row.durability}/${row.item.maxDurability} durability`
+                            : undefined
+                        }
+                        warning={questWarning(row.item.id)}
+                        price={price}
+                        action="Sell"
+                        maximum={maximum}
+                        unavailableReason={unavailableReason ?? 'Your gold purse is full.'}
+                        busy={busy}
+                        open={openOffer === key}
+                        onOpenChange={(open) => setOpenOffer(open ? key : undefined)}
+                        trade={(quantity) =>
+                          progress({ type: 'SELL_ITEM', objectId, item: row.reference, quantity })
+                        }
+                      />
+                    );
+                  })}
+                </View>
+                <InventoryPager
+                  label="Sale items"
+                  page={inventoryPage(salePage, saleInventory.length)}
+                  count={saleInventory.length}
+                  disabled={busy}
+                  onPage={setSalePage}
+                />
+              </Tabs.Content>
+            </Tabs>
           ) : null}
           {shop?.kind === 'blacksmith' ? (
             <>
@@ -384,72 +427,45 @@ function TownServicePanelLoaded({
               ) : null}
             </>
           ) : null}
-          {altar || shop?.buysItems ? (
+          {altar ? (
             <>
               <Text className="text-accent" style={styles.section}>
-                {altar ? 'Choose an offering' : 'Sell spare items'}
+                Choose an offering
               </Text>
               <Text className="text-muted" style={styles.body}>
-                {altar
-                  ? 'Offer one unequipped item. The goddess consumes it and opens the moss depths. All offerings lead to the same dungeon.'
-                  : 'The general shop pays half the item’s purchase price. Equipped and locked copies stay in your pack.'}
+                Offer one unequipped item. The goddess consumes it and opens the moss depths. All
+                offerings lead to the same dungeon.
               </Text>
               {inventory.length === 0 ? (
                 <Text className="text-muted" style={styles.body}>
                   No unequipped items available. Unequip equipment or find loot in the moss halls.
                 </Text>
               ) : null}
-              {inventory.slice(tradeStart, tradeStart + INVENTORY_PAGE_SIZE).map((entry) =>
-                altar ? (
-                  <DungeonCard key={entry.key}>
-                    <GameImage kind="item" id={entry.item.id} />
-                    <Text className="text-foreground" style={styles.name}>
-                      {entry.item.name}
-                    </Text>
-                    <Text className="text-muted" style={styles.body}>
-                      {entry.detail}
-                    </Text>
-                    <Button
-                      label={`Offer ${entry.item.name}`}
-                      disabled={busy}
-                      onPress={() =>
-                        choose({
-                          command: { type: 'OFFER_ITEM', objectId, item: entry.reference },
-                          label: `Offer ${entry.item.name}?`,
-                          goldChange: 0,
-                          detail: `${entry.detail}. One copy will be permanently consumed to begin a new dungeon run. ${questWarning(entry.item.id)}`,
-                        })
-                      }
-                    />
-                  </DungeonCard>
-                ) : (
-                  <TradeRow
-                    itemId={entry.item.id}
-                    key={entry.key}
-                    name={entry.item.name}
-                    detail={entry.detail}
-                    price={Math.floor(entry.item.price / 2)}
-                    maximum={Math.min(
-                      removableCount(hero, entry.reference),
-                      Math.floor(entry.item.price / 2) > 0
-                        ? Math.floor((1000000 - hero.gold) / Math.floor(entry.item.price / 2))
-                        : 999,
-                    )}
-                    verb="Sell"
+              {inventory.slice(tradeStart, tradeStart + INVENTORY_PAGE_SIZE).map((entry) => (
+                <DungeonCard key={entry.key}>
+                  <GameImage kind="item" id={entry.item.id} />
+                  <Text className="text-foreground" style={styles.name}>
+                    {entry.item.name}
+                  </Text>
+                  <Text className="text-muted" style={styles.body}>
+                    {entry.detail}
+                  </Text>
+                  <Button
+                    label={`Offer ${entry.item.name}`}
                     disabled={busy}
-                    choose={(quantity) =>
+                    onPress={() =>
                       choose({
-                        command: { type: 'SELL_ITEM', objectId, item: entry.reference, quantity },
-                        label: `Sell ${entry.item.name} ×${quantity}?`,
-                        goldChange: Math.floor(entry.item.price / 2) * quantity,
-                        detail: `${entry.detail}. ${questWarning(entry.item.id)}`,
+                        command: { type: 'OFFER_ITEM', objectId, item: entry.reference },
+                        label: `Offer ${entry.item.name}?`,
+                        goldChange: 0,
+                        detail: `${entry.detail}. One copy will be permanently consumed to begin a new dungeon run. ${questWarning(entry.item.id)}`,
                       })
                     }
                   />
-                ),
-              )}
+                </DungeonCard>
+              ))}
               <InventoryPager
-                label={altar ? 'Offerings' : 'Sale items'}
+                label="Offerings"
                 page={inventoryPage(tradePage, inventory.length)}
                 count={inventory.length}
                 disabled={busy}
@@ -475,14 +491,15 @@ const styles = StyleSheet.create({
   name: { fontSize: 15, fontWeight: '600' },
   body: { fontSize: 13, lineHeight: 21 },
   gold: { fontSize: 13, lineHeight: 22 },
-  actions: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 10 },
-  quantity: { fontSize: 16 },
 });
 
-export default function TownServicePanel(props: Parameters<typeof TownServicePanelLoaded>[0]) {
+export default function TownServicePanel(
+  props: Omit<Parameters<typeof TownServicePanelLoaded>[0], 'tradeTab' | 'onTradeTabChange'>,
+) {
+  const [tradeTab, setTradeTab] = useState('buy');
   return (
     <FeatureGate session={props.session} features={['inventory', 'equipment', 'skills', 'quests']}>
-      <TownServicePanelLoaded {...props} />
+      <TownServicePanelLoaded {...props} tradeTab={tradeTab} onTradeTabChange={setTradeTab} />
     </FeatureGate>
   );
 }

@@ -173,7 +173,7 @@ function Exploration({
         <ScrollView contentContainerStyle={styles.scroll}>
           <View style={[styles.content, { width }]}>
             <TownServicePanel
-              key={`${view.activeService}:${view.revision}`}
+              key={view.activeService}
               session={session}
               objectId={view.activeService}
               busy={hostView.busy || !!hostView.retryAvailable}
