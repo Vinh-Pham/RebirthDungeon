@@ -65,8 +65,11 @@ export default function JourneyScreen() {
               battle={snapshot.battle}
               busy={snapshot.busy}
               retryAvailable={snapshot.retryAvailable}
+              error={snapshot.error}
               confirm={(selected) => {
-                void host.returnFromBattle(selected);
+                void (snapshot.retryAvailable
+                  ? host.retryProgression()
+                  : host.returnFromBattle(selected));
               }}
             />
           }

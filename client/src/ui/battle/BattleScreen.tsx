@@ -7,7 +7,15 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from 'react';
-import { Platform, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import {
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { loadGameContent } from '../../data/content';
 import type { BattleAction } from '../../engine/battle/BattleMachine';
@@ -83,8 +91,8 @@ export function BattleView({
   const { width: windowWidth } = useWindowDimensions();
   const width = Math.max(240, Math.min(windowWidth - 40, 560));
   const scroll = useRef<ScrollView>(null);
-  const decisionY = useRef(0);
   const hasVictoryLoot = !!victoryContent;
+  const showVictoryLoot = view.phase === 'victory' && hasVictoryLoot && !presentation.busy;
   const turnKey = `${view.turnId}:${view.actionCount}`;
   const [errorState, setErrorState] = useState<{ turn: string; value?: string }>({ turn: turnKey });
   const [inspectState, setInspectState] = useState<{ turn: string; value?: string }>({
@@ -101,10 +109,6 @@ export function BattleView({
     // Simulation advances independently of presentation completion.
     if (!busy && view.phase === 'enemyTurn') session.advanceEnemyTurns();
   }, [session, view.phase, busy]);
-  useEffect(() => {
-    if (view.phase === 'victory' && hasVictoryLoot && !presentation.busy)
-      scroll.current?.scrollTo({ y: decisionY.current, animated: true });
-  }, [view.phase, hasVictoryLoot, presentation.busy]);
   function attempt(run: () => boolean): boolean {
     try {
       const accepted = run();
@@ -164,12 +168,7 @@ export function BattleView({
               />
             </ArenaBoundary>
           </View>
-          <View
-            style={styles.decision}
-            onLayout={(event) => {
-              decisionY.current = event.nativeEvent.layout.y;
-            }}
-          >
+          <View style={styles.decision}>
             {!finished ? (
               <BattleActions
                 session={session}
@@ -180,9 +179,7 @@ export function BattleView({
                 selectAction={selectAction}
                 cancel={cancel}
               />
-            ) : view.phase === 'victory' && victoryContent ? (
-              victoryContent
-            ) : (
+            ) : view.phase === 'victory' && hasVictoryLoot ? null : (
               <View style={styles.actions}>
                 <Button
                   primary
@@ -297,6 +294,27 @@ export function BattleView({
           </Text>
         </View>
       </ScrollView>
+      <Modal
+        visible={showVictoryLoot}
+        transparent
+        animationType="fade"
+        // Rewards remain pending until explicitly confirmed, including on Back/Escape.
+        onRequestClose={() => undefined}
+      >
+        <SafeAreaView className="flex-1 bg-backdrop" edges={['top', 'bottom', 'left', 'right']}>
+          <View className="flex-1 items-center justify-center px-4">
+            <View
+              style={styles.lootDialog}
+              role="dialog"
+              aria-modal
+              accessibilityLabel="Victory loot"
+              accessibilityViewIsModal
+            >
+              {showVictoryLoot ? victoryContent : null}
+            </View>
+          </View>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -353,6 +371,7 @@ const styles = StyleSheet.create({
   },
   subtitle: { fontFamily: mono, fontSize: 9, letterSpacing: 1.3, marginTop: -7 },
   arena: { overflow: 'hidden', borderRadius: 8 },
+  lootDialog: { width: '100%', maxWidth: 560, maxHeight: '90%' },
   roster: {
     flexDirection: 'row',
     gap: 16,
