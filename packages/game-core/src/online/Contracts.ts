@@ -8,6 +8,12 @@ import { HeroSchema, WeaponSchema, ArmorSchema } from '../engine/rpg/Character';
 import { WorldMapSchema } from '../data/schemas/world';
 
 export const GAME_CONTENT_VERSION = 'rebirth-13.1';
+export const DeletionResponseSchema = z.strictObject({
+  apiVersion: z.literal(2),
+  characterId: z.string().uuid(),
+  permanent: z.boolean(),
+  deletedAt: z.number().int().nonnegative().nullable(),
+});
 const id = z.string().min(1).max(300);
 const integer = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
 const quantity = z.number().int().min(1).max(999);

@@ -7,6 +7,50 @@ import { seedLocalCatalog } from '../tools/seed-local.mjs';
 
 const migrations = readMigrationFiles({ migrationsFolder: 'drizzle' });
 const [legacy] = migrations;
+test(
+  'character deletion migration preserves existing characters and defaults deleted_at to null',
+  { timeout: 20000 },
+  async (t) => {
+    const db = await localDatabase(t);
+    for (const migration of migrations.slice(0, -1))
+      await db.batch(migration.sql.map((sql) => db.prepare(sql)));
+    await seedLocalCatalog(db);
+    await db
+      .prepare(
+        "INSERT INTO user(id,name,email,email_verified,created_at,updated_at) VALUES ('local-development-player','Player','migration@example.invalid',0,123,456)",
+      )
+      .run();
+    await db
+      .prepare(
+        "INSERT INTO game_characters(id,user_id,name,talent,age,revision,content_version,created_at,updated_at) VALUES ('existing','local-development-player','Player','warrior',12,7,'rebirth-13.1',123,456)",
+      )
+      .run();
+    const before = await db.prepare('SELECT * FROM game_characters').first();
+    const migration = migrations.at(-1);
+    assert.ok(migration.name.endsWith('_character_deletion'));
+    await db.batch(migration.sql.map((sql) => db.prepare(sql)));
+    assert.deepEqual(
+      await db.prepare('SELECT * FROM game_characters').first(),
+      { ...before, deleted_at: null },
+    );
+    await db
+      .prepare("UPDATE game_characters SET deleted_at=789 WHERE id='existing'")
+      .run();
+    await assert.rejects(() =>
+      db
+        .prepare(
+          "INSERT INTO game_command_receipts(user_id,command_id,character_id,request_hash,base_revision,committed_revision,outcome,created_at) VALUES ('local-development-player','stale-command','existing','hash',7,8,'{}',900)",
+        )
+        .run(),
+    );
+    assert.equal(
+      await db
+        .prepare("SELECT revision FROM game_characters WHERE id='existing'")
+        .first('revision'),
+      7,
+    );
+  },
+);
 async function legacyDatabase(t) {
   const db = await localDatabase(t);
   await db.batch(legacy.sql.map((sql) => db.prepare(sql)));
@@ -203,7 +247,12 @@ test(
   { timeout: 25000 },
   async (t) => {
     const db = await localDatabase(t),
-      prior = migrations.slice(0, -1);
+      prior = migrations.slice(
+        0,
+        migrations.findIndex((migration) =>
+          migration.name.endsWith('_feature_game_reset'),
+        ),
+      );
     for (const migration of prior)
       await db.batch(migration.sql.map((sql) => db.prepare(sql)));
     await db

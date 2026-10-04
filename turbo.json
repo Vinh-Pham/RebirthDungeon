@@ -83,6 +83,15 @@
     "db:seed:local": {
       "cache": false
     },
+    "db:seed:skills": {
+      "cache": false,
+      "passThroughEnv": [
+        "LOCAL_D1_STATE",
+        "CLOUDFLARE_ACCOUNT_ID",
+        "CLOUDFLARE_DATABASE_ID",
+        "CLOUDFLARE_D1_TOKEN"
+      ]
+    },
     "db:setup": {
       "cache": false
     },

@@ -31,6 +31,7 @@
     "test:seed": "node --test test/seed.test.mjs",
     "admin:roles": "node tools/admin-roles.mjs",
     "db:seed:content": "node tools/seed-content.mjs",
+    "db:seed:skills": "node tools/seed-content.mjs",
     "db:models": "tsx tools/generate-game-models.ts"
   },
   "dependencies": {

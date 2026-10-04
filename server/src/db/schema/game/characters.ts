@@ -27,6 +27,7 @@ export const gameCharacters = sqliteTable(
       .references(() => gameContentReleases.content_version),
     created_at: integer('created_at').notNull(),
     updated_at: integer('updated_at').notNull(),
+    deleted_at: integer('deleted_at'),
   },
   (t) => [
     uniqueIndex('game_character_content_idx').on(t.id, t.content_version),

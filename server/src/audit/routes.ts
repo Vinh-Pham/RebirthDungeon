@@ -79,7 +79,9 @@ characterLogRoutes.use(
 const owned = async (db: D1Database, userId: string, id: string) => {
   if (
     !(await db
-      .prepare('SELECT id FROM game_characters WHERE id=? AND user_id=?')
+      .prepare(
+        'SELECT id FROM game_characters WHERE id=? AND user_id=? AND deleted_at IS NULL',
+      )
       .bind(id, userId)
       .first())
   )
@@ -214,7 +216,7 @@ adminLogRoutes.openapi(
     const term = c.req.query('q') ?? '';
     // Literal substring search, bounded to 50 accounts/characters. No wildcard interpretation.
     const result = await c.env.DB.prepare(
-      `SELECT u.id AS userId,u.email,g.id AS characterId,g.name FROM user u LEFT JOIN game_characters g ON g.user_id=u.id WHERE instr(lower(u.email),lower(?))>0 OR u.id=? OR instr(lower(g.name),lower(?))>0 OR g.id=? ORDER BY u.id,g.id LIMIT 50`,
+      `SELECT u.id AS userId,u.email,g.id AS characterId,g.name FROM user u LEFT JOIN game_characters g ON g.user_id=u.id AND g.deleted_at IS NULL WHERE instr(lower(u.email),lower(?))>0 OR u.id=? OR instr(lower(g.name),lower(?))>0 OR g.id=? ORDER BY u.id,g.id LIMIT 50`,
     )
       .bind(term, term, term, term)
       .all();

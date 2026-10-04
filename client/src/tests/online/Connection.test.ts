@@ -14,7 +14,7 @@ import {
   type CommandJournal,
   type PendingCommand,
 } from '../../online/CommandJournal';
-import { gameKeys, mergeCharacter } from '../../online/queries';
+import { deleteCharacter, gameKeys, mergeCharacter } from '../../online/queries';
 import { parseAPIURL } from '../../online/config';
 import { newOnlineState, publicView } from '@rebirth/game-core/online/TestRuntime';
 import { GAME_CONTENT_VERSION } from '@rebirth/game-core/online/Contracts';
@@ -99,6 +99,60 @@ function committed(body: { commandId: string; expectedRevision: number }) {
 }
 afterEach(() => vi.useRealTimers());
 describe('connection and account isolation', () => {
+  it.each([false, true])(
+    'deletes characters with authenticated DELETE and clears only their caches (permanent=%s)',
+    async (permanent) => {
+      const transport = vi.fn<typeof fetch>(async () =>
+        Response.json({
+          apiVersion: 2,
+          characterId: metadata.id,
+          permanent,
+          deletedAt: permanent ? null : 1000,
+        }),
+      );
+      const f = fixture(transport);
+      const roster = gameKeys.characters(origin, 'account-a');
+      const target = gameKeys.character(origin, 'account-a', metadata.id);
+      const other = { ...metadata, id: 'ad46a450-bc4b-42bf-aab4-e58c7ccdfc7b' };
+      f.queries.setQueryData(roster, { characters: [metadata, other] });
+      f.queries.setQueryData(target, { character: metadata });
+      f.queries.setQueryData(gameKeys.feature(origin, 'account-a', metadata.id, 'inventory'), {
+        items: [],
+      });
+      f.queries.setQueryData(gameKeys.preview(origin, 'account-a', metadata.id, 1, {}), {});
+      f.queries.setQueryData(gameKeys.character(origin, 'account-a', other.id), other);
+      await deleteCharacter(f.queries, f.api, 'account-a', metadata.id, permanent);
+      expect(transport.mock.calls[0][0]).toBe(
+        origin + '/api/game/characters/' + metadata.id + (permanent ? '/permanent' : ''),
+      );
+      expect(transport.mock.calls[0][1]?.method).toBe('DELETE');
+      expect(transport.mock.calls[0][1]?.body).toBeUndefined();
+      expect(new Headers(transport.mock.calls[0][1]?.headers).get('Cookie')).toBe('session=fake');
+      expect(f.queries.getQueryData(roster)).toEqual({ characters: [other] });
+      expect(f.queries.getQueriesData({ queryKey: target })).toEqual([]);
+      expect(f.queries.getQueryData(gameKeys.character(origin, 'account-a', other.id))).toEqual(
+        other,
+      );
+      f.queries.clear();
+    },
+  );
+  it('preserves caches after failed deletion and prevents cross-account deletion', async () => {
+    const transport = vi.fn<typeof fetch>(async () =>
+      Response.json({ message: 'Storage unavailable' }, { status: 503 }),
+    );
+    const f = fixture(transport);
+    const roster = gameKeys.characters(origin, 'account-a');
+    f.queries.setQueryData(roster, { characters: [metadata] });
+    await expect(deleteCharacter(f.queries, f.api, 'account-a', metadata.id)).rejects.toMatchObject(
+      { status: 503 },
+    );
+    expect(f.queries.getQueryData(roster)).toEqual({ characters: [metadata] });
+    await expect(
+      deleteCharacter(f.queries, f.api, 'account-b', metadata.id),
+    ).rejects.toBeInstanceOf(StaleAccessError);
+    expect(transport).toHaveBeenCalledTimes(1);
+    f.queries.clear();
+  });
   it('validates an explicit public origin without silently accepting paths or credentials', () => {
     expect(parseAPIURL('')).toBeUndefined();
     expect(parseAPIURL('http://192.168.1.10:8787/')).toBe('http://192.168.1.10:8787');

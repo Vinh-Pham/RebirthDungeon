@@ -6,7 +6,8 @@ import { resolve } from 'node:path';
 import { createServer } from 'node:net';
 import { createServer as createHTTPServer } from 'node:http';
 import { forwardWorker } from '../tools/online-forwarder.mjs';
-import { spawn } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
+import { promisify } from 'node:util';
 import { EventEmitter } from 'node:events';
 import {
   addresses,
@@ -18,6 +19,7 @@ import {
   assertFreePort,
   validateHost,
   checkOverrides,
+  workspace,
 } from '../tools/online-config.mjs';
 import { setup } from '../tools/online-setup.mjs';
 import { runApplications, applicationCommands } from '../tools/online-dev.mjs';
@@ -32,6 +34,21 @@ const available = [
   { name: 'wifi', address: '192.168.1.12' },
   { name: 'wired', address: '10.2.3.4' },
 ];
+
+test(
+  'workspace dev and start use the configured online launcher',
+  { timeout: 20000 },
+  async () => {
+    for (const command of ['dev', 'start']) {
+      const { stdout } = await promisify(execFile)(
+        'pnpm',
+        ['run', command, '--help'],
+        { cwd: workspace, timeout: 8000 },
+      );
+      assert.match(stdout, /validates local setup and starts API \+ Expo/);
+    }
+  },
+);
 async function fixture(t) {
   const root = await mkdtemp(resolve(tmpdir(), 'rebirth-online-'));
   t.after(() => rm(root, { recursive: true, force: true }));

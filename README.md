@@ -25,7 +25,7 @@ For local online play, run the guided setup once, then start both apps:
 
 ```sh
 pnpm online:setup
-pnpm online:dev
+pnpm dev
 ```
 
 Choose a detected LAN address for a physical phone and web, or `localhost` for this
@@ -57,7 +57,7 @@ of at least 32 bytes, then run `pnpm db:setup`. Client configuration belongs in
 | -------------------------- | --------------------------------------------- |
 | `pnpm online:setup`        | Configure local online play and initialize D1 |
 | `pnpm online:dev`          | Validate setup and start API + Expo on LAN    |
-| `pnpm dev` or `pnpm start` | Expo and the local Worker together            |
+| `pnpm dev` or `pnpm start` | Validate setup and start API + Expo on LAN    |
 | `pnpm dev:client`          | Expo only                                     |
 | `pnpm dev:server`          | Local Worker only, normally on port 8787      |
 | `pnpm android`             | Expo with Android launch                      |
@@ -65,10 +65,15 @@ of at least 32 bytes, then run `pnpm db:setup`. Client configuration belongs in
 | `pnpm web`                 | Expo web only                                 |
 | `pnpm email:dev`           | Server's React Email preview on port 3000     |
 
-Turbo runs independent apps concurrently. Its terminal UI lets you select the
-Expo task and interact with its keyboard shortcuts. Stop the run with Ctrl+C.
-To use Expo web alongside the API, run `pnpm web` and `pnpm dev:server` in two
-terminals. To pass package-specific arguments, use an explicit filtered task:
+`dev`, `start`, and `online:dev` use the same configured online launcher. In LAN
+mode, it exposes the API on the selected interface through the loopback Worker
+forwarder and starts Expo on the configured web port. Open the printed browser
+address. Stop both applications with Ctrl+C.
+
+The individual `dev:client`, `dev:server`, and `web` commands use Turbo for manual
+development. The raw Worker listens on localhost, so those commands alone do not
+expose the API at the configured LAN address. For package-specific arguments, use
+an explicit filtered task:
 
 ```sh
 pnpm exec turbo run dev --filter=rebirth-dungeon-server -- --port 8790

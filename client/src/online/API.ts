@@ -1,4 +1,5 @@
 import type { z } from 'zod';
+import { DeletionResponseSchema } from '@rebirth/game-core/online/Contracts';
 import type { OnlineAccess } from './Access';
 export class APIError extends Error {
   constructor(
@@ -31,11 +32,24 @@ export class GameAPI {
     if (!this.options.access.ready() || this.options.access.getSnapshot().userId !== userId)
       throw new StaleAccessError();
   }
+  async deleteCharacter(id: string, permanent = false) {
+    const result = await this.request(
+      '/api/game/characters/' + encodeURIComponent(id) + (permanent ? '/permanent' : ''),
+      DeletionResponseSchema,
+      undefined,
+      undefined,
+      'DELETE',
+    );
+    if (result.characterId !== id || result.permanent !== permanent)
+      throw new Error('Unexpected character deletion response');
+    return result;
+  }
   async request<S extends z.ZodType>(
     path: string,
     schema: S,
     body?: unknown,
     signal?: AbortSignal,
+    method: 'GET' | 'POST' | 'DELETE' = body === undefined ? 'GET' : 'POST',
   ): Promise<z.output<S>> {
     const lease = this.options.access.getSnapshot();
     if (!this.options.access.ready()) throw new StaleAccessError();
@@ -55,7 +69,7 @@ export class GameAPI {
       const response = await (this.options.fetch ?? fetch)(this.origin + path, {
         ...credentials,
         headers,
-        method: body === undefined ? 'GET' : 'POST',
+        method,
         body: encoded,
         signal: controller.signal,
         cache: 'no-store',

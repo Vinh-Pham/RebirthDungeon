@@ -11,6 +11,7 @@ import {
   CommandRequestSchema,
   PreviewRequestSchema,
   ListResponseSchema,
+  DeletionResponseSchema,
 } from '@rebirth/game-core/online/Contracts';
 import {
   GAME_FEATURES,
@@ -117,7 +118,7 @@ const revisionQuery = z.strictObject({
   expectedRevision: z.coerce.number().int().nonnegative().optional(),
 });
 const route = (
-  method: 'get' | 'post',
+  method: 'get' | 'post' | 'delete',
   path: string,
   schema: z.ZodType,
   body?: z.ZodType,
@@ -190,6 +191,21 @@ for (const collection of ContentCollectionSchema.options) {
 gameRoutes.openapi(route('get', '/characters', ListResponseSchema), async (c) =>
   c.json(ListResponseSchema.parse({ characters: await repo(c).list() })),
 );
+for (const permanent of [false, true]) {
+  gameRoutes.openapi(
+    route(
+      'delete',
+      '/characters/{id}' + (permanent ? '/permanent' : ''),
+      DeletionResponseSchema,
+    ),
+    async (c) =>
+      c.json(
+        DeletionResponseSchema.parse(
+          await repo(c).delete(c.req.param('id')!, permanent),
+        ),
+      ),
+  );
+}
 gameRoutes.openapi(
   route('post', '/characters', CreationResponseSchema, CreationRequestSchema),
   async (c) => {

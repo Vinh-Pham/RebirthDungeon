@@ -289,6 +289,29 @@ export function charactersOptions(api: GameAPI, userId: string) {
     },
   });
 }
+export async function deleteCharacter(
+  queries: QueryClient,
+  api: GameAPI,
+  userId: string,
+  id: string,
+  permanent = false,
+) {
+  api.assertAccount(userId);
+  const result = await api.deleteCharacter(id, permanent);
+  // Cancel earlier reads before removing cached data so they cannot republish the character.
+  await Promise.all([
+    queries.cancelQueries({ queryKey: gameKeys.characters(api.origin, userId) }),
+    queries.cancelQueries({ queryKey: gameKeys.character(api.origin, userId, id) }),
+  ]);
+  api.assertAccount(userId);
+  queries.removeQueries({ queryKey: gameKeys.character(api.origin, userId, id) });
+  queries.setQueryData<z.output<typeof ListResponseSchema>>(
+    gameKeys.characters(api.origin, userId),
+    (old) => old && { characters: old.characters.filter((character) => character.id !== id) },
+  );
+  await queries.invalidateQueries({ queryKey: gameKeys.characters(api.origin, userId) });
+  return result;
+}
 export function contentOptions(api: GameAPI, userId: string, version?: string) {
   return queryOptions({
     queryKey: gameKeys.content(api.origin, userId, version),

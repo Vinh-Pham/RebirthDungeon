@@ -161,6 +161,13 @@ CPU budget. This implementation does not deploy or change remote data/secrets.
 
 ## Expo integration
 
+Character deletion uses authenticated, ownership-scoped endpoints:
+
+- `DELETE /api/game/characters/{id}` sets `deleted_at` (milliseconds) and retains saved progress. Repeated soft deletion succeeds without changing the original deletion timestamp.
+- `DELETE /api/game/characters/{id}/permanent` permanently deletes either an active or soft-deleted character and cascades its related game state and command receipts. It cannot be restored.
+
+Both return HTTP 200 with `{ apiVersion: 2, characterId, permanent, deletedAt }`; permanent deletion returns `deletedAt: null`. Missing or unowned characters return 404. The additive `character_deletion` migration preserves existing characters with `deleted_at: null`. Character lists, features, gameplay loads, player logs and activity, and character search exclude deleted rows. The receipt insertion guard also rejects commands racing with soft deletion. Immutable audit history remains under its existing retention policy and is separate from playable character state.
+
 The client now includes Account registration/sign-in/sign-out and separate online
 character routes. React Query owns validated session reads, account-scoped game
 queries, previews, and confirmed command mutations. Native uses the official Expo
@@ -388,6 +395,24 @@ without creating accounts. Identical seeds are idempotent; reusing a version wit
 different content fails. Unpublished interrupted seeds can resume; incomplete or
 invalid releases cannot become active. Local development account seeding also
 seeds content before checking whether the account already exists.
+
+To seed the game skills from the workspace root, run:
+
+```sh
+pnpm db:migrate:local
+pnpm db:seed:skills -- --local
+```
+
+`db:seed:skills` uses the content seeder and publishes a complete release so skill
+references to status effects, classes, enemies, and items remain valid. It includes
+all skill definitions from `packages/game-core/src/data/skills`: `basic.json`,
+`enchant.json`, `human-ranged-attack.json`, `rest.json`, and `poison-attack.json`.
+Definitions populate `game_content_skills`; authored ranks, training objectives,
+and status assignments populate its child tables. Historical reference metadata
+is preserved separately from executable rank rules. It does not create accounts
+or grant skills to characters. From `server`, use `pnpm db:seed:skills --local`
+or `pnpm db:seed:skills --remote` with the configured D1 credentials. Changed skill
+definitions require a new `GAME_CONTENT_VERSION` before publishing another release.
 
 Authoritative actions validate the whole candidate and commit affected state,
 revision, receipt, affected-feature records, and audit in one D1 transaction.

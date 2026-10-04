@@ -34,7 +34,7 @@ const readTables = [gameTables[0], ...stateTables];
 const readSQL = Array.from(
   { length: Math.ceil(readTables.length / 5) },
   (_, index) =>
-    `WITH owned AS (SELECT * FROM game_characters WHERE id = ? AND user_id = ?) ${readTables
+    `WITH owned AS (SELECT * FROM game_characters WHERE id = ? AND user_id = ? AND deleted_at IS NULL) ${readTables
       .slice(index * 5, (index + 1) * 5)
       .map((table) =>
         table.name === 'game_characters'
@@ -124,7 +124,7 @@ export class GameRepository {
     const statements = Array.from(
       { length: Math.ceil(selected.length / 5) },
       (_, i) =>
-        `WITH owned AS (SELECT * FROM game_characters WHERE id=? AND user_id=?) ${selected
+        `WITH owned AS (SELECT * FROM game_characters WHERE id=? AND user_id=? AND deleted_at IS NULL) ${selected
           .slice(i * 5, (i + 1) * 5)
           .map((table) => {
             if (table.name === 'game_characters')
@@ -187,7 +187,7 @@ export class GameRepository {
     try {
       const result = await this.db
         .prepare(
-          'SELECT * FROM game_characters WHERE user_id = ? ORDER BY created_at, id',
+          'SELECT * FROM game_characters WHERE user_id = ? AND deleted_at IS NULL ORDER BY created_at, id',
         )
         .bind(this.userId)
         .all<Row>();
@@ -195,6 +195,34 @@ export class GameRepository {
     } catch {
       throw new HTTPException(503, { message: 'Game storage unavailable' });
     }
+  }
+  async delete(id: string, permanent = false) {
+    let row: { deleted_at: number | null } | null;
+    try {
+      const now = Date.now();
+      row = await (
+        permanent
+          ? this.db
+              .prepare(
+                'DELETE FROM game_characters WHERE id = ? AND user_id = ? RETURNING deleted_at',
+              )
+              .bind(id, this.userId)
+          : this.db
+              .prepare(
+                'UPDATE game_characters SET deleted_at = COALESCE(deleted_at, ?), updated_at = CASE WHEN deleted_at IS NULL THEN ? ELSE updated_at END WHERE id = ? AND user_id = ? RETURNING deleted_at',
+              )
+              .bind(now, now, id, this.userId)
+      ).first<{ deleted_at: number | null }>();
+    } catch {
+      throw new HTTPException(503, { message: 'Game storage unavailable' });
+    }
+    if (!row) throw new HTTPException(404, { message: 'Character not found' });
+    return {
+      apiVersion: 2 as const,
+      characterId: id,
+      permanent,
+      deletedAt: permanent ? null : row.deleted_at,
+    };
   }
   async receipt(
     commandId: string,
@@ -340,11 +368,17 @@ export class GameRepository {
         if (previous) {
           const row = await this.db
             .prepare(
-              'SELECT revision FROM game_characters WHERE id = ? AND user_id = ?',
+              'SELECT revision, deleted_at FROM game_characters WHERE id = ? AND user_id = ?',
             )
             .bind(character.id, this.userId)
-            .first<{ revision: number }>()
-            .catch(() => null);
+            .first<{ revision: number; deleted_at: number | null }>()
+            .catch(() => {
+              throw new HTTPException(503, {
+                message: 'Game storage unavailable',
+              });
+            });
+          if (!row || row.deleted_at !== null)
+            throw new HTTPException(404, { message: 'Character not found' });
           if (row && row.revision !== receipt.baseRevision)
             throw new HTTPException(409, {
               message: 'Character revision changed',
