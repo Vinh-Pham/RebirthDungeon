@@ -3,6 +3,7 @@ import type {
   BattleAvailability,
   ResolvedPresentation,
 } from '@rebirth/game-core/online/Contracts';
+import type { ActivityEvent } from '@rebirth/game-core/online/Audit';
 import type { GameplayBattle } from '../game/Gameplay';
 import type { BattleView } from '../game/BattleSession';
 import type { BattleAction } from '../engine/battle/BattleMachine';
@@ -31,7 +32,7 @@ export class RemoteBattle implements GameplayBattle {
     readonly content: ContentRegistry,
     private canAct: () => boolean,
     private submit: (action: BattleAction, targetId: string) => void,
-    private log: (type: string, message: string) => void,
+    private log: (type: ActivityEvent['type'], message: string) => void,
   ) {
     this.initialEntities = this.entities();
     this.refresh();
@@ -236,6 +237,7 @@ export class RemoteBattle implements GameplayBattle {
     if (!availability || availability.reason || !availability.targets.includes(targetId))
       throw new Error(availability?.reason ?? 'Choose a valid target.');
     this.selection = undefined;
+    this.log('SELECT_TARGET', `Selected target ${targetId}.`);
     this.submit(action, targetId);
     this.refresh();
     return true;
@@ -245,6 +247,7 @@ export class RemoteBattle implements GameplayBattle {
     const availability = this.availabilityFor(action);
     if (!availability || availability.reason)
       throw new Error(availability?.reason ?? 'Action unavailable.');
+    this.log('SELECT_ACTION', `Selected ${action.action}.`);
     if (availability.targets.length === 1)
       return this.executePlayerAction(action, availability.targets[0], sequence);
     this.selection = action;
@@ -254,13 +257,14 @@ export class RemoteBattle implements GameplayBattle {
   dispatch(command: GameCommand) {
     if (command.type !== 'CANCEL_ACTION')
       throw new Error('Submit a complete confirmed battle action.');
+    this.log('CANCEL_ACTION', 'Cancelled battle selection.');
     this.selection = undefined;
     this.refresh();
   }
   advanceEnemyTurns() {
     /* Enemy turns are committed with the server action. */
   }
-  recordInspection(type: string, message: string) {
+  recordInspection(type: ActivityEvent['type'], message: string) {
     this.log(type, message);
   }
   present(result: CommandResult, previousRevision: number) {

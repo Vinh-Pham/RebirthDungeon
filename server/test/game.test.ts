@@ -89,7 +89,19 @@ async function accepted(
 ) {
   const response = await command(cookie, id, revision, intent);
   expect(response.status, await response.clone().text()).toBe(200);
-  return CommandResponseSchema.parse(await response.json());
+  const result = CommandResponseSchema.parse(await response.json());
+  const audit = await env.DB.prepare(
+    "SELECT details FROM audit_records WHERE command_id=? AND outcome='committed'",
+  )
+    .bind(result.receipt.commandId)
+    .first<{ details: string }>();
+  expect(audit, intent.type).toBeTruthy();
+  const detail = JSON.parse(audit!.details);
+  expect(detail.command).toEqual(intent);
+  expect(detail.committedRevision).toBe(result.receipt.committedRevision);
+  expect(Array.isArray(detail.events)).toBe(true);
+  expect(Array.isArray(detail.changes)).toBe(true);
+  return result;
 }
 
 it('creates fresh characters atomically, lists owned summaries, and keeps auth intact', async () => {
@@ -595,8 +607,13 @@ it('keeps writes bounded and only updates changed rows', async () => {
     candidate.state,
     receipt,
     await requestHash(receipt),
+    {
+      requestId: crypto.randomUUID(),
+      command: { type: 'SET_ITEM_HOTBAR', itemId: 'potion', assigned: true },
+      audit: candidate.audit,
+    },
   );
-  expect(result.metrics.queries).toBe(2);
+  expect(result.metrics.queries).toBe(3);
   expect(before.metrics.sqlBytes).toBeLessThan(100000);
 });
 it('supports catalog equipment quantity limits with indexed reads and a changed-row command', async () => {
@@ -894,6 +911,11 @@ it('retries the exact resolved candidate after a transient failed batch', async 
     candidate.state,
     receipt,
     await requestHash(receipt),
+    {
+      requestId: crypto.randomUUID(),
+      command: { type: 'SET_ITEM_HOTBAR', itemId: 'potion', assigned: true },
+      audit: candidate.audit,
+    },
   );
   expect(spy).toHaveBeenCalledTimes(2);
   expect(spy.mock.calls[0][0]).toEqual(spy.mock.calls[1][0]);

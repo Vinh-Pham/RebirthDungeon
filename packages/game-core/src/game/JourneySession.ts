@@ -136,6 +136,7 @@ export class JourneySession {
     if (logSink)
       this.logCleanup = observeGameLogging(this.engine, content, {
         append: (entries) => this.recordLogs(entries),
+        onError: () => this.logSink?.onError?.(),
       });
     const first = content.data.worlds[0];
     if (!first) throw new Error('No exploration map defined');
@@ -737,7 +738,7 @@ export class JourneySession {
       if (this.staging) this.committedLogs.push(...entries.map(copyLogInput));
       else appendLogs(this.logSink, entries);
     } catch {
-      /* Diagnostics cannot reject a candidate. */
+      this.logSink?.onError?.();
     }
   }
   publishCommittedEvents() {

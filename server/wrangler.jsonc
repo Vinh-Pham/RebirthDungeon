@@ -19,7 +19,7 @@
     },
   ],
   "triggers": {
-    "crons": ["* * * * *"],
+    "crons": ["0 * * * *"],
   },
   "queues": {
     "producers": [{ "binding": "APP_QUEUE", "queue": "rebirth-dungeon-jobs" }],
@@ -42,6 +42,7 @@
     },
   ],
   "vars": {
+    "AUDIT_DATABASE_BUDGET_BYTES": "400000000",
     "BETTER_AUTH_URL": "",
     "BETTER_AUTH_TRUSTED_ORIGINS": "[\"rebirthdungeon://\"]",
     "EMAIL_FROM": "noreply@rebirthdungeon.com",
@@ -49,6 +50,11 @@
   },
   "secrets": { "required": ["BETTER_AUTH_SECRET"] },
   "ratelimits": [
+    {
+      "name": "ACTIVITY_RATE_LIMIT",
+      "namespace_id": "2026100302",
+      "simple": { "limit": 60, "period": 60 },
+    },
     {
       "name": "GAME_RATE_LIMIT",
       "namespace_id": "2026100301",

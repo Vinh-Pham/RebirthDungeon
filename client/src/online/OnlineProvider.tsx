@@ -31,6 +31,8 @@ import {
 import { onlineWebAddress } from './localWeb';
 import { observeConnection } from './lifecycle';
 import { createCommandJournal } from './createCommandJournal';
+import { ActivityOutbox } from './ActivityOutbox';
+import { createActivityStorage } from './createActivityStorage';
 import { CommandCoordinator } from './CommandCoordinator';
 
 const sessionSchema = z.object({
@@ -42,6 +44,7 @@ interface OnlineContextValue {
   access: OnlineAccess;
   api?: GameAPI;
   commands?: CommandCoordinator;
+  activity?: ActivityOutbox;
   session?: AccountSession;
   loading: boolean;
   connectionStatus: ConnectionStatus;
@@ -119,6 +122,28 @@ function OnlineServices({
         })
       : undefined;
   });
+  const [activity] = useState(() => {
+    let storage: ReturnType<typeof createActivityStorage> | undefined;
+    return api
+      ? new ActivityOutbox({
+          api,
+          access,
+          uuid: createCommandId,
+          now: Date.now,
+          storage: () =>
+            (storage ??= createActivityStorage().catch((error) => {
+              storage = undefined;
+              throw error;
+            })),
+          acknowledged: (characterId, userId) => {
+            void queries.invalidateQueries({
+              queryKey: ['game', api.origin, userId, 'logs', characterId],
+            });
+          },
+        })
+      : undefined;
+  });
+  useEffect(() => activity?.start(), [activity]);
   const session = useQuery({
     queryKey: ['auth', apiConfiguration.url ?? 'unconfigured', 'session'],
     enabled: started && !!api && !webAddress && !changing && snapshot.online && snapshot.foreground,
@@ -183,6 +208,7 @@ function OnlineServices({
     activeChange.current = true;
     setChanging(true);
     setAuthError(undefined);
+    void activity?.flush();
     access.invalidate();
     await queries.cancelQueries({ queryKey: ['auth'] });
     await queries.cancelQueries({ queryKey: ['game'] });
@@ -240,6 +266,7 @@ function OnlineServices({
         access,
         api,
         commands,
+        activity,
         session: snapshot.verified ? session.data?.account : undefined,
         webAddress,
         loading:

@@ -1,4 +1,6 @@
 import type { z } from 'zod';
+import type { ActivityEvent } from '@rebirth/game-core/online/Audit';
+import type { LogCategory } from '../engine/logging/LogEngine';
 import type { JourneyHost } from './JourneyHost';
 import type { BattleSession, BattleView } from './BattleSession';
 import type { HeroFacts } from '../engine/rpg/Character';
@@ -81,12 +83,12 @@ export type GameplayBattle = Pick<
   | 'executePlayerAction'
   | 'selectPlayerAction'
   | 'advanceEnemyTurns'
-  | 'recordInspection'
   | 'events'
   | 'error'
   | 'getActor'
   | 'validTargetIds'
 > & {
+  recordInspection(type: ActivityEvent['type'], message: string): void;
   readonly availability?: readonly BattleAvailability[];
   previewSkill(
     sourceId: string,
@@ -113,7 +115,6 @@ export interface GameplayHost extends Pick<
   JourneyHost,
   | 'content'
   | 'logs'
-  | 'recordLog'
   | 'save'
   | 'load'
   | 'toggleRest'
@@ -122,6 +123,7 @@ export interface GameplayHost extends Pick<
   | 'flush'
   | 'flushForExit'
 > {
+  recordLog(category: LogCategory, type: ActivityEvent['type'], message: string): void;
   readonly source: 'local' | 'online';
   readonly localHost?: JourneyHost;
   subscribe(listener: () => void): () => void;

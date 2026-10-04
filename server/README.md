@@ -424,3 +424,13 @@ See [D1 limits](https://developers.cloudflare.com/d1/platform/limits/) and
 ## Guided local online play
 
 From the workspace root, run `pnpm online:setup` followed by `pnpm online:dev`. Setup configures ignored client/server files and initializes local D1 with the existing migrations and seed, preserving current accounts and characters. It refuses legacy authentication resets and automatic baselining. The launcher validates settings and ports, starts local bindings on the selected interface, and prints a browser URL with the API’s hostname. See [client online play](../client/docs/online-play.md) for flags and device setup. Run the HTTP smoke check against that interface with `LOCAL_API_ORIGIN=http://<selected-address>:8787 pnpm test:smoke`; only loopback and addresses currently assigned to this computer are accepted.
+
+## Persistent gameplay audits
+
+Gameplay, its retry receipt and an immutable audit envelope commit in one D1 transaction.
+Owners can read 90-day safe history; administrators can inspect detailed records and
+bounded JSONL exports. Client UI reports are stored separately with unverified provenance.
+The hourly scheduled handler performs bounded retention cleanup and emits capacity signals.
+
+See [gameplay audit operations](docs/gameplay-audit.md) for additive migration rollout,
+API filters, trusted `admin:roles` commands, measured storage budgets and launch checks.

@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `audit_committed_revision_idx` ON `audit_records` (`character_id`,`revision`) WHERE outcome = 'committed';

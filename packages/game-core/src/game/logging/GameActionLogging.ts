@@ -263,13 +263,19 @@ export function observeGameLogging(
       appendLogs(sink, batch);
     }
   };
-  const commands = engine.commands.observe((observation) => write(commandLog(observation, battle)));
+  const commands = engine.commands.observe((observation) => {
+    try {
+      write(commandLog(observation, battle));
+    } catch {
+      sink.onError?.();
+    }
+  });
   const events = engine.events.subscribe((event) => {
     try {
       const entry = gameEventLog(event, engine, content, battle);
       if (entry) write(entry);
     } catch {
-      /* Logging cannot reject committed simulation events. */
+      sink.onError?.();
     }
   });
   return () => {

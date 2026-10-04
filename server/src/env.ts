@@ -9,5 +9,11 @@ export type AppEnv = {
     user: AuthSession['user'];
     sessionId: string;
     requestId: string;
+    auditReplay?: boolean;
+    auditContext?: {
+      commandId: string;
+      type: string;
+      expectedRevision?: number;
+    };
   };
 };

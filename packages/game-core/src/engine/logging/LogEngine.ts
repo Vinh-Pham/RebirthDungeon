@@ -15,6 +15,7 @@ const InputSchema = z.strictObject({
   actionId: z.string().optional(),
   metadata: z.record(z.string(), z.json()).optional(),
 });
+export { InputSchema as LogInputSchema };
 export type LogJson =
   | string
   | number
@@ -39,6 +40,7 @@ export type LogEntry = LogInput & {
   readonly timestamp: number;
 };
 export interface LogSink {
+  onError?(): void;
   append(entries: readonly LogInput[]): void;
 }
 export interface LogSnapshot {
@@ -139,6 +141,6 @@ export function appendLogs(sink: LogSink | undefined, entries: readonly LogInput
   try {
     sink.append(entries);
   } catch {
-    /* Gameplay remains authoritative if a logging sink fails. */
+    sink.onError?.();
   }
 }

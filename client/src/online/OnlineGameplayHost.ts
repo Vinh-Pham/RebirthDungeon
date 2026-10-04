@@ -18,7 +18,7 @@ import type {
 import type { ContentRegistry } from '../engine/data/ContentRegistry';
 import type { GameCommand } from '../engine/commands';
 import { EventBus } from '../engine/EventBus';
-import { LogEngine, appendLogs } from '../engine/logging/LogEngine';
+import { LogEngine } from '../engine/logging/LogEngine';
 import { immutableData } from '../engine/immutableState';
 import type { OnlineAccess } from './Access';
 import type { GameAPI } from './API';
@@ -111,6 +111,7 @@ class RemoteJourney implements GameplayJourney {
   }
 }
 export interface OnlineHostOptions {
+  activity?: import('./ActivityOutbox').ActivityOutbox;
   characterId: string;
   userId: string;
   api: GameAPI;
@@ -180,6 +181,12 @@ export class OnlineGameplayHost implements GameplayHost {
     this.disconnectQuery = this.observer.subscribe((result) => this.observe(result));
     this.observe(this.observer.getCurrentResult());
     this.disconnectAccess = this.options.access.subscribe(() => {
+      const connection = this.options.access.getSnapshot();
+      this.recordLog(
+        'system',
+        'CONNECTION_CHANGED',
+        `Connection ${connection.online ? 'online' : 'offline'}; app ${connection.foreground ? 'foreground' : 'background'}; session ${connection.verified ? 'verified' : 'unverified'}.`,
+      );
       if (!this.options.access.ready()) {
         this.pauseRest();
         this.battle?.presentation.clear();
@@ -323,7 +330,15 @@ export class OnlineGameplayHost implements GameplayHost {
         notice: result.receipt.outcome.message,
         error: undefined,
       };
-      this.recordLog('system', 'COMMAND_COMMITTED', result.receipt.outcome.message);
+      void this.options.queries.invalidateQueries({
+        queryKey: [
+          'game',
+          this.options.api.origin,
+          this.options.userId,
+          'logs',
+          this.options.characterId,
+        ],
+      });
       this.battle?.present(result, previousRevision);
       if (result.receipt.outcome.events.includes('WORLD_MOVED')) {
         try {
@@ -471,16 +486,15 @@ export class OnlineGameplayHost implements GameplayHost {
   stopRest = () => {
     this.pauseRest();
   };
-  recordLog: GameplayHost['recordLog'] = (category, type, message) =>
-    appendLogs(this.logs, [
-      {
-        category,
-        type,
-        message,
-        characterId: this.options.characterId,
-        characterName: this.cached?.view.character.name,
-      },
-    ]);
+  recordLog: GameplayHost['recordLog'] = (_category, type, message) => {
+    this.options.activity?.record(
+      this.options.userId,
+      this.options.characterId,
+      type,
+      message,
+      this.cached?.view.character.revision,
+    );
+  };
   flush = async () => true;
   flushForExit = async () => !this.inFlight;
   save: GameplayHost['save'] = async () => {

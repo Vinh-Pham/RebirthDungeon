@@ -25,6 +25,10 @@ import {
   preview,
   publicView,
 } from '@rebirth/game-core/online/Runtime';
+import {
+  AuditCollectionError,
+  creationAudit,
+} from '@rebirth/game-core/online/Audit';
 import { GameRepository, requestHash } from './repository.js';
 
 export const gameRoutes = new OpenAPIHono<AppEnv>({
@@ -145,6 +149,10 @@ function gameplay<T>(action: () => T): T {
   try {
     return action();
   } catch (error) {
+    if (error instanceof AuditCollectionError) {
+      console.error(JSON.stringify({ event: 'audit_collection_failed' }));
+      throw new HTTPException(503, { message: 'Gameplay audit unavailable' });
+    }
     throw new HTTPException(422, {
       message:
         error instanceof Error ? error.message : 'Illegal gameplay action',
@@ -178,10 +186,17 @@ gameRoutes.openapi(
   route('post', '/characters', CommandResponseSchema, CreationRequestSchema),
   async (c) => {
     const input = CreationRequestSchema.parse(await c.req.json());
+    c.set('auditContext', {
+      commandId: input.commandId,
+      type: 'CREATE_CHARACTER',
+    });
     const repository = repo(c);
     const hash = await requestHash({ operation: 'CREATE_CHARACTER', input });
     const prior = await duplicate(repository, input.commandId, hash);
-    if (prior) return c.json(prior);
+    if (prior) {
+      c.set('auditReplay', true);
+      return c.json(prior);
+    }
     const now = Date.now(),
       id = crypto.randomUUID();
     const seed = new Int32Array(
@@ -212,7 +227,18 @@ gameRoutes.openapi(
       state,
       receipt,
       hash,
+      {
+        requestId: c.get('requestId'),
+        command: {
+          type: 'CREATE_CHARACTER',
+          name: input.name,
+          talent: input.talent,
+          age: input.age,
+        },
+        audit: creationAudit(state),
+      },
     );
+    if (committed.replayed) c.set('auditReplay', true);
     const current = await repository.load(committed.receipt.characterId);
     return c.json(
       CommandResponseSchema.parse({
@@ -260,13 +286,21 @@ gameRoutes.openapi(
     const input = CommandRequestSchema.parse(await c.req.json()),
       id = c.req.param('id')!,
       repository = repo(c);
+    c.set('auditContext', {
+      commandId: input.commandId,
+      type: input.command.type,
+      expectedRevision: input.expectedRevision,
+    });
     const hash = await requestHash({
       operation: 'COMMAND',
       characterId: id,
       input,
     });
     const prior = await duplicate(repository, input.commandId, hash);
-    if (prior) return c.json(prior);
+    if (prior) {
+      c.set('auditReplay', true);
+      return c.json(prior);
+    }
     const current = await repository.load(id);
     if (current.character.revision !== input.expectedRevision)
       throw new HTTPException(409, { message: 'Character revision changed' });
@@ -288,7 +322,13 @@ gameRoutes.openapi(
       candidate.state,
       receipt,
       hash,
+      {
+        requestId: c.get('requestId'),
+        command: input.command,
+        audit: candidate.audit,
+      },
     );
+    if (committed.replayed) c.set('auditReplay', true);
     const latest = await repository.load(id);
     return c.json(
       CommandResponseSchema.parse({

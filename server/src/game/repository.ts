@@ -1,3 +1,8 @@
+import {
+  auditStatement,
+  commitRecord,
+  type CommitAudit,
+} from '../audit/repository.js';
 import { HTTPException } from 'hono/http-exception';
 import {
   MetadataSchema,
@@ -151,6 +156,7 @@ export class GameRepository {
     state: OnlineState,
     receipt: CommandReceipt,
     hash: string,
+    audit: CommitAudit,
   ) {
     const statements: D1PreparedStatement[] = [];
     if (!previous)
@@ -187,6 +193,20 @@ export class GameRepository {
           receipt.createdAt,
         ),
     );
+    statements.push(
+      auditStatement(
+        this.db,
+        commitRecord(
+          this.userId,
+          character.id,
+          receipt.commandId,
+          receipt.committedRevision,
+          receipt.createdAt,
+          audit,
+          state.campaign.encounterCount,
+        ),
+      ),
+    );
     const writes = stateDiff(
       this.db,
       previous,
@@ -216,6 +236,7 @@ export class GameRepository {
             });
           return {
             receipt: committed.receipt,
+            replayed: true,
             metrics: { queries: statements.length, rowsWritten: 0 },
           };
         }

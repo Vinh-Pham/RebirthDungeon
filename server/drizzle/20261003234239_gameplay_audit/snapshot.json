@@ -1,0 +1,5881 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "id": "cec43016-1ea2-4f75-945c-4b5a0159979e",
+  "prevIds": [
+    "2324607c-48e4-4d13-bcbc-60dd78da539d"
+  ],
+  "ddl": [
+    {
+      "name": "account",
+      "entityType": "tables"
+    },
+    {
+      "name": "session",
+      "entityType": "tables"
+    },
+    {
+      "name": "user",
+      "entityType": "tables"
+    },
+    {
+      "name": "verification",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_campaigns",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_character_titles",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_characters",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_command_receipts",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_discovered_skills",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_dungeon_effects",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_dungeon_flags",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_dungeon_keys",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_dungeon_runs",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_enchant_receipts",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_enchant_recovered_items",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_encounter_actor_values",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_encounter_actors",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_encounter_cooldowns",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_encounter_enemy_history",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_encounter_inventory",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_encounter_quest_evidence",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_encounter_reward_items",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_encounter_rewards",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_encounter_skills",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_encounter_sources",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_encounter_stats",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_encounter_statuses",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_encounter_training",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_encounter_turn_order",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_encounters",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_equipment_enchant_values",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_equipment_enchants",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_equipment_instances",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_heroes",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_inventory_stacks",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_item_hotbar",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_learned_skills",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_loadouts",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_milestone_claims",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_quest_flags",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_quest_objective_counts",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_quests",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_rng_streams",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_selected_titles",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_skill_book_collections",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_skill_book_pages",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_skill_objective_counts",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_title_evidence",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_tracked_objectives",
+      "entityType": "tables"
+    },
+    {
+      "name": "game_world_flags",
+      "entityType": "tables"
+    },
+    {
+      "name": "audit_administrators",
+      "entityType": "tables"
+    },
+    {
+      "name": "audit_configuration",
+      "entityType": "tables"
+    },
+    {
+      "name": "audit_records",
+      "entityType": "tables"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "id",
+      "entityType": "columns",
+      "table": "account"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "account_id",
+      "entityType": "columns",
+      "table": "account"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "provider_id",
+      "entityType": "columns",
+      "table": "account"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "user_id",
+      "entityType": "columns",
+      "table": "account"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "access_token",
+      "entityType": "columns",
+      "table": "account"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "refresh_token",
+      "entityType": "columns",
+      "table": "account"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "id_token",
+      "entityType": "columns",
+      "table": "account"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "access_token_expires_at",
+      "entityType": "columns",
+      "table": "account"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "refresh_token_expires_at",
+      "entityType": "columns",
+      "table": "account"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "scope",
+      "entityType": "columns",
+      "table": "account"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "password",
+      "entityType": "columns",
+      "table": "account"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "table": "account"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "updated_at",
+      "entityType": "columns",
+      "table": "account"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "id",
+      "entityType": "columns",
+      "table": "session"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "expires_at",
+      "entityType": "columns",
+      "table": "session"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "token",
+      "entityType": "columns",
+      "table": "session"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "table": "session"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "updated_at",
+      "entityType": "columns",
+      "table": "session"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "ip_address",
+      "entityType": "columns",
+      "table": "session"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "user_agent",
+      "entityType": "columns",
+      "table": "session"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "user_id",
+      "entityType": "columns",
+      "table": "session"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "id",
+      "entityType": "columns",
+      "table": "user"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "name",
+      "entityType": "columns",
+      "table": "user"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "email",
+      "entityType": "columns",
+      "table": "user"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "false",
+      "generated": null,
+      "name": "email_verified",
+      "entityType": "columns",
+      "table": "user"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "image",
+      "entityType": "columns",
+      "table": "user"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "table": "user"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "updated_at",
+      "entityType": "columns",
+      "table": "user"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "id",
+      "entityType": "columns",
+      "table": "verification"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "identifier",
+      "entityType": "columns",
+      "table": "verification"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "value",
+      "entityType": "columns",
+      "table": "verification"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "expires_at",
+      "entityType": "columns",
+      "table": "verification"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "table": "verification"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "updated_at",
+      "entityType": "columns",
+      "table": "verification"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_campaigns"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "world_id",
+      "entityType": "columns",
+      "table": "game_campaigns"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "x",
+      "entityType": "columns",
+      "table": "game_campaigns"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "y",
+      "entityType": "columns",
+      "table": "game_campaigns"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "encounter_count",
+      "entityType": "columns",
+      "table": "game_campaigns"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "active_service",
+      "entityType": "columns",
+      "table": "game_campaigns"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "resting",
+      "entityType": "columns",
+      "table": "game_campaigns"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "last_rest_tick",
+      "entityType": "columns",
+      "table": "game_campaigns"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "rest_lease_until",
+      "entityType": "columns",
+      "table": "game_campaigns"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_character_titles"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "title_id",
+      "entityType": "columns",
+      "table": "game_character_titles"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "discovered_position",
+      "entityType": "columns",
+      "table": "game_character_titles"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "earned_position",
+      "entityType": "columns",
+      "table": "game_character_titles"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "source",
+      "entityType": "columns",
+      "table": "game_character_titles"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "id",
+      "entityType": "columns",
+      "table": "game_characters"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "user_id",
+      "entityType": "columns",
+      "table": "game_characters"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "name",
+      "entityType": "columns",
+      "table": "game_characters"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "talent",
+      "entityType": "columns",
+      "table": "game_characters"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "age",
+      "entityType": "columns",
+      "table": "game_characters"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "revision",
+      "entityType": "columns",
+      "table": "game_characters"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "content_version",
+      "entityType": "columns",
+      "table": "game_characters"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "table": "game_characters"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "updated_at",
+      "entityType": "columns",
+      "table": "game_characters"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "user_id",
+      "entityType": "columns",
+      "table": "game_command_receipts"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "command_id",
+      "entityType": "columns",
+      "table": "game_command_receipts"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_command_receipts"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "request_hash",
+      "entityType": "columns",
+      "table": "game_command_receipts"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "base_revision",
+      "entityType": "columns",
+      "table": "game_command_receipts"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "committed_revision",
+      "entityType": "columns",
+      "table": "game_command_receipts"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "outcome",
+      "entityType": "columns",
+      "table": "game_command_receipts"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "table": "game_command_receipts"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_discovered_skills"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "skill_id",
+      "entityType": "columns",
+      "table": "game_discovered_skills"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "position",
+      "entityType": "columns",
+      "table": "game_discovered_skills"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_dungeon_effects"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "position",
+      "entityType": "columns",
+      "table": "game_dungeon_effects"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "status_id",
+      "entityType": "columns",
+      "table": "game_dungeon_effects"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "stacks",
+      "entityType": "columns",
+      "table": "game_dungeon_effects"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_dungeon_flags"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "kind",
+      "entityType": "columns",
+      "table": "game_dungeon_flags"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "object_id",
+      "entityType": "columns",
+      "table": "game_dungeon_flags"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "position",
+      "entityType": "columns",
+      "table": "game_dungeon_flags"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_dungeon_keys"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "kind",
+      "entityType": "columns",
+      "table": "game_dungeon_keys"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "status",
+      "entityType": "columns",
+      "table": "game_dungeon_keys"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "x",
+      "entityType": "columns",
+      "table": "game_dungeon_keys"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "y",
+      "entityType": "columns",
+      "table": "game_dungeon_keys"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_dungeon_runs"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "definition_id",
+      "entityType": "columns",
+      "table": "game_dungeon_runs"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "return_world_id",
+      "entityType": "columns",
+      "table": "game_dungeon_runs"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "return_x",
+      "entityType": "columns",
+      "table": "game_dungeon_runs"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "return_y",
+      "entityType": "columns",
+      "table": "game_dungeon_runs"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "blueprint",
+      "entityType": "columns",
+      "table": "game_dungeon_runs"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "boss_door_opened",
+      "entityType": "columns",
+      "table": "game_dungeon_runs"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "selected_chest",
+      "entityType": "columns",
+      "table": "game_dungeon_runs"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_enchant_receipts"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "operation_id",
+      "entityType": "columns",
+      "table": "game_enchant_receipts"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "position",
+      "entityType": "columns",
+      "table": "game_enchant_receipts"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "kind",
+      "entityType": "columns",
+      "table": "game_enchant_receipts"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "message",
+      "entityType": "columns",
+      "table": "game_enchant_receipts"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "success",
+      "entityType": "columns",
+      "table": "game_enchant_receipts"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_enchant_recovered_items"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "operation_id",
+      "entityType": "columns",
+      "table": "game_enchant_recovered_items"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "position",
+      "entityType": "columns",
+      "table": "game_enchant_recovered_items"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "item_id",
+      "entityType": "columns",
+      "table": "game_enchant_recovered_items"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_encounter_actor_values"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "actor_id",
+      "entityType": "columns",
+      "table": "game_encounter_actor_values"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "path",
+      "entityType": "columns",
+      "table": "game_encounter_actor_values"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "value_type",
+      "entityType": "columns",
+      "table": "game_encounter_actor_values"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "text_value",
+      "entityType": "columns",
+      "table": "game_encounter_actor_values"
+    },
+    {
+      "type": "real",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "number_value",
+      "entityType": "columns",
+      "table": "game_encounter_actor_values"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_encounter_actors"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "actor_id",
+      "entityType": "columns",
+      "table": "game_encounter_actors"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "position",
+      "entityType": "columns",
+      "table": "game_encounter_actors"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "defending_position",
+      "entityType": "columns",
+      "table": "game_encounter_actors"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_encounter_cooldowns"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "actor_id",
+      "entityType": "columns",
+      "table": "game_encounter_cooldowns"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "path",
+      "entityType": "columns",
+      "table": "game_encounter_cooldowns"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "value_type",
+      "entityType": "columns",
+      "table": "game_encounter_cooldowns"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "text_value",
+      "entityType": "columns",
+      "table": "game_encounter_cooldowns"
+    },
+    {
+      "type": "real",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "number_value",
+      "entityType": "columns",
+      "table": "game_encounter_cooldowns"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_encounter_enemy_history"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "actor_id",
+      "entityType": "columns",
+      "table": "game_encounter_enemy_history"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "action",
+      "entityType": "columns",
+      "table": "game_encounter_enemy_history"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "skill_id",
+      "entityType": "columns",
+      "table": "game_encounter_enemy_history"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "target_id",
+      "entityType": "columns",
+      "table": "game_encounter_enemy_history"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_encounter_inventory"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "actor_id",
+      "entityType": "columns",
+      "table": "game_encounter_inventory"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "path",
+      "entityType": "columns",
+      "table": "game_encounter_inventory"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "value_type",
+      "entityType": "columns",
+      "table": "game_encounter_inventory"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "text_value",
+      "entityType": "columns",
+      "table": "game_encounter_inventory"
+    },
+    {
+      "type": "real",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "number_value",
+      "entityType": "columns",
+      "table": "game_encounter_inventory"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_encounter_quest_evidence"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "quest_id",
+      "entityType": "columns",
+      "table": "game_encounter_quest_evidence"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "stage_id",
+      "entityType": "columns",
+      "table": "game_encounter_quest_evidence"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "objective_id",
+      "entityType": "columns",
+      "table": "game_encounter_quest_evidence"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "count",
+      "entityType": "columns",
+      "table": "game_encounter_quest_evidence"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_encounter_reward_items"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "position",
+      "entityType": "columns",
+      "table": "game_encounter_reward_items"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "item_id",
+      "entityType": "columns",
+      "table": "game_encounter_reward_items"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "quantity",
+      "entityType": "columns",
+      "table": "game_encounter_reward_items"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "collectable",
+      "entityType": "columns",
+      "table": "game_encounter_reward_items"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_encounter_rewards"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "gold",
+      "entityType": "columns",
+      "table": "game_encounter_rewards"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "experience",
+      "entityType": "columns",
+      "table": "game_encounter_rewards"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "word0",
+      "entityType": "columns",
+      "table": "game_encounter_rewards"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "word1",
+      "entityType": "columns",
+      "table": "game_encounter_rewards"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "word2",
+      "entityType": "columns",
+      "table": "game_encounter_rewards"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "word3",
+      "entityType": "columns",
+      "table": "game_encounter_rewards"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_encounter_skills"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "actor_id",
+      "entityType": "columns",
+      "table": "game_encounter_skills"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "path",
+      "entityType": "columns",
+      "table": "game_encounter_skills"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "value_type",
+      "entityType": "columns",
+      "table": "game_encounter_skills"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "text_value",
+      "entityType": "columns",
+      "table": "game_encounter_skills"
+    },
+    {
+      "type": "real",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "number_value",
+      "entityType": "columns",
+      "table": "game_encounter_skills"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_encounter_sources"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "actor_id",
+      "entityType": "columns",
+      "table": "game_encounter_sources"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "path",
+      "entityType": "columns",
+      "table": "game_encounter_sources"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "value_type",
+      "entityType": "columns",
+      "table": "game_encounter_sources"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "text_value",
+      "entityType": "columns",
+      "table": "game_encounter_sources"
+    },
+    {
+      "type": "real",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "number_value",
+      "entityType": "columns",
+      "table": "game_encounter_sources"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_encounter_stats"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "actor_id",
+      "entityType": "columns",
+      "table": "game_encounter_stats"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "path",
+      "entityType": "columns",
+      "table": "game_encounter_stats"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "value_type",
+      "entityType": "columns",
+      "table": "game_encounter_stats"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "text_value",
+      "entityType": "columns",
+      "table": "game_encounter_stats"
+    },
+    {
+      "type": "real",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "number_value",
+      "entityType": "columns",
+      "table": "game_encounter_stats"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_encounter_statuses"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "actor_id",
+      "entityType": "columns",
+      "table": "game_encounter_statuses"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "path",
+      "entityType": "columns",
+      "table": "game_encounter_statuses"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "value_type",
+      "entityType": "columns",
+      "table": "game_encounter_statuses"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "text_value",
+      "entityType": "columns",
+      "table": "game_encounter_statuses"
+    },
+    {
+      "type": "real",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "number_value",
+      "entityType": "columns",
+      "table": "game_encounter_statuses"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_encounter_training"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "skill_id",
+      "entityType": "columns",
+      "table": "game_encounter_training"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "objective_id",
+      "entityType": "columns",
+      "table": "game_encounter_training"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "count",
+      "entityType": "columns",
+      "table": "game_encounter_training"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_encounter_turn_order"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "position",
+      "entityType": "columns",
+      "table": "game_encounter_turn_order"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "actor_id",
+      "entityType": "columns",
+      "table": "game_encounter_turn_order"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "defending",
+      "entityType": "columns",
+      "table": "game_encounter_turn_order"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_encounters"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "encounter_id",
+      "entityType": "columns",
+      "table": "game_encounters"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "'selectingAction'",
+      "generated": null,
+      "name": "phase",
+      "entityType": "columns",
+      "table": "game_encounters"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "'xoroshiro128plus'",
+      "generated": null,
+      "name": "algorithm",
+      "entityType": "columns",
+      "table": "game_encounters"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "world_id",
+      "entityType": "columns",
+      "table": "game_encounters"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "object_id",
+      "entityType": "columns",
+      "table": "game_encounters"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "map_id",
+      "entityType": "columns",
+      "table": "game_encounters"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "seed",
+      "entityType": "columns",
+      "table": "game_encounters"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "version",
+      "entityType": "columns",
+      "table": "game_encounters"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "word0",
+      "entityType": "columns",
+      "table": "game_encounters"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "word1",
+      "entityType": "columns",
+      "table": "game_encounters"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "word2",
+      "entityType": "columns",
+      "table": "game_encounters"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "word3",
+      "entityType": "columns",
+      "table": "game_encounters"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "result",
+      "entityType": "columns",
+      "table": "game_encounters"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "action_sequence",
+      "entityType": "columns",
+      "table": "game_encounters"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "cursor",
+      "entityType": "columns",
+      "table": "game_encounters"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "training_last_action",
+      "entityType": "columns",
+      "table": "game_encounters"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "quest_last_action",
+      "entityType": "columns",
+      "table": "game_encounters"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "title_eligible",
+      "entityType": "columns",
+      "table": "game_encounters"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "title_flawless",
+      "entityType": "columns",
+      "table": "game_encounters"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_equipment_enchant_values"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "instance_id",
+      "entityType": "columns",
+      "table": "game_equipment_enchant_values"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "slot",
+      "entityType": "columns",
+      "table": "game_equipment_enchant_values"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "stat_id",
+      "entityType": "columns",
+      "table": "game_equipment_enchant_values"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "value",
+      "entityType": "columns",
+      "table": "game_equipment_enchant_values"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_equipment_enchants"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "instance_id",
+      "entityType": "columns",
+      "table": "game_equipment_enchants"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "slot",
+      "entityType": "columns",
+      "table": "game_equipment_enchants"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "enchant_id",
+      "entityType": "columns",
+      "table": "game_equipment_enchants"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_equipment_instances"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "instance_id",
+      "entityType": "columns",
+      "table": "game_equipment_instances"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "definition_id",
+      "entityType": "columns",
+      "table": "game_equipment_instances"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "kind",
+      "entityType": "columns",
+      "table": "game_equipment_instances"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "durability",
+      "entityType": "columns",
+      "table": "game_equipment_instances"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "locked",
+      "entityType": "columns",
+      "table": "game_equipment_instances"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_heroes"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "class_id",
+      "entityType": "columns",
+      "table": "game_heroes"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "level",
+      "entityType": "columns",
+      "table": "game_heroes"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "cumulative_level",
+      "entityType": "columns",
+      "table": "game_heroes"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "experience",
+      "entityType": "columns",
+      "table": "game_heroes"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "gold",
+      "entityType": "columns",
+      "table": "game_heroes"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "ap",
+      "entityType": "columns",
+      "table": "game_heroes"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "health",
+      "entityType": "columns",
+      "table": "game_heroes"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "mana",
+      "entityType": "columns",
+      "table": "game_heroes"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "stamina",
+      "entityType": "columns",
+      "table": "game_heroes"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "wounds",
+      "entityType": "columns",
+      "table": "game_heroes"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "fullness_tenths",
+      "entityType": "columns",
+      "table": "game_heroes"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "next_weapon_id",
+      "entityType": "columns",
+      "table": "game_heroes"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "next_armor_id",
+      "entityType": "columns",
+      "table": "game_heroes"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_inventory_stacks"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "item_id",
+      "entityType": "columns",
+      "table": "game_inventory_stacks"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "quantity",
+      "entityType": "columns",
+      "table": "game_inventory_stacks"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_item_hotbar"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "position",
+      "entityType": "columns",
+      "table": "game_item_hotbar"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "item_id",
+      "entityType": "columns",
+      "table": "game_item_hotbar"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_learned_skills"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "skill_id",
+      "entityType": "columns",
+      "table": "game_learned_skills"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "rank",
+      "entityType": "columns",
+      "table": "game_learned_skills"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_loadouts"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "weapon_id",
+      "entityType": "columns",
+      "table": "game_loadouts"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "armor_id",
+      "entityType": "columns",
+      "table": "game_loadouts"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "ammunition_id",
+      "entityType": "columns",
+      "table": "game_loadouts"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_milestone_claims"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "milestone_id",
+      "entityType": "columns",
+      "table": "game_milestone_claims"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "position",
+      "entityType": "columns",
+      "table": "game_milestone_claims"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_quest_flags"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "flag_id",
+      "entityType": "columns",
+      "table": "game_quest_flags"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "position",
+      "entityType": "columns",
+      "table": "game_quest_flags"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_quest_objective_counts"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "quest_id",
+      "entityType": "columns",
+      "table": "game_quest_objective_counts"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "objective_id",
+      "entityType": "columns",
+      "table": "game_quest_objective_counts"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "count",
+      "entityType": "columns",
+      "table": "game_quest_objective_counts"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_quests"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "quest_id",
+      "entityType": "columns",
+      "table": "game_quests"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "status",
+      "entityType": "columns",
+      "table": "game_quests"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "stage_id",
+      "entityType": "columns",
+      "table": "game_quests"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "claim_id",
+      "entityType": "columns",
+      "table": "game_quests"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_rng_streams"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "kind",
+      "entityType": "columns",
+      "table": "game_rng_streams"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "seed",
+      "entityType": "columns",
+      "table": "game_rng_streams"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "algorithm",
+      "entityType": "columns",
+      "table": "game_rng_streams"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "version",
+      "entityType": "columns",
+      "table": "game_rng_streams"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "word0",
+      "entityType": "columns",
+      "table": "game_rng_streams"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "word1",
+      "entityType": "columns",
+      "table": "game_rng_streams"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "word2",
+      "entityType": "columns",
+      "table": "game_rng_streams"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "word3",
+      "entityType": "columns",
+      "table": "game_rng_streams"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "next_operation_id",
+      "entityType": "columns",
+      "table": "game_rng_streams"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_selected_titles"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "slot",
+      "entityType": "columns",
+      "table": "game_selected_titles"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "title_id",
+      "entityType": "columns",
+      "table": "game_selected_titles"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_skill_book_collections"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "recipe_id",
+      "entityType": "columns",
+      "table": "game_skill_book_collections"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "completed",
+      "entityType": "columns",
+      "table": "game_skill_book_collections"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_skill_book_pages"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "recipe_id",
+      "entityType": "columns",
+      "table": "game_skill_book_pages"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "position",
+      "entityType": "columns",
+      "table": "game_skill_book_pages"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "page_id",
+      "entityType": "columns",
+      "table": "game_skill_book_pages"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_skill_objective_counts"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "skill_id",
+      "entityType": "columns",
+      "table": "game_skill_objective_counts"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "objective_id",
+      "entityType": "columns",
+      "table": "game_skill_objective_counts"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "count",
+      "entityType": "columns",
+      "table": "game_skill_objective_counts"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_title_evidence"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "evidence_id",
+      "entityType": "columns",
+      "table": "game_title_evidence"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "count",
+      "entityType": "columns",
+      "table": "game_title_evidence"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_tracked_objectives"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "position",
+      "entityType": "columns",
+      "table": "game_tracked_objectives"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "quest_id",
+      "entityType": "columns",
+      "table": "game_tracked_objectives"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "objective_id",
+      "entityType": "columns",
+      "table": "game_tracked_objectives"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "game_world_flags"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "kind",
+      "entityType": "columns",
+      "table": "game_world_flags"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "object_id",
+      "entityType": "columns",
+      "table": "game_world_flags"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "position",
+      "entityType": "columns",
+      "table": "game_world_flags"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "user_id",
+      "entityType": "columns",
+      "table": "audit_administrators"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "granted_at",
+      "entityType": "columns",
+      "table": "audit_administrators"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "key",
+      "entityType": "columns",
+      "table": "audit_configuration"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "value",
+      "entityType": "columns",
+      "table": "audit_configuration"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": true,
+      "default": null,
+      "generated": null,
+      "name": "sequence",
+      "entityType": "columns",
+      "table": "audit_records"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "id",
+      "entityType": "columns",
+      "table": "audit_records"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "timestamp",
+      "entityType": "columns",
+      "table": "audit_records"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "user_id",
+      "entityType": "columns",
+      "table": "audit_records"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "character_id",
+      "entityType": "columns",
+      "table": "audit_records"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "source",
+      "entityType": "columns",
+      "table": "audit_records"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "category",
+      "entityType": "columns",
+      "table": "audit_records"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "type",
+      "entityType": "columns",
+      "table": "audit_records"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "outcome",
+      "entityType": "columns",
+      "table": "audit_records"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "message",
+      "entityType": "columns",
+      "table": "audit_records"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "command_id",
+      "entityType": "columns",
+      "table": "audit_records"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "request_id",
+      "entityType": "columns",
+      "table": "audit_records"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "revision",
+      "entityType": "columns",
+      "table": "audit_records"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "encounter_id",
+      "entityType": "columns",
+      "table": "audit_records"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "occurred_at",
+      "entityType": "columns",
+      "table": "audit_records"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "dedupe_key",
+      "entityType": "columns",
+      "table": "audit_records"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "details",
+      "entityType": "columns",
+      "table": "audit_records"
+    },
+    {
+      "columns": [
+        "user_id"
+      ],
+      "tableTo": "user",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_account_user_id_user_id_fk",
+      "entityType": "fks",
+      "table": "account"
+    },
+    {
+      "columns": [
+        "user_id"
+      ],
+      "tableTo": "user",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_session_user_id_user_id_fk",
+      "entityType": "fks",
+      "table": "session"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_campaigns_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_campaigns"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_character_titles_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_character_titles"
+    },
+    {
+      "columns": [
+        "user_id"
+      ],
+      "tableTo": "user",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_characters_user_id_user_id_fk",
+      "entityType": "fks",
+      "table": "game_characters"
+    },
+    {
+      "columns": [
+        "user_id"
+      ],
+      "tableTo": "user",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_command_receipts_user_id_user_id_fk",
+      "entityType": "fks",
+      "table": "game_command_receipts"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_command_receipts_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_command_receipts"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_discovered_skills_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_discovered_skills"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_dungeon_effects_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_dungeon_effects"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_dungeon_runs",
+      "columnsTo": [
+        "character_id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_dungeon_effects_character_id_game_dungeon_runs_character_id_fk",
+      "entityType": "fks",
+      "table": "game_dungeon_effects"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_dungeon_flags_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_dungeon_flags"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_dungeon_runs",
+      "columnsTo": [
+        "character_id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_dungeon_flags_character_id_game_dungeon_runs_character_id_fk",
+      "entityType": "fks",
+      "table": "game_dungeon_flags"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_dungeon_keys_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_dungeon_keys"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_dungeon_runs",
+      "columnsTo": [
+        "character_id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_dungeon_keys_character_id_game_dungeon_runs_character_id_fk",
+      "entityType": "fks",
+      "table": "game_dungeon_keys"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_dungeon_runs_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_dungeon_runs"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_enchant_receipts_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_enchant_receipts"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_enchant_recovered_items_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_enchant_recovered_items"
+    },
+    {
+      "columns": [
+        "character_id",
+        "operation_id"
+      ],
+      "tableTo": "game_enchant_receipts",
+      "columnsTo": [
+        "character_id",
+        "operation_id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_enchant_recovered_items_character_id_operation_id_game_enchant_receipts_character_id_operation_id_fk",
+      "entityType": "fks",
+      "table": "game_enchant_recovered_items"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_encounter_actor_values_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_encounter_actor_values"
+    },
+    {
+      "columns": [
+        "character_id",
+        "actor_id"
+      ],
+      "tableTo": "game_encounter_actors",
+      "columnsTo": [
+        "character_id",
+        "actor_id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_encounter_actor_values_character_id_actor_id_game_encounter_actors_character_id_actor_id_fk",
+      "entityType": "fks",
+      "table": "game_encounter_actor_values"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_encounter_actors_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_encounter_actors"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_encounters",
+      "columnsTo": [
+        "character_id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_encounter_actors_character_id_game_encounters_character_id_fk",
+      "entityType": "fks",
+      "table": "game_encounter_actors"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_encounter_cooldowns_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_encounter_cooldowns"
+    },
+    {
+      "columns": [
+        "character_id",
+        "actor_id"
+      ],
+      "tableTo": "game_encounter_actors",
+      "columnsTo": [
+        "character_id",
+        "actor_id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_encounter_cooldowns_character_id_actor_id_game_encounter_actors_character_id_actor_id_fk",
+      "entityType": "fks",
+      "table": "game_encounter_cooldowns"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_encounter_enemy_history_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_encounter_enemy_history"
+    },
+    {
+      "columns": [
+        "character_id",
+        "actor_id"
+      ],
+      "tableTo": "game_encounter_actors",
+      "columnsTo": [
+        "character_id",
+        "actor_id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_encounter_enemy_history_character_id_actor_id_game_encounter_actors_character_id_actor_id_fk",
+      "entityType": "fks",
+      "table": "game_encounter_enemy_history"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_encounter_inventory_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_encounter_inventory"
+    },
+    {
+      "columns": [
+        "character_id",
+        "actor_id"
+      ],
+      "tableTo": "game_encounter_actors",
+      "columnsTo": [
+        "character_id",
+        "actor_id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_encounter_inventory_character_id_actor_id_game_encounter_actors_character_id_actor_id_fk",
+      "entityType": "fks",
+      "table": "game_encounter_inventory"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_encounter_quest_evidence_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_encounter_quest_evidence"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_encounters",
+      "columnsTo": [
+        "character_id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_encounter_quest_evidence_character_id_game_encounters_character_id_fk",
+      "entityType": "fks",
+      "table": "game_encounter_quest_evidence"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_encounter_reward_items_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_encounter_reward_items"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_encounter_rewards",
+      "columnsTo": [
+        "character_id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_encounter_reward_items_character_id_game_encounter_rewards_character_id_fk",
+      "entityType": "fks",
+      "table": "game_encounter_reward_items"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_encounter_rewards_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_encounter_rewards"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_encounters",
+      "columnsTo": [
+        "character_id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_encounter_rewards_character_id_game_encounters_character_id_fk",
+      "entityType": "fks",
+      "table": "game_encounter_rewards"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_encounter_skills_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_encounter_skills"
+    },
+    {
+      "columns": [
+        "character_id",
+        "actor_id"
+      ],
+      "tableTo": "game_encounter_actors",
+      "columnsTo": [
+        "character_id",
+        "actor_id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_encounter_skills_character_id_actor_id_game_encounter_actors_character_id_actor_id_fk",
+      "entityType": "fks",
+      "table": "game_encounter_skills"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_encounter_sources_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_encounter_sources"
+    },
+    {
+      "columns": [
+        "character_id",
+        "actor_id"
+      ],
+      "tableTo": "game_encounter_actors",
+      "columnsTo": [
+        "character_id",
+        "actor_id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_encounter_sources_character_id_actor_id_game_encounter_actors_character_id_actor_id_fk",
+      "entityType": "fks",
+      "table": "game_encounter_sources"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_encounter_stats_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_encounter_stats"
+    },
+    {
+      "columns": [
+        "character_id",
+        "actor_id"
+      ],
+      "tableTo": "game_encounter_actors",
+      "columnsTo": [
+        "character_id",
+        "actor_id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_encounter_stats_character_id_actor_id_game_encounter_actors_character_id_actor_id_fk",
+      "entityType": "fks",
+      "table": "game_encounter_stats"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_encounter_statuses_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_encounter_statuses"
+    },
+    {
+      "columns": [
+        "character_id",
+        "actor_id"
+      ],
+      "tableTo": "game_encounter_actors",
+      "columnsTo": [
+        "character_id",
+        "actor_id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_encounter_statuses_character_id_actor_id_game_encounter_actors_character_id_actor_id_fk",
+      "entityType": "fks",
+      "table": "game_encounter_statuses"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_encounter_training_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_encounter_training"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_encounters",
+      "columnsTo": [
+        "character_id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_encounter_training_character_id_game_encounters_character_id_fk",
+      "entityType": "fks",
+      "table": "game_encounter_training"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_encounter_turn_order_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_encounter_turn_order"
+    },
+    {
+      "columns": [
+        "character_id",
+        "actor_id"
+      ],
+      "tableTo": "game_encounter_actors",
+      "columnsTo": [
+        "character_id",
+        "actor_id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_encounter_turn_order_character_id_actor_id_game_encounter_actors_character_id_actor_id_fk",
+      "entityType": "fks",
+      "table": "game_encounter_turn_order"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_encounters_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_encounters"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_equipment_enchant_values_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_equipment_enchant_values"
+    },
+    {
+      "columns": [
+        "character_id",
+        "instance_id",
+        "slot"
+      ],
+      "tableTo": "game_equipment_enchants",
+      "columnsTo": [
+        "character_id",
+        "instance_id",
+        "slot"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_equipment_enchant_values_character_id_instance_id_slot_game_equipment_enchants_character_id_instance_id_slot_fk",
+      "entityType": "fks",
+      "table": "game_equipment_enchant_values"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_equipment_enchants_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_equipment_enchants"
+    },
+    {
+      "columns": [
+        "character_id",
+        "instance_id"
+      ],
+      "tableTo": "game_equipment_instances",
+      "columnsTo": [
+        "character_id",
+        "instance_id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_equipment_enchants_character_id_instance_id_game_equipment_instances_character_id_instance_id_fk",
+      "entityType": "fks",
+      "table": "game_equipment_enchants"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_equipment_instances_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_equipment_instances"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_heroes_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_heroes"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_inventory_stacks_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_inventory_stacks"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_item_hotbar_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_item_hotbar"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_learned_skills_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_learned_skills"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_loadouts_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_loadouts"
+    },
+    {
+      "columns": [
+        "character_id",
+        "weapon_id"
+      ],
+      "tableTo": "game_equipment_instances",
+      "columnsTo": [
+        "character_id",
+        "instance_id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_loadouts_character_id_weapon_id_game_equipment_instances_character_id_instance_id_fk",
+      "entityType": "fks",
+      "table": "game_loadouts"
+    },
+    {
+      "columns": [
+        "character_id",
+        "armor_id"
+      ],
+      "tableTo": "game_equipment_instances",
+      "columnsTo": [
+        "character_id",
+        "instance_id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_loadouts_character_id_armor_id_game_equipment_instances_character_id_instance_id_fk",
+      "entityType": "fks",
+      "table": "game_loadouts"
+    },
+    {
+      "columns": [
+        "character_id",
+        "ammunition_id"
+      ],
+      "tableTo": "game_inventory_stacks",
+      "columnsTo": [
+        "character_id",
+        "item_id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_loadouts_character_id_ammunition_id_game_inventory_stacks_character_id_item_id_fk",
+      "entityType": "fks",
+      "table": "game_loadouts"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_milestone_claims_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_milestone_claims"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_quest_flags_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_quest_flags"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_quest_objective_counts_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_quest_objective_counts"
+    },
+    {
+      "columns": [
+        "character_id",
+        "quest_id"
+      ],
+      "tableTo": "game_quests",
+      "columnsTo": [
+        "character_id",
+        "quest_id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_quest_objective_counts_character_id_quest_id_game_quests_character_id_quest_id_fk",
+      "entityType": "fks",
+      "table": "game_quest_objective_counts"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_quests_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_quests"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_rng_streams_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_rng_streams"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_selected_titles_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_selected_titles"
+    },
+    {
+      "columns": [
+        "character_id",
+        "title_id"
+      ],
+      "tableTo": "game_character_titles",
+      "columnsTo": [
+        "character_id",
+        "title_id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_selected_titles_character_id_title_id_game_character_titles_character_id_title_id_fk",
+      "entityType": "fks",
+      "table": "game_selected_titles"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_skill_book_collections_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_skill_book_collections"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_skill_book_pages_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_skill_book_pages"
+    },
+    {
+      "columns": [
+        "character_id",
+        "recipe_id"
+      ],
+      "tableTo": "game_skill_book_collections",
+      "columnsTo": [
+        "character_id",
+        "recipe_id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_skill_book_pages_character_id_recipe_id_game_skill_book_collections_character_id_recipe_id_fk",
+      "entityType": "fks",
+      "table": "game_skill_book_pages"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_skill_objective_counts_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_skill_objective_counts"
+    },
+    {
+      "columns": [
+        "character_id",
+        "skill_id"
+      ],
+      "tableTo": "game_learned_skills",
+      "columnsTo": [
+        "character_id",
+        "skill_id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_skill_objective_counts_character_id_skill_id_game_learned_skills_character_id_skill_id_fk",
+      "entityType": "fks",
+      "table": "game_skill_objective_counts"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_title_evidence_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_title_evidence"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_tracked_objectives_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_tracked_objectives"
+    },
+    {
+      "columns": [
+        "character_id",
+        "quest_id"
+      ],
+      "tableTo": "game_quests",
+      "columnsTo": [
+        "character_id",
+        "quest_id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_tracked_objectives_character_id_quest_id_game_quests_character_id_quest_id_fk",
+      "entityType": "fks",
+      "table": "game_tracked_objectives"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "tableTo": "game_characters",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_game_world_flags_character_id_game_characters_id_fk",
+      "entityType": "fks",
+      "table": "game_world_flags"
+    },
+    {
+      "columns": [
+        "user_id"
+      ],
+      "tableTo": "user",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_audit_administrators_user_id_user_id_fk",
+      "entityType": "fks",
+      "table": "audit_administrators"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "nameExplicit": false,
+      "name": "game_campaigns_pk",
+      "entityType": "pks",
+      "table": "game_campaigns"
+    },
+    {
+      "columns": [
+        "character_id",
+        "title_id"
+      ],
+      "nameExplicit": false,
+      "name": "game_character_titles_pk",
+      "entityType": "pks",
+      "table": "game_character_titles"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "game_characters_pk",
+      "entityType": "pks",
+      "table": "game_characters"
+    },
+    {
+      "columns": [
+        "user_id",
+        "command_id"
+      ],
+      "nameExplicit": false,
+      "name": "game_command_receipts_pk",
+      "entityType": "pks",
+      "table": "game_command_receipts"
+    },
+    {
+      "columns": [
+        "character_id",
+        "skill_id"
+      ],
+      "nameExplicit": false,
+      "name": "game_discovered_skills_pk",
+      "entityType": "pks",
+      "table": "game_discovered_skills"
+    },
+    {
+      "columns": [
+        "character_id",
+        "position"
+      ],
+      "nameExplicit": false,
+      "name": "game_dungeon_effects_pk",
+      "entityType": "pks",
+      "table": "game_dungeon_effects"
+    },
+    {
+      "columns": [
+        "character_id",
+        "kind",
+        "object_id"
+      ],
+      "nameExplicit": false,
+      "name": "game_dungeon_flags_pk",
+      "entityType": "pks",
+      "table": "game_dungeon_flags"
+    },
+    {
+      "columns": [
+        "character_id",
+        "kind"
+      ],
+      "nameExplicit": false,
+      "name": "game_dungeon_keys_pk",
+      "entityType": "pks",
+      "table": "game_dungeon_keys"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "nameExplicit": false,
+      "name": "game_dungeon_runs_pk",
+      "entityType": "pks",
+      "table": "game_dungeon_runs"
+    },
+    {
+      "columns": [
+        "character_id",
+        "operation_id"
+      ],
+      "nameExplicit": false,
+      "name": "game_enchant_receipts_pk",
+      "entityType": "pks",
+      "table": "game_enchant_receipts"
+    },
+    {
+      "columns": [
+        "character_id",
+        "operation_id",
+        "position"
+      ],
+      "nameExplicit": false,
+      "name": "game_enchant_recovered_items_pk",
+      "entityType": "pks",
+      "table": "game_enchant_recovered_items"
+    },
+    {
+      "columns": [
+        "character_id",
+        "actor_id",
+        "path"
+      ],
+      "nameExplicit": false,
+      "name": "game_encounter_actor_values_pk",
+      "entityType": "pks",
+      "table": "game_encounter_actor_values"
+    },
+    {
+      "columns": [
+        "character_id",
+        "actor_id"
+      ],
+      "nameExplicit": false,
+      "name": "game_encounter_actors_pk",
+      "entityType": "pks",
+      "table": "game_encounter_actors"
+    },
+    {
+      "columns": [
+        "character_id",
+        "actor_id",
+        "path"
+      ],
+      "nameExplicit": false,
+      "name": "game_encounter_cooldowns_pk",
+      "entityType": "pks",
+      "table": "game_encounter_cooldowns"
+    },
+    {
+      "columns": [
+        "character_id",
+        "actor_id"
+      ],
+      "nameExplicit": false,
+      "name": "game_encounter_enemy_history_pk",
+      "entityType": "pks",
+      "table": "game_encounter_enemy_history"
+    },
+    {
+      "columns": [
+        "character_id",
+        "actor_id",
+        "path"
+      ],
+      "nameExplicit": false,
+      "name": "game_encounter_inventory_pk",
+      "entityType": "pks",
+      "table": "game_encounter_inventory"
+    },
+    {
+      "columns": [
+        "character_id",
+        "quest_id",
+        "objective_id"
+      ],
+      "nameExplicit": false,
+      "name": "game_encounter_quest_evidence_pk",
+      "entityType": "pks",
+      "table": "game_encounter_quest_evidence"
+    },
+    {
+      "columns": [
+        "character_id",
+        "position"
+      ],
+      "nameExplicit": false,
+      "name": "game_encounter_reward_items_pk",
+      "entityType": "pks",
+      "table": "game_encounter_reward_items"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "nameExplicit": false,
+      "name": "game_encounter_rewards_pk",
+      "entityType": "pks",
+      "table": "game_encounter_rewards"
+    },
+    {
+      "columns": [
+        "character_id",
+        "actor_id",
+        "path"
+      ],
+      "nameExplicit": false,
+      "name": "game_encounter_skills_pk",
+      "entityType": "pks",
+      "table": "game_encounter_skills"
+    },
+    {
+      "columns": [
+        "character_id",
+        "actor_id",
+        "path"
+      ],
+      "nameExplicit": false,
+      "name": "game_encounter_sources_pk",
+      "entityType": "pks",
+      "table": "game_encounter_sources"
+    },
+    {
+      "columns": [
+        "character_id",
+        "actor_id",
+        "path"
+      ],
+      "nameExplicit": false,
+      "name": "game_encounter_stats_pk",
+      "entityType": "pks",
+      "table": "game_encounter_stats"
+    },
+    {
+      "columns": [
+        "character_id",
+        "actor_id",
+        "path"
+      ],
+      "nameExplicit": false,
+      "name": "game_encounter_statuses_pk",
+      "entityType": "pks",
+      "table": "game_encounter_statuses"
+    },
+    {
+      "columns": [
+        "character_id",
+        "skill_id",
+        "objective_id"
+      ],
+      "nameExplicit": false,
+      "name": "game_encounter_training_pk",
+      "entityType": "pks",
+      "table": "game_encounter_training"
+    },
+    {
+      "columns": [
+        "character_id",
+        "position"
+      ],
+      "nameExplicit": false,
+      "name": "game_encounter_turn_order_pk",
+      "entityType": "pks",
+      "table": "game_encounter_turn_order"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "nameExplicit": false,
+      "name": "game_encounters_pk",
+      "entityType": "pks",
+      "table": "game_encounters"
+    },
+    {
+      "columns": [
+        "character_id",
+        "instance_id",
+        "slot",
+        "stat_id"
+      ],
+      "nameExplicit": false,
+      "name": "game_equipment_enchant_values_pk",
+      "entityType": "pks",
+      "table": "game_equipment_enchant_values"
+    },
+    {
+      "columns": [
+        "character_id",
+        "instance_id",
+        "slot"
+      ],
+      "nameExplicit": false,
+      "name": "game_equipment_enchants_pk",
+      "entityType": "pks",
+      "table": "game_equipment_enchants"
+    },
+    {
+      "columns": [
+        "character_id",
+        "instance_id"
+      ],
+      "nameExplicit": false,
+      "name": "game_equipment_instances_pk",
+      "entityType": "pks",
+      "table": "game_equipment_instances"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "nameExplicit": false,
+      "name": "game_heroes_pk",
+      "entityType": "pks",
+      "table": "game_heroes"
+    },
+    {
+      "columns": [
+        "character_id",
+        "item_id"
+      ],
+      "nameExplicit": false,
+      "name": "game_inventory_stacks_pk",
+      "entityType": "pks",
+      "table": "game_inventory_stacks"
+    },
+    {
+      "columns": [
+        "character_id",
+        "position"
+      ],
+      "nameExplicit": false,
+      "name": "game_item_hotbar_pk",
+      "entityType": "pks",
+      "table": "game_item_hotbar"
+    },
+    {
+      "columns": [
+        "character_id",
+        "skill_id"
+      ],
+      "nameExplicit": false,
+      "name": "game_learned_skills_pk",
+      "entityType": "pks",
+      "table": "game_learned_skills"
+    },
+    {
+      "columns": [
+        "character_id"
+      ],
+      "nameExplicit": false,
+      "name": "game_loadouts_pk",
+      "entityType": "pks",
+      "table": "game_loadouts"
+    },
+    {
+      "columns": [
+        "character_id",
+        "milestone_id"
+      ],
+      "nameExplicit": false,
+      "name": "game_milestone_claims_pk",
+      "entityType": "pks",
+      "table": "game_milestone_claims"
+    },
+    {
+      "columns": [
+        "character_id",
+        "flag_id"
+      ],
+      "nameExplicit": false,
+      "name": "game_quest_flags_pk",
+      "entityType": "pks",
+      "table": "game_quest_flags"
+    },
+    {
+      "columns": [
+        "character_id",
+        "quest_id",
+        "objective_id"
+      ],
+      "nameExplicit": false,
+      "name": "game_quest_objective_counts_pk",
+      "entityType": "pks",
+      "table": "game_quest_objective_counts"
+    },
+    {
+      "columns": [
+        "character_id",
+        "quest_id"
+      ],
+      "nameExplicit": false,
+      "name": "game_quests_pk",
+      "entityType": "pks",
+      "table": "game_quests"
+    },
+    {
+      "columns": [
+        "character_id",
+        "kind"
+      ],
+      "nameExplicit": false,
+      "name": "game_rng_streams_pk",
+      "entityType": "pks",
+      "table": "game_rng_streams"
+    },
+    {
+      "columns": [
+        "character_id",
+        "slot"
+      ],
+      "nameExplicit": false,
+      "name": "game_selected_titles_pk",
+      "entityType": "pks",
+      "table": "game_selected_titles"
+    },
+    {
+      "columns": [
+        "character_id",
+        "recipe_id"
+      ],
+      "nameExplicit": false,
+      "name": "game_skill_book_collections_pk",
+      "entityType": "pks",
+      "table": "game_skill_book_collections"
+    },
+    {
+      "columns": [
+        "character_id",
+        "recipe_id",
+        "position"
+      ],
+      "nameExplicit": false,
+      "name": "game_skill_book_pages_pk",
+      "entityType": "pks",
+      "table": "game_skill_book_pages"
+    },
+    {
+      "columns": [
+        "character_id",
+        "skill_id",
+        "objective_id"
+      ],
+      "nameExplicit": false,
+      "name": "game_skill_objective_counts_pk",
+      "entityType": "pks",
+      "table": "game_skill_objective_counts"
+    },
+    {
+      "columns": [
+        "character_id",
+        "evidence_id"
+      ],
+      "nameExplicit": false,
+      "name": "game_title_evidence_pk",
+      "entityType": "pks",
+      "table": "game_title_evidence"
+    },
+    {
+      "columns": [
+        "character_id",
+        "position"
+      ],
+      "nameExplicit": false,
+      "name": "game_tracked_objectives_pk",
+      "entityType": "pks",
+      "table": "game_tracked_objectives"
+    },
+    {
+      "columns": [
+        "character_id",
+        "kind",
+        "object_id"
+      ],
+      "nameExplicit": false,
+      "name": "game_world_flags_pk",
+      "entityType": "pks",
+      "table": "game_world_flags"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "account_pk",
+      "table": "account",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "session_pk",
+      "table": "session",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "user_pk",
+      "table": "user",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "verification_pk",
+      "table": "verification",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "user_id"
+      ],
+      "nameExplicit": false,
+      "name": "audit_administrators_pk",
+      "table": "audit_administrators",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "key"
+      ],
+      "nameExplicit": false,
+      "name": "audit_configuration_pk",
+      "table": "audit_configuration",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "sequence"
+      ],
+      "nameExplicit": false,
+      "name": "audit_records_pk",
+      "table": "audit_records",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        {
+          "value": "user_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "account_user_id_idx",
+      "entityType": "indexes",
+      "table": "account"
+    },
+    {
+      "columns": [
+        {
+          "value": "provider_id",
+          "isExpression": false
+        },
+        {
+          "value": "account_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "origin": "manual",
+      "name": "account_provider_identity_idx",
+      "entityType": "indexes",
+      "table": "account"
+    },
+    {
+      "columns": [
+        {
+          "value": "identifier",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "verification_identifier_idx",
+      "entityType": "indexes",
+      "table": "verification"
+    },
+    {
+      "columns": [
+        {
+          "value": "user_id",
+          "isExpression": false
+        },
+        {
+          "value": "created_at",
+          "isExpression": false
+        },
+        {
+          "value": "id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "game_characters_owner_idx",
+      "entityType": "indexes",
+      "table": "game_characters"
+    },
+    {
+      "columns": [
+        {
+          "value": "character_id",
+          "isExpression": false
+        },
+        {
+          "value": "committed_revision",
+          "isExpression": false
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "origin": "manual",
+      "name": "game_command_revision_idx",
+      "entityType": "indexes",
+      "table": "game_command_receipts"
+    },
+    {
+      "columns": [
+        {
+          "value": "character_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "game_command_character_idx",
+      "entityType": "indexes",
+      "table": "game_command_receipts"
+    },
+    {
+      "columns": [
+        {
+          "value": "dedupe_key",
+          "isExpression": false
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "origin": "manual",
+      "name": "audit_dedupe_idx",
+      "entityType": "indexes",
+      "table": "audit_records"
+    },
+    {
+      "columns": [
+        {
+          "value": "timestamp",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "audit_retention_idx",
+      "entityType": "indexes",
+      "table": "audit_records"
+    },
+    {
+      "columns": [
+        {
+          "value": "character_id",
+          "isExpression": false
+        },
+        {
+          "value": "sequence",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "audit_character_idx",
+      "entityType": "indexes",
+      "table": "audit_records"
+    },
+    {
+      "columns": [
+        {
+          "value": "user_id",
+          "isExpression": false
+        },
+        {
+          "value": "sequence",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "audit_user_idx",
+      "entityType": "indexes",
+      "table": "audit_records"
+    },
+    {
+      "columns": [
+        {
+          "value": "command_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "audit_command_idx",
+      "entityType": "indexes",
+      "table": "audit_records"
+    },
+    {
+      "columns": [
+        {
+          "value": "request_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "audit_request_idx",
+      "entityType": "indexes",
+      "table": "audit_records"
+    },
+    {
+      "columns": [
+        {
+          "value": "character_id",
+          "isExpression": false
+        },
+        {
+          "value": "encounter_id",
+          "isExpression": false
+        },
+        {
+          "value": "sequence",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "audit_encounter_idx",
+      "entityType": "indexes",
+      "table": "audit_records"
+    },
+    {
+      "columns": [
+        "token"
+      ],
+      "nameExplicit": false,
+      "name": "session_token_unique",
+      "entityType": "uniques",
+      "table": "session"
+    },
+    {
+      "columns": [
+        "user_id"
+      ],
+      "nameExplicit": false,
+      "name": "session_user_id_unique",
+      "entityType": "uniques",
+      "table": "session"
+    },
+    {
+      "columns": [
+        "email"
+      ],
+      "nameExplicit": false,
+      "name": "user_email_unique",
+      "entityType": "uniques",
+      "table": "user"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "audit_records_id_unique",
+      "entityType": "uniques",
+      "table": "audit_records"
+    },
+    {
+      "value": "x >= 0",
+      "name": "game_campaigns_check_0",
+      "entityType": "checks",
+      "table": "game_campaigns"
+    },
+    {
+      "value": "y >= 0",
+      "name": "game_campaigns_check_1",
+      "entityType": "checks",
+      "table": "game_campaigns"
+    },
+    {
+      "value": "encounter_count BETWEEN 0 AND 1000000",
+      "name": "game_campaigns_check_2",
+      "entityType": "checks",
+      "table": "game_campaigns"
+    },
+    {
+      "value": "resting IN (0,1)",
+      "name": "game_campaigns_check_3",
+      "entityType": "checks",
+      "table": "game_campaigns"
+    },
+    {
+      "value": "discovered_position IS NULL OR discovered_position BETWEEN 0 AND 999",
+      "name": "game_character_titles_check_0",
+      "entityType": "checks",
+      "table": "game_character_titles"
+    },
+    {
+      "value": "earned_position IS NULL OR earned_position BETWEEN 0 AND 999",
+      "name": "game_character_titles_check_1",
+      "entityType": "checks",
+      "table": "game_character_titles"
+    },
+    {
+      "value": "talent IN ('warrior','archery','mage')",
+      "name": "game_characters_check_0",
+      "entityType": "checks",
+      "table": "game_characters"
+    },
+    {
+      "value": "age BETWEEN 10 AND 17",
+      "name": "game_characters_check_1",
+      "entityType": "checks",
+      "table": "game_characters"
+    },
+    {
+      "value": "revision >= 0",
+      "name": "game_characters_check_2",
+      "entityType": "checks",
+      "table": "game_characters"
+    },
+    {
+      "value": "length(trim(name)) BETWEEN 1 AND 24",
+      "name": "game_characters_check_3",
+      "entityType": "checks",
+      "table": "game_characters"
+    },
+    {
+      "value": "committed_revision = base_revision + 1",
+      "name": "game_command_receipts_check_0",
+      "entityType": "checks",
+      "table": "game_command_receipts"
+    },
+    {
+      "value": "base_revision >= 0",
+      "name": "game_command_receipts_check_1",
+      "entityType": "checks",
+      "table": "game_command_receipts"
+    },
+    {
+      "value": "json_valid(outcome)",
+      "name": "game_command_receipts_check_2",
+      "entityType": "checks",
+      "table": "game_command_receipts"
+    },
+    {
+      "value": "position BETWEEN 0 AND 999",
+      "name": "game_discovered_skills_check_0",
+      "entityType": "checks",
+      "table": "game_discovered_skills"
+    },
+    {
+      "value": "position BETWEEN 0 AND 11",
+      "name": "game_dungeon_effects_check_0",
+      "entityType": "checks",
+      "table": "game_dungeon_effects"
+    },
+    {
+      "value": "stacks BETWEEN 1 AND 10",
+      "name": "game_dungeon_effects_check_1",
+      "entityType": "checks",
+      "table": "game_dungeon_effects"
+    },
+    {
+      "value": "kind IN ('cleared','opened','revealedMimics','usedFountains')",
+      "name": "game_dungeon_flags_check_0",
+      "entityType": "checks",
+      "table": "game_dungeon_flags"
+    },
+    {
+      "value": "position BETWEEN 0 AND 16",
+      "name": "game_dungeon_flags_check_1",
+      "entityType": "checks",
+      "table": "game_dungeon_flags"
+    },
+    {
+      "value": "kind IN ('bossKey','treasureKey')",
+      "name": "game_dungeon_keys_check_0",
+      "entityType": "checks",
+      "table": "game_dungeon_keys"
+    },
+    {
+      "value": "status IN ('absent','dropped','held','spent')",
+      "name": "game_dungeon_keys_check_1",
+      "entityType": "checks",
+      "table": "game_dungeon_keys"
+    },
+    {
+      "value": "(x IS NULL) = (y IS NULL)",
+      "name": "game_dungeon_keys_check_2",
+      "entityType": "checks",
+      "table": "game_dungeon_keys"
+    },
+    {
+      "value": "boss_door_opened IN (0,1)",
+      "name": "game_dungeon_runs_check_0",
+      "entityType": "checks",
+      "table": "game_dungeon_runs"
+    },
+    {
+      "value": "json_valid(blueprint)",
+      "name": "game_dungeon_runs_check_1",
+      "entityType": "checks",
+      "table": "game_dungeon_runs"
+    },
+    {
+      "value": "position BETWEEN 0 AND 99",
+      "name": "game_enchant_receipts_check_0",
+      "entityType": "checks",
+      "table": "game_enchant_receipts"
+    },
+    {
+      "value": "kind IN ('apply','burn')",
+      "name": "game_enchant_receipts_check_1",
+      "entityType": "checks",
+      "table": "game_enchant_receipts"
+    },
+    {
+      "value": "success IN (0,1)",
+      "name": "game_enchant_receipts_check_2",
+      "entityType": "checks",
+      "table": "game_enchant_receipts"
+    },
+    {
+      "value": "position BETWEEN 0 AND 1",
+      "name": "game_enchant_recovered_items_check_0",
+      "entityType": "checks",
+      "table": "game_enchant_recovered_items"
+    },
+    {
+      "value": "value_type IN ('object','array','string','number','boolean')",
+      "name": "game_encounter_actor_values_check_0",
+      "entityType": "checks",
+      "table": "game_encounter_actor_values"
+    },
+    {
+      "value": "(value_type = 'string' AND text_value IS NOT NULL AND number_value IS NULL) OR (value_type IN ('number','boolean') AND number_value IS NOT NULL AND text_value IS NULL) OR (value_type IN ('object','array') AND text_value IS NULL AND number_value IS NULL)",
+      "name": "game_encounter_actor_values_check_1",
+      "entityType": "checks",
+      "table": "game_encounter_actor_values"
+    },
+    {
+      "value": "position >= 0",
+      "name": "game_encounter_actors_check_0",
+      "entityType": "checks",
+      "table": "game_encounter_actors"
+    },
+    {
+      "value": "value_type IN ('object','array','string','number','boolean')",
+      "name": "game_encounter_cooldowns_check_0",
+      "entityType": "checks",
+      "table": "game_encounter_cooldowns"
+    },
+    {
+      "value": "(value_type = 'string' AND text_value IS NOT NULL AND number_value IS NULL) OR (value_type IN ('number','boolean') AND number_value IS NOT NULL AND text_value IS NULL) OR (value_type IN ('object','array') AND text_value IS NULL AND number_value IS NULL)",
+      "name": "game_encounter_cooldowns_check_1",
+      "entityType": "checks",
+      "table": "game_encounter_cooldowns"
+    },
+    {
+      "value": "action IN ('attack','skill','defend','rest')",
+      "name": "game_encounter_enemy_history_check_0",
+      "entityType": "checks",
+      "table": "game_encounter_enemy_history"
+    },
+    {
+      "value": "value_type IN ('object','array','string','number','boolean')",
+      "name": "game_encounter_inventory_check_0",
+      "entityType": "checks",
+      "table": "game_encounter_inventory"
+    },
+    {
+      "value": "(value_type = 'string' AND text_value IS NOT NULL AND number_value IS NULL) OR (value_type IN ('number','boolean') AND number_value IS NOT NULL AND text_value IS NULL) OR (value_type IN ('object','array') AND text_value IS NULL AND number_value IS NULL)",
+      "name": "game_encounter_inventory_check_1",
+      "entityType": "checks",
+      "table": "game_encounter_inventory"
+    },
+    {
+      "value": "count BETWEEN 0 AND 999",
+      "name": "game_encounter_quest_evidence_check_0",
+      "entityType": "checks",
+      "table": "game_encounter_quest_evidence"
+    },
+    {
+      "value": "position >= 0",
+      "name": "game_encounter_reward_items_check_0",
+      "entityType": "checks",
+      "table": "game_encounter_reward_items"
+    },
+    {
+      "value": "quantity >= 0",
+      "name": "game_encounter_reward_items_check_1",
+      "entityType": "checks",
+      "table": "game_encounter_reward_items"
+    },
+    {
+      "value": "collectable BETWEEN 0 AND quantity",
+      "name": "game_encounter_reward_items_check_2",
+      "entityType": "checks",
+      "table": "game_encounter_reward_items"
+    },
+    {
+      "value": "gold >= 0",
+      "name": "game_encounter_rewards_check_0",
+      "entityType": "checks",
+      "table": "game_encounter_rewards"
+    },
+    {
+      "value": "experience >= 0",
+      "name": "game_encounter_rewards_check_1",
+      "entityType": "checks",
+      "table": "game_encounter_rewards"
+    },
+    {
+      "value": "value_type IN ('object','array','string','number','boolean')",
+      "name": "game_encounter_skills_check_0",
+      "entityType": "checks",
+      "table": "game_encounter_skills"
+    },
+    {
+      "value": "(value_type = 'string' AND text_value IS NOT NULL AND number_value IS NULL) OR (value_type IN ('number','boolean') AND number_value IS NOT NULL AND text_value IS NULL) OR (value_type IN ('object','array') AND text_value IS NULL AND number_value IS NULL)",
+      "name": "game_encounter_skills_check_1",
+      "entityType": "checks",
+      "table": "game_encounter_skills"
+    },
+    {
+      "value": "value_type IN ('object','array','string','number','boolean')",
+      "name": "game_encounter_sources_check_0",
+      "entityType": "checks",
+      "table": "game_encounter_sources"
+    },
+    {
+      "value": "(value_type = 'string' AND text_value IS NOT NULL AND number_value IS NULL) OR (value_type IN ('number','boolean') AND number_value IS NOT NULL AND text_value IS NULL) OR (value_type IN ('object','array') AND text_value IS NULL AND number_value IS NULL)",
+      "name": "game_encounter_sources_check_1",
+      "entityType": "checks",
+      "table": "game_encounter_sources"
+    },
+    {
+      "value": "value_type IN ('object','array','string','number','boolean')",
+      "name": "game_encounter_stats_check_0",
+      "entityType": "checks",
+      "table": "game_encounter_stats"
+    },
+    {
+      "value": "(value_type = 'string' AND text_value IS NOT NULL AND number_value IS NULL) OR (value_type IN ('number','boolean') AND number_value IS NOT NULL AND text_value IS NULL) OR (value_type IN ('object','array') AND text_value IS NULL AND number_value IS NULL)",
+      "name": "game_encounter_stats_check_1",
+      "entityType": "checks",
+      "table": "game_encounter_stats"
+    },
+    {
+      "value": "value_type IN ('object','array','string','number','boolean')",
+      "name": "game_encounter_statuses_check_0",
+      "entityType": "checks",
+      "table": "game_encounter_statuses"
+    },
+    {
+      "value": "(value_type = 'string' AND text_value IS NOT NULL AND number_value IS NULL) OR (value_type IN ('number','boolean') AND number_value IS NOT NULL AND text_value IS NULL) OR (value_type IN ('object','array') AND text_value IS NULL AND number_value IS NULL)",
+      "name": "game_encounter_statuses_check_1",
+      "entityType": "checks",
+      "table": "game_encounter_statuses"
+    },
+    {
+      "value": "count BETWEEN 0 AND 1000",
+      "name": "game_encounter_training_check_0",
+      "entityType": "checks",
+      "table": "game_encounter_training"
+    },
+    {
+      "value": "position >= 0",
+      "name": "game_encounter_turn_order_check_0",
+      "entityType": "checks",
+      "table": "game_encounter_turn_order"
+    },
+    {
+      "value": "defending IN (0,1)",
+      "name": "game_encounter_turn_order_check_1",
+      "entityType": "checks",
+      "table": "game_encounter_turn_order"
+    },
+    {
+      "value": "version = 1",
+      "name": "game_encounters_check_0",
+      "entityType": "checks",
+      "table": "game_encounters"
+    },
+    {
+      "value": "result IS NULL OR result IN ('victory','defeat')",
+      "name": "game_encounters_check_1",
+      "entityType": "checks",
+      "table": "game_encounters"
+    },
+    {
+      "value": "action_sequence >= 0",
+      "name": "game_encounters_check_2",
+      "entityType": "checks",
+      "table": "game_encounters"
+    },
+    {
+      "value": "cursor >= 0",
+      "name": "game_encounters_check_3",
+      "entityType": "checks",
+      "table": "game_encounters"
+    },
+    {
+      "value": "training_last_action >= 0",
+      "name": "game_encounters_check_4",
+      "entityType": "checks",
+      "table": "game_encounters"
+    },
+    {
+      "value": "quest_last_action >= 0",
+      "name": "game_encounters_check_5",
+      "entityType": "checks",
+      "table": "game_encounters"
+    },
+    {
+      "value": "title_eligible IN (0,1)",
+      "name": "game_encounters_check_6",
+      "entityType": "checks",
+      "table": "game_encounters"
+    },
+    {
+      "value": "title_flawless IN (0,1)",
+      "name": "game_encounters_check_7",
+      "entityType": "checks",
+      "table": "game_encounters"
+    },
+    {
+      "value": "value BETWEEN -1000 AND 1000",
+      "name": "game_equipment_enchant_values_check_0",
+      "entityType": "checks",
+      "table": "game_equipment_enchant_values"
+    },
+    {
+      "value": "slot IN ('prefix','suffix')",
+      "name": "game_equipment_enchants_check_0",
+      "entityType": "checks",
+      "table": "game_equipment_enchants"
+    },
+    {
+      "value": "kind IN ('weapon','armor')",
+      "name": "game_equipment_instances_check_0",
+      "entityType": "checks",
+      "table": "game_equipment_instances"
+    },
+    {
+      "value": "(kind = 'weapon' AND durability BETWEEN 0 AND 10000) OR (kind = 'armor' AND durability IS NULL)",
+      "name": "game_equipment_instances_check_1",
+      "entityType": "checks",
+      "table": "game_equipment_instances"
+    },
+    {
+      "value": "locked IS NULL OR locked IN (0,1)",
+      "name": "game_equipment_instances_check_2",
+      "entityType": "checks",
+      "table": "game_equipment_instances"
+    },
+    {
+      "value": "level BETWEEN 1 AND 200",
+      "name": "game_heroes_check_0",
+      "entityType": "checks",
+      "table": "game_heroes"
+    },
+    {
+      "value": "cumulative_level >= level",
+      "name": "game_heroes_check_1",
+      "entityType": "checks",
+      "table": "game_heroes"
+    },
+    {
+      "value": "experience >= 0",
+      "name": "game_heroes_check_2",
+      "entityType": "checks",
+      "table": "game_heroes"
+    },
+    {
+      "value": "gold BETWEEN 0 AND 1000000",
+      "name": "game_heroes_check_3",
+      "entityType": "checks",
+      "table": "game_heroes"
+    },
+    {
+      "value": "ap BETWEEN 0 AND 1000000",
+      "name": "game_heroes_check_4",
+      "entityType": "checks",
+      "table": "game_heroes"
+    },
+    {
+      "value": "health >= 1",
+      "name": "game_heroes_check_5",
+      "entityType": "checks",
+      "table": "game_heroes"
+    },
+    {
+      "value": "mana >= 0",
+      "name": "game_heroes_check_6",
+      "entityType": "checks",
+      "table": "game_heroes"
+    },
+    {
+      "value": "stamina >= 0",
+      "name": "game_heroes_check_7",
+      "entityType": "checks",
+      "table": "game_heroes"
+    },
+    {
+      "value": "wounds >= 0",
+      "name": "game_heroes_check_8",
+      "entityType": "checks",
+      "table": "game_heroes"
+    },
+    {
+      "value": "fullness_tenths BETWEEN 500 AND 1000",
+      "name": "game_heroes_check_9",
+      "entityType": "checks",
+      "table": "game_heroes"
+    },
+    {
+      "value": "next_weapon_id >= 1",
+      "name": "game_heroes_check_10",
+      "entityType": "checks",
+      "table": "game_heroes"
+    },
+    {
+      "value": "next_armor_id >= 1",
+      "name": "game_heroes_check_11",
+      "entityType": "checks",
+      "table": "game_heroes"
+    },
+    {
+      "value": "quantity BETWEEN 1 AND 999",
+      "name": "game_inventory_stacks_check_0",
+      "entityType": "checks",
+      "table": "game_inventory_stacks"
+    },
+    {
+      "value": "position BETWEEN 0 AND 99",
+      "name": "game_item_hotbar_check_0",
+      "entityType": "checks",
+      "table": "game_item_hotbar"
+    },
+    {
+      "value": "rank IN ('F','E','D','C','B','A','9','8','7','6','5','4','3','2','1')",
+      "name": "game_learned_skills_check_0",
+      "entityType": "checks",
+      "table": "game_learned_skills"
+    },
+    {
+      "value": "milestone_id = 'intro-melee-lesson'",
+      "name": "game_milestone_claims_check_0",
+      "entityType": "checks",
+      "table": "game_milestone_claims"
+    },
+    {
+      "value": "position = 0",
+      "name": "game_milestone_claims_check_1",
+      "entityType": "checks",
+      "table": "game_milestone_claims"
+    },
+    {
+      "value": "position BETWEEN 0 AND 999",
+      "name": "game_quest_flags_check_0",
+      "entityType": "checks",
+      "table": "game_quest_flags"
+    },
+    {
+      "value": "count BETWEEN 0 AND 999",
+      "name": "game_quest_objective_counts_check_0",
+      "entityType": "checks",
+      "table": "game_quest_objective_counts"
+    },
+    {
+      "value": "status IN ('available','active','completed')",
+      "name": "game_quests_check_0",
+      "entityType": "checks",
+      "table": "game_quests"
+    },
+    {
+      "value": "kind IN ('journey','enchant')",
+      "name": "game_rng_streams_check_0",
+      "entityType": "checks",
+      "table": "game_rng_streams"
+    },
+    {
+      "value": "algorithm = 'xoroshiro128plus'",
+      "name": "game_rng_streams_check_1",
+      "entityType": "checks",
+      "table": "game_rng_streams"
+    },
+    {
+      "value": "version = 1",
+      "name": "game_rng_streams_check_2",
+      "entityType": "checks",
+      "table": "game_rng_streams"
+    },
+    {
+      "value": "word0 != 0 OR word1 != 0 OR word2 != 0 OR word3 != 0",
+      "name": "game_rng_streams_check_3",
+      "entityType": "checks",
+      "table": "game_rng_streams"
+    },
+    {
+      "value": "slot IN ('first','second')",
+      "name": "game_selected_titles_check_0",
+      "entityType": "checks",
+      "table": "game_selected_titles"
+    },
+    {
+      "value": "completed IN (0,1)",
+      "name": "game_skill_book_collections_check_0",
+      "entityType": "checks",
+      "table": "game_skill_book_collections"
+    },
+    {
+      "value": "position BETWEEN 0 AND 19",
+      "name": "game_skill_book_pages_check_0",
+      "entityType": "checks",
+      "table": "game_skill_book_pages"
+    },
+    {
+      "value": "count BETWEEN 0 AND 1000",
+      "name": "game_skill_objective_counts_check_0",
+      "entityType": "checks",
+      "table": "game_skill_objective_counts"
+    },
+    {
+      "value": "count BETWEEN 0 AND 1000000",
+      "name": "game_title_evidence_check_0",
+      "entityType": "checks",
+      "table": "game_title_evidence"
+    },
+    {
+      "value": "position BETWEEN 0 AND 2",
+      "name": "game_tracked_objectives_check_0",
+      "entityType": "checks",
+      "table": "game_tracked_objectives"
+    },
+    {
+      "value": "kind IN ('opened','cleared')",
+      "name": "game_world_flags_check_0",
+      "entityType": "checks",
+      "table": "game_world_flags"
+    },
+    {
+      "value": "position >= 0",
+      "name": "game_world_flags_check_1",
+      "entityType": "checks",
+      "table": "game_world_flags"
+    }
+  ],
+  "renames": []
+}

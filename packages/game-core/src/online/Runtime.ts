@@ -1,3 +1,5 @@
+import { AuditCollector, type ExecutionAudit } from './Audit';
+import type { LogSink } from '../engine/logging/LogEngine';
 import { worldObjectSprite } from '../game/WorldObjectArt';
 import { PresentationCollector } from '../game/PresentationCollector';
 import { battleAvailability } from './BattleAvailability';
@@ -36,11 +38,19 @@ export interface OnlineState {
   rewards?: { loot: VictoryLoot; randomState: number[] };
 }
 export interface Execution {
+  audit: ExecutionAudit;
   state: OnlineState;
   outcome: { message: string; events: string[]; presentation?: ResolvedPresentation };
 }
-function open(state: OnlineState, name: string) {
-  const journey = new JourneySession(gameContent, cloneData(state.campaign), undefined, name);
+function open(state: OnlineState, name: string, logs?: LogSink) {
+  const journey = new JourneySession(
+    gameContent,
+    cloneData(state.campaign),
+    undefined,
+    name,
+    'warrior',
+    logs,
+  );
   journey.restoreRuntime(state.context);
   let battle: BattleSession | undefined;
   try {
@@ -98,7 +108,9 @@ export function execute(
   command: OnlineCommand,
   now: number,
 ): Execution {
-  const { journey, battle: restored } = open(state, name);
+  const audit = new AuditCollector();
+  const { journey, battle: restored } = open(state, name, audit);
+  audit.active = true;
   let battle = restored;
   const events: string[] = [];
   const cleanup = journey.engine.events.subscribe((event) => events.push(event.type));
@@ -201,6 +213,7 @@ export function execute(
     validateOnlineState(candidate, name);
     return {
       state: candidate,
+      audit: audit.finish(state, candidate),
       outcome: {
         message: battle ? (battle.combat.result ?? 'Battle action committed') : view.message,
         events: [...new Set(events)].slice(0, 100),

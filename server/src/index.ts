@@ -2,6 +2,8 @@ import { OpenAPIHono } from '@hono/zod-openapi';
 import { Scalar } from '@scalar/hono-api-reference';
 import { secureHeaders } from 'hono/secure-headers';
 import { cors } from 'hono/cors';
+import { characterLogRoutes, adminLogRoutes } from './audit/routes.js';
+import { auditGameRequests } from './audit/middleware.js';
 import { gameRoutes } from './game/routes.js';
 import { authRoutes } from './auth/routes.js';
 import { authenticationGuide } from './auth/documentation.js';
@@ -58,7 +60,11 @@ app.use('/api/game/*', async (c, next) => {
   c.header('Cache-Control', 'no-store');
   await next();
 });
-app.use('/api/game/*', apiCors, protectApplicationWrites);
+app.use('/api/game/*', auditGameRequests, apiCors, protectApplicationWrites);
+app.use('/api/admin/*', apiCors, protectApplicationWrites, async (c, next) => {
+  c.header('Cache-Control', 'no-store');
+  await next();
+});
 app.use('/queues/*', apiCors, protectApplicationWrites);
 app.use('/cache/*', apiCors, protectApplicationWrites);
 app.onError(handleError);
@@ -67,7 +73,9 @@ app.notFound((c) =>
 );
 app.get('/', (c) => c.text('Hello Hono!'));
 app.route('/api/auth', authRoutes);
+app.route('/api/game', characterLogRoutes);
 app.route('/api/game', gameRoutes);
+app.route('/api/admin', adminLogRoutes);
 app.route('/queues', queueRoutes);
 app.route('/cache', cacheRoutes);
 app.openAPIRegistry.registerComponent('securitySchemes', 'cookieAuth', {
@@ -121,7 +129,14 @@ export default {
   async queue(batch: MessageBatch<unknown>): Promise<void> {
     await consumeJobs(batch);
   },
-  async scheduled(controller: ScheduledController): Promise<void> {
-    await runScheduled(controller);
+  async scheduled(
+    controller: ScheduledController,
+    env: CloudflareBindings,
+  ): Promise<void> {
+    await runScheduled(
+      controller,
+      env.DB,
+      Number(env.AUDIT_DATABASE_BUDGET_BYTES),
+    );
   },
 } satisfies ExportedHandler<CloudflareBindings>;

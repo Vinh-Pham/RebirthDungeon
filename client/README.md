@@ -63,11 +63,11 @@ consumables from the Items hotbar during encounters; equipment and exploration
 use stay unavailable. Server state retains resources, equipment, inventory, XP, gold, world flags, map position, active battle state and RNG; reload resumes current authoritative progress.
 Native runtime testing requires a development build after adding native modules.
 
-The **Logs** journal shows timestamped actions in All, Combat, Movement, User and
-System tabs. Each message belongs to one category. Clear logs empties the current
-journal; successfully leaving a character clears it too. Logs are immutable and
-kept only in memory, never in save slots. See [logging](docs/gameplay/logging.md)
-for coverage, extension and durable retry behavior.
+The **Logs** screen shows persistent server history in All, Combat, Movement, User and
+System tabs. Server-verified gameplay and client-reported UI activity have distinct
+labels. History lasts 90 days and survives leaving a character or reloading.
+Administrators can investigate records from Account. See [logging](docs/gameplay/logging.md)
+for recording, safe player views, recovery and retention.
 
 ## UI system
 

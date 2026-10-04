@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useSyncExternalStore } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useFocusEffect, useLocalSearchParams, usePathname } from 'expo-router';
 import { Text, View } from 'react-native';
 import { useOnline } from '../../online/OnlineProvider';
 import { contentOptions } from '../../online/queries';
@@ -64,6 +64,7 @@ function Game({
   characterId: string;
   catalog: ConstructorParameters<typeof ContentRegistry>[0];
 }) {
+  const path = usePathname();
   const online = useOnline(),
     queries = useQueryClient();
   const { registerGame } = useAppNavigation(),
@@ -85,6 +86,7 @@ function Game({
         api: online.api!,
         access: online.access,
         commands: online.commands!,
+        activity: online.activity,
         queries,
         content: new ContentRegistry(catalog),
         mutate,
@@ -95,11 +97,20 @@ function Game({
       online.api,
       online.access,
       online.commands,
+      online.activity,
       queries,
       catalog,
       mutate,
     ],
   );
+  useEffect(() => {
+    if (!path.endsWith('/logs'))
+      host.recordLog(
+        'user',
+        'NAVIGATION',
+        `Opened ${path.split('/').at(-1) === characterId ? 'Journey' : path.split('/').at(-1)}.`,
+      );
+  }, [host, path, characterId]);
   useFocusEffect(useCallback(() => () => host.stopRest(), [host]));
   const view = useSyncExternalStore(host.subscribe, host.getSnapshot, host.getServerSnapshot);
   const profile = useMemo(

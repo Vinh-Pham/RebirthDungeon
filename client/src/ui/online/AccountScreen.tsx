@@ -1,3 +1,4 @@
+import AdminEntry from '../logs/AdminEntry';
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { router } from 'expo-router';
@@ -168,6 +169,7 @@ export default function AccountScreen() {
           />
         </View>
       )}
+      {online.session ? <AdminEntry /> : null}
       <MenuButton label="Back to title" secondary onPress={() => router.navigate('/')} />
     </MenuPage>
   );
