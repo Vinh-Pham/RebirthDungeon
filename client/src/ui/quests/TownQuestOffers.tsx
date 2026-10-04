@@ -1,5 +1,7 @@
+import FeatureGate from '../shared/FeatureGate';
+import { heroFeatures } from '../../game/FeatureReads';
 import { gameHref } from '../navigation/gameHref';
-import { useState } from 'react';
+import { useSyncExternalStore, useState } from 'react';
 import { router } from 'expo-router';
 import { Text, View } from 'react-native';
 import type { ProgressionCommand } from '../../engine/commands';
@@ -10,7 +12,7 @@ import { DungeonButton, DungeonCard } from '../shared/DungeonUI';
 import QuestDetails from './QuestDetails';
 import { questStatus } from './questLabels';
 
-export default function TownQuestOffers({
+function TownQuestOffersLoaded({
   session,
   objectId,
   busy,
@@ -23,10 +25,11 @@ export default function TownQuestOffers({
 }) {
   const { profile } = useCharacterGame();
   const [selectedId, setSelectedId] = useState<string>();
-  const { state } = session.getSnapshot();
+  const view = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
+  const { state } = view;
   const quests = session.content.data.quests.filter(
     (q) =>
-      state.hero.quests[q.id] &&
+      heroFeatures(session, ['quests', 'skills', 'inventory', 'equipment'], view).quests[q.id] &&
       [q.offerNpc, q.claimNpc].some((n) => n?.objectId === objectId && n.worldId === state.worldId),
   );
   const selected = quests.find((q) => q.id === selectedId);
@@ -52,7 +55,10 @@ export default function TownQuestOffers({
           <DungeonButton
             key={q.id}
             label={q.name}
-            detail={questStatus(state.hero, q)}
+            detail={questStatus(
+              heroFeatures(session, ['quests', 'skills', 'inventory', 'equipment'], view),
+              q,
+            )}
             onPress={() => setSelectedId(q.id)}
           />
         ))
@@ -62,5 +68,13 @@ export default function TownQuestOffers({
         onPress={() => router.navigate(gameHref(profile.id, 'quests'))}
       />
     </View>
+  );
+}
+
+export default function TownQuestOffers(props: Parameters<typeof TownQuestOffersLoaded>[0]) {
+  return (
+    <FeatureGate session={props.session} features={['quests', 'skills', 'inventory', 'equipment']}>
+      <TownQuestOffersLoaded {...props} />
+    </FeatureGate>
   );
 }

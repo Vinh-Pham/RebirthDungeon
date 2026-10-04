@@ -1,3 +1,10 @@
+import { ContentRepository } from './content.js';
+import { sqlFeatureTables, projectFeature } from './projections.js';
+import { jsonColumns } from './sql.js';
+import {
+  FeatureNameSchema,
+  type GameFeature,
+} from '@rebirth/game-core/online/Features';
 import {
   auditStatement,
   commitRecord,
@@ -7,12 +14,11 @@ import { HTTPException } from 'hono/http-exception';
 import {
   MetadataSchema,
   ReceiptSchema,
-  GAME_CONTENT_VERSION,
   type CharacterMetadata,
   type CommandReceipt,
 } from '@rebirth/game-core/online/Contracts';
 import {
-  validateOnlineState,
+  createOnlineRuntime,
   type OnlineState,
 } from '@rebirth/game-core/online/Runtime';
 import { decodeState, encodeState } from './codec.js';
@@ -21,18 +27,6 @@ import { gameTables, type Row, type Rows, type TableName } from './tables.js';
 const stateTables = gameTables.filter(
   (t) => t.name !== 'game_characters' && t.name !== 'game_command_receipts',
 );
-// D1 has a 32-argument function limit. Split large row objects into at most 16 fields.
-const jsonColumns = (columns: readonly string[], alias: string) => {
-  const parts = Array.from(
-    { length: Math.ceil(columns.length / 16) },
-    (_, i) =>
-      `json_object(${columns
-        .slice(i * 16, (i + 1) * 16)
-        .map((c) => `'${c}',${alias}.${c}`)
-        .join(',')})`,
-  );
-  return parts.reduce((left, right) => `json_patch(${left},${right})`);
-};
 // A read-only D1 batch supplies one transaction snapshot. Each statement stays below D1's
 // five-term compound-SELECT limit. Return individual rows rather than aggregating a table into one
 // JSON value: legal large enchanted collections can exceed D1's 2 MiB value limit.
@@ -50,7 +44,7 @@ const readSQL = Array.from(
       .join(' UNION ALL ')}`,
 );
 
-function metadata(row: Row): CharacterMetadata {
+export function metadata(row: Row): CharacterMetadata {
   return MetadataSchema.parse({
     id: row.id,
     name: row.name,
@@ -66,6 +60,7 @@ export class GameRepository {
   constructor(
     readonly db: D1Database,
     readonly userId: string,
+    readonly catalogs = new ContentRepository(db),
   ) {}
   async load(id: string) {
     let results: D1Result<{ kind: TableName; row: string }>[];
@@ -88,12 +83,14 @@ export class GameRepository {
       throw new HTTPException(404, { message: 'Character not found' });
     try {
       const character = metadata(rows.game_characters[0]);
-      if (character.contentVersion !== GAME_CONTENT_VERSION)
-        throw new Error('Unsupported content version');
       const state = decodeState(rows, character.talent);
-      validateOnlineState(state, character.name);
+      const content = await this.catalogs.load(character.contentVersion);
+      const runtime = createOnlineRuntime(content);
+      runtime.validateOnlineState(state, character.name);
       return {
         character,
+        content,
+        runtime,
         state,
         rows,
         metrics: {
@@ -105,9 +102,84 @@ export class GameRepository {
           readQueries: readSQL.length,
         },
       };
-    } catch {
+    } catch (error) {
+      if (error instanceof HTTPException) throw error;
       throw new HTTPException(503, {
         message: 'Stored game state unavailable',
+      });
+    }
+  }
+  async feature<K extends GameFeature>(
+    id: string,
+    feature: K,
+    expectedRevision?: number,
+  ) {
+    const names = new Set(['game_characters', ...sqlFeatureTables(feature)]);
+    const selected = gameTables.filter((table) => names.has(table.name));
+    const filters: Record<string, string> = {
+      game_equipment_instances: 'instance_id',
+      game_equipment_enchants: 'instance_id',
+      game_equipment_enchant_values: 'instance_id',
+    };
+    const statements = Array.from(
+      { length: Math.ceil(selected.length / 5) },
+      (_, i) =>
+        `WITH owned AS (SELECT * FROM game_characters WHERE id=? AND user_id=?) ${selected
+          .slice(i * 5, (i + 1) * 5)
+          .map((table) => {
+            if (table.name === 'game_characters')
+              return `SELECT '${table.name}' AS kind,${jsonColumns(table.columns, 'owned')} AS row FROM owned`;
+            const filter =
+              feature === 'stats'
+                ? filters[table.name]
+                  ? ` AND ${table.name}.${filters[table.name]} IN (SELECT weapon_id FROM game_loadouts WHERE character_id=owned.id UNION ALL SELECT armor_id FROM game_loadouts WHERE character_id=owned.id)`
+                  : table.name === 'game_inventory_stacks'
+                    ? ` AND ${table.name}.item_id IN (SELECT ammunition_id FROM game_loadouts WHERE character_id=owned.id)`
+                    : table.name === 'game_character_skills'
+                      ? ` AND ${table.name}.rank IS NOT NULL`
+                      : ''
+                : '';
+            return `SELECT '${table.name}' AS kind,${jsonColumns(table.columns, table.name)} AS row FROM ${table.name} JOIN owned ON ${table.name}.character_id=owned.id${filter}`;
+          })
+          .join(' UNION ALL ')}`,
+    );
+    let results: D1Result<{ kind: string; row: string }>[];
+    try {
+      results = await this.db.batch(
+        statements.map((sql) => this.db.prepare(sql).bind(id, this.userId)),
+      );
+    } catch {
+      throw new HTTPException(503, { message: 'Game storage unavailable' });
+    }
+    const rows: Rows = Object.fromEntries(
+      gameTables.map((table) => [table.name, []]),
+    );
+    for (const result of results)
+      for (const record of result.results)
+        rows[record.kind].push(JSON.parse(record.row));
+    if (!rows.game_characters.length)
+      throw new HTTPException(404, { message: 'Character not found' });
+    const character = metadata(rows.game_characters[0]);
+    if (
+      expectedRevision !== undefined &&
+      character.revision !== expectedRevision
+    )
+      throw new HTTPException(409, { message: 'Character revision changed' });
+    try {
+      const content = ['stats', 'journey', 'encounter'].includes(feature)
+        ? await this.catalogs.load(character.contentVersion)
+        : undefined;
+      return {
+        apiVersion: 2 as const,
+        characterId: id,
+        revision: character.revision,
+        contentVersion: character.contentVersion,
+        data: projectFeature(feature, rows, character, content),
+      };
+    } catch (error) {
+      if (error instanceof HTTPException) throw error;
+      throw new HTTPException(503, {
+        message: 'Stored game feature unavailable',
       });
     }
   }
@@ -126,7 +198,10 @@ export class GameRepository {
   }
   async receipt(
     commandId: string,
-  ): Promise<{ hash: string; receipt: CommandReceipt } | undefined> {
+  ): Promise<
+    | { hash: string; receipt: CommandReceipt; features: GameFeature[] }
+    | undefined
+  > {
     try {
       const row = await this.db
         .prepare(
@@ -137,6 +212,14 @@ export class GameRepository {
       if (!row) return;
       return {
         hash: String(row.request_hash),
+        features: (
+          await this.db
+            .prepare(
+              'SELECT feature FROM game_command_receipt_features WHERE user_id=? AND command_id=?',
+            )
+            .bind(this.userId, commandId)
+            .all<{ feature: string }>()
+        ).results.map((row) => FeatureNameSchema.parse(row.feature)),
         receipt: ReceiptSchema.parse({
           commandId: row.command_id,
           characterId: row.character_id,
@@ -157,6 +240,8 @@ export class GameRepository {
     receipt: CommandReceipt,
     hash: string,
     audit: CommitAudit,
+    features: readonly GameFeature[] = ['character'],
+    candidateRows?: Rows,
   ) {
     const statements: D1PreparedStatement[] = [];
     if (!previous)
@@ -210,7 +295,19 @@ export class GameRepository {
     const writes = stateDiff(
       this.db,
       previous,
-      encodeState(character.id, state),
+      candidateRows ??
+        encodeState(character.id, state, character.contentVersion),
+    );
+    statements.push(
+      this.db
+        .prepare(
+          'INSERT INTO game_command_receipt_features(user_id,command_id,feature) SELECT ?,?,value FROM json_each(?)',
+        )
+        .bind(
+          this.userId,
+          receipt.commandId,
+          JSON.stringify([...new Set(['character', ...features])]),
+        ),
     );
     statements.push(...writes);
     // Every failed attempt reuses this exact candidate and SQL. Never resolve RNG/game rules again.
@@ -255,7 +352,11 @@ export class GameRepository {
         }
         if (
           attempt === 1 ||
-          statements.length * 2 + 5 + readSQL.length * 2 > 50
+          statements.length * 2 +
+            5 +
+            readSQL.length * 2 +
+            this.catalogs.queryCount >
+            50
         )
           throw new HTTPException(503, { message: 'Game storage unavailable' });
       }
@@ -337,22 +438,4 @@ function* bulkChunks(rows: Row[]) {
   }
   if (chunk.length) yield chunk;
 }
-export async function requestHash(value: unknown): Promise<string> {
-  const canonical = (v: unknown): unknown =>
-    Array.isArray(v)
-      ? v.map(canonical)
-      : v && typeof v === 'object'
-        ? Object.fromEntries(
-            Object.entries(v)
-              .sort(([a], [b]) => a.localeCompare(b))
-              .map(([key, value]) => [key, canonical(value)]),
-          )
-        : v;
-  const hash = await crypto.subtle.digest(
-    'SHA-256',
-    new TextEncoder().encode(JSON.stringify(canonical(value))),
-  );
-  return Array.from(new Uint8Array(hash), (b) =>
-    b.toString(16).padStart(2, '0'),
-  ).join('');
-}
+export { requestHash } from './hash.js';

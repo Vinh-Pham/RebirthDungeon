@@ -1,17 +1,12 @@
+import { characterReviewFeature, heroFeatures, type FeatureHero } from '../../game/FeatureReads';
 import { gameHref } from '../navigation/gameHref';
 import { useGameplayPreview } from '../../hooks/useGameplayPreview';
-import { useState } from 'react';
+import { useSyncExternalStore, useState } from 'react';
 import EquipmentEnchants, { enchantStatLabel } from './EquipmentEnchants';
 import { router } from 'expo-router';
 import { Text, View } from 'react-native';
 import type { GameCommand } from '../../engine/commands';
-import {
-  heroStats,
-  itemCount,
-  ownedEquipment,
-  removableCount,
-  type HeroFacts,
-} from '../../engine/rpg/Character';
+import { heroStats, itemCount, ownedEquipment, removableCount } from '../../engine/rpg/Character';
 import { consumableRecovery } from '../../engine/rpg/Consumables';
 import type { CharacterReview } from '../../game/BattleSession';
 import type { GameplayHost as JourneyHost } from '../../game/Gameplay';
@@ -35,7 +30,7 @@ export default function InventoryDetails({
   dispatch,
 }: {
   row: InventoryRow;
-  hero: HeroFacts;
+  hero: FeatureHero<'inventory' | 'equipment' | 'skills' | 'quests' | 'titles'>;
   host: JourneyHost;
   session: JourneySession;
   characterId: string;
@@ -47,8 +42,16 @@ export default function InventoryDetails({
 }) {
   const item = row.item;
   const equipment = 'itemId' in row.reference ? undefined : ownedEquipment(hero, row.reference);
-  const effects = session.getSnapshot().state.dungeon?.effects;
-  const stats = review?.stats ?? heroStats(hero, session.content, effects);
+  const view = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
+  const effects = view.state.dungeon?.effects;
+  const stats =
+    review?.stats ??
+    characterReviewFeature(session, view)?.stats ??
+    heroStats(
+      heroFeatures(session, ['inventory', 'equipment', 'skills', 'titles'], view),
+      session.content,
+      effects,
+    );
   const resource = {
     health: { current: review?.health ?? hero.health, max: stats.maxHealth },
     mana: { current: review?.mana ?? hero.mana, max: stats.maxMana },

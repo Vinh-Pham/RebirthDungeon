@@ -1,7 +1,7 @@
 # Rebirth Dungeon API
 
 Hono on Cloudflare Workers, with Better Auth 1.7.7, Drizzle/D1, KV, Queues, and email bindings.
-The Expo app supports Better Auth accounts and separate authoritative online characters, alongside existing local play.
+The Expo app supports Better Auth accounts and separate authoritative online characters, with online gameplay and separate legacy local-save compatibility tests.
 
 ## Local setup
 
@@ -299,131 +299,124 @@ minute, approximately per Cloudflare location. Authentication limits remain sepa
 The OpenAPI Application source at `/docs` includes strict game request and response
 schemas; the shared contracts live in `packages/game-core/src/online/Contracts.ts`.
 
-| Method | Route                               | Request / result                                                             |
-| ------ | ----------------------------------- | ---------------------------------------------------------------------------- |
-| GET    | `/api/game/content`                 | Public bundled catalog and content version                                   |
-| POST   | `/api/game/characters`              | `{ commandId, name, talent, age }`; receipt and initial view                 |
-| GET    | `/api/game/characters`              | Owned summaries, ordered by creation time and ID                             |
-| GET    | `/api/game/characters/:id`          | Version 1 public view, including any committed battle                        |
-| POST   | `/api/game/characters/:id/previews` | `{ expectedRevision, selection }`; equipment/enchant/burn calculations       |
-| POST   | `/api/game/characters/:id/commands` | `{ commandId, expectedRevision, command }`; durable receipt and current view |
+The character base is `/api/game/characters/{id}`. GET returns metadata only. Feature
+GETs use `/progression`, `/resources`, `/stats`, `/inventory`, `/equipment`, `/skills`,
+`/quests`, `/titles`, `/enchanting`, `/journey`, `/rest`, `/dungeon`, and `/encounter`.
+Each returns `{ apiVersion: 2, characterId, revision, contentVersion, data }`.
+Inactive dungeon/encounter data is `null`. Optional `?expectedRevision=N` rejects
+changed revisions with 409. Ownership, revision, rows, and projection dependencies
+are read in a single D1 batch snapshot; these routes never load the entire character.
 
-Use a new UUID `commandId` for each intended operation and reuse that exact ID,
-revision, and body when retrying it. Character creation starts at revision 1.
-Successful commands increment the revision once. A repeated committed command
-returns the same receipt; its view may include subsequent committed actions.
-IDs are account-scoped, so reusing one for another character or another request
-returns 409. Other-account characters are indistinguishable from missing ones (404).
-Malformed or unknown inputs return 400, illegal gameplay actions 422, stale
-revisions 409, and unavailable/corrupt storage 503. No client-provided damage,
-rewards, enemy turns, RNG, debug actions, state uploads, or rewinds are accepted.
+POST `/api/game/characters` returns `{ apiVersion: 2, receipt, character }`.
+GET `/api/game/characters` keeps the account-owned roster. Gameplay uses feature
+action routes with `{ commandId, expectedRevision, ...fields }`; URL parameters
+replace the corresponding body fields and the route supplies the internal command
+type. The complete mappings and strict Zod bodies live in
+[Actions.ts](../packages/game-core/src/online/Actions.ts). OpenAPI groups operations
+by feature. For example:
 
-Commands cover movement/travel, world interactions, town services and shops,
-repair/healing/offerings, exploration item use, dropping/hotbar assignments, equipment and locks,
-skill lessons/books/pages/rank advancement, quest acceptance/claims/tracking,
-title selection/coupons, enchanting/burning, and leaving dungeons. The contract's
-`CommandSchema` is the complete current allowlist. Enchant operation IDs and
-engine revision checks are supplied by the server. Outer command receipts remain
-for the character's lifetime; engine enchant receipts retain their existing
-bounded 100-operation history. Depleted hotbar assignments remain assigned.
+```http
+POST /api/game/characters/{id}/inventory/hotbar
+Content-Type: application/json
 
-Entering an encounter automatically commits its initial enemy turns. Submit a
-complete `BATTLE_ACTION` with `action` and `targetId`; presentation selection and
-cancellation stay local. One command commits that action and every ensuing enemy
-turn until the next player turn or terminal result. The view exposes actors,
-resources, cooldowns, statuses, action sequence, and the committed reward offer.
-The encounter also exposes read-only action availability, legal targets, and combat
-previews. Committed receipts optionally include version 1 resolved animation facts
-for client presentation, without timers or gameplay commands. Dungeon HUD and
-visible art are projected before stripping private blueprint fields.
-RNG, enemy decision history, checkpoint seeds, and unrevealed dungeon blueprint
-outcomes stay private. Victory rolls the offer once at the terminal boundary;
-`SETTLE_ENCOUNTER` accepts optional offered item IDs and atomically merges loot,
-wear, costs, progression evidence, world clearance, and the offered journey RNG.
-Defeat settles the existing recovery and half-gold penalty once. Disconnecting
-never rewinds an encounter, including a terminal encounter awaiting settlement.
+{"commandId":"<uuid>","expectedRevision":1,"itemId":"potion","assigned":true}
+```
 
-`START_REST` begins the Rest skill, `REST_PULSE` renews a three-second lease, and
-`STOP_REST` ends it. A pulse must be at least one server second after the previous
-accepted pulse. A pulse after the lease expired renews without recovery; subsequent
-on-time pulses recover once each. There is no offline catch-up. Authored recovery
-objects, consumables, and paid healing preserve their existing game rules.
+Actions return `{ apiVersion: 2, receipt, snapshotRevision, updates }`, where
+`updates.character` is always present and other entries are actual affected feature
+snapshots. Indirect stats/resource/quest/title changes are included. Removed active
+state is `null`. The client may advance already loaded, known unchanged features
+only for a sequential receipt; revision gaps require guarded reads.
 
-### Persistence and release
+Use a fresh UUID for each deliberate action. Replays reuse the exact ID, revision,
+and body, return the original durable receipt, and read current snapshots of the
+features recorded with that receipt. Changed input or competing revisions return 409. Other-account characters return 404. Malformed input is 400, illegal gameplay
+422, and unavailable/corrupt storage or missing content releases 503. Authentication,
+origin protection, 4 KiB bodies, account rate limits, audit commits, and request IDs
+retain their existing behavior. Generic `/commands` and `/previews` routes are removed.
 
-Online characters are fresh, independent of existing local characters and saves.
-Their owner references Better Auth `user.id`. The additive `game_` migrations
-preserve Better Auth accounts and unrelated tables. The earlier auth-reset
-migration still applies only when upgrading the original custom-auth schema.
-Apply pending migrations before releasing this Worker; remote migration and
-production deployment remain separate release actions. The Expo UI consumes these
-contracts; cloud/local save synchronization remains future work. Existing SQLite/IndexedDB local saves retain
-format 13 and their existing storage schemas.
+Read-only POST previews are `/equipment/preview`, `/enchanting/preview`, and
+`/enchanting/burn-preview`. They require `expectedRevision` and never write.
+`GET /api/game/content` returns the active release manifest. Versioned collection
+reads are `/api/game/content/{version}/{collection}` and return
+`{ apiVersion: 2, contentVersion, data }`. Supported collections are items, skills,
+enemies, classes, status-effects, atlases, maps, worlds, dungeons, shops,
+skill-book-recipes, enchants, enchanting-rules, quests, titles, and quest-flags.
 
-Hero progression, campaign state, equipment instances, loadout references,
-progression collections, enchant outcomes, dungeon progress, encounter actors,
-combat state, evidence, and rewards use relational rows. Foreign keys include
-character ownership; child rows cascade when the character is deleted. Mutable
-ECS components have separate actor/stat/inventory/status/cooldown/skill/source
-tables: polymorphic nested fields become typed scalar leaf rows with component
-paths and explicit object/array markers. This preserves optional fields and empty
-collections without mutable JSON documents. Only immutable validated dungeon
-blueprints and compact public command outcomes use persisted JSON columns.
-Fullness uses integer tenths, including actor component serialization.
+Entering a battle commits its initial enemy turns. `/encounter/actions` accepts
+`action` and `targetId` and commits following enemy turns through the next player
+turn or terminal result. The encounter projection includes legal actions, targets,
+combat previews, and the immutable pending reward offer. `/encounter/settlement`
+accepts optional offered item IDs and merges wear, consumption, resources, evidence,
+loot, world clearance, and saved journey RNG exactly once. Receipt animation batches
+remain presentation-only. Seeds, enemy decision history, private RNG, and unrevealed
+dungeon blueprint outcomes stay server-side.
 
-One read-only D1 batch reads all components at one transaction snapshot. Its
-nine indexed statements each contain at most five SELECT terms and return
-individual relational rows through transient JSON transport. Tables are never
-aggregated into a single large JSON value. This respects the runtime's compound
-SELECT and 32-function-argument limits, including heavily enchanted collections.
-The codec builds in-memory indexes for parent/key lookups. The application validates
-campaign, hero, dungeon, progression, and battle contracts before execution and
-again before committing. A batch first inserts the receipt; its BEFORE trigger
-checks ownership/revision and its AFTER trigger advances revision in the same
-transaction. Unique account/command and character/revision keys reject races.
-Creation establishes the new character at revision zero before that receipt in
-the same batch. Any later failure rolls back creation, state, revision, and receipt.
-Only changed rows are upserted; removed rows use indexed composite-key lookups.
-Bulk JSON parameters are split into chunks of at most 1 MiB and expanded into
-typed columns within the same atomic batch. Retries reuse the resolved
-candidate and SQL and stay within a conservative 50-query request budget.
+Rest uses `/rest/start`, `/rest/stop`, and `/rest/pulse`. Pulses preserve the existing
+one-second spacing and three-second lease, with no offline catch-up or journal replay.
 
-Content is bundled in `packages/game-core/src/data`. Bump `GAME_CONTENT_VERSION`
-and provide an explicit state migration when changing incompatible content or
-rules. Mismatched versions fail closed rather than silently replaying an old
-character against new rules. Battle format 1 exports every live ECS field, turn
-queue/cursor, defending flags, action counter, enemy history, RNG, and pending
-training/quest/title evidence. Restore validates actor membership and stable
-boundaries; no animation timer or UI selection is serialized.
+### Persistence and content releases
 
-Validation includes client regression tests, headless action parity and rest
-leases, Workers/D1 rollback and concurrency tests, a persisted full dungeon
-scenario, additive migration reruns, Worker dry-run builds, and local HTTP smoke
-checks. A manual browser check also verified a local character's manual save
-survives reload and loads successfully. The dungeon integration fixture uses the
-catalog maximum of 13 rooms and four combat actors, and reports maximum batch
-queries, state rows, indexed rows read, elapsed command time, and read SQL size.
-Use `pnpm exec vitest run test/game.test.ts --disableConsoleIntercept` in `server`
-to see the cost records. Representative local measurements:
+Feature schemas live in `src/db/schema/game/`, with explicit Drizzle 1.0
+`defineRelations` in `src/db/relations.ts`. Progression, resources, allocation
+counters, loadout, rest leases, collections, evidence, and command features have
+separate tables. Parent/definition foreign keys pin character rows to their release.
+The shared resolver derives campaign stats; stored encounter stats and inventory
+are independent combat snapshots until settlement.
 
-| Scenario                                  | Measurements                                                                                                                                                                                                                           |
-| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Full generated dungeon                    | 54 accepted commands; at most 21 statements per commit (41 queries including session/receipt/state reads); 287 state rows; 332 rows read; 70 ms maximum accepted-command wall time                                                     |
-| Fully enchanted equipment quantity limits | All 12 equipment definitions at 999 instances each (11,988 total), with every compatible prefix/suffix and 43,956 rolled-value rows; 77,982 rows read; 472 ms read and 1,630 ms lock command; one changed-table write plus the receipt |
-| Consistent read statements                | Nine statements; the largest is 2,696 SQL bytes, below D1's 100 KB SQL limit                                                                                                                                                           |
+Typed encounter tables replace generic property paths and values. They preserve
+optional container presence, child ordering, resources, positions, sprite/AI state,
+combat stats and sources, equipment/enchant contributions, inventory, skills,
+training, cooldowns, statuses, turn order, evidence, history, and pending rewards.
+Campaign fullness remains integer tenths; battle fullness retains its supported
+numeric precision. Codecs are grouped by feature in `src/game/codecs/`. SQL table
+names, columns, and composite keys are derived from the Drizzle definitions.
 
-These measurements cover the current catalog fixtures, not future content.
-The enchanted-value collection exceeds 2 MiB in total, exercising chunked writes
-and individual-row reads. State transport, validation work, and response sizes
-grow with ownership; large fully enchanted collections require target-account
-CPU/memory and D1 billing capacity checks before release. Local measurements are development evidence; production
-latency, billing, and concurrency still need measurement on the target account.
-See [D1 limits](https://developers.cloudflare.com/d1/platform/limits/) and
-[atomic D1 batches](https://developers.cloudflare.com/d1/worker-api/d1-database/#batch).
+Content definitions are immutable published D1 releases identified by version and
+checksum, with a configuration row selecting the active release. The 52 typed
+catalog tables cover authored collections and their ranks, objectives, stages,
+rewards, stock, loot, objects, and enchant clauses. Validated JSON is limited to
+recursive conditions, geometry, blueprint snapshots, AI config, reference metadata,
+and immutable receipt/audit payloads. `pnpm db:models` regenerates typed catalog and
+actor tables from the domain schemas; review and author a migration separately.
+
+The runtime takes an injected `ContentRegistry` from the pinned database release.
+Request-scoped loading uses validated, checksum-checked KV entries under the
+reserved `game:catalog:v1:` namespace and falls back to D1. Bundled authored files
+are seed input and test fixtures. `pnpm db:seed:content --local` seeds definitions
+without creating accounts. Identical seeds are idempotent; reusing a version with
+different content fails. Unpublished interrupted seeds can resume; incomplete or
+invalid releases cannot become active. Local development account seeding also
+seeds content before checking whether the account already exists.
+
+Authoritative actions validate the whole candidate and commit affected state,
+revision, receipt, affected-feature records, and audit in one D1 transaction.
+Revision guard triggers and unique keys reject races. Changed-row writes preserve
+unchanged rows; transport chunks stay under 1 MiB and reads return individual rows
+through bounded SQL JSON expressions. Failed writes retry the same resolved
+candidate and SQL, within a conservative query budget including cold catalog reads.
+
+The appended `20261004025107_feature_game_reset` migration resets online characters
+and receipts once, rebuilding game tables and triggers. Better Auth users,
+credential accounts, sessions, and immutable audit history remain. Earlier migration
+history is unchanged. This is a coordinated API/data cutover; see
+[feature API rollout](docs/feature-api-rollout.md) before applying it to a live database.
+Legacy device saves retain their existing format and storage.
+
+Regression coverage includes fresh/existing migrations, preservation on reset,
+idempotent/validated catalog reconstruction, REST seed batches, feature isolation,
+revision guards, all action/preview route mappings, typed round trips, atomic
+rollback, competing commands, exact-candidate retries, and exactly-once rewards.
+The large inventory fixture contains 11,988 equipment instances and 43,956 enchant
+values, reads 77,991 rows, and verifies that a lock command writes one changed table.
+The generated dungeon fixture performs 54 accepted commands, with at most 23 commit
+statements and 12 indexed state read statements. Local measurements validate
+storage shape and bounds; target-account latency and billing require deployment
+measurements. See [D1 limits](https://developers.cloudflare.com/d1/platform/limits/).
 
 ## Guided local online play
 
-From the workspace root, run `pnpm online:setup` followed by `pnpm online:dev`. Setup configures ignored client/server files and initializes local D1 with the existing migrations and seed, preserving current accounts and characters. It refuses legacy authentication resets and automatic baselining. The launcher validates settings and ports, starts local bindings on the selected interface, and prints a browser URL with the API’s hostname. See [client online play](../client/docs/online-play.md) for flags and device setup. Run the HTTP smoke check against that interface with `LOCAL_API_ORIGIN=http://<selected-address>:8787 pnpm test:smoke`; only loopback and addresses currently assigned to this computer are accepted.
+From the workspace root, run `pnpm online:setup` followed by `pnpm online:dev`. Setup configures ignored client/server files and initializes local D1 with migrations and the seed. The feature-reset migration clears old online characters once while preserving Better Auth accounts and sessions; subsequent setup runs preserve newly created characters. It refuses legacy authentication resets and automatic baselining. The launcher validates settings and ports, starts local bindings on the selected interface, and prints a browser URL with the API’s hostname. See [client online play](../client/docs/online-play.md) for flags and device setup. Run the HTTP smoke check against that interface with `LOCAL_API_ORIGIN=http://<selected-address>:8787 pnpm test:smoke`; only loopback and addresses currently assigned to this computer are accepted.
 
 ## Persistent gameplay audits
 

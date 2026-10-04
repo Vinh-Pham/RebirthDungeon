@@ -1,8 +1,4 @@
-import type {
-  PublicView,
-  BattleAvailability,
-  ResolvedPresentation,
-} from '@rebirth/game-core/online/Contracts';
+import type { BattleAvailability, ResolvedPresentation } from '@rebirth/game-core/online/Contracts';
 import type { ActivityEvent } from '@rebirth/game-core/online/Audit';
 import type { GameplayBattle } from '../game/Gameplay';
 import type { BattleView } from '../game/BattleSession';
@@ -12,7 +8,8 @@ import type { ContentRegistry } from '../engine/data/ContentRegistry';
 import type { RenderEntity } from '../renderer/types';
 import type { Entity } from '../engine/ecs/Entity';
 import { EventBus } from '../engine/EventBus';
-import { heroStatSource, heroStats } from '../engine/rpg/Character';
+import type { CoreView } from './queries';
+type BattleViewInput = Pick<CoreView, 'character' | 'hero' | 'encounter' | 'dungeon' | 'stats'>;
 import { cloneData } from '../engine/cloneData';
 import { RemotePresentation } from './RemotePresentation';
 import type { CommandResult } from './CommandCoordinator';
@@ -28,7 +25,7 @@ export class RemoteBattle implements GameplayBattle {
   private played = new Set<string>();
   error: string | undefined;
   constructor(
-    private current: PublicView,
+    private current: BattleViewInput,
     readonly content: ContentRegistry,
     private canAct: () => boolean,
     private submit: (action: BattleAction, targetId: string) => void,
@@ -53,7 +50,7 @@ export class RemoteBattle implements GameplayBattle {
       this.listeners.delete(listener);
     };
   };
-  update(current: PublicView) {
+  update(current: BattleViewInput) {
     if (
       current.encounter?.actionSequence !== this.current.encounter?.actionSequence ||
       current.character.revision !== this.current.character.revision
@@ -69,16 +66,6 @@ export class RemoteBattle implements GameplayBattle {
     const definition = actor.player
       ? this.content.data.classes.find((c) => c.id === this.current.hero.classId)!
       : this.content.data.enemies.find((e) => e.id === spawn.definitionId)!;
-    const hero = {
-      ...this.current.hero,
-      inventory: actor.inventory,
-      weapons: actor.weapon
-        ? { ...this.current.hero.weapons, [actor.weapon.id]: actor.weapon }
-        : this.current.hero.weapons,
-    };
-    const source = actor.player
-      ? heroStatSource(hero, this.current.dungeon?.effects, this.content)
-      : undefined;
     return {
       id: actor.id,
       name: actor.name,
@@ -100,7 +87,7 @@ export class RemoteBattle implements GameplayBattle {
       position: actor.position ? cloneData(actor.position) : undefined,
       sprite: cloneData(definition.sprite),
       combatant: { ...definition.combatant },
-      statSource: source,
+      statSource: actor.statSource ? cloneData(actor.statSource) : undefined,
       skills: actor.player
         ? Object.keys(actor.learnedSkills ?? {}).filter(
             (id) => this.content.skill(id).kind !== 'passive',
@@ -150,7 +137,7 @@ export class RemoteBattle implements GameplayBattle {
     const player = encounter.actors.find((a) => a.player)!;
     const entity = this.getActor(player.id)!;
     const stats = {
-      ...heroStats(this.current.hero, this.content, this.current.dungeon?.effects),
+      ...this.current.stats,
       combatant: player.stats ?? entity.combatant!,
       maxHealth: player.health!.max,
       maxMana: player.mana!.max,
@@ -274,7 +261,8 @@ export class RemoteBattle implements GameplayBattle {
       this.played.has(result.receipt.commandId) ||
       presentation.encounterId !== this.encounterId ||
       result.receipt.committedRevision <= previousRevision ||
-      result.view.character.revision !== result.receipt.committedRevision ||
+      ('updates' in result ? result.snapshotRevision : result.character.revision) !==
+        result.receipt.committedRevision ||
       this.current.character.revision !== result.receipt.committedRevision
     )
       return;

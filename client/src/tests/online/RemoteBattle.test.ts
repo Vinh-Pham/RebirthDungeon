@@ -5,7 +5,7 @@ import {
   execute,
   publicView,
   gameContent,
-} from '@rebirth/game-core/online/Runtime';
+} from '@rebirth/game-core/online/TestRuntime';
 import { GAME_CONTENT_VERSION } from '@rebirth/game-core/online/Contracts';
 import { battleActionDetails } from '../../ui/battle/battleActionDetails';
 function encounter() {
@@ -78,19 +78,51 @@ it('plays a committed receipt once, skips restart/duplicate/later-view animation
   };
   battle.update(next);
   const old = battle.getSnapshot();
-  battle.present({ view: next, receipt }, 4);
+  battle.present(
+    {
+      apiVersion: 2,
+      snapshotRevision: next.character.revision,
+      updates: { character: next.character },
+      receipt,
+    },
+    4,
+  );
   expect(battle.presentation.getSnapshot().busy).toBe(true);
   expect(old.log).toHaveLength(0);
   const chronicle = battle.getSnapshot().log;
   vi.advanceTimersByTime(30000);
-  battle.present({ view: next, receipt }, 4);
+  battle.present(
+    {
+      apiVersion: 2,
+      snapshotRevision: next.character.revision,
+      updates: { character: next.character },
+      receipt,
+    },
+    4,
+  );
   expect(battle.presentation.getSnapshot().busy).toBe(false);
   expect(battle.getSnapshot().log).toBe(chronicle);
   const restarted = new RemoteBattle(next, gameContent, () => true, vi.fn(), vi.fn());
-  restarted.present({ view: next, receipt }, 5);
+  restarted.present(
+    {
+      apiVersion: 2,
+      snapshotRevision: next.character.revision,
+      updates: { character: next.character },
+      receipt,
+    },
+    5,
+  );
   expect(restarted.presentation.getSnapshot().busy).toBe(false);
   battle.update({ ...next, character: { ...next.character, revision: 6 } });
-  battle.present({ view: next, receipt: { ...receipt, commandId: crypto.randomUUID() } }, 4);
+  battle.present(
+    {
+      apiVersion: 2,
+      snapshotRevision: next.character.revision,
+      updates: { character: next.character },
+      receipt: { ...receipt, commandId: crypto.randomUUID() },
+    },
+    4,
+  );
   expect(battle.presentation.getSnapshot().busy).toBe(false);
   battle.dispose();
   restarted.dispose();

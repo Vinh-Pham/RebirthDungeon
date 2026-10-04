@@ -93,7 +93,7 @@ export function trainingPoints(skill: Skill, record: LearnedSkills[string]) {
   );
 }
 export function rankUpReason(
-  hero: HeroFacts,
+  hero: Pick<HeroFacts, 'learnedSkills' | 'ap'>,
   id: string,
   content: ContentRegistry,
 ): string | undefined {

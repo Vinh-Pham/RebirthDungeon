@@ -1,5 +1,6 @@
+import { heroFeatures } from '../../game/FeatureReads';
 import { useCharacterGame } from '../menu/CharacterGameContext';
-import { useState } from 'react';
+import { useSyncExternalStore, useState } from 'react';
 import { Text, View } from 'react-native';
 import type { QuestDefinition } from '../../data/schemas/quests';
 import type { ProgressionCommand } from '../../engine/commands';
@@ -36,8 +37,8 @@ export default function QuestDetails({
   progress(command: ProgressionCommand): void;
 }) {
   const [confirming, setConfirming] = useState(false);
-  const view = session.getSnapshot(),
-    hero = view.state.hero,
+  const view = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot),
+    hero = heroFeatures(session, ['quests', 'skills', 'inventory', 'equipment'], view),
     content = session.content;
   const record = hero.quests[quest.id],
     stage = questStage(hero, quest);

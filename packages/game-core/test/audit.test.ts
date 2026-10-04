@@ -1,6 +1,11 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { AuditCollectionError, AuditCollector } from '../src/online/Audit';
-import { execute, newOnlineState, publicView, validateOnlineState } from '../src/online/Runtime';
+import {
+  execute,
+  newOnlineState,
+  publicView,
+  validateOnlineState,
+} from '../src/online/TestRuntime';
 import { appendLogs } from '../src/engine/logging/LogEngine';
 import { GAME_CONTENT_VERSION } from '../src/online/Contracts';
 afterEach(() => vi.restoreAllMocks());

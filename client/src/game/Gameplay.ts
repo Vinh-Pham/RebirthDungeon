@@ -3,9 +3,11 @@ import type { ActivityEvent } from '@rebirth/game-core/online/Audit';
 import type { LogCategory } from '../engine/logging/LogEngine';
 import type { JourneyHost } from './JourneyHost';
 import type { BattleSession, BattleView } from './BattleSession';
-import type { HeroFacts } from '../engine/rpg/Character';
-import type { ContentRegistry } from '../engine/data/ContentRegistry';
+import type { CoreHero } from '../online/queries';
 import type { Immutable } from '../engine/immutableState';
+import type { GameFeature } from '@rebirth/game-core/online/Features';
+import type { FeatureReadPort } from './FeatureReads';
+import type { ContentRegistry } from '../engine/data/ContentRegistry';
 import type { WorldMap } from '../data/schemas/world';
 import type { GameCommand, ProgressionCommand } from '../engine/commands';
 import type { EventBus } from '../engine/EventBus';
@@ -32,7 +34,7 @@ export type PreviewSelection = z.infer<typeof PreviewRequestSchema>['selection']
 export type GameplayDungeon = NonNullable<PublicView['dungeon']>;
 export interface JourneyObservation {
   readonly state: {
-    readonly hero: HeroFacts;
+    readonly hero: Immutable<CoreHero>;
     readonly worldId: string;
     readonly position: Readonly<{ x: number; y: number }>;
     readonly opened: readonly string[];
@@ -45,8 +47,9 @@ export interface JourneyObservation {
   readonly revision: number;
   readonly activeService?: string;
   readonly resting: boolean;
+  readonly availableFeatures?: readonly GameFeature[];
 }
-export interface GameplayJourney {
+export interface GameplayJourney extends FeatureReadPort {
   readonly source: 'local' | 'online';
   readonly characterId: string;
   readonly characterName?: string;

@@ -1,9 +1,11 @@
+import FeatureGate from '../shared/FeatureGate';
+import { heroFeatures } from '../../game/FeatureReads';
 import type { z } from 'zod';
 import type { PreviewResponseSchema } from '@rebirth/game-core/online/Contracts';
 import GameImage from '../shared/GameImage';
 import { trainingPoints } from '../../engine/rpg/Skills';
 import { useQueryClient } from '@tanstack/react-query';
-import { useRef, useState } from 'react';
+import { useSyncExternalStore, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 import type { GameplayProgressionCommand as ProgressionCommand } from '../../game/Gameplay';
 import { ownedEquipment, type EquipmentReference } from '../../engine/rpg/Character';
@@ -25,7 +27,7 @@ type BurnQuote = Extract<z.infer<typeof PreviewResponseSchema>['preview'], { typ
   command: ProgressionCommand;
 };
 type Quote = ApplyQuote | BurnQuote;
-export default function EnchantServicePanel({
+function EnchantServicePanelLoaded({
   session,
   objectId,
   busy,
@@ -38,8 +40,9 @@ export default function EnchantServicePanel({
   progress(command: ProgressionCommand): void;
   back(): void;
 }) {
-  const { state, revision } = session.getSnapshot(),
-    hero = state.hero,
+  const view = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
+  const { revision } = view,
+    hero = heroFeatures(session, ['inventory', 'equipment', 'skills'], view),
     content = session.content;
   const [target, setTarget] = useState<EquipmentReference>();
   const [scrollId, setScrollId] = useState<string>();
@@ -368,5 +371,18 @@ export default function EnchantServicePanel({
         }}
       />
     </View>
+  );
+}
+
+export default function EnchantServicePanel(
+  props: Parameters<typeof EnchantServicePanelLoaded>[0],
+) {
+  return (
+    <FeatureGate
+      session={props.session}
+      features={['inventory', 'equipment', 'skills', 'enchanting']}
+    >
+      <EnchantServicePanelLoaded {...props} />
+    </FeatureGate>
   );
 }

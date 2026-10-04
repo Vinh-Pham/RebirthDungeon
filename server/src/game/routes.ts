@@ -7,30 +7,28 @@ import { BattleAISchema } from '@rebirth/game-core/data/schemas/content';
 import { QuestConditionSchema } from '@rebirth/game-core/data/schemas/quests';
 import { TitleConditionSchema } from '@rebirth/game-core/data/schemas/titles';
 import {
-  ContentResponseSchema,
-  PreviewResponseSchema,
   CreationRequestSchema,
   CommandRequestSchema,
   PreviewRequestSchema,
-  CommandResponseSchema,
-  PublicViewSchema,
   ListResponseSchema,
-  ReceiptSchema,
-  GAME_CONTENT_VERSION,
 } from '@rebirth/game-core/online/Contracts';
 import {
-  gameContent,
-  newOnlineState,
-  execute,
-  preview,
-  publicView,
-} from '@rebirth/game-core/online/Runtime';
+  GAME_FEATURES,
+  featureResponseSchema,
+  MutationResponseSchema,
+  CreationResponseSchema,
+  FeaturePreviewResponseSchema,
+  ContentManifestSchema,
+  ContentCollectionSchema,
+  contentCollectionResponseSchema,
+} from '@rebirth/game-core/online/Features';
 import {
-  AuditCollectionError,
-  creationAudit,
-} from '@rebirth/game-core/online/Audit';
-import { GameRepository, requestHash } from './repository.js';
-
+  actionDefinitions,
+  previewDefinitions,
+} from '@rebirth/game-core/online/Actions';
+import { ContentRepository } from './content.js';
+import { GameRepository } from './repository.js';
+import { GameExecution } from './execution.js';
 export const gameRoutes = new OpenAPIHono<AppEnv>({
   defaultHook: (result, c) => {
     if (!result.success)
@@ -113,228 +111,181 @@ const responses = (schema: z.ZodType) => ({
     ]),
   ),
 });
+
 const params = z.strictObject({ id: z.string().uuid() });
+const revisionQuery = z.strictObject({
+  expectedRevision: z.coerce.number().int().nonnegative().optional(),
+});
 const route = (
   method: 'get' | 'post',
   path: string,
   schema: z.ZodType,
   body?: z.ZodType,
+  parameterSchema?: z.ZodObject,
+  query?: z.ZodObject,
 ) =>
   createRoute({
     method,
     path,
-    tags: ['Game'],
+    tags: [
+      'Game ' +
+        (path.includes('/characters')
+          ? (path.split('/')[3] ?? 'Characters')
+          : 'Content'),
+    ],
     operationId: 'game_' + method + '_' + path.replace(/[^a-zA-Z0-9]+/g, '_'),
     security: [{ cookieAuth: [] }],
-    ...(body || path.includes('{id}')
-      ? {
-          request: {
-            ...(body
-              ? {
-                  body: {
-                    required: true,
-                    content: { 'application/json': { schema: body } },
-                  },
-                }
-              : {}),
-            ...(path.includes('{id}') ? { params } : {}),
-          },
-        }
-      : {}),
+    request: {
+      ...(body
+        ? {
+            body: {
+              required: true,
+              content: { 'application/json': { schema: body } },
+            },
+          }
+        : {}),
+      ...(parameterSchema
+        ? { params: parameterSchema }
+        : path.includes('{id}')
+          ? { params }
+          : {}),
+      ...(query ? { query } : {}),
+    },
     responses: responses(schema),
   });
 const repo = (c: Parameters<typeof requireAuth>[0]) =>
-  new GameRepository(c.env.DB, c.get('user').id);
-function gameplay<T>(action: () => T): T {
-  try {
-    return action();
-  } catch (error) {
-    if (error instanceof AuditCollectionError) {
-      console.error(JSON.stringify({ event: 'audit_collection_failed' }));
-      throw new HTTPException(503, { message: 'Gameplay audit unavailable' });
-    }
-    throw new HTTPException(422, {
-      message:
-        error instanceof Error ? error.message : 'Illegal gameplay action',
-    });
-  }
-}
-async function duplicate(
-  repository: GameRepository,
-  commandId: string,
-  hash: string,
-) {
-  const existing = await repository.receipt(commandId);
-  if (!existing) return;
-  if (existing.hash !== hash)
-    throw new HTTPException(409, {
-      message: 'Command ID was already used with different input',
-    });
-  const current = await repository.load(existing.receipt.characterId);
-  return CommandResponseSchema.parse({
-    receipt: existing.receipt,
-    view: publicView(current.state, current.character),
-  });
-}
-gameRoutes.openapi(route('get', '/content', ContentResponseSchema), (c) =>
-  c.json({ contentVersion: GAME_CONTENT_VERSION, catalog: gameContent.data }),
+  new GameRepository(
+    c.env.DB,
+    c.get('user').id,
+    new ContentRepository(c.env.DB, c.env.CACHE),
+  );
+const execution = (c: Parameters<typeof requireAuth>[0]) =>
+  new GameExecution(repo(c), c.get('requestId'));
+
+gameRoutes.openapi(route('get', '/content', ContentManifestSchema), async (c) =>
+  c.json(await new ContentRepository(c.env.DB, c.env.CACHE).manifest()),
 );
+for (const collection of ContentCollectionSchema.options) {
+  gameRoutes.openapi(
+    route(
+      'get',
+      `/content/{version}/${collection}`,
+      contentCollectionResponseSchema(collection),
+      undefined,
+      z.strictObject({ version: z.string().min(1).max(300) }),
+    ),
+    async (c) => {
+      const version = c.req.param('version')!;
+      return c.json({
+        apiVersion: 2,
+        contentVersion: version,
+        data: await new ContentRepository(c.env.DB, c.env.CACHE).collection(
+          version,
+          collection,
+        ),
+      });
+    },
+  );
+}
 gameRoutes.openapi(route('get', '/characters', ListResponseSchema), async (c) =>
   c.json(ListResponseSchema.parse({ characters: await repo(c).list() })),
 );
 gameRoutes.openapi(
-  route('post', '/characters', CommandResponseSchema, CreationRequestSchema),
+  route('post', '/characters', CreationResponseSchema, CreationRequestSchema),
   async (c) => {
     const input = CreationRequestSchema.parse(await c.req.json());
     c.set('auditContext', {
       commandId: input.commandId,
       type: 'CREATE_CHARACTER',
     });
-    const repository = repo(c);
-    const hash = await requestHash({ operation: 'CREATE_CHARACTER', input });
-    const prior = await duplicate(repository, input.commandId, hash);
-    if (prior) {
-      c.set('auditReplay', true);
-      return c.json(prior);
-    }
-    const now = Date.now(),
-      id = crypto.randomUUID();
-    const seed = new Int32Array(
-      crypto.getRandomValues(new Uint32Array(1)).buffer,
-    )[0];
-    const character = {
-      id,
-      name: input.name,
-      talent: input.talent,
-      age: input.age,
-      revision: 1,
-      contentVersion: GAME_CONTENT_VERSION,
-      createdAt: now,
-      updatedAt: now,
-    };
-    const state = newOnlineState(seed, character.name, character.talent);
-    const receipt = ReceiptSchema.parse({
-      commandId: input.commandId,
-      characterId: id,
-      baseRevision: 0,
-      committedRevision: 1,
-      createdAt: now,
-      outcome: { message: 'Character created', events: ['CHARACTER_CREATED'] },
-    });
-    const committed = await repository.commit(
-      character,
+    const result = await execution(c).create(input);
+    if (result.replayed) c.set('auditReplay', true);
+    return c.json(result.response);
+  },
+);
+for (const feature of GAME_FEATURES) {
+  const path =
+    '/characters/{id}' + (feature === 'character' ? '' : '/' + feature);
+  gameRoutes.openapi(
+    route(
+      'get',
+      path,
+      featureResponseSchema(feature),
       undefined,
-      state,
-      receipt,
-      hash,
-      {
-        requestId: c.get('requestId'),
-        command: {
-          type: 'CREATE_CHARACTER',
-          name: input.name,
-          talent: input.talent,
-          age: input.age,
-        },
-        audit: creationAudit(state),
-      },
-    );
-    if (committed.replayed) c.set('auditReplay', true);
-    const current = await repository.load(committed.receipt.characterId);
-    return c.json(
-      CommandResponseSchema.parse({
-        receipt: committed.receipt,
-        view: publicView(current.state, current.character),
-      }),
-    );
-  },
-);
-gameRoutes.openapi(
-  route('get', '/characters/{id}', PublicViewSchema),
-  async (c) => {
-    const current = await repo(c).load(c.req.param('id')!);
-    return c.json(publicView(current.state, current.character));
-  },
-);
-gameRoutes.openapi(
-  route(
-    'post',
-    '/characters/{id}/previews',
-    PreviewResponseSchema,
-    PreviewRequestSchema,
-  ),
-  async (c) => {
-    const input = PreviewRequestSchema.parse(await c.req.json());
-    const current = await repo(c).load(c.req.param('id')!);
-    if (input.expectedRevision !== current.character.revision)
-      throw new HTTPException(409, { message: 'Character revision changed' });
-    return c.json(
-      PreviewResponseSchema.parse({
-        revision: current.character.revision,
-        preview: gameplay(() => preview(current.state, input.selection)),
-      }),
-    );
-  },
-);
-gameRoutes.openapi(
-  route(
-    'post',
-    '/characters/{id}/commands',
-    CommandResponseSchema,
-    CommandRequestSchema,
-  ),
-  async (c) => {
-    const input = CommandRequestSchema.parse(await c.req.json()),
-      id = c.req.param('id')!,
-      repository = repo(c);
-    c.set('auditContext', {
-      commandId: input.commandId,
-      type: input.command.type,
-      expectedRevision: input.expectedRevision,
-    });
-    const hash = await requestHash({
-      operation: 'COMMAND',
-      characterId: id,
-      input,
-    });
-    const prior = await duplicate(repository, input.commandId, hash);
-    if (prior) {
-      c.set('auditReplay', true);
-      return c.json(prior);
-    }
-    const current = await repository.load(id);
-    if (current.character.revision !== input.expectedRevision)
-      throw new HTTPException(409, { message: 'Character revision changed' });
-    const now = Date.now();
-    const candidate = gameplay(() =>
-      execute(current.state, current.character.name, input.command, now),
-    );
-    const receipt = ReceiptSchema.parse({
-      commandId: input.commandId,
-      characterId: id,
-      baseRevision: input.expectedRevision,
-      committedRevision: input.expectedRevision + 1,
-      createdAt: now,
-      outcome: candidate.outcome,
-    });
-    const committed = await repository.commit(
-      current.character,
-      current.rows,
-      candidate.state,
-      receipt,
-      hash,
-      {
-        requestId: c.get('requestId'),
-        command: input.command,
-        audit: candidate.audit,
-      },
-    );
-    if (committed.replayed) c.set('auditReplay', true);
-    const latest = await repository.load(id);
-    return c.json(
-      CommandResponseSchema.parse({
-        receipt: committed.receipt,
-        view: publicView(latest.state, latest.character),
-      }),
-    );
-  },
-);
+      undefined,
+      revisionQuery,
+    ),
+    async (c) => {
+      const query = revisionQuery.parse(c.req.query());
+      return c.json(
+        await repo(c).feature(
+          c.req.param('id')!,
+          feature,
+          query.expectedRevision,
+        ),
+      );
+    },
+  );
+}
+for (const action of actionDefinitions) {
+  gameRoutes.openapi(
+    route(
+      'post',
+      '/characters/{id}' + action.path,
+      MutationResponseSchema,
+      action.body,
+      action.params,
+    ),
+    async (c) => {
+      const body = action.body.parse(await c.req.json()) as Record<
+        string,
+        unknown
+      >;
+      const { commandId, expectedRevision, ...fields } = body;
+      const command = {
+        ...fields,
+        ...Object.fromEntries(
+          action.keys.map((key) => [key, c.req.param(key)]),
+        ),
+        type: action.type,
+      };
+      const input = CommandRequestSchema.parse({
+        commandId,
+        expectedRevision,
+        command,
+      });
+      c.set('auditContext', {
+        commandId: input.commandId,
+        type: input.command.type,
+        expectedRevision: input.expectedRevision,
+      });
+      const result = await execution(c).action(c.req.param('id')!, input);
+      if (result.replayed) c.set('auditReplay', true);
+      return c.json(result.response);
+    },
+  );
+}
+for (const definition of previewDefinitions) {
+  gameRoutes.openapi(
+    route(
+      'post',
+      '/characters/{id}' + definition.path,
+      FeaturePreviewResponseSchema,
+      definition.body,
+    ),
+    async (c) => {
+      const { expectedRevision, ...fields } = definition.body.parse(
+        await c.req.json(),
+      );
+      const input = PreviewRequestSchema.parse({
+        expectedRevision,
+        selection: { type: definition.type, ...fields },
+      });
+      return c.json(
+        FeaturePreviewResponseSchema.parse(
+          await execution(c).preview(c.req.param('id')!, input),
+        ),
+      );
+    },
+  );
+}

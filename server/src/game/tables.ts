@@ -1,398 +1,120 @@
-// SQL identifiers are exclusively from this closed schema descriptor list.
-export const gameTables = [
-  {
-    name: 'game_characters',
-    columns: [
-      'id',
-      'user_id',
-      'name',
-      'talent',
-      'age',
-      'revision',
-      'content_version',
-      'created_at',
-      'updated_at',
-    ],
-    keys: ['id'],
-  },
-  {
-    name: 'game_heroes',
-    columns: [
-      'character_id',
-      'class_id',
-      'level',
-      'cumulative_level',
-      'experience',
-      'gold',
-      'ap',
-      'health',
-      'mana',
-      'stamina',
-      'wounds',
-      'fullness_tenths',
-      'next_weapon_id',
-      'next_armor_id',
-    ],
-    keys: ['character_id'],
-  },
-  {
-    name: 'game_campaigns',
-    columns: [
-      'character_id',
-      'world_id',
-      'x',
-      'y',
-      'encounter_count',
-      'active_service',
-      'resting',
-      'last_rest_tick',
-      'rest_lease_until',
-    ],
-    keys: ['character_id'],
-  },
-  {
-    name: 'game_rng_streams',
-    columns: [
-      'character_id',
-      'kind',
-      'seed',
-      'algorithm',
-      'version',
-      'word0',
-      'word1',
-      'word2',
-      'word3',
-      'next_operation_id',
-    ],
-    keys: ['character_id', 'kind'],
-  },
-  {
-    name: 'game_world_flags',
-    columns: ['character_id', 'kind', 'object_id', 'position'],
-    keys: ['character_id', 'kind', 'object_id'],
-  },
-  {
-    name: 'game_inventory_stacks',
-    columns: ['character_id', 'item_id', 'quantity'],
-    keys: ['character_id', 'item_id'],
-  },
-  {
-    name: 'game_equipment_instances',
-    columns: [
-      'character_id',
-      'instance_id',
-      'definition_id',
-      'kind',
-      'durability',
-      'locked',
-    ],
-    keys: ['character_id', 'instance_id'],
-  },
-  {
-    name: 'game_loadouts',
-    columns: ['character_id', 'weapon_id', 'armor_id', 'ammunition_id'],
-    keys: ['character_id'],
-  },
-  {
-    name: 'game_equipment_enchants',
-    columns: ['character_id', 'instance_id', 'slot', 'enchant_id'],
-    keys: ['character_id', 'instance_id', 'slot'],
-  },
-  {
-    name: 'game_equipment_enchant_values',
-    columns: ['character_id', 'instance_id', 'slot', 'stat_id', 'value'],
-    keys: ['character_id', 'instance_id', 'slot', 'stat_id'],
-  },
-  {
-    name: 'game_item_hotbar',
-    columns: ['character_id', 'position', 'item_id'],
-    keys: ['character_id', 'position'],
-  },
-  {
-    name: 'game_discovered_skills',
-    columns: ['character_id', 'skill_id', 'position'],
-    keys: ['character_id', 'skill_id'],
-  },
-  {
-    name: 'game_learned_skills',
-    columns: ['character_id', 'skill_id', 'rank'],
-    keys: ['character_id', 'skill_id'],
-  },
-  {
-    name: 'game_skill_objective_counts',
-    columns: ['character_id', 'skill_id', 'objective_id', 'count'],
-    keys: ['character_id', 'skill_id', 'objective_id'],
-  },
-  {
-    name: 'game_skill_book_collections',
-    columns: ['character_id', 'recipe_id', 'completed'],
-    keys: ['character_id', 'recipe_id'],
-  },
-  {
-    name: 'game_skill_book_pages',
-    columns: ['character_id', 'recipe_id', 'position', 'page_id'],
-    keys: ['character_id', 'recipe_id', 'position'],
-  },
-  {
-    name: 'game_milestone_claims',
-    columns: ['character_id', 'milestone_id', 'position'],
-    keys: ['character_id', 'milestone_id'],
-  },
-  {
-    name: 'game_quests',
-    columns: ['character_id', 'quest_id', 'status', 'stage_id', 'claim_id'],
-    keys: ['character_id', 'quest_id'],
-  },
-  {
-    name: 'game_quest_objective_counts',
-    columns: ['character_id', 'quest_id', 'objective_id', 'count'],
-    keys: ['character_id', 'quest_id', 'objective_id'],
-  },
-  {
-    name: 'game_quest_flags',
-    columns: ['character_id', 'flag_id', 'position'],
-    keys: ['character_id', 'flag_id'],
-  },
-  {
-    name: 'game_tracked_objectives',
-    columns: ['character_id', 'position', 'quest_id', 'objective_id'],
-    keys: ['character_id', 'position'],
-  },
-  {
-    name: 'game_character_titles',
-    columns: [
-      'character_id',
-      'title_id',
-      'discovered_position',
-      'earned_position',
-      'source',
-    ],
-    keys: ['character_id', 'title_id'],
-  },
-  {
-    name: 'game_title_evidence',
-    columns: ['character_id', 'evidence_id', 'count'],
-    keys: ['character_id', 'evidence_id'],
-  },
-  {
-    name: 'game_selected_titles',
-    columns: ['character_id', 'slot', 'title_id'],
-    keys: ['character_id', 'slot'],
-  },
-  {
-    name: 'game_enchant_receipts',
-    columns: [
-      'character_id',
-      'operation_id',
-      'position',
-      'kind',
-      'message',
-      'success',
-    ],
-    keys: ['character_id', 'operation_id'],
-  },
-  {
-    name: 'game_enchant_recovered_items',
-    columns: ['character_id', 'operation_id', 'position', 'item_id'],
-    keys: ['character_id', 'operation_id', 'position'],
-  },
-  {
-    name: 'game_dungeon_runs',
-    columns: [
-      'character_id',
-      'definition_id',
-      'return_world_id',
-      'return_x',
-      'return_y',
-      'blueprint',
-      'boss_door_opened',
-      'selected_chest',
-    ],
-    keys: ['character_id'],
-  },
-  {
-    name: 'game_dungeon_flags',
-    columns: ['character_id', 'kind', 'object_id', 'position'],
-    keys: ['character_id', 'kind', 'object_id'],
-  },
-  {
-    name: 'game_dungeon_keys',
-    columns: ['character_id', 'kind', 'status', 'x', 'y'],
-    keys: ['character_id', 'kind'],
-  },
-  {
-    name: 'game_dungeon_effects',
-    columns: ['character_id', 'position', 'status_id', 'stacks'],
-    keys: ['character_id', 'position'],
-  },
-  {
-    name: 'game_encounters',
-    columns: [
-      'character_id',
-      'encounter_id',
-      'phase',
-      'algorithm',
-      'world_id',
-      'object_id',
-      'map_id',
-      'seed',
-      'version',
-      'word0',
-      'word1',
-      'word2',
-      'word3',
-      'result',
-      'action_sequence',
-      'cursor',
-      'training_last_action',
-      'quest_last_action',
-      'title_eligible',
-      'title_flawless',
-    ],
-    keys: ['character_id'],
-  },
-  {
-    name: 'game_encounter_actors',
-    columns: ['character_id', 'actor_id', 'position', 'defending_position'],
-    keys: ['character_id', 'actor_id'],
-  },
-  {
-    name: 'game_encounter_actor_values',
-    columns: [
-      'character_id',
-      'actor_id',
-      'path',
-      'value_type',
-      'text_value',
-      'number_value',
-    ],
-    keys: ['character_id', 'actor_id', 'path'],
-  },
-  {
-    name: 'game_encounter_stats',
-    columns: [
-      'character_id',
-      'actor_id',
-      'path',
-      'value_type',
-      'text_value',
-      'number_value',
-    ],
-    keys: ['character_id', 'actor_id', 'path'],
-  },
-  {
-    name: 'game_encounter_inventory',
-    columns: [
-      'character_id',
-      'actor_id',
-      'path',
-      'value_type',
-      'text_value',
-      'number_value',
-    ],
-    keys: ['character_id', 'actor_id', 'path'],
-  },
-  {
-    name: 'game_encounter_statuses',
-    columns: [
-      'character_id',
-      'actor_id',
-      'path',
-      'value_type',
-      'text_value',
-      'number_value',
-    ],
-    keys: ['character_id', 'actor_id', 'path'],
-  },
-  {
-    name: 'game_encounter_cooldowns',
-    columns: [
-      'character_id',
-      'actor_id',
-      'path',
-      'value_type',
-      'text_value',
-      'number_value',
-    ],
-    keys: ['character_id', 'actor_id', 'path'],
-  },
-  {
-    name: 'game_encounter_skills',
-    columns: [
-      'character_id',
-      'actor_id',
-      'path',
-      'value_type',
-      'text_value',
-      'number_value',
-    ],
-    keys: ['character_id', 'actor_id', 'path'],
-  },
-  {
-    name: 'game_encounter_sources',
-    columns: [
-      'character_id',
-      'actor_id',
-      'path',
-      'value_type',
-      'text_value',
-      'number_value',
-    ],
-    keys: ['character_id', 'actor_id', 'path'],
-  },
-  {
-    name: 'game_encounter_turn_order',
-    columns: ['character_id', 'position', 'actor_id', 'defending'],
-    keys: ['character_id', 'position'],
-  },
-  {
-    name: 'game_encounter_enemy_history',
-    columns: ['character_id', 'actor_id', 'action', 'skill_id', 'target_id'],
-    keys: ['character_id', 'actor_id'],
-  },
-  {
-    name: 'game_encounter_training',
-    columns: ['character_id', 'skill_id', 'objective_id', 'count'],
-    keys: ['character_id', 'skill_id', 'objective_id'],
-  },
-  {
-    name: 'game_encounter_quest_evidence',
-    columns: ['character_id', 'quest_id', 'stage_id', 'objective_id', 'count'],
-    keys: ['character_id', 'quest_id', 'objective_id'],
-  },
-  {
-    name: 'game_encounter_rewards',
-    columns: [
-      'character_id',
-      'gold',
-      'experience',
-      'word0',
-      'word1',
-      'word2',
-      'word3',
-    ],
-    keys: ['character_id'],
-  },
-  {
-    name: 'game_encounter_reward_items',
-    columns: ['character_id', 'position', 'item_id', 'quantity', 'collectable'],
-    keys: ['character_id', 'position'],
-  },
-  {
-    name: 'game_command_receipts',
-    columns: [
-      'user_id',
-      'command_id',
-      'character_id',
-      'request_hash',
-      'base_revision',
-      'committed_revision',
-      'outcome',
-      'created_at',
-    ],
-    keys: ['user_id', 'command_id'],
-  },
-] as const;
-export type TableName = (typeof gameTables)[number]['name'];
+import { getTableConfig } from 'drizzle-orm/sqlite-core';
+import type { AnySQLiteTable } from 'drizzle-orm/sqlite-core';
+import { gameCharacters } from '../db/schema/game/characters.js';
+import {
+  gameHeroes,
+  gameMilestoneClaims,
+} from '../db/schema/game/progression.js';
+import { gameResources } from '../db/schema/game/resources.js';
+import {
+  gameInventoryMetadata,
+  gameInventoryStacks,
+  gameEquipmentInstances,
+  gameLoadouts,
+  gameEquipmentEnchants,
+  gameEquipmentEnchantValues,
+  gameItemHotbar,
+} from '../db/schema/game/inventory.js';
+import {
+  gameCharacterSkills,
+  gameSkillObjectiveCounts,
+  gameSkillBookCollections,
+  gameSkillBookPages,
+} from '../db/schema/game/skills.js';
+import {
+  gameQuests,
+  gameQuestObjectiveCounts,
+  gameQuestFlags,
+  gameTrackedObjectives,
+} from '../db/schema/game/quests.js';
+import {
+  gameCharacterTitles,
+  gameTitleEvidence,
+  gameSelectedTitles,
+} from '../db/schema/game/titles.js';
+import {
+  gameRngStreams,
+  gameEnchantReceipts,
+  gameEnchantRecoveredItems,
+} from '../db/schema/game/enchanting.js';
+import {
+  gameCampaigns,
+  gameRestState,
+  gameWorldFlags,
+} from '../db/schema/game/journey.js';
+import {
+  gameDungeonRuns,
+  gameDungeonFlags,
+  gameDungeonKeys,
+  gameDungeonEffects,
+} from '../db/schema/game/dungeon.js';
+import {
+  gameEncounters,
+  gameEncounterActors,
+  gameEncounterTurnOrder,
+  gameEncounterEnemyHistory,
+  gameEncounterTraining,
+  gameEncounterQuestEvidence,
+  gameEncounterRewards,
+  gameEncounterRewardItems,
+} from '../db/schema/game/encounters.js';
+import { gameCommandReceipts } from '../db/schema/game/commands.js';
+import { actorsTables } from '../db/schema/game/actors.js';
+
+export const stateSchemaTables: AnySQLiteTable[] = [
+  gameCharacters,
+  gameHeroes,
+  gameMilestoneClaims,
+  gameResources,
+  gameInventoryMetadata,
+  gameInventoryStacks,
+  gameEquipmentInstances,
+  gameLoadouts,
+  gameEquipmentEnchants,
+  gameEquipmentEnchantValues,
+  gameItemHotbar,
+  gameCharacterSkills,
+  gameSkillObjectiveCounts,
+  gameSkillBookCollections,
+  gameSkillBookPages,
+  gameQuests,
+  gameQuestObjectiveCounts,
+  gameQuestFlags,
+  gameTrackedObjectives,
+  gameCharacterTitles,
+  gameTitleEvidence,
+  gameSelectedTitles,
+  gameRngStreams,
+  gameEnchantReceipts,
+  gameEnchantRecoveredItems,
+  gameCampaigns,
+  gameRestState,
+  gameWorldFlags,
+  gameDungeonRuns,
+  gameDungeonFlags,
+  gameDungeonKeys,
+  gameDungeonEffects,
+  gameEncounters,
+  gameEncounterActors,
+  ...actorsTables,
+  gameEncounterTurnOrder,
+  gameEncounterEnemyHistory,
+  gameEncounterTraining,
+  gameEncounterQuestEvidence,
+  gameEncounterRewards,
+  gameEncounterRewardItems,
+  gameCommandReceipts,
+];
+export const gameTables = stateSchemaTables.map((table) => {
+  const config = getTableConfig(table);
+  return {
+    name: config.name,
+    columns: config.columns.map((c) => c.name),
+    keys:
+      config.primaryKeys[0]?.columns.map((c) => c.name) ??
+      config.columns.filter((c) => c.primary).map((c) => c.name),
+  };
+});
+export type TableName = string;
 export type Row = Record<string, string | number | null>;
 export type Rows = Record<TableName, Row[]>;

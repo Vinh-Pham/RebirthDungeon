@@ -1,7 +1,9 @@
+import { scenarioRequest } from './scenario-api.js';
+import { seedCatalog } from '../src/game/content.js';
+import { gameContent } from '@rebirth/game-core/online/TestRuntime';
 import { env } from 'cloudflare:workers';
 import { applyD1Migrations, reset } from 'cloudflare:test';
 import { beforeEach, afterEach, expect, it, vi } from 'vitest';
-import { app } from '../src/index.js';
 import { register } from './auth-helpers.js';
 import { CommandResponseSchema } from '@rebirth/game-core/online/Contracts';
 import {
@@ -18,21 +20,10 @@ import {
 beforeEach(async () => {
   await reset();
   await applyD1Migrations(env.DB, env.TEST_MIGRATIONS);
+  await seedCatalog(env.DB, gameContent.data);
 });
 afterEach(() => vi.restoreAllMocks());
-const req = (path: string, cookie?: string, body?: unknown) =>
-  app.request(
-    path,
-    {
-      method: body === undefined ? 'GET' : 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(cookie ? { Cookie: cookie } : {}),
-      },
-      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-    },
-    env,
-  );
+const req = scenarioRequest;
 async function fixture() {
   const owner = await register();
   const input = {

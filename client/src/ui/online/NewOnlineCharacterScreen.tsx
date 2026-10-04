@@ -31,7 +31,7 @@ function CreateCharacter() {
     networkMode: 'always',
     mutationFn: (details?: CharacterDetails) =>
       details ? commands!.create({ commandId: createCommandId(), ...details }) : commands!.retry(),
-    onSuccess: (result) => router.dismissTo(gameHref(result.view.character.id)),
+    onSuccess: (result) => router.dismissTo(gameHref(result.receipt.characterId)),
     onSettled: async () => {
       await queries.invalidateQueries({ queryKey: key });
     },

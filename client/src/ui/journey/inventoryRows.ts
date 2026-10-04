@@ -15,7 +15,7 @@ export interface InventoryRow {
 
 /** A view of the battle copy or the campaign pack; never creates item ownership. */
 export function inventoryRows(
-  hero: HeroFacts,
+  hero: Pick<HeroFacts, 'inventory' | 'weapons' | 'armors' | 'equipment'>,
   content: ContentRegistry,
   battle?: BattleView['inventory'],
 ): InventoryRow[] {

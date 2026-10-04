@@ -2,16 +2,18 @@ import type { QueryClient } from '@tanstack/react-query';
 import {
   CommandRequestSchema,
   CreationRequestSchema,
-  CommandResponseSchema,
   type OnlineCommand,
-  type CommandResponseSchema as ResponseSchema,
 } from '@rebirth/game-core/online/Contracts';
 import type { z } from 'zod';
+import { MutationResponseSchema, CreationResponseSchema } from '@rebirth/game-core/online/Features';
+import { actionRequest } from '@rebirth/game-core/online/Actions';
 import type { OnlineAccess } from './Access';
 import { APIError, StaleAccessError, type GameAPI } from './API';
 import { journalKey, type CommandJournal, type PendingCommand } from './CommandJournal';
-import { gameKeys, mergeCharacter, type CachedCharacter } from './queries';
-export type CommandResult = z.infer<typeof ResponseSchema>;
+import { gameKeys, applyUpdates } from './queries';
+export type CommandResult =
+  | z.infer<typeof MutationResponseSchema>
+  | z.infer<typeof CreationResponseSchema>;
 export class CommandCoordinator {
   private locks = new Set<string>();
   private blockedUntil = 0;
@@ -58,12 +60,14 @@ export class CommandCoordinator {
       command.type === 'REST_PULSE',
     );
   }
-  async create(details: z.infer<typeof CreationRequestSchema>): Promise<CommandResult> {
+  async create(
+    details: z.infer<typeof CreationRequestSchema>,
+  ): Promise<z.infer<typeof CreationResponseSchema>> {
     return this.run(
       undefined,
       { kind: 'create', request: CreationRequestSchema.parse(details), createdAt: this.now() },
       false,
-    );
+    ).then((result) => CreationResponseSchema.parse(result));
   }
   async retry(characterId?: string): Promise<CommandResult> {
     return this.run(characterId, undefined, true);
@@ -96,41 +100,45 @@ export class CommandCoordinator {
       const queryKey = characterId
         ? gameKeys.character(this.options.api.origin, userId, characterId)
         : undefined;
-      if (queryKey) await this.options.queries.cancelQueries({ queryKey, exact: true });
+      if (queryKey) await this.options.queries.cancelQueries({ queryKey });
       if (!this.options.access.matches(lease) || !this.options.access.ready())
         throw new StaleAccessError();
       sent = true;
-      const result = await this.options.api.request(
+      const result =
         operation.kind === 'create'
-          ? '/api/game/characters'
-          : '/api/game/characters/' + encodeURIComponent(characterId!) + '/commands',
-        CommandResponseSchema,
-        operation.request,
-      );
+          ? await this.options.api.request(
+              '/api/game/characters',
+              CreationResponseSchema,
+              operation.request,
+            )
+          : await (async () => {
+              const request = actionRequest(characterId!, operation.request);
+              return this.options.api.request(request.path, MutationResponseSchema, request.body);
+            })();
       if (!this.options.access.matches(lease)) throw new StaleAccessError();
       const expectedRevision = operation.kind === 'create' ? 0 : operation.request.expectedRevision;
+      const character = 'updates' in result ? result.updates.character : result.character;
+      const snapshotRevision = 'updates' in result ? result.snapshotRevision : character.revision;
       if (
         result.receipt.commandId !== operation.request.commandId ||
         result.receipt.baseRevision !== expectedRevision ||
         result.receipt.committedRevision !== expectedRevision + 1 ||
-        result.view.character.revision < result.receipt.committedRevision ||
-        result.receipt.characterId !== result.view.character.id ||
-        (characterId && result.view.character.id !== characterId)
+        snapshotRevision < result.receipt.committedRevision ||
+        result.receipt.characterId !== character.id ||
+        (characterId && character.id !== characterId) ||
+        character.revision !== snapshotRevision
       )
         throw new Error(
           'The server returned an inconsistent command receipt. Recover the original request.',
         );
-      const characterKey = gameKeys.character(
-        this.options.api.origin,
-        userId,
-        result.view.character.id,
-      );
-      this.options.queries.setQueryData<CachedCharacter>(characterKey, (old) =>
-        mergeCharacter(old, {
-          view: result.view,
-          connectionGeneration: lease.connectionGeneration,
-        }),
-      );
+      if ('updates' in result)
+        await applyUpdates(
+          this.options.queries,
+          this.options.api,
+          this.options.access,
+          userId,
+          result,
+        );
       if (!ephemeral) await journal.clear(key, operation.request.commandId);
       if (operation.kind === 'create')
         await this.options.queries.invalidateQueries({

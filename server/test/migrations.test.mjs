@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import { readMigrationFiles } from 'drizzle-orm/migrator';
 import { migrateLocal } from '../tools/migrate-local.mjs';
 import { localDatabase } from './local-db.mjs';
+import { seedLocalCatalog } from '../tools/seed-local.mjs';
 
 const migrations = readMigrationFiles({ migrationsFolder: 'drizzle' });
 const [legacy] = migrations;
@@ -44,6 +45,7 @@ test(
       .bind('preserved', 'Player', 'preserved@example.invalid', 123, 456)
       .run();
     const user = await db.prepare('SELECT * FROM user').first();
+    await seedLocalCatalog(db);
     await db
       .prepare(
         'INSERT INTO game_characters (id,user_id,name,talent,age,revision,content_version,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?)',
@@ -192,6 +194,110 @@ test(
     await assert.rejects(
       () => migrateLocal(db, true),
       /differs from the original migration/,
+    );
+  },
+);
+
+test(
+  'resets online game state once while preserving accounts, sessions and immutable audit history',
+  { timeout: 25000 },
+  async (t) => {
+    const db = await localDatabase(t),
+      prior = migrations.slice(0, -1);
+    for (const migration of prior)
+      await db.batch(migration.sql.map((sql) => db.prepare(sql)));
+    await db
+      .prepare(
+        'CREATE TABLE __drizzle_migrations (id INTEGER PRIMARY KEY, hash text NOT NULL, created_at numeric, name text, applied_at TEXT)',
+      )
+      .run();
+    for (const migration of prior)
+      await db
+        .prepare(
+          'INSERT INTO __drizzle_migrations(hash,created_at,name,applied_at) VALUES (?,?,?,?)',
+        )
+        .bind(
+          migration.hash,
+          migration.folderMillis,
+          migration.name,
+          new Date().toISOString(),
+        )
+        .run();
+    await db
+      .prepare(
+        "INSERT INTO user(id,name,email,email_verified,created_at,updated_at) VALUES ('preserved','Player','preserved@example.invalid',1,123,456)",
+      )
+      .run();
+    await db
+      .prepare(
+        "INSERT INTO account(id,user_id,account_id,provider_id,password,created_at,updated_at) VALUES ('account','preserved','preserved','credential','retained-password',123,456)",
+      )
+      .run();
+    await db
+      .prepare(
+        "INSERT INTO session(id,user_id,token,created_at,updated_at,expires_at) VALUES ('session','preserved','retained-token',123,456,9999999999999)",
+      )
+      .run();
+    await db
+      .prepare(
+        "INSERT INTO game_characters(id,user_id,name,talent,age,revision,content_version,created_at,updated_at) VALUES ('old-character','preserved','Player','warrior',12,0,'rebirth-13.1',123,456)",
+      )
+      .run();
+    await db
+      .prepare(
+        "INSERT INTO game_command_receipts(user_id,command_id,character_id,request_hash,base_revision,committed_revision,outcome,created_at) VALUES ('preserved','old-command','old-character','hash',0,1,'{}',456)",
+      )
+      .run();
+    await db
+      .prepare(
+        "INSERT INTO audit_records(id,timestamp,user_id,character_id,source,category,type,outcome,message,command_id,revision,details) VALUES ('retained-audit',456,'preserved','old-character','server','game','CREATE_CHARACTER','committed','Created','old-command',1,'{}')",
+      )
+      .run();
+    const names = ['user', 'account', 'session', 'audit_records'],
+      before = await Promise.all(
+        names.map((name) => db.prepare('SELECT * FROM ' + name).all()),
+      );
+    await migrateLocal(db);
+    assert.deepEqual(
+      await Promise.all(
+        names.map((name) =>
+          db
+            .prepare('SELECT * FROM ' + name)
+            .all()
+            .then((r) => r.results),
+        ),
+      ),
+      before.map((r) => r.results),
+    );
+    for (const table of ['game_characters', 'game_command_receipts'])
+      assert.equal(
+        await db
+          .prepare('SELECT COUNT(*) AS count FROM ' + table)
+          .first('count'),
+        0,
+      );
+    assert.equal(
+      await db
+        .prepare(
+          "SELECT COUNT(*) AS count FROM sqlite_master WHERE name='game_encounter_values'",
+        )
+        .first('count'),
+      0,
+    );
+    await seedLocalCatalog(db);
+    await db
+      .prepare(
+        "INSERT INTO game_characters(id,user_id,name,talent,age,revision,content_version,created_at,updated_at) VALUES ('new-character','preserved','Player','warrior',12,0,'rebirth-13.1',123,456)",
+      )
+      .run();
+    await migrateLocal(db);
+    assert.equal(
+      await db.prepare('SELECT id FROM game_characters').first('id'),
+      'new-character',
+    );
+    assert.deepEqual(
+      (await db.prepare('PRAGMA foreign_key_check').all()).results,
+      [],
     );
   },
 );

@@ -1,3 +1,7 @@
+import { publicFeatures } from '@rebirth/game-core/online/PublicFeatures';
+import { gameContent } from '@rebirth/game-core/online/TestRuntime';
+import { StatSourceSchema } from '@rebirth/game-core/online/Contracts';
+import { heroStatSource } from '../../engine/rpg/Character';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { QueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
@@ -12,11 +16,11 @@ import {
 } from '../../online/CommandJournal';
 import { gameKeys, mergeCharacter } from '../../online/queries';
 import { parseAPIURL } from '../../online/config';
-import { newOnlineState, publicView } from '@rebirth/game-core/online/Runtime';
+import { newOnlineState, publicView } from '@rebirth/game-core/online/TestRuntime';
 import { GAME_CONTENT_VERSION } from '@rebirth/game-core/online/Contracts';
 const origin = 'https://api.example.com';
 const metadata = {
-  id: 'hero',
+  id: 'dd46a450-bc4b-42bf-aab4-e58c7ccdfc7b',
   name: 'Player',
   talent: 'warrior' as const,
   age: 12,
@@ -78,13 +82,19 @@ function committed(body: { commandId: string; expectedRevision: number }) {
   return {
     receipt: {
       commandId: body.commandId,
-      characterId: 'hero',
+      characterId: 'dd46a450-bc4b-42bf-aab4-e58c7ccdfc7b',
       baseRevision: body.expectedRevision,
       committedRevision: body.expectedRevision + 1,
       createdAt: 1000,
       outcome: { message: 'Committed', events: [] },
     },
-    view: { ...view(), character: { ...metadata, revision: body.expectedRevision + 1 } },
+    apiVersion: 2 as const,
+    snapshotRevision: body.expectedRevision + 1,
+    updates: publicFeatures(
+      { ...view(), character: { ...metadata, revision: body.expectedRevision + 1 } },
+      gameContent,
+      { receipts: [] },
+    ),
   };
 }
 afterEach(() => vi.useRealTimers());
@@ -173,12 +183,20 @@ describe('durable online command coordination', () => {
       }),
     );
     const command = { type: 'MOVE' as const, dx: 1, dy: 0 };
-    await expect(f.coordinator().submit('hero', 1, command)).rejects.toThrow('Response lost');
-    expect(f.queries.getQueryData(gameKeys.character(origin, 'account-a', 'hero'))).toBeUndefined();
-    await expect(f.coordinator().submit('hero', 1, command)).rejects.toMatchObject({ status: 409 });
+    await expect(
+      f.coordinator().submit('dd46a450-bc4b-42bf-aab4-e58c7ccdfc7b', 1, command),
+    ).rejects.toThrow('Response lost');
+    expect(
+      f.queries.getQueryData(
+        gameKeys.character(origin, 'account-a', 'dd46a450-bc4b-42bf-aab4-e58c7ccdfc7b'),
+      ),
+    ).toBeUndefined();
+    await expect(
+      f.coordinator().submit('dd46a450-bc4b-42bf-aab4-e58c7ccdfc7b', 1, command),
+    ).rejects.toMatchObject({ status: 409 });
     expect(bodies).toHaveLength(1);
     fail = false;
-    const recovered = await f.coordinator().retry('hero');
+    const recovered = await f.coordinator().retry('dd46a450-bc4b-42bf-aab4-e58c7ccdfc7b');
     expect(bodies[1]).toEqual(bodies[0]);
     expect(recovered.receipt.commandId).toBe(bodies[0].commandId);
     expect(f.journal.rows.size).toBe(0);
@@ -192,8 +210,14 @@ describe('durable online command coordination', () => {
     });
     const f = fixture(fetcher),
       commands = f.coordinator();
-    const first = commands.submit('hero', 1, { type: 'MOVE', dx: 1, dy: 0 });
-    await expect(commands.submit('hero', 1, { type: 'MOVE', dx: 1, dy: 0 })).rejects.toMatchObject({
+    const first = commands.submit('dd46a450-bc4b-42bf-aab4-e58c7ccdfc7b', 1, {
+      type: 'MOVE',
+      dx: 1,
+      dy: 0,
+    });
+    await expect(
+      commands.submit('dd46a450-bc4b-42bf-aab4-e58c7ccdfc7b', 1, { type: 'MOVE', dx: 1, dy: 0 }),
+    ).rejects.toMatchObject({
       status: 409,
     });
     await first;
@@ -206,8 +230,12 @@ describe('durable online command coordination', () => {
     );
     const f = fixture(fetcher);
     const results = await Promise.allSettled([
-      f.coordinator().submit('hero', 1, { type: 'MOVE', dx: 1, dy: 0 }),
-      f.coordinator().submit('hero', 1, { type: 'MOVE', dx: 0, dy: 1 }),
+      f
+        .coordinator()
+        .submit('dd46a450-bc4b-42bf-aab4-e58c7ccdfc7b', 1, { type: 'MOVE', dx: 1, dy: 0 }),
+      f
+        .coordinator()
+        .submit('dd46a450-bc4b-42bf-aab4-e58c7ccdfc7b', 1, { type: 'MOVE', dx: 0, dy: 1 }),
     ]);
     expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
     expect(fetcher).toHaveBeenCalledOnce();
@@ -218,9 +246,9 @@ describe('durable online command coordination', () => {
     const fetcher = vi.fn<typeof fetch>();
     const f = fixture(fetcher);
     f.journal.failWrite = true;
-    await expect(f.coordinator().submit('hero', 1, { type: 'STOP_REST' })).rejects.toThrow(
-      'Disk full',
-    );
+    await expect(
+      f.coordinator().submit('dd46a450-bc4b-42bf-aab4-e58c7ccdfc7b', 1, { type: 'STOP_REST' }),
+    ).rejects.toThrow('Disk full');
     expect(fetcher).not.toHaveBeenCalled();
     f.queries.clear();
   });
@@ -231,7 +259,9 @@ describe('durable online command coordination', () => {
           Response.json({ message: 'Rejected' }, { status, headers: { 'Retry-After': '2' } }),
         ),
       );
-      await expect(f.coordinator().submit('hero', 1, { type: 'STOP_REST' })).rejects.toMatchObject({
+      await expect(
+        f.coordinator().submit('dd46a450-bc4b-42bf-aab4-e58c7ccdfc7b', 1, { type: 'STOP_REST' }),
+      ).rejects.toMatchObject({
         status,
       });
       expect(f.journal.rows.size).toBe([401, 429, 503].includes(status) ? 1 : 0);
@@ -245,9 +275,13 @@ describe('durable online command coordination', () => {
         throw new Error('offline');
       }),
     );
-    await expect(f.coordinator().submit('hero', 1, { type: 'REST_PULSE' })).rejects.toThrow();
+    await expect(
+      f.coordinator().submit('dd46a450-bc4b-42bf-aab4-e58c7ccdfc7b', 1, { type: 'REST_PULSE' }),
+    ).rejects.toThrow();
     expect(f.journal.rows.size).toBe(0);
-    await expect(f.coordinator().retry('hero')).rejects.toMatchObject({ status: 409 });
+    await expect(
+      f.coordinator().retry('dd46a450-bc4b-42bf-aab4-e58c7ccdfc7b'),
+    ).rejects.toMatchObject({ status: 409 });
     f.queries.clear();
   });
   it('keeps acknowledged recovery available when clearing storage fails', async () => {
@@ -255,13 +289,13 @@ describe('durable online command coordination', () => {
       vi.fn(async (_url, init) => Response.json(committed(JSON.parse(init!.body as string)))),
     );
     f.journal.failClear = true;
-    await expect(f.coordinator().submit('hero', 1, { type: 'STOP_REST' })).rejects.toThrow(
-      'Disk full',
-    );
+    await expect(
+      f.coordinator().submit('dd46a450-bc4b-42bf-aab4-e58c7ccdfc7b', 1, { type: 'STOP_REST' }),
+    ).rejects.toThrow('Disk full');
     expect(f.journal.rows.size).toBe(1);
     f.journal.failClear = false;
-    const result = await f.coordinator().retry('hero');
-    expect(result.view.character.revision).toBe(2);
+    const result = await f.coordinator().retry('dd46a450-bc4b-42bf-aab4-e58c7ccdfc7b');
+    expect('updates' in result ? result.snapshotRevision : result.character.revision).toBe(2);
     expect(f.journal.rows.size).toBe(0);
     f.queries.clear();
   });
@@ -276,25 +310,43 @@ describe('durable online command coordination', () => {
         return response.promise;
       }),
     );
-    const request = f.coordinator().submit('hero', 1, { type: 'STOP_REST' });
+    const request = f
+      .coordinator()
+      .submit('dd46a450-bc4b-42bf-aab4-e58c7ccdfc7b', 1, { type: 'STOP_REST' });
     await started.promise;
     f.access.invalidate();
     f.access.accept('account-b', f.access.getSnapshot());
     response.resolve(Response.json(committed(body)));
     await expect(request).rejects.toBeInstanceOf(StaleAccessError);
-    expect(await f.coordinator().pending('hero')).toBeUndefined();
-    expect(f.journal.rows.has(journalKey(origin, 'account-a', 'hero'))).toBe(true);
-    expect(f.queries.getQueryData(gameKeys.character(origin, 'account-a', 'hero'))).toBeUndefined();
+    expect(await f.coordinator().pending('dd46a450-bc4b-42bf-aab4-e58c7ccdfc7b')).toBeUndefined();
+    expect(
+      f.journal.rows.has(journalKey(origin, 'account-a', 'dd46a450-bc4b-42bf-aab4-e58c7ccdfc7b')),
+    ).toBe(true);
+    expect(
+      f.queries.getQueryData(
+        gameKeys.character(origin, 'account-a', 'dd46a450-bc4b-42bf-aab4-e58c7ccdfc7b'),
+      ),
+    ).toBeUndefined();
     f.queries.clear();
   });
   it('keeps the latest revision when a receipt retry returns a later view or an older read arrives', () => {
-    const first = { view: view(), connectionGeneration: 0 },
+    const original = view();
+    const first = {
+        view: {
+          ...original,
+          statReview: {
+            stats: original.stats,
+            source: StatSourceSchema.parse(heroStatSource(original.hero, [], gameContent)),
+          },
+        },
+        connectionGeneration: 0,
+      },
       latest = { ...first, view: { ...first.view, character: { ...metadata, revision: 8 } } };
     expect(
       mergeCharacter(latest, { ...first, connectionGeneration: 2 }).view.character.revision,
     ).toBe(8);
     expect(mergeCharacter(latest, { ...first, connectionGeneration: 2 }).connectionGeneration).toBe(
-      2,
+      0,
     );
   });
   it('recovers creation using the original command ID and account scope', async () => {
@@ -305,7 +357,12 @@ describe('durable online command coordination', () => {
         const body = JSON.parse(init!.body as string);
         bodies.push(body);
         if (fail) throw new Error('offline');
-        return Response.json(committed({ ...body, expectedRevision: 0 }));
+        const created = committed({ ...body, expectedRevision: 0 });
+        return Response.json({
+          apiVersion: 2,
+          receipt: created.receipt,
+          character: created.updates.character,
+        });
       }),
     );
     await expect(

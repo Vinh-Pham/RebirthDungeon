@@ -1,3 +1,5 @@
+import FeatureGate from '../shared/FeatureGate';
+import { heroFeatures, characterReviewFeature } from '../../game/FeatureReads';
 import { useSyncExternalStore } from 'react';
 import { Text, View } from 'react-native';
 import { heroStats } from '../../engine/rpg/Character';
@@ -6,13 +8,7 @@ import type { GameplayHost as JourneyHost } from '../../game/Gameplay';
 import type { GameplayJourney as JourneySession } from '../../game/Gameplay';
 import { DungeonButton } from '../shared/DungeonUI';
 
-export default function RestSkillUse({
-  host,
-  session,
-}: {
-  host: JourneyHost;
-  session: JourneySession;
-}) {
+function RestSkillUseLoaded({ host, session }: { host: JourneyHost; session: JourneySession }) {
   const view = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
   const hosted = useSyncExternalStore(host.subscribe, host.getSnapshot, host.getServerSnapshot);
   const reason =
@@ -20,18 +16,24 @@ export default function RestSkillUse({
       ? 'Use Rest from the Life hotbar during battle.'
       : view.activeService
         ? 'Close the town service before resting.'
-        : !view.state.hero.learnedSkills.rest
+        : !heroFeatures(session, ['skills'], view).learnedSkills.rest
           ? 'Learn Rest first.'
           : hosted.retryAvailable
             ? 'Recover the pending action before resting again.'
             : undefined;
-  const stats = heroStats(view.state.hero, session.content, view.state.dungeon?.effects);
+  const stats =
+    characterReviewFeature(session, view)?.stats ??
+    heroStats(
+      heroFeatures(session, ['inventory', 'equipment', 'skills', 'titles'], view),
+      session.content,
+      view.state.dungeon?.effects,
+    );
   return (
     <View className="gap-2">
       {!hosted.battle && !view.state.inEncounter ? (
         <Text className="text-muted text-xs leading-5">
-          Stamina {view.state.hero.stamina} / {stats.maxStamina} · Recover up to{' '}
-          {REST_STAMINA_RECOVERY} each second while resting, limited by fullness.
+          Stamina {heroFeatures(session, ['skills'], view).stamina} / {stats.maxStamina} · Recover
+          up to {REST_STAMINA_RECOVERY} each second while resting, limited by fullness.
         </Text>
       ) : null}
       {view.resting ? (
@@ -60,5 +62,13 @@ export default function RestSkillUse({
         }}
       />
     </View>
+  );
+}
+
+export default function RestSkillUse(props: Parameters<typeof RestSkillUseLoaded>[0]) {
+  return (
+    <FeatureGate session={props.session} features={['skills']}>
+      <RestSkillUseLoaded {...props} />
+    </FeatureGate>
   );
 }

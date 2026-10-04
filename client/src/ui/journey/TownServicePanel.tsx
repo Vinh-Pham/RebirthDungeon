@@ -1,7 +1,9 @@
+import FeatureGate from '../shared/FeatureGate';
+import { heroFeatures, characterReviewFeature } from '../../game/FeatureReads';
 import GameImage from '../shared/GameImage';
 import EnchantServicePanel from './EnchantServicePanel';
 import { DungeonButton as Button, DungeonCard } from '../shared/DungeonUI';
-import { useRef, useState } from 'react';
+import { useSyncExternalStore, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { GameplayJourney as JourneySession } from '../../game/Gameplay';
 import type { GameplayProgressionCommand as ProgressionCommand } from '../../game/Gameplay';
@@ -82,7 +84,7 @@ function TradeRow({
 }
 type Quote = { command: ProgressionCommand; label: string; goldChange: number; detail: string };
 
-export default function TownServicePanel({
+function TownServicePanelLoaded({
   session,
   objectId,
   busy,
@@ -100,13 +102,16 @@ export default function TownServicePanel({
   const [repairPage, setRepairPage] = useState(0);
   const [tradePage, setTradePage] = useState(0);
   const pending = useRef<Quote | undefined>(undefined);
-  const { state, map } = session.getSnapshot();
-  const hero = state.hero;
+  const view = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
+  const { map } = view;
+  const hero = heroFeatures(session, ['inventory', 'equipment', 'skills', 'quests'], view);
   const content = session.content;
   const object = map.objects.find((entry) => entry.id === objectId)!;
   const shop = content.data.shops.find((entry) => entry.id === object.shopId);
   const altar = object.kind === 'altar' || object.kind === 'dungeonEntrance';
-  const stats = heroStats(hero, content);
+  const stats =
+    characterReviewFeature(session, view)?.stats ??
+    heroStats(heroFeatures(session, ['inventory', 'equipment', 'skills', 'titles'], view), content);
   const choose = (next: Quote) => {
     pending.current = next;
     setQuote(next);
@@ -473,3 +478,11 @@ const styles = StyleSheet.create({
   actions: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 10 },
   quantity: { fontSize: 16 },
 });
+
+export default function TownServicePanel(props: Parameters<typeof TownServicePanelLoaded>[0]) {
+  return (
+    <FeatureGate session={props.session} features={['inventory', 'equipment', 'skills', 'quests']}>
+      <TownServicePanelLoaded {...props} />
+    </FeatureGate>
+  );
+}

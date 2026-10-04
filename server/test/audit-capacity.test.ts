@@ -1,7 +1,7 @@
 import { env } from 'cloudflare:workers';
 import { reset, applyD1Migrations } from 'cloudflare:test';
 import { expect, it } from 'vitest';
-import { execute, newOnlineState } from '@rebirth/game-core/online/Runtime';
+import { execute, newOnlineState } from '@rebirth/game-core/online/TestRuntime';
 import { auditStatement, commitRecord } from '../src/audit/repository.js';
 
 // Local D1 measurements: useful for budgeting, not a substitute for deployed latency/load tests.

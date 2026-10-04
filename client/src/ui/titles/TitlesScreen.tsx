@@ -1,3 +1,5 @@
+import FeatureGate from '../shared/FeatureGate';
+import { heroFeatures } from '../../game/FeatureReads';
 import { useState, useSyncExternalStore } from 'react';
 import { Text, TextInput, View } from 'react-native';
 import type { TitleDefinition } from '../../data/schemas/titles';
@@ -26,7 +28,7 @@ export default function TitlesScreen() {
     </MenuPage>
   );
 }
-function TitleCollection({ host, session }: { host: JourneyHost; session: JourneySession }) {
+function TitleCollectionLoaded({ host, session }: { host: JourneyHost; session: JourneySession }) {
   const view = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
   const hosted = useSyncExternalStore(host.subscribe, host.getSnapshot, host.getServerSnapshot);
   const [slot, setSlot] = useState<'all' | TitleDefinition['slot']>('all');
@@ -34,7 +36,11 @@ function TitleCollection({ host, session }: { host: JourneyHost; session: Journe
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<string>();
   const [offset, setOffset] = useState(0);
-  const hero = view.state.hero,
+  const hero = heroFeatures(
+      session,
+      ['titles', 'skills', 'inventory', 'equipment', 'quests'],
+      view,
+    ),
     content = session.content;
   const selected = content.data.titles.find((t) => t.id === selectedId);
   const town = !hosted.battle && !view.state.inEncounter && !view.state.dungeon && !!view.map.theme;
@@ -353,4 +359,15 @@ function acquisition(source: string | undefined, session: JourneySession) {
   if (source?.startsWith('coupon/')) return 'Redeemed a town coupon';
   if (source === 'legacy/ownership') return 'Preserved from an earlier save';
   return source?.startsWith('encounter/') ? 'Completed encounter' : 'Saved journey achievement';
+}
+
+function TitleCollection(props: Parameters<typeof TitleCollectionLoaded>[0]) {
+  return (
+    <FeatureGate
+      session={props.session}
+      features={['titles', 'skills', 'inventory', 'equipment', 'quests']}
+    >
+      <TitleCollectionLoaded {...props} />
+    </FeatureGate>
+  );
 }

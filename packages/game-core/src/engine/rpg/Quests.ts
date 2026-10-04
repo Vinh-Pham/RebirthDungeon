@@ -20,6 +20,18 @@ import {
 import { learnSkillDraft, type ActionOutcome } from './Skills';
 import { MAX_LEVEL } from './Leveling';
 
+export type QuestFacts = Pick<
+  HeroFacts,
+  | 'quests'
+  | 'questFlags'
+  | 'learnedSkills'
+  | 'level'
+  | 'growthTalent'
+  | 'inventory'
+  | 'weapons'
+  | 'armors'
+  | 'equipment'
+>;
 export { emptyQuestProgression } from './QuestState';
 export function rankAtLeast(
   actual: z.infer<typeof SkillRankSchema> | undefined,
@@ -27,7 +39,7 @@ export function rankAtLeast(
 ) {
   return !!actual && SKILL_RANKS.indexOf(actual) >= SKILL_RANKS.indexOf(required);
 }
-export function questEligible(hero: HeroFacts, condition?: QuestCondition): boolean {
+export function questEligible(hero: QuestFacts, condition?: QuestCondition): boolean {
   if (!condition) return true;
   switch (condition.kind) {
     case 'all':
@@ -53,9 +65,9 @@ export function questEligible(hero: HeroFacts, condition?: QuestCondition): bool
         : itemCount(hero, condition.itemId) >= condition.quantity;
   }
 }
-export const questStage = (hero: HeroFacts, quest: QuestDefinition) =>
+export const questStage = (hero: QuestFacts, quest: QuestDefinition) =>
   quest.stages.find((s) => s.id === hero.quests[quest.id]?.stageId);
-export function objectiveProgress(hero: HeroFacts, quest: QuestDefinition, o: QuestObjective) {
+export function objectiveProgress(hero: QuestFacts, quest: QuestDefinition, o: QuestObjective) {
   if (hero.quests[quest.id]?.status === 'completed') return o.target;
   if (o.kind === 'ownItem') return Math.min(o.target, itemCount(hero, o.itemId));
   if (o.kind === 'deliverItem')
@@ -64,7 +76,7 @@ export function objectiveProgress(hero: HeroFacts, quest: QuestDefinition, o: Qu
     return rankAtLeast(hero.learnedSkills[o.skillId]?.rank, o.rank) ? 1 : 0;
   return hero.quests[quest.id]?.counts[o.id] ?? 0;
 }
-export function questReady(hero: HeroFacts, quest: QuestDefinition) {
+export function questReady(hero: QuestFacts, quest: QuestDefinition) {
   const record = hero.quests[quest.id],
     stage = questStage(hero, quest);
   return (
@@ -368,7 +380,7 @@ export function mergeQuestEncounter(
   }
   reconcileQuests(hero, content);
 }
-export function questItemNeeds(hero: HeroFacts, content: ContentRegistry, itemId?: string) {
+export function questItemNeeds(hero: QuestFacts, content: ContentRegistry, itemId?: string) {
   return content.data.quests.flatMap((quest) =>
     hero.quests[quest.id]?.status === 'active'
       ? (questStage(hero, quest)?.objectives ?? [])

@@ -1,3 +1,5 @@
+import FeatureGate from '../shared/FeatureGate';
+import { heroFeatures } from '../../game/FeatureReads';
 import { useState, useSyncExternalStore } from 'react';
 import { Text, View } from 'react-native';
 import type { QuestDefinition } from '../../data/schemas/quests';
@@ -21,12 +23,16 @@ export default function QuestsScreen() {
     </MenuPage>
   );
 }
-function QuestJournal({ host, session }: { host: JourneyHost; session: JourneySession }) {
+function QuestJournalLoaded({ host, session }: { host: JourneyHost; session: JourneySession }) {
   const view = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
   const hosted = useSyncExternalStore(host.subscribe, host.getSnapshot, host.getServerSnapshot);
   const [category, setCategory] = useState<'all' | QuestDefinition['category']>('all');
   const [selectedId, setSelectedId] = useState<string>();
-  const hero = view.state.hero,
+  const hero = heroFeatures(
+      session,
+      ['quests', 'skills', 'inventory', 'equipment', 'titles'],
+      view,
+    ),
     content = session.content;
   const selected = content.data.quests.find((q) => q.id === selectedId);
   const readOnly = !!hosted.battle || !!view.state.inEncounter;
@@ -117,5 +123,16 @@ function QuestJournal({ host, session }: { host: JourneyHost; session: JourneySe
       ) : null}
       <ProgressionFeedback host={host} />
     </MenuPage>
+  );
+}
+
+function QuestJournal(props: Parameters<typeof QuestJournalLoaded>[0]) {
+  return (
+    <FeatureGate
+      session={props.session}
+      features={['quests', 'skills', 'inventory', 'equipment', 'titles']}
+    >
+      <QuestJournalLoaded {...props} />
+    </FeatureGate>
   );
 }

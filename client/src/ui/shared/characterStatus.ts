@@ -10,7 +10,24 @@ import type { CharacterReview } from '../../game/BattleSession';
 
 /** Prefer the isolated encounter's live resources without publishing them to the campaign. */
 export function characterReview(
-  hero: HeroFacts,
+  hero: Pick<
+    HeroFacts,
+    | 'classId'
+    | 'level'
+    | 'growthTalent'
+    | 'inventory'
+    | 'equipment'
+    | 'weapons'
+    | 'armors'
+    | 'learnedSkills'
+    | 'earnedTitles'
+    | 'titleCollection'
+    | 'health'
+    | 'mana'
+    | 'stamina'
+    | 'wounds'
+    | 'fullness'
+  >,
   content: ContentRegistry,
   effects: readonly { statusId: string; stacks: number }[] = [],
   battle?: CharacterReview,

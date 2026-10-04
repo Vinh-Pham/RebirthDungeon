@@ -19,7 +19,7 @@ export const titleStatLabels = {
 };
 export const slotLabel = { first: 'First Title', second: 'Second Title' };
 export function visibleTitles(
-  hero: HeroFacts,
+  hero: Pick<HeroFacts, 'earnedTitles' | 'titleCollection'>,
   definitions: readonly TitleDefinition[],
   search: string,
   slot: 'all' | TitleDefinition['slot'],

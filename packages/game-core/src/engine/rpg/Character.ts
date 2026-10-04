@@ -84,21 +84,37 @@ export type HeroFacts = Omit<HeroSnapshot, 'enchanting'>;
 export type EquipmentReference = { weaponId: string } | { armorId: string };
 export type OwnedItem = { itemId: string } | EquipmentReference;
 export function ownedEquipment(
-  hero: Hero,
+  hero: Pick<Hero, 'weapons' | 'armors'>,
   reference: EquipmentReference,
 ): Weapon | z.infer<typeof ArmorSchema>;
 export function ownedEquipment(
-  hero: HeroFacts,
+  hero: Pick<HeroFacts, 'weapons' | 'armors'>,
   reference: EquipmentReference,
 ): Immutable<Weapon | z.infer<typeof ArmorSchema>>;
-export function ownedEquipment(hero: HeroFacts, reference: EquipmentReference) {
+export function ownedEquipment(
+  hero: Pick<HeroFacts, 'weapons' | 'armors'>,
+  reference: EquipmentReference,
+) {
   const item =
     'weaponId' in reference ? hero.weapons[reference.weaponId] : hero.armors[reference.armorId];
   if (!item) throw new Error('This equipment is not in your pack');
   return item;
 }
+export type HeroStatFacts = Pick<
+  HeroFacts,
+  | 'classId'
+  | 'level'
+  | 'growthTalent'
+  | 'inventory'
+  | 'equipment'
+  | 'weapons'
+  | 'armors'
+  | 'learnedSkills'
+  | 'earnedTitles'
+  | 'titleCollection'
+>;
 export function heroStatSource(
-  hero: HeroFacts,
+  hero: HeroStatFacts,
   effects: readonly { statusId: string; stacks: number }[] | undefined,
   content: ContentRegistry,
 ): StatSource {
@@ -129,7 +145,7 @@ export function heroStatSource(
   };
 }
 export function heroStats(
-  hero: HeroFacts,
+  hero: HeroStatFacts,
   content: ContentRegistry,
   effects: readonly { statusId: string; stacks: number }[] = [],
 ) {
@@ -322,7 +338,10 @@ export function createHero(
   restoreHero(hero, content);
   return hero;
 }
-export function itemCount(hero: HeroFacts, itemId: string) {
+export function itemCount(
+  hero: Pick<HeroFacts, 'inventory' | 'weapons' | 'armors'>,
+  itemId: string,
+) {
   return (
     (hero.inventory[itemId] ?? 0) +
     Object.values(readPlain(hero.weapons)).filter((weapon) => weapon.itemId === itemId).length +
@@ -355,12 +374,19 @@ export function addItem(hero: Hero, itemId: string, quantity: number, content: C
       hero.discoveredSkills.push(discovered);
   }
 }
-export function ownedDefinition(hero: HeroFacts, reference: OwnedItem, content: ContentRegistry) {
+export function ownedDefinition(
+  hero: Pick<HeroFacts, 'weapons' | 'armors'>,
+  reference: OwnedItem,
+  content: ContentRegistry,
+) {
   return content.item(
     'itemId' in reference ? reference.itemId : ownedEquipment(hero, reference).itemId,
   );
 }
-export function removableCount(hero: HeroFacts, reference: OwnedItem): number {
+export function removableCount(
+  hero: Pick<HeroFacts, 'inventory' | 'weapons' | 'armors' | 'equipment'>,
+  reference: OwnedItem,
+): number {
   if ('weaponId' in reference)
     return hero.weapons[reference.weaponId] &&
       !hero.weapons[reference.weaponId].locked &&

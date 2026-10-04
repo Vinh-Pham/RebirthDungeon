@@ -1,3 +1,6 @@
+import { useSyncExternalStore } from 'react';
+import FeatureGate from '../shared/FeatureGate';
+import { heroFeatures } from '../../game/FeatureReads';
 import { gameHref } from '../navigation/gameHref';
 import { router } from 'expo-router';
 import { Text } from 'react-native';
@@ -7,9 +10,10 @@ import { useCharacterGame } from '../menu/CharacterGameContext';
 import { menu } from '../menu/MenuUI';
 import { DungeonButton, DungeonCard } from '../shared/DungeonUI';
 
-export default function QuestTracker({ session }: { session: JourneySession }) {
+function QuestTrackerLoaded({ session }: { session: JourneySession }) {
   const { profile } = useCharacterGame();
-  const hero = session.getSnapshot().state.hero;
+  const view = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
+  const hero = heroFeatures(session, ['quests', 'skills', 'inventory', 'equipment'], view);
   const available = Object.values(hero.quests).filter((q) => q.status === 'available').length;
   const active = session.content.data.quests.filter((q) => hero.quests[q.id]?.status === 'active');
   const objectiveCount = active.reduce(
@@ -41,5 +45,13 @@ export default function QuestTracker({ session }: { session: JourneySession }) {
         onPress={() => router.navigate(gameHref(profile.id, 'quests'))}
       />
     </DungeonCard>
+  );
+}
+
+export default function QuestTracker(props: Parameters<typeof QuestTrackerLoaded>[0]) {
+  return (
+    <FeatureGate session={props.session} features={['quests', 'skills', 'inventory', 'equipment']}>
+      <QuestTrackerLoaded {...props} />
+    </FeatureGate>
   );
 }

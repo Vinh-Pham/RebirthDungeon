@@ -3,11 +3,31 @@ import { pathToFileURL } from 'node:url';
 import { join } from 'node:path';
 import { hashPassword } from 'better-auth/crypto';
 import { getPlatformProxy } from 'wrangler';
+import { tsImport } from 'tsx/esm/api';
+const { seedCatalog } = await tsImport(
+  '../src/game/content.ts',
+  import.meta.url,
+);
+const { loadGameContent } = await tsImport(
+  '../../packages/game-core/src/data/content.ts',
+  import.meta.url,
+);
+const seeds = new WeakMap();
+export function seedLocalCatalog(db) {
+  let seed = seeds.get(db);
+  if (!seed) {
+    seed = seedCatalog(db, loadGameContent().data);
+    seeds.set(db, seed);
+    seed.catch(() => seeds.delete(db));
+  }
+  return seed;
+}
 
 export const SEED_EMAIL = 'player@example.invalid';
 export const SEED_PASSWORD = 'local-development-password';
 
 export async function seedLocal(db) {
+  await seedLocalCatalog(db);
   const existing = await db
     .prepare('SELECT id FROM user WHERE email = ?')
     .bind(SEED_EMAIL)

@@ -1,3 +1,5 @@
+import FeatureGate from '../shared/FeatureGate';
+import { heroFeatures } from '../../game/FeatureReads';
 import { gameHref } from '../navigation/gameHref';
 import { router } from 'expo-router';
 import { ProgressBar } from 'heroui-native-pro/progress-bar';
@@ -13,15 +15,12 @@ import KeyboardChoiceGroup from '../shared/KeyboardChoiceGroup';
 import RestSkillUse from '../skills/RestSkillUse';
 import ProgressionFeedback from '../skills/ProgressionFeedback';
 
-export default function JourneySkills({ session }: { session: JourneySession }) {
+function JourneySkillsLoaded({ session }: { session: JourneySession }) {
   const { profile, host } = useCharacterGame();
   const [category, setCategory] = useState('life');
-  const { state, map } = useSyncExternalStore(
-    session.subscribe,
-    session.getSnapshot,
-    session.getSnapshot,
-  );
-  const hero = state.hero;
+  const view = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
+  const { state, map } = view;
+  const hero = heroFeatures(session, ['skills'], view);
   const skills = session.content.data.skills.filter((skill) => !!hero.learnedSkills[skill.id]);
   const categorySkills = skills.filter((skill) => (skill.category ?? 'combat') === category);
   const town = !state.inEncounter && !state.dungeon && !!map.theme;
@@ -188,3 +187,11 @@ const styles = StyleSheet.create({
   rank: { fontSize: 12, fontWeight: '600' },
   objective: { flex: 1, fontSize: 12, lineHeight: 20 },
 });
+
+export default function JourneySkills(props: Parameters<typeof JourneySkillsLoaded>[0]) {
+  return (
+    <FeatureGate session={props.session} features={['skills']}>
+      <JourneySkillsLoaded {...props} />
+    </FeatureGate>
+  );
+}

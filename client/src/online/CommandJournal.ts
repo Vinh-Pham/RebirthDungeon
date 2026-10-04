@@ -19,4 +19,4 @@ export interface CommandJournal {
   clear(key: string, commandId: string): Promise<void>;
 }
 export const journalKey = (origin: string, userId: string, characterId = 'creation') =>
-  JSON.stringify([origin, userId, characterId]);
+  JSON.stringify(['game-api-v2-reset', origin, userId, characterId]);

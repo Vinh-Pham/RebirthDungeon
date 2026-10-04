@@ -1,3 +1,5 @@
+import FeatureGate from '../shared/FeatureGate';
+import { heroFeatures } from '../../game/FeatureReads';
 import { useMemo, useState, useSyncExternalStore } from 'react';
 import { FlatList, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -40,7 +42,11 @@ function rankEffects(
     .filter(Boolean)
     .join(' · ');
 }
-function progressLabel(hero: HeroFacts, skill: Skill, town: boolean) {
+function progressLabel(
+  hero: Pick<HeroFacts, 'learnedSkills' | 'discoveredSkills' | 'ap'>,
+  skill: Skill,
+  town: boolean,
+) {
   const record = hero.learnedSkills[skill.id];
   if (skill.enemyOnly) return 'Enemy-only passive';
   if (!skill.gameRanks) return 'Not implemented';
@@ -76,13 +82,13 @@ export default function SkillsScreen() {
     </MenuPage>
   );
 }
-function SkillJournal({ host, session }: { host: JourneyHost; session: JourneySession }) {
+function SkillJournalLoaded({ host, session }: { host: JourneyHost; session: JourneySession }) {
   const { edges } = useAppScreenChrome();
   const view = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
   const [filter, setFilter] = useState<'learned' | 'discovered' | 'catalog'>('learned');
   const [selectedId, setSelectedId] = useState<string>();
   const skills = useMemo(() => session.content.data.skills, [session]);
-  const hero = view.state.hero,
+  const hero = heroFeatures(session, ['skills', 'inventory', 'equipment'], view),
     town = !view.state.inEncounter && !view.state.dungeon && !!view.map.theme;
   const rows = skills.filter(
     (skill) =>
@@ -194,7 +200,7 @@ function SkillDetails({
     hosted.battle?.getSnapshot ?? noSnapshot,
     noSnapshot,
   );
-  const hero = view.state.hero,
+  const hero = heroFeatures(session, ['skills', 'inventory', 'equipment'], view),
     record = hero.learnedSkills[skill.id];
   const town = !view.state.inEncounter && !view.state.dungeon && !!view.map.theme;
   const rank = skill.gameRanks?.[record?.rank ?? 'F'];
@@ -404,5 +410,13 @@ function SkillDetails({
         </>
       )}
     </View>
+  );
+}
+
+function SkillJournal(props: Parameters<typeof SkillJournalLoaded>[0]) {
+  return (
+    <FeatureGate session={props.session} features={['skills', 'inventory', 'equipment']}>
+      <SkillJournalLoaded {...props} />
+    </FeatureGate>
   );
 }

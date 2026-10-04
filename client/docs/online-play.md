@@ -31,7 +31,7 @@ secrets are preserved. Missing/blank secrets get 32 cryptographically random byt
 invalid nonblank secrets require explicit correction. Secrets are never printed.
 
 Database initialization uses the existing Drizzle migrations and seed against local
-D1 only. Reruns preserve accounts, sessions, characters, and migration history.
+D1 only. The API 2 reset migration clears old online characters once and preserves Better Auth accounts, sessions, and audit history. Reruns preserve new characters and migration history.
 Legacy auth tables cause refusal before the historical reset can run. Current tables
 without migration history require explicit operator review; setup never baselines
 them. `LOCAL_D1_STATE=/absolute/path` selects the same state folder for setup and
@@ -78,19 +78,34 @@ The native `.ts` auth adapter uses the official Expo client and SecureStore unde
 
 Cached credentials are provisional. Startup, reconnect, and foregrounding revalidate the session before enabling game input; authoritative missing-session/401 responses require sign-in again. Network failures preserve stored credentials. Account changes cancel reads and discard game caches; generation checks reject late responses from an earlier account or connection.
 
-| Query            | Key scope                                       | Freshness                                     |
-| ---------------- | ----------------------------------------------- | --------------------------------------------- |
-| Session          | API origin                                      | 30 seconds, with lifecycle revalidation       |
-| Content          | Origin and account                              | 5 minutes; bundled content version must match |
-| Character roster | Origin and account                              | 30 seconds                                    |
-| Character view   | Origin, account, character                      | 5 seconds; foreground/reconnect revalidation  |
-| Preview          | Origin, account, character, revision, selection | Immutable at that revision; no mutation       |
+| Query                         | Key scope                                       | Freshness                                  |
+| ----------------------------- | ----------------------------------------------- | ------------------------------------------ |
+| Session                       | API origin                                      | 30 seconds; lifecycle revalidation         |
+| Content                       | Origin, account, pinned release                 | Immutable validated definitions            |
+| Character roster              | Origin and account                              | 30 seconds                                 |
+| Feature                       | Origin, account, character, feature             | 5 seconds; revision guards                 |
+| Coherent gameplay observation | Origin, account, character                      | Composed from required real feature slices |
+| Preview                       | Origin, account, character, revision, selection | Immutable at that revision                 |
 
+Metadata, progression, resources, stats, journey, rest, dungeon, and encounter
+bootstrap independently. Inventory, equipment, skills, quests, titles, and enchanting
+load only when their screens require them. Content is reconstructed from the
+manifest and pinned versioned collection endpoints. Character metadata GET never
+returns a complete hero or battle.
+
+Feature actions use the API 2 paths from shared `Actions.ts`; mutation responses
+contain the original receipt, current `snapshotRevision`, and affected-feature
+`updates`. Updates apply together. Sequential commits advance known unchanged cached
+features, without inventing unloaded data. Older reads/actions cannot replace newer
+slices. Unexpected revision gaps refresh required and already loaded features with
+`expectedRevision` guards before input resumes. A coherent gameplay observation
+publishes only after all required slices share a revision, content release, and
+connection generation.
 Game caches are memory-only. Reads have bounded retries for network and server failures, a 15-second timeout, and cancellation signals. Authoritative client errors and previews do not automatically retry. Transport validates responses with shared Zod contracts and limits UTF-8 JSON bodies to 4 KiB. Character cache merges never replace a newer revision with an older response.
 
 ## Gameplay ownership
 
-`src/game/Gameplay.ts` defines the read-only host, journey, and battle ports used by shared screens, renderers, and audio. `LocalGameplayHost` remains only as a headless compatibility adapter for the original simulation/save tests; no app route imports or mounts it. `OnlineGameplayHost` subscribes to React Query's public server view, maps existing UI intents to the public command allowlist, and updates only after a confirmed server response. It never constructs a journey engine or advances enemies locally.
+`src/game/Gameplay.ts` defines the read-only host, journey, and battle ports used by shared screens, renderers, and audio. `LocalGameplayHost` remains only as a headless compatibility adapter for the original simulation/save tests; no app route imports or mounts it. `OnlineGameplayHost` subscribes to a coherent composition of React Query feature caches, maps existing intents to feature action routes, and updates after a confirmed server response. Journey observation contains core progression/resources; typed `getFeature`/`loadFeatures` ports expose optional loaded slices. Feature gates derive readiness from the subscribed observation's available feature names. Hero/stat read helpers receive that observation explicitly, keeping React Compiler memoization sensitive to feature and revision changes. It never constructs a journey engine or advances enemies locally.
 
 Movement, interactions, services, equipment, exploration consumables, hotbar changes, skills, quests, titles, enchants, dungeons, battle actions, and encounter settlement go through the server. Equipment/enchant/burn previews use revision-bound server calculations. Enchant operation identity and RNG remain server-owned. Battle action selection and cancellation stay local, while action availability, valid targets, and combat estimates come from the server's read-only projection.
 
@@ -98,7 +113,7 @@ Battle receipts optionally contain version 1 presentation batches for the commit
 
 ## Durable action recovery
 
-On web, command UUIDs use cryptographic [`getRandomValues`](https://w3c.github.io/webcrypto/#Crypto-method-getRandomValues), which works on LAN HTTP where `randomUUID` requires a secure context. Native keeps Expo Crypto. Every deliberate action receives a UUID and the currently observed character revision. The coordinator writes that exact request to a separate recovery store **before** sending it: `rebirth-online-commands.db` on native and `rebirth-online-commands` IndexedDB on web. Keys include API origin, account, and character (or a separate character-creation key). Atomic insertion prevents another tab from overwriting an unresolved action; clearing compares command identity so a late acknowledgment cannot delete a newer request.
+On web, command UUIDs use cryptographic [`getRandomValues`](https://w3c.github.io/webcrypto/#Crypto-method-getRandomValues), which works on LAN HTTP where `randomUUID` requires a secure context. Native keeps Expo Crypto. Every deliberate action receives a UUID and the currently observed character revision. The coordinator writes that exact request to a separate recovery store **before** sending it: `rebirth-online-commands.db` on native and `rebirth-online-commands` IndexedDB on web. Keys begin with `game-api-v2-reset` and include API origin, account, and character (or a separate creation key). Pre-cutover requests remain in their old namespace and cannot replay automatically. Atomic insertion prevents another tab from overwriting an unresolved action; clearing compares command identity so a late acknowledgment cannot delete a newer request.
 
 Only one unresolved request per character is allowed. Unknown outcomes, disconnects, 401s, server failures, and rate limits retain the request. **Recover pending action** explicitly resends the same ID, revision, and body. The server returns its original receipt if it already committed. No retry invents a new ID, rebases an old choice, spends resources optimistically, or rerolls outcomes. Character creation uses the same recovery path.
 
@@ -121,3 +136,23 @@ The localhost/LAN mismatch follow-up reproduced the unreachable account screen a
 Online-only client validation on October 3, 2026: all 626 client tests, formatting, lint and type checks passed. Browser QA at `http://192.168.4.38:8081` used 390×844 and 1280×900 layouts and covered Play → sign-in, the seeded development account, creating an online character, opening the game/menu, returning to the roster, and legacy character/setup/save-load redirects. The drawer has no Save/Load or debug controls. Emulated disconnection during a game showed the connection gate with no local fallback. Existing local saves were not read, migrated or deleted by these changes. Native device interaction was not performed. Screenshots are in ignored `client/.artifacts/online-only/`.
 
 Cloud/local save synchronization, social sign-in, email verification/reset, multiplayer, JWT issuance, and content administration remain future work.
+
+API 2 automated checks also cover lazy core bootstrap, unloaded feature preservation,
+independently newer reads, guarded revision gaps, null encounter removal, and the
+full feature action/preview route mapping. The server rollout sequence lives in
+[feature API rollout](../../server/docs/feature-api-rollout.md).
+
+API 2 verification on October 3, 2026: workspace formatting, lint with zero warnings,
+and all type checks passed. The full suite passed 771 tests (636 client, 13 shared
+core, and 122 server/tooling tests); the final client storage-readiness change also
+passed the full 636-test client suite. Worker dry-run and web export passed. The
+isolated HTTP smoke check covered creation and durable replay, focused reads,
+movement, collection, equipment preview/equip, battle actions and settlement, and
+a merchant purchase. Web QA at `http://localhost:8097` against the isolated Worker
+at `http://localhost:8797` used 390×844 and 1280×900 layouts. It verified lazy feature
+loading, potion use, hotbar updates, rest start/stop, quests, titles, canvas movement,
+keyboard dismissal of navigation, and position/inventory persistence after reload.
+The task's browser and development servers were closed and temporary connection
+configuration restored. No remote migration/deployment or native device interaction
+was performed. Existing development warnings about require cycles, deprecated web
+style props, and unsupported Reanimated easing remain.

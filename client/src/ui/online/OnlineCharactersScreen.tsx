@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Text, View } from 'react-native';
 import { useOnline } from '../../online/OnlineProvider';
 import { charactersOptions } from '../../online/queries';
@@ -16,6 +16,7 @@ export default function OnlineCharactersScreen() {
   );
 }
 function CharacterList() {
+  const { reset } = useLocalSearchParams<{ reset?: string }>();
   const { api, session } = useOnline();
   const query = useQuery(charactersOptions(api!, session!.user.id));
   return (
@@ -30,6 +31,12 @@ function CharacterList() {
         Progress is saved on the server after every accepted action. A connection is required to
         play.
       </Text>
+      {reset === '1' ? (
+        <Text className="text-muted" style={menu.body}>
+          This character is no longer available. Online characters were reset for the game update;
+          your account is preserved. Choose or create a character below.
+        </Text>
+      ) : null}
       {query.isPending ? <DungeonLoading label="Loading online characters" /> : null}
       <MenuError message={query.error?.message} />
       {query.error ? (

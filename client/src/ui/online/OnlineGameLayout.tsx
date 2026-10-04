@@ -3,7 +3,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, Stack, useFocusEffect, useLocalSearchParams, usePathname } from 'expo-router';
 import { Text, View } from 'react-native';
 import { useOnline } from '../../online/OnlineProvider';
-import { contentOptions } from '../../online/queries';
+import { contentOptions, featureOptions } from '../../online/queries';
+import { APIError } from '../../online/API';
 import { OnlineGameplayHost, type OnlineHostOptions } from '../../online/OnlineGameplayHost';
 import { ContentRegistry } from '../../engine/data/ContentRegistry';
 import { useAudio } from '../../audio/AudioProvider';
@@ -21,17 +22,29 @@ export default function OnlineGameLayout() {
   );
 }
 function LoadGame({ characterId }: { characterId: string }) {
-  const { api, session } = useOnline();
-  const catalog = useQuery(contentOptions(api!, session!.user.id));
+  const { api, session, access } = useOnline();
+  const metadata = useQuery(
+    featureOptions(api!, access, session!.user.id, characterId, 'character'),
+  );
+  const catalog = useQuery({
+    ...contentOptions(api!, session!.user.id, metadata.data?.contentVersion),
+    enabled: !!metadata.data,
+  });
+  useEffect(() => {
+    if (metadata.error instanceof APIError && metadata.error.status === 404)
+      router.dismissTo('/online/characters?reset=1');
+  }, [metadata.error]);
   if (!catalog.data)
     return (
       <MenuPage>
         <Text className="text-foreground" style={menu.title}>
           Online journey
         </Text>
-        {catalog.error ? (
+        {catalog.error || metadata.error ? (
           <>
-            <MenuError message={catalog.error.message} />
+            <MenuError
+              message={catalog.error?.message ?? metadata.error?.message ?? 'Character unavailable'}
+            />
             <MenuButton
               label="Retry"
               onPress={() => {

@@ -14,15 +14,31 @@ import {
 } from './Character';
 import type { EnchantContribution } from './EnchantEffects';
 
+export type TitleFacts = Pick<
+  HeroFacts,
+  | 'earnedTitles'
+  | 'titleCollection'
+  | 'learnedSkills'
+  | 'level'
+  | 'classId'
+  | 'growthTalent'
+  | 'quests'
+  | 'inventory'
+  | 'weapons'
+  | 'armors'
+>;
 export type TitleSlot = 'first' | 'second';
-export function titleState(hero: HeroFacts, id: string) {
+export function titleState(hero: Pick<HeroFacts, 'earnedTitles' | 'titleCollection'>, id: string) {
   return hero.earnedTitles.includes(id)
     ? 'Earned'
     : hero.titleCollection.discovered.includes(id)
       ? 'Known'
       : 'Unknown';
 }
-export function titleEligible(hero: HeroFacts, title: Pick<TitleDefinition, 'eligibility'>) {
+export function titleEligible(
+  hero: Pick<HeroFacts, 'learnedSkills'>,
+  title: Pick<TitleDefinition, 'eligibility'>,
+) {
   const requirement = title.eligibility;
   return (
     !requirement ||
@@ -33,7 +49,7 @@ export function titleEligible(hero: HeroFacts, title: Pick<TitleDefinition, 'eli
 }
 /** Progression-only basis excludes equipment, titles, enchantments and temporary effects. */
 export function titleConditionProgress(
-  hero: HeroFacts,
+  hero: TitleFacts,
   c: TitleCondition,
   content: ContentRegistry,
 ): { met: boolean; text: string } {
@@ -161,7 +177,7 @@ export function recordTitleEvidence(hero: Hero, key: string) {
   );
 }
 export function selectedTitleEffects(
-  hero: HeroFacts,
+  hero: Pick<HeroFacts, 'learnedSkills' | 'earnedTitles' | 'titleCollection'>,
   content: ContentRegistry,
 ): EnchantContribution[] {
   return (['first', 'second'] as const).flatMap((slot) => {
@@ -184,7 +200,7 @@ export function selectedTitleEffects(
   });
 }
 export function titleSelectionProblem(
-  hero: HeroFacts,
+  hero: Pick<HeroFacts, 'earnedTitles' | 'learnedSkills'>,
   slot: TitleSlot,
   id: string | undefined,
   content: ContentRegistry,
@@ -218,7 +234,23 @@ export function selectTitle(
   return produceState(hero, (draft) => selectTitleDraft(draft, slot, id, content));
 }
 export function previewTitle(
-  hero: HeroFacts,
+  hero: Pick<
+    HeroFacts,
+    | 'classId'
+    | 'level'
+    | 'growthTalent'
+    | 'inventory'
+    | 'equipment'
+    | 'weapons'
+    | 'armors'
+    | 'learnedSkills'
+    | 'earnedTitles'
+    | 'titleCollection'
+    | 'health'
+    | 'mana'
+    | 'stamina'
+    | 'wounds'
+  >,
   slot: TitleSlot,
   id: string | undefined,
   content: ContentRegistry,

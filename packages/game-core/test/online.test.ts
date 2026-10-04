@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { newOnlineState, execute, publicView, validateOnlineState } from '../src/online/Runtime';
+import {
+  newOnlineState,
+  execute,
+  publicView,
+  validateOnlineState,
+} from '../src/online/TestRuntime';
 import {
   ResolvedPresentationSchema,
   CommandSchema,
@@ -7,7 +12,7 @@ import {
   CommandRequestSchema,
 } from '../src/online/Contracts';
 import { JourneySession } from '../src/game/JourneySession';
-import { gameContent } from '../src/online/Runtime';
+import { gameContent } from '../src/online/TestRuntime';
 import { BattleSession } from '../src/game/BattleSession';
 import { addItem, createHero } from '../src/engine/rpg/Character';
 import { applyStatus } from '../src/engine/rpg/StatusEffects';

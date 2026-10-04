@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { CharacterDetailsSchema } from '../persistence/CharacterProfile';
 import { ContentSchema, ItemSchema, MapSchema } from '../data/schemas/content';
-import { EnchantSchema, EnchantRulesSchema } from '../data/schemas/enchants';
+import { EnchantSchema, EnchantRulesSchema, EnchantStatSchema } from '../data/schemas/enchants';
 import { InstalledEnchantSchema } from '../engine/rpg/EnchantState';
 import { LearnedSkillSchema } from '../engine/rpg/Skills';
 import { HeroSchema, WeaponSchema, ArmorSchema } from '../engine/rpg/Character';
@@ -263,6 +263,40 @@ export const PreviewResponseSchema = z.strictObject({
     }),
   ]),
 });
+export const StatSourceSchema = z.strictObject({
+  classId: id,
+  level: z.number().int().min(1).max(200),
+  growthTalent: z.enum(['warrior', 'archery', 'mage']),
+  weaponItemId: id.optional(),
+  ammunitionItemId: id.optional(),
+  armorItemId: id.optional(),
+  enchantments: z
+    .array(
+      z.strictObject({
+        sourceId: id,
+        name: id,
+        stat: EnchantStatSchema,
+        value: z.number().int().min(-1000).max(1000),
+        active: z.boolean(),
+        condition: z.string(),
+      }),
+    )
+    .optional(),
+  titles: z
+    .array(
+      z.strictObject({
+        sourceId: id,
+        name: id,
+        stat: EnchantStatSchema,
+        value: z.number().int().min(-1000).max(1000),
+        active: z.boolean(),
+        condition: z.string(),
+      }),
+    )
+    .optional(),
+  effects: z.array(z.strictObject({ statusId: id, stacks: z.number().int().min(1).max(10) })),
+  learnedSkills: z.record(id, LearnedSkillSchema),
+});
 export const PublicActorSchema = z.strictObject({
   id,
   name: z.string().optional(),
@@ -280,6 +314,7 @@ export const PublicActorSchema = z.strictObject({
   cooldowns: z.record(id, integer),
   inventory: z.record(id, integer),
   stats: DerivedCombatStatsSchema.optional(),
+  statSource: StatSourceSchema.optional(),
   weapon: WeaponSchema.extend({ id }).optional(),
   learnedSkills: z.record(id, LearnedSkillSchema).optional(),
   itemHotbar: z.array(id),

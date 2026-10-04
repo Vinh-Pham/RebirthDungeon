@@ -1,3 +1,5 @@
+import { scenarioRequest } from './scenario-api.js';
+import { seedCatalog } from '../src/game/content.js';
 import {
   distance,
   findPath,
@@ -6,7 +8,6 @@ import {
 import { env } from 'cloudflare:workers';
 import { applyD1Migrations, reset } from 'cloudflare:test';
 import { beforeEach, afterEach, expect, it, vi } from 'vitest';
-import { app } from '../src/index.js';
 import { register } from './auth-helpers.js';
 import {
   CommandResponseSchema,
@@ -18,7 +19,7 @@ import {
   newOnlineState,
   execute,
   validateOnlineState,
-} from '@rebirth/game-core/online/Runtime';
+} from '@rebirth/game-core/online/TestRuntime';
 import {
   GameRepository,
   requestHash,
@@ -35,28 +36,15 @@ import {
 beforeEach(async () => {
   await reset();
   await applyD1Migrations(env.DB, env.TEST_MIGRATIONS);
+  await seedCatalog(env.DB, gameContent.data);
 });
 afterEach(() => vi.restoreAllMocks());
-function request(
+const request = (
   path: string,
   cookie?: string,
   body?: unknown,
   headers: Record<string, string> = {},
-) {
-  return app.request(
-    '/api/game' + path,
-    {
-      method: body === undefined ? 'GET' : 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(cookie ? { Cookie: cookie } : {}),
-        ...headers,
-      },
-      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-    },
-    env,
-  );
-}
+) => scenarioRequest('/api/game' + path, cookie, body, headers);
 async function create(cookie: string, commandId = crypto.randomUUID()) {
   const response = await request('/characters', cookie, {
     commandId,
@@ -613,7 +601,7 @@ it('keeps writes bounded and only updates changed rows', async () => {
       audit: candidate.audit,
     },
   );
-  expect(result.metrics.queries).toBe(3);
+  expect(result.metrics.queries).toBe(4);
   expect(before.metrics.sqlBytes).toBeLessThan(100000);
 });
 it('supports catalog equipment quantity limits with indexed reads and a changed-row command', async () => {

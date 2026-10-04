@@ -1,3 +1,5 @@
+import FeatureGate from '../shared/FeatureGate';
+import { heroFeatures } from '../../game/FeatureReads';
 import { gameHref } from '../navigation/gameHref';
 import ProgressionFeedback from '../skills/ProgressionFeedback';
 import { router } from 'expo-router';
@@ -54,13 +56,7 @@ function InventoryPage({ host, session }: { host: JourneyHost; session: JourneyS
   );
 }
 
-export function InventoryContent({
-  host,
-  session,
-}: {
-  host: JourneyHost;
-  session: JourneySession;
-}) {
+function InventoryContentLoaded({ host, session }: { host: JourneyHost; session: JourneySession }) {
   const { profile } = useCharacterGame();
   const view = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
   const hosted = useSyncExternalStore(host.subscribe, host.getSnapshot, host.getServerSnapshot);
@@ -74,7 +70,11 @@ export function InventoryContent({
   const [search, setSearch] = useState('');
   const [selectedKey, setSelectedKey] = useState<string>();
   const [error, setError] = useState<string>();
-  const hero = view.state.hero;
+  const hero = heroFeatures(
+    session,
+    ['inventory', 'equipment', 'skills', 'quests', 'titles'],
+    view,
+  );
   const rows = useMemo(
     () => inventoryRows(hero, session.content, battle?.inventory),
     [hero, session.content, battle?.inventory],
@@ -311,5 +311,16 @@ export function InventoryContent({
         />
       </DungeonCard>
     </View>
+  );
+}
+
+export function InventoryContent(props: Parameters<typeof InventoryContentLoaded>[0]) {
+  return (
+    <FeatureGate
+      session={props.session}
+      features={['inventory', 'equipment', 'skills', 'quests', 'titles']}
+    >
+      <InventoryContentLoaded {...props} />
+    </FeatureGate>
   );
 }

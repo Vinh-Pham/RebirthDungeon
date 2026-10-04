@@ -11,7 +11,7 @@
     "db:check:remote": "node tools/check-remote.mjs",
     "db:migrate:remote": "node tools/migrate-remote.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run && node --test test/migrations.test.mjs test/seed.test.mjs test/queues.integration.test.mjs test/online-tools.test.mjs test/admin-roles.test.mjs && node --import tsx --test test/email-command.test.mjs",
+    "test": "vitest run && node --test test/migrations.test.mjs test/seed.test.mjs test/queues.integration.test.mjs test/online-tools.test.mjs test/admin-roles.test.mjs test/content-tools.test.mjs && node --import tsx --test test/email-command.test.mjs",
     "test:watch": "vitest",
     "deploy:dry-run": "wrangler deploy --dry-run --outdir dist",
     "format": "oxfmt --write .",
@@ -29,7 +29,9 @@
     "db:seed:local": "node tools/seed-local.mjs",
     "db:setup": "node tools/migrate-local.mjs && node tools/seed-local.mjs",
     "test:seed": "node --test test/seed.test.mjs",
-    "admin:roles": "node tools/admin-roles.mjs"
+    "admin:roles": "node tools/admin-roles.mjs",
+    "db:seed:content": "node tools/seed-content.mjs",
+    "db:models": "tsx tools/generate-game-models.ts"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "1.7.7",

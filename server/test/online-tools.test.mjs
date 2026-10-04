@@ -364,7 +364,7 @@ test(
       .run();
     await db
       .prepare(
-        "INSERT INTO game_characters (id,user_id,name,talent,age,revision,content_version,created_at,updated_at) VALUES ('hero',?,'Hero','warrior',12,0,'v1',1,1)",
+        "INSERT INTO game_characters (id,user_id,name,talent,age,revision,content_version,created_at,updated_at) VALUES ('hero',?,'Hero','warrior',12,0,'rebirth-13.1',1,1)",
       )
       .bind(user.id)
       .run();

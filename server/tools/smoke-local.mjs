@@ -3,6 +3,11 @@ import { randomUUID } from 'node:crypto';
 import { withLocalD1 } from './online-database.mjs';
 import { addresses } from './online-config.mjs';
 import { resolve } from 'node:path';
+import { tsImport } from 'tsx/esm/api';
+const { findPath, isWalkable } = await tsImport(
+  '../../packages/game-core/src/engine/world/TileMap.ts',
+  import.meta.url,
+);
 
 const origin = new URL(process.env.LOCAL_API_ORIGIN ?? 'http://localhost:8787');
 if (
@@ -50,8 +55,11 @@ try {
     '/api/game/content',
     '/api/game/characters',
     '/api/game/characters/{id}',
-    '/api/game/characters/{id}/previews',
-    '/api/game/characters/{id}/commands',
+    '/api/game/characters/{id}/inventory',
+    '/api/game/characters/{id}/inventory/hotbar',
+    '/api/game/characters/{id}/equipment/preview',
+    '/api/game/characters/{id}/encounter/actions',
+    '/api/game/characters/{id}/encounter/settlement',
   ])
     assert.ok(specification.paths[path], `Missing game contract: ${path}`);
   const registered = await request('/api/auth/sign-up/email', {
@@ -103,8 +111,8 @@ try {
   );
   assert.equal(createdResponse.status, 200);
   const created = await createdResponse.json();
-  assert.equal(created.view.character.revision, 1);
-  const characterId = created.view.character.id;
+  assert.equal(created.character.revision, 1);
+  const characterId = created.character.id;
   const replay = await (
     await request('/api/game/characters', creationBody, current)
   ).json();
@@ -112,19 +120,20 @@ try {
   const actionBody = {
     commandId: randomUUID(),
     expectedRevision: 1,
-    command: { type: 'SET_ITEM_HOTBAR', itemId: 'potion', assigned: true },
+    itemId: 'potion',
+    assigned: true,
   };
   const action = await request(
-    `/api/game/characters/${characterId}/commands`,
+    `/api/game/characters/${characterId}/inventory/hotbar`,
     actionBody,
     current,
   );
   assert.equal(action.status, 200);
   const committed = await action.json();
-  assert.equal(committed.view.character.revision, 2);
+  assert.equal(committed.snapshotRevision, 2);
   const duplicate = await (
     await request(
-      `/api/game/characters/${characterId}/commands`,
+      `/api/game/characters/${characterId}/inventory/hotbar`,
       actionBody,
       current,
     )
@@ -140,6 +149,139 @@ try {
       .status,
     200,
   );
+  let revision = committed.snapshotRevision;
+  async function read(feature) {
+    const response = await request(
+      `/api/game/characters/${characterId}/${feature}?expectedRevision=${revision}`,
+      undefined,
+      current,
+    );
+    assert.equal(
+      response.status,
+      200,
+      `${feature}: ${await response.clone().text()}`,
+    );
+    const result = await response.json();
+    assert.equal(result.apiVersion, 2);
+    assert.equal(result.revision, revision);
+    return result.data;
+  }
+  async function act(path, fields = {}) {
+    const response = await request(
+      `/api/game/characters/${characterId}/${path}`,
+      { commandId: randomUUID(), expectedRevision: revision, ...fields },
+      current,
+    );
+    assert.equal(
+      response.status,
+      200,
+      `${path}: ${await response.clone().text()}`,
+    );
+    const result = await response.json();
+    assert.equal(result.snapshotRevision, revision + 1);
+    revision = result.snapshotRevision;
+    return result;
+  }
+  assert.ok((await read('inventory')).itemHotbar.includes('potion'));
+  await read('progression');
+  await read('stats');
+  await read('resources');
+  const preview = await request(
+    `/api/game/characters/${characterId}/equipment/preview`,
+    { expectedRevision: revision, item: { slot: 'weapon' } },
+    current,
+  );
+  assert.equal(preview.status, 200, await preview.clone().text());
+  // Navigate using public geometry; every action still passes through the authoritative HTTP API.
+  let journey = await read('journey');
+  function pathTo(target) {
+    if (target.kind === 'encounter')
+      return findPath(journey.map, journey.position, target);
+    const goals = [
+      { x: target.x + 1, y: target.y },
+      { x: target.x - 1, y: target.y },
+      { x: target.x, y: target.y + 1 },
+      { x: target.x, y: target.y - 1 },
+    ].filter((p) => isWalkable(journey.map, p));
+    const paths = goals
+      .map((goal) => findPath(journey.map, journey.position, goal))
+      .filter(
+        (path, i) =>
+          path.length ||
+          (goals[i].x === journey.position.x &&
+            goals[i].y === journey.position.y),
+      );
+    assert.ok(paths.length, 'No route to smoke target');
+    return paths.sort((a, b) => a.length - b.length)[0];
+  }
+  async function approach(object) {
+    let latest;
+    for (const step of pathTo(object)) {
+      const update = await act('journey/move', {
+        dx: step.x - journey.position.x,
+        dy: step.y - journey.position.y,
+      });
+      journey = update.updates.journey ?? journey;
+      latest = update;
+    }
+    if (latest?.updates.encounter) return latest;
+    const result = await act('journey/interact', { objectId: object.id });
+    journey = result.updates.journey ?? journey;
+    return result;
+  }
+  await approach(
+    journey.map.objects.find(
+      (o) => o.kind === 'chest' && o.itemId === 'iron-blade',
+    ),
+  );
+  const inventory = await read('inventory'),
+    weaponId = Object.keys(inventory.weapons)[0];
+  await act('equipment/weapon', { weaponId });
+  await approach(
+    journey.map.objects.find(
+      (o) => o.kind === 'portal' && o.destination === 'halls',
+    ),
+  );
+  await approach(journey.map.objects.find((o) => o.kind === 'encounter'));
+  let battle = await read('encounter');
+  for (
+    let turn = 0;
+    battle && !['victory', 'defeat'].includes(battle.phase) && turn < 120;
+    turn++
+  ) {
+    const attack = battle.actions.find(
+      (a) => a.action.action === 'attack' && !a.reason && a.targets.length,
+    );
+    assert.ok(attack, 'No basic attack available');
+    const result = await act('encounter/actions', {
+      action: attack.action,
+      targetId: attack.targets[0],
+    });
+    battle = result.updates.encounter ?? (await read('encounter'));
+  }
+  assert.ok(['victory', 'defeat'].includes(battle.phase));
+  const settlement = await act('encounter/settlement');
+  assert.equal(settlement.updates.encounter, null);
+  assert.equal(await read('encounter'), null);
+  journey = await read('journey');
+  await approach(
+    journey.map.objects.find(
+      (o) => o.kind === 'portal' && o.destination === 'refuge',
+    ),
+  );
+  await approach(
+    journey.map.objects.find(
+      (o) => o.kind === 'portal' && o.destination === 'grocery-interior',
+    ),
+  );
+  const shop = journey.map.objects.find((o) => o.kind === 'merchant');
+  await approach(shop);
+  await act(`services/${encodeURIComponent(shop.id)}/purchases`, {
+    itemId: 'bread',
+    quantity: 1,
+  });
+  await act('services/close');
+
   const logout = await request('/api/auth/sign-out', {}, current);
   assert.equal(logout.status, 200);
   assert.equal((await logout.json()).success, true);

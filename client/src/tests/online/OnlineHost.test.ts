@@ -1,3 +1,6 @@
+import { publicFeatures } from '@rebirth/game-core/online/PublicFeatures';
+import { actionDefinitions } from '@rebirth/game-core/online/Actions';
+import { journalKey } from '../../online/CommandJournal';
 import { afterEach, expect, it, vi } from 'vitest';
 import { QueryClient } from '@tanstack/react-query';
 import { OnlineAccess } from '../../online/Access';
@@ -10,12 +13,12 @@ import {
   newOnlineState,
   publicView,
   gameContent,
-} from '@rebirth/game-core/online/Runtime';
+} from '@rebirth/game-core/online/TestRuntime';
 import { GAME_CONTENT_VERSION } from '@rebirth/game-core/online/Contracts';
 function fixture() {
   let state = newOnlineState(12345, 'Player', 'warrior');
   let metadata = {
-    id: 'hero',
+    id: 'dd46a450-bc4b-42bf-aab4-e58c7ccdfc7b',
     name: 'Player',
     talent: 'warrior' as const,
     age: 12,
@@ -41,16 +44,45 @@ function fixture() {
     },
   };
   const fetcher = vi.fn<typeof fetch>(async (_url, init) => {
-    if (init!.method === 'GET') return Response.json(publicView(state, metadata));
+    const path = new URL(String(_url)).pathname;
+    if (init!.method === 'GET') {
+      const feature = path.split('/')[5] ?? 'character';
+      return Response.json({
+        apiVersion: 2,
+        characterId: metadata.id,
+        revision: metadata.revision,
+        contentVersion: metadata.contentVersion,
+        data: publicFeatures(publicView(state, metadata), gameContent, {
+          receipts: state.campaign.hero.enchanting.receipts,
+        })[feature as 'character'],
+      });
+    }
     const request = JSON.parse(init!.body as string),
-      resolved = execute(state, 'Player', request.command, Date.now());
+      definition = actionDefinitions.find((d) => path.endsWith(d.path))!,
+      resolved = execute(
+        state,
+        'Player',
+        {
+          type: definition.type,
+          ...Object.fromEntries(
+            Object.entries(request).filter(
+              ([key]) => !['commandId', 'expectedRevision'].includes(key),
+            ),
+          ),
+        } as any,
+        Date.now(),
+      );
     state = resolved.state;
     metadata = { ...metadata, revision: metadata.revision + 1 };
     return Response.json({
-      view: publicView(state, metadata),
+      apiVersion: 2,
+      snapshotRevision: metadata.revision,
+      updates: publicFeatures(publicView(state, metadata), gameContent, {
+        receipts: state.campaign.hero.enchanting.receipts,
+      }),
       receipt: {
         commandId: request.commandId,
-        characterId: 'hero',
+        characterId: 'dd46a450-bc4b-42bf-aab4-e58c7ccdfc7b',
         baseRevision: request.expectedRevision,
         committedRevision: metadata.revision,
         createdAt: Date.now(),
@@ -79,13 +111,17 @@ function fixture() {
       access,
       queries,
       commands,
-      characterId: 'hero',
+      characterId: 'dd46a450-bc4b-42bf-aab4-e58c7ccdfc7b',
       userId: 'user',
       content: gameContent,
       mutate: (action) =>
         action.kind === 'retry'
-          ? commands.retry('hero')
-          : commands.submit('hero', action.revision, action.command),
+          ? commands.retry('dd46a450-bc4b-42bf-aab4-e58c7ccdfc7b')
+          : commands.submit(
+              'dd46a450-bc4b-42bf-aab4-e58c7ccdfc7b',
+              action.revision,
+              action.command,
+            ),
     });
   return {
     access,
@@ -109,6 +145,7 @@ afterEach(() => vi.useRealTimers());
 it('uses authoritative cache revisions and never constructs an online journey engine', async () => {
   const f = fixture(),
     { host, stop } = await start(f);
+  expect(host.getSnapshot().storageAvailable).toBe(true);
   const before = host.getSnapshot().session!.getSnapshot();
   expect(host.getSnapshot().session).not.toHaveProperty('engine');
   expect(host.getSnapshot().session).not.toHaveProperty('nextEnchantOperation');
@@ -155,15 +192,18 @@ it('pauses Rest after backgrounding, renews explicitly, and never catches up or 
 });
 it('blocks new actions until an interrupted command has been recovered after a host restart', async () => {
   const f = fixture();
-  f.rows.set(JSON.stringify(['https://api.example.com', 'user', 'hero']), {
-    kind: 'command',
-    createdAt: 1,
-    request: {
-      commandId: crypto.randomUUID(),
-      expectedRevision: 1,
-      command: { type: 'MOVE', dx: 1, dy: 0 },
+  f.rows.set(
+    journalKey('https://api.example.com', 'user', 'dd46a450-bc4b-42bf-aab4-e58c7ccdfc7b'),
+    {
+      kind: 'command',
+      createdAt: 1,
+      request: {
+        commandId: crypto.randomUUID(),
+        expectedRevision: 1,
+        command: { type: 'MOVE', dx: 1, dy: 0 },
+      },
     },
-  });
+  );
   const { host, stop } = await start(f);
   expect(host.getSnapshot().retryAvailable).toBe(true);
   expect(() =>
@@ -197,6 +237,23 @@ it('leaving a disconnected online character is allowed without local save or rew
   expect(() => host.begin({ type: 'STOP_REST' })).toThrow();
   await expect(host.load('auto')).rejects.toThrow('one current state');
   await expect(host.save('auto')).rejects.toThrow('server');
+  stop();
+  f.queries.clear();
+});
+it('publishes lazy feature availability as a new subscribed observation at the same revision', async () => {
+  const f = fixture(),
+    { host, stop } = await start(f);
+  const journey = host.getSnapshot().session!;
+  const before = journey.getSnapshot();
+  expect(before.availableFeatures).not.toContain('inventory');
+  expect(journey.getFeature?.('inventory')).toBeUndefined();
+  await journey.loadFeatures?.(['inventory', 'skills']);
+  const after = journey.getSnapshot();
+  expect(after).not.toBe(before);
+  expect(after.revision).toBe(before.revision);
+  expect(after.availableFeatures).toEqual(expect.arrayContaining(['inventory', 'skills']));
+  expect(journey.getFeature?.('inventory')?.inventory.potion).toBe(2);
+  expect(after.state.hero).not.toHaveProperty('inventory');
   stop();
   f.queries.clear();
 });

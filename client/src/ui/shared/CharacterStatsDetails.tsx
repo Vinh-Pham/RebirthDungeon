@@ -1,3 +1,6 @@
+import { useSyncExternalStore } from 'react';
+import FeatureGate from './FeatureGate';
+import { heroFeatures } from '../../game/FeatureReads';
 import { StyleSheet, Text, View } from 'react-native';
 import { MAX_LEVEL, experienceToNextLevel } from '../../engine/rpg/Character';
 import {
@@ -34,7 +37,7 @@ function Row({ label, value, note }: { label: string; value: string; note?: stri
 }
 
 /** Shared read-only details for the Journey tab and character stats overlay. */
-export default function CharacterStatsDetails({
+function CharacterStatsDetailsLoaded({
   host,
   session,
   profile,
@@ -43,7 +46,9 @@ export default function CharacterStatsDetails({
   session: JourneySession;
   profile: CompleteCharacter;
 }) {
-  const { hero, review } = useCharacterStatus(host, session);
+  const { review } = useCharacterStatus(host, session);
+  const view = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
+  const hero = heroFeatures(session, ['titles', 'inventory', 'equipment'], view);
   const { stats } = review;
   const combat = stats.combatant;
   const {
@@ -252,3 +257,13 @@ const styles = StyleSheet.create({
   effect: { paddingVertical: 8, gap: 4 },
   footnote: { fontSize: 12, lineHeight: 20, marginTop: 24, marginBottom: 12 },
 });
+
+export default function CharacterStatsDetails(
+  props: Parameters<typeof CharacterStatsDetailsLoaded>[0],
+) {
+  return (
+    <FeatureGate session={props.session} features={['titles', 'inventory', 'equipment']}>
+      <CharacterStatsDetailsLoaded {...props} />
+    </FeatureGate>
+  );
+}

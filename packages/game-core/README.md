@@ -12,9 +12,13 @@ shared sessions default to immediate headless presentation. Local saves and thei
 manual rewind behavior are unchanged; online persistence uses relational server
 codecs and never accepts a local save upload.
 
-`online/Contracts.ts` defines strict public commands and versioned views.
-`online/Runtime.ts` runs candidates with explicitly supplied server time and
-provides read-only previews/views. Reads never advance persistent RNG or award
+`online/Features.ts` defines API 2 feature envelopes, affected-feature updates,
+creation responses, and content manifests/collection contracts. `online/Actions.ts`
+maps every supported command and preview to a feature route and its strict body.
+`online/Contracts.ts` keeps authoritative internal command, receipt, and battle
+contracts. `online/Runtime.ts` exports `createOnlineRuntime(ContentRegistry)`;
+the server injects the character's immutable D1 content release and explicit time.
+`online/TestRuntime.ts` supplies the bundled registry for tests only. Reads never advance persistent RNG or award
 progression. `game/BattlePersistence.ts` validates format 1 battle state at stable
 boundaries, including actors, resources, statuses, wear, consumptions, defending,
 turn cursor, RNG, enemy history, and pending evidence. Local-save serialization

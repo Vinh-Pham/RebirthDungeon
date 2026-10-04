@@ -2,9 +2,7 @@ import { QueryObserver, type QueryClient, type QueryObserverResult } from '@tans
 import {
   CommandSchema,
   BattleActionSchema,
-  PreviewResponseSchema,
   type OnlineCommand,
-  type PublicView,
 } from '@rebirth/game-core/online/Contracts';
 import type {
   GameplayHost,
@@ -24,7 +22,22 @@ import type { OnlineAccess } from './Access';
 import type { GameAPI } from './API';
 import { APIError } from './API';
 import type { CommandCoordinator, CommandResult } from './CommandCoordinator';
-import { characterOptions, gameKeys, type CachedCharacter } from './queries';
+import {
+  characterOptions,
+  featureOptions,
+  cachedFeature,
+  coherentCharacter,
+  refreshFeatures,
+  gameKeys,
+  type CoreView,
+  type CachedCharacter,
+} from './queries';
+import {
+  FeaturePreviewResponseSchema,
+  GAME_FEATURES,
+  type GameFeature,
+} from '@rebirth/game-core/online/Features';
+import { previewRequest } from '@rebirth/game-core/online/Actions';
 import { worldObjectSprite } from '../renderer/WorldObjectArt';
 import type { Immutable } from '../engine/immutableState';
 import type { WorldMap } from '../data/schemas/world';
@@ -53,12 +66,16 @@ export function onlineIntent(command: GameCommand | GameplayProgressionCommand):
 class RemoteJourney implements GameplayJourney {
   readonly source = 'online';
   readonly events = new EventBus();
-  private previous?: PublicView;
+  private previous?: CoreView;
+  private previousHost?: GameplayHostView;
   private snapshot!: JourneyObservation;
   constructor(
     private host: OnlineGameplayHost,
     readonly characterId: string,
   ) {}
+  getFeature: NonNullable<GameplayJourney['getFeature']> = (feature) =>
+    this.host.getFeature(feature);
+  loadFeatures = (features: readonly GameFeature[]) => this.host.loadFeatures(features);
   get characterName() {
     return this.host.current().character.name;
   }
@@ -68,7 +85,9 @@ class RemoteJourney implements GameplayJourney {
   subscribe = (listener: () => void) => this.host.subscribe(listener);
   getSnapshot = (): JourneyObservation => {
     const current = this.host.current();
-    if (current === this.previous) return this.snapshot;
+    const hosted = this.host.getSnapshot();
+    if (current === this.previous && hosted === this.previousHost) return this.snapshot;
+    this.previousHost = hosted;
     this.previous = current;
     const view = immutableData(current);
     return (this.snapshot = {
@@ -86,6 +105,9 @@ class RemoteJourney implements GameplayJourney {
       message: this.host.getSnapshot().notice ?? '',
       activeService: view.activeService,
       resting: view.resting,
+      availableFeatures: GAME_FEATURES.filter(
+        (feature) => this.host.getFeature(feature) !== undefined,
+      ),
     });
   };
   dispatch = (command: GameCommand) => {
@@ -156,7 +178,13 @@ export class OnlineGameplayHost implements GameplayHost {
     this.content = options.content;
     this.journey = new RemoteJourney(this, options.characterId);
     this.observer = new QueryObserver(options.queries, {
-      ...characterOptions(options.api, options.access, options.userId, options.characterId),
+      ...characterOptions(
+        options.api,
+        options.access,
+        options.userId,
+        options.characterId,
+        options.queries,
+      ),
       enabled: options.access.ready(),
       refetchOnMount: 'always',
     });
@@ -164,6 +192,53 @@ export class OnlineGameplayHost implements GameplayHost {
   current() {
     if (!this.cached) throw new Error('The character has not loaded.');
     return this.cached.view;
+  }
+  getFeature: NonNullable<GameplayJourney['getFeature']> = (feature) => {
+    const row = cachedFeature(
+      this.options.queries,
+      this.options.api,
+      this.options.userId,
+      this.options.characterId,
+      feature,
+    );
+    return row &&
+      row.revision === this.cached?.view.character.revision &&
+      row.connectionGeneration === this.options.access.getSnapshot().connectionGeneration
+      ? immutableData(row.data)
+      : undefined;
+  };
+  async loadFeatures(features: readonly GameFeature[]) {
+    const revision = this.current().character.revision;
+    try {
+      await Promise.all(
+        features
+          .filter((feature) => this.getFeature(feature) === undefined)
+          .map((feature) =>
+            this.options.queries.fetchQuery({
+              ...featureOptions(
+                this.options.api,
+                this.options.access,
+                this.options.userId,
+                this.options.characterId,
+                feature,
+                revision,
+              ),
+              staleTime: 0,
+            }),
+          ),
+      );
+    } catch (error) {
+      if (!(error instanceof APIError && error.status === 409)) throw error;
+      await refreshFeatures(
+        this.options.queries,
+        this.options.api,
+        this.options.access,
+        this.options.userId,
+        this.options.characterId,
+        [...features],
+      );
+    }
+    this.publish();
   }
   getSnapshot = () => this.snapshot;
   getServerSnapshot = () => this.snapshot;
@@ -197,6 +272,7 @@ export class OnlineGameplayHost implements GameplayHost {
           this.options.access,
           this.options.userId,
           this.options.characterId,
+          this.options.queries,
         ),
         enabled: this.options.access.ready(),
       });
@@ -287,6 +363,12 @@ export class OnlineGameplayHost implements GameplayHost {
       this.options.access.getSnapshot().userId === this.options.userId &&
       this.cached?.connectionGeneration ===
         this.options.access.getSnapshot().connectionGeneration &&
+      coherentCharacter(
+        this.options.queries,
+        this.options.api,
+        this.options.userId,
+        this.options.characterId,
+      )?.view.character.revision === this.cached?.view.character.revision &&
       this.journalLoaded &&
       !this.inFlight &&
       !this.snapshot.retryAvailable
@@ -300,6 +382,7 @@ export class OnlineGameplayHost implements GameplayHost {
       ...this.snapshot,
       session: this.cached ? this.journey : undefined,
       battle: this.battle,
+      storageAvailable: this.journalLoaded,
       revision: this.cached?.view.character.revision ?? 0,
       busy: this.inFlight || (!this.journalLoaded && !this.snapshot.error) || !connected,
       restPaused: !!this.cached?.view.resting && !this.restRequested,
@@ -322,6 +405,7 @@ export class OnlineGameplayHost implements GameplayHost {
     this.publish();
     try {
       const result = await this.options.mutate(action);
+      if (!('updates' in result)) throw new Error('Unexpected character creation response');
       if (generation !== this.generation) return true;
       this.snapshot = {
         ...this.snapshot,
@@ -345,7 +429,7 @@ export class OnlineGameplayHost implements GameplayHost {
           this.journey.events.emit({
             type: 'WORLD_MOVED',
             entityId: 'player',
-            ...result.view.position,
+            ...this.current().position,
           });
         } catch {
           /* Resolved observers never authorize replay. */
@@ -353,7 +437,7 @@ export class OnlineGameplayHost implements GameplayHost {
       }
       if (action.kind === 'submit' && ['START_REST', 'REST_PULSE'].includes(action.command.type))
         this.restRequested = true;
-      if (!result.view.resting) this.pauseRest();
+      if (!this.current().resting) this.pauseRest();
       return true;
     } catch (error) {
       if (generation !== this.generation) return false;
@@ -403,10 +487,14 @@ export class OnlineGameplayHost implements GameplayHost {
   async preview(selection: PreviewSelection, revision: number, signal?: AbortSignal) {
     if (!this.canInput() || revision !== this.current().character.revision)
       throw new Error('Refresh the character before requesting a preview.');
+    const request = previewRequest(this.options.characterId, {
+      expectedRevision: revision,
+      selection,
+    });
     return this.options.api.request(
-      '/api/game/characters/' + encodeURIComponent(this.options.characterId) + '/previews',
-      PreviewResponseSchema,
-      { expectedRevision: revision, selection },
+      request.path,
+      FeaturePreviewResponseSchema,
+      request.body,
       signal,
     );
   }
