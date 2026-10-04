@@ -1,13 +1,18 @@
 import { publicFeatures } from '@rebirth/game-core/online/PublicFeatures';
+import { CORE_FEATURES } from '@rebirth/game-core/online/Features';
 import { actionDefinitions } from '@rebirth/game-core/online/Actions';
 import { journalKey } from '../../online/CommandJournal';
 import { afterEach, expect, it, vi } from 'vitest';
+import { createRequire } from 'node:module';
+import { createElement, type ReactNode } from 'react';
 import { QueryClient } from '@tanstack/react-query';
 import { OnlineAccess } from '../../online/Access';
 import { GameAPI } from '../../online/API';
 import { CommandCoordinator } from '../../online/CommandCoordinator';
 import type { CommandJournal, PendingCommand } from '../../online/CommandJournal';
 import { OnlineGameplayHost } from '../../online/OnlineGameplayHost';
+import { coherentCharacter, gameKeys, type CachedFeature } from '../../online/queries';
+import { useCharacterStatus } from '../../ui/shared/useCharacterStatus';
 import {
   execute,
   newOnlineState,
@@ -15,6 +20,9 @@ import {
   gameContent,
 } from '@rebirth/game-core/online/TestRuntime';
 import { GAME_CONTENT_VERSION } from '@rebirth/game-core/online/Contracts';
+const renderToStaticMarkup: (node: ReactNode) => string = createRequire(import.meta.url)(
+  'react-dom/server',
+).renderToStaticMarkup;
 function fixture() {
   let state = newOnlineState(12345, 'Player', 'warrior');
   let metadata = {
@@ -124,6 +132,7 @@ function fixture() {
             ),
     });
   return {
+    api,
     access,
     fetcher,
     queries,
@@ -142,6 +151,65 @@ async function start(f: ReturnType<typeof fixture>) {
   return { host, stop };
 }
 afterEach(() => vi.useRealTimers());
+it('renders footer status during a partial feature refresh without reading unloaded inventory', async () => {
+  const f = fixture(),
+    { host, stop } = await start(f);
+  try {
+    const journey = host.getSnapshot().session!;
+    const key = gameKeys.feature('https://api.example.com', 'user', journey.characterId, 'stats');
+    const stats = f.queries.getQueryData<CachedFeature<'stats'>>(key)!;
+    function Status() {
+      const status = useCharacterStatus(host, journey);
+      return createElement(
+        'output',
+        null,
+        status.review.health + '/' + status.review.stats.maxHealth,
+      );
+    }
+    const before = renderToStaticMarkup(createElement(Status));
+    expect(journey.getFeature?.('inventory')).toBeUndefined();
+    f.queries.setQueryData(key, {
+      ...stats,
+      revision: stats.revision + 1,
+      data: {
+        ...stats.data,
+        stats: { ...stats.data.stats, maxHealth: stats.data.stats.maxHealth + 50 },
+      },
+    });
+    expect(journey.getSnapshot().revision).toBe(stats.revision);
+    expect(journey.getFeature?.('stats')).toBeUndefined();
+    expect(renderToStaticMarkup(createElement(Status))).toBe(before);
+    for (const feature of CORE_FEATURES.filter((feature) => feature !== 'stats')) {
+      const featureKey = gameKeys.feature(
+        'https://api.example.com',
+        'user',
+        journey.characterId,
+        feature,
+      );
+      const row = f.queries.getQueryData<CachedFeature>(featureKey)!;
+      const data =
+        feature === 'character'
+          ? { ...row.data, revision: row.revision + 1 }
+          : feature === 'resources'
+            ? { ...row.data, health: journey.getSnapshot().state.hero.health - 1 }
+            : row.data;
+      f.queries.setQueryData(featureKey, { ...row, revision: row.revision + 1, data });
+    }
+    const coherent = coherentCharacter(f.queries, f.api, 'user', journey.characterId)!;
+    f.queries.setQueryData(
+      gameKeys.character('https://api.example.com', 'user', journey.characterId),
+      coherent,
+    );
+    await vi.waitFor(() => expect(journey.getSnapshot().revision).toBe(stats.revision + 1));
+    expect(renderToStaticMarkup(createElement(Status))).toBe(
+      '<output>' + coherent.view.hero.health + '/' + coherent.view.stats.maxHealth + '</output>',
+    );
+    expect(journey.getFeature?.('inventory')).toBeUndefined();
+  } finally {
+    stop();
+    f.queries.clear();
+  }
+});
 it('uses authoritative cache revisions and never constructs an online journey engine', async () => {
   const f = fixture(),
     { host, stop } = await start(f);

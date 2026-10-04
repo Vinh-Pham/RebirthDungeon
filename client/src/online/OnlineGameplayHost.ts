@@ -105,6 +105,7 @@ class RemoteJourney implements GameplayJourney {
       message: this.host.getSnapshot().notice ?? '',
       activeService: view.activeService,
       resting: view.resting,
+      statReview: view.statReview,
       availableFeatures: GAME_FEATURES.filter(
         (feature) => this.host.getFeature(feature) !== undefined,
       ),

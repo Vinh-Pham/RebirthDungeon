@@ -5,7 +5,7 @@ import type { JourneyHost } from './JourneyHost';
 import type { BattleSession, BattleView } from './BattleSession';
 import type { CoreHero } from '../online/queries';
 import type { Immutable } from '../engine/immutableState';
-import type { GameFeature } from '@rebirth/game-core/online/Features';
+import type { FeatureData, GameFeature } from '@rebirth/game-core/online/Features';
 import type { FeatureReadPort } from './FeatureReads';
 import type { ContentRegistry } from '../engine/data/ContentRegistry';
 import type { WorldMap } from '../data/schemas/world';
@@ -47,6 +47,7 @@ export interface JourneyObservation {
   readonly revision: number;
   readonly activeService?: string;
   readonly resting: boolean;
+  readonly statReview?: Immutable<FeatureData['stats']>;
   readonly availableFeatures?: readonly GameFeature[];
 }
 export interface GameplayJourney extends FeatureReadPort {

@@ -28,7 +28,7 @@ export function heroFeatures<K extends HeroFeature>(
   return hero as FeatureHero<K>;
 }
 export function characterReviewFeature(session: GameplayJourney, observation: JourneyObservation) {
-  const data = session.getFeature?.('stats'),
+  const data = observation.statReview ?? session.getFeature?.('stats'),
     hero = observation.state.hero;
   if (!data) return;
   return { ...data, ...hero, statuses: [] };

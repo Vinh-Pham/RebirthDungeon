@@ -107,6 +107,12 @@ publishes only after all required slices share a revision, content release, and
 connection generation.
 Game caches are memory-only. Reads have bounded retries for network and server failures, a 15-second timeout, and cancellation signals. Authoritative client errors and previews do not automatically retry. Transport validates responses with shared Zod contracts and limits UTF-8 JSON bodies to 4 KiB. Character cache merges never replace a newer revision with an older response.
 
+Journey observations include the resolved stat review from their coherent core snapshot.
+The footer and stat read helpers use that review with the snapshot's resources while
+individual feature caches refresh. They do not require lazy inventory, equipment,
+skills, or titles to render character status. Encounter status still uses the live
+battle observation.
+
 ## Gameplay ownership
 
 `src/game/Gameplay.ts` defines the read-only host, journey, and battle ports used by shared screens, renderers, and audio. `LocalGameplayHost` remains only as a headless compatibility adapter for the original simulation/save tests; no app route imports or mounts it. `OnlineGameplayHost` subscribes to a coherent composition of React Query feature caches, maps existing intents to feature action routes, and updates after a confirmed server response. Journey observation contains core progression/resources; typed `getFeature`/`loadFeatures` ports expose optional loaded slices. Feature gates derive readiness from the subscribed observation's available feature names. Hero/stat read helpers receive that observation explicitly, keeping React Compiler memoization sensitive to feature and revision changes. It never constructs a journey engine or advances enemies locally.
