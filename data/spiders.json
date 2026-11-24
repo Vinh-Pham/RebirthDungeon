@@ -1,0 +1,2834 @@
+[
+  {
+    "source_name": "Giant Red-eyed Ornata Spider",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Giant_Red-eyed_Ornata_Spider",
+    "sprite": 0,
+    "behavior": {
+      "melee_hits": "?",
+      "running_speed": "Fast",
+      "detection_speed": "Medium",
+      "detection_range": "Far",
+      "aggressive": "Yes 100",
+      "aggression": "Unknown",
+      "element": "None"
+    },
+    "variants": [
+      {
+        "location": "Beach of Scathach",
+        "health": 3716,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": null,
+        "protection": 80,
+        "experience": 4550,
+        "gold": "279-311",
+        "combat_power": 4300,
+        "raw_stats": {
+          "location": "Beach of Scathach",
+          "health": "3,716",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "? (80%)",
+          "experience": "4,550",
+          "gold": "279-311",
+          "combat_power": "4,300"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Red Spider",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Red_Spider",
+    "sprite": 1,
+    "behavior": {
+      "melee_hits": "2",
+      "running_speed": "Fast",
+      "detection_speed": "Slow",
+      "detection_range": "Small",
+      "aggressive": "Yes 100",
+      "aggression": "-",
+      "element": "Ice"
+    },
+    "variants": [
+      {
+        "location": "Tir Chonaill graveyard Dunbarton",
+        "health": 190,
+        "damage_min": 10,
+        "damage_max": 35,
+        "defense": 2,
+        "protection": null,
+        "experience": 80,
+        "gold": "30-60",
+        "combat_power": 849,
+        "raw_stats": {
+          "location": "Tir Chonaill graveyard Dunbarton",
+          "health": "190",
+          "melee_damage": "10-35",
+          "ranged_damage": "-",
+          "defense_protection": "2 (?)",
+          "experience": "80",
+          "gold": "30-60",
+          "combat_power": "849"
+        }
+      },
+      {
+        "location": "Ciar Normal",
+        "health": 460,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": null,
+        "protection": null,
+        "experience": 776,
+        "gold": "?",
+        "combat_power": null,
+        "raw_stats": {
+          "location": "Ciar Normal",
+          "health": "460",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "? (?)",
+          "experience": "776",
+          "gold": "?",
+          "combat_power": "?"
+        }
+      },
+      {
+        "location": "Math Normal",
+        "health": 810,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": null,
+        "protection": null,
+        "experience": 692,
+        "gold": "?",
+        "combat_power": null,
+        "raw_stats": {
+          "location": "Math Normal",
+          "health": "810",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "? (?)",
+          "experience": "692",
+          "gold": "?",
+          "combat_power": "?"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Red-eyed Ornata Spider",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Red-eyed_Ornata_Spider",
+    "sprite": 2,
+    "behavior": {
+      "melee_hits": "3",
+      "running_speed": "Fast",
+      "detection_speed": "Unknown",
+      "detection_range": "Unknown",
+      "aggressive": "Yes 100",
+      "aggression": "Multi",
+      "element": "None"
+    },
+    "variants": [
+      {
+        "location": "Scathach Beach",
+        "health": 2110,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": null,
+        "protection": null,
+        "experience": 3510,
+        "gold": "0",
+        "combat_power": 2400,
+        "raw_stats": {
+          "location": "Scathach Beach",
+          "health": "2,110",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "? (?)",
+          "experience": "3,510",
+          "gold": "0",
+          "combat_power": "2,400"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "White Spider",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#White_Spider",
+    "sprite": 3,
+    "behavior": {
+      "melee_hits": "2",
+      "running_speed": "Fast",
+      "detection_speed": "-",
+      "detection_range": "-",
+      "aggressive": "No 100",
+      "aggression": "Double",
+      "element": "Ice"
+    },
+    "variants": [
+      {
+        "location": "Tir Chonaill Dunbarton Emain Macha Solea Connous (near the Lizard Mark and Spider Mark) Connous Underground Maze",
+        "health": 20,
+        "damage_min": 5,
+        "damage_max": 10,
+        "defense": 1,
+        "protection": 0,
+        "experience": 16,
+        "gold": "10~",
+        "combat_power": 201,
+        "raw_stats": {
+          "location": "Tir Chonaill Dunbarton Emain Macha Solea Connous (near the Lizard Mark and Spider Mark) Connous Underground Maze",
+          "health": "20",
+          "melee_damage": "5-10",
+          "ranged_damage": "-",
+          "defense_protection": "1 (0%)",
+          "experience": "16",
+          "gold": "10~",
+          "combat_power": "201"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "White Spiderling (Hardmode)",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#White_Spiderling_(Hardmode)",
+    "sprite": 4,
+    "behavior": {
+      "melee_hits": "2",
+      "running_speed": "Fast",
+      "detection_speed": "Unknown",
+      "detection_range": "Unknown",
+      "aggressive": "Yes 100",
+      "aggression": "Multi",
+      "element": "Ice"
+    },
+    "variants": [
+      {
+        "location": "Alby Normal Hardmode",
+        "health": 500,
+        "damage_min": 25,
+        "damage_max": 31,
+        "defense": 10,
+        "protection": 10,
+        "experience": 500,
+        "gold": "0",
+        "combat_power": 1102,
+        "raw_stats": {
+          "location": "Alby Normal Hardmode",
+          "health": "500",
+          "melee_damage": "25-31",
+          "ranged_damage": "-",
+          "defense_protection": "10 (10%)",
+          "experience": "500",
+          "gold": "0",
+          "combat_power": "1,102"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Black Spider",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Black_Spider",
+    "sprite": 5,
+    "behavior": {
+      "melee_hits": "2",
+      "running_speed": "Fast",
+      "detection_speed": "Slow",
+      "detection_range": "Small",
+      "aggressive": "Yes 100",
+      "aggression": "-",
+      "element": "Ice"
+    },
+    "variants": [
+      {
+        "location": "Barri Normal Albey Normal Albey Green Fiodh Normal Fiodh (Violet) Rundal Normal Rundal Advanced Rundal Dungeon (Temple Knights Lair)",
+        "health": 660,
+        "damage_min": 10,
+        "damage_max": 15,
+        "defense": 1,
+        "protection": 0,
+        "experience": 50,
+        "gold": "15-38",
+        "combat_power": 670,
+        "raw_stats": {
+          "location": "Barri Normal Albey Normal Albey Green Fiodh Normal Fiodh (Violet) Rundal Normal Rundal Advanced Rundal Dungeon (Temple Knights Lair)",
+          "health": "660",
+          "melee_damage": "10-15",
+          "ranged_damage": "-",
+          "defense_protection": "1 (0%)",
+          "experience": "50",
+          "gold": "15-38",
+          "combat_power": "670"
+        }
+      },
+      {
+        "location": "Ciar Normal",
+        "health": 384,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": null,
+        "protection": null,
+        "experience": 648,
+        "gold": "?",
+        "combat_power": null,
+        "raw_stats": {
+          "location": "Ciar Normal",
+          "health": "384",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "? (?)",
+          "experience": "648",
+          "gold": "?",
+          "combat_power": "?"
+        }
+      },
+      {
+        "location": "Ciar Advanced Hardmode",
+        "health": 3810,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": null,
+        "protection": null,
+        "experience": 6812,
+        "gold": "777~",
+        "combat_power": null,
+        "raw_stats": {
+          "location": "Ciar Advanced Hardmode",
+          "health": "3,810",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "? (?)",
+          "experience": "6,812",
+          "gold": "777~",
+          "combat_power": "?"
+        }
+      },
+      {
+        "location": "Math Normal",
+        "health": 676,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": null,
+        "protection": null,
+        "experience": 576,
+        "gold": "?",
+        "combat_power": null,
+        "raw_stats": {
+          "location": "Math Normal",
+          "health": "676",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "? (?)",
+          "experience": "576",
+          "gold": "?",
+          "combat_power": "?"
+        }
+      },
+      {
+        "location": "Math Basic",
+        "health": 676,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": null,
+        "protection": null,
+        "experience": 576,
+        "gold": "?",
+        "combat_power": null,
+        "raw_stats": {
+          "location": "Math Basic",
+          "health": "676",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "? (?)",
+          "experience": "576",
+          "gold": "?",
+          "combat_power": "?"
+        }
+      },
+      {
+        "location": "Math Intermediate",
+        "health": 900,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": null,
+        "protection": null,
+        "experience": 768,
+        "gold": "?",
+        "combat_power": null,
+        "raw_stats": {
+          "location": "Math Intermediate",
+          "health": "900",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "? (?)",
+          "experience": "768",
+          "gold": "?",
+          "combat_power": "?"
+        }
+      },
+      {
+        "location": "Math Advanced",
+        "health": 1000,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": null,
+        "protection": null,
+        "experience": 854,
+        "gold": "?",
+        "combat_power": null,
+        "raw_stats": {
+          "location": "Math Advanced",
+          "health": "1,000",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "? (?)",
+          "experience": "854",
+          "gold": "?",
+          "combat_power": "?"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Black Spider (Hardmode)",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Black_Spider_(Hardmode)",
+    "sprite": 6,
+    "behavior": {
+      "melee_hits": "2",
+      "running_speed": "Fast",
+      "detection_speed": "Unknown",
+      "detection_range": "Unknown",
+      "aggressive": "Yes 100",
+      "aggression": "Double",
+      "element": "Unknown"
+    },
+    "variants": [
+      {
+        "location": "Ciar Normal Hardmode Rundal Normal Hardmode",
+        "health": 800,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": null,
+        "protection": null,
+        "experience": 700,
+        "gold": "102-120",
+        "combat_power": 1872,
+        "raw_stats": {
+          "location": "Ciar Normal Hardmode Rundal Normal Hardmode",
+          "health": "800",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "? (?)",
+          "experience": "700",
+          "gold": "102-120",
+          "combat_power": "1,872"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Burgundy Spider",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Burgundy_Spider",
+    "sprite": 7,
+    "behavior": {
+      "melee_hits": "2",
+      "running_speed": "Fast",
+      "detection_speed": "Very Fast",
+      "detection_range": "Far",
+      "aggressive": "Yes 100",
+      "aggression": "Multi",
+      "element": "Ice"
+    },
+    "variants": [
+      {
+        "location": "Alby Basic Alby Intermediate",
+        "health": 160,
+        "damage_min": 20,
+        "damage_max": 40,
+        "defense": 2,
+        "protection": 0,
+        "experience": 200,
+        "gold": "80-116",
+        "combat_power": 910,
+        "raw_stats": {
+          "location": "Alby Basic Alby Intermediate",
+          "health": "160",
+          "melee_damage": "20-40",
+          "ranged_damage": "-",
+          "defense_protection": "2 (0%)",
+          "experience": "200",
+          "gold": "80-116",
+          "combat_power": "910"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Burgundy Spider (Hardmode)",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Burgundy_Spider_(Hardmode)",
+    "sprite": 8,
+    "behavior": {
+      "melee_hits": "2",
+      "running_speed": "Fast",
+      "detection_speed": "Very Fast",
+      "detection_range": "Far",
+      "aggressive": "Yes 100",
+      "aggression": "Multi",
+      "element": "Ice"
+    },
+    "variants": [
+      {
+        "location": "Alby Advanced Hardmode",
+        "health": null,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": null,
+        "protection": null,
+        "experience": 1300,
+        "gold": "0",
+        "combat_power": null,
+        "raw_stats": {
+          "location": "Alby Advanced Hardmode",
+          "health": "?",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "? (?)",
+          "experience": "1,300",
+          "gold": "0",
+          "combat_power": "?"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Dark Blue Spider",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Dark_Blue_Spider",
+    "sprite": 9,
+    "behavior": {
+      "melee_hits": "2",
+      "running_speed": "Fast",
+      "detection_speed": "Slow",
+      "detection_range": "Small",
+      "aggressive": "Yes 100",
+      "aggression": "-",
+      "element": "Fire"
+    },
+    "variants": [
+      {
+        "location": "Alby Basic",
+        "health": 260,
+        "damage_min": 20,
+        "damage_max": 40,
+        "defense": 3,
+        "protection": 0,
+        "experience": 275,
+        "gold": "90-113",
+        "combat_power": 1005,
+        "raw_stats": {
+          "location": "Alby Basic",
+          "health": "260",
+          "melee_damage": "20-40",
+          "ranged_damage": "-",
+          "defense_protection": "3 (0%)",
+          "experience": "275",
+          "gold": "90-113",
+          "combat_power": "1,005"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Dark Blue Spider (Hardmode)",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Dark_Blue_Spider_(Hardmode)",
+    "sprite": 10,
+    "behavior": {
+      "melee_hits": "2",
+      "running_speed": "Unknown",
+      "detection_speed": "Unknown",
+      "detection_range": "Unknown",
+      "aggressive": "Yes 100",
+      "aggression": "Unknown",
+      "element": "Unknown"
+    },
+    "variants": [
+      {
+        "location": "Alby Advanced Hardmode",
+        "health": 1350,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": null,
+        "protection": null,
+        "experience": 1325,
+        "gold": "0",
+        "combat_power": 2309,
+        "raw_stats": {
+          "location": "Alby Advanced Hardmode",
+          "health": "1,350",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "? (?)",
+          "experience": "1,325",
+          "gold": "0",
+          "combat_power": "2,309"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Red Spider (Dungeon)",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Red_Spider_(Dungeon)",
+    "sprite": 11,
+    "behavior": {
+      "melee_hits": "2",
+      "running_speed": "Fast",
+      "detection_speed": "Slow",
+      "detection_range": "Small",
+      "aggressive": "Yes 100",
+      "aggression": "-",
+      "element": "Ice"
+    },
+    "variants": [
+      {
+        "location": "Alby Normal",
+        "health": null,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": null,
+        "protection": null,
+        "experience": null,
+        "gold": "?",
+        "combat_power": null,
+        "raw_stats": {
+          "location": "Alby Normal",
+          "health": "?",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "? (?)",
+          "experience": "?",
+          "gold": "?",
+          "combat_power": "?"
+        }
+      },
+      {
+        "location": "Ciar Normal",
+        "health": null,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": null,
+        "protection": null,
+        "experience": null,
+        "gold": "?",
+        "combat_power": 331,
+        "raw_stats": {
+          "location": "Ciar Normal",
+          "health": "?",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "? (?)",
+          "experience": "?",
+          "gold": "?",
+          "combat_power": "331"
+        }
+      },
+      {
+        "location": "Ciar Advanced Hardmode",
+        "health": 3200,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": null,
+        "protection": null,
+        "experience": 5740,
+        "gold": "?",
+        "combat_power": null,
+        "raw_stats": {
+          "location": "Ciar Advanced Hardmode",
+          "health": "3,200",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "? (?)",
+          "experience": "5,740",
+          "gold": "?",
+          "combat_power": "?"
+        }
+      },
+      {
+        "location": "Fiodh Normal",
+        "health": 964,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": null,
+        "protection": null,
+        "experience": 824,
+        "gold": "?",
+        "combat_power": 631,
+        "raw_stats": {
+          "location": "Fiodh Normal",
+          "health": "964",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "? (?)",
+          "experience": "824",
+          "gold": "?",
+          "combat_power": "631"
+        }
+      },
+      {
+        "location": "Rundal Normal",
+        "health": null,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": null,
+        "protection": null,
+        "experience": null,
+        "gold": "?",
+        "combat_power": null,
+        "raw_stats": {
+          "location": "Rundal Normal",
+          "health": "?",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "? (?)",
+          "experience": "?",
+          "gold": "?",
+          "combat_power": "?"
+        }
+      },
+      {
+        "location": "Math Normal",
+        "health": 850,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": null,
+        "protection": null,
+        "experience": null,
+        "gold": "?",
+        "combat_power": null,
+        "raw_stats": {
+          "location": "Math Normal",
+          "health": "850",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "? (?)",
+          "experience": "?",
+          "gold": "?",
+          "combat_power": "?"
+        }
+      },
+      {
+        "location": "Barri Normal",
+        "health": null,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": null,
+        "protection": null,
+        "experience": null,
+        "gold": "?",
+        "combat_power": null,
+        "raw_stats": {
+          "location": "Barri Normal",
+          "health": "?",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "? (?)",
+          "experience": "?",
+          "gold": "?",
+          "combat_power": "?"
+        }
+      },
+      {
+        "location": "Barri Paladin Training Barri Mythril Mine Barri Spirit Fossil",
+        "health": 190,
+        "damage_min": 10,
+        "damage_max": 35,
+        "defense": 2,
+        "protection": 0,
+        "experience": 80,
+        "gold": "30-60",
+        "combat_power": 849,
+        "raw_stats": {
+          "location": "Barri Paladin Training Barri Mythril Mine Barri Spirit Fossil",
+          "health": "190",
+          "melee_damage": "10-35",
+          "ranged_damage": "-",
+          "defense_protection": "2 (0%)",
+          "experience": "80",
+          "gold": "30-60",
+          "combat_power": "849"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Red Spider (Hardmode)",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Red_Spider_(Hardmode)",
+    "sprite": 12,
+    "behavior": {
+      "melee_hits": "2",
+      "running_speed": "Fast",
+      "detection_speed": "Unknown",
+      "detection_range": "Unknown",
+      "aggressive": "Yes 100",
+      "aggression": "-",
+      "element": "Ice"
+    },
+    "variants": [
+      {
+        "location": "Alby Normal Hardmode Ciar Normal Hardmode Rundal Normal Hardmode",
+        "health": 1000,
+        "damage_min": 36,
+        "damage_max": 50,
+        "defense": 10,
+        "protection": 10,
+        "experience": 700,
+        "gold": "0",
+        "combat_power": 2158.4,
+        "raw_stats": {
+          "location": "Alby Normal Hardmode Ciar Normal Hardmode Rundal Normal Hardmode",
+          "health": "1,000",
+          "melee_damage": "36-50",
+          "ranged_damage": "-",
+          "defense_protection": "10 (10%)",
+          "experience": "700",
+          "gold": "0",
+          "combat_power": "2,158.4"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Red Spiderling",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Red_Spiderling",
+    "sprite": 13,
+    "behavior": {
+      "melee_hits": "2",
+      "running_speed": "Fast",
+      "detection_speed": "Slow",
+      "detection_range": "Small",
+      "aggressive": "Yes 100",
+      "aggression": "-",
+      "element": "Ice"
+    },
+    "variants": [
+      {
+        "location": "Alby Beginner",
+        "health": 100,
+        "damage_min": 10,
+        "damage_max": 15,
+        "defense": 1,
+        "protection": 0,
+        "experience": 50,
+        "gold": "15-30",
+        "combat_power": 303,
+        "raw_stats": {
+          "location": "Alby Beginner",
+          "health": "100",
+          "melee_damage": "10-15",
+          "ranged_damage": "-",
+          "defense_protection": "1 (0%)",
+          "experience": "50",
+          "gold": "15-30",
+          "combat_power": "303"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "White Spider (Dungeon)",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#White_Spider_(Dungeon)",
+    "sprite": 14,
+    "behavior": {
+      "melee_hits": "2",
+      "running_speed": "Fast",
+      "detection_speed": "Slow",
+      "detection_range": "Small",
+      "aggressive": "Yes 100",
+      "aggression": "-",
+      "element": "Ice"
+    },
+    "variants": [
+      {
+        "location": "Alby Normal",
+        "health": 70,
+        "damage_min": 5,
+        "damage_max": 10,
+        "defense": 1,
+        "protection": 0,
+        "experience": 16,
+        "gold": "10~",
+        "combat_power": 301,
+        "raw_stats": {
+          "location": "Alby Normal",
+          "health": "70",
+          "melee_damage": "5-10",
+          "ranged_damage": "-",
+          "defense_protection": "1 (0%)",
+          "experience": "16",
+          "gold": "10~",
+          "combat_power": "301"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "White Spider (Hardmode)",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#White_Spider_(Hardmode)",
+    "sprite": 15,
+    "behavior": {
+      "melee_hits": "2",
+      "running_speed": "Fast",
+      "detection_speed": "Unknown",
+      "detection_range": "Unknown",
+      "aggressive": "Yes 100",
+      "aggression": "Double",
+      "element": "Ice"
+    },
+    "variants": [
+      {
+        "location": "Alby Normal Hardmode",
+        "health": 650,
+        "damage_min": 23,
+        "damage_max": 34,
+        "defense": 10,
+        "protection": 10,
+        "experience": 365,
+        "gold": "90-95",
+        "combat_power": 1281.6,
+        "raw_stats": {
+          "location": "Alby Normal Hardmode",
+          "health": "650",
+          "melee_damage": "23-34",
+          "ranged_damage": "-",
+          "defense_protection": "10 (10%)",
+          "experience": "365",
+          "gold": "90-95",
+          "combat_power": "1,281.6"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "White Spiderling",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#White_Spiderling",
+    "sprite": 16,
+    "behavior": {
+      "melee_hits": "2",
+      "running_speed": "Fast",
+      "detection_speed": "Slow",
+      "detection_range": "Small",
+      "aggressive": "Yes 100",
+      "aggression": "-",
+      "element": "None"
+    },
+    "variants": [
+      {
+        "location": "Alby Beginner Alby Normal Alby Magic Bean Albey Blue Albey Red",
+        "health": 45,
+        "damage_min": 1,
+        "damage_max": 5,
+        "defense": 1,
+        "protection": 0,
+        "experience": 8,
+        "gold": "5-30",
+        "combat_power": 189,
+        "raw_stats": {
+          "location": "Alby Beginner Alby Normal Alby Magic Bean Albey Blue Albey Red",
+          "health": "45",
+          "melee_damage": "1-5",
+          "ranged_damage": "-",
+          "defense_protection": "1 (0%)",
+          "experience": "8",
+          "gold": "5-30",
+          "combat_power": "189"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Black Poisonous Spider",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Black_Poisonous_Spider",
+    "sprite": 17,
+    "behavior": {
+      "melee_hits": "2",
+      "running_speed": "Fast",
+      "detection_speed": "Fast",
+      "detection_range": "Far",
+      "aggressive": "Yes 100",
+      "aggression": "Multi",
+      "element": "Unknown"
+    },
+    "variants": [
+      {
+        "location": "Alby Advanced",
+        "health": 1900,
+        "damage_min": 30,
+        "damage_max": 80,
+        "defense": null,
+        "protection": 30,
+        "experience": 2000,
+        "gold": "0",
+        "combat_power": 3300,
+        "raw_stats": {
+          "location": "Alby Advanced",
+          "health": "1,900",
+          "melee_damage": "30-80",
+          "ranged_damage": "-",
+          "defense_protection": "? (30%)",
+          "experience": "2,000",
+          "gold": "0",
+          "combat_power": "3,300"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Black Poisonous Spider (Hardmode)",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Black_Poisonous_Spider_(Hardmode)",
+    "sprite": 18,
+    "behavior": {
+      "melee_hits": "2",
+      "running_speed": "Fast",
+      "detection_speed": "Fast",
+      "detection_range": "Small",
+      "aggressive": "Yes 100",
+      "aggression": "Multi",
+      "element": "None"
+    },
+    "variants": [
+      {
+        "location": "Alby Advanced Hardmode",
+        "health": 5500,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": null,
+        "protection": 50,
+        "experience": 5500,
+        "gold": "0",
+        "combat_power": 5620,
+        "raw_stats": {
+          "location": "Alby Advanced Hardmode",
+          "health": "5,500",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "? (50%)",
+          "experience": "5,500",
+          "gold": "0",
+          "combat_power": "5,620"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Black Poisonous Spiderling",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Black_Poisonous_Spiderling",
+    "sprite": 19,
+    "behavior": {
+      "melee_hits": "2",
+      "running_speed": "Fast",
+      "detection_speed": "Fast",
+      "detection_range": "Far",
+      "aggressive": "Yes 100",
+      "aggression": "Multi",
+      "element": "Ice"
+    },
+    "variants": [
+      {
+        "location": "Alby Advanced",
+        "health": 150,
+        "damage_min": 40,
+        "damage_max": 60,
+        "defense": 1,
+        "protection": 0,
+        "experience": 50,
+        "gold": "0",
+        "combat_power": null,
+        "raw_stats": {
+          "location": "Alby Advanced",
+          "health": "150",
+          "melee_damage": "40-60",
+          "ranged_damage": "-",
+          "defense_protection": "1 (0%)",
+          "experience": "50",
+          "gold": "0",
+          "combat_power": "?"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Black Desert Spider",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Black_Desert_Spider",
+    "sprite": 20,
+    "behavior": {
+      "melee_hits": "3",
+      "running_speed": "Fast",
+      "detection_speed": "Fast",
+      "detection_range": "Small",
+      "aggressive": "Yes 100",
+      "aggression": "Multi",
+      "element": "Unknown"
+    },
+    "variants": [
+      {
+        "location": "Rano (Central Muyu Desert)",
+        "health": 600,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": null,
+        "protection": null,
+        "experience": 812.5,
+        "gold": "0",
+        "combat_power": null,
+        "raw_stats": {
+          "location": "Rano (Central Muyu Desert)",
+          "health": "600",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "? (?)",
+          "experience": "812.5",
+          "gold": "0",
+          "combat_power": "?"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "White Desert Spider",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#White_Desert_Spider",
+    "sprite": 21,
+    "behavior": {
+      "melee_hits": "3",
+      "running_speed": "Fast",
+      "detection_speed": "Fast",
+      "detection_range": "Small",
+      "aggressive": "Yes 100",
+      "aggression": "Multi",
+      "element": "Unknown"
+    },
+    "variants": [
+      {
+        "location": "Rano (Northern Muyu Desert)",
+        "health": 465,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": null,
+        "protection": null,
+        "experience": 780,
+        "gold": "0-200",
+        "combat_power": 1300,
+        "raw_stats": {
+          "location": "Rano (Northern Muyu Desert)",
+          "health": "465",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "? (?)",
+          "experience": "780",
+          "gold": "0-200",
+          "combat_power": "1,300"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "White-spot Desert Spider",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#White-spot_Desert_Spider",
+    "sprite": 22,
+    "behavior": {
+      "melee_hits": "3",
+      "running_speed": "Fast",
+      "detection_speed": "Fast",
+      "detection_range": "Small",
+      "aggressive": "Yes 100",
+      "aggression": "-",
+      "element": "Unknown"
+    },
+    "variants": [
+      {
+        "location": "Rano (Northwestern and Southeastern Muyu Desert)",
+        "health": 850,
+        "damage_min": 40,
+        "damage_max": 60,
+        "defense": 10,
+        "protection": 22,
+        "experience": 1040,
+        "gold": "0-250",
+        "combat_power": 1900,
+        "raw_stats": {
+          "location": "Rano (Northwestern and Southeastern Muyu Desert)",
+          "health": "850",
+          "melee_damage": "40-60",
+          "ranged_damage": "-",
+          "defense_protection": "10 (22%)",
+          "experience": "1,040",
+          "gold": "0-250",
+          "combat_power": "1,900"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "White-striped Desert Spider",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#White-striped_Desert_Spider",
+    "sprite": 23,
+    "behavior": {
+      "melee_hits": "3",
+      "running_speed": "Fast",
+      "detection_speed": "Fast",
+      "detection_range": "Small",
+      "aggressive": "Yes 100",
+      "aggression": "-",
+      "element": "Unknown"
+    },
+    "variants": [
+      {
+        "location": "Rano (Muyu Desert, South of Sheep Mark)",
+        "health": 970,
+        "damage_min": 40,
+        "damage_max": 70,
+        "defense": 10,
+        "protection": 24,
+        "experience": 1170,
+        "gold": "400-550",
+        "combat_power": 2100,
+        "raw_stats": {
+          "location": "Rano (Muyu Desert, South of Sheep Mark)",
+          "health": "970",
+          "melee_damage": "40-70",
+          "ranged_damage": "-",
+          "defense_protection": "10 (24%)",
+          "experience": "1,170",
+          "gold": "400-550",
+          "combat_power": "2,100"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Black Forest Mushroom Spider",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Black_Forest_Mushroom_Spider",
+    "sprite": 24,
+    "behavior": {
+      "melee_hits": "3",
+      "running_speed": "Fast",
+      "detection_speed": "Fast",
+      "detection_range": "Small",
+      "aggressive": "Yes 100",
+      "aggression": "-",
+      "element": "Unknown"
+    },
+    "variants": [
+      {
+        "location": "Rano (Karu Forest, Tree Mark)",
+        "health": 900,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": null,
+        "protection": null,
+        "experience": 1040,
+        "gold": "0",
+        "combat_power": 1900,
+        "raw_stats": {
+          "location": "Rano (Karu Forest, Tree Mark)",
+          "health": "900",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "? (?)",
+          "experience": "1,040",
+          "gold": "0",
+          "combat_power": "1,900"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Blue Forest Mushroom Spider",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Blue_Forest_Mushroom_Spider",
+    "sprite": 25,
+    "behavior": {
+      "melee_hits": "3",
+      "running_speed": "Fast",
+      "detection_speed": "Fast",
+      "detection_range": "Small",
+      "aggressive": "Yes 100",
+      "aggression": "-",
+      "element": "Unknown"
+    },
+    "variants": [
+      {
+        "location": "Rano (Karu Forest, north of Snake Mark)",
+        "health": 750,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": null,
+        "protection": null,
+        "experience": 936,
+        "gold": "0",
+        "combat_power": 1700,
+        "raw_stats": {
+          "location": "Rano (Karu Forest, north of Snake Mark)",
+          "health": "750",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "? (?)",
+          "experience": "936",
+          "gold": "0",
+          "combat_power": "1,700"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Brown Forest Mushroom Spider",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Brown_Forest_Mushroom_Spider",
+    "sprite": 26,
+    "behavior": {
+      "melee_hits": "3",
+      "running_speed": "Fast",
+      "detection_speed": "Fast",
+      "detection_range": "Small",
+      "aggressive": "Yes 100",
+      "aggression": "-",
+      "element": "Unknown"
+    },
+    "variants": [
+      {
+        "location": "Rano (Karu Forest, North of the Snake Mark)",
+        "health": 300,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": null,
+        "protection": null,
+        "experience": 487.5,
+        "gold": "0",
+        "combat_power": 900,
+        "raw_stats": {
+          "location": "Rano (Karu Forest, North of the Snake Mark)",
+          "health": "300",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "? (?)",
+          "experience": "487.5",
+          "gold": "0",
+          "combat_power": "900"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Red Forest Mushroom Spider",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Red_Forest_Mushroom_Spider",
+    "sprite": 27,
+    "behavior": {
+      "melee_hits": "3",
+      "running_speed": "Fast",
+      "detection_speed": "Fast",
+      "detection_range": "Small",
+      "aggressive": "Yes 100",
+      "aggression": "-",
+      "element": "Unknown"
+    },
+    "variants": [
+      {
+        "location": "Rano (Karu Forest, north of Snake Mark)",
+        "health": 390,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": null,
+        "protection": null,
+        "experience": 650,
+        "gold": "0",
+        "combat_power": 1100,
+        "raw_stats": {
+          "location": "Rano (Karu Forest, north of Snake Mark)",
+          "health": "390",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "? (?)",
+          "experience": "650",
+          "gold": "0",
+          "combat_power": "1,100"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Candle Spider",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Candle_Spider",
+    "sprite": 28,
+    "behavior": {
+      "melee_hits": "2",
+      "running_speed": "Slow",
+      "detection_speed": "Very Slow",
+      "detection_range": "Medium",
+      "aggressive": "Yes 100",
+      "aggression": "-",
+      "element": "Unknown"
+    },
+    "variants": [
+      {
+        "location": "Abb Neagh Castle Dungeon Sen Mag Castle Dungeon Sliab Cuilin Castle Dungeon",
+        "health": 210,
+        "damage_min": 20,
+        "damage_max": 40,
+        "defense": null,
+        "protection": null,
+        "experience": 250,
+        "gold": "106-115",
+        "combat_power": 1000,
+        "raw_stats": {
+          "location": "Abb Neagh Castle Dungeon Sen Mag Castle Dungeon Sliab Cuilin Castle Dungeon",
+          "health": "210",
+          "melee_damage": "20-40",
+          "ranged_damage": "-",
+          "defense_protection": "? (?)",
+          "experience": "250",
+          "gold": "106-115",
+          "combat_power": "1,000"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Chandelier Spider",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Chandelier_Spider",
+    "sprite": 29,
+    "behavior": {
+      "melee_hits": "2",
+      "running_speed": "Slow",
+      "detection_speed": "Very Slow",
+      "detection_range": "Medium",
+      "aggressive": "Yes 100",
+      "aggression": "-",
+      "element": "Unknown"
+    },
+    "variants": [
+      {
+        "location": "Abb Neagh Castle Dungeon Dugald Castle Dungeon",
+        "health": 210,
+        "damage_min": 20,
+        "damage_max": 40,
+        "defense": null,
+        "protection": null,
+        "experience": 250,
+        "gold": "?",
+        "combat_power": 1000,
+        "raw_stats": {
+          "location": "Abb Neagh Castle Dungeon Dugald Castle Dungeon",
+          "health": "210",
+          "melee_damage": "20-40",
+          "ranged_damage": "-",
+          "defense_protection": "? (?)",
+          "experience": "250",
+          "gold": "?",
+          "combat_power": "1,000"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Guard Spider",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Guard_Spider",
+    "sprite": 30,
+    "behavior": {
+      "melee_hits": "2",
+      "running_speed": "Fast",
+      "detection_speed": "Instant",
+      "detection_range": "Small",
+      "aggressive": "Yes 100",
+      "aggression": "Multi",
+      "element": "Unknown"
+    },
+    "variants": [
+      {
+        "location": "Baol Infiltration",
+        "health": 300,
+        "damage_min": 100,
+        "damage_max": 100,
+        "defense": 20,
+        "protection": null,
+        "experience": null,
+        "gold": "?",
+        "combat_power": null,
+        "raw_stats": {
+          "location": "Baol Infiltration",
+          "health": "300",
+          "melee_damage": "100",
+          "ranged_damage": "-",
+          "defense_protection": "20 (?)",
+          "experience": "?",
+          "gold": "?",
+          "combat_power": "?"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Black Sulfur Spider",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Black_Sulfur_Spider",
+    "sprite": 31,
+    "behavior": {
+      "melee_hits": "2",
+      "running_speed": "Fast",
+      "detection_speed": "Medium",
+      "detection_range": "Medium",
+      "aggressive": "Yes 100",
+      "aggression": "Multi",
+      "element": "None"
+    },
+    "variants": [
+      {
+        "location": "Basic",
+        "health": 450,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": 12,
+        "protection": 10,
+        "experience": null,
+        "gold": "?",
+        "combat_power": 950,
+        "raw_stats": {
+          "location": "Basic",
+          "health": "450",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "12 (10%)",
+          "experience": "?",
+          "gold": "?",
+          "combat_power": "950"
+        }
+      },
+      {
+        "location": "Intermediate",
+        "health": 900,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": 22,
+        "protection": 15,
+        "experience": null,
+        "gold": "?",
+        "combat_power": 1900,
+        "raw_stats": {
+          "location": "Intermediate",
+          "health": "900",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "22 (15%)",
+          "experience": "?",
+          "gold": "?",
+          "combat_power": "1,900"
+        }
+      },
+      {
+        "location": "Advanced",
+        "health": 1800,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": 42,
+        "protection": 24,
+        "experience": null,
+        "gold": "?",
+        "combat_power": 2850,
+        "raw_stats": {
+          "location": "Advanced",
+          "health": "1,800",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "42 (24%)",
+          "experience": "?",
+          "gold": "?",
+          "combat_power": "2,850"
+        }
+      },
+      {
+        "location": "Hard",
+        "health": 3600,
+        "damage_min": 40,
+        "damage_max": 100,
+        "defense": 52,
+        "protection": 29,
+        "experience": null,
+        "gold": "?",
+        "combat_power": null,
+        "raw_stats": {
+          "location": "Hard",
+          "health": "3,600",
+          "melee_damage": "40~100",
+          "ranged_damage": "-",
+          "defense_protection": "52 (29%)",
+          "experience": "?",
+          "gold": "?",
+          "combat_power": "?"
+        }
+      },
+      {
+        "location": "Elite",
+        "health": 7200,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": 72,
+        "protection": 35,
+        "experience": null,
+        "gold": "?",
+        "combat_power": null,
+        "raw_stats": {
+          "location": "Elite",
+          "health": "7,200",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "72 (35%)",
+          "experience": "?",
+          "gold": "?",
+          "combat_power": "?"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Giant Sulfur Spider",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Giant_Sulfur_Spider",
+    "sprite": 32,
+    "behavior": {
+      "melee_hits": "2",
+      "running_speed": "Fast",
+      "detection_speed": "Fast",
+      "detection_range": "Far",
+      "aggressive": "Yes 100",
+      "aggression": "Multi",
+      "element": "None"
+    },
+    "variants": [
+      {
+        "location": "Basic",
+        "health": 2500,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": 20,
+        "protection": 17,
+        "experience": null,
+        "gold": "?",
+        "combat_power": null,
+        "raw_stats": {
+          "location": "Basic",
+          "health": "2,500",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "20 (17%)",
+          "experience": "?",
+          "gold": "?",
+          "combat_power": "?"
+        }
+      },
+      {
+        "location": "Intermediate",
+        "health": 5000,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": 30,
+        "protection": 22,
+        "experience": null,
+        "gold": "?",
+        "combat_power": null,
+        "raw_stats": {
+          "location": "Intermediate",
+          "health": "5,000",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "30 (22%)",
+          "experience": "?",
+          "gold": "?",
+          "combat_power": "?"
+        }
+      },
+      {
+        "location": "Advanced",
+        "health": 10000,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": 50,
+        "protection": 31,
+        "experience": null,
+        "gold": "?",
+        "combat_power": null,
+        "raw_stats": {
+          "location": "Advanced",
+          "health": "10,000",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "50 (31%)",
+          "experience": "?",
+          "gold": "?",
+          "combat_power": "?"
+        }
+      },
+      {
+        "location": "Hard",
+        "health": 20000,
+        "damage_min": 80,
+        "damage_max": 200,
+        "defense": 60,
+        "protection": 36,
+        "experience": 23100,
+        "gold": "?",
+        "combat_power": null,
+        "raw_stats": {
+          "location": "Hard",
+          "health": "20,000",
+          "melee_damage": "80-200",
+          "ranged_damage": "-",
+          "defense_protection": "60 (36%)",
+          "experience": "23,100",
+          "gold": "?",
+          "combat_power": "?"
+        }
+      },
+      {
+        "location": "Elite",
+        "health": 40000,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": 80,
+        "protection": 42,
+        "experience": null,
+        "gold": "?",
+        "combat_power": null,
+        "raw_stats": {
+          "location": "Elite",
+          "health": "40,000",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "80 (42%)",
+          "experience": "?",
+          "gold": "?",
+          "combat_power": "?"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Red Sulfur Spider",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Red_Sulfur_Spider",
+    "sprite": 33,
+    "behavior": {
+      "melee_hits": "2",
+      "running_speed": "Fast",
+      "detection_speed": "Medium",
+      "detection_range": "Medium",
+      "aggressive": "Yes 100",
+      "aggression": "Multi",
+      "element": "None"
+    },
+    "variants": [
+      {
+        "location": "Basic",
+        "health": 610,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": 11,
+        "protection": 15,
+        "experience": null,
+        "gold": "?",
+        "combat_power": 1120,
+        "raw_stats": {
+          "location": "Basic",
+          "health": "610",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "11 (15%)",
+          "experience": "?",
+          "gold": "?",
+          "combat_power": "1,120"
+        }
+      },
+      {
+        "location": "Intermediate",
+        "health": 1220,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": 22,
+        "protection": 20,
+        "experience": null,
+        "gold": "?",
+        "combat_power": 2240,
+        "raw_stats": {
+          "location": "Intermediate",
+          "health": "1,220",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "22 (20%)",
+          "experience": "?",
+          "gold": "?",
+          "combat_power": "2,240"
+        }
+      },
+      {
+        "location": "Advanced",
+        "health": 2440,
+        "damage_min": 50,
+        "damage_max": 110,
+        "defense": 42,
+        "protection": 29,
+        "experience": null,
+        "gold": "?",
+        "combat_power": 3360,
+        "raw_stats": {
+          "location": "Advanced",
+          "health": "2,440",
+          "melee_damage": "50~110",
+          "ranged_damage": "-",
+          "defense_protection": "42 (29%)",
+          "experience": "?",
+          "gold": "?",
+          "combat_power": "3,360"
+        }
+      },
+      {
+        "location": "Hard",
+        "health": 4880,
+        "damage_min": 60,
+        "damage_max": 150,
+        "defense": 52,
+        "protection": 34,
+        "experience": null,
+        "gold": "?",
+        "combat_power": 4480,
+        "raw_stats": {
+          "location": "Hard",
+          "health": "4,880",
+          "melee_damage": "60~150",
+          "ranged_damage": "-",
+          "defense_protection": "52 (34%)",
+          "experience": "?",
+          "gold": "?",
+          "combat_power": "4,480"
+        }
+      },
+      {
+        "location": "Elite",
+        "health": 9760,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": 72,
+        "protection": 40,
+        "experience": null,
+        "gold": "?",
+        "combat_power": 6720,
+        "raw_stats": {
+          "location": "Elite",
+          "health": "9,760",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "72 (40%)",
+          "experience": "?",
+          "gold": "?",
+          "combat_power": "6,720"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Small Sulfur Spider",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Small_Sulfur_Spider",
+    "sprite": 34,
+    "behavior": {
+      "melee_hits": "2",
+      "running_speed": "Fast",
+      "detection_speed": "Medium",
+      "detection_range": "Medium",
+      "aggressive": "Yes 100",
+      "aggression": "Multi",
+      "element": "None"
+    },
+    "variants": [
+      {
+        "location": "Basic",
+        "health": 350,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": 5,
+        "protection": 5,
+        "experience": null,
+        "gold": "?",
+        "combat_power": 800,
+        "raw_stats": {
+          "location": "Basic",
+          "health": "350",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "5 (5%)",
+          "experience": "?",
+          "gold": "?",
+          "combat_power": "800"
+        }
+      },
+      {
+        "location": "Intermediate",
+        "health": 700,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": 15,
+        "protection": 10,
+        "experience": null,
+        "gold": "?",
+        "combat_power": 1600,
+        "raw_stats": {
+          "location": "Intermediate",
+          "health": "700",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "15 (10%)",
+          "experience": "?",
+          "gold": "?",
+          "combat_power": "1,600"
+        }
+      },
+      {
+        "location": "Advanced",
+        "health": 1400,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": 35,
+        "protection": 19,
+        "experience": null,
+        "gold": "?",
+        "combat_power": 2400,
+        "raw_stats": {
+          "location": "Advanced",
+          "health": "1,400",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "35 (19%)",
+          "experience": "?",
+          "gold": "?",
+          "combat_power": "2,400"
+        }
+      },
+      {
+        "location": "Hard",
+        "health": 2800,
+        "damage_min": 40,
+        "damage_max": 80,
+        "defense": 45,
+        "protection": 24,
+        "experience": null,
+        "gold": "?",
+        "combat_power": 3200,
+        "raw_stats": {
+          "location": "Hard",
+          "health": "2,800",
+          "melee_damage": "40~80",
+          "ranged_damage": "-",
+          "defense_protection": "45 (24%)",
+          "experience": "?",
+          "gold": "?",
+          "combat_power": "3,200"
+        }
+      },
+      {
+        "location": "Elite",
+        "health": 5600,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": 65,
+        "protection": 30,
+        "experience": null,
+        "gold": "?",
+        "combat_power": 4000,
+        "raw_stats": {
+          "location": "Elite",
+          "health": "5,600",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "65 (30%)",
+          "experience": "?",
+          "gold": "?",
+          "combat_power": "4,000"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Sulfur Spider",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Sulfur_Spider",
+    "sprite": 35,
+    "behavior": {
+      "melee_hits": "2?",
+      "running_speed": "Fast",
+      "detection_speed": "Unknown",
+      "detection_range": "Unknown",
+      "aggressive": "Yes 100",
+      "aggression": "Multi",
+      "element": "Unknown"
+    },
+    "variants": [
+      {
+        "location": "Basic",
+        "health": null,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": null,
+        "protection": null,
+        "experience": null,
+        "gold": "?",
+        "combat_power": null,
+        "raw_stats": {
+          "location": "Basic",
+          "health": "?",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "? (?)",
+          "experience": "?",
+          "gold": "?",
+          "combat_power": "?"
+        }
+      },
+      {
+        "location": "Intermediate",
+        "health": null,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": null,
+        "protection": null,
+        "experience": null,
+        "gold": "?",
+        "combat_power": null,
+        "raw_stats": {
+          "location": "Intermediate",
+          "health": "?",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "? (?)",
+          "experience": "?",
+          "gold": "?",
+          "combat_power": "?"
+        }
+      },
+      {
+        "location": "Advanced",
+        "health": 1200,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": null,
+        "protection": null,
+        "experience": null,
+        "gold": "?",
+        "combat_power": 2340,
+        "raw_stats": {
+          "location": "Advanced",
+          "health": "1,200",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "? (?)",
+          "experience": "?",
+          "gold": "?",
+          "combat_power": "2,340"
+        }
+      },
+      {
+        "location": "Hard",
+        "health": 1592,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": null,
+        "protection": null,
+        "experience": null,
+        "gold": "?",
+        "combat_power": 3120,
+        "raw_stats": {
+          "location": "Hard",
+          "health": "1,592",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "? (?)",
+          "experience": "?",
+          "gold": "?",
+          "combat_power": "3,120"
+        }
+      },
+      {
+        "location": "Elite",
+        "health": null,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": null,
+        "protection": null,
+        "experience": null,
+        "gold": "?",
+        "combat_power": null,
+        "raw_stats": {
+          "location": "Elite",
+          "health": "?",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "? (?)",
+          "experience": "?",
+          "gold": "?",
+          "combat_power": "?"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Giant Black Spider",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Giant_Black_Spider",
+    "sprite": 36,
+    "behavior": {
+      "melee_hits": "1",
+      "running_speed": "Fast",
+      "detection_speed": "Medium",
+      "detection_range": "Medium",
+      "aggressive": "Yes 100",
+      "aggression": "-",
+      "element": "Ice"
+    },
+    "variants": [
+      {
+        "location": "Alby Intermediate",
+        "health": 2660,
+        "damage_min": 100,
+        "damage_max": 200,
+        "defense": 21,
+        "protection": 15,
+        "experience": 1500,
+        "gold": "?",
+        "combat_power": 3470,
+        "raw_stats": {
+          "location": "Alby Intermediate",
+          "health": "2,660",
+          "melee_damage": "100-200",
+          "ranged_damage": "-",
+          "defense_protection": "21 (15%)",
+          "experience": "1,500",
+          "gold": "?",
+          "combat_power": "3,470"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Giant Golden Spider",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Giant_Golden_Spider",
+    "sprite": 37,
+    "behavior": {
+      "melee_hits": "1",
+      "running_speed": "Fast",
+      "detection_speed": "Medium",
+      "detection_range": "Medium",
+      "aggressive": "Yes 100",
+      "aggression": "-",
+      "element": "Ice"
+    },
+    "variants": [
+      {
+        "location": "Alby Advanced (Boss)",
+        "health": 6600,
+        "damage_min": 200,
+        "damage_max": 300,
+        "defense": null,
+        "protection": 50,
+        "experience": 4300,
+        "gold": "800~",
+        "combat_power": 5000,
+        "raw_stats": {
+          "location": "Alby Advanced (Boss)",
+          "health": "6,600",
+          "melee_damage": "200-300",
+          "ranged_damage": "-",
+          "defense_protection": "? (50%)",
+          "experience": "4,300",
+          "gold": "800~",
+          "combat_power": "5,000"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Giant Golden Spiderling",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Giant_Golden_Spiderling",
+    "sprite": 38,
+    "behavior": {
+      "melee_hits": "1",
+      "running_speed": "Fast",
+      "detection_speed": "Medium",
+      "detection_range": "Small",
+      "aggressive": "Yes 100",
+      "aggression": "-",
+      "element": "Ice"
+    },
+    "variants": [
+      {
+        "location": "Alby Malcolm's Ring (Boss)",
+        "health": 200,
+        "damage_min": 5,
+        "damage_max": 13,
+        "defense": 6,
+        "protection": null,
+        "experience": 400,
+        "gold": "?",
+        "combat_power": 400,
+        "raw_stats": {
+          "location": "Alby Malcolm's Ring (Boss)",
+          "health": "200",
+          "melee_damage": "5-13",
+          "ranged_damage": "-",
+          "defense_protection": "6 (?)",
+          "experience": "400",
+          "gold": "?",
+          "combat_power": "400"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Giant Red Spider",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Giant_Red_Spider",
+    "sprite": 39,
+    "behavior": {
+      "melee_hits": "1",
+      "running_speed": "Fast",
+      "detection_speed": "Medium",
+      "detection_range": "Medium",
+      "aggressive": "Yes 100",
+      "aggression": "Multi",
+      "element": "Ice"
+    },
+    "variants": [
+      {
+        "location": "Alby Basic (Boss) Alby Intermediate",
+        "health": 2640,
+        "damage_min": 100,
+        "damage_max": 200,
+        "defense": 21,
+        "protection": 15,
+        "experience": 1500,
+        "gold": "?",
+        "combat_power": 3430,
+        "raw_stats": {
+          "location": "Alby Basic (Boss) Alby Intermediate",
+          "health": "2,640",
+          "melee_damage": "100-200",
+          "ranged_damage": "-",
+          "defense_protection": "21 (15%)",
+          "experience": "1,500",
+          "gold": "?",
+          "combat_power": "3,430"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Giant Red Spider (Hardmode)",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Giant_Red_Spider_(Hardmode)",
+    "sprite": 40,
+    "behavior": {
+      "melee_hits": "1",
+      "running_speed": "Fast",
+      "detection_speed": "Unknown",
+      "detection_range": "Unknown",
+      "aggressive": "Yes 100",
+      "aggression": "Multi",
+      "element": "Unknown"
+    },
+    "variants": [
+      {
+        "location": "Alby Advanced Hardmode",
+        "health": 6500,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": 25,
+        "protection": 30,
+        "experience": 5000,
+        "gold": "?",
+        "combat_power": 6674,
+        "raw_stats": {
+          "location": "Alby Advanced Hardmode",
+          "health": "6,500",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "25 (30%)",
+          "experience": "5,000",
+          "gold": "?",
+          "combat_power": "6,674"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Giant Spider",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Giant_Spider",
+    "sprite": 41,
+    "behavior": {
+      "melee_hits": "1",
+      "running_speed": "Fast",
+      "detection_speed": "Medium",
+      "detection_range": "Medium",
+      "aggressive": "Yes 100",
+      "aggression": "-",
+      "element": "Ice"
+    },
+    "variants": [
+      {
+        "location": "Alby Normal (Boss) Alby Basic Alby Intermediate",
+        "health": 510,
+        "damage_min": 20,
+        "damage_max": 40,
+        "defense": 17,
+        "protection": 3,
+        "experience": 300,
+        "gold": "100-450",
+        "combat_power": 1688,
+        "raw_stats": {
+          "location": "Alby Normal (Boss) Alby Basic Alby Intermediate",
+          "health": "510",
+          "melee_damage": "20-40",
+          "ranged_damage": "-",
+          "defense_protection": "17 (3%)",
+          "experience": "300",
+          "gold": "100-450",
+          "combat_power": "1,688"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Giant Spider (Hardmode)",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Giant_Spider_(Hardmode)",
+    "sprite": 42,
+    "behavior": {
+      "melee_hits": "1",
+      "running_speed": "Fast",
+      "detection_speed": "Medium",
+      "detection_range": "Medium",
+      "aggressive": "Yes 100",
+      "aggression": "-",
+      "element": "Ice"
+    },
+    "variants": [
+      {
+        "location": "Alby Normal Hardmode (Boss) Alby Advanced Hardmode",
+        "health": 4000,
+        "damage_min": 41,
+        "damage_max": 58,
+        "defense": 10,
+        "protection": 20,
+        "experience": 2400,
+        "gold": "?",
+        "combat_power": 3500.8,
+        "raw_stats": {
+          "location": "Alby Normal Hardmode (Boss) Alby Advanced Hardmode",
+          "health": "4,000",
+          "melee_damage": "41-58",
+          "ranged_damage": "-",
+          "defense_protection": "10 (20%)",
+          "experience": "2,400",
+          "gold": "?",
+          "combat_power": "3,500.8"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Giant Spiderling",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Giant_Spiderling",
+    "sprite": 43,
+    "behavior": {
+      "melee_hits": "1",
+      "running_speed": "Fast",
+      "detection_speed": "Medium",
+      "detection_range": "Small",
+      "aggressive": "Yes 100",
+      "aggression": "-",
+      "element": "Ice"
+    },
+    "variants": [
+      {
+        "location": "Alby Beginner (Boss)",
+        "health": 150,
+        "damage_min": 15,
+        "damage_max": 20,
+        "defense": 1,
+        "protection": 0,
+        "experience": 120,
+        "gold": "48-100",
+        "combat_power": 335,
+        "raw_stats": {
+          "location": "Alby Beginner (Boss)",
+          "health": "150",
+          "melee_damage": "15-20",
+          "ranged_damage": "-",
+          "defense_protection": "1 (0%)",
+          "experience": "120",
+          "gold": "48-100",
+          "combat_power": "335"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Giant White Spider",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Giant_White_Spider",
+    "sprite": 44,
+    "behavior": {
+      "melee_hits": "1",
+      "running_speed": "Fast",
+      "detection_speed": "Medium",
+      "detection_range": "Medium",
+      "aggressive": "Yes 100",
+      "aggression": "-",
+      "element": "Ice"
+    },
+    "variants": [
+      {
+        "location": "Alby Intermediate",
+        "health": 2640,
+        "damage_min": 100,
+        "damage_max": 200,
+        "defense": 21,
+        "protection": 15,
+        "experience": 1500,
+        "gold": "?",
+        "combat_power": 3350,
+        "raw_stats": {
+          "location": "Alby Intermediate",
+          "health": "2,640",
+          "melee_damage": "100-200",
+          "ranged_damage": "-",
+          "defense_protection": "21 (15%)",
+          "experience": "1,500",
+          "gold": "?",
+          "combat_power": "3,350"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Giant White Spider (Hardmode)",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Giant_White_Spider_(Hardmode)",
+    "sprite": 45,
+    "behavior": {
+      "melee_hits": "1",
+      "running_speed": "Fast",
+      "detection_speed": "Fast",
+      "detection_range": "Medium",
+      "aggressive": "Yes 100",
+      "aggression": "Unknown",
+      "element": "None"
+    },
+    "variants": [
+      {
+        "location": "Alby Advanced Hardmode",
+        "health": 9000,
+        "damage_min": 100,
+        "damage_max": 150,
+        "defense": 10,
+        "protection": 43,
+        "experience": 9000,
+        "gold": "?",
+        "combat_power": 7365,
+        "raw_stats": {
+          "location": "Alby Advanced Hardmode",
+          "health": "9,000",
+          "melee_damage": "100-150",
+          "ranged_damage": "-",
+          "defense_protection": "10 (43%)",
+          "experience": "9,000",
+          "gold": "?",
+          "combat_power": "7,365"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Giant Gold Forest Mushroom Spider",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Giant_Gold_Forest_Mushroom_Spider",
+    "sprite": 46,
+    "behavior": {
+      "melee_hits": "2",
+      "running_speed": "Fast",
+      "detection_speed": "Very Fast",
+      "detection_range": "Small",
+      "aggressive": "Yes 100",
+      "aggression": "-",
+      "element": "None"
+    },
+    "variants": [
+      {
+        "location": "Rano (Southern Karu Forest, slightly northeast of the Snake Mark Mana Tunnel)",
+        "health": 24000,
+        "damage_min": 250,
+        "damage_max": 300,
+        "defense": null,
+        "protection": 50,
+        "experience": 12000,
+        "gold": "500-2,500",
+        "combat_power": 4600,
+        "raw_stats": {
+          "location": "Rano (Southern Karu Forest, slightly northeast of the Snake Mark Mana Tunnel)",
+          "health": "24,000",
+          "melee_damage": "250-300",
+          "ranged_damage": "-",
+          "defense_protection": "? (50%)",
+          "experience": "12,000",
+          "gold": "500-2,500",
+          "combat_power": "4,600"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Wolf-striped Desert Spider",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Wolf-striped_Desert_Spider",
+    "sprite": 47,
+    "behavior": {
+      "melee_hits": "3",
+      "running_speed": "Fast",
+      "detection_speed": "Very Fast",
+      "detection_range": "Small",
+      "aggressive": "Yes 100",
+      "aggression": "Multi",
+      "element": "None"
+    },
+    "variants": [
+      {
+        "location": "Rano (Central Muyu Desert)",
+        "health": 19500,
+        "damage_min": 100,
+        "damage_max": 150,
+        "defense": null,
+        "protection": 30,
+        "experience": 9250,
+        "gold": "?",
+        "combat_power": 5000,
+        "raw_stats": {
+          "location": "Rano (Central Muyu Desert)",
+          "health": "19,500",
+          "melee_damage": "100-150",
+          "ranged_damage": "-",
+          "defense_protection": "? (30%)",
+          "experience": "9,250",
+          "gold": "?",
+          "combat_power": "5,000"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Giant Snowfield Spider",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Giant_Snowfield_Spider",
+    "sprite": 48,
+    "behavior": {
+      "melee_hits": "?",
+      "running_speed": "Fast",
+      "detection_speed": "Fast",
+      "detection_range": "Far",
+      "aggressive": "Yes 100",
+      "aggression": "Multi",
+      "element": "Ice"
+    },
+    "variants": [
+      {
+        "location": "Basic",
+        "health": 1250,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": 10,
+        "protection": 10,
+        "experience": 1500,
+        "gold": "?",
+        "combat_power": 700,
+        "raw_stats": {
+          "location": "Basic",
+          "health": "1,250",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "10 (10%)",
+          "experience": "1,500",
+          "gold": "?",
+          "combat_power": "700"
+        }
+      },
+      {
+        "location": "Intermediate",
+        "health": 2500,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": 20,
+        "protection": 15,
+        "experience": 3000,
+        "gold": "?",
+        "combat_power": null,
+        "raw_stats": {
+          "location": "Intermediate",
+          "health": "2,500",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "20 (15%)",
+          "experience": "3,000",
+          "gold": "?",
+          "combat_power": "?"
+        }
+      },
+      {
+        "location": "Advanced",
+        "health": 5000,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": 40,
+        "protection": 25,
+        "experience": 5250,
+        "gold": "?",
+        "combat_power": null,
+        "raw_stats": {
+          "location": "Advanced",
+          "health": "5,000",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "40 (25%)",
+          "experience": "5,250",
+          "gold": "?",
+          "combat_power": "?"
+        }
+      },
+      {
+        "location": "Hard",
+        "health": 10000,
+        "damage_min": 60,
+        "damage_max": 120,
+        "defense": 50,
+        "protection": 29,
+        "experience": 10500,
+        "gold": "?",
+        "combat_power": null,
+        "raw_stats": {
+          "location": "Hard",
+          "health": "10,000",
+          "melee_damage": "60~120",
+          "ranged_damage": "-",
+          "defense_protection": "50 (29%)",
+          "experience": "10,500",
+          "gold": "?",
+          "combat_power": "?"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Snowfield Spider",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Snowfield_Spider",
+    "sprite": 49,
+    "behavior": {
+      "melee_hits": "2",
+      "running_speed": "Fast",
+      "detection_speed": "Fast",
+      "detection_range": "Far",
+      "aggressive": "Yes 100",
+      "aggression": "Multi",
+      "element": "Ice"
+    },
+    "variants": [
+      {
+        "location": "Basic",
+        "health": 280,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": 6,
+        "protection": 5,
+        "experience": 200,
+        "gold": "?",
+        "combat_power": 700,
+        "raw_stats": {
+          "location": "Basic",
+          "health": "280",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "6 (5%)",
+          "experience": "200",
+          "gold": "?",
+          "combat_power": "700"
+        }
+      },
+      {
+        "location": "Intermediate",
+        "health": 560,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": 16,
+        "protection": 10,
+        "experience": 400,
+        "gold": "?",
+        "combat_power": null,
+        "raw_stats": {
+          "location": "Intermediate",
+          "health": "560",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "16 (10%)",
+          "experience": "400",
+          "gold": "?",
+          "combat_power": "?"
+        }
+      },
+      {
+        "location": "Advanced",
+        "health": 1120,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": 36,
+        "protection": 20,
+        "experience": 700,
+        "gold": "?",
+        "combat_power": null,
+        "raw_stats": {
+          "location": "Advanced",
+          "health": "1,120",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "36 (20%)",
+          "experience": "700",
+          "gold": "?",
+          "combat_power": "?"
+        }
+      },
+      {
+        "location": "Hard",
+        "health": 2240,
+        "damage_min": 50,
+        "damage_max": 100,
+        "defense": 46,
+        "protection": 24,
+        "experience": 1400,
+        "gold": "?",
+        "combat_power": null,
+        "raw_stats": {
+          "location": "Hard",
+          "health": "2,240",
+          "melee_damage": "50~100",
+          "ranged_damage": "-",
+          "defense_protection": "46 (24%)",
+          "experience": "1,400",
+          "gold": "?",
+          "combat_power": "?"
+        }
+      }
+    ]
+  },
+  {
+    "source_name": "Red Spider (Abb Neagh)",
+    "source_url": "https://wiki.mabinogiworld.com/view/Spider_(Family)#Red_Spider_(Abb_Neagh)",
+    "sprite": 50,
+    "behavior": {
+      "melee_hits": "2",
+      "running_speed": "Fast",
+      "detection_speed": "Medium",
+      "detection_range": "Small",
+      "aggressive": "Yes 100",
+      "aggression": "-",
+      "element": "Ice"
+    },
+    "variants": [
+      {
+        "location": "Basic",
+        "health": 190,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": null,
+        "protection": null,
+        "experience": 80,
+        "gold": "0",
+        "combat_power": null,
+        "raw_stats": {
+          "location": "Basic",
+          "health": "190",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "? (?)",
+          "experience": "80",
+          "gold": "0",
+          "combat_power": "?"
+        }
+      },
+      {
+        "location": "Intermediate",
+        "health": null,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": null,
+        "protection": null,
+        "experience": 160,
+        "gold": "0",
+        "combat_power": null,
+        "raw_stats": {
+          "location": "Intermediate",
+          "health": "?",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "? (?)",
+          "experience": "160",
+          "gold": "0",
+          "combat_power": "?"
+        }
+      },
+      {
+        "location": "Advanced",
+        "health": 700,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": null,
+        "protection": null,
+        "experience": 280,
+        "gold": "0",
+        "combat_power": 2547,
+        "raw_stats": {
+          "location": "Advanced",
+          "health": "700",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "? (?)",
+          "experience": "280",
+          "gold": "0",
+          "combat_power": "2,547"
+        }
+      },
+      {
+        "location": "Hard",
+        "health": null,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": null,
+        "protection": null,
+        "experience": null,
+        "gold": "0",
+        "combat_power": null,
+        "raw_stats": {
+          "location": "Hard",
+          "health": "?",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "? (?)",
+          "experience": "?",
+          "gold": "0",
+          "combat_power": "?"
+        }
+      },
+      {
+        "location": "Elite",
+        "health": null,
+        "damage_min": null,
+        "damage_max": null,
+        "defense": null,
+        "protection": null,
+        "experience": null,
+        "gold": "0",
+        "combat_power": null,
+        "raw_stats": {
+          "location": "Elite",
+          "health": "?",
+          "melee_damage": "?",
+          "ranged_damage": "-",
+          "defense_protection": "? (?)",
+          "experience": "?",
+          "gold": "0",
+          "combat_power": "?"
+        }
+      }
+    ]
+  }
+]

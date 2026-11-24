@@ -1,0 +1,25 @@
+;paint.net Palette File
+;Downloaded from Lospec.com/palette-list
+;Palette Name: Dungeon-20
+;Description: This is an edited version of the palette&nbsp;<a href="https://lospec.com/palette-list/mushroom" target="_blank">Mushroom</a>, I added some blues that compliment the reds.&nbsp; This dungeon palette is perfect for the moody vibe of a roguelike.&nbsp; I used this variant of it in my favorite tileset, seen here: https://goldentreesart.itch.io/abandoned-dungeon-asset-pack-and-tileset-32x32
+;Colors: 20
+FF2e222f
+FF45293f
+FF7a3045
+FF993d41
+FFcd683d
+FFfbb954
+FF28353e
+FF344a5a
+FF407080
+FF508da0
+FF5bbfc5
+FFf2ec8b
+FFb0a987
+FF997f73
+FF665964
+FF443846
+FF576069
+FF788a87
+FFd6dad3
+FFa9b2a2

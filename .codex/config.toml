@@ -1,0 +1,12 @@
+[mcp_servers.beckett]
+url = "http://127.0.0.1:8770/mcp/08869a7bfaf04ca4de6e3c0933ff0b22"
+
+[mcp_servers.aseprite]
+command = "/Users/vinhpham/.local/share/mise/installs/uv/0.13.8/uv-aarch64-apple-darwin/uv"
+args = [
+  "--directory",
+  "/Users/vinhpham/Projects/aseprite-mcp",
+  "run",
+  "-m",
+  "aseprite_mcp",
+]
