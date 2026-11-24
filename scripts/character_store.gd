@@ -6,6 +6,7 @@ const Skills = preload("res://scripts/character_skills.gd")
 const DIRECTORY := "user://characters"
 const MAX_SEED := 2147483647
 const MAX_EXPERIENCE := 2_000_000_000
+const MAX_UNIX_TIME := 253402300799
 const LIMITS := {
 	"lineage": [0, 2], "body": [0, 2], "age": [17, 25],
 	"hair": [0, 3], "hair_color": [0, 3], "skin": [0, 3],
@@ -23,7 +24,8 @@ const WORLD_DEFAULTS := {
 	"armor_owned": false, "equipment_durability": {},
 	"starter_sword_claimed": false, "gear_inventory": {}, "shop_supplies": {},
 	"threshold_cleared": 0, "threshold_treasure_claimed": false, "threshold_treasure_chest": -1, "threshold_run": 0,
-	"town_materials": {"fish": 0, "grain": 0, "flour": 0, "fiber": 0, "thread": 0, "cloth": 0, "cobweb": 0},
+	"town_materials": {"fish": 0, "grain": 0, "flour": 0, "fiber": 0, "thread": 0, "cloth": 0, "cobweb": 0, "firewood": 0},
+	"tree_harvests": {},
 }
 static var _selected_id: String = ""
 
@@ -185,6 +187,7 @@ static func _normalize_world(value: Variant) -> Dictionary:
 			return {}
 		materials[material] = int(world["town_materials"][material])
 	world["town_materials"] = materials
+	world["tree_harvests"] = _normalize_tree_harvests(world["tree_harvests"])
 	if not world["pending_loot"] is Dictionary:
 		return {}
 	var pending_loot := {}
@@ -230,6 +233,23 @@ static func _normalize_world(value: Variant) -> Dictionary:
 		return {}
 	world["map_position"] = _normalize_map_position(world["map_position"], world)
 	return world
+
+
+static func _normalize_tree_harvests(value: Variant) -> Dictionary:
+	var trees := {}
+	if not value is Dictionary:
+		return trees
+	for key in value:
+		var state: Variant = value[key]
+		if not key is String or not state is Dictionary:
+			continue
+		var parts: PackedStringArray = key.split(":")
+		if parts.size() != 3 or parts[0] not in TOWNS or not parts[1].is_valid_int() or not parts[2].is_valid_int():
+			continue
+		if not _integer_in_range(state.get("count"), 0, 4) or not _integer_in_range(state.get("next_at"), 1, MAX_UNIX_TIME):
+			continue
+		trees[key] = {"count": int(state["count"]), "next_at": int(state["next_at"])}
+	return trees
 
 
 static func _normalize_map_position(value: Variant, world: Dictionary) -> Dictionary:

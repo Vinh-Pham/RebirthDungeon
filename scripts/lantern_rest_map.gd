@@ -90,3 +90,70 @@ static func generate(seed_value: int) -> Dictionary:
 	landmarks[13]["cell"] = Vector2i(8, 23)
 	landmarks[14]["cell"] = Vector2i(SIZE.x - 2, 20)
 	return {"landmarks": landmarks, "walls": walls, "water": water, "roads": roads, "spawn": Vector2i(3, 12)}
+
+
+static func tree_landmarks(size: Vector2i, landmarks: Array, blocked: Dictionary, roads: Dictionary, spawn: Vector2i, seed_value: int, count: int) -> Array[Dictionary]:
+	var reserved := roads.duplicate()
+	for place: Dictionary in landmarks:
+		var cell: Vector2i = place["cell"]
+		for x in range(cell.x - 1, cell.x + 2):
+			for y in range(cell.y - 1, cell.y + 2):
+				reserved[Vector2i(x, y)] = true
+		if place.has("building"):
+			var footprint: Rect2i = place["building"]
+			for x in range(footprint.position.x - 1, footprint.end.x + 1):
+				for y in range(footprint.position.y - 1, footprint.end.y + 1):
+					reserved[Vector2i(x, y)] = true
+		if place.has("door"):
+			var door: Vector2i = place["door"]
+			for x in range(door.x - 1, door.x + 2):
+				for y in range(door.y - 1, door.y + 2):
+					reserved[Vector2i(x, y)] = true
+	var occupied := blocked.duplicate()
+	for place: Dictionary in landmarks:
+		occupied[place["cell"]] = true
+	var reachable := _tree_reachable(size, occupied, spawn)
+	var candidates: Array[Vector2i] = []
+	for cell: Vector2i in reachable:
+		if not reserved.has(cell) and cell.distance_squared_to(spawn) > 4:
+			candidates.append(cell)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_value
+	for index in range(candidates.size() - 1, 0, -1):
+		var other := rng.randi_range(0, index)
+		var swap := candidates[index]
+		candidates[index] = candidates[other]
+		candidates[other] = swap
+	var trees: Array[Dictionary] = []
+	for cell in candidates:
+		if trees.size() >= count:
+			break
+		if reserved.has(cell):
+			continue
+		occupied[cell] = true
+		if _tree_reachable(size, occupied, spawn).size() != reachable.size() - trees.size() - 1:
+			occupied.erase(cell)
+			continue
+		trees.append({"id": "tree", "cell": cell, "label": "Tree"})
+		for x in range(cell.x - 2, cell.x + 3):
+			for y in range(cell.y - 2, cell.y + 3):
+				reserved[Vector2i(x, y)] = true
+	return trees
+
+
+static func _tree_reachable(size: Vector2i, blocked: Dictionary, spawn: Vector2i) -> Dictionary:
+	var reachable := {spawn: true}
+	var pending: Array[Vector2i] = [spawn]
+	var index := 0
+	while index < pending.size():
+		var cell := pending[index]
+		index += 1
+		for direction in [Vector2i.UP, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT]:
+			var neighbor: Vector2i = cell + direction
+			if neighbor.x < 0 or neighbor.y < 0 or neighbor.x >= size.x or neighbor.y >= size.y:
+				continue
+			if blocked.has(neighbor) or reachable.has(neighbor):
+				continue
+			reachable[neighbor] = true
+			pending.append(neighbor)
+	return reachable

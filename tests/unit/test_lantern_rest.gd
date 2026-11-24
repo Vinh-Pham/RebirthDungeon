@@ -61,7 +61,8 @@ func test_new_character_can_fish_in_lantern_rest_and_keep_the_catch() -> void:
 	assert_eq(created["world"]["location"], "lantern_rest")
 	var town := Town.new()
 	add_child_autofree(town)
-	assert_eq(town._landmarks.size(), Map.LANDMARKS.size())
+	var amenities: Array = town._landmarks.filter(func(place: Dictionary) -> bool: return place["id"] != "tree")
+	assert_eq(amenities.size(), Map.LANDMARKS.size())
 	for landmark in town._landmarks:
 		if landmark["id"] == "fishing":
 			town.player = landmark["cell"] + Vector2i.UP

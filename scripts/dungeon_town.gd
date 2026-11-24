@@ -17,7 +17,9 @@ const Journal = preload("res://scripts/exploration_journal.gd")
 const Skills = preload("res://scripts/character_skills.gd")
 const LanternMap = preload("res://scripts/lantern_rest_map.gd")
 const Activities = preload("res://scripts/town_activities.gd")
+const Firewood = preload("res://scripts/firewood.gd")
 const AMENITY_ATLAS = preload("res://assets/art/town_amenities.png")
+const TREE_SPRITE = preload("res://assets/art/town_tree.png")
 const SPRITE_SIZE := Vector2(16, 24)
 
 const SPINDLE_LANDMARKS := [
@@ -54,6 +56,7 @@ var armory: Armory
 var sheet: Sheet
 var _repair: Repair
 var _shop: Shop
+var _tree_refresh: Timer
 var wall_cells: Dictionary = {}
 var _water_cells: Dictionary = {}
 var _road_cells: Dictionary = {}
@@ -110,9 +113,18 @@ func _build_map() -> void:
 		_map_origin = Vector2.ZERO
 		_tile_size = Vector2(28, 28)
 	else:
-		_landmarks = SPINDLE_LANDMARKS
+		_landmarks = SPINDLE_LANDMARKS.duplicate(true)
 		_build_spindle_walls()
 
+	var tree_clearings := _road_cells.duplicate()
+	if town == "spindle_hollow":
+		for place: Dictionary in _landmarks.slice(0, 4):
+			var center: Vector2i = place["cell"]
+			for x in range(center.x - 2, center.x + 3):
+				for y in range(2, 7):
+					tree_clearings[Vector2i(x, y)] = true
+	var tree_count := 12 if town == "lantern_rest" else 5
+	_landmarks.append_array(LanternMap.tree_landmarks(_map_size, _landmarks, wall_cells, tree_clearings, player, int(profile["seed"]), tree_count))
 	for place: Dictionary in _landmarks:
 		var cell: Vector2i = place["cell"]
 		_points.append(cell)
@@ -125,7 +137,9 @@ func _build_map() -> void:
 		var checkpoint: Dictionary = world.get("map_position", {})
 		if checkpoint.get("location") == town:
 			var saved := Vector2i(int(checkpoint["x"]), int(checkpoint["y"]))
-			if saved.x >= 0 and saved.y >= 0 and saved.x < _map_size.x and saved.y < _map_size.y and not wall_cells.has(saved) and not _points.has(saved):
+			var saved_landmark := _points.find(saved)
+			var can_resume: bool = saved_landmark < 0 or _landmarks[saved_landmark]["id"] == "tree"
+			if Rect2i(Vector2i.ZERO, _map_size).has_point(saved) and not wall_cells.has(saved) and can_resume:
 				player = saved
 
 
@@ -191,6 +205,10 @@ func _build_interface() -> void:
 	_shop.purchase_requested.connect(_purchase_shop_item)
 	_shop.closed.connect(_blacksmith_menu)
 	add_child(_shop)
+	_tree_refresh = Timer.new()
+	_tree_refresh.one_shot = true
+	_tree_refresh.timeout.connect(_refresh_tree_options)
+	add_child(_tree_refresh)
 
 
 func _build_town_view() -> void:
@@ -386,7 +404,9 @@ func _draw_world() -> void:
 		if place.has("amenity_sprite"):
 			sprite_atlas = AMENITY_ATLAS
 			sprite_index = int(place["amenity_sprite"])
-		if _resident_portraits.has(cell):
+		if place["id"] == "tree":
+			canvas.draw_texture(TREE_SPRITE, point + inset)
+		elif _resident_portraits.has(cell):
 			canvas.draw_texture(_resident_portraits[cell], point + inset)
 		elif sprite_atlas != null and sprite_index >= 0:
 			var region := Rect2(Vector2(sprite_index * SPRITE_SIZE.x, 0), SPRITE_SIZE)
@@ -489,6 +509,7 @@ func _move(direction: Vector2i) -> void:
 
 
 func _say(message: String, choices: Dictionary) -> void:
+	_tree_refresh.stop()
 	conversation_serial += 1
 	var serial := conversation_serial
 	for child in dialogue.get_children():
@@ -567,6 +588,8 @@ func _interact() -> void:
 			_say("Cave fish gather in the quiet pools. Cook your catch at the oven.", {
 				"Cast a line": _perform_activity.bind("fish"),
 			})
+		"tree":
+			_tree_options()
 		"windmill":
 			_say("Grind grain from the Grocery Store into flour for the oven.", {
 				"Grind grain": _perform_activity.bind("mill"),
@@ -575,6 +598,60 @@ func _interact() -> void:
 			_gate()
 		"dungeon":
 			_leave()
+
+
+func _tree_options(message := "") -> void:
+	var place: Dictionary = _landmarks[conversation_target]
+	if place["id"] != "tree":
+		return
+	var key := Firewood.tree_key(town, place["cell"])
+	var available := Firewood.status(world, key, int(Time.get_unix_time_from_system()))
+	var description := "Tree · %d / %d firewood available." % [available["count"], Firewood.CAPACITY]
+	var seconds := int(available["seconds_until_next"])
+	if seconds > 0:
+		@warning_ignore("integer_division")
+		description += " Next piece in %dm %02ds." % [seconds / 60, seconds % 60]
+	var held: Dictionary = catalogue.get(satchel.equipped, {})
+	var choices := {}
+	if satchel.equipped == "gathering_axe" and not Durability.usable_weapon(world, held).is_empty():
+		if int(available["count"]) > 0:
+			choices["Chop firewood"] = _chop_firewood
+	else:
+		description += " Equip an unbroken Gathering Axe to chop wood."
+	_say(description if message.is_empty() else message + "\n" + description, choices)
+	if seconds > 0:
+		_tree_refresh.start(float(seconds))
+
+
+func _refresh_tree_options() -> void:
+	if conversation_target < 0 or _landmarks[conversation_target]["id"] != "tree":
+		return
+	if _map_movement_available():
+		_tree_options()
+	else:
+		_tree_refresh.start(1.0)
+
+
+func _chop_firewood() -> void:
+	var active := Store.load_selected()
+	if active.get("id") != profile["id"] or active["world"]["location"] != town:
+		return
+	if conversation_target < 0 or _landmarks[conversation_target]["id"] != "tree":
+		return
+	var place: Dictionary = _landmarks[conversation_target]
+	if player.distance_squared_to(place["cell"]) > 1:
+		return
+	world = active["world"]
+	var held: Dictionary = catalogue.get(satchel.equipped, {})
+	if satchel.equipped != "gathering_axe" or Durability.usable_weapon(world, held).is_empty():
+		_tree_options()
+		return
+	var result := Firewood.harvest(world, Firewood.tree_key(town, place["cell"]), int(Time.get_unix_time_from_system()))
+	if result["changes"].is_empty():
+		_tree_options(result["message"])
+	elif _save(result["changes"]):
+		_refresh()
+		_tree_options(result["message"])
 
 
 func _perform_activity(action: String) -> void:

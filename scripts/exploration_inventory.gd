@@ -191,7 +191,7 @@ func refresh(catalogue: Dictionary, satchel: Satchel, world: Dictionary) -> void
 			_slots[slot_id].tooltip_text = slot_id.replace("_", " ").capitalize() + " is empty"
 	var materials: Dictionary = world.get("town_materials", {})
 	var entries: Array[String] = []
-	for key: String in ["cobweb", "fish", "grain", "flour", "fiber", "thread", "cloth"]:
+	for key: String in ["firewood", "cobweb", "fish", "grain", "flour", "fiber", "thread", "cloth"]:
 		var count := int(materials.get(key, 0))
 		if count > 0:
 			entries.append("%s ×%d" % [key.capitalize(), count])
