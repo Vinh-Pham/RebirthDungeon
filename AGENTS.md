@@ -6,7 +6,7 @@ Rebirth Dungeon is a text-driven, tile-based roguelike dungeon crawler built in 
 
 - **Skills and talents.** Let players train and rank up individual skills through relevant actions. Group related skills into talents that reward specialization while allowing players to learn skills across talents.
 - **Inventory.** Use a grid inventory where items occupy space according to their size. Support stackable items, equipment slots, and bags that expand storage. Keep inventory management keyboard-friendly.
-- **Combat.** Resolve committed actions in discrete turns using a rock-paper-scissors cycle. **Smash** breaks **Defend** and bypasses its damage reduction. **Defend** reduces damage from a **Normal Attack**. **Normal Attack** interrupts **Smash**. Show enemy preparation through readable cues and explain each outcome in the message log.
+- **Combat.** Use Chrono Trigger-inspired Active Time Battle. The player's Time gauge gates Attack and Skill commands. Enemies act automatically on their own clock, and items leave the player's gauge intact. **Smash** breaks **Defend** and bypasses its damage reduction. **Defend** reduces damage from a **Normal Attack**. **Normal Attack** interrupts **Smash**. Show enemy preparation through readable cues and explain each outcome in the message log.
 - **Dungeon Towns.** Keep settlements inside the dungeon. These monster-free hubs offer NPCs, quests, shops, blacksmiths, and healer houses. Connect them through hostile, explorable dungeon passages.
 - **Moon Gates.** Let players register a gate by interacting with it in person. Save activated gates per character and allow instant travel between them at any time.
 
@@ -39,7 +39,7 @@ Use the Aseprite MCP server configured in [`.codex/config.toml`](.codex/config.t
 
 ## Godot plugins
 
-Beckett, GUT, GLoot, Maaack’s Input Remapping, Plugin Updater, and Aseprite Wizard are enabled in [project settings](project.godot). Gaea, GECS, Beehave, Dialogue Manager, and Phantom Camera are installed for future integration.
+Beckett, GUT, GLoot, Maaack’s Input Remapping, Plugin Updater, Aseprite Wizard, and Phantom Camera are enabled in [project settings](project.godot). Gaea, GECS, Beehave, and Dialogue Manager are installed for future integration.
 
 | Plugin | Use in Rebirth Dungeon |
 | --- | --- |
@@ -48,7 +48,7 @@ Beckett, GUT, GLoot, Maaack’s Input Remapping, Plugin Updater, and Aseprite Wi
 | [GECS](addons/gecs/plugin.cfg) | Model the player, creatures, and items with reusable components such as grid position and health. Keep shared rules, such as movement and status effects, in systems that query those components. |
 | [Beehave](addons/beehave/plugin.cfg) | Use behavior trees to choose enemy and NPC actions, such as patrolling, pursuing, attacking, or retreating. |
 | [Dialogue Manager](addons/dialogue_manager/plugin.cfg) | Author branching NPC conversations, quest-related choices, and conditional lore reveals. Render dialogue text in Source Code Pro. |
-| [Phantom Camera](addons/phantom_camera/plugin.cfg) | Frame the player and dungeon map with a top-down 2D camera and handle transitions between viewpoints when needed. Keep tile edges crisp during camera movement. |
+| [Phantom Camera](addons/phantom_camera/plugin.cfg) | Follow the player with a damped, pixel-snapped 2D camera in Lantern Rest. The map scrolls inside the HUD panel and stops at the town boundary. |
 | [GUT 9.7.1](addons/gut/plugin.cfg) | Run the automated GDScript tests in [`tests/unit/`](tests/unit/) for combat, character stats, inventory, and save compatibility. |
 | [GLoot 3.0.2](addons/gloot/plugin.cfg) | Manage the sword satchel's 8×7 bag grid, item footprints, and main-hand equipment slot. The HUD and armory share this inventory and load existing character weapon saves. |
 | [Maaack’s Input Remapping 1.8.0](addons/maaacks_input_remapping/plugin.cfg) | Add a rebinding menu after gameplay controls move to named `InputMap` actions. The addon bundles [Plugin Updater 0.5.1](addons/plugin_updater/plugin.cfg) and its setup helpers. |

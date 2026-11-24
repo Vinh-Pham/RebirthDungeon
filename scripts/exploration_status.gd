@@ -13,29 +13,27 @@ var bars: Array[ProgressBar] = []
 var damage: Label
 var defense: Label
 var slots: Array[MenuButton] = []
+var _experience_label: Label
+var _experience_bar: ProgressBar
 
 
 func _ready() -> void:
 	theme = Style.make_theme()
 	custom_minimum_size.x = 232
-	add_theme_constant_override("separation", 8)
+	add_theme_constant_override("separation", 6)
 	_location_heading = Style.label("", 16, Style.TEAL)
 	_location_heading.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	add_child(_location_heading)
 	map = Control.new()
-	map.custom_minimum_size.y = 136
+	map.custom_minimum_size.y = 110
 	map.draw.connect(_draw_map)
 	add_child(map)
 	add_child(Style.rule())
 	for color: Color in [Style.ACCENT, Style.TEAL, Style.ERROR]:
-		var label := Style.label("", 13, color)
+		var label := Style.label("", 13, Color.WHITE)
 		add_child(label)
 		labels.append(label)
-		var bar := ProgressBar.new()
-		bar.custom_minimum_size.y = 6
-		bar.show_percentage = false
-		bar.add_theme_stylebox_override("background", Style.box(Style.SURFACE))
-		bar.add_theme_stylebox_override("fill", Style.box(color))
+		var bar := Style.progress_bar(Style.HEALTH if bars.is_empty() else color)
 		add_child(bar)
 		bars.append(bar)
 	damage = Style.label("", 14)
@@ -43,6 +41,10 @@ func _ready() -> void:
 	defense = Style.label("", 12, Style.MUTED)
 	add_child(defense)
 	add_child(Style.rule())
+	_experience_label = Style.label("", 12, Style.TEXT)
+	add_child(_experience_label)
+	_experience_bar = Style.progress_bar(Style.TEAL)
+	add_child(_experience_bar)
 	add_child(Style.label("Quick Slots", 16, Style.TEAL))
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 5)
@@ -99,6 +101,11 @@ func refresh(stats: Dictionary, world: Dictionary) -> void:
 		bars[index].value = clampi(current, 0, maximum)
 	damage.text = "%d–%d damage" % [stats["damage_min"], stats["damage_max"]]
 	defense.text = "DEF %s  ·  Crit %.1f%%" % [stats["defense"], stats["critical"]]
+	var experience := int(stats["experience"])
+	var next_level := int(stats["next_level_experience"])
+	_experience_label.text = "Lv %d  ·  XP %d / %d" % [stats["level"], experience, next_level]
+	_experience_bar.max_value = maxi(1, next_level)
+	_experience_bar.value = experience
 	var assignments: Array = world.get("quick_slots", [])
 	var count := int(world.get("tonics", 0))
 	for index in range(4):

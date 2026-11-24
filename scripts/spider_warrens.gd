@@ -6,13 +6,30 @@ signal experience_saved(profile: Dictionary)
 
 const Style = preload("res://scripts/menu_style.gd")
 const Combat = preload("res://scripts/spider_encounter.gd")
+const Rooms = preload("res://scripts/threshold_rooms.gd")
+const Consumables = preload("res://scripts/consumables.gd")
+const Durability = preload("res://scripts/equipment_durability.gd")
 const Stats = preload("res://scripts/character_stats.gd")
 const Store = preload("res://scripts/character_store.gd")
 const ROSTER: JSON = preload("res://data/spiders.json")
 const ATLAS = preload("res://assets/art/spider_atlas.png")
 const CELL := Vector2i(16, 24)
 const ATLAS_COLUMNS := 8
+const ENEMY_SAVE_RETRY_SECONDS := 1.0
 
+class EnemyCard:
+	var button: Button
+	var art: TextureRect
+	var vitals: Label
+	var gauge: ProgressBar
+
+
+var _room_index := -1
+var _room_enemies: Array = []
+var _enemy_cards: HBoxContainer
+var _target_cards: Array[EnemyCard] = []
+var _target_index := 0
+var _roster: VBoxContainer
 var _crossing := false
 var _crossing_cleared := false
 var _heading: Label
@@ -32,6 +49,10 @@ var _player_art: TextureRect
 var _spider_art: TextureRect
 var _player_line: Label
 var _enemy_line: Label
+var _battle_gauges: HBoxContainer
+var _player_gauge: ProgressBar
+var _enemy_gauge: ProgressBar
+var _player_time_label: Label
 var _enemy_name: Label
 var _stats: Label
 var _source_details: Label
@@ -41,10 +62,19 @@ var _return: Button
 var _enter: Button
 var _actions: HBoxContainer
 var _attack_button: Button
+var _skill_button: Button
+var _item_button: Button
+var _action_button: Button
+var _skill_options: HBoxContainer
+var _item_options: HBoxContainer
 var _smash_button: Button
+var _defend_button: Button
+var _enemy_save_retry := 0.0
+var _quick_slots: Array[Button] = []
 
 
 func _ready() -> void:
+	set_process(false)
 	hide()
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
@@ -94,6 +124,11 @@ func _ready() -> void:
 
 
 func open(weapon: Dictionary, player_icon: Texture2D, seed_value: int, crossing := false) -> void:
+	_room_index = -1
+	_room_enemies.clear()
+	_build_target_cards()
+	_roster.show()
+	_spider_art.custom_minimum_size = Vector2(96, 144)
 	_crossing = crossing
 	_crossing_cleared = false
 	_defeated = false
@@ -103,15 +138,43 @@ func open(weapon: Dictionary, player_icon: Texture2D, seed_value: int, crossing 
 	_character_stats = Stats.snapshot(Store.load_selected(), _weapon)
 	_seed = seed_value
 	_player_art.texture = player_icon
-	_weapon_line.text = "Weapon: " + str(_weapon.get("name", "Unarmed"))
 	_search.text = ""
 	show()
 	_fill_roster("White Spider")
 	_list.grab_focus()
 
 
+func open_room_enemy(weapon: Dictionary, player_icon: Texture2D, seed_value: int, room_index: int, enemy: Dictionary) -> void:
+	open_room_enemies(weapon, player_icon, seed_value, room_index, [enemy])
+
+
+func open_room_enemies(weapon: Dictionary, player_icon: Texture2D, seed_value: int, room_index: int, enemies: Array, initial_target := 0) -> void:
+	if enemies.is_empty():
+		return
+	_room_index = room_index
+	_room_enemies = enemies.duplicate()
+	_build_target_cards()
+	_crossing = false
+	_crossing_cleared = false
+	_defeated = false
+	_weapon = weapon
+	_seed = seed_value
+	_match = Combat.new()
+	_character_stats = Stats.snapshot(Store.load_selected(), weapon)
+	_heading.text = "Boss Chamber" if room_index == Rooms.ROOM_COUNT - 1 else "Dungeon Battle"
+	_enemy_name.text = "Choose a target" if _room_enemies.size() > 1 else _room_enemies[0]["name"]
+	_player_art.texture = player_icon
+	_spider_art.texture = _icon(int(_room_enemies[0]["sprite"]))
+	_spider_art.custom_minimum_size = Vector2(144, 216) if room_index == Rooms.ROOM_COUNT - 1 else Vector2(96, 144)
+	_roster.hide()
+	show()
+	_begin()
+	_select_target(initial_target)
+
+
 func _build_roster(parent: Control) -> void:
 	var roster := VBoxContainer.new()
+	_roster = roster
 	roster.custom_minimum_size.x = 310
 	roster.add_theme_constant_override("separation", 7)
 	parent.add_child(roster)
@@ -156,6 +219,14 @@ func _build_arena(arena: VBoxContainer) -> void:
 	Style.inset(battlefield, 12, 8).add_child(positions)
 	_player_art = _sprite_slot(positions)
 	_spider_art = _sprite_slot(positions)
+	_enemy_cards = HBoxContainer.new()
+	_enemy_cards.name = "EnemyCards"
+	_enemy_cards.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_enemy_cards.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_enemy_cards.size_flags_stretch_ratio = 3.0
+	_enemy_cards.add_theme_constant_override("separation", 8)
+	_enemy_cards.hide()
+	positions.add_child(_enemy_cards)
 
 	var vitals := HBoxContainer.new()
 	arena.add_child(vitals)
@@ -165,6 +236,14 @@ func _build_arena(arena: VBoxContainer) -> void:
 	_enemy_line = Style.label("", 14, Style.ACCENT)
 	_enemy_line.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	vitals.add_child(_enemy_line)
+
+	_battle_gauges = HBoxContainer.new()
+	_battle_gauges.add_theme_constant_override("separation", 24)
+	_battle_gauges.hide()
+	arena.add_child(_battle_gauges)
+	_player_time_label = Style.label("Time", 13, Style.TEAL)
+	_player_gauge = _add_battle_clock("PlayerGauge", _player_time_label, Style.TEAL)
+	_enemy_gauge = _add_battle_clock("EnemyGauge", Style.label("Time", 13, Style.ACCENT), Style.ACCENT)
 
 	_stats = Style.label("", 14, Style.TEXT)
 	_stats.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -181,10 +260,131 @@ func _build_arena(arena: VBoxContainer) -> void:
 	_actions = HBoxContainer.new()
 	_actions.add_theme_constant_override("separation", 9)
 	arena.add_child(_actions)
-	_attack_button = _add_action("1  Attack (%d SP)" % Combat.ATTACK_COST, Combat.Action.ATTACK)
-	_add_action("2  Defend (+%d SP)" % Combat.GUARD_RECOVERY, Combat.Action.DEFEND)
-	_smash_button = _add_action("3  Smash (%d SP)" % Combat.SMASH_COST, Combat.Action.SMASH)
-	_tonic_button = _add_action("4  Tonic", Combat.Action.TONIC)
+	_attack_button = _add_battle_button(_actions, "Attack", _act.bind(Combat.Action.ATTACK), true)
+	_attack_button.tooltip_text = "Normal attack with your weapon or bare hands. Costs %d SP. Press A." % Combat.ATTACK_COST
+	_skill_button = _add_battle_button(_actions, "Skill", _open_skills)
+	_skill_button.tooltip_text = "Choose an active skill. Press S."
+	_item_button = _add_battle_button(_actions, "Item", _open_items)
+	_item_button.tooltip_text = "Use a consumable at any time. Press I."
+	_action_button = _add_battle_button(_actions, "Action")
+	_action_button.disabled = true
+	_action_button.tooltip_text = "Unavailable"
+
+	_skill_options = HBoxContainer.new()
+	_skill_options.add_theme_constant_override("separation", 9)
+	arena.add_child(_skill_options)
+	_defend_button = _add_battle_button(_skill_options, "Defend (+%d SP)" % Combat.GUARD_RECOVERY, _act.bind(Combat.Action.DEFEND))
+	_defend_button.tooltip_text = "Recover stamina and guard against the next normal strike."
+	_smash_button = _add_battle_button(_skill_options, "Smash (%d SP)" % Combat.SMASH_COST, _act.bind(Combat.Action.SMASH))
+	_smash_button.tooltip_text = "Break the enemy's guard. An Attack can interrupt Smash."
+	_item_options = HBoxContainer.new()
+	arena.add_child(_item_options)
+	_tonic_button = _add_battle_button(_item_options, "Healing Tonic", _use_item.bind(Consumables.TONIC))
+	_show_options()
+
+	var quick_row := HBoxContainer.new()
+	quick_row.add_theme_constant_override("separation", 8)
+	arena.add_child(quick_row)
+	quick_row.add_child(Style.label("Quick Slots", 14, Style.TEAL))
+	for index in range(4):
+		var slot := _add_battle_button(quick_row, "", _use_quick_slot.bind(index))
+		slot.name = "QuickSlot%d" % (index + 1)
+		slot.add_theme_font_size_override("font_size", 13)
+		_quick_slots.append(slot)
+
+
+func _build_target_cards() -> void:
+	for child in _enemy_cards.get_children():
+		_enemy_cards.remove_child(child)
+		child.queue_free()
+	_target_cards.clear()
+	_target_index = 0
+	var group_battle := _room_enemies.size() > 1
+	_enemy_cards.visible = group_battle
+	_spider_art.get_parent().visible = not group_battle
+	_enemy_line.visible = not group_battle
+	_enemy_gauge.get_parent().visible = not group_battle
+	if not group_battle:
+		return
+
+	for index in range(_room_enemies.size()):
+		var panel := Style.panel(_enemy_cards, Style.BACK)
+		panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var column := VBoxContainer.new()
+		column.add_theme_constant_override("separation", 6)
+		Style.inset(panel, 8, 8).add_child(column)
+
+		var enemy: Dictionary = _room_enemies[index]
+		var card := EnemyCard.new()
+		var title := "%d · %s" % [index + 1, enemy["name"]]
+		card.button = Style.button(title)
+		card.button.name = "EnemyTarget%d" % (index + 1)
+		card.button.add_theme_font_size_override("font_size", 12)
+		card.button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		card.button.tooltip_text = "%s. Click to target or use Left and Right." % title
+		card.button.toggle_mode = true
+		card.button.pressed.connect(_select_target.bind(index))
+		column.add_child(card.button)
+
+		card.art = _sprite_slot(column)
+		card.art.custom_minimum_size = Vector2(56, 84)
+		card.art.texture = _icon(int(enemy["sprite"]))
+		card.vitals = Style.label("", 12, Style.TEXT)
+		card.vitals.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		column.add_child(card.vitals)
+
+		card.gauge = _new_gauge("EnemyGauge%d" % (index + 1), Style.ACCENT)
+		card.gauge.tooltip_text = "Enemy Time"
+		column.add_child(card.gauge)
+		_target_cards.append(card)
+
+
+func _select_target(index: int) -> void:
+	if index < 0 or index >= _target_cards.size() or _match.enemy_at(index).health <= 0:
+		return
+	_target_index = index
+	for i in range(_target_cards.size()):
+		_target_cards[i].button.set_pressed_no_signal(i == index)
+
+
+func _cycle_target(direction: int) -> bool:
+	for offset in range(1, _target_cards.size()):
+		var index := posmod(_target_index + direction * offset, _target_cards.size())
+		if _match.enemy_at(index).health > 0:
+			_select_target(index)
+			return true
+	return false
+
+
+func _enemy_intent(intent: int) -> String:
+	match intent:
+		Combat.Action.DEFEND: return "Guarding"
+		Combat.Action.ATTACK: return "Preparing Attack"
+		Combat.Action.SMASH: return "Preparing Smash"
+		_: return ""
+
+
+func _add_battle_clock(gauge_name: String, label: Label, color: Color) -> ProgressBar:
+	var group := HBoxContainer.new()
+	group.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	group.add_theme_constant_override("separation", 9)
+	_battle_gauges.add_child(group)
+	label.custom_minimum_size.x = 44
+	group.add_child(label)
+	var gauge := _new_gauge(gauge_name, color)
+	group.add_child(gauge)
+	return gauge
+
+
+func _new_gauge(gauge_name: String, color: Color) -> ProgressBar:
+	var gauge := Style.progress_bar(color)
+	gauge.name = gauge_name
+	gauge.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	gauge.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	gauge.custom_minimum_size.y = 8
+	gauge.max_value = 1.0
+	gauge.step = 0.0
+	return gauge
 
 
 func _sprite_slot(parent: Control) -> TextureRect:
@@ -199,13 +399,32 @@ func _sprite_slot(parent: Control) -> TextureRect:
 	return sprite
 
 
-func _add_action(text_value: String, action: int) -> Button:
-	var button := Style.button(text_value, action == Combat.Action.ATTACK)
-	button.focus_mode = Control.FOCUS_NONE
+func _add_battle_button(row: HBoxContainer, text_value: String, activate := Callable(), primary := false) -> Button:
+	var button := Style.button(text_value, primary)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	button.pressed.connect(_act.bind(action))
-	_actions.add_child(button)
+	if activate.is_valid():
+		button.pressed.connect(activate)
+	row.add_child(button)
 	return button
+
+
+func _open_skills() -> void:
+	if not _match.player_ready():
+		return
+	_show_options(null if _skill_options.visible else _skill_options)
+	if _skill_options.visible:
+		_skill_options.get_child(0).grab_focus()
+
+
+func _open_items() -> void:
+	_show_options(null if _item_options.visible else _item_options)
+	if _item_options.visible and not _tonic_button.disabled:
+		_tonic_button.grab_focus()
+
+
+func _show_options(options: HBoxContainer = null) -> void:
+	_skill_options.visible = options == _skill_options
+	_item_options.visible = options == _item_options
 
 
 func _fill_roster(preferred := "") -> void:
@@ -262,6 +481,9 @@ func _select_spider(index: int) -> void:
 
 func _show_variant(index: int) -> void:
 	_match = Combat.new()
+	var world: Dictionary = Store.load_selected()["world"]
+	_update_weapon_line(world)
+	_refresh_items(world)
 	if index < 0:
 		_spider_art.texture = null
 		_stats.text = ""
@@ -285,9 +507,7 @@ func _show_variant(index: int) -> void:
 		_report(behavior["melee_hits"]), _report(behavior["running_speed"]), _report(behavior["element"])
 	]
 	_source_details.tooltip_text = _entry["source_url"]
-	var saved_health: int = Store.load_selected()["world"]["health"]
-	var preview_health := int(_character_stats["life"]) if saved_health < 0 else saved_health
-	_player_line.text = "You  %d HP  /  %d SP" % [preview_health, _character_stats["stamina"]]
+	_update_preview_health(world)
 	_enemy_line.text = "%s HP" % _report(raw["health"])
 	_set_fighting(false)
 	if _crossing:
@@ -305,97 +525,260 @@ func _report(value: String) -> String:
 
 
 func _current_variant() -> Dictionary:
+	if _room_index >= 0:
+		return _room_enemies[0]
 	if _entry.is_empty() or _variants.selected < 0:
 		return {}
 	return _entry["variants"][_variants.selected]
 
 
 func _begin() -> void:
-	var variant := _current_variant()
-	var current_profile := Store.load_selected()
-	_character_stats = Stats.snapshot(current_profile, _weapon)
-	if not _match.begin(variant, _seed + int(_entry["sprite"]) * 97 + _variants.selected, _character_stats, int(current_profile["world"]["health"])):
+	if _match.active:
 		return
+	var current_profile := Store.load_selected()
+	if current_profile.is_empty():
+		return
+	var variant := _current_variant()
+	if variant.is_empty():
+		return
+	_character_stats = Stats.snapshot(current_profile, _weapon)
+	var encounter_seed := _seed + (_room_index * 97 if _room_index >= 0 else int(_entry["sprite"]) * 97 + _variants.selected)
+	var enemies := _room_enemies if _room_index >= 0 else [variant]
+	if not _match.begin_group(enemies, encounter_seed, _character_stats, int(current_profile["world"]["health"])):
+		return
+	_enemy_save_retry = 0.0
+	_select_target(0)
 	_set_fighting(true)
-	_update_combat_vitals()
-	_log.text = "Read the spider's stance. Smash breaks a guard, but a normal strike interrupts Smash."
+	_update_combat_vitals(current_profile["world"])
+	_log.text = "Attack or use a skill when your Time gauge fills. Items are always available."
+	if _target_cards.size() > 1:
+		_log.text += " Select enemies by clicking or using Left and Right."
 
 
 func _set_fighting(fighting: bool) -> void:
 	_search.editable = not fighting
 	_list.mouse_filter = Control.MOUSE_FILTER_IGNORE if fighting else Control.MOUSE_FILTER_STOP
 	_list.focus_mode = Control.FOCUS_NONE if fighting else Control.FOCUS_ALL
-	_variant_loader.visible = not _crossing and not _entry.is_empty()
+	_variant_loader.visible = _room_index < 0 and not fighting and not _crossing and not _entry.is_empty()
+	_stats.visible = not fighting
+	_source_details.visible = not fighting
 	_variants.disabled = fighting
 	_return.text = "Recover in Town" if _defeated else ("Retreat" if fighting else "Return to Threshold")
 	_actions.visible = fighting
+	_battle_gauges.visible = fighting
+	set_process(fighting)
+	_show_options()
 	_enter.visible = not fighting
 	_enter.disabled = _defeated or _crossing_cleared or _current_variant().get("health") == null
+	if _room_index >= 0:
+		_enter.hide()
+		_return.text = "Recover in Town" if _defeated else ("Retreat" if fighting else "Return to Dungeon")
 	if _crossing_cleared:
 		_return.text = "Continue through Threshold"
 
 
-func _update_combat_vitals() -> void:
-	_player_line.text = "You  %d/%d HP  ·  %d/%d SP" % [
+func _update_combat_vitals(world: Dictionary) -> void:
+	_update_weapon_line(world)
+	_player_line.text = "You %d/%d HP  ·  %d/%d SP" % [
 		_match.health, _character_stats["life"], _match.stamina, _character_stats["stamina"]
 	]
-	_attack_button.disabled = _match.stamina < Combat.ATTACK_COST
-	_smash_button.disabled = _match.stamina < Combat.SMASH_COST
-	var tonics: int = Store.load_selected()["world"]["tonics"]
-	_tonic_button.text = "4  Tonic (%d)" % tonics
-	_tonic_button.disabled = tonics <= 0 or _match.health >= int(_character_stats["life"])
-	var cue := ""
+	if _match.guarded:
+		_player_line.text += "  /  Guarding"
+	if _target_cards.is_empty():
+		var cue := "  /  " + _enemy_intent(_match.intent) if _match.active else ""
+		_enemy_line.text = "%d / %d HP%s" % [_match.enemy_health, int(_current_variant()["health"]), cue]
+	else:
+		for index in range(_target_cards.size()):
+			var card := _target_cards[index]
+			var enemy := _match.enemy_at(index)
+			card.button.disabled = enemy.health <= 0 or not _match.active
+			card.art.modulate.a = 0.3 if enemy.health <= 0 else 1.0
+			var status := "Defeated" if enemy.health <= 0 else _enemy_intent(enemy.intent)
+			card.vitals.text = "%d / %d HP\n%s" % [enemy.health, _room_enemies[index]["health"], status]
+		if _match.active and _match.enemy_at(_target_index).health <= 0:
+			_cycle_target(1)
+	_update_gauges()
+	_refresh_items(world)
+
+
+func _update_gauges() -> void:
+	_player_gauge.value = _match.player_gauge
+	if _target_cards.is_empty():
+		_enemy_gauge.value = _match.enemy_gauge
+	else:
+		for index in range(_target_cards.size()):
+			var enemy := _match.enemy_at(index)
+			_target_cards[index].gauge.value = enemy.gauge if enemy.health > 0 and _match.active else 0.0
+	var ready_to_act := _match.player_ready()
+	_player_time_label.text = "Ready" if ready_to_act else "Time"
+	_attack_button.disabled = not ready_to_act or _match.stamina < Combat.ATTACK_COST
+	_skill_button.disabled = not ready_to_act
+	_defend_button.disabled = not ready_to_act
+	_smash_button.disabled = not ready_to_act or _match.stamina < Combat.SMASH_COST
+
+
+func _process(delta: float) -> void:
+	if not is_visible_in_tree() or not _match.active:
+		return
+	_match.advance_time(delta)
+	_enemy_save_retry = maxf(0.0, _enemy_save_retry - delta)
+	var messages: PackedStringArray = []
+	for index in range(_match.enemy_count()):
+		if not _match.active or _enemy_save_retry > 0.0:
+			break
+		if _match.enemy_ready(index):
+			var message := _resolve_action(_match.enemy_at(index).intent, index)
+			if not message.is_empty():
+				messages.append(message)
+	if not messages.is_empty():
+		_log.text = "  ".join(messages)
+	_update_gauges()
+
+
+func _update_weapon_line(world: Dictionary) -> void:
+	if _weapon.is_empty():
+		_weapon_line.text = "Weapon · Bare hands"
+		return
+	_weapon_line.text = "%s  ·  %s" % [_weapon["name"], Durability.condition_text(world, _weapon)]
+	if Durability.usable_weapon(world, _weapon).is_empty():
+		_weapon_line.text += "  ·  Fighting bare-handed"
+
+
+func _update_preview_health(world: Dictionary) -> void:
+	var saved_health: int = world["health"]
+	var preview_health := int(_character_stats["life"]) if saved_health < 0 else saved_health
+	_player_line.text = "You  %d HP  /  %d SP" % [preview_health, _character_stats["stamina"]]
+
+
+func _refresh_items(world: Dictionary) -> void:
+	var count: int = world["tonics"]
+	var health: int = _match.health if _match.active else world["health"]
+	var tonic := Consumables.use_item(Consumables.TONIC, world, health, int(_character_stats["life"]))
+	_tonic_button.text = "Healing Tonic ×%d" % count
+	_tonic_button.disabled = tonic["changes"].is_empty()
+	_tonic_button.tooltip_text = tonic["message"] if _tonic_button.disabled else "Restores up to %d Life without resetting your Time gauge." % Consumables.TONIC_HEAL
+	var assignments: Array = world["quick_slots"]
+	for index in range(_quick_slots.size()):
+		var assigned: bool = assignments[index] == Consumables.TONIC
+		var slot := _quick_slots[index]
+		slot.text = "%d  %s" % [index + 1, "Tonic ×%d" % count if assigned else "—"]
+		slot.tooltip_text = "Healing Tonic. Click or press %d to use." % (index + 1) if assigned else "Assign an item to this slot during exploration."
+		slot.disabled = _defeated
+
+
+func _use_quick_slot(index: int) -> void:
+	var profile := Store.load_selected()
+	if profile.is_empty() or _defeated:
+		return
+	var slots: Array = profile["world"]["quick_slots"]
+	if index < 0 or index >= slots.size() or slots[index].is_empty():
+		_log.text = "Quick slot %d is empty." % (index + 1)
+		return
+	_use_item(slots[index], profile)
+
+
+func _use_item(item_id: String, profile := {}) -> void:
+	if profile.is_empty():
+		profile = Store.load_selected()
+	if profile.is_empty() or _defeated:
+		return
+	var world: Dictionary = profile["world"]
+	if not _match.active:
+		_character_stats = Stats.snapshot(profile, _weapon)
+	var health: int = _match.health if _match.active else world["health"]
+	var result := Consumables.use_item(item_id, world, health, int(_character_stats["life"]))
+	if result["changes"].is_empty():
+		_log.text = result["message"]
+		return
+	var saved := Store.update_world(result["changes"])
+	if saved.is_empty():
+		_log.text = "Could not save item use. Try again."
+		return
+	var saved_world: Dictionary = saved["world"]
 	if _match.active:
-		cue = "  /  Guarding" if _match.intent == Combat.Action.DEFEND else "  /  Preparing a strike"
-	_enemy_line.text = "%d / %d HP%s" % [_match.enemy_health, int(_current_variant()["health"]), cue]
+		_match.health = int(saved_world["health"])
+		_update_combat_vitals(saved_world)
+	else:
+		_update_preview_health(saved_world)
+		_refresh_items(saved_world)
+	experience_saved.emit(saved)
+	_log.text = result["message"]
 
 
 func _act(action: int) -> void:
-	var profile := Store.load_selected()
-	var world: Dictionary = profile["world"]
-	if action == Combat.Action.TONIC and (int(world["tonics"]) <= 0 or _match.health >= int(_character_stats["life"])):
-		return
-	var old_health := _match.health
-	var old_stamina := _match.stamina
-	var old_enemy := _match.enemy_health
-	var old_round := _match.round_number
-	var old_intent := _match.intent
-	var message := _match.act(action, _weapon)
-	if message.is_empty():
-		return
-	if _match.round_number == old_round:
-		_log.text = message
-		return
+	if _match.player_ready():
+		var message := _resolve_action(action)
+		if not message.is_empty():
+			_log.text = message
+
+
+func _resolve_action(action: int, enemy_index := -1) -> String:
+	var enemy_action := enemy_index >= 0
+	var active_profile := Store.load_selected()
+	if active_profile.is_empty():
+		if enemy_action:
+			_enemy_save_retry = ENEMY_SAVE_RETRY_SECONDS
+		return "Could not load your character."
+	var world: Dictionary = active_profile["world"]
+	var weapon := Durability.usable_weapon(world, _weapon)
+	var previous := _match.snapshot()
+	var previous_round := _match.round_number
+	var message := _match.act_enemy(enemy_index) if enemy_action else _match.act(action, weapon, _target_index)
+	if message.is_empty() or (not enemy_action and _match.round_number == previous_round):
+		return message
 	var changes := {"health": _match.health}
-	if action == Combat.Action.TONIC:
-		changes["tonics"] = int(world["tonics"]) - 1
+	var weapon_wear := 0
+	if _match.last_player_hit:
+		weapon_wear = Durability.SMASH_WEAR if action == Combat.Action.SMASH else Durability.ATTACK_WEAR
+	var condition := Durability.wear(world, weapon, weapon_wear, _match.last_enemy_hit)
+	if condition != world["equipment_durability"]:
+		changes["equipment_durability"] = condition
 	var xp := 0
 	if not _match.active:
 		if _match.health <= 0:
 			changes.merge({"location": world["dungeon_from"], "health": -1}, true)
 		else:
-			xp = int(_current_variant()["experience"]) if _current_variant()["experience"] != null else 0
+			var enemies := _room_enemies if _room_index >= 0 else [_current_variant()]
+			for enemy: Dictionary in enemies:
+				xp += int(enemy["experience"]) if enemy.get("experience") != null else 0
+			if _room_index >= 0:
+				if int(world.get("threshold_cleared", 0)) == _room_index:
+					changes["threshold_cleared"] = _room_index + 1
+					if _room_index == Rooms.ROOM_COUNT - 1 and int(world["quest"]) == 1:
+						changes["quest"] = 2
+				else:
+					xp = 0
 			if _crossing and int(world["quest"]) == 1:
 				changes["quest"] = 2
 	var saved := Store.award_experience(xp, changes)
 	if saved.is_empty():
-		_match.health = old_health
-		_match.stamina = old_stamina
-		_match.enemy_health = old_enemy
-		_match.round_number = old_round
-		_match.intent = old_intent
-		_match.active = true
-		_log.text = "Could not save this turn. Try again."
-		return
-	experience_saved.emit(saved)
+		_match.restore(previous)
+		if enemy_action:
+			_enemy_save_retry = ENEMY_SAVE_RETRY_SECONDS
+		return "Could not save this action. Try again."
+	var saved_world: Dictionary = saved["world"]
+	var broke_weapon := not weapon.is_empty() and Durability.usable_weapon(saved_world, weapon).is_empty()
+	var broke_armor := Durability.armor_defense(world) > 0 and Durability.armor_defense(saved_world) == 0
+	if broke_weapon:
+		message += " Your weapon broke. You now fight bare-handed."
+	if broke_armor:
+		message += " Your armor broke."
+	if _match.active and (broke_weapon or broke_armor):
+		_character_stats = Stats.snapshot(saved, _weapon)
+		_match.refresh_character_stats(_character_stats)
 	_defeated = _match.health <= 0
 	_crossing_cleared = _crossing and not _match.active and not _defeated
-	_update_combat_vitals()
+	_update_combat_vitals(saved_world)
+	if not enemy_action:
+		_show_options()
 	if not _match.active:
 		if xp > 0:
 			message += " +%d XP." % xp
+		if not _target_cards.is_empty():
+			_enemy_name.text = "You fall" if _defeated else "Room cleared"
 		_set_fighting(false)
-	_log.text = message
+	experience_saved.emit(saved)
+	return message
 
 
 func active_vitals() -> Vector2i:
@@ -419,16 +802,36 @@ func _input(event: InputEvent) -> void:
 		return
 	if event.is_action_pressed("ui_cancel"):
 		get_viewport().set_input_as_handled()
-		_back()
-	elif _match.active and [KEY_1, KEY_2, KEY_3, KEY_4].has(event.keycode):
+		if _skill_options.visible or _item_options.visible:
+			_show_options()
+		else:
+			_back()
+	elif event.keycode in [KEY_1, KEY_2, KEY_3, KEY_4] and (_match.active or not _search.has_focus()):
 		get_viewport().set_input_as_handled()
-		_act(event.keycode - KEY_1)
+		_use_quick_slot(event.keycode - KEY_1)
+	elif _match.active:
+		match event.keycode:
+			KEY_A: _act(Combat.Action.ATTACK)
+			KEY_S: _open_skills()
+			KEY_I: _open_items()
+			KEY_LEFT:
+				if not _cycle_target(-1):
+					return
+			KEY_RIGHT:
+				if not _cycle_target(1):
+					return
+			_: return
+		get_viewport().set_input_as_handled()
 
 
 func _back() -> void:
 	if _defeated:
 		hide()
 		return_to_town_requested.emit()
+	elif _room_index >= 0:
+		_match.active = false
+		set_process(false)
+		hide()
 	elif _match.active:
 		_show_variant(_variants.selected)
 		_log.text = "You return to the warren entrance."

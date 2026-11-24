@@ -11,6 +11,7 @@ const BORDER := Color("#407080")
 const MUTED := Color("#a9b2a2")
 const TEXT := Color("#d6dad3")
 const ACCENT := Color("#fbb954")
+const HEALTH := Color("#993d41")
 const TEAL := Color("#5bbfc5")
 const ERROR := Color("#f2ec8b")
 
@@ -125,3 +126,16 @@ static func rule() -> ColorRect:
 	line.custom_minimum_size = Vector2(0, 1)
 	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return line
+
+
+static func progress_bar(color: Color) -> ProgressBar:
+	var bar := ProgressBar.new()
+	bar.custom_minimum_size.y = 6
+	bar.show_percentage = false
+	var track := box(SURFACE)
+	track.set_content_margin_all(0.0)
+	var fill := box(color)
+	fill.set_content_margin_all(0.0)
+	bar.add_theme_stylebox_override("background", track)
+	bar.add_theme_stylebox_override("fill", fill)
+	return bar

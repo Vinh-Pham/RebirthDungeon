@@ -23,7 +23,7 @@ func before_each() -> void:
 	for x in range(5):
 		for y in range(3):
 			walkable[Vector2i(x, y)] = true
-	_layout.configure("Test floor", "", Vector2i(5, 3), walkable, {}, {}, Satchel.new())
+	_layout.configure("Test floor", Vector2i(5, 3), walkable, {}, {}, Satchel.new())
 	_layout.configure_click_movement(ORIGIN, TILE, [Vector2i(2, 0), Vector2i(2, 1)], func() -> bool: return _can_move, _move)
 	_layout.set_player(_player)
 	_layout.set_process(false)

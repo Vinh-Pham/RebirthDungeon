@@ -7,7 +7,9 @@ const Catalog = preload("res://scripts/sword_catalog.gd")
 const Satchel = preload("res://scripts/sword_satchel.gd")
 const Armory = preload("res://scripts/armory.gd")
 const Warrens = preload("res://scripts/spider_warrens.gd")
+const Rooms = preload("res://scripts/threshold_rooms.gd")
 const Stats = preload("res://scripts/character_stats.gd")
+const Durability = preload("res://scripts/equipment_durability.gd")
 const Sheet = preload("res://scripts/character_sheet.gd")
 const Layout = preload("res://scripts/exploration_layout.gd")
 const Journal = preload("res://scripts/exploration_journal.gd")
@@ -18,22 +20,33 @@ const MAP_ORIGIN := Vector2(12, 12)
 const TILE_SIZE := Vector2(27, 26)
 const SPRITE_INSET := Vector2(5, 1)
 const GLYPH_INSET := Vector2(7, 21)
-const MAP_SIZE := Vector2i(31, 15)
 const PRACTICE_POST := Vector2i(8, 4)
-const WARRENS_STAIRS := Vector2i(27, 7)
-const WEST_EXIT := Vector2i(2, 7)
-const EAST_EXIT := Vector2i(28, 9)
-const WEB_CROSSING := Vector2i(18, 7)
-const WHITE_SPIDER_REGION := Rect2(48, 0, 16, 24)
 const WEAPON_RACKS := {
-	Vector2i(5, 5): "light",
-	Vector2i(7, 9): "rapier",
-	Vector2i(23, 5): "heavy",
-	Vector2i(26, 9): "piercing",
+	Vector2i(5, 4): "light",
+	Vector2i(5, 6): "rapier",
+	Vector2i(5, 8): "heavy",
+	Vector2i(5, 10): "piercing",
 }
+const ROOM_SPIDERS := [
+	{"name": "White Spiderling", "sprite": 16},
+	{"name": "White Spider", "sprite": 3},
+	{"name": "Red Spiderling", "sprite": 13},
+	{"name": "Black Spider", "sprite": 5},
+	{"name": "Red Spider", "sprite": 1},
+	{"name": "Black Spider", "sprite": 5},
+	{"name": "Red Spider", "sprite": 1},
+]
+const BOSS := {
+	"name": "Giant Black Spider", "sprite": 36, "health": 62,
+	"damage_min": 8, "damage_max": 13, "defense": 2, "protection": 0, "experience": 100,
+}
+const TREASURE_GOLD := 60
+const TREASURE_TONICS := 3
 
-var player := Vector2i(3, 5)
-var floor_cells: Dictionary[Vector2i, bool] = {}
+var player := Vector2i.ZERO
+var _rooms: Array[Dictionary] = []
+var _room_index := 0
+var _room: Dictionary
 var log_label: Label
 var player_sprite: Texture2D
 var _catalog: Dictionary
@@ -60,10 +73,8 @@ func _ready() -> void:
 	theme = Style.make_theme()
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	player_sprite = Data.portrait(_profile, true)
-	_seed = int(_profile["seed"])
-	if _profile["world"]["dungeon_from"] == "spindle_hollow":
-		player = Vector2i(27, 9)
-	_build_map(_seed)
+	_seed = int(_profile["seed"]) + int(_profile["world"]["threshold_run"]) * 104729
+	_rooms = Rooms.generate(_seed)
 	_damage_rng.seed = _seed
 	_catalog = Catalog.items_by_id()
 	_satchel.open(_profile["id"], _catalog)
@@ -77,13 +88,8 @@ func _ready() -> void:
 	_layout.command_requested.connect(_command)
 	_layout.profile_updated.connect(_on_profile_updated)
 	add_child(_layout)
-	_configure_map()
 	log_label = _layout.log_label
 	_layout.map_canvas.draw.connect(_draw_map)
-	_layout.set_player(player)
-	log_label.text = "Lantern Rest lies west. Follow the main corridor east to Spindle Hollow."
-	if _crossing_blocked():
-		log_label.text = "Follow the corridor east. Something moves behind the webbing."
 
 	_armory = Armory.new()
 	_armory.name = "Armory"
@@ -103,23 +109,86 @@ func _ready() -> void:
 	_journal = Journal.new()
 	_journal.name = "ExplorationJournal"
 	add_child(_journal)
+
+	_show_room(_cleared_rooms())
+
+
+func _show_room(index: int, arriving_from_east := false) -> void:
+	_room_index = index
+	_room = _rooms[index]
+	player = _room["exit"] if arriving_from_east else _room["entry"]
+	_configure_map()
 	_refresh_hud()
+	if _room_index == Rooms.ROOM_COUNT:
+		log_label.text = "You enter the treasure chamber. The exit leads to %s." % _destination_town().capitalize()
+	elif _monster_present():
+		var enemies: Array = _room["enemies"]
+		var threat: String = _enemy()["name"] if enemies.size() == 1 else "enemies in this chamber"
+		log_label.text = "Defeat the %s to open the next door." % threat
+	else:
+		log_label.text = "This room is clear."
+
+
+func _cleared_rooms() -> int:
+	return int(_profile["world"]["threshold_cleared"])
+
+
+func _monster_present() -> bool:
+	return _room_index < Rooms.ROOM_COUNT and _room_index >= _cleared_rooms()
+
+
+func _enemies() -> Array[Dictionary]:
+	var enemies: Array[Dictionary] = []
+	for index in _room.get("enemies", []).size():
+		var enemy := _enemy().duplicate()
+		if index > 0:
+			var variant: Dictionary = ROOM_SPIDERS[(_room_index + index) % ROOM_SPIDERS.size()]
+			enemy["name"] = variant["name"]
+			enemy["sprite"] = variant["sprite"]
+		enemies.append(enemy)
+	return enemies
+
+
+func _enemy() -> Dictionary:
+	if _room_index == Rooms.ROOM_COUNT - 1:
+		return BOSS
+	var enemy: Dictionary = ROOM_SPIDERS[_room_index].duplicate()
+	var tier := floori(_room_index * 0.5)
+	enemy.merge({
+		"health": 14 + 2 * _room_index,
+		"damage_min": 3 + tier,
+		"damage_max": 6 + tier,
+		"defense": 1 if _room_index >= 3 else 0,
+		"protection": 0,
+		"experience": 14 + 2 * _room_index,
+	})
+	return enemy
+
+
+func _room_title() -> String:
+	if _room_index == Rooms.ROOM_COUNT:
+		return "Treasure Chamber"
+	return "Threshold · Room %d/%d" % [_room_index + 1, Rooms.ROOM_COUNT]
 
 
 func _configure_map() -> void:
 	var landmarks := {
-		WEST_EXIT: Style.TEAL, EAST_EXIT: Style.TEAL, WARRENS_STAIRS: Style.ACCENT,
-		PRACTICE_POST: Style.MUTED,
+		_room["entry"]: Style.TEAL,
+		_room["exit"]: Style.ERROR if _monster_present() else Style.TEAL,
 	}
-	for cell: Vector2i in WEAPON_RACKS:
-		landmarks[cell] = Style.BORDER.lightened(0.2)
-	if _crossing_blocked():
-		landmarks[WEB_CROSSING] = Style.ERROR
-	var subtitle := "%s  ·  %s     /     Click / WASD / Arrows  Move   E  Interact   Space  Practice   Esc  Character Select" % [
-		_profile["name"], Data.TALENTS[_profile["talent"]]
-	]
-	_layout.configure("Threshold", subtitle, MAP_SIZE, floor_cells, landmarks, _catalog, _satchel)
-	_layout.configure_click_movement(MAP_ORIGIN, TILE_SIZE, [PRACTICE_POST], _map_movement_available, _move)
+	if _monster_present():
+		for cell: Vector2i in _room["enemies"]:
+			landmarks[cell] = Style.ACCENT
+	var blocked := []
+	if _room_index == 0:
+		blocked.append(PRACTICE_POST)
+		landmarks[PRACTICE_POST] = Style.MUTED
+		for cell: Vector2i in WEAPON_RACKS:
+			landmarks[cell] = Style.BORDER.lightened(0.2)
+	if _room_index == Rooms.ROOM_COUNT and not _profile["world"]["threshold_treasure_claimed"]:
+		landmarks[_room["chest"]] = Style.ACCENT
+	_layout.configure(_room_title(), Rooms.MAP_SIZE, _room["floor"], landmarks, _catalog, _satchel)
+	_layout.configure_click_movement(MAP_ORIGIN, TILE_SIZE, blocked, _map_movement_available, _move)
 	_layout.set_player(player)
 
 
@@ -134,74 +203,67 @@ func _on_profile_updated(profile: Dictionary) -> void:
 
 func _update_interaction() -> void:
 	var label := ""
-	if _near_exit(WEST_EXIT):
-		label = "Lantern Rest"
-	elif _near_exit(EAST_EXIT):
-		label = "Spindle Hollow"
-	elif _near_warrens():
-		label = "Enter Warrens"
-	elif _near_crossing():
-		label = "Approach Spider"
+	if _near_cell(_room["entry"]):
+		label = String(_profile["world"]["dungeon_from"]).capitalize() if _room_index == 0 else "Previous room"
+	elif _near_cell(_room["exit"]):
+		if _room_index == Rooms.ROOM_COUNT:
+			label = _destination_town().capitalize()
+		elif _monster_present():
+			label = "Locked door"
+		else:
+			label = "Treasure chamber" if _room_index == Rooms.ROOM_COUNT - 1 else "Next room"
+	elif _near_chest() and not _profile["world"]["threshold_treasure_claimed"]:
+		label = "Open treasure chest"
 	elif not _nearby_rack().is_empty():
 		label = "Inspect Rack"
 	_layout.set_context(label)
 
 
-func _build_map(seed_value: int) -> void:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = seed_value
-	for x in range(2, 29):
-		for y in range(3, 12):
-			if x < 10 or x > 19 or (y >= 6 and y <= 8):
-				floor_cells[Vector2i(x, y)] = true
-	for x in range(11, 19):
-		var alcove_depth := rng.randi_range(0, 2)
-		var direction := -1 if rng.randf() < 0.5 else 1
-		var edge := 6 if direction < 0 else 8
-		for depth in range(1, alcove_depth + 1):
-			floor_cells[Vector2i(x, edge + depth * direction)] = true
-
-
 func _draw_map() -> void:
 	var canvas := _layout.map_canvas
-	for x in range(MAP_SIZE.x):
-		for y in range(MAP_SIZE.y):
+	var floor_cells: Dictionary = _room["floor"]
+	for x in range(Rooms.MAP_SIZE.x):
+		for y in range(Rooms.MAP_SIZE.y):
 			var cell := Vector2i(x, y)
-			var position_on_map := _map_point(cell)
 			var is_floor := floor_cells.has(cell)
 			var glyph := "." if is_floor else "#"
 			var color := Color("#788a87") if is_floor else Style.BORDER
-			canvas.draw_string(Style.UI_FONT, position_on_map + GLYPH_INSET, glyph, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, color)
-	for cell: Vector2i in WEAPON_RACKS:
-		var point := _map_point(cell)
-		canvas.draw_rect(Rect2(point, TILE_SIZE), Style.SURFACE)
-		canvas.draw_rect(Rect2(point, TILE_SIZE), Style.BORDER, false, 1)
-		var icon: Texture2D = _rack_icons.get(WEAPON_RACKS[cell])
-		if icon != null:
-			canvas.draw_texture(icon, point + SPRITE_INSET)
-	if not floor_cells.is_empty():
-		var post_position := _map_point(PRACTICE_POST)
-		canvas.draw_rect(Rect2(post_position, TILE_SIZE), Style.SURFACE)
-		canvas.draw_string(Style.UI_FONT, post_position + GLYPH_INSET, "+", HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Style.ACCENT)
-	if not floor_cells.is_empty():
-		var stair_position := _map_point(WARRENS_STAIRS)
-		canvas.draw_rect(Rect2(stair_position, TILE_SIZE), Style.SURFACE)
-		canvas.draw_rect(Rect2(stair_position, TILE_SIZE), Style.ACCENT, false, 1)
-		canvas.draw_string(Style.UI_FONT, stair_position + GLYPH_INSET, ">", HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Style.ACCENT)
-	if not floor_cells.is_empty():
-		_draw_marker(WEST_EXIT, "<", Style.TEAL)
-		_draw_marker(EAST_EXIT, ">", Style.TEAL)
-		if _crossing_blocked():
-			var anchor := _map_point(WEB_CROSSING)
-			for y in range(4, 11):
-				var silk := Vector2i(WEB_CROSSING.x, y)
-				if floor_cells.has(silk):
-					_draw_marker(silk, "%", Style.MUTED)
-			canvas.draw_texture_rect_region(SPIDER_ATLAS, Rect2(anchor + SPRITE_INSET, Vector2(16, 24)), WHITE_SPIDER_REGION)
+			canvas.draw_string(Style.UI_FONT, _map_point(cell) + GLYPH_INSET, glyph, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, color)
+	if _room_index == 0:
+		for cell: Vector2i in WEAPON_RACKS:
+			var point := _map_point(cell)
+			canvas.draw_rect(Rect2(point, TILE_SIZE), Style.SURFACE)
+			canvas.draw_rect(Rect2(point, TILE_SIZE), Style.BORDER, false, 1)
+			var icon: Texture2D = _rack_icons.get(WEAPON_RACKS[cell])
+			if icon != null:
+				canvas.draw_texture(icon, point + SPRITE_INSET)
+		_draw_marker(PRACTICE_POST, "+", Style.ACCENT)
+	_draw_marker(_room["entry"], "<", Style.TEAL)
+	var locked := _monster_present()
+	_draw_marker(_room["exit"], "×" if locked else ">", Style.ERROR if locked else Style.TEAL)
+	if _room_index == Rooms.ROOM_COUNT:
+		var claimed: bool = _profile["world"]["threshold_treasure_claimed"]
+		_draw_marker(_room["chest"], "–" if claimed else "$", Style.MUTED if claimed else Style.ACCENT)
+	if locked:
+		var enemies := _enemies()
+		for index in enemies.size():
+			_draw_enemy(_room["enemies"][index], int(enemies[index]["sprite"]))
 	if player_sprite != null:
 		var player_position := _map_point(player)
 		canvas.draw_rect(Rect2(player_position, TILE_SIZE), Style.PANEL)
 		canvas.draw_texture(player_sprite, player_position + SPRITE_INSET)
+
+
+func _draw_enemy(cell: Vector2i, sprite: int) -> void:
+	@warning_ignore("integer_division")
+	var row := sprite / 8
+	var region := Rect2(Vector2(sprite % 8, row) * Vector2(16, 24), Vector2(16, 24))
+	var point := _map_point(cell)
+	var size := Vector2(32, 48) if _room_index == Rooms.ROOM_COUNT - 1 else region.size
+	var offset := ((TILE_SIZE - size) * 0.5).floor()
+	var canvas := _layout.map_canvas
+	canvas.draw_rect(Rect2(point, TILE_SIZE), Style.SURFACE)
+	canvas.draw_texture_rect_region(SPIDER_ATLAS, Rect2(point + offset, size), region)
 
 
 func _draw_marker(cell: Vector2i, glyph: String, color: Color) -> void:
@@ -303,92 +365,106 @@ func _open_journal(section: String) -> void:
 
 func _move(direction: Vector2i) -> void:
 	var destination := player + direction
-	if _crossing_blocked() and destination.x == WEB_CROSSING.x and floor_cells.has(destination):
-		_open_warrens(true)
-		return
-	if destination == PRACTICE_POST:
-		log_label.text = "A practice post blocks the way. Press Space to test your sword."
-	elif floor_cells.has(destination):
-		player = destination
-		var family := _nearby_rack()
-		if _near_exit(WEST_EXIT):
-			log_label.text = "West stairs to Lantern Rest. Press E to leave the dungeon."
-		elif _near_exit(EAST_EXIT):
-			log_label.text = "East stairs to Spindle Hollow. Press E to leave the dungeon."
-		elif _near_crossing():
-			log_label.text = "A White Spider guards the crossing. Press E to approach or head west to rest."
-		elif _near_warrens():
-			log_label.text = "Silk covers the stairs. Press E to enter the Spider Warrens."
-		elif not family.is_empty():
-			log_label.text = "%s rack. Press E to browse." % Catalog.FAMILIES[family]
-		elif player.distance_squared_to(PRACTICE_POST) <= 1:
-			log_label.text = "Practice post. Press Space to test your sword."
-		else:
-			log_label.text = "Your footsteps echo through the stone."
-	else:
+	if not _room["floor"].has(destination):
 		log_label.text = "Cold stone blocks the way."
-	_update_interaction()
+		return
+	if _room_index == 0 and destination == PRACTICE_POST:
+		log_label.text = "A practice post blocks the way. Press Space to test your sword."
+		return
+	if _monster_present() and _room["enemies"].has(destination):
+		_layout.cancel_map_movement()
+		var weapon: Dictionary = _catalog.get(_satchel.equipped, {})
+		var target: int = _room["enemies"].find(destination)
+		_warrens.open_room_enemies(weapon, player_sprite, _seed, _room_index, _enemies(), target)
+		return
+	if destination == _room["exit"] and _room_index < Rooms.ROOM_COUNT:
+		_advance_room()
+		return
+	if destination == _room["entry"] and _room_index > 0:
+		_show_room(_room_index - 1, true)
+		return
+	player = destination
 	_layout.set_player(player)
+	_update_interaction()
+
+
+func _advance_room() -> void:
+	if _monster_present():
+		log_label.text = "Defeat all enemies in this room before proceeding."
+	elif _room_index == Rooms.ROOM_COUNT:
+		_travel_to_town(_destination_town())
+	else:
+		_show_room(_room_index + 1)
 
 
 func _nearby_rack() -> String:
-	for cell: Vector2i in WEAPON_RACKS:
-		if player.distance_squared_to(cell) <= 1:
-			return WEAPON_RACKS[cell]
+	if _room_index == 0:
+		for cell: Vector2i in WEAPON_RACKS:
+			if _near_cell(cell):
+				return WEAPON_RACKS[cell]
 	return ""
 
 
-func _near_warrens() -> bool:
-	return player.distance_squared_to(WARRENS_STAIRS) <= 1
-
-
-func _crossing_blocked() -> bool:
-	return not _profile.is_empty() and int(_profile["world"]["quest"]) < 2
-
-
-func _near_crossing() -> bool:
-	return _crossing_blocked() and player.distance_squared_to(WEB_CROSSING) <= 1
-
-
-func _near_exit(cell: Vector2i) -> bool:
+func _near_cell(cell: Vector2i) -> bool:
 	return player.distance_squared_to(cell) <= 1
 
 
-func _open_warrens(crossing := false) -> void:
-	var weapon: Dictionary = _catalog.get(_satchel.equipped, {})
-	_warrens.open(weapon, player_sprite, _seed, crossing)
+func _near_chest() -> bool:
+	return _room_index == Rooms.ROOM_COUNT and _near_cell(_room["chest"])
 
 
 func _interact() -> void:
-	if _near_exit(WEST_EXIT):
-		_travel_to_town("lantern_rest")
-		return
-	if _near_exit(EAST_EXIT):
-		if _crossing_blocked():
-			log_label.text = "Clear the White Spider from the crossing before leaving."
+	if _near_cell(_room["entry"]):
+		if _room_index == 0:
+			_travel_to_town(_profile["world"]["dungeon_from"])
 		else:
-			_travel_to_town("spindle_hollow")
+			_show_room(_room_index - 1, true)
+	elif _near_cell(_room["exit"]):
+		_advance_room()
+	elif _near_chest():
+		_claim_treasure()
+	else:
+		var family := _nearby_rack()
+		if family.is_empty():
+			log_label.text = "Move next to a door, chest, or sword rack to interact."
+		else:
+			_armory.open_rack(family)
+
+
+func _claim_treasure() -> void:
+	var world: Dictionary = _profile["world"]
+	if _cleared_rooms() < Rooms.ROOM_COUNT:
 		return
-	if _near_crossing():
-		_open_warrens(true)
+	if world["threshold_treasure_claimed"]:
+		log_label.text = "The treasure chest is empty."
 		return
-	if _near_warrens():
-		_open_warrens()
+	var saved := Store.update_world({
+		"threshold_treasure_claimed": true,
+		"gold": mini(int(world["gold"]) + TREASURE_GOLD, Store.MAX_EXPERIENCE),
+		"tonics": mini(int(world["tonics"]) + TREASURE_TONICS, Store.MAX_EXPERIENCE),
+	})
+	if saved.is_empty():
+		log_label.text = "Could not save the treasure. The chest remains closed."
 		return
-	var family := _nearby_rack()
-	if family.is_empty():
-		log_label.text = "Move next to stairs, a sword rack, or the spider crossing to interact."
-		return
-	_armory.open_rack(family)
+	_profile = saved
+	_configure_map()
+	_refresh_hud()
+	log_label.text = "Found %d gold and %d Healing Tonics." % [
+		int(saved["world"]["gold"]) - int(world["gold"]),
+		int(saved["world"]["tonics"]) - int(world["tonics"]),
+	]
 
 
 func _strike_practice_post() -> void:
-	if player.distance_squared_to(PRACTICE_POST) > 1:
+	if _room_index != 0 or not _near_cell(PRACTICE_POST):
 		log_label.text = "Move next to the practice post marked + to strike it."
 		return
 	var held: Dictionary = _catalog.get(_satchel.equipped, {})
 	if held.is_empty():
 		log_label.text = "Equip a sword from the satchel first."
+		return
+	if Durability.usable_weapon(_profile["world"], held).is_empty():
+		log_label.text = "Your sword is broken. Repair it at the blacksmith."
 		return
 	var damage := Stats.roll_melee(Stats.snapshot(_profile, held), _damage_rng)
 	log_label.text = "%s strikes the practice post for %d damage." % [held["name"], damage]
@@ -417,13 +493,16 @@ func _on_character_sheet_closed() -> void:
 
 
 func _on_experience_saved(profile: Dictionary) -> void:
-	var crossing_was_blocked := _crossing_blocked()
+	var previous := _cleared_rooms()
 	_profile = profile
-	if crossing_was_blocked and not _crossing_blocked():
-		log_label.text = "The crossing is clear. Report to Watchkeeper Oren in Spindle Hollow."
-	_configure_map()
+	if _cleared_rooms() > previous:
+		_configure_map()
+		log_label.text = "The treasure chamber is open." if _cleared_rooms() == Rooms.ROOM_COUNT else "Room cleared. The next door is open."
 	_refresh_hud()
-	_layout.map_canvas.queue_redraw()
+
+
+func _destination_town() -> String:
+	return "lantern_rest" if _profile["world"]["dungeon_from"] == "spindle_hollow" else "spindle_hollow"
 
 
 func _travel_to_town(town_id: String) -> void:

@@ -1,5 +1,8 @@
 extends Control
 
+const Durability = preload("res://scripts/equipment_durability.gd")
+const Repair = preload("res://scripts/equipment_repair.gd")
+
 const Style = preload("res://scripts/menu_style.gd")
 const Store = preload("res://scripts/character_store.gd")
 const Catalog = preload("res://scripts/sword_catalog.gd")
@@ -10,15 +13,19 @@ const Stats = preload("res://scripts/character_stats.gd")
 const Data = preload("res://scripts/character_data.gd")
 const Layout = preload("res://scripts/exploration_layout.gd")
 const Journal = preload("res://scripts/exploration_journal.gd")
+const LanternMap = preload("res://scripts/lantern_rest_map.gd")
+const Activities = preload("res://scripts/town_activities.gd")
+const AMENITY_ATLAS = preload("res://assets/art/town_amenities.png")
+const SPRITE_SIZE := Vector2(16, 24)
 
-const POINTS := [
-	Vector2i(5, 4), Vector2i(10, 4), Vector2i(15, 4),
-	Vector2i(20, 4), Vector2i(24, 8), Vector2i(26, 5)
+const SPINDLE_LANDMARKS := [
+	{"id": "warden", "cell": Vector2i(5, 4), "label": "Watchkeeper", "name": "Oren", "sprite": 5},
+	{"id": "blacksmith", "cell": Vector2i(10, 4), "label": "Blacksmith", "name": "Brann", "sprite": 6},
+	{"id": "general_shop", "cell": Vector2i(15, 4), "label": "Provisioner", "name": "Rill", "sprite": 7},
+	{"id": "healer", "cell": Vector2i(20, 4), "label": "Healer's House", "name": "Ada", "sprite": 8},
+	{"id": "gate", "cell": Vector2i(24, 8), "label": "Moon Gate", "sprite": 9},
+	{"id": "dungeon", "cell": Vector2i(26, 5), "label": "Threshold", "glyph": ">"},
 ]
-const ORIGIN := Vector2(11, 42)
-const TILE := Vector2(28, 32)
-const SPRITE_INSET := Vector2(6, 4)
-const SERVICES := ["Warden", "Blacksmith", "Provisioner", "Healer's House"]
 const TOWN_NAMES := {"lantern_rest": "Lantern Rest", "spindle_hollow": "Spindle Hollow"}
 
 static var _gate_arrival_id := ""
@@ -30,15 +37,25 @@ var player := Vector2i(4, 7)
 var catalogue: Dictionary
 var portrait: Texture2D
 var atlas: Texture2D
-var info: Label
-var quest_status: Label
+var _landmarks: Array
+var _points: Array[Vector2i] = []
+var _resident_portraits: Dictionary = {}
+var _map_size := Vector2i(30, 11)
+var _map_origin := Vector2(11, 42)
+var _tile_size := Vector2(28, 32)
 var dialogue: HBoxContainer
 var _layout: Layout
 var _journal: Journal
 var satchel := Satchel.new()
 var armory: Armory
 var sheet: Sheet
+var _repair: Repair
 var wall_cells: Dictionary = {}
+var _water_cells: Dictionary = {}
+var _road_cells: Dictionary = {}
+var _world_canvas: CanvasItem
+var _town_viewport: SubViewport
+var _player_sprite: Sprite2D
 var conversation_target := -1
 var conversation_serial := 0
 
@@ -53,10 +70,6 @@ func _ready() -> void:
 	if not TOWN_NAMES.has(town):
 		get_tree().change_scene_to_file.call_deferred("res://scenes/character.tscn")
 		return
-	if _gate_arrival_id == profile["id"]:
-		player = POINTS[4] + Vector2i.UP
-		_gate_arrival_id = ""
-
 	Style.background(self)
 	theme = Style.make_theme()
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
@@ -78,9 +91,35 @@ func _ready() -> void:
 
 
 func _build_map() -> void:
-	# Four enclosed service rooms. Each southern door remains open at y=5.
+	if town == "lantern_rest":
+		var generated := LanternMap.generate(int(profile["seed"]))
+		_landmarks = generated["landmarks"]
+		wall_cells = generated["walls"]
+		_water_cells = generated["water"]
+		_road_cells = generated["roads"]
+		wall_cells.merge(_water_cells)
+		player = generated["spawn"]
+		_map_size = LanternMap.SIZE
+		_map_origin = Vector2.ZERO
+		_tile_size = Vector2(28, 28)
+	else:
+		_landmarks = SPINDLE_LANDMARKS
+		_build_spindle_walls()
+
+	for place: Dictionary in _landmarks:
+		var cell: Vector2i = place["cell"]
+		_points.append(cell)
+		if place.has("portrait"):
+			_resident_portraits[cell] = Data.portrait(place["portrait"], true)
+		if place["id"] == "gate" and _gate_arrival_id == profile["id"]:
+			player = cell + Vector2i.UP
+			_gate_arrival_id = ""
+
+
+func _build_spindle_walls() -> void:
+	# Four service rooms open onto the central road.
 	for index in range(4):
-		var center: Vector2i = POINTS[index]
+		var center: Vector2i = _landmarks[index]["cell"]
 		for x in range(center.x - 2, center.x + 3):
 			wall_cells[Vector2i(x, 1)] = true
 			if x != center.x:
@@ -88,12 +127,12 @@ func _build_map() -> void:
 		for y in range(2, 5):
 			wall_cells[Vector2i(center.x - 2, y)] = true
 			wall_cells[Vector2i(center.x + 2, y)] = true
-	for x in range(30):
+	for x in range(_map_size.x):
 		wall_cells[Vector2i(x, 0)] = true
-		wall_cells[Vector2i(x, 10)] = true
-	for y in range(11):
+		wall_cells[Vector2i(x, _map_size.y - 1)] = true
+	for y in range(_map_size.y):
 		wall_cells[Vector2i(0, y)] = true
-		wall_cells[Vector2i(29, y)] = true
+		wall_cells[Vector2i(_map_size.x - 1, y)] = true
 
 
 func _build_interface() -> void:
@@ -101,16 +140,21 @@ func _build_interface() -> void:
 	add_child(_layout)
 	var walkable := {}
 	var landmarks := {}
-	for x in range(30):
-		for y in range(11):
+	for x in range(_map_size.x):
+		for y in range(_map_size.y):
 			var cell := Vector2i(x, y)
 			if not wall_cells.has(cell):
 				walkable[cell] = true
-	for point: Vector2i in POINTS:
-		landmarks[point] = Style.TEAL
-	_layout.configure(TOWN_NAMES[town], "Safe Dungeon Town     /     Click / WASD / Arrows  Move   E  Interact   Esc  Character Select", Vector2i(30, 11), walkable, landmarks, catalogue, satchel)
-	_layout.configure_click_movement(ORIGIN, TILE, POINTS, _map_movement_available, _move)
-	_layout.map_canvas.draw.connect(_draw_world)
+	for place: Dictionary in _landmarks:
+		landmarks[place["cell"]] = _landmark_color(place)
+	_layout.configure(TOWN_NAMES[town], _map_size, walkable, landmarks, catalogue, satchel)
+	var input_to_world := Callable()
+	_world_canvas = _layout.map_canvas
+	if town == "lantern_rest":
+		_build_town_view()
+		input_to_world = _town_world_position
+	_world_canvas.draw.connect(_draw_world)
+	_layout.configure_click_movement(_map_origin, _tile_size, _points, _map_movement_available, _move, input_to_world)
 	_layout.command_requested.connect(_command)
 	_layout.profile_updated.connect(_profile_updated)
 	dialogue = _layout.choices
@@ -122,6 +166,75 @@ func _build_interface() -> void:
 	add_child(sheet)
 	_journal = Journal.new()
 	add_child(_journal)
+	_repair = Repair.new()
+	_repair.selected.connect(_repair_options)
+	add_child(_repair)
+
+
+func _build_town_view() -> void:
+	# Render the scrolling map inside the HUD panel.
+	var panel := _layout.map_canvas
+	_town_viewport = SubViewport.new()
+	_town_viewport.name = "TownViewport"
+	_town_viewport.size = Vector2i(panel.size)
+	_town_viewport.world_2d = World2D.new()
+	_town_viewport.transparent_bg = true
+	panel.add_child(_town_viewport)
+
+	var display := TextureRect.new()
+	display.name = "TownView"
+	display.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	display.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	display.texture = _town_viewport.get_texture()
+	panel.add_child(display)
+	display.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+	_world_canvas = Node2D.new()
+	_world_canvas.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_town_viewport.add_child(_world_canvas)
+
+	_player_sprite = Sprite2D.new()
+	_player_sprite.name = "Player"
+	_player_sprite.texture = portrait
+	_player_sprite.position = (_map_origin + (Vector2(player) + Vector2(0.5, 0.5)) * _tile_size).floor()
+	_world_canvas.add_child(_player_sprite)
+
+	var camera := Camera2D.new()
+	camera.position = _player_sprite.position
+	_town_viewport.add_child(camera)
+
+	var follow := PhantomCamera2D.new()
+	follow.follow_mode = PhantomCamera2D.FollowMode.SIMPLE
+	follow.follow_target = _player_sprite
+	follow.position = _player_sprite.position
+	follow.follow_damping = true
+	follow.follow_damping_value = Vector2(0.12, 0.12)
+	follow.snap_to_pixel = true
+	follow.tween_on_load = false
+	follow.tween_completed.connect(_limit_town_camera.bind(camera))
+	_town_viewport.add_child(follow)
+	camera.add_child(PhantomCameraHost.new())
+	_limit_town_camera(camera)
+
+
+func _limit_town_camera(camera: Camera2D) -> void:
+	# Let Camera2D use the map viewport size when clamping at the town boundary.
+	var extent := Vector2(_map_size) * _tile_size
+	camera.limit_left = int(_map_origin.x)
+	camera.limit_top = int(_map_origin.y)
+	camera.limit_right = int(_map_origin.x + extent.x)
+	camera.limit_bottom = int(_map_origin.y + extent.y)
+	camera.force_update_scroll()
+
+
+func _town_world_position(panel_position: Vector2) -> Vector2:
+	return _town_viewport.get_canvas_transform().affine_inverse() * panel_position
+
+
+func _sync_player_view() -> void:
+	_layout.set_player(player)
+	if _player_sprite != null:
+		_player_sprite.position = (_map_origin + (Vector2(player) + Vector2(0.5, 0.5)) * _tile_size).floor()
 
 
 func _profile_updated(updated: Dictionary) -> void:
@@ -131,7 +244,7 @@ func _profile_updated(updated: Dictionary) -> void:
 
 
 func _map_movement_available() -> bool:
-	return not (_layout.inventory_is_open() or sheet.visible or armory.visible or _journal.visible)
+	return not (_layout.inventory_is_open() or sheet.visible or armory.visible or _journal.visible or _repair.visible)
 
 
 func _command(command: String) -> void:
@@ -164,66 +277,118 @@ func _refresh() -> void:
 	if _layout == null:
 		return
 	_layout.refresh(profile)
-	_layout.set_player(player)
+	_sync_player_view()
+	_world_canvas.queue_redraw()
 	_update_context()
 
 
+func _nearby_landmark() -> int:
+	for index in range(_points.size()):
+		if player.distance_squared_to(_points[index]) <= 1:
+			return index
+	return -1
+
+
 func _update_context() -> void:
-	for index in POINTS.size():
-		if player.distance_squared_to(POINTS[index]) <= 1:
-			_layout.set_context(_resident_names()[index])
-			return
-	_layout.set_context("")
+	var index := _nearby_landmark()
+	if index < 0:
+		_layout.set_context("")
+		return
+	var place: Dictionary = _landmarks[index]
+	_layout.set_context(place.get("name", place["label"]))
 
 
 func _show_status() -> void:
 	conversation_target = -1
-	_say("Lanterns mark a place of safety. Residents offer equipment, provisions, and a bed. Follow the road to the Moon Gate or dungeon stairs.", {})
+	var message := "Visit the shops, workstations, or fishing pools. Take the east stairs to the Threshold dungeon."
+	if town == "spindle_hollow":
+		message = "Rest, resupply, or speak with Watchkeeper Oren. The Threshold stairs lead back toward Lantern Rest."
+	elif int(world["quest"]) == 0:
+		message = "Welcome to Lantern Rest. Speak to Warden Nera and visit Venn for a starter sword before taking the east stairs."
+	_say(message, {})
+
+
+func _landmark_color(place: Dictionary) -> Color:
+	if place.has("name") or place["id"] in ["gate", "fishing"]:
+		return Style.TEAL
+	return Style.ACCENT
 
 
 func _draw_world() -> void:
-	if profile.is_empty() or not TOWN_NAMES.has(town):
-		return
-	var masonry := Style.BORDER if town == "lantern_rest" else Color("#665964")
-	var road := Color("#344a5a") if town == "lantern_rest" else Color("#443846")
-	for x in range(30):
-		for y in range(11):
+	var canvas := _world_canvas
+	var lantern := town == "lantern_rest"
+	var masonry := Style.BORDER if lantern else Color("#665964")
+	var road := Color(Style.PANEL, 0.52) if lantern else Color("#443846")
+	for place: Dictionary in _landmarks:
+		if place.has("building"):
+			var building: Rect2i = place["building"]
+			var bounds := Rect2(_map_origin + Vector2(building.position) * _tile_size, Vector2(building.size) * _tile_size)
+			canvas.draw_rect(bounds, Style.SURFACE)
+			canvas.draw_rect(bounds, Style.BORDER, false, 1)
+	for x in range(_map_size.x):
+		for y in range(_map_size.y):
 			var cell := Vector2i(x, y)
-			var point := ORIGIN + Vector2(cell) * TILE
-			if y == 7 or (x == 24 and y >= 6):
-				_layout.map_canvas.draw_rect(Rect2(point, TILE), road)
-			var is_wall := wall_cells.has(cell)
-			_layout.map_canvas.draw_string(Style.UI_FONT, point + Vector2(9, 23), "#" if is_wall else ".", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, masonry)
+			var point := _map_origin + Vector2(cell) * _tile_size
+			if _water_cells.has(cell):
+				canvas.draw_rect(Rect2(point, _tile_size), Style.PANEL)
+				canvas.draw_string(Style.UI_FONT, point + Vector2(8, 21), "≈", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Style.TEAL)
+				continue
+			if _road_cells.has(cell) or (not lantern and (y == 7 or (x == 24 and y >= 6))):
+				canvas.draw_rect(Rect2(point, _tile_size), road)
+			var glyph := "#" if wall_cells.has(cell) else "."
+			canvas.draw_string(Style.UI_FONT, point + Vector2(9, 22), glyph, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, masonry)
 
-	for index in range(4):
-		var point := ORIGIN + Vector2(POINTS[index]) * TILE
-		var caption: String = SERVICES[index]
-		if index == 0 and town == "spindle_hollow":
-			caption = "Watchkeeper"
-		_layout.map_canvas.draw_string(Style.UI_FONT, Vector2(point.x - 32, ORIGIN.y - 2), caption, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Style.TEXT)
-		var door := ORIGIN + Vector2(POINTS[index].x, 5) * TILE
-		_layout.map_canvas.draw_line(door + Vector2(2, 29), door + Vector2(26, 29), Style.ACCENT)
-
-	var names := _resident_names()
-	for index in POINTS.size():
-		var point := ORIGIN + Vector2(POINTS[index]) * TILE
-		if index == 4 and world["gates"].has(town):
-			_layout.map_canvas.draw_rect(Rect2(point + Vector2(2, 1), TILE - Vector2(4, 2)), Style.TEAL, false, 1)
-		if index < 5 and atlas != null:
-			var slot := index + (1 if town == "lantern_rest" else 5)
-			if index == 4:
-				slot = 9
-			_layout.map_canvas.draw_texture_rect_region(atlas, Rect2(point + SPRITE_INSET, Vector2(16, 24)), Rect2(slot * 16, 0, 16, 24))
+	var inset := ((_tile_size - SPRITE_SIZE) * 0.5).floor()
+	for place: Dictionary in _landmarks:
+		var cell: Vector2i = place["cell"]
+		var point := _map_origin + Vector2(cell) * _tile_size
+		var color := _landmark_color(place)
+		if place.has("building"):
+			_draw_building_entrance(place)
+		elif place.has("name"):
+			_draw_caption(point.x, _map_origin.y - 4, place["label"], Style.TEXT)
+			var door := _map_origin + Vector2(cell.x, 5) * _tile_size
+			canvas.draw_line(door + Vector2(2, _tile_size.y - 3), door + Vector2(_tile_size.x - 2, _tile_size.y - 3), Style.ACCENT)
 		else:
-			_layout.map_canvas.draw_string(Style.UI_FONT, point + Vector2(9, 23), ">", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Style.ACCENT)
-		_layout.map_canvas.draw_string(Style.UI_FONT, point + Vector2(-13, -4), names[index], HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Style.TEXT)
-	_layout.map_canvas.draw_texture(portrait, ORIGIN + Vector2(player) * TILE + SPRITE_INSET)
+			canvas.draw_rect(Rect2(point, _tile_size), Style.SURFACE)
+		if place["id"] == "gate" and world["gates"].has(town):
+			canvas.draw_rect(Rect2(point + Vector2.ONE, _tile_size - Vector2(2, 2)), Style.TEAL, false, 1)
+		var sprite_atlas := atlas
+		var sprite_index := int(place.get("sprite", -1))
+		if place.has("amenity_sprite"):
+			sprite_atlas = AMENITY_ATLAS
+			sprite_index = int(place["amenity_sprite"])
+		if _resident_portraits.has(cell):
+			canvas.draw_texture(_resident_portraits[cell], point + inset)
+		elif sprite_atlas != null and sprite_index >= 0:
+			var region := Rect2(Vector2(sprite_index * SPRITE_SIZE.x, 0), SPRITE_SIZE)
+			canvas.draw_texture_rect_region(sprite_atlas, Rect2(point + inset, SPRITE_SIZE), region)
+		else:
+			canvas.draw_string(Style.UI_FONT, point + Vector2(9, 22), place.get("glyph", "@"), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, color)
+		_draw_caption(point.x, point.y - 3, place.get("name", place["label"]), color)
+	if not lantern:
+		canvas.draw_texture(portrait, _map_origin + Vector2(player) * _tile_size + inset)
 
 
-func _resident_names() -> Array:
-	if town == "lantern_rest":
-		return ["Nera", "Venn", "Tamsin", "Sera", "Moon Gate", "Dungeon"]
-	return ["Oren", "Brann", "Rill", "Ada", "Moon Gate", "Dungeon"]
+func _draw_building_entrance(place: Dictionary) -> void:
+	var door_cell: Vector2i = place["door"]
+	var door := _map_origin + Vector2(door_cell) * _tile_size
+	_world_canvas.draw_rect(Rect2(door + Vector2(1, 0), _tile_size - Vector2(2, 0)), Style.PANEL)
+	_world_canvas.draw_line(door + Vector2(2, 4), door + Vector2(2, _tile_size.y - 4), Style.ACCENT)
+	_world_canvas.draw_line(door + Vector2(_tile_size.x - 3, 4), door + Vector2(_tile_size.x - 3, _tile_size.y - 4), Style.ACCENT)
+
+	var caption: String = place["label"]
+	var sign_top := door + Vector2(_tile_size.x * 0.5, -24)
+	var width := ceilf(Style.UI_FONT.get_string_size(caption, HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x) + 16
+	var sign := Rect2(Vector2(roundf(sign_top.x - width * 0.5), sign_top.y), Vector2(width, 20))
+	_world_canvas.draw_rect(sign, Style.BACK)
+	_world_canvas.draw_rect(sign, Style.BORDER, false, 1)
+	_world_canvas.draw_string(Style.UI_FONT, sign.position + Vector2(8, 15), caption, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Style.TEXT)
+
+
+func _draw_caption(tile_x: float, baseline: float, caption: String, color: Color) -> void:
+	var x := tile_x + _tile_size.x * 0.5 - 54.0
+	_world_canvas.draw_string(Style.UI_FONT, Vector2(x, baseline), caption, HORIZONTAL_ALIGNMENT_CENTER, 108, 10, color)
 
 
 func _input(event: InputEvent) -> void:
@@ -237,7 +402,7 @@ func _input(event: InputEvent) -> void:
 			sheet.close()
 			get_viewport().set_input_as_handled()
 		return
-	if armory.visible:
+	if armory.visible or _repair.visible:
 		return
 	if _journal.visible:
 		if event.keycode in [KEY_ESCAPE, KEY_Z, KEY_T, KEY_Q]:
@@ -287,11 +452,11 @@ func _unhandled_key_input(event: InputEvent) -> void:
 
 func _move(direction: Vector2i) -> void:
 	var target := player + direction
-	if not wall_cells.has(target) and not POINTS.has(target):
+	if not wall_cells.has(target) and not _points.has(target):
 		player = target
 		if conversation_target >= 0:
 			_show_status()
-		_layout.set_player(player)
+		_sync_player_view()
 		_update_context()
 
 
@@ -318,34 +483,85 @@ func _say(message: String, choices: Dictionary) -> void:
 func _choose(action: Callable, serial: int, target: int) -> void:
 	if serial != conversation_serial or target < 0 or target != conversation_target:
 		return
-	if player.distance_squared_to(POINTS[target]) > 1:
+	if player.distance_squared_to(_points[target]) > 1:
 		_show_status()
 		return
 	action.call()
 
 
 func _interact() -> void:
-	for index in POINTS.size():
-		if player.distance_squared_to(POINTS[index]) <= 1:
-			conversation_target = index
-			match index:
-				0:
-					_elder()
-				1:
-					_say("%s: Take a dependable blade before entering the passage. I can also show you the sword racks." % _resident_names()[1], {
-						"Claim starter sword": _starter,
-						"Browse swords": _browse_swords
-					})
-				2:
-					_say("%s: A Healing Tonic costs 8 gold. Carry a few before taking the lower road." % _resident_names()[2], {"Buy tonic · 8 gold": _buy})
-				3:
-					_say("%s: The Healer's House has a clean bed and warm broth. Rest here until your strength returns." % _resident_names()[3], {"Rest and recover": _heal})
-				4:
-					_gate()
-				5:
-					_leave()
-			return
-	_show_status()
+	conversation_target = _nearby_landmark()
+	if conversation_target < 0:
+		_show_status()
+		return
+	var place: Dictionary = _landmarks[conversation_target]
+	var resident := str(place.get("name", ""))
+	match place["id"]:
+		"warden":
+			_elder()
+		"blacksmith":
+			_say("%s  ·  Take a dependable blade before entering the passage." % resident, {
+				"Claim starter sword": _starter,
+				"Browse swords": _browse_swords,
+				"Claim Riveted Jack": _claim_armor,
+				"Repair equipment": _open_repairs,
+			})
+		"general_shop":
+			var choices := {"Buy tonic · 8 gold": _buy}
+			if town == "lantern_rest":
+				choices["Buy fiber · %d gold" % Activities.FIBER_PRICE] = _perform_activity.bind("buy_fiber")
+				choices["Sell cloth · %d gold" % Activities.CLOTH_PRICE] = _perform_activity.bind("sell_cloth")
+			_say("%s  ·  Stock up before taking the lower road." % resident, choices)
+		"school":
+			_say("%s  ·  I teach the skills a new delver needs to stay alive." % resident, {
+				"Combat lesson": _say.bind("Act when your Time gauge fills. Attack interrupts Smash, Defend softens Attack, and Smash breaks Defend. You can use a tonic anytime.", {}),
+			})
+		"church":
+			_say("%s  ·  The Moon Gates join the towns we remember." % resident, {
+				"Ask about Moon Gates": _say.bind("Activate the Moon Gate here, then find one in another town. Visit both gates before traveling between them.", {}),
+			})
+		"grocery_store":
+			_say("%s  ·  Mill this grain into flour at the windmill, then bake it at the oven." % resident, {
+				"Buy grain · %d gold" % Activities.GRAIN_PRICE: _perform_activity.bind("buy_grain"),
+			})
+		"healer":
+			_say("%s  ·  Rest here until your strength returns." % resident, {"Rest and recover": _heal})
+		"oven":
+			_say("Cook a fish or bake with flour to restore up to %d Life." % Activities.MEAL_HEAL, {
+				"Cook fish": _perform_activity.bind("cook_fish"),
+				"Bake bread": _perform_activity.bind("bake"),
+			})
+		"loom":
+			_say("Weave thread into cloth. Tamsin buys finished cloth at the General Shop.", {
+				"Weave cloth": _perform_activity.bind("weave"),
+			})
+		"spinning_wheel":
+			_say("Spin fiber from the General Shop into thread for the loom.", {
+				"Spin thread": _perform_activity.bind("spin"),
+			})
+		"fishing":
+			_say("Cave fish gather in the quiet pools. Cook your catch at the oven.", {
+				"Cast a line": _perform_activity.bind("fish"),
+			})
+		"windmill":
+			_say("Grind grain from the Grocery Store into flour for the oven.", {
+				"Grind grain": _perform_activity.bind("mill"),
+			})
+		"gate":
+			_gate()
+		"dungeon":
+			_leave()
+
+
+func _perform_activity(action: String) -> void:
+	var weapon: Dictionary = catalogue.get(satchel.equipped, {})
+	var maximum := int(Stats.snapshot(profile, weapon)["life"])
+	var result := Activities.perform(action, world, maximum)
+	if result["changes"].is_empty():
+		_say(result["message"], {})
+	elif _save(result["changes"]):
+		_say(result["message"], {})
+		_refresh()
 
 
 func _elder() -> void:
@@ -364,7 +580,7 @@ func _accept() -> void:
 	if int(world["quest"]) != 0:
 		return
 	if _save({"quest": 1}):
-		_say("Nera: Your first passage begins here. Venn's forge is the next room along.", {})
+		_say("Nera: Your first passage begins here. Look for Venn under the Blacksmith sign.", {})
 		_refresh()
 
 
@@ -383,7 +599,7 @@ func _starter() -> void:
 	if error.is_empty() and satchel.equipped.is_empty():
 		error = satchel.equip("ashen_arcblade")
 	if error.is_empty():
-		_say("%s: Your starter sword is ready. Inspect it in your satchel before leaving." % _resident_names()[1], {})
+		_say("%s: Your starter sword is ready. Inspect it in your satchel before leaving." % _landmarks[conversation_target]["name"], {})
 	else:
 		_say(error, {})
 	_refresh()
@@ -396,25 +612,27 @@ func _browse_swords() -> void:
 
 func _buy() -> void:
 	if int(world["gold"]) < 8:
-		_say("%s: You need 8 gold for a tonic." % _resident_names()[2], {})
+		_say("%s: You need 8 gold for a tonic." % _landmarks[conversation_target]["name"], {})
 		return
 	if _save({"gold": int(world["gold"]) - 8, "tonics": int(world["tonics"]) + 1}):
 		var choices := {"Buy tonic · 8 gold": _buy} if int(world["gold"]) >= 8 else {}
-		_say("%s: One Healing Tonic, packed for the journey." % _resident_names()[2], choices)
+		_say("%s: One Healing Tonic, packed for the journey." % _landmarks[conversation_target]["name"], choices)
 		_refresh()
 
 
 func _heal() -> void:
 	if _save({"health": -1}):
-		_say("%s: You wake fully healed. Travel carefully." % _resident_names()[3], {})
+		_say("%s: You wake fully healed. Travel carefully." % _landmarks[conversation_target]["name"], {})
 		_refresh()
 
 
 func _leave() -> void:
+	var departure := {"location": "threshold", "dungeon_from": town}
+	if int(world["threshold_cleared"]) == 8:
+		departure.merge({"threshold_cleared": 0, "threshold_treasure_claimed": false, "threshold_run": mini(int(world["threshold_run"]) + 1, Store.MAX_EXPERIENCE)})
 	if town == "lantern_rest" and int(world["quest"]) == 0:
-		_say("The passage keeper asks you to speak with Warden Nera first.", {})
-		return
-	if _save({"location": "threshold", "dungeon_from": town}):
+		departure["quest"] = 1
+	if _save(departure):
 		get_tree().change_scene_to_file("res://scenes/dungeon_entry.tscn")
 
 
@@ -452,3 +670,49 @@ func _travel(destination: String) -> void:
 
 func _characters() -> void:
 	get_tree().change_scene_to_file("res://scenes/character.tscn")
+
+
+
+func _claim_armor() -> void:
+	if world["armor_owned"]:
+		_say("You already own a Riveted Jack.", {})
+	elif _save({"armor_owned": true}):
+		_say("The Riveted Jack is equipped. Its armor protects you while it has durability.", {})
+		_refresh()
+
+
+func _owned_equipment() -> Array:
+	var items: Array = []
+	for id: String in catalogue:
+		if satchel.owns(id):
+			items.append(catalogue[id])
+	if world["armor_owned"]:
+		items.append(Durability.ARMOR)
+	return items
+
+
+func _open_repairs() -> void:
+	_layout.cancel_map_movement()
+	_repair.open(_owned_equipment(), world)
+
+
+func _repair_options(item: Dictionary) -> void:
+	var one := Durability.repair_cost(world, item, false)
+	var full := Durability.repair_cost(world, item, true)
+	_say("%s · %s · Gold %d" % [item["name"], Durability.condition_text(world, item), world["gold"]], {
+		"Repair 1 point · %d gold" % one: _repair_item.bind(item, false),
+		"Repair fully · %d gold" % full: _repair_item.bind(item, true),
+		"Other equipment": _open_repairs,
+	})
+
+
+func _repair_item(item: Dictionary, full: bool) -> void:
+	var changes := Durability.repair(world, item, full)
+	if changes.is_empty():
+		var message := "This equipment is already fully repaired."
+		if Durability.current(world, item) < Durability.maximum(item):
+			message = "You need more gold for this repair."
+		_say(message, {"Other equipment": _open_repairs})
+	elif _save(changes):
+		_refresh()
+		_repair_options(item)

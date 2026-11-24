@@ -3,6 +3,8 @@ extends RefCounted
 ## Starting values, lineage/talent bonuses, age gains and XP thresholds are
 ## original Rebirth Dungeon balance. Appearance choices do not alter attributes.
 
+const Durability = preload("res://scripts/equipment_durability.gd")
+
 const LINEAGE_BONUSES := [
 	{"life": 5, "will": 3},
 	{"mana": 10, "intelligence": 4, "dexterity": 2},
@@ -16,6 +18,8 @@ const TALENT_BONUSES := [
 
 
 static func snapshot(profile: Dictionary, weapon: Dictionary = {}) -> Dictionary:
+	var world: Dictionary = profile.get("world", {})
+	weapon = Durability.usable_weapon(world, weapon)
 	var total_xp := maxi(0, int(profile.get("experience", 0)))
 	var level := maxi(1, int(floor((1.0 + sqrt(1.0 + float(total_xp) * 0.08)) / 2.0)))
 	var previous_threshold := 50 * level * (level - 1)
@@ -61,7 +65,7 @@ static func snapshot(profile: Dictionary, weapon: Dictionary = {}) -> Dictionary
 	var weapon_balance := 30.0 if weapon.is_empty() else 35.0
 	stats["balance"] = clampf(dex_balance + weapon_balance, 0.0, 80.0)
 	stats["critical"] = maxf(0.0, will / 10.0 + luck / 5.0 + (10.0 if weapon.is_empty() else 0.0))
-	stats["defense"] = int(floor(strength / 10.0))
+	stats["defense"] = int(floor(strength / 10.0)) + Durability.armor_defense(world)
 	stats["protection"] = 0.0
 	stats["magic_attack"] = intelligence / 5.0
 	stats["magic_defense"] = int(floor(will / 10.0))

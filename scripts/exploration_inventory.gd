@@ -5,6 +5,7 @@ signal close_requested
 
 const Style = preload("res://scripts/menu_style.gd")
 const Catalog = preload("res://scripts/sword_catalog.gd")
+const Durability = preload("res://scripts/equipment_durability.gd")
 const Satchel = preload("res://scripts/sword_satchel.gd")
 const CELL := 38
 const GRID_ORIGIN := Vector2(300, 132)
@@ -20,10 +21,13 @@ var _items: Array[Button] = []
 var _gear: Button
 var _main_hand: TextureRect
 var _main_hand_empty: Label
+var _armor: Control
+var _armor_state: Label
 var _offhand: Label
 var _selection: Label
 var _gold: Label
 var _tonics: Label
+var _materials: Label
 var _grid: Control
 var _rendered_placements: Dictionary = {}
 var _body: Control
@@ -67,6 +71,9 @@ func _ready() -> void:
 	_selection.size.x = 612
 	_selection.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	_add_label("Drag a sword to Main hand", Vector2(24, 463), 14, Style.MUTED)
+	_materials = _add_label("", Vector2(24, 286), 12, Style.TEXT)
+	_materials.size = Vector2(252, 72)
+	_materials.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	_gold = _add_label("", Vector2(24, 375), 14, Style.ACCENT)
 	_gold.size.x = 240
 	_tonics = _add_label("", Vector2(300, 411), 14, Style.TEXT)
@@ -121,6 +128,10 @@ func _build_equipment() -> void:
 				slot.add_child(_main_hand)
 			"Off hand":
 				_offhand = state
+			"Armor":
+				_armor = slot
+				_armor.mouse_filter = Control.MOUSE_FILTER_STOP
+				_armor_state = state
 
 
 func _inspect_main_hand() -> void:
@@ -148,10 +159,29 @@ func refresh(catalogue: Dictionary, satchel: Satchel, world: Dictionary) -> void
 	var armed := catalogue.has(held)
 	_main_hand.texture = Catalog.icon(catalogue[held]) if armed else null
 	_main_hand_empty.visible = not armed
-	_gear.tooltip_text = Catalog.tooltip(catalogue[held]) if armed else "Main hand is empty"
+	_gear.tooltip_text = Catalog.tooltip(catalogue[held]) + "\n" + Durability.condition_text(world, catalogue[held], true) if armed else "Main hand is empty"
+	for button in _items:
+		var id := button.name.trim_prefix("Item_")
+		button.tooltip_text = Catalog.tooltip(catalogue[id]) + "\n" + Durability.condition_text(world, catalogue[id], true) + "\n\nDrag to Main hand or press Enter"
+	var armored: bool = world.get("armor_owned", false)
+	var armor_defense := Durability.armor_defense(world)
+	_armor_state.text = ("!" if armor_defense == 0 else "+") if armored else "—"
+	_armor.tooltip_text = "%s\n%s\nDefense +%d" % [Durability.ARMOR["name"], Durability.condition_text(world, Durability.ARMOR), armor_defense] if armored else "Armor is empty"
 	var two_handed := armed and int(catalogue[held]["hands"]) == 2
 	_offhand.text = "2H" if two_handed else "—"
 	_offhand.tooltip_text = "Occupied by a two-handed weapon" if two_handed else "Off hand is empty"
+	var materials: Dictionary = world.get("town_materials", {})
+	var entries: Array[String] = []
+	for key: String in ["fish", "grain", "flour", "fiber", "thread", "cloth"]:
+		var count := int(materials.get(key, 0))
+		if count > 0:
+			entries.append("%s ×%d" % [key.capitalize(), count])
+	var rows: Array[String] = []
+	for index in range(0, entries.size(), 2):
+		rows.append("  ·  ".join(entries.slice(index, index + 2)))
+	_materials.text = "\n".join(rows)
+	_materials.tooltip_text = "\n".join(entries)
+	_materials.visible = not entries.is_empty()
 	_gold.text = "Gold %s" % str(world.get("gold", 0))
 	_gold.tooltip_text = _gold.text
 	_tonics.text = "Healing Tonic ×%s" % str(world.get("tonics", 0))

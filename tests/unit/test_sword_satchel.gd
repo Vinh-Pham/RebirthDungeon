@@ -265,7 +265,7 @@ func test_inventory_screen_starts_hidden_and_can_be_opened_and_closed() -> void:
 	var catalog := Catalog.items_by_id()
 	var layout := Layout.new()
 	add_child_autofree(layout)
-	layout.configure("Lantern Rest", "", Vector2i.ONE, {}, {}, catalog, _satchel)
+	layout.configure("Lantern Rest", Vector2i.ONE, {}, {}, catalog, _satchel)
 	layout.refresh({"world": {}})
 	assert_false(layout.inventory_is_open())
 	assert_false(layout._inventory.visible)
@@ -283,7 +283,7 @@ func _build_exploration_layout(catalog: Dictionary) -> Layout:
 	add_child_autofree(viewport)
 	var layout := Layout.new()
 	viewport.add_child(layout)
-	layout.configure("Lantern Rest", "", Vector2i.ONE, {}, {}, catalog, _satchel)
+	layout.configure("Lantern Rest", Vector2i.ONE, {}, {}, catalog, _satchel)
 	layout.refresh({"world": {}})
 	layout.open_inventory()
 	return layout

@@ -7,19 +7,18 @@ signal profile_updated(profile: Dictionary)
 const Style = preload("res://scripts/menu_style.gd")
 const Stats = preload("res://scripts/character_stats.gd")
 const Store = preload("res://scripts/character_store.gd")
+const Consumables = preload("res://scripts/consumables.gd")
 const Satchel = preload("res://scripts/sword_satchel.gd")
 const InventoryPanel = preload("res://scripts/exploration_inventory.gd")
 const Status = preload("res://scripts/exploration_status.gd")
 
 const CONTENT_SIZE := Vector2(1120, 680)
-const MAP_PANEL_SIZE := Vector2(874, 466)
-const TONIC_HEAL := 30
+const MAP_PANEL_SIZE := Vector2(874, 548)
 const MAP_STEP_SECONDS := 0.08
 
 var map_canvas: Control
 var log_label: Label
 var choices: HBoxContainer
-var _subtitle: Label
 var _context: Button
 var _inventory: InventoryPanel
 var _status: Status
@@ -31,6 +30,7 @@ var _map_origin: Vector2
 var _map_tile_size: Vector2
 var _can_move_on_map: Callable
 var _move_map_step: Callable
+var _map_input_to_world: Callable
 var _map_route: Array[Vector2i] = []
 var _map_step_delay := 0.0
 
@@ -46,17 +46,11 @@ func _ready() -> void:
 	theme = Style.make_theme()
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 
-	_subtitle = Style.label("", 14, Style.MUTED)
-	_subtitle.position = Vector2(1, 53)
-	_subtitle.size.x = CONTENT_SIZE.x - 2
-	_subtitle.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	add_child(_subtitle)
-
 	_build_map_panel()
 	_status = Status.new()
 	_status.name = "ExplorationStatus"
-	_status.position = Vector2(MAP_PANEL_SIZE.x + 14, 82)
-	_status.size = Vector2(232, 466)
+	_status.position = Vector2(MAP_PANEL_SIZE.x + 14, 0)
+	_status.size = Vector2(232, MAP_PANEL_SIZE.y)
 	_status.slot_changed.connect(_assign_slot)
 	_status.slot_used.connect(use_slot)
 	add_child(_status)
@@ -72,25 +66,22 @@ func _ready() -> void:
 
 
 func _build_map_panel() -> void:
-	var frame := _panel(Vector2(0, 82), MAP_PANEL_SIZE, Style.BACK)
-	var caption := Style.label("Local Map", 14, Style.TEAL)
-	caption.position = Vector2(12, 12)
-	frame.add_child(caption)
-	_context = Style.button("")
-	_context.focus_mode = Control.FOCUS_NONE
-	_context.size = Vector2(263, 34)
-	_context.position = Vector2(MAP_PANEL_SIZE.x - _context.size.x - 11, 5)
-	_context.pressed.connect(command_requested.emit.bind("interact"))
-	frame.add_child(_context)
-	set_context("")
-
+	var frame := _panel(Vector2.ZERO, MAP_PANEL_SIZE, Style.BACK)
 	map_canvas = Control.new()
 	map_canvas.name = "WorldMap"
 	map_canvas.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	map_canvas.position = Vector2(6, 42)
-	map_canvas.size = MAP_PANEL_SIZE - Vector2(12, 52)
+	map_canvas.position = Vector2(6, 6)
+	map_canvas.size = MAP_PANEL_SIZE - Vector2(12, 12)
 	frame.add_child(map_canvas)
 	map_canvas.gui_input.connect(_on_map_input)
+
+	_context = Style.button("")
+	_context.focus_mode = Control.FOCUS_NONE
+	_context.size = Vector2(263, 34)
+	_context.position = Vector2(MAP_PANEL_SIZE.x - _context.size.x - 11, 10)
+	_context.pressed.connect(command_requested.emit.bind("interact"))
+	frame.add_child(_context)
+	set_context("")
 
 
 func _build_message_log() -> void:
@@ -134,19 +125,19 @@ func _panel(origin: Vector2, extent: Vector2, color: Color) -> Panel:
 	return panel
 
 
-func configure(area: String, subtitle: String, dimensions: Vector2i, walkable: Dictionary, landmarks: Dictionary, catalogue: Dictionary, satchel: Satchel) -> void:
-	_subtitle.text = subtitle
+func configure(area: String, dimensions: Vector2i, walkable: Dictionary, landmarks: Dictionary, catalogue: Dictionary, satchel: Satchel) -> void:
 	_catalogue = catalogue
 	_satchel = satchel
 	_status.setup_map(area, dimensions, walkable, landmarks)
 
 
-func configure_click_movement(origin: Vector2, tile_size: Vector2, blocked: Array, can_move: Callable, move_step: Callable) -> void:
+func configure_click_movement(origin: Vector2, tile_size: Vector2, blocked: Array, can_move: Callable, move_step: Callable, input_to_world := Callable()) -> void:
 	cancel_map_movement()
 	_map_origin = origin
 	_map_tile_size = tile_size
 	_can_move_on_map = can_move
 	_move_map_step = move_step
+	_map_input_to_world = input_to_world
 	_map_grid = AStarGrid2D.new()
 	_map_grid.region = Rect2i(Vector2i.ZERO, _status.dimensions)
 	_map_grid.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_NEVER
@@ -171,7 +162,10 @@ func _on_map_input(event: InputEvent) -> void:
 	cancel_map_movement()
 	if inventory_is_open() or not _can_move_on_map.call() or _status.slot_menu_open():
 		return
-	var target := Vector2i(((event.position - _map_origin) / _map_tile_size).floor())
+	var world_position: Vector2 = event.position
+	if _map_input_to_world.is_valid():
+		world_position = _map_input_to_world.call(world_position)
+	var target := Vector2i(((world_position - _map_origin) / _map_tile_size).floor())
 	if target == _status.player or not _map_grid.is_in_boundsv(target) or _map_grid.is_point_solid(target):
 		return
 	_map_route = _map_grid.get_id_path(_status.player, target)
@@ -288,17 +282,13 @@ func use_slot(index: int) -> void:
 	if index < 0 or index >= assigned.size() or assigned[index] != "tonic":
 		log_label.text = "Quick slot %d is empty. Click a slot to assign a tonic." % (index + 1)
 		return
-	if int(world["tonics"]) <= 0:
-		log_label.text = "You have no Healing Tonics."
-		return
 	var weapon: Dictionary = _catalogue.get(_satchel.equipped, {})
 	var maximum := int(Stats.snapshot(active_profile, weapon)["life"])
-	var health := int(world["health"])
-	if health < 0 or health >= maximum:
-		log_label.text = "Life is already full."
+	var result := Consumables.use_item(assigned[index], world, int(world["health"]), maximum)
+	if result["changes"].is_empty():
+		log_label.text = result["message"]
 		return
-	var restored := mini(TONIC_HEAL, maximum - health)
-	_save_world({"health": health + restored, "tonics": int(world["tonics"]) - 1}, "Healing Tonic restored %d Life." % restored)
+	_save_world(result["changes"], result["message"])
 
 
 func _save_world(changes: Dictionary, message: String) -> void:

@@ -75,7 +75,7 @@ func open(profile: Dictionary, stats: Dictionary, weapon: Dictionary, health: in
 	var resources := HBoxContainer.new()
 	resources.add_theme_constant_override("separation", 20)
 	_content.add_child(resources)
-	_resource(resources, "Life", health, int(stats["life"]), Style.ACCENT)
+	_resource(resources, "Life", health, int(stats["life"]), Style.HEALTH)
 	_resource(resources, "Mana", int(stats["mana"]), int(stats["mana"]), Style.TEAL)
 	_resource(resources, "Stamina", current_stamina, int(stats["stamina"]), Color("#f2ec8b"))
 
@@ -116,14 +116,10 @@ func _resource(parent: Control, caption: String, current: int, maximum: int, col
 	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	column.add_theme_constant_override("separation", 5)
 	parent.add_child(column)
-	column.add_child(Style.label("%s  %d / %d" % [caption, maxi(0, current), maximum], 16, color))
-	var bar := ProgressBar.new()
-	bar.custom_minimum_size.y = 6
+	column.add_child(Style.label("%s  %d / %d" % [caption, maxi(0, current), maximum], 16, Color.WHITE))
+	var bar := Style.progress_bar(color)
 	bar.max_value = maxi(1, maximum)
 	bar.value = clampi(current, 0, maximum)
-	bar.show_percentage = false
-	bar.add_theme_stylebox_override("background", Style.box(Style.SURFACE))
-	bar.add_theme_stylebox_override("fill", Style.box(color))
 	column.add_child(bar)
 
 

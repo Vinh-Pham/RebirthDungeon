@@ -1,6 +1,7 @@
 extends RefCounted
 ## Local character profiles. All returned dictionaries are independent copies.
 
+const Rooms = preload("res://scripts/threshold_rooms.gd")
 const DIRECTORY := "user://characters"
 const MAX_SEED := 2147483647
 const MAX_EXPERIENCE := 2_000_000_000
@@ -11,9 +12,12 @@ const LIMITS := {
 }
 const TOWNS := ["lantern_rest", "spindle_hollow"]
 const WORLD_DEFAULTS := {
-	"location": "arrival", "visited": [], "gates": [], "quest": 0,
+	"location": "lantern_rest", "visited": [], "gates": [], "quest": 0,
 	"gold": 24, "tonics": 0, "health": -1, "dungeon_from": "lantern_rest",
 	"quick_slots": ["", "", "", ""],
+	"armor_owned": false, "equipment_durability": {},
+	"threshold_cleared": 0, "threshold_treasure_claimed": false, "threshold_run": 0,
+	"town_materials": {"fish": 0, "grain": 0, "flour": 0, "fiber": 0, "thread": 0, "cloth": 0},
 }
 static var _selected_id: String = ""
 
@@ -121,11 +125,31 @@ static func _normalize_world(value: Variant) -> Dictionary:
 		if not item is String or item not in ["", "tonic"]:
 			return {}
 	world["quick_slots"] = slots.duplicate()
-	var bounds := {"quest": [0, 3], "gold": [0, MAX_EXPERIENCE], "tonics": [0, MAX_EXPERIENCE], "health": [-1, 2500]}
+	if not world["town_materials"] is Dictionary:
+		return {}
+	var materials: Dictionary = WORLD_DEFAULTS["town_materials"].duplicate()
+	for material in world["town_materials"]:
+		if not materials.has(material) or not _integer_in_range(world["town_materials"][material], 0, MAX_EXPERIENCE):
+			return {}
+		materials[material] = int(world["town_materials"][material])
+	world["town_materials"] = materials
+	if not world["armor_owned"] is bool or not world["equipment_durability"] is Dictionary:
+		return {}
+	var durability := {}
+	for item_id in world["equipment_durability"]:
+		if not item_id is String or item_id.is_empty() or not _integer_in_range(world["equipment_durability"][item_id], 0, 1000000):
+			return {}
+		durability[item_id] = int(world["equipment_durability"][item_id])
+	world["equipment_durability"] = durability
+	var bounds := {"quest": [0, 3], "gold": [0, MAX_EXPERIENCE], "tonics": [0, MAX_EXPERIENCE], "health": [-1, 2500], "threshold_cleared": [0, Rooms.ROOM_COUNT], "threshold_run": [0, MAX_EXPERIENCE]}
 	for key in bounds:
 		if not _integer_in_range(world[key], bounds[key][0], bounds[key][1]):
 			return {}
 		world[key] = int(world[key])
+	if not world["threshold_treasure_claimed"] is bool:
+		return {}
+	if world["threshold_treasure_claimed"] and world["threshold_cleared"] != Rooms.ROOM_COUNT:
+		return {}
 	return world
 
 

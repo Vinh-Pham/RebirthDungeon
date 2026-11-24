@@ -71,8 +71,8 @@ func open(section: String, profile: Dictionary, stats: Dictionary) -> void:
 			var stage := clampi(int(profile.get("world", {}).get("quest", 0)), 0, 3)
 			var objectives := [
 				"Speak to Warden Nera in Lantern Rest to accept the passage quest.",
-				"Get a blade from Venn, stock up with Tamsin, and clear the White Spider from the eastern crossing.",
-				"Reach Spindle Hollow through the Threshold and report to Watchkeeper Oren.",
+				"Get a blade from Venn, stock up with Tamsin, and clear eight dungeon rooms, and defeat the Giant Black Spider.",
+				"Open the treasure chamber beyond the boss, then reach Spindle Hollow and report to Watchkeeper Oren.",
 				"Completed. You delivered Lantern Rest's signal and received 32 gold."
 			]
 			_section("Passage to Spindle Hollow", objectives[stage])
