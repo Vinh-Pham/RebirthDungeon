@@ -1,0 +1,10 @@
+[bootstrap]
+main_collection = /tests/visual.collectionc
+[project]
+title = RebirthDungeon QA
+[storage]
+appname = RebirthDungeonVisualFixtures
+[osx]
+bundle_identifier = games.rebirthdungeon.visualfixtures
+[test]
+hold = 1

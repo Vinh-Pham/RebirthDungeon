@@ -1,0 +1,2 @@
+name: "town"
+embedded_instances { id: "world" data: "components { id: \"screen\" component: \"/game/world/screen.script\" }\ncomponents { id: \"tile\" component: \"/game/world/tile.factory\" }\ncomponents { id: \"wall\" component: \"/game/world/wall.factory\" }\ncomponents { id: \"hero\" component: \"/game/world/hero.factory\" }\ncomponents { id: \"service_trigger\" component: \"/game/world/service_trigger.factory\" }\n" }

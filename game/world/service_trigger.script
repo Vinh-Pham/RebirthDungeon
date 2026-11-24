@@ -1,0 +1,7 @@
+go.property("service", hash(""))
+
+function on_message(self, message_id, message, sender)
+    if message_id == hash("trigger_response") and message.other_group == hash("player") then
+        msg.post("/world#screen", "service_proximity", {service = self.service, inside = message.enter})
+    end
+end

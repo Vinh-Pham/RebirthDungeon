@@ -1,0 +1,5 @@
+name: "town_dialogue_popup"
+embedded_instances {
+  id: "host"
+  data: ""
+}

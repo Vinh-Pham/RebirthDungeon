@@ -1,0 +1,7 @@
+type: COLLISION_OBJECT_TYPE_STATIC
+mass: 0.0
+friction: 0.0
+restitution: 0.0
+group: "walls"
+mask: "player"
+embedded_collision_shape { shapes { shape_type: TYPE_BOX position { x: 0 y: 0 z: 0 } rotation { x: 0 y: 0 z: 0 w: 1 } index: 0 count: 3 } data: 8 data: 8 data: 1 }

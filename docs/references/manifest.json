@@ -1,0 +1,858 @@
+[
+    {
+        "name": "phaser-scenes",
+        "url": "https://docs.phaser.io/phaser/concepts/scenes",
+        "status": "saved",
+        "retrieved": "2026-09-18T01:58:25.928532+00:00",
+        "path": "phaser-scenes.md",
+        "scope": "historical_browser_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "phaser-api",
+        "url": "https://docs.phaser.io/api-documentation/api-documentation",
+        "status": "saved",
+        "retrieved": "2026-09-18T01:58:25.928532+00:00",
+        "path": "phaser-api.md",
+        "scope": "historical_browser_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "phaser-tilemaps",
+        "url": "https://docs.phaser.io/api-documentation/class/tilemaps-tilemap",
+        "status": "saved",
+        "retrieved": "2026-09-18T01:58:25.928532+00:00",
+        "path": "phaser-tilemaps.md",
+        "scope": "historical_browser_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "phaser-physics",
+        "url": "https://docs.phaser.io/api-documentation/class/physics-arcade-arcadephysics",
+        "status": "saved",
+        "retrieved": "2026-09-18T01:58:25.928532+00:00",
+        "path": "phaser-physics.md",
+        "scope": "historical_browser_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "phaser-input",
+        "url": "https://docs.phaser.io/api-documentation/class/input-inputplugin",
+        "status": "saved",
+        "retrieved": "2026-09-18T01:58:25.928532+00:00",
+        "path": "phaser-input.md",
+        "scope": "historical_browser_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "phaser-camera",
+        "url": "https://docs.phaser.io/api-documentation/class/cameras-scene2d-camera",
+        "status": "saved",
+        "retrieved": "2026-09-18T01:58:25.928532+00:00",
+        "path": "phaser-camera.md",
+        "scope": "historical_browser_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "phaser-scale",
+        "url": "https://docs.phaser.io/api-documentation/class/scale-scalemanager",
+        "status": "saved",
+        "retrieved": "2026-09-18T01:58:25.928532+00:00",
+        "path": "phaser-scale.md",
+        "scope": "historical_browser_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "phaser-loader",
+        "url": "https://docs.phaser.io/api-documentation/class/loader-loaderplugin",
+        "status": "saved",
+        "retrieved": "2026-09-18T01:58:25.928532+00:00",
+        "path": "phaser-loader.md",
+        "scope": "historical_browser_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "phaser-animation",
+        "url": "https://docs.phaser.io/api-documentation/class/animations-animationmanager",
+        "status": "saved",
+        "retrieved": "2026-09-18T01:58:25.928532+00:00",
+        "path": "phaser-animation.md",
+        "scope": "historical_browser_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "phaser-audio",
+        "url": "https://docs.phaser.io/api-documentation/class/sound-webaudiosoundmanager",
+        "status": "saved",
+        "retrieved": "2026-09-18T01:58:25.928532+00:00",
+        "path": "phaser-audio.md",
+        "scope": "historical_browser_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "mabinogi-town",
+        "url": "https://wiki.mabinogiworld.com/view/Tir_Chonaill",
+        "status": "saved",
+        "retrieved": "2026-09-18T01:58:25.928532+00:00",
+        "path": "mabinogi-town.md",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "mabinogi-alby",
+        "url": "https://wiki.mabinogiworld.com/view/Alby_Beginner",
+        "status": "saved",
+        "retrieved": "2026-09-18T01:58:25.928532+00:00",
+        "path": "mabinogi-alby.md",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "mabinogi-dungeons",
+        "url": "https://wiki.mabinogiworld.com/view/Category:Dungeons",
+        "status": "saved",
+        "retrieved": "2026-09-18T01:58:25.928532+00:00",
+        "path": "mabinogi-dungeons.md",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "mabinogi-level",
+        "url": "https://wiki.mabinogiworld.com/view/Level",
+        "status": "saved",
+        "retrieved": "2026-09-18T01:58:25.928532+00:00",
+        "path": "mabinogi-level.md",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "mabinogi-character",
+        "url": "https://wiki.mabinogiworld.com/view/Character",
+        "status": "saved",
+        "retrieved": "2026-09-18T01:58:25.928532+00:00",
+        "path": "mabinogi-character.md",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "mabinogi-rebirth",
+        "url": "https://wiki.mabinogiworld.com/view/Rebirth",
+        "status": "saved",
+        "retrieved": "2026-09-18T01:58:25.928532+00:00",
+        "path": "mabinogi-rebirth.md",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "mabinogi-talent",
+        "url": "https://wiki.mabinogiworld.com/view/Talent",
+        "status": "saved",
+        "retrieved": "2026-09-18T01:58:25.928532+00:00",
+        "path": "mabinogi-talent.md",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "mabinogi-human",
+        "url": "https://wiki.mabinogiworld.com/view/Human",
+        "status": "saved",
+        "retrieved": "2026-09-18T01:58:25.928532+00:00",
+        "path": "mabinogi-human.md",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "mabinogi-elf",
+        "url": "https://wiki.mabinogiworld.com/view/Elf",
+        "status": "saved",
+        "retrieved": "2026-09-18T01:58:25.928532+00:00",
+        "path": "mabinogi-elf.md",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "mabinogi-giant",
+        "url": "https://wiki.mabinogiworld.com/view/Giant",
+        "status": "saved",
+        "retrieved": "2026-09-18T01:58:25.928532+00:00",
+        "path": "mabinogi-giant.md",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "mabinogi-archery",
+        "url": "https://wiki.mabinogiworld.com/view/Archery_(Talent)",
+        "status": "saved",
+        "retrieved": "2026-09-18T01:58:25.928532+00:00",
+        "path": "mabinogi-archery.md",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "mabinogi-magic",
+        "url": "https://wiki.mabinogiworld.com/view/Magic_(Talent)",
+        "status": "saved",
+        "retrieved": "2026-09-18T01:58:25.928532+00:00",
+        "path": "mabinogi-magic.md",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "mabinogi-melee",
+        "url": "https://wiki.mabinogiworld.com/view/Close_Combat_(Talent)",
+        "status": "saved",
+        "retrieved": "2026-09-18T01:58:25.928532+00:00",
+        "path": "mabinogi-melee.md",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "mabinogi-guns",
+        "url": "https://wiki.mabinogiworld.com/view/Gunslinger_(Talent)",
+        "status": "saved",
+        "retrieved": "2026-09-18T01:58:25.928532+00:00",
+        "path": "mabinogi-guns.md",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "dicero",
+        "url": "https://apps.apple.com/si/iphone/story/id1876466957?l=sl",
+        "status": "saved",
+        "retrieved": "2026-09-18T01:58:25.928532+00:00",
+        "path": "dicero.md",
+        "scope": "historical_dice_inspiration",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "immer",
+        "url": "https://immerjs.github.io/immer/produce/",
+        "status": "saved",
+        "retrieved": "2026-09-18T01:58:25.928532+00:00",
+        "path": "immer.md",
+        "scope": "historical_browser_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "immer-pitfalls",
+        "url": "https://immerjs.github.io/immer/pitfalls/",
+        "status": "saved",
+        "retrieved": "2026-09-18T01:58:25.928532+00:00",
+        "path": "immer-pitfalls.md",
+        "scope": "historical_browser_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "xstate-actors",
+        "url": "https://stately.ai/docs/actors",
+        "status": "saved",
+        "retrieved": "2026-09-18T01:58:25.928532+00:00",
+        "path": "xstate-actors.md",
+        "scope": "historical_browser_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "xstate-persistence",
+        "url": "https://stately.ai/docs/persistence",
+        "status": "saved",
+        "retrieved": "2026-09-18T01:58:25.928532+00:00",
+        "path": "xstate-persistence.md",
+        "scope": "historical_browser_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "vitest",
+        "url": "https://vitest.dev/guide/",
+        "status": "saved",
+        "retrieved": "2026-09-18T01:58:25.928532+00:00",
+        "path": "vitest.md",
+        "scope": "historical_browser_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "playwright",
+        "url": "https://playwright.dev/docs/test-configuration",
+        "status": "saved",
+        "retrieved": "2026-09-18T01:58:25.928532+00:00",
+        "path": "playwright.md",
+        "scope": "historical_browser_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "rex-plugin-list",
+        "url": "https://rexrainbow.github.io/phaser3-rex-notes/docs/site/plugin-list/",
+        "status": "saved",
+        "retrieved": "2026-09-18T01:58:25.928532+00:00",
+        "path": "rex-plugin-list.md",
+        "scope": "historical_browser_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "rex-eightdirection",
+        "url": "https://rexrainbow.github.io/phaser3-rex-notes/docs/site/eightdirection/",
+        "status": "saved",
+        "retrieved": "2026-09-18T01:58:25.928532+00:00",
+        "path": "rex-eightdirection.md",
+        "scope": "historical_browser_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "rex-button",
+        "url": "https://rexrainbow.github.io/phaser3-rex-notes/docs/site/button/",
+        "status": "saved",
+        "retrieved": "2026-09-18T01:58:25.928532+00:00",
+        "path": "rex-button.md",
+        "scope": "historical_browser_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "rex-anchor",
+        "url": "https://rexrainbow.github.io/phaser3-rex-notes/docs/site/anchor/",
+        "status": "saved",
+        "retrieved": "2026-09-18T01:58:25.928532+00:00",
+        "path": "rex-anchor.md",
+        "scope": "historical_browser_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "rex-shake-position",
+        "url": "https://rexrainbow.github.io/phaser3-rex-notes/docs/site/shake-position/",
+        "status": "saved",
+        "retrieved": "2026-09-18T01:58:25.928532+00:00",
+        "path": "rex-shake-position.md",
+        "scope": "historical_browser_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "rex-fadeoutdestroy",
+        "url": "https://rexrainbow.github.io/phaser3-rex-notes/docs/site/fadeoutdestroy/",
+        "status": "saved",
+        "retrieved": "2026-09-18T01:58:25.928532+00:00",
+        "path": "rex-fadeoutdestroy.md",
+        "scope": "historical_browser_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "rex-fadevolume",
+        "url": "https://rexrainbow.github.io/phaser3-rex-notes/docs/site/fadevolume/",
+        "status": "saved",
+        "retrieved": "2026-09-18T01:58:25.928532+00:00",
+        "path": "rex-fadevolume.md",
+        "scope": "historical_browser_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "mabinogi-skills",
+        "url": "https://wiki.mabinogiworld.com/view/Category:Skills",
+        "status": "saved",
+        "retrieved": "2026-09-18T03:40:06.142392+00:00",
+        "path": "mabinogi-skills.md",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "mabinogi-critical-hit",
+        "url": "https://wiki.mabinogiworld.com/view/Critical_Hit",
+        "status": "saved",
+        "retrieved": "2026-09-18T03:40:06.142551+00:00",
+        "path": "mabinogi-critical-hit.md",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "oxlint-config",
+        "url": "https://oxc.rs/docs/guide/usage/linter/config.html",
+        "status": "saved",
+        "retrieved": "2026-09-18T03:54:39.028753+00:00",
+        "path": "oxlint-config.md",
+        "scope": "historical_browser_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "oxlint-migration",
+        "url": "https://oxc.rs/docs/guide/usage/linter/migrate-from-eslint.html",
+        "status": "saved",
+        "retrieved": "2026-09-18T03:54:39.028901+00:00",
+        "path": "oxlint-migration.md",
+        "scope": "historical_browser_reference",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "defold/druid",
+        "title": "Druid",
+        "url": "https://github.com/Insality/druid",
+        "path": "defold/druid.md",
+        "status": "summary_saved",
+        "retrieved": "2026-09-20",
+        "retrieval_method": "Firecrawl",
+        "revision": "Rolling upstream README; no project dependency pin selected",
+        "installed": false,
+        "scope": "planned_defold_dependency",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "defold/monarch",
+        "title": "Monarch",
+        "url": "https://github.com/britzl/monarch",
+        "path": "defold/monarch.md",
+        "status": "summary_saved",
+        "retrieved": "2026-09-20",
+        "retrieval_method": "Firecrawl",
+        "revision": "Rolling upstream README; no project dependency pin selected",
+        "installed": false,
+        "scope": "planned_defold_dependency",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "defold/defold-event",
+        "title": "Defold Event",
+        "url": "https://github.com/Insality/defold-event",
+        "path": "defold/defold-event.md",
+        "status": "summary_saved",
+        "retrieved": "2026-09-20",
+        "retrieval_method": "Firecrawl",
+        "revision": "Rolling upstream README; no project dependency pin selected",
+        "installed": false,
+        "scope": "planned_defold_dependency",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "defold/defold-rng",
+        "title": "Defold RNG",
+        "url": "https://github.com/alchimystic/defold-rng",
+        "path": "defold/defold-rng.md",
+        "status": "summary_saved",
+        "retrieved": "2026-09-20",
+        "retrieval_method": "Firecrawl",
+        "revision": "Rolling upstream README; no project dependency pin selected",
+        "installed": false,
+        "scope": "planned_defold_dependency",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "defold/defold-astar",
+        "title": "A* Path Finding",
+        "url": "https://github.com/selimanac/defold-astar",
+        "path": "defold/defold-astar.md",
+        "status": "summary_saved",
+        "retrieved": "2026-09-20",
+        "retrieval_method": "Firecrawl",
+        "revision": "Rolling upstream README; no project dependency pin selected",
+        "installed": false,
+        "additional_sources": [
+            "https://github.com/selimanac/defold-astar/wiki"
+        ],
+        "scope": "planned_defold_dependency",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "defold/defsave",
+        "title": "DefSave",
+        "url": "https://github.com/subsoap/defsave",
+        "path": "defold/defsave.md",
+        "status": "summary_saved",
+        "retrieved": "2026-09-20",
+        "retrieval_method": "Firecrawl",
+        "revision": "Rolling upstream README; no project dependency pin selected",
+        "installed": false,
+        "scope": "planned_defold_dependency",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "defold/defold-tweener",
+        "title": "Defold Tweener",
+        "url": "https://github.com/Insality/defold-tweener",
+        "path": "defold/defold-tweener.md",
+        "status": "summary_saved",
+        "retrieved": "2026-09-20",
+        "retrieval_method": "Firecrawl",
+        "revision": "Rolling upstream README; no project dependency pin selected",
+        "installed": false,
+        "scope": "planned_defold_dependency",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "defold/lume",
+        "title": "LUme (Lume)",
+        "url": "https://github.com/rxi/lume",
+        "path": "defold/lume.md",
+        "status": "summary_saved",
+        "retrieved": "2026-09-20",
+        "retrieval_method": "Firecrawl",
+        "revision": "Rolling upstream README; no project dependency pin selected",
+        "installed": false,
+        "scope": "planned_defold_dependency",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "defold/lester",
+        "title": "Lester",
+        "url": "https://github.com/edubart/lester",
+        "path": "defold/lester.md",
+        "status": "summary_saved",
+        "retrieved": "2026-09-20",
+        "retrieval_method": "Firecrawl",
+        "revision": "Rolling upstream README; no project dependency pin selected",
+        "installed": false,
+        "scope": "planned_defold_dependency",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "defold/defold-quest",
+        "title": "Defold Quest",
+        "url": "https://github.com/Insality/defold-quest",
+        "path": "defold/defold-quest.md",
+        "status": "summary_saved",
+        "retrieved": "2026-09-20",
+        "retrieval_method": "Firecrawl",
+        "revision": "Rolling upstream README; no project dependency pin selected",
+        "installed": false,
+        "scope": "planned_defold_dependency",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "defold/defold-ink",
+        "title": "defold-ink",
+        "url": "https://github.com/abadonna/defold-ink",
+        "path": "defold/defold-ink.md",
+        "status": "summary_saved",
+        "retrieved": "2026-09-20",
+        "retrieval_method": "Firecrawl",
+        "revision": "Rolling upstream README; no project dependency pin selected",
+        "installed": false,
+        "additional_sources": [
+            "https://defold.com/manuals/project-settings/"
+        ],
+        "scope": "planned_defold_dependency",
+        "alignment_reviewed": "2026-09-20"
+    },
+    {
+        "name": "heroui-components",
+        "path": "heroui-components.md",
+        "status": "saved",
+        "scope": "historical_browser_reference",
+        "alignment_reviewed": "2026-09-20",
+        "provenance_note": "See the retained source links and retrieval notes inside the document."
+    },
+    {
+        "name": "mabinogi-stats",
+        "path": "mabinogi-stats.md",
+        "status": "saved",
+        "scope": "historical_browser_reference",
+        "alignment_reviewed": "2026-09-20",
+        "url": "https://wiki.mabinogiworld.com/view/Stats"
+    },
+    {
+        "name": "skills/arrow-revolver",
+        "path": "skills/arrow-revolver.md",
+        "status": "saved",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20",
+        "url": "https://wiki.mabinogiworld.com/view/Arrow_Revolver",
+        "retrieved": "2026-09-18 UTC using Firecrawl (markdown + HTML)."
+    },
+    {
+        "name": "skills/blacksmithing",
+        "path": "skills/blacksmithing.md",
+        "status": "saved",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20",
+        "url": "https://wiki.mabinogiworld.com/view/Blacksmithing",
+        "retrieved": "2026-09-18 UTC using Firecrawl (markdown + HTML)."
+    },
+    {
+        "name": "skills/bow-mastery",
+        "path": "skills/bow-mastery.md",
+        "status": "saved",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20",
+        "url": "https://wiki.mabinogiworld.com/view/Bow_Mastery",
+        "retrieved": "2026-09-18 UTC using Firecrawl (markdown + HTML)."
+    },
+    {
+        "name": "skills/campfire",
+        "path": "skills/campfire.md",
+        "status": "saved",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20",
+        "url": "https://wiki.mabinogiworld.com/view/Campfire",
+        "retrieved": "2026-09-18 UTC using Firecrawl (markdown + HTML)."
+    },
+    {
+        "name": "skills/carpentry",
+        "path": "skills/carpentry.md",
+        "status": "saved",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20",
+        "url": "https://wiki.mabinogiworld.com/view/Carpentry",
+        "retrieved": "2026-09-18 UTC using Firecrawl (markdown + HTML)."
+    },
+    {
+        "name": "skills/combat-mastery",
+        "path": "skills/combat-mastery.md",
+        "status": "saved",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20",
+        "url": "https://wiki.mabinogiworld.com/view/Combat_Mastery",
+        "retrieved": "2026-09-18 UTC using Firecrawl (markdown + HTML)."
+    },
+    {
+        "name": "skills/counterattack",
+        "path": "skills/counterattack.md",
+        "status": "saved",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20",
+        "url": "https://wiki.mabinogiworld.com/view/Counterattack",
+        "retrieved": "2026-09-18 UTC using Firecrawl (markdown + HTML)."
+    },
+    {
+        "name": "skills/critical-hit",
+        "path": "skills/critical-hit.md",
+        "status": "saved",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20",
+        "url": "https://wiki.mabinogiworld.com/view/Critical_Hit",
+        "retrieved": "2026-09-18 UTC using Firecrawl (markdown + HTML)."
+    },
+    {
+        "name": "skills/defense",
+        "path": "skills/defense.md",
+        "status": "saved",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20",
+        "url": "https://wiki.mabinogiworld.com/view/Defense",
+        "retrieved": "2026-09-18 UTC using Firecrawl (markdown + HTML)."
+    },
+    {
+        "name": "skills/elf-ranged-attack",
+        "path": "skills/elf-ranged-attack.md",
+        "status": "saved",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20",
+        "provenance_note": "See the retained source links and retrieval notes inside the document."
+    },
+    {
+        "name": "skills/firebolt",
+        "path": "skills/firebolt.md",
+        "status": "saved",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20",
+        "url": "https://wiki.mabinogiworld.com/view/Firebolt",
+        "retrieved": "2026-09-18 UTC using Firecrawl (markdown + HTML)."
+    },
+    {
+        "name": "skills/first-aid",
+        "path": "skills/first-aid.md",
+        "status": "saved",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20",
+        "url": "https://wiki.mabinogiworld.com/view/First_Aid",
+        "retrieved": "2026-09-18 UTC using Firecrawl (markdown + HTML)."
+    },
+    {
+        "name": "skills/fishing",
+        "path": "skills/fishing.md",
+        "status": "saved",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20",
+        "url": "https://wiki.mabinogiworld.com/view/Fishing",
+        "retrieved": "2026-09-18 UTC using Firecrawl (markdown + HTML)."
+    },
+    {
+        "name": "skills/hailstorm",
+        "path": "skills/hailstorm.md",
+        "status": "saved",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20",
+        "url": "https://wiki.mabinogiworld.com/view/Hailstorm",
+        "retrieved": "2026-09-18 UTC using Firecrawl (markdown + HTML)."
+    },
+    {
+        "name": "skills/handicraft",
+        "path": "skills/handicraft.md",
+        "status": "saved",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20",
+        "url": "https://wiki.mabinogiworld.com/view/Handicraft",
+        "retrieved": "2026-09-18 UTC using Firecrawl (markdown + HTML)."
+    },
+    {
+        "name": "skills/healing",
+        "path": "skills/healing.md",
+        "status": "saved",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20",
+        "url": "https://wiki.mabinogiworld.com/view/Healing",
+        "retrieved": "2026-09-18 UTC using Firecrawl (markdown + HTML)."
+    },
+    {
+        "name": "skills/heavy-armor-mastery",
+        "path": "skills/heavy-armor-mastery.md",
+        "status": "saved",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20",
+        "url": "https://wiki.mabinogiworld.com/view/Heavy_Armor_Mastery",
+        "retrieved": "2026-09-18 UTC using Firecrawl (markdown + HTML)."
+    },
+    {
+        "name": "skills/herbalism",
+        "path": "skills/herbalism.md",
+        "status": "saved",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20",
+        "url": "https://wiki.mabinogiworld.com/view/Herbalism",
+        "retrieved": "2026-09-18 UTC using Firecrawl (markdown + HTML)."
+    },
+    {
+        "name": "skills/ice-spear",
+        "path": "skills/ice-spear.md",
+        "status": "saved",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20",
+        "url": "https://wiki.mabinogiworld.com/view/Ice_Spear",
+        "retrieved": "2026-09-18 UTC using Firecrawl (markdown + HTML)."
+    },
+    {
+        "name": "skills/icebolt",
+        "path": "skills/icebolt.md",
+        "status": "saved",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20",
+        "url": "https://wiki.mabinogiworld.com/view/Icebolt",
+        "retrieved": "2026-09-18 UTC using Firecrawl (markdown + HTML)."
+    },
+    {
+        "name": "skills/light-armor-mastery",
+        "path": "skills/light-armor-mastery.md",
+        "status": "saved",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20",
+        "url": "https://wiki.mabinogiworld.com/view/Light_Armor_Mastery",
+        "retrieved": "2026-09-18 UTC using Firecrawl (markdown + HTML)."
+    },
+    {
+        "name": "skills/lightning-bolt",
+        "path": "skills/lightning-bolt.md",
+        "status": "saved",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20",
+        "url": "https://wiki.mabinogiworld.com/view/Lightning_Bolt",
+        "retrieved": "2026-09-18 UTC using Firecrawl (markdown + HTML)."
+    },
+    {
+        "name": "skills/magic-mastery",
+        "path": "skills/magic-mastery.md",
+        "status": "saved",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20",
+        "url": "https://wiki.mabinogiworld.com/view/Magic_Mastery",
+        "retrieved": "2026-09-18 UTC using Firecrawl (markdown + HTML)."
+    },
+    {
+        "name": "skills/magnum-shot",
+        "path": "skills/magnum-shot.md",
+        "status": "saved",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20",
+        "url": "https://wiki.mabinogiworld.com/view/Magnum_Shot",
+        "retrieved": "2026-09-18 UTC using Firecrawl (markdown + HTML)."
+    },
+    {
+        "name": "skills/mana-regeneration",
+        "path": "skills/mana-regeneration.md",
+        "status": "saved",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20",
+        "url": "https://wiki.mabinogiworld.com/view/Mana_Recovery",
+        "retrieved": "2026-09-18 UTC using Firecrawl (markdown + HTML)."
+    },
+    {
+        "name": "skills/mana-shield",
+        "path": "skills/mana-shield.md",
+        "status": "saved",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20",
+        "url": "https://wiki.mabinogiworld.com/view/Mana_Shield",
+        "retrieved": "2026-09-18 UTC using Firecrawl (markdown + HTML)."
+    },
+    {
+        "name": "skills/meteor-strike",
+        "path": "skills/meteor-strike.md",
+        "status": "saved",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20",
+        "url": "https://wiki.mabinogiworld.com/view/Meteor_Strike",
+        "retrieved": "2026-09-18 UTC using Firecrawl (markdown + HTML)."
+    },
+    {
+        "name": "skills/potion-making",
+        "path": "skills/potion-making.md",
+        "status": "saved",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20",
+        "url": "https://wiki.mabinogiworld.com/view/Potion_Making",
+        "retrieved": "2026-09-18 UTC using Firecrawl (markdown + HTML)."
+    },
+    {
+        "name": "skills/range-attack",
+        "path": "skills/range-attack.md",
+        "status": "saved",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20",
+        "url": "https://wiki.mabinogiworld.com/view/Human_Ranged_Attack",
+        "retrieved": "2026-09-18 UTC using Firecrawl (markdown + HTML)."
+    },
+    {
+        "name": "skills/shockwave",
+        "path": "skills/shockwave.md",
+        "status": "saved",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20",
+        "url": "https://wiki.mabinogiworld.com/view/Shockwave",
+        "retrieved": "2026-09-18 UTC using Firecrawl (markdown + HTML)."
+    },
+    {
+        "name": "skills/smash",
+        "path": "skills/smash.md",
+        "status": "saved",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20",
+        "url": "https://wiki.mabinogiworld.com/view/Smash",
+        "retrieved": "2026-09-18 UTC using Firecrawl (markdown + HTML)."
+    },
+    {
+        "name": "skills/sword-mastery",
+        "path": "skills/sword-mastery.md",
+        "status": "saved",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20",
+        "url": "https://wiki.mabinogiworld.com/view/Sword_Mastery",
+        "retrieved": "2026-09-18 UTC using Firecrawl (markdown + HTML)."
+    },
+    {
+        "name": "skills/thunder",
+        "path": "skills/thunder.md",
+        "status": "saved",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20",
+        "url": "https://wiki.mabinogiworld.com/view/Thunder",
+        "retrieved": "2026-09-18 UTC using Firecrawl (markdown + HTML)."
+    },
+    {
+        "name": "skills/wand-mastery",
+        "path": "skills/wand-mastery.md",
+        "status": "saved",
+        "scope": "gameplay_source_reference",
+        "alignment_reviewed": "2026-09-20",
+        "url": "https://wiki.mabinogiworld.com/view/Wand_Mastery",
+        "retrieved": "2026-09-18 UTC using Firecrawl (markdown + HTML)."
+    },
+    {
+        "name": "wmkit",
+        "path": "wmkit.md",
+        "status": "saved",
+        "scope": "historical_browser_reference",
+        "alignment_reviewed": "2026-09-20",
+        "provenance_note": "See the retained source links and retrieval notes inside the document."
+    }
+]
