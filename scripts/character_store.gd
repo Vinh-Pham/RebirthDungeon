@@ -14,10 +14,11 @@ const TOWNS := ["lantern_rest", "spindle_hollow"]
 const WORLD_DEFAULTS := {
 	"location": "lantern_rest", "visited": [], "gates": [], "quest": 0,
 	"gold": 24, "tonics": 0, "health": -1, "dungeon_from": "lantern_rest",
+	"pending_loot": {},
 	"quick_slots": ["", "", "", ""],
 	"armor_owned": false, "equipment_durability": {},
 	"threshold_cleared": 0, "threshold_treasure_claimed": false, "threshold_run": 0,
-	"town_materials": {"fish": 0, "grain": 0, "flour": 0, "fiber": 0, "thread": 0, "cloth": 0},
+	"town_materials": {"fish": 0, "grain": 0, "flour": 0, "fiber": 0, "thread": 0, "cloth": 0, "cobweb": 0},
 }
 static var _selected_id: String = ""
 
@@ -133,6 +134,14 @@ static func _normalize_world(value: Variant) -> Dictionary:
 			return {}
 		materials[material] = int(world["town_materials"][material])
 	world["town_materials"] = materials
+	if not world["pending_loot"] is Dictionary:
+		return {}
+	var pending_loot := {}
+	for item_id in world["pending_loot"]:
+		if item_id not in ["cobweb", "gold"] or not _integer_in_range(world["pending_loot"][item_id], 1, MAX_EXPERIENCE):
+			return {}
+		pending_loot[item_id] = int(world["pending_loot"][item_id])
+	world["pending_loot"] = pending_loot
 	if not world["armor_owned"] is bool or not world["equipment_durability"] is Dictionary:
 		return {}
 	var durability := {}

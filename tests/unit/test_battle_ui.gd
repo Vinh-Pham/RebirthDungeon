@@ -222,3 +222,156 @@ func test_multiple_enemy_clocks_advance_and_damage_player_independently() -> voi
 		assert_eq(_battle._match.enemy_at(index).gauge, 0.0)
 	assert_eq(_battle._match.round_number, 0)
 	assert_eq(Store.load_selected()["world"]["health"], _battle._match.health)
+
+
+func test_victory_saves_loot_then_collects_only_checked_stacks() -> void:
+	assert_false(Store.update_world({"pending_loot": {"cobweb": 2, "gold": 4}}).is_empty())
+	_battle._match.enemy_health = 1
+	_battle._match.player_gauge = 1.0
+	_battle._act(Combat.Action.ATTACK)
+	assert_true(_battle._loot_panel.visible)
+	assert_false(_battle._match.active)
+	var world: Dictionary = Store.load_selected()["world"]
+	var pending: Dictionary = world["pending_loot"]
+	assert_gte(int(pending["cobweb"]), 2)
+	assert_eq(world["town_materials"]["cobweb"], 0)
+	var cobweb: CheckBox = _battle._loot_panel.find_child("Loot_cobweb", true, false)
+	cobweb.button_pressed = true
+	_battle._loot_panel._take_selected.pressed.emit()
+	world = Store.load_selected()["world"]
+	assert_eq(world["town_materials"]["cobweb"], pending["cobweb"])
+	assert_eq(world["pending_loot"], {})
+	assert_eq(world["gold"], 24)
+	assert_false(_battle._loot_panel.visible)
+	assert_false(_battle.visible)
+
+
+func test_resumed_loot_survives_failed_claim_and_can_be_left() -> void:
+	_battle._back()
+	var saved := Store.update_world({"pending_loot": {"cobweb": 2}})
+	_battle.open_pending_loot(saved)
+	var path := Store.DIRECTORY.path_join(_id + ".json.tmp")
+	assert_eq(DirAccess.make_dir_absolute(path), OK)
+	_battle._loot_panel._take_all.pressed.emit()
+	assert_push_error("Unable to save character.")
+	assert_true(_battle._loot_panel.visible)
+	assert_eq(Store.load_selected()["world"]["pending_loot"], {"cobweb": 2})
+	assert_eq(Store.load_selected()["world"]["town_materials"]["cobweb"], 0)
+	assert_eq(DirAccess.remove_absolute(path), OK)
+	_battle._loot_panel._leave.pressed.emit()
+	assert_false(_battle.visible)
+	assert_eq(Store.load_selected()["world"]["pending_loot"], {})
+	assert_eq(Store.load_selected()["world"]["town_materials"]["cobweb"], 0)
+
+
+func test_take_all_returns_directly_to_map() -> void:
+	_battle._back()
+	var saved := Store.update_world({"pending_loot": {"cobweb": 3, "gold": 5}})
+	_battle.open_pending_loot(saved)
+	_battle._loot_panel._take_all.pressed.emit()
+	var world: Dictionary = Store.load_selected()["world"]
+	assert_eq(world["town_materials"]["cobweb"], 3)
+	assert_eq(world["gold"], 29)
+	assert_eq(world["pending_loot"], {})
+	assert_false(_battle._loot_panel.visible)
+	assert_false(_battle.visible)
+
+
+func test_victory_without_drops_returns_directly_to_map() -> void:
+	var Loot = load("res://scripts/battle_loot.gd")
+	var rng := RandomNumberGenerator.new()
+	_battle._match.enemy_health = 1
+	_battle._match.player_gauge = 1.0
+	var drops := {"cobweb": 1}
+	for candidate in range(100):
+		_battle._match.rng_state = candidate
+		var before: Dictionary = _battle._match.snapshot()
+		_battle._match.act(Combat.Action.ATTACK, {})
+		rng.seed = _battle._match.rng_state
+		drops = Loot.roll([{"name": _battle._entry["source_name"]}], rng)
+		_battle._match.restore(before)
+		if drops.is_empty():
+			break
+	assert_true(drops.is_empty())
+	_battle._act(Combat.Action.ATTACK)
+	assert_false(_battle._match.active)
+	assert_eq(Store.load_selected()["world"]["pending_loot"], {})
+	assert_false(_battle._loot_panel.visible)
+	assert_false(_battle.visible)
+
+
+func test_player_stat_bars_track_battle_damage_healing_and_stamina() -> void:
+	var hp := _battle.find_child("PlayerHP", true, false) as ProgressBar
+	var mp := _battle.find_child("PlayerMP", true, false) as ProgressBar
+	var stamina := _battle.find_child("PlayerStamina", true, false) as ProgressBar
+	var xp := _battle.find_child("PlayerXP", true, false) as ProgressBar
+	assert_not_null(hp)
+	assert_not_null(mp)
+	assert_not_null(stamina)
+	assert_not_null(xp)
+	if hp == null or mp == null or stamina == null or xp == null:
+		return
+	assert_eq(hp.value, 20.0)
+	assert_eq(hp.max_value, float(_battle._character_stats["life"]))
+	assert_eq(mp.value, float(_battle._character_stats["mana"]))
+	assert_eq(mp.max_value, float(_battle._character_stats["mana"]))
+	assert_eq(stamina.value, float(_battle._match.stamina))
+	assert_eq(stamina.max_value, float(_battle._character_stats["stamina"]))
+	assert_eq(xp.value, float(_battle._character_stats["experience"]))
+	assert_eq(xp.max_value, float(_battle._character_stats["next_level_experience"]))
+	_battle._match.intent = Combat.Action.ATTACK
+	_battle._match.enemy_gauge = 1.0
+	_battle._process(0.0)
+	assert_lt(hp.value, 20.0)
+	assert_eq(hp.value, float(_battle._match.health))
+	_battle._use_item(Consumables.TONIC)
+	assert_eq(hp.value, float(_battle._match.health))
+	assert_gt(hp.value, 20.0)
+	_battle._match.player_gauge = 1.0
+	_battle._act(Combat.Action.ATTACK)
+	assert_eq(stamina.value, float(_battle._match.stamina))
+	assert_eq(stamina.value, stamina.max_value - Combat.ATTACK_COST)
+
+
+func test_solo_enemy_hp_bar_tracks_damage() -> void:
+	var hp := _battle.find_child("EnemyHP", true, false) as ProgressBar
+	assert_not_null(hp)
+	if hp == null:
+		return
+	assert_eq(hp.value, float(_battle._match.enemy_health))
+	assert_eq(hp.max_value, float(_battle._current_variant()["health"]))
+	var before := hp.value
+	_battle._match.player_gauge = 1.0
+	_battle._act(Combat.Action.ATTACK)
+	assert_lt(hp.value, before)
+	assert_eq(hp.value, float(_battle._match.enemy_health))
+	assert_false(hp.show_percentage)
+
+
+func test_group_enemy_hp_bars_track_selected_target_only() -> void:
+	var enemies := []
+	for index in range(2):
+		enemies.append({
+			"name": "Spider %d" % (index + 1), "sprite": 3, "health": 100,
+			"damage_min": 3, "damage_max": 3, "defense": 0,
+			"protection": 0, "experience": 10,
+		})
+	_battle.open_room_enemies({}, null, 42, 0, enemies)
+	var first := _battle.find_child("EnemyHP1", true, false) as ProgressBar
+	var second := _battle.find_child("EnemyHP2", true, false) as ProgressBar
+	assert_not_null(first)
+	assert_not_null(second)
+	if first == null or second == null:
+		return
+	assert_eq(first.value, 100.0)
+	assert_eq(second.value, 100.0)
+	assert_eq(first.max_value, 100.0)
+	assert_eq(second.max_value, 100.0)
+	_battle._select_target(1)
+	_battle._match.player_gauge = 1.0
+	_battle._act(Combat.Action.ATTACK)
+	assert_eq(first.value, 100.0)
+	assert_lt(second.value, 100.0)
+	assert_eq(second.value, float(_battle._match.enemy_at(1).health))
+	assert_false(first.show_percentage)
+	assert_false(second.show_percentage)

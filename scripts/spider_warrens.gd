@@ -6,6 +6,8 @@ signal experience_saved(profile: Dictionary)
 
 const Style = preload("res://scripts/menu_style.gd")
 const Combat = preload("res://scripts/spider_encounter.gd")
+const Loot = preload("res://scripts/battle_loot.gd")
+const LootPanel = preload("res://scripts/battle_loot_panel.gd")
 const Rooms = preload("res://scripts/threshold_rooms.gd")
 const Consumables = preload("res://scripts/consumables.gd")
 const Durability = preload("res://scripts/equipment_durability.gd")
@@ -16,11 +18,13 @@ const ATLAS = preload("res://assets/art/spider_atlas.png")
 const CELL := Vector2i(16, 24)
 const ATLAS_COLUMNS := 8
 const ENEMY_SAVE_RETRY_SECONDS := 1.0
+const PORTRAIT_BAR_WIDTH := 96.0
+const PLAYER_STAT_CAPTIONS := ["HP", "MP", "Stamina", "XP"]
 
 class EnemyCard:
 	var button: Button
 	var art: TextureRect
-	var vitals: Label
+	var hp: ProgressBar
 	var gauge: ProgressBar
 
 
@@ -47,9 +51,10 @@ var _variants: OptionButton
 var _variant_loader: HBoxContainer
 var _player_art: TextureRect
 var _spider_art: TextureRect
-var _player_line: Label
-var _enemy_line: Label
-var _battle_gauges: HBoxContainer
+var _player_stat_labels: Array[Label] = []
+var _player_stat_bars: Array[ProgressBar] = []
+var _solo_enemy: CenterContainer
+var _enemy_hp: ProgressBar
 var _player_gauge: ProgressBar
 var _enemy_gauge: ProgressBar
 var _player_time_label: Label
@@ -71,6 +76,9 @@ var _smash_button: Button
 var _defend_button: Button
 var _enemy_save_retry := 0.0
 var _quick_slots: Array[Button] = []
+var _battle_frame: Control
+var _loot_panel: LootPanel
+var _loot_profile_id := ""
 
 
 func _ready() -> void:
@@ -84,6 +92,7 @@ func _ready() -> void:
 	add_child(shade)
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var frame := Style.panel(Style.inset(self, 62, 38, true), Style.SURFACE)
+	_battle_frame = frame
 	var layout := VBoxContainer.new()
 	layout.add_theme_constant_override("separation", 11)
 	Style.inset(frame, 18, 14).add_child(layout)
@@ -121,6 +130,62 @@ func _ready() -> void:
 	_log.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_log.custom_minimum_size.y = 40
 	layout.add_child(_log)
+
+	_loot_panel = LootPanel.new()
+	_loot_panel.name = "BattleLoot"
+	_loot_panel.take_requested.connect(_take_loot)
+	_loot_panel.leave_requested.connect(_leave_loot)
+	add_child(_loot_panel)
+
+
+func open_pending_loot(profile: Dictionary) -> void:
+	if profile["world"]["pending_loot"].is_empty():
+		return
+	show()
+	_show_loot(profile)
+
+
+func _show_loot(profile: Dictionary) -> void:
+	_loot_profile_id = profile["id"]
+	_battle_frame.hide()
+	_loot_panel.show_loot(profile["world"]["pending_loot"])
+
+
+func _take_loot(ids: Array) -> void:
+	var profile := Store.load_selected()
+	if not _loot_panel.visible or profile.get("id") != _loot_profile_id:
+		return
+	var changes := Loot.collect(profile["world"], ids)
+	var remaining: Dictionary = changes.get("pending_loot", profile["world"]["pending_loot"])
+	for id in ids:
+		if remaining.has(id):
+			_loot_panel.set_status("There is no room for all of the selected loot.")
+			return
+	if changes.is_empty():
+		return
+	changes["pending_loot"] = {}
+	_save_loot_changes(changes)
+
+
+func _leave_loot() -> void:
+	if _loot_panel.visible and Store.load_selected().get("id") == _loot_profile_id:
+		_save_loot_changes({"pending_loot": {}})
+
+
+func _save_loot_changes(changes: Dictionary) -> void:
+	var saved := Store.update_world(changes)
+	if saved.is_empty():
+		_loot_panel.set_status("Could not save your choice. Try again.")
+		return
+	experience_saved.emit(saved)
+	_close_loot()
+
+
+func _close_loot() -> void:
+	_loot_panel.hide()
+	_battle_frame.show()
+	_loot_profile_id = ""
+	hide()
 
 
 func open(weapon: Dictionary, player_icon: Texture2D, seed_value: int, crossing := false) -> void:
@@ -217,8 +282,32 @@ func _build_arena(arena: VBoxContainer) -> void:
 	battlefield.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	var positions := HBoxContainer.new()
 	Style.inset(battlefield, 12, 8).add_child(positions)
-	_player_art = _sprite_slot(positions)
-	_spider_art = _sprite_slot(positions)
+	var player_slot := CenterContainer.new()
+	player_slot.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	positions.add_child(player_slot)
+	var player_portrait := VBoxContainer.new()
+	player_portrait.add_theme_constant_override("separation", 6)
+	player_slot.add_child(player_portrait)
+	_player_art = _sprite_slot(player_portrait)
+	_player_gauge = _add_time_gauge(player_portrait, "PlayerGauge", Style.TEAL)
+	_player_gauge.hide()
+	_player_time_label = Style.label("Time", 13, Style.TEAL)
+	_player_time_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_player_time_label.hide()
+	player_portrait.add_child(_player_time_label)
+
+	_solo_enemy = CenterContainer.new()
+	_solo_enemy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	positions.add_child(_solo_enemy)
+	var enemy_portrait := VBoxContainer.new()
+	enemy_portrait.add_theme_constant_override("separation", 6)
+	_solo_enemy.add_child(enemy_portrait)
+	_spider_art = _sprite_slot(enemy_portrait)
+	_enemy_hp = _add_enemy_hp(enemy_portrait, "EnemyHP")
+	_enemy_gauge = _add_time_gauge(enemy_portrait, "EnemyGauge", Style.ACCENT)
+	_enemy_gauge.tooltip_text = "Enemy Time"
+	_enemy_gauge.hide()
+
 	_enemy_cards = HBoxContainer.new()
 	_enemy_cards.name = "EnemyCards"
 	_enemy_cards.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -228,22 +317,7 @@ func _build_arena(arena: VBoxContainer) -> void:
 	_enemy_cards.hide()
 	positions.add_child(_enemy_cards)
 
-	var vitals := HBoxContainer.new()
-	arena.add_child(vitals)
-	_player_line = Style.label("", 14, Style.TEAL)
-	_player_line.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	vitals.add_child(_player_line)
-	_enemy_line = Style.label("", 14, Style.ACCENT)
-	_enemy_line.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	vitals.add_child(_enemy_line)
-
-	_battle_gauges = HBoxContainer.new()
-	_battle_gauges.add_theme_constant_override("separation", 24)
-	_battle_gauges.hide()
-	arena.add_child(_battle_gauges)
-	_player_time_label = Style.label("Time", 13, Style.TEAL)
-	_player_gauge = _add_battle_clock("PlayerGauge", _player_time_label, Style.TEAL)
-	_enemy_gauge = _add_battle_clock("EnemyGauge", Style.label("Time", 13, Style.ACCENT), Style.ACCENT)
+	_build_player_stats(arena)
 
 	_stats = Style.label("", 14, Style.TEXT)
 	_stats.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -293,6 +367,26 @@ func _build_arena(arena: VBoxContainer) -> void:
 		_quick_slots.append(slot)
 
 
+func _build_player_stats(arena: VBoxContainer) -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 16)
+	arena.add_child(row)
+	var colors := [Style.HEALTH, Style.TEAL, Style.ERROR, Style.TEAL]
+	for index in range(PLAYER_STAT_CAPTIONS.size()):
+		var column := VBoxContainer.new()
+		column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		column.add_theme_constant_override("separation", 3)
+		row.add_child(column)
+		var label := Style.label("", 13, Color.WHITE)
+		label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		column.add_child(label)
+		_player_stat_labels.append(label)
+		var bar := Style.progress_bar(colors[index])
+		bar.name = "Player" + PLAYER_STAT_CAPTIONS[index]
+		column.add_child(bar)
+		_player_stat_bars.append(bar)
+
+
 func _build_target_cards() -> void:
 	for child in _enemy_cards.get_children():
 		_enemy_cards.remove_child(child)
@@ -301,9 +395,7 @@ func _build_target_cards() -> void:
 	_target_index = 0
 	var group_battle := _room_enemies.size() > 1
 	_enemy_cards.visible = group_battle
-	_spider_art.get_parent().visible = not group_battle
-	_enemy_line.visible = not group_battle
-	_enemy_gauge.get_parent().visible = not group_battle
+	_solo_enemy.visible = not group_battle
 	if not group_battle:
 		return
 
@@ -329,13 +421,10 @@ func _build_target_cards() -> void:
 		card.art = _sprite_slot(column)
 		card.art.custom_minimum_size = Vector2(56, 84)
 		card.art.texture = _icon(int(enemy["sprite"]))
-		card.vitals = Style.label("", 12, Style.TEXT)
-		card.vitals.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		column.add_child(card.vitals)
+		card.hp = _add_enemy_hp(column, "EnemyHP%d" % (index + 1))
 
-		card.gauge = _new_gauge("EnemyGauge%d" % (index + 1), Style.ACCENT)
+		card.gauge = _add_time_gauge(column, "EnemyGauge%d" % (index + 1), Style.ACCENT)
 		card.gauge.tooltip_text = "Enemy Time"
-		column.add_child(card.gauge)
 		_target_cards.append(card)
 
 
@@ -356,34 +445,28 @@ func _cycle_target(direction: int) -> bool:
 	return false
 
 
-func _enemy_intent(intent: int) -> String:
-	match intent:
-		Combat.Action.DEFEND: return "Guarding"
-		Combat.Action.ATTACK: return "Preparing Attack"
-		Combat.Action.SMASH: return "Preparing Smash"
-		_: return ""
+func _add_enemy_hp(parent: Control, bar_name: String) -> ProgressBar:
+	var bar := Style.progress_bar(Style.HEALTH)
+	bar.name = bar_name
+	bar.custom_minimum_size.x = PORTRAIT_BAR_WIDTH
+	bar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	parent.add_child(bar)
+	return bar
 
 
-func _add_battle_clock(gauge_name: String, label: Label, color: Color) -> ProgressBar:
-	var group := HBoxContainer.new()
-	group.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	group.add_theme_constant_override("separation", 9)
-	_battle_gauges.add_child(group)
-	label.custom_minimum_size.x = 44
-	group.add_child(label)
-	var gauge := _new_gauge(gauge_name, color)
-	group.add_child(gauge)
-	return gauge
+func _set_enemy_hp(bar: ProgressBar, current: int, maximum: int) -> void:
+	bar.max_value = maxi(1, maximum)
+	bar.value = current
 
 
-func _new_gauge(gauge_name: String, color: Color) -> ProgressBar:
+func _add_time_gauge(parent: Control, gauge_name: String, color: Color) -> ProgressBar:
 	var gauge := Style.progress_bar(color)
 	gauge.name = gauge_name
-	gauge.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	gauge.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	gauge.custom_minimum_size.y = 8
+	gauge.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	gauge.custom_minimum_size = Vector2(PORTRAIT_BAR_WIDTH, 8)
 	gauge.max_value = 1.0
 	gauge.step = 0.0
+	parent.add_child(gauge)
 	return gauge
 
 
@@ -484,12 +567,12 @@ func _show_variant(index: int) -> void:
 	var world: Dictionary = Store.load_selected()["world"]
 	_update_weapon_line(world)
 	_refresh_items(world)
+	_update_preview_health(world)
 	if index < 0:
 		_spider_art.texture = null
 		_stats.text = ""
 		_source_details.text = ""
-		_player_line.text = ""
-		_enemy_line.text = ""
+		_enemy_hp.hide()
 		_set_fighting(false)
 		_log.text = "Adjust the search to choose an encounter."
 		return
@@ -507,8 +590,10 @@ func _show_variant(index: int) -> void:
 		_report(behavior["melee_hits"]), _report(behavior["running_speed"]), _report(behavior["element"])
 	]
 	_source_details.tooltip_text = _entry["source_url"]
-	_update_preview_health(world)
-	_enemy_line.text = "%s HP" % _report(raw["health"])
+	_enemy_hp.visible = variant["health"] != null
+	if _enemy_hp.visible:
+		var maximum := int(variant["health"])
+		_set_enemy_hp(_enemy_hp, maximum, maximum)
 	_set_fighting(false)
 	if _crossing:
 		_log.text = "A White Spider blocks the way to Spindle Hollow. Ready your blade or retreat to Lantern Rest."
@@ -517,7 +602,7 @@ func _show_variant(index: int) -> void:
 	elif variant["damage_min"] == null:
 		_log.text = "Melee damage is unreported. This variant can defend in the chamber."
 	else:
-		_log.text = "Choose a chamber, then read the spider's stance before committing an action."
+		_log.text = "Choose a chamber to begin an encounter."
 
 
 func _report(value: String) -> String:
@@ -565,7 +650,9 @@ func _set_fighting(fighting: bool) -> void:
 	_variants.disabled = fighting
 	_return.text = "Recover in Town" if _defeated else ("Retreat" if fighting else "Return to Threshold")
 	_actions.visible = fighting
-	_battle_gauges.visible = fighting
+	_player_gauge.visible = fighting
+	_player_time_label.visible = fighting
+	_enemy_gauge.visible = fighting
 	set_process(fighting)
 	_show_options()
 	_enter.visible = not fighting
@@ -579,22 +666,17 @@ func _set_fighting(fighting: bool) -> void:
 
 func _update_combat_vitals(world: Dictionary) -> void:
 	_update_weapon_line(world)
-	_player_line.text = "You %d/%d HP  ·  %d/%d SP" % [
-		_match.health, _character_stats["life"], _match.stamina, _character_stats["stamina"]
-	]
-	if _match.guarded:
-		_player_line.text += "  /  Guarding"
+	_update_player_stats(_match.health, _match.stamina)
 	if _target_cards.is_empty():
-		var cue := "  /  " + _enemy_intent(_match.intent) if _match.active else ""
-		_enemy_line.text = "%d / %d HP%s" % [_match.enemy_health, int(_current_variant()["health"]), cue]
+		_enemy_hp.show()
+		_set_enemy_hp(_enemy_hp, _match.enemy_health, int(_current_variant()["health"]))
 	else:
 		for index in range(_target_cards.size()):
 			var card := _target_cards[index]
 			var enemy := _match.enemy_at(index)
 			card.button.disabled = enemy.health <= 0 or not _match.active
 			card.art.modulate.a = 0.3 if enemy.health <= 0 else 1.0
-			var status := "Defeated" if enemy.health <= 0 else _enemy_intent(enemy.intent)
-			card.vitals.text = "%d / %d HP\n%s" % [enemy.health, _room_enemies[index]["health"], status]
+			_set_enemy_hp(card.hp, enemy.health, int(_room_enemies[index]["health"]))
 		if _match.active and _match.enemy_at(_target_index).health <= 0:
 			_cycle_target(1)
 	_update_gauges()
@@ -610,7 +692,10 @@ func _update_gauges() -> void:
 			var enemy := _match.enemy_at(index)
 			_target_cards[index].gauge.value = enemy.gauge if enemy.health > 0 and _match.active else 0.0
 	var ready_to_act := _match.player_ready()
-	_player_time_label.text = "Ready" if ready_to_act else "Time"
+	var time_caption := "Ready" if ready_to_act else "Time"
+	if _match.guarded:
+		time_caption += " · Guarding"
+	_player_time_label.text = time_caption
 	_attack_button.disabled = not ready_to_act or _match.stamina < Combat.ATTACK_COST
 	_skill_button.disabled = not ready_to_act
 	_defend_button.disabled = not ready_to_act
@@ -647,7 +732,25 @@ func _update_weapon_line(world: Dictionary) -> void:
 func _update_preview_health(world: Dictionary) -> void:
 	var saved_health: int = world["health"]
 	var preview_health := int(_character_stats["life"]) if saved_health < 0 else saved_health
-	_player_line.text = "You  %d HP  /  %d SP" % [preview_health, _character_stats["stamina"]]
+	_update_player_stats(preview_health, int(_character_stats["stamina"]))
+
+
+func _update_player_stats(health: int, stamina: int) -> void:
+	var maximums := [
+		int(_character_stats["life"]), int(_character_stats["mana"]),
+		int(_character_stats["stamina"]), int(_character_stats["next_level_experience"])
+	]
+	var values := [health, maximums[1], stamina, int(_character_stats["experience"])]
+	for index in range(PLAYER_STAT_CAPTIONS.size()):
+		var bar := _player_stat_bars[index]
+		bar.max_value = maxi(1, maximums[index])
+		bar.value = clampi(values[index], 0, maximums[index])
+		var caption: String = PLAYER_STAT_CAPTIONS[index]
+		var text_value := "%s  %d / %d" % [caption, int(bar.value), maximums[index]]
+		if caption == "XP":
+			text_value = "Lv %d · %s" % [_character_stats["level"], text_value]
+		_player_stat_labels[index].text = text_value
+		_player_stat_labels[index].tooltip_text = text_value
 
 
 func _refresh_items(world: Dictionary) -> void:
@@ -738,7 +841,11 @@ func _resolve_action(action: int, enemy_index := -1) -> String:
 		if _match.health <= 0:
 			changes.merge({"location": world["dungeon_from"], "health": -1}, true)
 		else:
-			var enemies := _room_enemies if _room_index >= 0 else [_current_variant()]
+			var enemies := _room_enemies
+			if _room_index < 0:
+				var variant := _current_variant().duplicate()
+				variant["name"] = _entry["source_name"]
+				enemies = [variant]
 			for enemy: Dictionary in enemies:
 				xp += int(enemy["experience"]) if enemy.get("experience") != null else 0
 			if _room_index >= 0:
@@ -750,6 +857,11 @@ func _resolve_action(action: int, enemy_index := -1) -> String:
 					xp = 0
 			if _crossing and int(world["quest"]) == 1:
 				changes["quest"] = 2
+			if _room_index < 0 or changes.has("threshold_cleared"):
+				var loot_rng := RandomNumberGenerator.new()
+				loot_rng.seed = _match.rng_state
+				var drops := Loot.roll(enemies, loot_rng)
+				changes["pending_loot"] = Loot.combine(world["pending_loot"], drops)
 	var saved := Store.award_experience(xp, changes)
 	if saved.is_empty():
 		_match.restore(previous)
@@ -763,9 +875,10 @@ func _resolve_action(action: int, enemy_index := -1) -> String:
 		message += " Your weapon broke. You now fight bare-handed."
 	if broke_armor:
 		message += " Your armor broke."
-	if _match.active and (broke_weapon or broke_armor):
+	if xp > 0 or broke_weapon or broke_armor:
 		_character_stats = Stats.snapshot(saved, _weapon)
-		_match.refresh_character_stats(_character_stats)
+		if _match.active:
+			_match.refresh_character_stats(_character_stats)
 	_defeated = _match.health <= 0
 	_crossing_cleared = _crossing and not _match.active and not _defeated
 	_update_combat_vitals(saved_world)
@@ -777,6 +890,11 @@ func _resolve_action(action: int, enemy_index := -1) -> String:
 		if not _target_cards.is_empty():
 			_enemy_name.text = "You fall" if _defeated else "Room cleared"
 		_set_fighting(false)
+		if not _defeated:
+			if saved_world["pending_loot"].is_empty():
+				hide()
+			else:
+				_show_loot(saved)
 	experience_saved.emit(saved)
 	return message
 
@@ -799,6 +917,10 @@ func _change_variant_with_keys(event: InputEvent) -> void:
 
 func _input(event: InputEvent) -> void:
 	if not visible or not event is InputEventKey or not event.pressed or event.echo:
+		return
+	if _loot_panel.visible:
+		if event.is_action_pressed("ui_cancel"):
+			get_viewport().set_input_as_handled()
 		return
 	if event.is_action_pressed("ui_cancel"):
 		get_viewport().set_input_as_handled()
@@ -825,6 +947,9 @@ func _input(event: InputEvent) -> void:
 
 
 func _back() -> void:
+	if _loot_panel.visible:
+		_close_loot()
+		return
 	if _defeated:
 		hide()
 		return_to_town_requested.emit()

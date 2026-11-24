@@ -172,7 +172,7 @@ func refresh(catalogue: Dictionary, satchel: Satchel, world: Dictionary) -> void
 	_offhand.tooltip_text = "Occupied by a two-handed weapon" if two_handed else "Off hand is empty"
 	var materials: Dictionary = world.get("town_materials", {})
 	var entries: Array[String] = []
-	for key: String in ["fish", "grain", "flour", "fiber", "thread", "cloth"]:
+	for key: String in ["cobweb", "fish", "grain", "flour", "fiber", "thread", "cloth"]:
 		var count := int(materials.get(key, 0))
 		if count > 0:
 			entries.append("%s ×%d" % [key.capitalize(), count])

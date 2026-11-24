@@ -115,6 +115,7 @@ func _ready() -> void:
 	add_child(_journal)
 
 	_show_room(_cleared_rooms())
+	_warrens.open_pending_loot(_profile)
 
 
 func _show_room(index: int, arriving_from_east := false) -> void:
