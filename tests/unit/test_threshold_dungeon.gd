@@ -249,3 +249,40 @@ func test_opened_treasure_resumes_as_pending_loot_after_reload() -> void:
 	assert_eq(int(saved["world"]["tonics"]), int(before["world"]["tonics"]) + 3)
 	assert_eq(saved["world"]["pending_loot"], {})
 	assert_false(resumed._warrens.visible)
+
+
+class ExitFixture extends "res://scripts/dungeon_entry.gd":
+	func _open_town_scene() -> void:
+		pass
+
+
+func test_leaving_partial_dungeon_resets_run_and_keeps_earned_rewards() -> void:
+	assert_false(Store.award_experience(150, {
+		"threshold_cleared": 2, "threshold_run": 4, "gold": 91,
+		"town_materials": {"cobweb": 7},
+		"pending_loot": {"gold": 3},
+		"map_position": {"location": "threshold", "room": 2, "run": 4, "x": 9, "y": 7},
+	}).is_empty())
+	var before := Store.load_selected()
+	_dungeon.hide()
+	var exiting := ExitFixture.new()
+	add_child_autofree(exiting)
+	exiting._travel_to_town("lantern_rest")
+	var saved := Store.load_selected()
+	var world: Dictionary = saved["world"]
+	assert_eq(world["location"], "lantern_rest")
+	assert_eq(world["threshold_cleared"], 0)
+	assert_false(world["threshold_treasure_claimed"])
+	assert_eq(world["threshold_treasure_chest"], -1)
+	assert_eq(world["threshold_run"], 5)
+	assert_eq(world["pending_loot"], {})
+	assert_eq(world["map_position"], {"location": "lantern_rest", "landmark": "dungeon"})
+	assert_eq(world["gold"], before["world"]["gold"])
+	assert_eq(world["town_materials"], before["world"]["town_materials"])
+	assert_eq(saved["experience"], before["experience"])
+	assert_false(Store.update_world({"location": "threshold", "map_position": {}}).is_empty())
+	exiting.hide()
+	var reentered := Dungeon.new()
+	add_child_autofree(reentered)
+	assert_eq(reentered._room_index, 0)
+	assert_true(reentered._monster_present())

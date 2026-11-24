@@ -1,13 +1,14 @@
 extends RefCounted
 ## Derived formulas adapted from https://wiki.mabinogiworld.com/view/Stats
-## Starting values, lineage/talent bonuses, age gains and XP thresholds are
-## original Rebirth Dungeon balance. Appearance choices do not alter attributes.
+## Starting values, race bonuses, age gains and XP thresholds use original game balance.
+## Talent growth follows the Talent category. Appearance choices do not alter attributes.
 
 const Durability = preload("res://scripts/equipment_durability.gd")
 const Catalog = preload("res://scripts/sword_catalog.gd")
 const Skills = preload("res://scripts/character_skills.gd")
+const Data = preload("res://scripts/character_data.gd")
 
-const LINEAGE_BONUSES := [
+const RACE_BONUSES := [
 	{"life": 5, "will": 3},
 	{"mana": 10, "intelligence": 4, "dexterity": 2},
 	{"life": 10, "strength": 4, "stamina": 5},
@@ -19,6 +20,17 @@ const TALENT_BONUSES := [
 ]
 
 
+static func talent_bonus(talent: int) -> Dictionary:
+	if talent < TALENT_BONUSES.size():
+		return TALENT_BONUSES[talent]
+	if talent == Data.FATE_ASTROLOGY:
+		return {"dexterity": 4, "will": 4}
+	var bonus := {}
+	for key: String in Data.TALENT_GROWTH[talent]:
+		bonus[key] = float(Data.TALENT_GROWTH[talent][key]) * 8.0
+	return bonus
+
+
 static func snapshot(profile: Dictionary, weapon: Dictionary = {}) -> Dictionary:
 	var world: Dictionary = profile.get("world", {})
 	weapon = Durability.usable_weapon(world, weapon)
@@ -26,7 +38,7 @@ static func snapshot(profile: Dictionary, weapon: Dictionary = {}) -> Dictionary
 	var level := Skills.level_for_experience(total_xp)
 	var previous_threshold := 50 * level * (level - 1)
 	var growth := level - 1
-	var age_gain := clampi(int(profile.get("age", 17)), 17, 25) - 17
+	var age_gain := clampi(int(profile.get("age", Data.MAX_START_AGE)), Data.MIN_START_AGE, Data.MAX_AGE) - Data.MAX_START_AGE
 	var stats := {
 		"life": 100 + growth * 5 + age_gain * 2,
 		"mana": 35 + growth * 3,
@@ -41,11 +53,13 @@ static func snapshot(profile: Dictionary, weapon: Dictionary = {}) -> Dictionary
 		"next_level_experience": level * 100,
 		"ability_points": Skills.available_ap(profile),
 	}
-	var lineage := clampi(int(profile.get("lineage", 0)), 0, LINEAGE_BONUSES.size() - 1)
-	var talent := clampi(int(profile.get("talent", 0)), 0, TALENT_BONUSES.size() - 1)
-	for bonus: Dictionary in [LINEAGE_BONUSES[lineage], TALENT_BONUSES[talent]]:
+	var race := Data.race_index(profile)
+	var talent := clampi(int(profile.get("talent", 0)), 0, Data.TALENTS.size() - 1)
+	for bonus: Dictionary in [RACE_BONUSES[race], talent_bonus(talent)]:
 		for key: String in bonus:
 			stats[key] += bonus[key]
+	for key: String in Data.TALENT_GROWTH[talent]:
+		stats[key] += float(Data.TALENT_GROWTH[talent][key]) * growth
 	var learned: Array = world.get("skills", Skills.STARTING).keys()
 	var skill_effects := {}
 	for id: String in learned:

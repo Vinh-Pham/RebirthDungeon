@@ -13,7 +13,7 @@ const DESTINATIONS := {
 const LOOK_FIELDS := ["body", "hair", "hair_color", "skin", "eyes", "eye_color", "face"]
 
 var _draft := {
-	"name": "", "lineage": 0, "body": 1, "age": 19, "hair": 1, "hair_color": 0,
+	"name": "", "race": 0, "gender": Data.Gender.NONBINARY, "body": 1, "age": 17, "hair": 1, "hair_color": 0,
 	"skin": 1, "eyes": 0, "eye_color": 0, "face": 0, "talent": 0
 }
 var _profiles: Array[Dictionary] = []
@@ -119,9 +119,13 @@ func _build_creator(parent: Control) -> void:
 	_name_input.custom_minimum_size.y = 36
 	_name_input.text_changed.connect(_on_name_changed)
 	name_field.add_child(_name_input)
-	_add_options(identity, "Lineage", "lineage", Data.LINEAGES)
+	_add_options(identity, "Race", "race", Data.RACES)
+	_add_options(identity, "Gender", "gender", Data.GENDERS)
 	_add_options(identity, "Build", "body", Data.BUILDS)
-	_add_options(identity, "Age", "age", ["17", "18", "19", "20", "21", "22", "23", "24", "25"], 17)
+	var ages: Array[String] = []
+	for age in range(Data.MIN_START_AGE, Data.MAX_START_AGE + 1):
+		ages.append(str(age))
+	_add_options(identity, "Age", "age", ages, Data.MIN_START_AGE)
 
 	form.add_child(Style.rule())
 	form.add_child(Style.label("Appearance", 20, Style.TEAL))
@@ -135,6 +139,7 @@ func _build_creator(parent: Control) -> void:
 
 	form.add_child(Style.rule())
 	_add_options(form, "Starting Talent", "talent", Data.TALENTS)
+	_refresh_talents()
 
 	var actions := HBoxContainer.new()
 	actions.add_theme_constant_override("separation", 10)
@@ -267,9 +272,10 @@ func _show_mode(creating: bool) -> void:
 func _populate_roster() -> void:
 	_saved_list.clear()
 	for profile in _profiles:
-		var lineage: String = Data.LINEAGES[profile["lineage"]]
+		var race: String = Data.RACES[profile["race"]]
 		var talent: String = Data.TALENTS[profile["talent"]]
-		_saved_list.add_item("%s  /  %s  /  %s" % [profile["name"], lineage, talent])
+		_saved_list.add_item("%s  /  %s  /  %s" % [profile["name"], race, talent])
+		_saved_list.set_item_tooltip(_saved_list.item_count - 1, "%s · %s · Age %d" % [race, Data.gender_name(profile), profile["age"]])
 	if not _profiles.is_empty():
 		_saved_list.select(0)
 
@@ -294,7 +300,20 @@ func _on_name_changed(new_name: String) -> void:
 func _on_option_changed(index: int, key: String) -> void:
 	var option: OptionButton = _fields[key]
 	_draft[key] = option.get_item_id(index)
+	if key == "race":
+		_refresh_talents()
 	_update_preview(_draft)
+
+
+func _refresh_talents() -> void:
+	var option: OptionButton = _fields["talent"]
+	var choices: Array[int] = Data.available_talents(int(_draft["race"]))
+	if not choices.has(int(_draft["talent"])):
+		_draft["talent"] = 0
+	option.clear()
+	for id: int in choices:
+		option.add_item(Data.TALENTS[id], id)
+	option.select(option.get_item_index(int(_draft["talent"])))
 
 
 func _cycle_option(event: InputEvent, option: OptionButton, key: String) -> void:
@@ -332,10 +351,10 @@ func _update_preview(profile: Dictionary) -> void:
 	_portrait.texture = Data.portrait(profile)
 	var profile_name := str(profile["name"]).strip_edges()
 	_preview_name.text = "Unnamed" if profile_name.is_empty() else profile_name
-	var lineage: int = profile["lineage"]
+	var race: int = profile["race"]
 	var talent: int = profile["talent"]
-	_preview_identity.text = "%s  /  Age %s" % [Data.LINEAGES[lineage], profile["age"]]
-	_preview_origin.text = Data.LINEAGE_DETAILS[lineage]
+	_preview_identity.text = "%s  /  %s  /  Age %s" % [Data.RACES[race], Data.gender_name(profile), profile["age"]]
+	_preview_origin.text = Data.RACE_DETAILS[race]
 	_preview_talent.text = Data.TALENTS[talent]
 	_preview_training.text = Data.TALENT_DETAILS[talent]
 

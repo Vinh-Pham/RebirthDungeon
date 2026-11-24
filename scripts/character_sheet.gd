@@ -64,8 +64,8 @@ func open(profile: Dictionary, stats: Dictionary, weapon: Dictionary, health: in
 	var name_label := Style.label(str(profile["name"]), 28)
 	name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	about.add_child(name_label)
-	about.add_child(Style.label("%s  /  Age %d  /  %s" % [
-		Data.LINEAGES[int(profile["lineage"])], int(profile["age"]), Data.TALENTS[int(profile["talent"])]
+	about.add_child(Style.label("%s  /  %s  /  Age %d  /  %s" % [
+		Data.RACES[Data.race_index(profile)], Data.gender_name(profile), int(profile["age"]), Data.TALENTS[int(profile["talent"])]
 	], 14, Style.MUTED))
 	about.add_child(Style.label("Level %d   •   Ability Points %d   •   Total XP %d" % [
 		int(stats["level"]), int(stats["ability_points"]), int(stats["total_experience"])

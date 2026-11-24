@@ -134,13 +134,29 @@ func _build_map() -> void:
 			player = cell + Vector2i.UP
 			_gate_arrival_id = ""
 	if not gate_arrival:
-		var checkpoint: Dictionary = world.get("map_position", {})
-		if checkpoint.get("location") == town:
-			var saved := Vector2i(int(checkpoint["x"]), int(checkpoint["y"]))
-			var saved_landmark := _points.find(saved)
-			var can_resume: bool = saved_landmark < 0 or _landmarks[saved_landmark]["id"] == "tree"
-			if Rect2i(Vector2i.ZERO, _map_size).has_point(saved) and not wall_cells.has(saved) and can_resume:
-				player = saved
+		_restore_map_position()
+
+
+func _restore_map_position() -> void:
+	var checkpoint: Dictionary = world.get("map_position", {})
+	if checkpoint.get("location") != town:
+		return
+	var bounds := Rect2i(Vector2i.ZERO, _map_size)
+	if checkpoint.get("landmark") == "dungeon":
+		for place: Dictionary in _landmarks:
+			if place["id"] != "dungeon":
+				continue
+			for direction: Vector2i in [Vector2i.LEFT, Vector2i.DOWN, Vector2i.UP, Vector2i.RIGHT]:
+				var approach: Vector2i = place["cell"] + direction
+				if bounds.has_point(approach) and not wall_cells.has(approach) and not _points.has(approach):
+					player = approach
+					return
+		return
+	var saved := Vector2i(int(checkpoint["x"]), int(checkpoint["y"]))
+	var saved_landmark := _points.find(saved)
+	var can_resume: bool = saved_landmark < 0 or _landmarks[saved_landmark]["id"] == "tree"
+	if bounds.has_point(saved) and not wall_cells.has(saved) and can_resume:
+		player = saved
 
 
 func _build_spindle_walls() -> void:
@@ -809,8 +825,9 @@ func _heal() -> void:
 
 func _leave() -> void:
 	var departure := {"location": "threshold", "dungeon_from": town, "map_position": {}}
-	if int(world["threshold_cleared"]) == 8:
-		departure.merge({"threshold_cleared": 0, "threshold_treasure_claimed": false, "threshold_treasure_chest": -1, "threshold_run": mini(int(world["threshold_run"]) + 1, Store.MAX_EXPERIENCE)})
+	# Saves made before exits reset the dungeon can still contain an old run.
+	if int(world["threshold_cleared"]) > 0 or not world["pending_loot"].is_empty():
+		departure.merge(Store.threshold_reset(world))
 	if town == "lantern_rest" and int(world["quest"]) == 0:
 		departure["quest"] = 1
 	if _save(departure):

@@ -87,3 +87,28 @@ func test_old_dungeon_run_and_unvisited_room_are_ignored() -> void:
 		var value := base.duplicate()
 		value["map_position"] = checkpoint
 		assert_eq(Store._normalize_world(value)["map_position"], {})
+
+
+func test_dungeon_arrival_starts_beside_each_towns_dungeon_entrance() -> void:
+	for location: String in Store.TOWNS:
+		var arrival := {"location": location, "landmark": "dungeon"}
+		var saved := Store.update_world({"location": location, "map_position": arrival})
+		assert_false(saved.is_empty())
+		if saved.is_empty():
+			continue
+		assert_eq(saved["world"]["map_position"], arrival)
+		var town := Town.new()
+		add_child_autofree(town)
+		var entrance := Vector2i.ZERO
+		for landmark: Dictionary in town._landmarks:
+			if landmark["id"] == "dungeon":
+				entrance = landmark["cell"]
+				break
+		assert_ne(entrance, Vector2i.ZERO)
+		assert_eq(town.player, entrance + Vector2i.LEFT, location)
+		assert_false(town.wall_cells.has(town.player))
+		assert_false(town._points.has(town.player))
+		assert_true(town._save_map_position())
+		var checkpoint: Dictionary = Store.load_selected()["world"]["map_position"]
+		assert_eq(checkpoint, {"location": location, "x": town.player.x, "y": town.player.y})
+		town.hide()

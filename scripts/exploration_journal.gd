@@ -64,11 +64,14 @@ func open(section: String, profile: Dictionary, stats: Dictionary, skills: Array
 		"talent":
 			_heading.text = "Talent"
 			var current := clampi(int(profile.get("talent", 0)), 0, Data.TALENTS.size() - 1)
-			for index in Data.TALENTS.size():
+			var talents := Data.available_talents(Data.race_index(profile))
+			if not talents.has(current):
+				talents.append(current)
+			for index: int in talents:
 				var caption: String = Data.TALENTS[index]
 				if index == current:
 					caption += "  ·  Selected"
-				var bonuses: Dictionary = Stats.TALENT_BONUSES[index]
+				var bonuses: Dictionary = Stats.talent_bonus(index)
 				var parts: Array[String] = []
 				for key: String in bonuses:
 					parts.append("+%s %s" % [str(bonuses[key]), key.capitalize()])

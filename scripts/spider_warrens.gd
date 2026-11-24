@@ -890,7 +890,13 @@ func _resolve_action(action: int, enemy_index := -1) -> String:
 	var xp := 0
 	if not _match.active:
 		if _match.health <= 0:
-			changes.merge({"location": world["dungeon_from"], "health": -1}, true)
+			if world["location"] == "threshold":
+				changes.merge(Store.threshold_reset(world))
+			var town: String = world["dungeon_from"]
+			changes.merge({
+				"location": town, "health": -1,
+				"map_position": {"location": town, "landmark": "dungeon"},
+			}, true)
 		else:
 			var enemies := _room_enemies
 			if _room_index < 0:

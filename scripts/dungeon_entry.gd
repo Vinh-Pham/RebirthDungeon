@@ -597,7 +597,12 @@ func _travel_to_town(town_id: String) -> void:
 	var visited: Array = _profile["world"]["visited"].duplicate()
 	if not visited.has(town_id):
 		visited.append(town_id)
-	if Store.update_world({"location": town_id, "visited": visited, "map_position": {}}).is_empty():
+	var changes := Store.threshold_reset(_profile["world"])
+	changes.merge({
+		"location": town_id, "visited": visited,
+		"map_position": {"location": town_id, "landmark": "dungeon"},
+	})
+	if Store.update_world(changes).is_empty():
 		log_label.text = "Could not save travel. The stairs remain open."
 		return
 	_open_town_scene()

@@ -3,14 +3,17 @@ extends RefCounted
 
 const Rooms = preload("res://scripts/threshold_rooms.gd")
 const Skills = preload("res://scripts/character_skills.gd")
+const Data = preload("res://scripts/character_data.gd")
 const DIRECTORY := "user://characters"
 const MAX_SEED := 2147483647
 const MAX_EXPERIENCE := 2_000_000_000
 const MAX_UNIX_TIME := 253402300799
-const LIMITS := {
-	"lineage": [0, 2], "body": [0, 2], "age": [17, 25],
-	"hair": [0, 3], "hair_color": [0, 3], "skin": [0, 3],
-	"eyes": [0, 2], "eye_color": [0, 3], "face": [0, 2], "talent": [0, 2]
+static var LIMITS := {
+	"race": [Data.Race.HUMAN, Data.Race.GIANT], "body": [0, 2], "age": [Data.MIN_START_AGE, Data.MAX_AGE],
+	"gender": [Data.Gender.MALE, Data.Gender.NONBINARY],
+	"hair": [0, Data.HAIR.size() - 1], "hair_color": [0, Data.HAIR_TONES.size() - 1], "skin": [0, 3],
+	"eyes": [0, 2], "eye_color": [0, Data.EYE_TONES.size() - 1], "face": [0, 2],
+	"talent": [0, Data.TALENTS.size() - 1]
 }
 const TOWNS := ["lantern_rest", "spindle_hollow"]
 const LOOT_BALANCE_KEYS := {"gold": "gold", "tonic": "tonics"}
@@ -46,7 +49,7 @@ static func list_characters() -> Array[Dictionary]:
 
 
 static func create(profile: Dictionary) -> Dictionary:
-	var normalized := _normalize(profile)
+	var normalized := _normalize(profile, true)
 	if normalized.is_empty():
 		return {}
 	var error := DirAccess.make_dir_recursive_absolute(DIRECTORY)
@@ -109,6 +112,16 @@ static func save_map_position(character_id: String, location: String, cell: Vect
 		return true
 	world["map_position"] = position
 	return _write_profile(profile, DIRECTORY.path_join(character_id + ".json"))
+
+
+static func threshold_reset(world: Dictionary) -> Dictionary:
+	return {
+		"threshold_cleared": 0,
+		"threshold_treasure_claimed": false,
+		"threshold_treasure_chest": -1,
+		"threshold_run": mini(int(world["threshold_run"]) + 1, MAX_EXPERIENCE),
+		"pending_loot": {},
+	}
 
 
 static func _merge_world(current: Dictionary, changes: Dictionary) -> Dictionary:
@@ -258,6 +271,8 @@ static func _normalize_map_position(value: Variant, world: Dictionary) -> Dictio
 	var location: String = world["location"]
 	if location != "threshold" and location not in TOWNS:
 		return {}
+	if location in TOWNS and value.get("landmark") == "dungeon":
+		return {"location": location, "landmark": "dungeon"}
 	var x: Variant = value.get("x")
 	var y: Variant = value.get("y")
 	if not _integer_in_range(x, 0, MAX_SEED) or not _integer_in_range(y, 0, MAX_SEED):
@@ -365,7 +380,7 @@ static func _read(id: String) -> Dictionary:
 	return normalized
 
 
-static func _normalize(profile: Dictionary) -> Dictionary:
+static func _normalize(profile: Dictionary, creating := false) -> Dictionary:
 	if not profile.get("name") is String:
 		return {}
 	var character_name: String = profile["name"].strip_edges()
@@ -376,11 +391,17 @@ static func _normalize(profile: Dictionary) -> Dictionary:
 			return {}
 	var normalized := {"name": character_name}
 	for key in LIMITS:
+		if key == "gender" and not creating and not profile.has(key):
+			continue
 		var bounds: Array = LIMITS[key]
 		var value: Variant = profile.get(key)
+		if key == "race" and not creating:
+			value = profile.get("race", profile.get("lineage"))
 		if not _integer_in_range(value, bounds[0], bounds[1]):
 			return {}
 		normalized[key] = int(value)
+	if creating and (normalized["age"] > Data.MAX_START_AGE or not Data.available_talents(normalized["race"]).has(normalized["talent"])):
+		return {}
 	return normalized
 
 
