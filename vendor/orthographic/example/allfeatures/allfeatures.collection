@@ -1,0 +1,142 @@
+name: "allfeatures"
+instances {
+  id: "camera"
+  prototype: "/orthographic/camera.go"
+  position {
+    x: 199.937
+    y: 470.962
+  }
+  component_properties {
+    id: "script"
+    properties {
+      id: "follow"
+      value: "true"
+      type: PROPERTY_TYPE_BOOLEAN
+    }
+    properties {
+      id: "follow_immediately"
+      value: "true"
+      type: PROPERTY_TYPE_BOOLEAN
+    }
+    properties {
+      id: "follow_target"
+      value: "/hitman"
+      type: PROPERTY_TYPE_HASH
+    }
+  }
+}
+instances {
+  id: "crosshair"
+  prototype: "/example/shared/objects/crosshair.go"
+  position {
+    z: 1.0
+  }
+}
+instances {
+  id: "hitman"
+  prototype: "/example/shared/objects/hitman.go"
+  position {
+    x: 344.0
+    y: 321.0
+    z: 0.5
+  }
+  component_properties {
+    id: "script"
+    properties {
+      id: "max_camera_offset"
+      value: "150.0, 250.0, 0.0"
+      type: PROPERTY_TYPE_VECTOR3
+    }
+    properties {
+      id: "camera_offset_lerp"
+      value: "0.0"
+      type: PROPERTY_TYPE_NUMBER
+    }
+  }
+}
+instances {
+  id: "enemy"
+  prototype: "/example/shared/objects/enemy.go"
+}
+scale_along_z: 0
+embedded_instances {
+  id: "map"
+  data: "components {\n"
+  "  id: \"tilemap\"\n"
+  "  component: \"/example/allfeatures/top_down.tilemap\"\n"
+  "}\n"
+  ""
+  position {
+    z: -1.0
+  }
+}
+embedded_instances {
+  id: "controls"
+  data: "components {\n"
+  "  id: \"camera_controls\"\n"
+  "  component: \"/example/allfeatures/camera_controls.gui\"\n"
+  "}\n"
+  ""
+}
+embedded_instances {
+  id: "bounds"
+  data: "embedded_components {\n"
+  "  id: \"bl\"\n"
+  "  type: \"label\"\n"
+  "  data: \"size {\\n"
+  "  x: 128.0\\n"
+  "  y: 32.0\\n"
+  "}\\n"
+  "text: \\\"0x0\\\"\\n"
+  "font: \\\"/builtins/fonts/default.font\\\"\\n"
+  "material: \\\"/builtins/fonts/label-df.material\\\"\\n"
+  "\"\n"
+  "}\n"
+  "embedded_components {\n"
+  "  id: \"br\"\n"
+  "  type: \"label\"\n"
+  "  data: \"size {\\n"
+  "  x: 128.0\\n"
+  "  y: 32.0\\n"
+  "}\\n"
+  "text: \\\"1280x0\\\"\\n"
+  "font: \\\"/builtins/fonts/default.font\\\"\\n"
+  "material: \\\"/builtins/fonts/label-df.material\\\"\\n"
+  "\"\n"
+  "  position {\n"
+  "    x: 1280.0\n"
+  "  }\n"
+  "}\n"
+  "embedded_components {\n"
+  "  id: \"tl\"\n"
+  "  type: \"label\"\n"
+  "  data: \"size {\\n"
+  "  x: 128.0\\n"
+  "  y: 32.0\\n"
+  "}\\n"
+  "text: \\\"0x720\\\"\\n"
+  "font: \\\"/builtins/fonts/default.font\\\"\\n"
+  "material: \\\"/builtins/fonts/label-df.material\\\"\\n"
+  "\"\n"
+  "  position {\n"
+  "    y: 720.0\n"
+  "  }\n"
+  "}\n"
+  "embedded_components {\n"
+  "  id: \"tr\"\n"
+  "  type: \"label\"\n"
+  "  data: \"size {\\n"
+  "  x: 128.0\\n"
+  "  y: 32.0\\n"
+  "}\\n"
+  "text: \\\"1280x720\\\"\\n"
+  "font: \\\"/builtins/fonts/default.font\\\"\\n"
+  "material: \\\"/builtins/fonts/label-df.material\\\"\\n"
+  "\"\n"
+  "  position {\n"
+  "    x: 1280.0\n"
+  "    y: 720.0\n"
+  "  }\n"
+  "}\n"
+  ""
+}

@@ -1,0 +1,31 @@
+# Native extension guidance
+
+- Work here for native endpoints, wrapper internals, or transport diagnostics.
+  Use `automation-bridge-python/` for automation scripts.
+- `README.md` is the source of truth for the base URL, endpoints, capabilities,
+  response fields, and errors.
+- Find the engine service port in the editor console line
+  `Engine service started on port <port>`; begin with `GET /health` and validate
+  its API version, capabilities, and engine identity.
+- Application state, commands, events, and acknowledgements require
+  `[automation_bridge] application_api = 1`; other native features do not.
+- Query parameters are supported. `POST` and `PUT` also accept a bounded root
+  JSON object; query values take precedence. Preserve the documented success and
+  error envelopes.
+- Elements are snapshots. Prefer semantic selectors, re-query after scene
+  changes, and use logical-identity guards for element-targeted input.
+  `expected_scene_sequence` guards one exact snapshot; logical IDs guard against
+  path reuse across snapshots.
+- Use named coordinate spaces and `/coordinates/convert`; do not infer window,
+  viewport, display, or GUI transforms.
+- Input is FIFO and receipt-based. Use `text` for literals and `keys` for
+  validated special-key tokens; wait for the required receipt phase. `modifiers`
+  holds up to four named keys as a chord across a click, drag, pointer session,
+  or key press, pressed one update before the primary action and released one
+  update after; it needs the `input.modifiers` capability. `/input/wheel` turns
+  the mouse wheel by a non-zero integer `steps` (`-64..64`, one detent each) at
+  an element or point; it needs the `input.wheel` capability. `button`
+  (`left`, `right`, or `middle`) picks the mouse button for a click, drag,
+  path, or pointer session; a non-left button needs the `input.button`
+  capability and the mouse device.
+- Screenshots are asynchronous; poll their status receipts.

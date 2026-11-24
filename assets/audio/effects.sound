@@ -1,0 +1,6 @@
+sound: "/assets/audio/silence.wav"
+looping: 0
+group: "effects"
+gain: 1.0
+pan: 0.0
+speed: 1.0

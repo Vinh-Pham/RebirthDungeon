@@ -1,0 +1,450 @@
+# promise API
+
+> at /event/promise.lua
+
+The Promise module, used to create and manage promises.
+A promise represents a single asynchronous operation that will either resolve with a value or reject with a reason.
+
+## Functions
+
+- [create](#create)
+- [resolved](#resolved)
+- [rejected](#rejected)
+- [all](#all)
+- [race](#race)
+- [is_promise](#is_promise)
+- [is_cancelled_reason](#is_cancelled_reason)
+- [next](#next)
+- [catch](#catch)
+- [finally](#finally)
+- [is_pending](#is_pending)
+- [is_resolved](#is_resolved)
+- [is_rejected](#is_rejected)
+- [is_finished](#is_finished)
+- [is_cancelled](#is_cancelled)
+- [resolve](#resolve)
+- [reject](#reject)
+- [cancel](#cancel)
+- [append](#append)
+- [tail](#tail)
+- [reset](#reset)
+## Fields
+
+- [state](#state)
+- [value](#value)
+- [on_cancel](#on_cancel)
+
+
+
+### create
+
+---
+```lua
+promise.create([executor], [context])
+```
+
+Generate a new promise instance. This instance represents a single asynchronous operation.
+The executor function is called immediately with resolve, reject functions and on_cancel event.
+
+- **Parameters:**
+	- `[executor]` *(function|event|nil)*: The function or event that will be called with resolve, reject functions and cancel event. Optional for manual promise creation.
+	- `[context]` *(any)*: The context to call the executor function with.
+
+- **Returns:**
+	- `promise_instance` *(promise)*: A new promise instance.
+
+- **Example Usage:**
+
+```lua
+local p = promise.create(function(resolve, reject, on_cancel)
+	local handle = timer.delay(1, false, resolve)
+	on_cancel:subscribe(function() timer.cancel(handle) end)
+end)
+```
+### resolved
+
+---
+```lua
+promise.resolved([value])
+```
+
+Create a promise that is immediately resolved with the given value.
+
+- **Parameters:**
+	- `[value]` *(any)*: The value to resolve the promise with.
+
+- **Returns:**
+	- `promise_instance` *(promise)*: A resolved promise.
+
+- **Example Usage:**
+
+```lua
+local p = promise.resolved(42)
+p:next(function(v) print(v) end)
+```
+### rejected
+
+---
+```lua
+promise.rejected([reason])
+```
+
+Create a promise that is immediately rejected with the given reason.
+
+- **Parameters:**
+	- `[reason]` *(any)*: The reason to reject the promise with.
+
+- **Returns:**
+	- `promise_instance` *(promise)*: A rejected promise.
+
+- **Example Usage:**
+
+```lua
+local p = promise.rejected("error")
+p:catch(function(reason) print(reason) end)
+```
+### all
+
+---
+```lua
+promise.all(promises)
+```
+
+Create a promise that resolves when all given promises resolve.
+If any promise rejects, the returned promise will reject with that reason.
+
+- **Parameters:**
+	- `promises` *(promise[])*: Array of promises to wait for.
+
+- **Returns:**
+	- `promise_instance` *(promise)*: A promise that resolves with an array of all resolved values.
+
+- **Example Usage:**
+
+```lua
+local p = promise.all({ load_asset(1), load_asset(2), load_asset(3) })
+p:next(function(results) print(#results) end)
+```
+### race
+
+---
+```lua
+promise.race(promises)
+```
+
+Create a promise that resolves or rejects as soon as one of the given promises resolves or rejects.
+
+- **Parameters:**
+	- `promises` *(promise[])*: Array of promises to race.
+
+- **Returns:**
+	- `promise_instance` *(promise)*: A promise that resolves or rejects with the first finished promise.
+
+- **Example Usage:**
+
+```lua
+local p = promise.race({ fetch_with_timeout(url, 1000), slow_fetch(url) })
+```
+### is_promise
+
+---
+```lua
+promise.is_promise([value])
+```
+
+Check if a value is a promise object
+
+- **Parameters:**
+	- `[value]` *(any)*: The value to check
+
+- **Returns:**
+	- `is_promise` *(boolean)*: True if the value is a promise
+
+- **Example Usage:**
+
+```lua
+if promise.is_promise(my_value) then
+	my_value:next(handler)
+end
+```
+### is_cancelled_reason
+
+---
+```lua
+promise.is_cancelled_reason(reason)
+```
+
+Check whether a rejection reason represents promise cancellation.
+This is useful in rejection callbacks where the promise instance is not available.
+
+- **Parameters:**
+	- `reason` *(any)*: The rejection reason to check.
+
+- **Returns:**
+	- `is_cancelled` *(boolean)*: True if the reason represents cancellation.
+
+- **Example Usage:**
+
+```lua
+load_data():catch(function(reason)
+	if promise.is_cancelled_reason(reason) then
+		return
+	end
+	print("Failed:", reason)
+end)
+```
+### next
+
+---
+```lua
+promise:next([on_resolved], [on_rejected], [context])
+```
+
+Attach resolve and reject handlers to the promise.
+Returns a new promise that will be resolved or rejected based on the handlers' return values.
+
+- **Parameters:**
+	- `[on_resolved]` *(function|event|promise|nil)*: Handler called when promise is resolved. If nil, value passes through.
+	- `[on_rejected]` *(function|event|promise|nil)*: Handler called when promise is rejected. If nil, rejection passes through.
+	- `[context]` *(any)*: The context to call the handlers with.
+
+- **Returns:**
+	- `new_promise` *(promise)*: A new promise representing the result of the handlers.
+
+- **Example Usage:**
+
+```lua
+load_data():next(function(data) return process(data) end):next(display):catch(show_error)
+```
+### catch
+
+---
+```lua
+promise:catch(on_rejected, [context])
+```
+
+Attach a rejection handler to the promise. Equivalent to next(nil, on_rejected).
+
+- **Parameters:**
+	- `on_rejected` *(function|event)*: Handler called when promise is rejected.
+	- `[context]` *(any)*: The context to call the handler with.
+
+- **Returns:**
+	- `new_promise` *(promise)*: A new promise representing the result of the handler.
+
+- **Example Usage:**
+
+```lua
+load_data():catch(function(err) print("Failed:", err) end)
+```
+### finally
+
+---
+```lua
+promise:finally(on_finally, [context])
+```
+
+Attach a handler that is called regardless of whether the promise is resolved or rejected.
+The handler is called with the resolved value or rejection reason.
+When context is provided, it is passed as the first argument.
+The handler return value is ignored.
+
+- **Parameters:**
+	- `on_finally` *(function|event)*: Handler called when promise is finished (resolved or rejected).
+	- `[context]` *(any)*: The context to call the handler with.
+
+- **Returns:**
+	- `new_promise` *(promise)*: A new promise that resolves/rejects with the same value/reason as the original.
+
+- **Example Usage:**
+
+```lua
+load_data():finally(function() hide_loading_spinner() end)
+```
+### is_pending
+
+---
+```lua
+promise:is_pending()
+```
+
+Check if the promise is in pending state.
+
+- **Returns:**
+	- `is_pending` *(boolean)*: True if the promise is pending.
+
+### is_resolved
+
+---
+```lua
+promise:is_resolved()
+```
+
+Check if the promise is in resolved state.
+
+- **Returns:**
+	- `is_resolved` *(boolean)*: True if the promise is resolved.
+
+### is_rejected
+
+---
+```lua
+promise:is_rejected()
+```
+
+Check if the promise is in rejected state.
+
+- **Returns:**
+	- `is_rejected` *(boolean)*: True if the promise is rejected.
+
+### is_finished
+
+---
+```lua
+promise:is_finished()
+```
+
+Check if the promise is finished (either resolved or rejected).
+
+- **Returns:**
+	- `is_finished` *(boolean)*: True if the promise is finished.
+
+### is_cancelled
+
+---
+```lua
+promise:is_cancelled()
+```
+
+Check if the shared cancel_context was cancelled.
+
+- **Returns:**
+	- `is_cancelled` *(boolean)*: True if the promise chain was cancelled.
+
+### resolve
+
+---
+```lua
+promise:resolve([value])
+```
+
+Resolve the promise.
+
+- **Parameters:**
+	- `[value]` *(any)*: The value to resolve with.
+
+- **Example Usage:**
+
+```lua
+my_promise:resolve(result)
+```
+### reject
+
+---
+```lua
+promise:reject([reason])
+```
+
+Reject the promise.
+
+- **Parameters:**
+	- `[reason]` *(any)*: The reason to reject with.
+
+- **Example Usage:**
+
+```lua
+my_promise:reject("failed")
+```
+### cancel
+
+---
+```lua
+promise:cancel()
+```
+
+Cancel in-progress work in this promise chain.
+A pending promise is rejected with the cancelled reason and `on_cancel` runs.
+A settled promise is left as-is; pending descendants in the chain are still cancelled.
+If nothing is still pending, this is a no-op.
+
+- **Example Usage:**
+
+```lua
+my_promise:cancel()
+```
+### append
+
+---
+```lua
+promise:append([task])
+```
+
+Append a task to this promise's internal sequence without reassigning.
+The task may return a value or a promise. If `task` is a promise, the pipeline waits for it
+to finish and adopts its result. The incoming value is not forwarded into `task`
+(same as `append(function() return task end)`).
+Returns self for chaining.
+Almost similar to `promise = promise:next(task)`, but without reassigning the promise.
+
+- **Parameters:**
+	- `[task]` *(fun(value: any):any|promise)*: The Promise module, used to create and manage promises.
+
+- **Returns:**
+	- `self` *(promise)*:
+
+- **Example Usage:**
+
+```lua
+pipeline:append(step1)
+pipeline:append(step2)
+pipeline:append(step3)
+local last = pipeline:tail()
+print("Is going to check status of", last:is_pending())
+```
+### tail
+
+---
+```lua
+promise:tail()
+```
+
+Get the current tail promise representing all appended work.
+
+- **Returns:**
+	- `tail` *(promise)*:
+
+- **Example Usage:**
+
+```lua
+local last = pipeline:tail()
+last:next(on_complete)
+```
+### reset
+
+---
+```lua
+promise:reset()
+```
+
+Reset the internal sequence to an already resolved promise.
+
+- **Returns:**
+	- `self` *(promise)*:
+
+- **Example Usage:**
+
+```lua
+pipeline:reset()
+pipeline:append(new_step)
+```
+
+## Fields
+<a name="state"></a>
+- **state** (_"pending"|"rejected"|"resolved"_): Current state of the promise (pending, resolved, rejected)
+
+<a name="value"></a>
+- **value** (_any_): The resolved value or rejection reason
+
+<a name="on_cancel"></a>
+- **on_cancel** (_event_): Event for cancellation cleanup subscriptions (shared across the promise chain)
+

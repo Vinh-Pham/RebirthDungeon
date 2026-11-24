@@ -1,0 +1,160 @@
+local camera = require "orthographic.camera"
+
+local CAMERA_ID = hash("/camera")
+local PLAYER_ID = hash("/hitman")
+local ENEMY_ID = hash("/enemy")
+
+function init(self)
+	msg.post(".", "acquire_input_focus")
+	gui.set_enabled(gui.get_node("deadzone_visualizer"), false)
+	self.bounds_enabled = false
+	self.deadzone_enabled = false
+	self.current_projection = 1
+	self.lerp = 0
+end
+
+
+function update(self, dt)
+	local w2s_fit = gui.get_node("w2s_fit")
+	local w2s_zoom = gui.get_node("w2s_zoom")
+	local w2s_stretch = gui.get_node("w2s_stretch")
+	local world_pos = vmath.vector3(160, 160, 0)
+	local screen_pos_stretch = camera.world_to_screen(CAMERA_ID, world_pos, gui.get_adjust_mode(w2s_stretch))
+	local screen_pos_fit = camera.world_to_screen(CAMERA_ID, world_pos, gui.get_adjust_mode(w2s_fit))
+	local screen_pos_zoom = camera.world_to_screen(CAMERA_ID, world_pos, gui.get_adjust_mode(w2s_zoom))
+	gui.set_screen_position(w2s_fit, screen_pos_fit)
+	gui.set_screen_position(w2s_zoom, screen_pos_zoom)
+	gui.set_screen_position(w2s_stretch, screen_pos_stretch)
+
+	local bounds = camera.screen_to_world_bounds(CAMERA_ID)
+	gui.set_text(gui.get_node("bottom_left"), ("%d,%d"):format(bounds.x, bounds.w))
+	gui.set_text(gui.get_node("bottom_right"), ("%d,%d"):format(bounds.z, bounds.w))
+	gui.set_text(gui.get_node("top_left"), ("%d,%d"):format(bounds.x, bounds.y))
+	gui.set_text(gui.get_node("top_right"), ("%d,%d"):format(bounds.z, bounds.y))
+	gui.set_text(gui.get_node("zoomlevel"), ("%.2f"):format(tostring(camera.get_zoom(CAMERA_ID))))
+	gui.set_text(gui.get_node("auto_zoom_state"), ("%s"):format(tostring(camera.get_automatic_zoom(CAMERA_ID))))
+end
+
+local function post_follow_message(self)
+	msg.post(CAMERA_ID, camera.MSG_FOLLOW, {
+		target = PLAYER_ID,
+		lerp = self.lerp,
+		offset = self.camera_offset,
+		horizontal = self.follow_horizontal,
+		vertical = self.follow_vertical,
+	})
+end
+
+local function update_deadzone(self, zoomlevel)
+	local dz = gui.get_node("deadzone_visualizer")
+	gui.set_enabled(dz, self.deadzone_enabled)
+	if self.deadzone_enabled then
+		local w = 600
+		local h = 400
+		gui.set_size(dz, vmath.vector3(w, h, 0))
+		local inv_zoomlevel = 1 / zoomlevel
+		w = (w * inv_zoomlevel) / 2
+		h = (h * inv_zoomlevel) / 2
+		msg.post(CAMERA_ID, "deadzone", { left = w, right = w, bottom = h, top = h })
+	else
+		msg.post(CAMERA_ID, "deadzone", {})
+	end
+end
+
+function on_input(self, action_id, action)
+	if action_id == hash("touch") and action.released then
+		if gui.pick_node(gui.get_node("unfollow/button"), action.x, action.y) then
+			self.follow = false
+			self.follow_horizontal = false
+			self.follow_vertical = false
+			msg.post(CAMERA_ID, "unfollow")
+			return true
+		elseif gui.pick_node(gui.get_node("follow_basic/button"), action.x, action.y) then
+			self.follow = true
+			self.follow_horizontal = true
+			self.follow_vertical = true
+			self.lerp = 1
+			post_follow_message(self)
+			return true
+		elseif gui.pick_node(gui.get_node("follow_lerp/button"), action.x, action.y) then
+			self.follow = true
+			self.follow_horizontal = true
+			self.follow_vertical = true
+			self.lerp = 0.1
+			post_follow_message(self)
+			return true
+		elseif gui.pick_node(gui.get_node("follow_horizontal/button"), action.x, action.y) then
+			self.follow = true
+			self.follow_horizontal = true
+			self.follow_vertical = false
+			self.lerp = 0.1
+			post_follow_message(self)
+			return true
+		elseif gui.pick_node(gui.get_node("follow_vertical/button"), action.x, action.y) then
+			self.follow = true
+			self.follow_horizontal = false
+			self.follow_vertical = true
+			self.lerp = 0.1
+			post_follow_message(self)
+			return true
+		elseif gui.pick_node(gui.get_node("follow_multiple/button"), action.x, action.y) then
+			self.follow = true
+			self.follow_horizontal = false
+			self.follow_vertical = true
+			self.lerp = 0.1
+			local targets = { PLAYER_ID, ENEMY_ID }
+			camera.follow(CAMERA_ID, targets)
+			return true
+		elseif gui.pick_node(gui.get_node("shake_both/button"), action.x, action.y) then
+			msg.post(CAMERA_ID, "shake", { intensity = 0.05, duration = 0.5, direction = hash("both") })
+			return true
+		elseif gui.pick_node(gui.get_node("shake_horizontal/button"), action.x, action.y) then
+			msg.post(CAMERA_ID, "shake", { intensity = 0.05, duration = 0.5, direction = hash("horizontal") })
+			return true
+		elseif gui.pick_node(gui.get_node("shake_vertical/button"), action.x, action.y) then
+			msg.post(CAMERA_ID, "shake", { intensity = 0.05, duration = 0.5, direction = hash("vertical") })
+			return true
+		elseif gui.pick_node(gui.get_node("stop_shaking/button"), action.x, action.y) then
+			msg.post(CAMERA_ID, "stop_shaking")
+			return true
+		elseif gui.pick_node(gui.get_node("bounds/button"), action.x, action.y) then
+			self.bounds_enabled = not self.bounds_enabled
+			if self.bounds_enabled then
+				print("enable bounds")
+				msg.post(CAMERA_ID, "bounds", { left = 0, right = 1728, bottom = 0, top = 1280 })
+			else
+				print("disable bounds")
+				msg.post(CAMERA_ID, "bounds", {})
+			end
+			return true
+		elseif gui.pick_node(gui.get_node("deadzone/button"), action.x, action.y) then
+			self.deadzone_enabled = not self.deadzone_enabled
+			update_deadzone(self, camera.get_zoom(CAMERA_ID))
+			return true
+		elseif gui.pick_node(gui.get_node("zoomin/button"), action.x, action.y) then
+			local zoomlevel = camera.get_zoom(CAMERA_ID) + 0.25
+			update_deadzone(self, zoomlevel)
+			msg.post(CAMERA_ID, "zoom_to", { zoom = zoomlevel } )
+			return true
+		elseif gui.pick_node(gui.get_node("zoomout/button"), action.x, action.y) then
+			local zoomlevel = math.max(0.25, camera.get_zoom(CAMERA_ID) - 0.25)
+			update_deadzone(self, zoomlevel)
+			msg.post(CAMERA_ID, "zoom_to", { zoom = zoomlevel } )
+			return true
+		elseif gui.pick_node(gui.get_node("toggle_auto_zoom/button"), action.x, action.y) then
+			camera.set_automatic_zoom(CAMERA_ID, not camera.get_automatic_zoom(CAMERA_ID))
+			return true
+		end
+	end
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("camera_offset") then
+		self.camera_offset = message.offset
+	end
+end
+
+function on_reload(self)
+	-- Add input-handling code here
+	-- Remove this function if not needed
+end

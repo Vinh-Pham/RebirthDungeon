@@ -1,0 +1,23 @@
+[project]
+title = DefTest
+version = 0.1
+
+[bootstrap]
+main_collection = /test/test.collectionc
+
+[input]
+game_binding = /input/game.input_bindingc
+
+[display]
+width = 1280
+height = 720
+
+[physics]
+scale = 0.02
+
+[script]
+shared_state = 1
+
+[library]
+include_dirs = deftest, luacov
+

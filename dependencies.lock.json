@@ -1,0 +1,164 @@
+{
+  "dependencies": [
+    {
+      "id": "asefold",
+      "repository": "https://github.com/Kaiqgs/asefold",
+      "commit": "a77add9bcf8ed07c3efcf166b117e77ee9d3f958",
+      "path": "vendor/asefold",
+      "archive": "https://github.com/Kaiqgs/asefold/archive/a77add9bcf8ed07c3efcf166b117e77ee9d3f958.zip",
+      "defold_library": false
+    },
+    {
+      "id": "automation-bridge",
+      "repository": "https://github.com/defold/extension-automation-bridge",
+      "commit": "941fc93f8b9eb6fa81ca9d70df892ed0ad689d0c",
+      "path": "vendor/automation-bridge",
+      "archive": "https://github.com/defold/extension-automation-bridge/archive/941fc93f8b9eb6fa81ca9d70df892ed0ad689d0c.zip",
+      "defold_library": true
+    },
+    {
+      "id": "behavior-tree",
+      "repository": "https://github.com/s-kania/def-behavior-tree",
+      "commit": "b92bcb825aed1576914c95a63b2621bb147be66c",
+      "path": "vendor/behavior-tree",
+      "archive": "https://github.com/s-kania/def-behavior-tree/archive/b92bcb825aed1576914c95a63b2621bb147be66c.zip",
+      "defold_library": true
+    },
+    {
+      "id": "das",
+      "repository": "https://github.com/masakazu-k/defold-aseprite-scripts",
+      "commit": "48776fad7b607677a1740e7fe6152ba4726277ad",
+      "path": "vendor/das",
+      "archive": "https://github.com/masakazu-k/defold-aseprite-scripts/archive/48776fad7b607677a1740e7fe6152ba4726277ad.zip",
+      "defold_library": true
+    },
+    {
+      "id": "deftest",
+      "repository": "https://github.com/britzl/deftest",
+      "commit": "a75fedc71dce2f7129126501c31f5d10c1815bac",
+      "path": "vendor/deftest",
+      "archive": "https://github.com/britzl/deftest/archive/a75fedc71dce2f7129126501c31f5d10c1815bac.zip",
+      "defold_library": true
+    },
+    {
+      "id": "druid",
+      "repository": "https://github.com/Insality/druid",
+      "commit": "425f7c7db17ae544a59686a312cd4cf8e5f10221",
+      "path": "vendor/druid",
+      "archive": "https://github.com/Insality/druid/archive/425f7c7db17ae544a59686a312cd4cf8e5f10221.zip",
+      "defold_library": true
+    },
+    {
+      "id": "event",
+      "repository": "https://github.com/Insality/defold-event",
+      "commit": "384813497c25ff41d34ab1efdb1163217dc9dd26",
+      "path": "vendor/event",
+      "archive": "https://codeload.github.com/Insality/defold-event/zip/384813497c25ff41d34ab1efdb1163217dc9dd26",
+      "defold_library": true
+    },
+    {
+      "id": "gooey",
+      "repository": "https://github.com/britzl/gooey",
+      "commit": "e19df8f3d1f3424b140c9bcd66df5e063f2ad649",
+      "path": "vendor/gooey",
+      "archive": "https://github.com/britzl/gooey/archive/e19df8f3d1f3424b140c9bcd66df5e063f2ad649.zip",
+      "defold_library": true
+    },
+    {
+      "id": "ink",
+      "repository": "https://github.com/abadonna/defold-ink",
+      "commit": "5e871c42f645689e7263d85015fab2b2f2743907",
+      "path": "vendor/ink",
+      "archive": "https://github.com/abadonna/defold-ink/archive/5e871c42f645689e7263d85015fab2b2f2743907.zip",
+      "defold_library": true
+    },
+    {
+      "id": "input",
+      "repository": "https://github.com/britzl/defold-input",
+      "commit": "964428dee12ba877d3b590e3f402aa9ab9b3242b",
+      "path": "vendor/input",
+      "archive": "https://github.com/britzl/defold-input/archive/964428dee12ba877d3b590e3f402aa9ab9b3242b.zip",
+      "defold_library": true
+    },
+    {
+      "id": "jumper",
+      "repository": "https://github.com/Yonaba/Jumper",
+      "commit": "441176b33536f5cc0e915b93c9ab1aa3632aa2a0",
+      "path": "vendor/jumper",
+      "archive": "https://github.com/Yonaba/Jumper/archive/441176b33536f5cc0e915b93c9ab1aa3632aa2a0.zip",
+      "defold_library": false
+    },
+    {
+      "id": "lpeg",
+      "repository": "https://github.com/astrochili/defold-lpeg",
+      "commit": "c4b2cdbbcae3f2b061b2865d4f1031d8022f4f42",
+      "path": "vendor/lpeg",
+      "archive": "https://github.com/astrochili/defold-lpeg/archive/c4b2cdbbcae3f2b061b2865d4f1031d8022f4f42.zip",
+      "defold_library": true
+    },
+    {
+      "id": "luaunit",
+      "repository": "https://github.com/bluebird75/luaunit",
+      "commit": "cd1311c20046a37cba76491d26bc7f748590ea17",
+      "path": "vendor/luaunit",
+      "archive": "https://github.com/bluebird75/luaunit/archive/cd1311c20046a37cba76491d26bc7f748590ea17.zip",
+      "defold_library": false
+    },
+    {
+      "id": "monarch",
+      "repository": "https://github.com/britzl/monarch",
+      "commit": "5c33c39830489925493163e741d5b22b4e5e3b9d",
+      "path": "vendor/monarch",
+      "archive": "https://github.com/britzl/monarch/archive/5c33c39830489925493163e741d5b22b4e5e3b9d.zip",
+      "defold_library": true
+    },
+    {
+      "id": "narrator",
+      "repository": "https://github.com/astrochili/narrator",
+      "commit": "45a8b03553f2385716c24ec762757e418b2b73c1",
+      "path": "vendor/narrator",
+      "archive": "https://github.com/astrochili/narrator/archive/45a8b03553f2385716c24ec762757e418b2b73c1.zip",
+      "defold_library": true
+    },
+    {
+      "id": "orthographic",
+      "repository": "https://github.com/britzl/defold-orthographic",
+      "commit": "ea8437b94c86174eeb03163a51c41d6744b0490f",
+      "path": "vendor/orthographic",
+      "archive": "https://github.com/britzl/defold-orthographic/archive/ea8437b94c86174eeb03163a51c41d6744b0490f.zip",
+      "defold_library": true
+    },
+    {
+      "id": "richtext",
+      "repository": "https://github.com/britzl/defold-richtext",
+      "commit": "adab8c826f1caf36d5d7d5637f48d33518485558",
+      "path": "vendor/richtext",
+      "archive": "https://github.com/britzl/defold-richtext/archive/adab8c826f1caf36d5d7d5637f48d33518485558.zip",
+      "defold_library": true
+    },
+    {
+      "id": "rotlove",
+      "repository": "https://github.com/paulofmandown/rotLove",
+      "commit": "4e0d9bfcb5bbcd47bc9ac0b93acf17a62f33b70f",
+      "path": "vendor/rotlove",
+      "archive": "https://github.com/paulofmandown/rotLove/archive/4e0d9bfcb5bbcd47bc9ac0b93acf17a62f33b70f.zip",
+      "defold_library": false
+    },
+    {
+      "id": "state-machine",
+      "repository": "https://github.com/kyleconroy/lua-state-machine",
+      "commit": "96fc10ee123479cf2e5fb8ffe9cdde2fd6df0877",
+      "path": "vendor/state-machine",
+      "archive": "https://github.com/kyleconroy/lua-state-machine/archive/96fc10ee123479cf2e5fb8ffe9cdde2fd6df0877.zip",
+      "defold_library": false
+    },
+    {
+      "id": "tiny-ecs",
+      "repository": "https://github.com/bakpakin/tiny-ecs",
+      "commit": "821914795db365d73dcb973b4a54741423650dc9",
+      "path": "vendor/tiny-ecs",
+      "archive": "https://github.com/bakpakin/tiny-ecs/archive/821914795db365d73dcb973b4a54741423650dc9.zip",
+      "defold_library": false
+    }
+  ]
+}

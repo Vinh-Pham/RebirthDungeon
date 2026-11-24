@@ -1,0 +1,7 @@
+# System
+.DS_Store
+Thumbs.db
+
+# Defold
+/.internal
+/build

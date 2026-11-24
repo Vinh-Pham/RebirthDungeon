@@ -1,0 +1,5 @@
+name: "tests"
+instances {
+  id: "tests"
+  prototype: "/tests/runtime.go"
+}

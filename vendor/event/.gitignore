@@ -1,0 +1,17 @@
+/.internal
+/build
+.DS_Store
+Thumbs.db
+manifest.private.der
+manifest.public.der
+
+deployer_version_settings.txt
+
+.deployer_cache
+bob.jar
+deployer_build_stats.csv
+dist
+/.editor_settings
+/.deployer_cache
+
+deployer_version_settings.ini

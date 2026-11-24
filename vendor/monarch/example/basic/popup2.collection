@@ -1,0 +1,10 @@
+name: "popup2"
+scale_along_z: 0
+embedded_instances {
+  id: "go"
+  data: "components {\n"
+  "  id: \"popup2\"\n"
+  "  component: \"/example/basic/popup2.gui\"\n"
+  "}\n"
+  ""
+}

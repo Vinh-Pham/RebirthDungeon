@@ -1,0 +1,6 @@
+# Merge into .codex/config.toml. Supply EXA_API_KEY in the client environment.
+[mcp_servers.exa]
+command = "npx"
+args = ["--yes", "exa-mcp-server@3.5.1"]
+env_vars = ["EXA_API_KEY"]
+startup_timeout_sec = 60

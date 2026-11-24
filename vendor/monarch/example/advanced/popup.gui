@@ -1,0 +1,176 @@
+script: "/example/advanced/popup.gui_script"
+fonts {
+  name: "example"
+  font: "/assets/example.font"
+}
+nodes {
+  position {
+    x: 320.0
+    y: 568.0
+  }
+  size {
+    x: 400.0
+    y: 300.0
+  }
+  color {
+    x: 0.3019608
+    y: 0.3019608
+    z: 0.3019608
+  }
+  type: TYPE_BOX
+  id: "root"
+  layer: "below"
+  inherit_alpha: true
+}
+nodes {
+  position {
+    x: 117.419
+    y: -112.414
+  }
+  size {
+    x: 150.0
+    y: 50.0
+  }
+  type: TYPE_BOX
+  id: "ok_button"
+  parent: "root"
+  layer: "below"
+  inherit_alpha: true
+}
+nodes {
+  size {
+    x: 200.0
+    y: 100.0
+  }
+  color {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+  }
+  type: TYPE_TEXT
+  text: "OK"
+  font: "example"
+  id: "ok_text"
+  outline {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+  shadow {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+  parent: "ok_button"
+  layer: "text"
+  inherit_alpha: true
+}
+nodes {
+  position {
+    x: -112.214
+    y: -111.501
+  }
+  size {
+    x: 150.0
+    y: 50.0
+  }
+  type: TYPE_BOX
+  id: "cancel_button"
+  parent: "root"
+  layer: "below"
+  inherit_alpha: true
+}
+nodes {
+  size {
+    x: 200.0
+    y: 100.0
+  }
+  color {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+  }
+  type: TYPE_TEXT
+  text: "CANCEL"
+  font: "example"
+  id: "back_text"
+  outline {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+  shadow {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+  parent: "cancel_button"
+  layer: "text"
+  inherit_alpha: true
+}
+nodes {
+  position {
+    x: 2.419
+    y: -14.414
+  }
+  size {
+    x: 150.0
+    y: 50.0
+  }
+  type: TYPE_BOX
+  id: "about_button"
+  parent: "root"
+  layer: "below"
+  inherit_alpha: true
+}
+nodes {
+  size {
+    x: 200.0
+    y: 100.0
+  }
+  color {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+  }
+  type: TYPE_TEXT
+  text: "ABOUT"
+  font: "example"
+  id: "about_text"
+  outline {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+  shadow {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+  parent: "about_button"
+  layer: "text"
+  inherit_alpha: true
+}
+nodes {
+  position {
+    x: 184.0
+    y: 136.0
+  }
+  size {
+    x: 10.0
+    y: 10.0
+  }
+  type: TYPE_BOX
+  id: "spinner"
+  parent: "root"
+  layer: "below"
+  inherit_alpha: true
+}
+layers {
+  name: "below"
+}
+layers {
+  name: "text"
+}
+material: "/builtins/materials/gui.material"
+adjust_reference: ADJUST_REFERENCE_PARENT

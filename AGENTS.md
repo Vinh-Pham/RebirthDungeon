@@ -1,6 +1,15 @@
 # Rebirth Dungeon
 
-Rebirth Dungeon is a text-driven, tile-based roguelike dungeon crawler built in Godot. Mabinogi, the Korean MMORPG, is the main gameplay reference for trainable skills, talent specializations, inventory, and melee counters. The player explores procedurally generated dungeons, collects and equips items, completes quests, and ranks up skills while uncovering the mystery of the dungeon. Develop original characters, quests, items, and art for the science-fantasy setting.
+Open [`game.project`](game.project) for the playable project.
+Follow the [tooling guide](docs/defold-tooling.md) for MCP setup, development,
+and verification.
+
+Rebirth Dungeon is a text-driven, tile-based roguelike dungeon crawler built in
+Defold. Mabinogi is the main gameplay reference for trainable skills, talent
+specializations, inventory, and melee counters. The player explores procedurally
+generated dungeons, collects and equips items, completes quests, and ranks up
+skills while uncovering the mystery of the dungeon. Develop original characters,
+quests, items, and art for the science-fantasy setting.
 
 ## Gameplay
 
@@ -24,7 +33,7 @@ Draw inspiration from Caves of Qud for the game's original pixel art. Use the [r
 
 Minimalist ASCII-inspired roguelike pixel art, 16×24 pixel sprites, two-tone coloring, restricted color palette, high-contrast silhouettes, orthographic top-down perspective, retro CRT terminal aesthetic, dark teal background, science-fantasy setting, no anti-aliasing, no smooth gradients.
 
-Use nearest-neighbor filtering for pixel art in Godot to keep sprite edges crisp. Make the player, creatures, items, and terrain distinguishable by silhouette as well as color.
+Use nearest-neighbor filtering for pixel art in Defold to keep sprite edges crisp. Make the player, creatures, items, and terrain distinguishable by silhouette as well as color.
 
 ## Game art workflow
 
@@ -37,32 +46,41 @@ Use the Aseprite MCP server configured in [`.codex/config.toml`](.codex/config.t
 5. **Shade with intent.** Use `adjust_hsl` to explore shadow colors and `outline_cel` where it improves readability. Keep the final colors within Dungeon-20. Reserve `apply_dither_gradient` for blends on larger artwork and use flat tones on 16×24 sprites.
 6. **Animate with cel tools.** Use `propagate_cels` to reuse cels, then `tween_cel_positions_eased` or `oscillate_cel_positions` for rigid parts and secondary motion. Verify frames and alignment with `view_sprite`, `compare_frames`, and `get_bounds`. Export with `export_animation` or `export_tag`.
 
-## Godot plugins
+## Defold development and verification
 
-Beckett, GUT, GLoot, Maaack’s Input Remapping, Plugin Updater, Aseprite Wizard, Phantom Camera, GECS, Dialogue Manager, and QuestSystem are enabled in [project settings](project.godot). QuestSystem is registered as the `QuestSystem` autoload. LimboAI is installed as a GDExtension. Gaea is installed for future integration. Beehave is bundled and disabled. Its blackboard is named `BeehaveBlackboard` to avoid a global class collision with LimboAI’s `Blackboard`.
-
-| Plugin | Use in Rebirth Dungeon |
-| --- | --- |
-| [Beckett](addons/beckett/plugin.cfg) | Connect the Godot editor to MCP for scene and script authoring, playtesting, screenshots, and runtime logs. |
-| [Gaea](addons/gaea/plugin.cfg) | Generate tile-based dungeon floors, including room and corridor layouts, and render them to tile maps. |
-| [GECS](addons/gecs/plugin.cfg) | Model the player, creatures, and items with reusable components such as grid position and health. Keep shared rules, such as movement and status effects, in systems that query those components. |
-| [Beehave](addons/beehave/plugin.cfg) | Bundled as a reference for behavior trees. LimboAI runs the game’s monster AI. |
-| [LimboAI 1.8.1](addons/limboai/bin/limboai.gdextension) | Run monster behavior trees for dungeon pursuit and wandering, and choose combat intents when enemies finish their actions. |
-| [Dialogue Manager](addons/dialogue_manager/plugin.cfg) | Author branching NPC conversations, quest-related choices, and conditional lore reveals. Render dialogue text in Source Code Pro. |
-| [QuestSystem 2.0.2](addons/quest_system/plugin.cfg) | Define quests as resources with stable integer IDs. Track which quests are available, active, or completed, and use that state to drive the Quests journal and quest-related NPC dialogue. |
-| [Phantom Camera](addons/phantom_camera/plugin.cfg) | Follow the player with a damped, pixel-snapped 2D camera in Lantern Rest. The map scrolls inside the HUD panel and stops at the town boundary. |
-| [GUT 9.7.1](addons/gut/plugin.cfg) | Run the automated GDScript tests in [`tests/unit/`](tests/unit/) for combat, character stats, inventory, and save compatibility. |
-| [GLoot 3.0.2](addons/gloot/plugin.cfg) | Manage the sword satchel's 8×7 bag grid, item footprints, and main-hand equipment slot. The HUD and armory share this inventory and load existing character weapon saves. |
-| [Maaack’s Input Remapping 1.8.0](addons/maaacks_input_remapping/plugin.cfg) | Add a rebinding menu after gameplay controls move to named `InputMap` actions. The addon bundles [Plugin Updater 0.5.1](addons/plugin_updater/plugin.cfg) and its setup helpers. |
-| [Aseprite Wizard 9.8.0](addons/AsepriteWizard/plugin.cfg) | Import tagged Aseprite animations into Godot when needed. Use manual imports alongside the existing PNG atlases. |
-
-### LimboAI and QuestSystem integration
-
-- **LimboAI.** Edit the [dungeon movement tree](scripts/ai/dungeon_movement.tres) for pursuit, wandering, and holding position. The dungeon controller passes legal tiles and path distances through a blackboard and manually ticks the tree after each successful player step. Edit the [combat intent tree](scripts/ai/combat_intent.tres) to choose a monster’s next move after its current action resolves. The combat model advances the Time gauges and resolves stamina, damage, and counters. [BehaviorTree reference](https://limboai.readthedocs.io/en/stable/classes/class_behaviortree.html)
-- **QuestSystem.** Register quest resources with `mark_quest_as_available()`, then call `start_quest()` from NPC interactions. Feed committed gameplay events such as boss defeats or item deliveries into `update_quest()`, and refresh the journal on `quest_accepted` and `quest_completed`. When integrating the autoload, save both pool membership and quest state in the selected character’s profile. Reset and restore the pools when switching characters, and migrate the current `world.quest` progress from [CharacterStore](scripts/character_store.gd). [QuestSystem addon documentation](https://store.godotengine.org/asset/shomy/quest-system/)
-
-## Godot development workflow
-
-- Use the project's Beckett MCP server for Godot editor operations. Inspect and edit scenes, nodes, resources, and scripts through Beckett. Use `find_classes` and `describe_class` to check the installed engine's classes and method signatures. When a change affects gameplay or the interface, run the scene through Beckett and check the runtime logs.
-- Use Exa to look up Godot API references, tutorials, and other technical documentation. Search for the relevant class, method, or feature and prefer official documentation that matches the Godot version in `project.godot`. Open the source page to verify the details before applying them.
-- Run `godot --headless --path . -s addons/gut/gut_cmdln.gd -gexit` from the project root. [`.gutconfig.json`](.gutconfig.json) points GUT to the test directory.
+- Write Lua 5.1-compatible runtime code. Put deterministic rules in pure `.lua`
+  modules; keep `.script`, `.gui_script`, and rendering adapters thin. Explicitly
+  create/reset per-character state; required modules are shared, cached tables.
+- Use Exa to search official Defold manuals/API docs and each library's upstream
+  docs; open the relevant source before applying it. Match the engine version in
+  `tools/defold/toolchain.json`. Use MCP API search for that version as well.
+- Use the configured `defold` MCP for project inspection, build/run/log checks,
+  and bounded iteration. Pass the pinned `version` to versioned tools and build
+  with `archive: true` to keep native bundle manifests current; the
+  server's default `stable` floats. Use `aseprite` for game art.
+- Follow Defold's [AI agents guide](https://defold.com/manuals/ai-agents/): define
+  acceptance criteria, inspect → change → build/test → inspect logs and required
+  screenshots. Keep build/test steps reproducible without an agent. Limit repair
+  loops to three attempts before reporting the remaining failure.
+- When an editor is open, read `.internal/editor.port` and discover its current
+  `/openapi.json`; never assume fixed editor endpoints or confuse editor and
+  engine ports. Check runtime extension health/version/capabilities before use.
+- Keep editor tokens and credentials local. Use stdio/loopback controls. Do not
+  add unrestricted `/eval` tooling. The requested MCP setup is authorized;
+  proceed with dependencies/native extensions already authorized by an
+  implementation task. Seek approval for unapproved dependency or release
+  changes per the guide, and for publishing, signing or destructive cleanup.
+- Run `luajit tests/run.lua` from the repository root. Verify the MCP,
+  in-engine DefTest suites and generated native bundle with
+  `node tools/defold/verify-mcp.mjs --tests --run`. The upstream MCP `defold_run`
+  uses a stock engine and cannot load this project's native extensions. Use the
+  generated native bundle and Automation Bridge for runtime input/state/capture.
+  Always stop the processes you launch. The desktop and browser playtest scripts
+  in `tools/defold/` exercise actual input, combat and save/reload.
+- Use the project skills in
+  [`.agents/skills/rebirth-defold-development`](.agents/skills/rebirth-defold-development/SKILL.md)
+  and [`.agents/skills/rebirth-defold-verify`](.agents/skills/rebirth-defold-verify/SKILL.md)
+  for development and completion checks.
+- Keep build output, `.internal/` (including `editor.token`), and personal saves
+  out of version control. Save and load characters through the Defold profile
+  service.

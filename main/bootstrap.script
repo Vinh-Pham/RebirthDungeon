@@ -1,0 +1,3 @@
+function init(self)
+	print("Rebirth Dungeon Defold bootstrap ready; migrated gameplay starting.")
+end

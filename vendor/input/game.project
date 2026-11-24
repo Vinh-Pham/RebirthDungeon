@@ -1,0 +1,53 @@
+[project]
+title = Defold-Input
+version = 0.1
+dependencies#0 = https://github.com/britzl/deftest/archive/2.6.0.zip
+
+[bootstrap]
+main_collection = /examples/examples.collectionc
+render = /builtins/render/default.renderc
+
+[display]
+width = 640
+height = 1136
+dynamic_orientation = 1
+
+[physics]
+scale = 0.02
+debug = 0
+gravity_y = 0
+max_collision_object_count = 512
+
+[script]
+shared_state = 1
+
+[library]
+include_dirs = in
+
+[graphics]
+max_debug_vertices = 50000
+
+[collection_proxy]
+max_count = 16
+
+[sprite]
+max_count = 2000
+
+[android]
+package = com.britzl.defold.input
+input_method = HiddenInputField
+
+[osx]
+bundle_identifier = com.britzl.defold.input
+
+[ios]
+bundle_identifier = com.britzl.defold.input
+
+[html5]
+show_fullscreen_button = 0
+show_made_with_defold = 0
+cssfile = /builtins/manifests/web/dark_theme.css
+
+[input]
+game_binding = /builtins/input/all.input_bindingc
+

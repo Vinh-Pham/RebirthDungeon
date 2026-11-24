@@ -1,0 +1,228 @@
+script: "/example/advanced/about.gui_script"
+fonts {
+  name: "example"
+  font: "/assets/example.font"
+}
+nodes {
+  position {
+    x: 320.0
+    y: 568.0
+  }
+  size {
+    x: 400.0
+    y: 300.0
+  }
+  color {
+    x: 0.3019608
+    y: 0.3019608
+    z: 0.3019608
+  }
+  type: TYPE_BOX
+  id: "root"
+  layer: "below"
+  inherit_alpha: true
+}
+nodes {
+  position {
+    x: 120.0
+    y: -112.414
+  }
+  size {
+    x: 110.0
+    y: 50.0
+  }
+  type: TYPE_BOX
+  id: "ok_reload_button"
+  parent: "root"
+  layer: "below"
+  inherit_alpha: true
+}
+nodes {
+  size {
+    x: 200.0
+    y: 100.0
+  }
+  color {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+  }
+  type: TYPE_TEXT
+  text: "OK, reload"
+  font: "example"
+  id: "ok_reload_text"
+  outline {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+  shadow {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+  parent: "ok_reload_button"
+  layer: "text"
+  inherit_alpha: true
+}
+nodes {
+  size {
+    x: 380.0
+    y: 100.0
+  }
+  type: TYPE_TEXT
+  text: "When clicking OK the menu will be shown again using monarch.show()"
+  font: "example"
+  id: "text"
+  outline {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+  shadow {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+  line_break: true
+  parent: "root"
+  layer: "text"
+  inherit_alpha: true
+}
+nodes {
+  position {
+    y: -112.414
+  }
+  size {
+    x: 110.0
+    y: 50.0
+  }
+  type: TYPE_BOX
+  id: "ok_clear_button"
+  parent: "root"
+  layer: "below"
+  inherit_alpha: true
+}
+nodes {
+  size {
+    x: 200.0
+    y: 100.0
+  }
+  color {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+  }
+  type: TYPE_TEXT
+  text: "OK, clear"
+  font: "example"
+  id: "ok_clear_text"
+  outline {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+  shadow {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+  parent: "ok_clear_button"
+  layer: "text"
+  inherit_alpha: true
+}
+nodes {
+  position {
+    x: -120.0
+    y: -112.414
+  }
+  size {
+    x: 110.0
+    y: 50.0
+  }
+  type: TYPE_BOX
+  id: "ok_clearreload_button"
+  parent: "root"
+  layer: "below"
+  inherit_alpha: true
+}
+nodes {
+  size {
+    x: 100.0
+    y: 100.0
+  }
+  color {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+  }
+  type: TYPE_TEXT
+  text: "OK, clear and reload"
+  font: "example"
+  id: "ok_clearreload_text"
+  outline {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+  shadow {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+  line_break: true
+  parent: "ok_clearreload_button"
+  layer: "text"
+  inherit_alpha: true
+}
+nodes {
+  position {
+    x: 120.0
+    y: -54.414
+  }
+  size {
+    x: 110.0
+    y: 50.0
+  }
+  type: TYPE_BOX
+  id: "ok_button"
+  parent: "root"
+  layer: "below"
+  inherit_alpha: true
+}
+nodes {
+  size {
+    x: 200.0
+    y: 100.0
+  }
+  color {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+  }
+  type: TYPE_TEXT
+  text: "OK"
+  font: "example"
+  id: "ok_text"
+  outline {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+  shadow {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+  parent: "ok_button"
+  layer: "text"
+  inherit_alpha: true
+}
+layers {
+  name: "below"
+}
+layers {
+  name: "text"
+}
+material: "/builtins/materials/gui.material"
+adjust_reference: ADJUST_REFERENCE_PARENT

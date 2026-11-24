@@ -1,0 +1,11 @@
+language: java
+
+jdk:
+  - oraclejdk11
+
+env:
+  global:
+    - DEFOLD_BOOSTRAP_COLLECTION=/test/test.collectionc
+
+script:
+  - "./.travis/run.sh"

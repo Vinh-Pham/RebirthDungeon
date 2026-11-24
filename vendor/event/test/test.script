@@ -1,0 +1,19 @@
+local deftest = require("deftest.deftest")
+
+function init(self)
+	deftest.add(require("test.test_event"))
+	deftest.add(require("test.test_event_mode"))
+	deftest.add(require("test.test_event_sub_with_event"))
+	deftest.add(require("test.test_event_logger"))
+	deftest.add(require("test.test_events"))
+	deftest.add(require("test.test_event_context_manager"))
+	deftest.add(require("test.test_event_context_change"))
+	deftest.add(require("test.test_queue"))
+	deftest.add(require("test.test_queues"))
+	deftest.add(require("test.test_promise"))
+
+	-- Ensure all other script init has been processed before
+	-- Required for context changing tests
+	local is_report = sys.get_config_int("test.report", 0) == 1
+	deftest.run({ coverage = { enabled = is_report } })
+end

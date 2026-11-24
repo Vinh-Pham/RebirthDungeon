@@ -1,0 +1,33 @@
+local ink = require "ink.story" 
+
+function init(self)
+
+	local res = sys.load_resource("/assets/test.json")
+	local story = ink.create(res)
+
+	local filename = sys.get_save_file("inktest", "story")
+
+	--sys.save(filename, story.get_state())
+	
+	--local restored = sys.load(filename)
+	--story.restore(restored)
+
+	repeat
+		pprint("======================")
+		local paragraphs, answers = story.continue(1)
+		for _, p in ipairs (paragraphs) do
+			pprint(p.text)
+		end
+
+		if #answers > 0 then
+			pprint("----------------------")
+			for i, a in ipairs (answers) do
+				pprint("[" .. i .. "] " .. a.text)
+			end
+		end
+	until #answers == 0 
+	
+
+	pprint("- T H E - E N D -")
+	os.exit(0)
+end

@@ -1,0 +1,18 @@
+# Aseprite Extension Build Artifacts
+*.aseprite-extension
+.luarc.json
+
+# Defold Build Artifacts
+example/assets/
+example/.internal/
+example/build/
+example/.editor_settings
+
+# Compiled Lua
+*.luac
+luac.out
+
+# Python Cache (for CI scripts)
+__pycache__/
+*.pyc
+*.pyo

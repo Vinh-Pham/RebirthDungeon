@@ -1,0 +1,5 @@
+[bootstrap]
+main_collection = /tests/runtime.collectionc
+
+[rebirth]
+test_mode = 1

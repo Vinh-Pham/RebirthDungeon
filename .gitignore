@@ -1,3 +1,16 @@
-# Godot 4+ specific ignores
-.godot/
-/android/
+# Local caches from the former Godot project.
+/.godot/
+/.beckett/
+
+# Defold build output and local editor state (including editor tokens).
+/.internal/
+/.editor_settings
+/build/
+/bundle/
+
+# Python tools and imported upstream helpers.
+__pycache__/
+*.py[cod]
+/node_modules/
+/.internal
+/build

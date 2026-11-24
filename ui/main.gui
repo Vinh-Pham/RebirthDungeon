@@ -1,0 +1,7 @@
+script: "/main/main.gui_script"
+fonts { name: "ui" font: "/assets/fonts/ui.font" }
+fonts { name: "prose" font: "/assets/fonts/prose.font" }
+material: "/ui/pixel_gui.material"
+adjust_reference: ADJUST_REFERENCE_PARENT
+max_nodes: 4096
+textures { name: "art" texture: "/assets/game.atlas" }

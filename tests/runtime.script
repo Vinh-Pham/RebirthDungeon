@@ -1,0 +1,28 @@
+local deftest = require("deftest.deftest")
+local assertions = require("tests.assertions")
+local suites = {
+	require("tests.test_profiles"),
+	require("tests.test_inventory"),
+	require("tests.test_combat"),
+	require("tests.test_world"),
+	require("tests.test_session"),
+	require("tests.test_input"),
+	require("tests.test_journey"),
+}
+function init(self)
+	deftest.add(function()
+		describe("Rebirth Dungeon parity", function()
+			assertions.test = function(name, run)
+				it(name, function()
+					local ok, err = xpcall(run, debug.traceback)
+					assert_true(ok, err)
+					print("REBIRTH_ENGINE_TEST_PASS " .. name)
+				end)
+			end
+			for _, suite in ipairs(suites) do
+				suite(assertions)
+			end
+		end)
+	end)
+	deftest.run()
+end

@@ -1,0 +1,654 @@
+# Automation Bridge Native API
+
+The native extension registers a curl-friendly HTTP API on Defold's engine service web server:
+
+```text
+http://127.0.0.1:<engine_service_port>/automation-bridge/v2
+```
+
+API v2 standardizes scene-inspection terminology on **element** across endpoint
+paths, capability names, response fields, ids, diagnostics, and input targets.
+
+Find `<engine_service_port>` in the editor console line:
+
+```text
+INFO:ENGINE: Engine service started on port <port>
+```
+
+No Lua setup is required for scene inspection, input, screenshots,
+the event cursor transport, or timeline markers.
+Application-defined events, state, commands, annotations, and acknowledgements
+use a debug-only Lua API that must be enabled explicitly:
+
+```ini
+[automation_bridge]
+application_api = 1
+event_capacity = 256
+```
+
+`event_capacity` is clamped to `16..4096` and defaults to `256`. Release builds expose neither the HTTP bridge nor the `automation_bridge` Lua module.
+
+Query parameters remain available for curl-friendly requests. `POST` and `PUT`
+also accept a root `application/json` object. JSON bodies are limited to 65,536
+bytes and 16 nesting levels. Structured endpoints consume documented nested
+fields (for example `point.x`/`point.y`); unsupported nested fields are validated
+and ignored by flat v1 operations. Query values win if the same key is present
+in both forms.
+
+```sh
+ENGINE_PORT=51337
+BASE="http://127.0.0.1:${ENGINE_PORT}/automation-bridge/v2"
+
+curl -fsS "$BASE/health" | python3 -m json.tool
+```
+
+## Response Shape
+
+Success responses use this envelope:
+
+```json
+{ "ok": true, "data": {} }
+```
+
+Error responses use this envelope:
+
+```json
+{ "ok": false, "error": { "status": 409, "code": "stale_scene", "message": "..." } }
+```
+
+`error.status` is the logical API status. Defold's embedded DLIB HTTP server only
+supports reason phrases for `200`, `302`, `404`, and `500`; other logical
+error statuses are therefore transported as HTTP `500` to avoid an engine
+warning without turning a failure into a successful response. Existing `404`
+and `500` statuses remain unchanged. Clients should use `ok` and `error.status`
+for the precise result; older and generic clients still receive a non-2xx
+failure. See the repository-root `DEVELOPMENT.md` before changing this mapping.
+
+Common error codes include `bad_request`, `invalid_json`, `json_body_too_large`,
+`unsupported_media_type`, `not_found`, `method_not_allowed`, `body_not_supported`,
+`stale_scene`, `stale_element`, `unsupported_key`, `input_queue_full`, `input_too_large`, `input_controller_busy`,
+`input_device_unsupported`, `input_not_found`, `input_not_owned`, `pointer_closed`,
+`screen_resize_unsupported`, `screenshot_unsupported`, `screenshot_not_found`,
+`screenshot_pending`, and
+`unsupported_capability`. The latter names a feature
+omitted by the current platform, graphics, game-object, window, or HID backend.
+
+## Coordinates
+
+Input coordinates use top-left `window` pixels. All advertised spaces use a
+top-left origin:
+
+```json
+{
+  "coordinates": {
+    "origin": "top-left",
+    "units": "pixels",
+    "input_space": "window",
+    "spaces": ["window", "client", "backbuffer", "viewport", "normalized_viewport"]
+  }
+}
+```
+
+Game object bounds are projected from configured `display.width` and `display.height` space to the current window size. GUI bounds are reported in screen pixels.
+
+`GET /screen`, `PUT /screen`, and `GET /health` return:
+
+```json
+{
+  "window": { "x": 0, "y": 0, "width": 1280, "height": 720 },
+  "client": { "x": 0, "y": 0, "width": 1280, "height": 720 },
+  "backbuffer": { "x": 0, "y": 0, "width": 1280, "height": 720 },
+  "display": { "width": 960, "height": 640, "scale": 2 },
+  "project_content": { "x": 0, "y": 0, "width": 960, "height": 640 },
+  "display_pixels": { "x": 0, "y": 0, "width": 1280, "height": 720, "scope": "window_drawable" },
+  "viewport": { "x": 0, "y": 0, "width": 1280, "height": 720 },
+  "coordinates": { "origin": "top-left", "units": "screen_pixels" }
+}
+```
+
+`display` is retained for compatibility and describes configured project
+content, not global monitor bounds. `display_pixels` is limited to the drawable
+window because public Defold APIs do not expose monitor or decorated outer-window
+rectangles.
+
+## Elements
+
+Element responses always include the basic fields:
+
+```json
+{
+  "id": "e:0123456789abcdef",
+  "snapshot_id": "e:0123456789abcdef",
+  "scene_sequence": 42,
+  "engine_frame": 810,
+  "instance_id": "/player",
+  "instance_generation": 7,
+  "logical_id": "instance:0123456789abcdef:g7",
+  "created_scene_sequence": 12,
+  "name": "play",
+  "type": "gui_node_box",
+  "kind": "gui_node",
+  "path": "/main[0]/hud[0]/play[0]",
+  "parent": "e:0011223344556677",
+  "visible": true,
+  "enabled": true
+}
+```
+
+Optional element fields include `text`, `url`, `resource`, `automation_id`, `localization_key`, `role`, `bounds`, `properties`, and `children`.
+
+`bounds` has screen, center, and normalized center coordinates:
+
+```json
+{
+  "bounds": {
+    "screen": { "x": 440, "y": 300, "w": 160, "h": 48 },
+    "center": { "x": 520, "y": 324 },
+    "normalized": { "x": 0.40625, "y": 0.45 }
+  }
+}
+```
+
+Use `include` to choose optional blocks:
+
+```text
+include=bounds
+include=properties
+include=children
+include=all
+include=bounds,properties,children
+```
+
+Basic fields are always returned. Unknown include tokens are ignored. `bounds` are included by default when `include` is omitted. `/element` also includes `properties` by default. `/scene` always returns the recursive tree under `root`.
+
+Element `type` examples include `collectionc`, `goc`, component resource types such as `spritec` or `labelc`, and GUI node types such as `gui_node_box` or `gui_node_text`. `kind` is a broader category: `collection`, `game_object`, `component`, `subcomponent`, `gui_node`, or `element`.
+
+`id`/`snapshot_id` hash the traversal path and are stable only for the current
+scene shape. Elements backed by a public Defold `HInstance` also expose the engine
+identifier, allocation generation, a composed `logical_id`, and the first bridge
+scene sequence that observed that generation. Collection-global qualification is
+not available in public DMSDK yet; use application automation ids when project
+semantics are required. Re-discover snapshot ids after scene changes.
+
+## Endpoint Reference
+
+### `GET /automation-bridge/v2/health`
+
+Checks that the extension is running.
+
+Response `data` includes:
+
+- `version`: API version string.
+- `debug`: `true`.
+- `platform`: `macos`, `windows`, `linux`, `android`, `ios`, or `unknown`.
+- `capabilities`: supported capability names for runtime health/lifecycle,
+  diagnostics, scene inspection, screen/coordinate operations, input and input
+  devices, events, markers, frame waits, application synchronization, and
+  screenshots. Backend-dependent names are omitted when unavailable.
+- `capability_versions`: capability-to-version map for feature negotiation.
+- `native_version`, `api_version_min`, and `api_version_max`: native package and API compatibility information.
+- `identity`: opaque engine instance, process id where portable, wall/monotonic start timestamps, hashed project identity, and hashed build-configuration identity.
+- `backend`: graphics, HID, and headless availability.
+- `lifecycle`: runtime registration, health, and initial-scene stages.
+- `screen`: current screen metadata.
+- `scene_sequence`: snapshot sequence number.
+- `engine_frame` and `engine_instance_id`: native temporal and process-instance correlation.
+- `input`: default device/visualization and supported input devices.
+
+```sh
+curl -fsS "$BASE/health" | python3 -m json.tool
+```
+
+The raw title, bootstrap path, executable path, and user paths are not returned.
+`build_identity` is currently a non-secret configuration fingerprint rather than a
+resource-content digest.
+
+### `GET /automation-bridge/v2/lifecycle`
+
+Returns ordered runtime stages with native monotonic timestamps. The
+`initial_scene_ready` stage appears once a scene root is available.
+
+```sh
+curl -fsS "$BASE/lifecycle" | python3 -m json.tool
+```
+
+## Capability-Driven Backends
+
+Health and lifecycle are independent of scene, graphics, screenshots, windows, and
+HID. Capabilities are advertised only when their backing context exists. Calling an
+omitted route returns logical status `501 unsupported_capability`, so CI can distinguish an unsupported
+backend from a transient runtime failure. True `DM_HEADLESS` registration still needs
+the public Defold debug transport proposed in the specification linked above.
+
+### `GET /automation-bridge/v2/screen`
+
+Returns named rectangles, display scale, scene sequence, engine frame, and the
+coordinate convention.
+
+```sh
+curl -fsS "$BASE/screen" | python3 -m json.tool
+```
+
+### `PUT /automation-bridge/v2/screen`
+
+Sets the native Defold window size and returns `requested`, `outcome`,
+`window_matches`, `backbuffer_matches`, all named rectangles, scene sequence,
+and engine frame. Outcomes are `already_correct`, `resized`, or
+`requested_not_observed`. The latter still uses HTTP 200 and lets a client poll
+`GET /screen` to impose its own timeout.
+
+Query parameters:
+
+- `width`, `height`: positive integer window size in screen pixels.
+
+```sh
+curl -fsS -X PUT "$BASE/screen?width=1280&height=720" | python3 -m json.tool
+curl -fsS -X PUT -H 'Content-Type: application/json' \
+  -d '{"width":1280,"height":720}' "$BASE/screen" | python3 -m json.tool
+```
+
+### `POST /automation-bridge/v2/coordinates/convert`
+
+Converts `x`/`y` from `from_space` to `to_space`. Supported spaces are `window`,
+`client`, `display_pixels`, `backbuffer`, `viewport`, and
+`normalized_viewport`. World and GUI-layout transforms are intentionally absent
+until the application publishes them or Defold exposes public transforms.
+
+```sh
+curl -fsS -X POST -H 'Content-Type: application/json' \
+  -d '{"point":{"x":0.5,"y":0.5},"from_space":"normalized_viewport","to_space":"window"}' \
+  "$BASE/coordinates/convert" | python3 -m json.tool
+```
+
+### `GET /automation-bridge/v2/frame`
+
+Returns the current `engine_frame` and `scene_sequence`. Poll this endpoint for
+frame-relative waits; semantic completion should use application state/events.
+
+### `GET /automation-bridge/v2/scene`
+
+Returns the current runtime scene tree.
+
+Query parameters:
+
+- `visible`: optional boolean. Use `1`, `true`, or `yes` for true; any other present value is false.
+- `include`: optional comma-separated include list.
+
+Response `data` includes `count`, `visible_filter`, `screen`, `scene_sequence`,
+`engine_frame`, and `root`.
+
+```sh
+curl -fsS "$BASE/scene?visible=1&include=bounds,properties" | python3 -m json.tool
+```
+
+### `GET /automation-bridge/v2/elements`
+
+Searches elements with simple filters. This is the main discovery endpoint for automation clients.
+
+Pagination values are validated: `limit` must be an integer from 0 through 500;
+`offset` and `cursor` must be unsigned 32-bit integers. Malformed supplied values
+return `bad_request`. A valid cursor takes precedence over a valid offset. Pages
+are independent live snapshots; compare their frame and scene metadata.
+
+Query parameters:
+
+- `id`: exact element id.
+- `type`, `name`, `text`, `url`: substring match, case-insensitive by default.
+- `type_exact`, `name_exact`, `text_exact`, `url_exact`: case-sensitive exact match.
+- `path`, `kind`, `instance_id`, `logical_id`: case-sensitive exact match.
+- `automation_id`: exact application-supplied automation id.
+- `localization_key`: exact application-supplied localization key.
+- `role`: exact application-supplied semantic role.
+- `visible`, `enabled`, `has_bounds`, `visible_and_enabled`: optional boolean filters.
+- `case_sensitive`: make substring filters case-sensitive.
+- `include`: optional comma-separated include list.
+- `limit`: number of returned elements, clamped to `0..500`. Default is `50`. Use `limit=0` to get counts without element payloads.
+- `offset` or numeric `cursor`: zero-based result offset.
+
+Response `data` includes:
+
+- `elements`: returned element list.
+- `count`: returned element count after `limit`.
+- `matched`: total matching elements before `limit`.
+- `total`: total elements in the snapshot.
+- `truncated`, `next_cursor`, and `offset`: explicit pagination state.
+- `scene_sequence`, `engine_frame`, and `active_collections`: selector diagnostics.
+
+```sh
+curl -fsS "$BASE/elements?type=labelc&text=Play&visible=1&limit=20" | python3 -m json.tool
+```
+
+### `GET /automation-bridge/v2/element`
+
+Returns one element in detail.
+
+Query parameters:
+
+- `id`: required element id.
+- `include`: optional comma-separated include list. Defaults to bounds and properties.
+
+```sh
+curl -fsS "$BASE/element?id=e:0123456789abcdef&include=bounds,properties,children" | python3 -m json.tool
+```
+
+### Input ownership, FIFO execution, and receipts
+
+All click, drag, path, pointer, key, and wheel actions share one FIFO. Only the first action advances during an engine update, so independent gestures cannot overwrite the same HID state. Every mutating request carries `client_id`, `session_id`, and `request_id`; keep ids compact on query endpoints because Defold bounds the complete request resource. The first client/session acquires the controller lease and other clients receive `input_controller_busy` until that lease expires. Observer endpoints remain readable without the lease.
+
+Use `PUT /input/configure?client_id=...&session_id=...&lease=5&device=auto&visualize=1` to acquire or renew control and set defaults. Devices are exclusive per gesture: `auto`, `mouse`, or `touch`. `GET /health` reports `input.device.mouse` and, on platforms where native touch injection is supported, `input.device.touch`. The public Defold HID API has no reliable connected-touch-device predicate, so explicit touch is conservatively enabled on iOS, Android, and Switch and rejected elsewhere; one gesture never injects both mouse and touch.
+
+When resolving an element id, pass `expected_scene_sequence` to reject a changed
+snapshot with logical status 409 `stale_scene`. Input receipts include the scene sequence
+and engine frame used for resolution.
+
+```sh
+curl -fsS -X POST "$BASE/input/click?id=e:0123456789abcdef"
+curl -fsS -X POST "$BASE/input/click?x=480&y=320&visualize=0"
+```
+
+Accepted input returns HTTP 200 with this lifecycle receipt in `data`:
+
+```json
+{
+  "input_id": 42,
+  "kind": "drag",
+  "state": "accepted",
+  "queue_position": 1,
+  "accepted_frame": 120,
+  "start_frame": null,
+  "release_frame": null,
+  "accepted_time_us": 123456789,
+  "start_time_us": null,
+  "release_time_us": null,
+  "requested_duration": 0.35,
+  "actual_duration": 0,
+  "reason": null,
+  "client_id": "runner-1",
+  "session_id": "test-7",
+  "request_id": "request-19",
+  "engine_instance_id": "engine-123456",
+  "scene_sequence": 8,
+  "engine_frame": 120,
+  "device": "mouse",
+  "pointer_id": 0,
+  "modifier_count": 0,
+  "button": "left"
+}
+```
+
+Lifecycle terms are exact: `accepted` means queued, `started` means the first down/key event was injected, and `released` means the final up was injected; for a wheel event they are the first detent's tick and the last detent's rest. `cancelled` and `failed` are terminal and include `reason`. They do not claim that application code consumed or accepted the action.
+
+Use `GET /input/status?input_id=42` for current/bounded-history status and `GET /input/pending` for the FIFO. `POST /input/cancel?input_id=42&release=1&client_id=...&session_id=...` cancels one action. `POST /input/flush?release=1&client_id=...&session_id=...` cancels the owning session's active and later actions. `release=1` releases mouse/key state or emits a cancelled touch contact. A pointer or controller lease expiry performs the same safe cleanup.
+
+Element-targeted input accepts `expected_scene_sequence`. A mismatch returns logical status 409 with `stale_scene` before resolving a snapshot/path element id. Receipts retain the scene sequence used for resolution plus engine instance/frame metadata.
+
+For protection that survives ordinary frame/snapshot advancement, element-targeted
+clicks and wheel events also accept `expected_logical_id`; element-targeted drags accept
+`expected_from_logical_id` and `expected_to_logical_id`. If a path-derived element id
+now belongs to a different runtime instance, the request returns logical status 409 with
+`stale_element` before input is queued.
+
+### `POST /automation-bridge/v2/input/click`
+
+Use `id`, or finite `x`/`y`. Optional common fields are `device`, `pointer_id`, `visualize`, `expected_scene_sequence`, and the ownership/correlation fields above. `modifiers` holds up to four comma-separated key names (e.g. `modifiers=KEY_LSHIFT` for shift-click) as a chord for the whole gesture: pressed one engine update before the pointer goes down and released one update after it comes up, re-asserted every update while the event plays. Accepted names are the same as the `keys` parameter's special keys; unknown names, an empty list, or more than four return an error instead of silently tapping unmodified.
+
+`button` selects the mouse button held for the gesture: `left` (the default), `right`, or `middle`, matching Defold's `MOUSE_BUTTON_LEFT`, `MOUSE_BUTTON_RIGHT`, and `MOUSE_BUTTON_MIDDLE` bindings. It applies the same way to `/input/drag`, `/input/drag_path`, and `/input/pointer/open`, where the button stays down until the final up. Any other supplied value, including an empty, upper-case, numeric, list, object, or `null` value, returns `bad_request` instead of becoming a left click. A touch contact has no buttons: `right` or `middle` with a device that resolves to `touch` returns `input_device_unsupported`. The receipt echoes `button` for mouse gestures and `null` for touch, key, and wheel receipts. Advertised as the `input.button` capability (version `1`); an older bridge ignores the field and clicks left, so negotiate the capability before sending a non-left button.
+
+```sh
+curl -fsS -X POST "$BASE/input/click?id=e:0123456789abcdef&client_id=runner&session_id=test&request_id=click-1"
+curl -fsS -X POST "$BASE/input/click?x=480&y=320&button=right&client_id=runner&session_id=test"
+```
+
+### `POST /automation-bridge/v2/input/drag`
+
+Use `from_id`/`to_id`, or `x1`/`y1`/`x2`/`y2`. `duration`, `hold_before`, and `hold_after` are seconds in `0..60`; their total must not exceed 60. `easing` is `linear`, `ease_in`, `ease_out`, or `ease_in_out`. `modifiers` and `button` work as on `/input/click` (e.g. `modifiers=KEY_LCTRL` for ctrl-drag, `button=right` for a right-button drag), held across the whole down/move/up.
+
+```sh
+curl -fsS -X POST "$BASE/input/drag?x1=100&y1=100&x2=500&y2=300&duration=.35&easing=ease_in_out&client_id=runner&session_id=test"
+```
+
+### `POST /automation-bridge/v2/input/drag_path`
+
+Runs exactly one down, a continuous native path, and one up. `points` contains `x,y` pairs separated by semicolons. For `path=sampled` or `linear`, `durations` and `easing` have one comma-separated value per segment. `path=quadratic` requires three control points and one duration/easing; `path=cubic` requires four. Paths contain 2–128 points, the encoded point list is limited to 8192 bytes, and total duration including holds is at most 60 seconds. Visualization records and draws positions actually injected on engine updates, including the sampled curve, rather than drawing only a start/end chord. `modifiers` and `button` work as on `/input/click`, held across the whole gesture.
+
+```sh
+curl -fsS -X POST -H 'Content-Type: application/json' \
+  --data '{"points":"100,100;180,60;260,140","durations":".15,.22","easing":"ease_in,ease_out","hold_before":.08,"hold_after":.04,"client_id":"runner","session_id":"test"}' \
+  "$BASE/input/drag_path"
+```
+
+### Low-level pointer sessions
+
+`POST /input/pointer/open?x=...&y=...&pointer_lease=2...` creates a leased pointer receipt. `modifiers` and `button` work as on `/input/click`, held for the whole session until the pointer releases. Append continuous work with `/input/pointer/move?input_id=...&x=...&y=...&duration=...&easing=...` and `/input/pointer/hold?input_id=...&duration=...`; finish with `/input/pointer/up?input_id=...`. Every command includes the same client/session identity and renews `pointer_lease`. If the client disappears, expiry emits a safe release/cancel. `POST /input/cancel` closes a session immediately.
+
+### `POST /automation-bridge/v2/input/key`
+
+Use `text` for literal UTF-8 or `keys` for one or more brace-wrapped special keys such as URL-encoded `%7BKEY_ENTER%7D`. Values are limited to 4096 bytes. Supported names cover every named key in the engine's `dmHID::Key` enum: arrows, modifiers, navigation keys, `KEY_F1`–`KEY_F12`, `KEY_A`–`KEY_Z`, `KEY_0`–`KEY_9`, punctuation and symbol keys (`KEY_EQUALS`, `KEY_MINUS`, `KEY_COMMA`, `KEY_PERIOD`, `KEY_SLASH`, brackets, and the rest), keypad keys (`KEY_KP_0`–`KEY_KP_9`, `KEY_KP_ADD`, ...), and lock/system keys (`KEY_CAPS_LOCK`, `KEY_PAUSE`, `KEY_LSUPER`, ...). Unknown or malformed brace-wrapped names return `unsupported_key` instead of producing a successful no-op receipt. Braces supplied through `text` remain literal. `hold` keeps each special key pressed for that many seconds (`0..60`, default `0` -- a single-update tap) before releasing it; it applies per `{KEY_...}` token, the combined hold across all tokens must stay within 60 seconds, and it requires at least one special key (literal text cannot be held). While held, the key is re-asserted every engine update, so bindings receive the same continuous per-frame actions a physically held key produces; progressing key events keep controller ownership through their bounded release without an indefinitely renewable hold, and the receipt's `requested_duration` reports the total requested hold. Key presses share the FIFO, report the same receipts, and cancellation releases an active special key. `modifiers` holds up to four comma-separated key names as a chord across the press (e.g. `keys=%7BKEY_Z%7D&modifiers=KEY_LCTRL` for ctrl-Z), pressed one update before the first key and released one update after the last; it composes with `hold`, requires at least one special key (literal text cannot be chorded), and is advertised as the `input.modifiers` capability. The receipt echoes `modifier_count` so a client can tell a chord was honoured. `GET /health` advertises `input.key` capability version `2` for full named-key and hold support; clients must negotiate `input.key>=2` before sending `hold`.
+
+### `POST /automation-bridge/v2/input/wheel`
+
+Turns the mouse wheel by `steps` detents. Use `id`, or finite `x`/`y`, as on `/input/click`; a request with neither returns `bad_request`. `steps` is required: a non-zero integer from `-64` to `64`, where positive fires `mouse_wheel_up` and negative fires `mouse_wheel_down`; a missing, zero, fractional, or out-of-range value returns `bad_request`. Each detent takes two engine updates, a tick (the binding reads value `1` and `pressed`) and a rest (value `0`, `released`), so every detent is a new press. The pointer is held at the target for the whole event, so the wheel action carries the target position as a click does (`action.screen_y` uses Defold's bottom-left origin). Defold delivers every wheel, trackpad included, as whole detents: the HID wheel is an integer and the binding clamps each update's change to `0..1`, so there is no fractional value to send. The wheel is always a mouse input: a `modifiers` field of any value, and a `device` other than `auto` or `mouse` (including an empty, `null`, or non-string value), return `bad_request`, and `visualize` has no effect. Detents already sent stay applied when the event is cancelled: a wheel has nothing to release. Wheel events share the FIFO and receipts, and own the controller through release like key events. Advertised as the `input.wheel` capability (version `1`).
+
+```sh
+curl -fsS -X POST "$BASE/input/wheel?x=480&y=360&steps=1&client_id=runner&session_id=test"
+```
+
+### `GET /automation-bridge/v2/screenshot`
+
+Schedules an atomic post-render PNG capture. `after_frames` may defer capture by
+up to 600 rendered callbacks. The accepted receipt includes a `capture_id` and
+must be completed through the status endpoint; file size polling is not a
+completion protocol. PNG rows use the same top-left window orientation as input,
+scene bounds, and coordinate conversion responses. Capture is supported on
+OpenGL, OpenGL ES, Vulkan, and Metal, including Defold 1.14.0's default macOS
+adapter.
+
+```sh
+curl -fsS "$BASE/screenshot" | python3 -m json.tool
+```
+
+Response `data`:
+
+```json
+{
+  "capture_id": 7,
+  "state": "pending",
+  "path": "/tmp/automation-bridge/screenshot-123-7.png",
+  "engine_frame": 810,
+  "scene_sequence": 42,
+  "width": 1280,
+  "height": 720,
+  "format": "png",
+  "sha256": null,
+  "failure_reason": null
+}
+```
+
+### `GET /automation-bridge/v2/screenshot/status`
+
+Takes `capture_id` (or `id`) and returns `pending`, `complete`, or `failed`.
+Completed receipts include capture frame/sequence, dimensions, and SHA-256. The
+PNG is first written to a temporary path and atomically renamed before `complete`
+is visible.
+
+## Engine-native video recording (Defold 1.14.1+)
+
+Defold owns video capture, encoding, finalization, and temporary recording files.
+The extension no longer registers recording routes or advertises
+`recording.video` / `recording.application_audio` in bridge health.
+Use `game.video_recording` from the Python wrapper, or the engine service's
+root routes, described by its `/openapi.json`:
+
+```text
+http://127.0.0.1:<engine_service_port>/recording/capabilities
+http://127.0.0.1:<engine_service_port>/recording/status
+http://127.0.0.1:<engine_service_port>/recording/start
+http://127.0.0.1:<engine_service_port>/recording/stop
+http://127.0.0.1:<engine_service_port>/recording/files/{id}
+```
+
+These routes are independent of `/automation-bridge/v2` and do not use its
+`ok`/`data` envelope, query parameters, or status-code compatibility mapping.
+Read capabilities and check `version == 1`, `supported`, `audio`, and
+`instance_id`. Send the retained identity as `X-Recording-Instance` on start,
+status, stop, download, and deletion to protect against engine replacement.
+
+Start accepts only `fps` (1–60, default 30) and optional `audio`. It captures
+native content dimensions with no size override; changing window size stops
+capture. The service chooses its own temporary output path. Start/stop return
+HTTP 202; poll status for completion. Stop requires the accepted `operation_id`.
+Download only after `pending == false`, `finalized == true`, and
+`file.state == "complete"`; verify the receipt's size and SHA-256 before saving,
+then DELETE the file to release engine storage.
+
+The recorder is included in desktop debug engines unless excluded by the app
+manifest. Supported platforms are macOS 15+, Windows 10 version 1903+, and Linux.
+Windows application audio requires build 20348+; Linux is video only. Omitted
+`audio` follows native support. Platform availability does not guarantee capture
+permission.
+
+See the [recording contract](../docs/recording-platform-contract.md) and
+[upstream recorder documentation](https://github.com/defold/defold/blob/c571fef566079dd309d009b62198e4cc5782cdf6/engine/record/README.md).
+
+## Application synchronization
+
+The application channel is optional. Core scene inspection and native input work without application changes. All names are limited to 128 bytes and use letters, numbers, `_`, `-`, `:`, and dot-separated namespace segments. Project-prefixed names such as `my_game.operation_complete` are recommended to avoid collisions.
+
+Application JSON is limited to 32 KiB and 16 nested array/object levels. Commands call registered functions only; there is no endpoint for arbitrary Lua evaluation.
+
+### Application catalog
+
+`GET /application/catalog` requires `application.catalog` (version 1), advertised
+only when `application_api = 1`. It lists all registered commands, published
+states, and explicitly declared state/event contracts. Undocumented registrations
+have an empty `contract`. Declare metadata from Lua after registering a command:
+
+```lua
+automation_bridge.describe("command", "my_game.load_fixture", {
+    description = "Load a fixture and return its name when ready.",
+    input_schema = { type = "object", properties = { name = { type = "string" } }, required = { "name" } },
+    output_schema = { type = "object", properties = { loaded = { type = "string" } } },
+})
+automation_bridge.describe("state", "my_game.ui", {
+    description = "Current workflow state; published whenever the step changes.",
+    schema = { type = "object", properties = { busy = { type = "boolean" } } },
+})
+automation_bridge.describe("event", "my_game.operation_complete", {
+    description = "Emitted after completion with the caller's operation_id.",
+    schema = { type = "object", properties = { operation_id = { type = "string" } } },
+})
+```
+
+The kind is `command`, `state`, or `event`. Metadata accepts only `description`
+(1-4096 bytes), command `input_schema`/`output_schema`, or state/event `schema`.
+Schema roots must be objects with string keys or booleans. They are application
+documentation: the bridge does not validate payloads against JSON Schema or fetch
+schema references. The existing JSON size/depth limits apply to each complete
+contract, with at most 256 declarations per engine instance. Repeating a kind/name
+replaces its complete metadata. Metadata is cleared with the Lua application
+lifecycle. An event declaration does not emit an event; a state may be described
+before its first publication. Document timing and correlation rules in descriptions.
+
+The endpoint accepts exact `kind`/`name` filters, `limit` (default 50, range 0-100),
+`offset` (default 0), and a decimal string `cursor` that takes precedence over
+offset. Invalid supplied pagination values return logical `400 bad_request`.
+The response data is `{entries: [{kind, name, contract}], count, matched, offset,
+next_cursor, revision, engine_instance_id}`. A zero limit returns only metadata
+and counts. `next_cursor` is null when there is no continuation. Each page is
+consistent; restart pagination when revision or engine identity changes.
+Revision changes on registration, first state publication, metadata replacement,
+or Lua teardown, rather than on every state value update.
+
+### Structured events and cursors
+
+Applications emit typed JSON from Lua:
+
+```lua
+automation_bridge.emit("my_game.operation_complete", {
+    operation_id = "op-42",
+    success = true,
+})
+```
+
+`GET /events/cursor` returns the next cursor and the oldest retained cursor. `GET /events?cursor=N&timeout_ms=10000&limit=100` long-polls for entries at or after `N`. Each event includes `sequence`, `type`, `name`, JSON `data`, engine `frame`, `native_timestamp_us`, `engine_instance_id`, and `scene_sequence`. `recording_timestamp_us` is present for recorder-correlated markers.
+
+The event ring is bounded. A cursor older than `oldest_cursor` returns `overflow: true`, the retained range, and no silent cursor advancement. Clients must explicitly decide whether to fail or resubscribe.
+
+### Published state
+
+```lua
+automation_bridge.publish("my_game.ui", {
+    busy = false,
+    workflow_step = "ready",
+})
+```
+
+`GET /state` returns all latest values plus the global `revision`. `GET /state?name=my_game.ui` selects an exact state name. `GET /state/wait?after_revision=12&timeout_ms=10000` long-polls until a newer publication. Every state includes its own revision, frame, and native timestamp, so a wait can require a publication newer than the state it already observed.
+
+### Named commands
+
+```lua
+automation_bridge.command("my_game.load_fixture", function(data)
+    load_fixture(data.name)
+    return { loaded = data.name }
+end)
+```
+
+Submit commands in a JSON body. The `data` field is itself a string containing
+strict JSON:
+
+```sh
+curl -fsS -X POST -H 'Content-Type: application/json' \
+  --data '{"name":"my_game.load_fixture","data":"{\"name\":\"standard\"}","timeout_ms":30000}' \
+  "$BASE/commands" | python3 -m json.tool
+```
+
+Query parameters remain supported for short curl requests, but clients should
+use the body because Defold bounds the complete request resource. The HTTP 200
+response contains a command id. Poll `GET /commands?id=<id>` for `pending`,
+`running`, `completed`, `failed`, `cancelled`, or `timed_out`, plus the JSON
+result or error. `DELETE /commands?id=<id>` cancels only pending work. Lua
+callbacks run on the engine update thread and cannot be safely preempted; a
+running cancellation returns logical status `409 command_not_cancellable`.
+
+### Native delivery and application acknowledgement
+
+Native input receipts describe only bridge lifecycle stages such as accepted, started, and released. An application can separately report its semantic decision:
+
+```lua
+automation_bridge.acknowledge_input(input_id, {
+    accepted = false,
+    reason = "input_locked",
+})
+```
+
+Acknowledgements are retained as `type="acknowledgement"`, `name="input.acknowledged"` events whose data contains `input_id` and `result`. They do not claim which script consumed an action. Automatic propagation of a native injection id into Defold's Lua input action is not currently available.
+
+### Semantic annotations
+
+Rendered text does not reveal a localization key. Applications can annotate a public scene-element URL instead:
+
+```lua
+automation_bridge.annotate("main:/ui#status", {
+    automation_id = "operation_status",
+    localization_key = "status_ready",
+    role = "status",
+})
+```
+
+Annotations are copied into matching scene snapshots and can be queried with the exact `automation_id`, `localization_key`, and `role` element filters. Metadata is application-owned and disappears when the engine instance exits.
+
+### Timeline markers
+
+Use a JSON body to insert a `marker` event without constraining marker data to
+the request-resource limit:
+
+```sh
+curl -fsS -X POST -H 'Content-Type: application/json' \
+  --data '{"name":"workflow_started","data":"{\"case\":7}","recording_timestamp_us":1234}' \
+  "$BASE/markers" | python3 -m json.tool
+```
+
+Native monotonic time is always recorded. The optional recording timestamp is
+caller-supplied, allowing a client to correlate markers with its own media or
+trace clock. Native video recording does not add this correlation automatically.
