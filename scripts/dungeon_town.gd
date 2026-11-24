@@ -6,6 +6,7 @@ const Shop = preload("res://scripts/blacksmith_shop.gd")
 
 const Style = preload("res://scripts/menu_style.gd")
 const Store = preload("res://scripts/character_store.gd")
+const Gold = preload("res://scripts/gold.gd")
 const Catalog = preload("res://scripts/sword_catalog.gd")
 const Satchel = preload("res://scripts/sword_satchel.gd")
 const Armory = preload("res://scripts/armory.gd")
@@ -28,6 +29,7 @@ const SPINDLE_LANDMARKS := [
 	{"id": "general_shop", "cell": Vector2i(15, 4), "label": "Provisioner", "name": "Rill", "sprite": 7},
 	{"id": "healer", "cell": Vector2i(20, 4), "label": "Healer's House", "name": "Ada", "sprite": 8},
 	{"id": "gate", "cell": Vector2i(24, 8), "label": "Moon Gate", "sprite": 9},
+	{"id": "bank", "cell": Vector2i(15, 8), "label": "Bank", "name": "Ledger Keeper", "glyph": "$"},
 	{"id": "dungeon", "cell": Vector2i(26, 5), "label": "Threshold", "glyph": ">"},
 ]
 const TOWN_NAMES := {"lantern_rest": "Lantern Rest", "spindle_hollow": "Spindle Hollow"}
@@ -54,6 +56,10 @@ var _studying_at_school := false
 var satchel := Satchel.new()
 var armory: Armory
 var sheet: Sheet
+var _bank: Control
+var _bank_amount: SpinBox
+var _bank_balance: Label
+var _bank_status: Label
 var _repair: Repair
 var _shop: Shop
 var _tree_refresh: Timer
@@ -300,7 +306,7 @@ func _profile_updated(updated: Dictionary) -> void:
 
 
 func _map_movement_available() -> bool:
-	return not (_layout.inventory_is_open() or _layout.game_menu_is_open() or sheet.visible or armory.visible or _journal.visible or _repair.visible or _shop.visible)
+	return not (_layout.inventory_is_open() or _layout.game_menu_is_open() or sheet.visible or armory.visible or _journal.visible or _repair.visible or _shop.visible or (_bank != null and _bank.visible))
 
 
 func _command(command: String) -> void:
@@ -325,6 +331,11 @@ func _command(command: String) -> void:
 
 
 func _save(changes: Dictionary) -> bool:
+	if int(changes.get(Gold.ID, 0)) > int(world.get(Gold.ID, 0)):
+		var cobwebs: int = world["town_materials"][Satchel.COBWEB_ID]
+		if int(changes[Gold.ID]) > satchel.gold_capacity(cobwebs):
+			_say("Your bag is full. Deposit some gold at the bank and try again.", {})
+			return false
 	var saved: Dictionary = Store.update_world(changes)
 	if saved.is_empty():
 		if dialogue != null:
@@ -466,6 +477,10 @@ func _input(event: InputEvent) -> void:
 			sheet.close()
 			get_viewport().set_input_as_handled()
 		return
+	if _bank != null and _bank.visible:
+		if event.keycode == KEY_ESCAPE:
+			_bank.hide()
+		return
 	if armory.visible or _repair.visible or _shop.visible:
 		return
 	if _journal.visible:
@@ -567,7 +582,7 @@ func _interact() -> void:
 		"blacksmith":
 			_blacksmith_menu()
 		"general_shop":
-			var choices := {"Buy tonic · 8 gold": _buy}
+			var choices := {"Shop": _open_general_shop, "Buy tonic · 8 gold": _buy}
 			if town == "lantern_rest":
 				choices["Buy fiber · %d gold" % Activities.FIBER_PRICE] = _perform_activity.bind("buy_fiber")
 				choices["Sell cloth · %d gold" % Activities.CLOTH_PRICE] = _perform_activity.bind("sell_cloth")
@@ -585,6 +600,8 @@ func _interact() -> void:
 			_say("%s  ·  Mill this grain into flour at the windmill, then bake it at the oven." % resident, {
 				"Buy grain · %d gold" % Activities.GRAIN_PRICE: _perform_activity.bind("buy_grain"),
 			})
+		"bank":
+			_open_bank()
 		"healer":
 			_say("%s  ·  Rest here until your strength returns." % resident, {"Rest and recover": _heal})
 		"oven":
@@ -752,6 +769,8 @@ func _open_shop() -> void:
 
 
 func _shop_rows() -> Array:
+	if _at_general_shop():
+		return _pouch_stock()
 	var rows := Catalog.shop_stock().values()
 	for item: Dictionary in rows:
 		if satchel.owns(item["id"]):
@@ -761,6 +780,9 @@ func _shop_rows() -> Array:
 
 
 func _purchase_shop_item(id: String) -> void:
+	if _shop.visible and _at_general_shop():
+		_purchase_gold_pouch(id)
+		return
 	if not _shop.visible or town != "lantern_rest" or not _at_blacksmith():
 		return
 	var active := Store.load_selected()
@@ -970,3 +992,117 @@ func _apply_skill_result(result: Dictionary) -> void:
 		_refresh()
 		_open_journal("skills", _studying_at_school)
 	_journal.set_skill_status(str(result.get("message", "")))
+
+
+func _open_bank() -> void:
+	if _bank == null:
+		_build_bank()
+	_bank_status.text = ""
+	_refresh_bank()
+	_bank.show()
+	_bank_amount.get_line_edit().grab_focus()
+
+
+func _build_bank() -> void:
+	_bank = Control.new()
+	_bank.name = "Bank"
+	add_child(_bank)
+	_bank.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var shade := ColorRect.new()
+	shade.color = Style.OVERLAY_SHADE
+	_bank.add_child(shade)
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var center := CenterContainer.new()
+	_bank.add_child(center)
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var frame := Style.panel(center, Style.SURFACE)
+	frame.custom_minimum_size.x = 480
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 14)
+	Style.inset(frame, 24, 22).add_child(column)
+	column.add_child(Style.label("Bank", 30, Style.ACCENT))
+	_bank_balance = Style.label("", 16)
+	column.add_child(_bank_balance)
+	column.add_child(Style.label("Amount in gold", 14))
+	_bank_amount = SpinBox.new()
+	_bank_amount.min_value = 0
+	_bank_amount.max_value = Gold.BANK_LIMIT
+	_bank_amount.step = 1
+	_bank_amount.value = 0
+	column.add_child(_bank_amount)
+	var actions := HBoxContainer.new()
+	column.add_child(actions)
+	for caption in ["Deposit", "Withdraw", "Deposit All"]:
+		var button := Style.button(caption)
+		button.pressed.connect(_bank_transfer.bind(caption))
+		actions.add_child(button)
+	_bank_status = Style.label("", 14, Style.TEXT, true)
+	_bank_status.custom_minimum_size = Vector2(430, 48)
+	_bank_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	column.add_child(_bank_status)
+	var back := Style.button("Back")
+	back.pressed.connect(_bank.hide)
+	column.add_child(back)
+
+
+func _refresh_bank() -> void:
+	var current: Dictionary = Store.load_selected().get("world", {})
+	_bank_balance.text = "Carried %dg\nBank %dg" % [int(current.get(Gold.ID, 0)), int(current.get("bank_gold", 0))]
+
+
+func _bank_transfer(action: String) -> void:
+	_bank_amount.apply()
+	var amount := int(_bank_amount.value)
+	if action == "Deposit All":
+		amount = int(world[Gold.ID])
+	var error := satchel.withdraw_gold(amount) if action == "Withdraw" else satchel.deposit_gold(amount)
+	if error.is_empty():
+		profile = Store.load_selected()
+		world = profile["world"]
+		_refresh()
+		_bank_status.text = "%s %dg." % ["Withdrew" if action == "Withdraw" else "Deposited", amount]
+	else:
+		_bank_status.text = error
+	_refresh_bank()
+
+
+func _at_general_shop() -> bool:
+	return conversation_target >= 0 and conversation_target < _landmarks.size() \
+		and _landmarks[conversation_target]["id"] == "general_shop" \
+		and player.distance_squared_to(_points[conversation_target]) <= 1
+
+
+func _pouch_stock() -> Array:
+	var rows := []
+	for id: String in Gold.POUCHES:
+		rows.append({
+			"id": id, "name": Gold.pouch_name(id), "category": "pouches", "price": Gold.POUCHES[id]["price"],
+			"icon_path": "res://assets/art/%s.png" % id,
+			"description": "Occupies 2×2 bag cells. Holds up to %s. Fills automatically with gold." % Gold.format_amount(Gold.pouch_capacity(id)),
+		})
+	return rows
+
+
+func _open_general_shop() -> void:
+	if not _at_general_shop():
+		return
+	_layout.cancel_map_movement()
+	_shop.open([{"id": "pouches", "name": "Gold Pouches"}], _pouch_stock(), int(world["gold"]), "General Shop")
+
+
+func _purchase_gold_pouch(id: String) -> void:
+	var active := Store.load_selected()
+	if active.get("id") != profile["id"] or active["world"]["location"] != town:
+		_shop.set_status("Could not load your character.")
+		return
+	for item: Dictionary in _pouch_stock():
+		if item["id"] != id:
+			continue
+		var error: String = satchel.purchase_pouch(id, int(item["price"]))
+		if not error.is_empty():
+			_shop.set_status(error)
+			return
+		_profile_updated(Store.load_selected())
+		_shop.refresh(int(world["gold"]), _pouch_stock())
+		_shop.set_status("Purchased %s." % item["name"])
+		return

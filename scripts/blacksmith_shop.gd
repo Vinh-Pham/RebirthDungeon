@@ -6,6 +6,7 @@ signal closed
 const Style = preload("res://scripts/menu_style.gd")
 const Catalog = preload("res://scripts/sword_catalog.gd")
 
+var _title: Label
 var _tabs: TabBar
 var _rows: GridContainer
 var _gold_label: Label
@@ -34,9 +35,9 @@ func _ready() -> void:
 	Style.inset(panel, 20, 18).add_child(column)
 	var header := HBoxContainer.new()
 	column.add_child(header)
-	var title := Style.label("Blacksmith Shop", 28)
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header.add_child(title)
+	_title = Style.label("Blacksmith Shop", 28)
+	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(_title)
 	_gold_label = Style.label("", 16, Style.ACCENT)
 	header.add_child(_gold_label)
 	var back := Style.button("Close")
@@ -68,7 +69,8 @@ func _ready() -> void:
 	column.add_child(_buy)
 
 
-func open(categories: Array, items: Array, gold: int) -> void:
+func open(categories: Array, items: Array, gold: int, heading := "Blacksmith Shop") -> void:
+	_title.text = heading
 	_categories = categories.duplicate(true)
 	_items = items.duplicate(true)
 	_selected = ""
@@ -123,7 +125,7 @@ func _render_rows() -> void:
 		button.custom_minimum_size.y = 64
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-		button.icon = Catalog.icon(item)
+		button.icon = load(item["icon_path"]) if item.has("icon_path") else Catalog.icon(item)
 		button.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		button.expand_icon = true
 		button.add_theme_constant_override("icon_max_width", 32)

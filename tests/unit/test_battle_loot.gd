@@ -49,3 +49,17 @@ func test_legacy_and_invalid_pending_loot() -> void:
 	for invalid in [[], {"unknown": 1}, {"gold": 0}, {"cobweb": -1}, {"gold": 1.5}]:
 		assert_eq(Store._normalize_world({"pending_loot": invalid}), {})
 	assert_eq(Loot.combine({"cobweb": 1}, {"gold": 2, "cobweb": 3}), {"cobweb": 4, "gold": 2})
+
+
+func test_cobweb_loot_requires_capacity_for_the_whole_selected_stack() -> void:
+	var world := Store._normalize_world({
+		"town_materials": {"cobweb": 98},
+		"pending_loot": {"cobweb": 2, "gold": 4},
+	})
+	var changes := Loot.collect(world, ["cobweb", "gold"], 99)
+	assert_eq(changes["pending_loot"], {"cobweb": 2})
+	assert_eq(changes["gold"], 28)
+	assert_false(changes.has("town_materials"))
+	changes = Loot.collect(world, ["cobweb"], 198)
+	assert_eq(changes["town_materials"]["cobweb"], 100)
+	assert_eq(changes["pending_loot"], {"gold": 4})

@@ -18,7 +18,7 @@ func before_each() -> void:
 	var created := Store.create(draft)
 	_id = created["id"]
 	assert_true(Store.select_character(_id))
-	assert_false(Store.update_world({"gold": 100000}).is_empty())
+	assert_false(Store.update_world({"gold": 32000}).is_empty())
 	_town = Town.new()
 	add_child_autofree(_town)
 	for index in _town._landmarks.size():
@@ -101,7 +101,7 @@ func test_supply_packs_stack_and_charge_per_pack() -> void:
 	_town._purchase_shop_item("arrow_100")
 	var world: Dictionary = Store.load_selected()["world"]
 	assert_eq(world["shop_supplies"], {"arrow": 120})
-	assert_eq(world["gold"], 99910)
+	assert_eq(world["gold"], 31910)
 
 
 func test_failed_purchase_does_not_charge_gold_or_add_gear() -> void:

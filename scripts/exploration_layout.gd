@@ -85,6 +85,7 @@ func _ready() -> void:
 	_inventory.equip_requested.connect(_equip)
 	_inventory.slot_equip_requested.connect(_equip)
 	_inventory.close_requested.connect(close_inventory)
+	_inventory.item_move_requested.connect(_move_inventory_item)
 	add_child(_inventory)
 
 	_game_settings = AudioSettings.new()
@@ -380,3 +381,14 @@ func _save_world(changes: Dictionary, message: String) -> void:
 	refresh(saved)
 	profile_updated.emit(saved)
 	log_label.text = message
+
+
+func _move_inventory_item(from: Vector2i, to: Vector2i) -> void:
+	var error: String = _satchel.move_item(from, to)
+	if error.is_empty():
+		var saved := Store.load_selected()
+		if not saved.is_empty() and saved.get("id") == _profile.get("id"):
+			_profile = saved
+		refresh(_profile)
+		profile_updated.emit(_profile)
+	_inventory.set_status(error)

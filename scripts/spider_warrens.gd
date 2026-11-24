@@ -14,6 +14,8 @@ const Durability = preload("res://scripts/equipment_durability.gd")
 const Stats = preload("res://scripts/character_stats.gd")
 const Skills = preload("res://scripts/character_skills.gd")
 const Store = preload("res://scripts/character_store.gd")
+const Satchel = preload("res://scripts/sword_satchel.gd")
+const Catalog = preload("res://scripts/sword_catalog.gd")
 const ROSTER: JSON = preload("res://data/spiders.json")
 const ATLAS = preload("res://assets/art/spider_atlas.png")
 const CELL := Vector2i(16, 24)
@@ -164,16 +166,25 @@ func _take_loot(ids: Array) -> void:
 	var profile := Store.load_selected()
 	if not _loot_panel.visible or profile.get("id") != _loot_profile_id:
 		return
-	var changes := Loot.collect(profile["world"], ids)
-	var remaining: Dictionary = changes.get("pending_loot", profile["world"]["pending_loot"])
-	for id in ids:
-		if remaining.has(id):
-			_loot_panel.set_status("There is no room for all of the selected loot.")
-			return
+	var world: Dictionary = profile["world"]
+	var satchel := Satchel.new()
+	satchel.open(profile["id"], Catalog.items_by_id())
+	var cobweb_capacity := satchel.cobweb_capacity(world["gold"])
+	var cobwebs: int = world["town_materials"][Satchel.COBWEB_ID]
+	if ids.has(Satchel.COBWEB_ID):
+		var requested: int = world["pending_loot"].get(Satchel.COBWEB_ID, 0)
+		if cobwebs + requested <= cobweb_capacity:
+			cobwebs += requested
+	var changes := Loot.collect(world, ids, cobweb_capacity, satchel.gold_capacity(cobwebs))
+	var remaining: Dictionary = changes.get("pending_loot", world["pending_loot"])
+	var keep_open := ids.any(func(id: String) -> bool: return remaining.has(id))
 	if changes.is_empty():
+		if keep_open:
+			_loot_panel.set_status("There is no room for the selected loot.")
 		return
-	changes["pending_loot"] = {}
-	_save_loot_changes(changes)
+	if not keep_open:
+		changes["pending_loot"] = {}
+	_save_loot_changes(changes, keep_open)
 
 
 func _leave_loot() -> void:
@@ -181,13 +192,17 @@ func _leave_loot() -> void:
 		_save_loot_changes({"pending_loot": {}})
 
 
-func _save_loot_changes(changes: Dictionary) -> void:
+func _save_loot_changes(changes: Dictionary, keep_open := false) -> void:
 	var saved := Store.update_world(changes)
 	if saved.is_empty():
 		_loot_panel.set_status("Could not save your choice. Try again.")
 		return
 	experience_saved.emit(saved)
-	_close_loot()
+	if keep_open:
+		_show_loot(saved)
+		_loot_panel.set_status("Your bag has no room for the rest of the selected loot.")
+	else:
+		_close_loot()
 
 
 func _close_loot() -> void:

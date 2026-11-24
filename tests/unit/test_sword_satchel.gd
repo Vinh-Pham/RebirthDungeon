@@ -321,3 +321,131 @@ func _drag_item(source: Control, destination: Control) -> void:
 	release.position = finish
 	viewport.push_input(release, true)
 	await get_tree().process_frame
+
+
+func test_cobwebs_fill_one_cell_per_stack_and_respect_the_99_limit() -> void:
+	assert_eq(_satchel.sync_cobwebs(99), 0)
+	assert_eq(_satchel.cobweb_stacks, {Vector2i(0, 0): 99})
+	assert_eq(_satchel.sync_cobwebs(100), 0)
+	assert_eq(_satchel.cobweb_stacks, {Vector2i(0, 0): 99, Vector2i(1, 0): 1})
+	assert_eq(_satchel.sync_cobwebs(0), 0)
+	assert_eq(_satchel.cobweb_stacks, {})
+
+
+func test_cobwebs_share_equipment_space_and_survive_equipment_changes() -> void:
+	assert_eq(_satchel.take("short"), "")
+	assert_eq(_satchel.cobweb_capacity(), (Satchel.WIDTH * Satchel.HEIGHT - 2) * 99)
+	assert_eq(_satchel.sync_cobwebs(100), 0)
+	assert_false(_satchel.cobweb_stacks.has(Vector2i(0, 0)))
+	assert_false(_satchel.cobweb_stacks.has(Vector2i(0, 1)))
+	assert_eq(_satchel.equip("short"), "")
+	assert_eq(_satchel.cobweb_stacks.values().reduce(func(total, count): return total + count, 0), 100)
+	assert_eq(_satchel.equipped, "short")
+
+
+func test_full_grid_retains_existing_gear_and_reports_cobweb_overflow() -> void:
+	_write_save(_fill_bag())
+	_satchel.open(_character_id, _catalog)
+	var saved := _read_save()
+	assert_eq(_satchel.cobweb_capacity(), 0)
+	assert_eq(_satchel.sync_cobwebs(5), 5)
+	assert_eq(_satchel.cobweb_stacks, {})
+	assert_eq(_read_save(), saved)
+
+
+func test_rearranging_preserves_footprints_and_saved_position() -> void:
+	assert_eq(_satchel.take("wide"), "")
+	assert_true(_satchel.can_move_item(Vector2i.ZERO, Vector2i(1, 1)))
+	assert_eq(_satchel.move_item(Vector2i.ZERO, Vector2i(1, 1)), "")
+	assert_eq(_satchel.placements["wide"], Vector2i(1, 1))
+	_satchel.open(_character_id, _catalog)
+	assert_eq(_satchel.placements["wide"], Vector2i(1, 1))
+	var saved := _read_save()
+	assert_false(_satchel.can_move_item(Vector2i(1, 1), Vector2i(7, 6)))
+	assert_false(_satchel.move_item(Vector2i(1, 1), Vector2i(7, 6)).is_empty())
+	assert_eq(_read_save(), saved)
+
+
+func test_rearranging_rejects_other_items_and_failed_save() -> void:
+	assert_eq(_satchel.take("short"), "")
+	assert_eq(_satchel.take("wide"), "")
+	var saved := _read_save()
+	assert_false(_satchel.can_move_item(Vector2i.ZERO, Vector2i(1, 0)))
+	assert_false(_satchel.move_item(Vector2i.ZERO, Vector2i(1, 0)).is_empty())
+	assert_eq(_read_save(), saved)
+	assert_eq(DirAccess.make_dir_absolute(_path + ".tmp"), OK)
+	assert_false(_satchel.move_item(Vector2i.ZERO, Vector2i(6, 4)).is_empty())
+	assert_eq(_satchel.placements["short"], Vector2i.ZERO)
+	assert_eq(_read_save(), saved)
+	assert_eq(DirAccess.remove_absolute(_path + ".tmp"), OK)
+
+
+func test_dragging_bagged_sword_to_empty_cells_rearranges_it() -> void:
+	var catalog := Catalog.items_by_id()
+	_satchel.open(_character_id, catalog)
+	assert_eq(_satchel.take("amber_arcblade"), "")
+	var layout := _build_exploration_layout(catalog)
+	var panel := layout._inventory
+	var sword := panel.find_child("Item_amber_arcblade", true, false) as Button
+	var target := Control.new()
+	target.position = Vector2(5, 3) * panel.CELL
+	target.size = sword.size
+	target.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel._grid.add_child(target)
+	await _drag_item(sword, target)
+	assert_eq(_satchel.placements["amber_arcblade"], Vector2i(5, 3))
+	_satchel.open(_character_id, catalog)
+	assert_eq(_satchel.placements["amber_arcblade"], Vector2i(5, 3))
+
+
+func test_drag_ghost_snaps_to_valid_cells_and_clears_after_drop() -> void:
+	var catalog := Catalog.items_by_id()
+	_satchel.open(_character_id, catalog)
+	assert_eq(_satchel.take("amber_arcblade"), "")
+	var layout := _build_exploration_layout(catalog)
+	var panel := layout._inventory
+	var sword := panel.find_child("Item_amber_arcblade", true, false) as Button
+	await get_tree().process_frame
+	var viewport := sword.get_viewport()
+	var start := sword.get_global_rect().get_center()
+	var destination := panel._grid.global_position + Vector2(5, 3) * panel.CELL + sword.size * 0.5
+	var motion := InputEventMouseMotion.new()
+	motion.position = start
+	viewport.push_input(motion, true)
+	var press := InputEventMouseButton.new()
+	press.position = start
+	press.button_index = MOUSE_BUTTON_LEFT
+	press.pressed = true
+	viewport.push_input(press, true)
+	await get_tree().process_frame
+	await _move_drag_cursor(viewport, start + Vector2(15, 0), Vector2(15, 0))
+	assert_true(viewport.gui_is_dragging())
+	await _move_drag_cursor(viewport, destination, destination - start)
+	assert_true(panel._drop_ghost.visible)
+	assert_eq(panel._drop_ghost.position, Vector2(5, 3) * panel.CELL)
+	assert_eq(panel._drop_ghost.size, sword.size)
+	assert_eq(panel._ghost_icon.texture, (sword.get_child(0) as TextureRect).texture)
+	var overflow := destination + Vector2(0, panel.CELL)
+	await _move_drag_cursor(viewport, overflow, overflow - destination)
+	assert_false(panel._drop_ghost.visible)
+	var outside := panel._grid.global_position - Vector2(20, 20)
+	await _move_drag_cursor(viewport, outside, outside - overflow)
+	assert_false(panel._drop_ghost.visible)
+	await _move_drag_cursor(viewport, destination, destination - outside)
+	assert_true(panel._drop_ghost.visible)
+	var release := InputEventMouseButton.new()
+	release.position = destination
+	release.button_index = MOUSE_BUTTON_LEFT
+	viewport.push_input(release, true)
+	await get_tree().process_frame
+	assert_false(panel._drop_ghost.visible)
+	assert_eq(_satchel.placements["amber_arcblade"], Vector2i(5, 3))
+
+
+func _move_drag_cursor(viewport: Viewport, position: Vector2, relative: Vector2) -> void:
+	var motion := InputEventMouseMotion.new()
+	motion.position = position
+	motion.relative = relative
+	motion.button_mask = MOUSE_BUTTON_MASK_LEFT
+	viewport.push_input(motion, true)
+	await get_tree().process_frame

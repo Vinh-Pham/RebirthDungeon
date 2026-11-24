@@ -4,6 +4,7 @@ extends RefCounted
 const Rooms = preload("res://scripts/threshold_rooms.gd")
 const Skills = preload("res://scripts/character_skills.gd")
 const Data = preload("res://scripts/character_data.gd")
+const Gold = preload("res://scripts/gold.gd")
 const DIRECTORY := "user://characters"
 const MAX_SEED := 2147483647
 const MAX_EXPERIENCE := 2_000_000_000
@@ -17,11 +18,12 @@ static var LIMITS := {
 }
 const TOWNS := ["lantern_rest", "spindle_hollow"]
 const LOOT_BALANCE_KEYS := {"gold": "gold", "tonic": "tonics"}
+const BAG_STACK_IDS := ["cobweb", Gold.ID]
 const GEAR_SLOTS := ["off_hand", "armor", "headgear", "gloves", "shoes", "accessory_1", "accessory_2"]
 const SHOP_SUPPLIES := ["arrow", "bolt", "altar_of_restoration"]
 const WORLD_DEFAULTS := {
 	"location": "lantern_rest", "map_position": {}, "visited": [], "gates": [], "quest": 0,
-	"gold": 24, "tonics": 0, "health": -1, "dungeon_from": "lantern_rest",
+	"gold": 24, "bank_gold": 0, "tonics": 0, "health": -1, "dungeon_from": "lantern_rest",
 	"pending_loot": {}, "skills": Skills.STARTING, "spent_ap": 0,
 	"quick_slots": ["", "", "", ""],
 	"armor_owned": false, "equipment_durability": {},
@@ -233,7 +235,7 @@ static func _normalize_world(value: Variant) -> Dictionary:
 			return {}
 		supplies[id] = int(count)
 	world["shop_supplies"] = supplies
-	var bounds := {"quest": [0, 3], "gold": [0, MAX_EXPERIENCE], "tonics": [0, MAX_EXPERIENCE], "health": [-1, 2500], "threshold_cleared": [0, Rooms.ROOM_COUNT], "threshold_run": [0, MAX_EXPERIENCE], "threshold_treasure_chest": [-1, Rooms.CHEST_COUNT - 1]}
+	var bounds := {"quest": [0, 3], "gold": [0, MAX_EXPERIENCE], "bank_gold": [0, Gold.BANK_LIMIT], "tonics": [0, MAX_EXPERIENCE], "health": [-1, 2500], "threshold_cleared": [0, Rooms.ROOM_COUNT], "threshold_run": [0, MAX_EXPERIENCE], "threshold_treasure_chest": [-1, Rooms.CHEST_COUNT - 1]}
 	for key in bounds:
 		if not _integer_in_range(world[key], bounds[key][0], bounds[key][1]):
 			return {}
@@ -315,7 +317,41 @@ static func _normalize_gear_inventory(value: Variant) -> Variant:
 			return null
 		seen[id] = true
 		slots[slot] = id
-	return {"placements": placements, "equipped": equipped, "slots": slots}
+	var pouches: Variant = value.get("pouches", [])
+	if not pouches is Array or pouches.size() > 12:
+		return null
+	var normalized_pouches := []
+	for entry in pouches:
+		if not entry is Dictionary or not entry.get("id") is String or not Gold.POUCHES.has(entry["id"]):
+			return null
+		var cell: Variant = entry.get("cell")
+		if not cell is Array or cell.size() != 2 or not _integer_in_range(cell[0], 0, 6) or not _integer_in_range(cell[1], 0, 5):
+			return null
+		normalized_pouches.append({"id": entry["id"], "cell": [int(cell[0]), int(cell[1])]})
+	var gear := {"placements": placements, "equipped": equipped, "slots": slots}
+	if not normalized_pouches.is_empty():
+		gear["pouches"] = normalized_pouches
+	var stack_positions: Variant = value.get("stack_positions", {})
+	if not stack_positions is Dictionary:
+		return null
+	var normalized_stacks := {}
+	var occupied := {}
+	for id in stack_positions:
+		var cells: Variant = stack_positions[id]
+		if id not in BAG_STACK_IDS or not cells is Array or cells.size() > 56:
+			return null
+		normalized_stacks[id] = []
+		for cell in cells:
+			if not cell is Array or cell.size() != 2 or not _integer_in_range(cell[0], 0, 7) or not _integer_in_range(cell[1], 0, 6):
+				return null
+			var point := Vector2i(int(cell[0]), int(cell[1]))
+			if occupied.has(point):
+				return null
+			occupied[point] = true
+			normalized_stacks[id].append([point.x, point.y])
+	if not normalized_stacks.is_empty():
+		gear["stack_positions"] = normalized_stacks
+	return gear
 
 
 static func _write_profile(profile: Dictionary, destination: String) -> bool:

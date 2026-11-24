@@ -17,6 +17,7 @@ const LANDMARKS := [
 	{"id": "windmill", "label": "Windmill", "amenity_sprite": 3, "glyph": "X"},
 	{"id": "gate", "label": "Moon Gate", "sprite": 9},
 	{"id": "dungeon", "label": "Threshold", "glyph": ">"},
+	{"id": "bank", "cell": Vector2i(12, 20), "label": "Bank", "name": "Ledger Keeper", "glyph": "$"},
 ]
 
 

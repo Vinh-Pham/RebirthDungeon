@@ -3,11 +3,19 @@ extends Control
 signal equip_requested(id: String)
 signal slot_equip_requested(id: String, slot: String)
 signal close_requested
+signal item_move_requested(from: Vector2i, to: Vector2i)
 
 const Style = preload("res://scripts/menu_style.gd")
 const Catalog = preload("res://scripts/sword_catalog.gd")
 const Durability = preload("res://scripts/equipment_durability.gd")
 const Satchel = preload("res://scripts/sword_satchel.gd")
+const Gold = preload("res://scripts/gold.gd")
+const COBWEB_ICON = preload("res://assets/art/cobweb.png")
+const GOLD_ICONS := {
+	"gold": preload("res://assets/art/gold.png"),
+	"gold_pouch_small": preload("res://assets/art/gold_pouch_small.png"),
+	"gold_pouch_large": preload("res://assets/art/gold_pouch_large.png"),
+}
 const CELL := 38
 const GRID_ORIGIN := Vector2(300, 132)
 const EQUIPMENT_SLOTS := [
@@ -31,7 +39,15 @@ var _gold: Label
 var _tonics: Label
 var _materials: Label
 var _grid: Control
+var _drop_ghost: Panel
+var _ghost_icon: TextureRect
+var _ghost_glyph: Label
+var _cursor_preview: Control
 var _rendered_placements: Dictionary = {}
+var _rendered_cobwebs: Dictionary = {}
+var _cobweb_items: Array[Button] = []
+var _rendered_gold: Array[Dictionary] = []
+var _gold_items: Array[Button] = []
 var _body: Control
 var _status: Label
 
@@ -69,10 +85,15 @@ func _ready() -> void:
 	_grid.size = Vector2(Satchel.WIDTH, Satchel.HEIGHT) * CELL
 	_body.add_child(_grid)
 	_build_cells()
+	_build_drop_ghost()
+	set_process_input(false)
+	visibility_changed.connect(_clear_drag_ghost)
+	get_window().mouse_exited.connect(_set_drop_ghost_visible.bind(false))
+	_grid.set_drag_forwarding(Callable(), _can_drop_bag.bind(_grid), _drop_bag.bind(_grid))
 	_selection = _add_label("Select equipment", Vector2(24, 428), 16, Style.TEXT)
 	_selection.size.x = 612
 	_selection.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	_add_label("Drag equipment to a matching slot", Vector2(24, 463), 14, Style.MUTED)
+	_add_label("Drag items to move them. Drop gear on a matching slot.", Vector2(24, 463), 14, Style.MUTED)
 	_materials = _add_label("", Vector2(24, 286), 12, Style.TEXT)
 	_materials.size = Vector2(252, 72)
 	_materials.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
@@ -159,6 +180,16 @@ func refresh(catalogue: Dictionary, satchel: Satchel, world: Dictionary) -> void
 	if _rendered_placements != placements:
 		_rendered_placements = placements
 		_render_items()
+	var materials: Dictionary = world.get("town_materials", {})
+	var overflow: Dictionary = satchel.sync_stacks(world)
+	var stacks := satchel.cobweb_stacks
+	if _rendered_cobwebs != stacks:
+		_rendered_cobwebs = stacks
+		_render_cobwebs()
+	var gold_items: Array[Dictionary] = satchel.gold_items
+	if _rendered_gold != gold_items:
+		_rendered_gold = gold_items
+		_render_gold()
 	var held: String = satchel.equipped
 	var armed := catalogue.has(held)
 	for button in _items:
@@ -189,9 +220,10 @@ func refresh(catalogue: Dictionary, satchel: Satchel, world: Dictionary) -> void
 		elif slot_id not in ["armor", "off_hand"]:
 			_slot_states[slot_id].text = "—"
 			_slots[slot_id].tooltip_text = slot_id.replace("_", " ").capitalize() + " is empty"
-	var materials: Dictionary = world.get("town_materials", {})
 	var entries: Array[String] = []
-	for key: String in ["firewood", "cobweb", "fish", "grain", "flour", "fiber", "thread", "cloth"]:
+	if int(overflow.get("cobweb", 0)) > 0:
+		entries.append("Cobweb ×%d awaiting bag space" % int(overflow["cobweb"]))
+	for key: String in ["firewood", "fish", "grain", "flour", "fiber", "thread", "cloth"]:
 		var count := int(materials.get(key, 0))
 		if count > 0:
 			entries.append("%s ×%d" % [key.capitalize(), count])
@@ -205,8 +237,9 @@ func refresh(catalogue: Dictionary, satchel: Satchel, world: Dictionary) -> void
 	_materials.text = "\n".join(rows)
 	_materials.tooltip_text = "\n".join(entries)
 	_materials.visible = not entries.is_empty()
-	_gold.text = "Gold %s" % str(world.get("gold", 0))
-	_gold.tooltip_text = _gold.text
+	_gold.visible = int(overflow.get("gold", 0)) > 0
+	_gold.text = "%s awaiting bag space" % Gold.format_amount(int(overflow.get("gold", 0)))
+	_gold.tooltip_text = "%d gold preserved from your existing save. Deposit at the bank or make room in your bag." % int(overflow.get("gold", 0))
 	_tonics.text = "Healing Tonic ×%s" % str(world.get("tonics", 0))
 	_tonics.size.x = 304
 	_tonics.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
@@ -227,6 +260,53 @@ func _build_cells() -> void:
 			_grid.add_child(cell)
 
 
+func _build_drop_ghost() -> void:
+	_drop_ghost = Panel.new()
+	_drop_ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_drop_ghost.z_index = 1
+	_drop_ghost.add_theme_stylebox_override("panel", Style.box(Color(Style.PANEL, 0.4), Color(Style.TEAL, 0.75)))
+	_drop_ghost.hide()
+	_grid.add_child(_drop_ghost)
+
+	_ghost_icon = TextureRect.new()
+	_ghost_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_ghost_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_ghost_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ghost_icon.modulate.a = 0.58
+	_drop_ghost.add_child(_ghost_icon)
+	_ghost_icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+	_ghost_glyph = Style.label("", 16, Color(Style.TEXT, 0.58))
+	_ghost_glyph.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_ghost_glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_ghost_glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_drop_ghost.add_child(_ghost_glyph)
+	_ghost_glyph.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+
+func _input(event: InputEvent) -> void:
+	# The drop callback shows the ghost again if the GUI finds a valid target.
+	if event is InputEventMouseMotion:
+		_set_drop_ghost_visible(false)
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_DRAG_END and is_instance_valid(_drop_ghost):
+		_clear_drag_ghost()
+
+
+func _set_drop_ghost_visible(show_ghost: bool) -> void:
+	_drop_ghost.visible = show_ghost
+	if is_instance_valid(_cursor_preview):
+		_cursor_preview.visible = not show_ghost
+
+
+func _clear_drag_ghost() -> void:
+	_set_drop_ghost_visible(false)
+	_cursor_preview = null
+	set_process_input(false)
+
+
 func _render_items() -> void:
 	for button in _items:
 		_grid.remove_child(button)
@@ -242,7 +322,7 @@ func _render_items() -> void:
 		button.position = Vector2(anchor) * CELL
 		button.size = Vector2(int(item["width"]), int(item["height"])) * CELL - Vector2.ONE
 		button.custom_minimum_size = Vector2.ZERO
-		button.set_drag_forwarding(_get_sword_drag_data.bind(button, id), Callable(), Callable())
+		button.set_drag_forwarding(_get_sword_drag_data.bind(button, id), _can_drop_bag.bind(button), _drop_bag.bind(button))
 		button.gui_input.connect(_equip_with_keyboard.bind(button, id))
 		button.pressed.connect(_select.bind(id))
 		button.focus_entered.connect(_select.bind(id))
@@ -257,7 +337,83 @@ func _render_items() -> void:
 		_items.append(button)
 
 
-func _get_sword_drag_data(_position: Vector2, button: Button, id: String) -> Dictionary:
+func _render_cobwebs() -> void:
+	for button in _cobweb_items:
+		_grid.remove_child(button)
+		button.queue_free()
+	_cobweb_items.clear()
+	for cell: Vector2i in _rendered_cobwebs:
+		var count: int = _rendered_cobwebs[cell]
+		var button := Style.button("")
+		button.name = "Cobweb_%d_%d" % [cell.x, cell.y]
+		button.custom_minimum_size = Vector2.ZERO
+		button.position = Vector2(cell) * CELL
+		button.size = Vector2.ONE * (CELL - 1)
+		button.tooltip_text = "Cobweb ×%d\nFine silk gathered from spiders." % count
+		_grid.add_child(button)
+		_cobweb_items.append(button)
+		button.set_drag_forwarding(_get_stack_drag_data.bind(button), _can_drop_bag.bind(button), _drop_bag.bind(button))
+
+		var icon := TextureRect.new()
+		icon.texture = COBWEB_ICON
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		button.add_child(icon)
+		icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		icon.offset_bottom = -6
+
+		var quantity := Style.label("×%d" % count, 11)
+		quantity.name = "Count"
+		quantity.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		quantity.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+		quantity.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		button.add_child(quantity)
+		quantity.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		quantity.offset_right = -3
+		quantity.offset_bottom = -2
+
+
+func _render_gold() -> void:
+	for button in _gold_items:
+		_grid.remove_child(button)
+		button.queue_free()
+	_gold_items.clear()
+	for item: Dictionary in _rendered_gold:
+		var cell: Vector2i = item["cell"]
+		var id: String = item["id"]
+		var pouch := id != "gold"
+		var count: int = item["count"]
+		var button := Style.button("")
+		button.name = "Gold_%d_%d" % [cell.x, cell.y]
+		button.custom_minimum_size = Vector2.ZERO
+		button.position = Vector2(cell) * CELL
+		button.size = Vector2.ONE * (CELL * (2 if pouch else 1) - 1)
+		var caption: String = Gold.pouch_name(id) if pouch else "Gold"
+		button.tooltip_text = "%s\n%d / %d gold" % [caption, count, int(item["capacity"])]
+		_grid.add_child(button)
+		_gold_items.append(button)
+		button.set_drag_forwarding(_get_stack_drag_data.bind(button), _can_drop_bag.bind(button), _drop_bag.bind(button))
+		var icon := TextureRect.new()
+		icon.texture = GOLD_ICONS[id]
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		button.add_child(icon)
+		icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		icon.offset_bottom = -10
+		var quantity := Style.label(Gold.format_amount(count), 11, Style.ACCENT)
+		quantity.name = "Count"
+		quantity.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		quantity.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+		quantity.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		button.add_child(quantity)
+		quantity.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		quantity.offset_right = -3
+		quantity.offset_bottom = -2
+
+
+func _get_sword_drag_data(position: Vector2, button: Button, id: String) -> Dictionary:
 	var item: Dictionary = _catalogue[id]
 	var icon := Catalog.icon(item)
 	var preview: Control
@@ -269,8 +425,9 @@ func _get_sword_drag_data(_position: Vector2, button: Button, id: String) -> Dic
 	else:
 		preview = Style.label(item.get("glyph", "+"), 20, Style.ACCENT)
 	preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	button.set_drag_preview(preview)
-	return {"sword_id": id}
+	var data := _begin_bag_drag(position, button, preview)
+	data["sword_id"] = id
+	return data
 
 
 func _can_drop_sword(_position: Vector2, data: Variant) -> bool:
@@ -311,5 +468,55 @@ func _update_selection() -> void:
 func focus_grid() -> void:
 	if not _items.is_empty():
 		_items[0].grab_focus()
+	elif not _cobweb_items.is_empty():
+		_cobweb_items[0].grab_focus()
+	elif not _gold_items.is_empty():
+		_gold_items[0].grab_focus()
 	else:
 		_gear.grab_focus()
+
+
+func _begin_bag_drag(position: Vector2, button: Button, preview: Control) -> Dictionary:
+	var icon := button.get_child(0) as TextureRect
+	_ghost_icon.texture = icon.texture
+	_ghost_icon.offset_bottom = icon.offset_bottom
+	_ghost_glyph.text = button.text if icon.texture == null else ""
+	_drop_ghost.size = button.size
+	_cursor_preview = preview
+	button.set_drag_preview(preview)
+	set_process_input(true)
+	return {
+		"bag_from": Vector2i(button.position / CELL),
+		"bag_offset": Vector2i(position / CELL),
+	}
+
+
+func _get_stack_drag_data(position: Vector2, button: Button) -> Dictionary:
+	var preview := TextureRect.new()
+	preview.texture = (button.get_child(0) as TextureRect).texture
+	preview.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	preview.custom_minimum_size = button.size
+	preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return _begin_bag_drag(position, button, preview)
+
+
+func _bag_destination(position: Vector2, data: Dictionary, control: Control) -> Vector2i:
+	var point := _grid.get_global_transform().affine_inverse() * (control.get_global_transform() * position)
+	return Vector2i(floori(point.x / CELL), floori(point.y / CELL)) - data["bag_offset"]
+
+
+func _can_drop_bag(position: Vector2, data: Variant, control: Control) -> bool:
+	if not data is Dictionary or not data.get("bag_from") is Vector2i or not data.get("bag_offset") is Vector2i:
+		return false
+	var destination := _bag_destination(position, data, control)
+	var fits := _satchel.can_move_item(data["bag_from"], destination)
+	if fits:
+		_drop_ghost.position = Vector2(destination) * CELL
+	_set_drop_ghost_visible(fits)
+	return fits
+
+
+func _drop_bag(position: Vector2, data: Dictionary, control: Control) -> void:
+	item_move_requested.emit(data["bag_from"], _bag_destination(position, data, control))

@@ -2,6 +2,7 @@ extends RefCounted
 
 const Store = preload("res://scripts/character_store.gd")
 const Consumables = preload("res://scripts/consumables.gd")
+const Satchel = preload("res://scripts/sword_satchel.gd")
 
 
 static func item_name(item_id: String) -> String:
@@ -29,7 +30,7 @@ static func combine(pending: Dictionary, drops: Dictionary) -> Dictionary:
 	return combined
 
 
-static func collect(world: Dictionary, ids: Array) -> Dictionary:
+static func collect(world: Dictionary, ids: Array, cobweb_capacity := Satchel.MAX_COBWEB_CAPACITY, gold_capacity := Store.MAX_EXPERIENCE) -> Dictionary:
 	var pending: Dictionary = world.get("pending_loot", {}).duplicate()
 	var materials: Dictionary = world.get("town_materials", {}).duplicate()
 	var changes := {}
@@ -37,11 +38,22 @@ static func collect(world: Dictionary, ids: Array) -> Dictionary:
 		if not ids.has(item_id) or not Store.supports_loot_item(item_id):
 			continue
 		var count := int(pending[item_id])
+		if item_id == "gold":
+			var carried := int(world.get("gold", 0))
+			var accepted := mini(count, gold_capacity - carried)
+			if accepted > 0:
+				changes["gold"] = carried + accepted
+				if accepted == count:
+					pending.erase(item_id)
+				else:
+					pending[item_id] = count - accepted
+			continue
 		var world_balance := Store.LOOT_BALANCE_KEYS.has(item_id)
 		var balance_key: String = Store.LOOT_BALANCE_KEYS.get(item_id, item_id)
 		var balances := world if world_balance else materials
 		var current := int(balances.get(balance_key, 0))
-		if count > Store.MAX_EXPERIENCE - current:
+		var capacity := cobweb_capacity if item_id == Satchel.COBWEB_ID else Store.MAX_EXPERIENCE
+		if count > capacity - current:
 			continue
 		if world_balance:
 			changes[balance_key] = current + count
