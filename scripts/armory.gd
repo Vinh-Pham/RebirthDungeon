@@ -225,6 +225,7 @@ func _fill_list(preferred := "") -> void:
 		elif _browsing_rack and _satchel.owns(id):
 			label += "  [owned]"
 		_list.add_item(label, Catalog.icon(item))
+		_list.set_item_tooltip(_list.item_count - 1, Catalog.tooltip(item))
 	if _ids.is_empty():
 		_inspect(-1)
 		return
@@ -268,15 +269,17 @@ func _paint_grid(selected: String) -> void:
 	for cell in _cells:
 		cell.add_theme_stylebox_override("panel", _empty_cell)
 		cell.tooltip_text = ""
-	for id: String in _satchel.placements:
-		var corner: Vector2i = _satchel.placements[id]
+	var placements := _satchel.placements
+	for id: String in placements:
+		var corner: Vector2i = placements[id]
 		var item: Dictionary = _catalog[id]
 		var style := _selected_cell if id == selected else _filled_cell
+		var tooltip := Catalog.tooltip(item)
 		for y in range(corner.y, corner.y + int(item["height"])):
 			for x in range(corner.x, corner.x + int(item["width"])):
 				var cell := _cells[y * Satchel.WIDTH + x]
 				cell.add_theme_stylebox_override("panel", style)
-				cell.tooltip_text = item["name"]
+				cell.tooltip_text = tooltip
 
 
 func _selected_id() -> String:

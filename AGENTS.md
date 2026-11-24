@@ -39,7 +39,7 @@ Use the Aseprite MCP server configured in [`.codex/config.toml`](.codex/config.t
 
 ## Godot plugins
 
-Beckett is enabled in [project settings](project.godot). The five gameplay plugins are installed under `addons/` for future integration.
+Beckett, GUT, GLoot, Maaack’s Input Remapping, Plugin Updater, and Aseprite Wizard are enabled in [project settings](project.godot). Gaea, GECS, Beehave, Dialogue Manager, and Phantom Camera are installed for future integration.
 
 | Plugin | Use in Rebirth Dungeon |
 | --- | --- |
@@ -49,8 +49,13 @@ Beckett is enabled in [project settings](project.godot). The five gameplay plugi
 | [Beehave](addons/beehave/plugin.cfg) | Use behavior trees to choose enemy and NPC actions, such as patrolling, pursuing, attacking, or retreating. |
 | [Dialogue Manager](addons/dialogue_manager/plugin.cfg) | Author branching NPC conversations, quest-related choices, and conditional lore reveals. Render dialogue text in Source Code Pro. |
 | [Phantom Camera](addons/phantom_camera/plugin.cfg) | Frame the player and dungeon map with a top-down 2D camera and handle transitions between viewpoints when needed. Keep tile edges crisp during camera movement. |
+| [GUT 9.7.1](addons/gut/plugin.cfg) | Run the automated GDScript tests in [`tests/unit/`](tests/unit/) for combat, character stats, inventory, and save compatibility. |
+| [GLoot 3.0.2](addons/gloot/plugin.cfg) | Manage the sword satchel's 8×7 bag grid, item footprints, and main-hand equipment slot. The HUD and armory share this inventory and load existing character weapon saves. |
+| [Maaack’s Input Remapping 1.8.0](addons/maaacks_input_remapping/plugin.cfg) | Add a rebinding menu after gameplay controls move to named `InputMap` actions. The addon bundles [Plugin Updater 0.5.1](addons/plugin_updater/plugin.cfg) and its setup helpers. |
+| [Aseprite Wizard 9.8.0](addons/AsepriteWizard/plugin.cfg) | Import tagged Aseprite animations into Godot when needed. Use manual imports alongside the existing PNG atlases. |
 
 ## Godot development workflow
 
 - Use the project's Beckett MCP server for Godot editor operations. Inspect and edit scenes, nodes, resources, and scripts through Beckett. Use `find_classes` and `describe_class` to check the installed engine's classes and method signatures. When a change affects gameplay or the interface, run the scene through Beckett and check the runtime logs.
 - Use Exa to look up Godot API references, tutorials, and other technical documentation. Search for the relevant class, method, or feature and prefer official documentation that matches the Godot version in `project.godot`. Open the source page to verify the details before applying them.
+- Run `godot --headless --path . -s addons/gut/gut_cmdln.gd -gexit` from the project root. [`.gutconfig.json`](.gutconfig.json) points GUT to the test directory.

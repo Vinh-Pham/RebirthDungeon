@@ -4,6 +4,7 @@ signal equip_requested(id: String)
 
 const Style = preload("res://scripts/menu_style.gd")
 const Catalog = preload("res://scripts/sword_catalog.gd")
+const Satchel = preload("res://scripts/sword_satchel.gd")
 const CELL := 24
 const GRID_ORIGIN := Vector2(17, 205)
 const EQUIPMENT_SLOTS := [
@@ -12,7 +13,7 @@ const EQUIPMENT_SLOTS := [
 ]
 
 var _catalogue: Dictionary = {}
-var _satchel: Variant
+var _satchel: Satchel
 var _selected := ""
 var _items: Array[Button] = []
 var _gear: Button
@@ -20,7 +21,6 @@ var _main_hand: TextureRect
 var _main_hand_empty: Label
 var _offhand: Label
 var _selection: Label
-var _equip: Button
 var _gold: Label
 var _tonics: Label
 var _grid: Control
@@ -40,20 +40,13 @@ func _ready() -> void:
 	_add_label("Basic bag", Vector2(17, 186), 13, Style.TEXT)
 	_grid = Control.new()
 	_grid.position = GRID_ORIGIN
-	_grid.size = Vector2(192, 168)
+	_grid.size = Vector2(Satchel.WIDTH, Satchel.HEIGHT) * CELL
 	add_child(_grid)
 	_build_cells()
 	_selection = _add_label("Select a sword", Vector2(17, 378), 12, Style.TEXT)
 	_selection.size.x = 192
 	_selection.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	_equip = Style.button("Equip")
-	_equip.position = Vector2(17, 399)
-	_equip.size = Vector2(192, 31)
-	_equip.custom_minimum_size.y = 31
-	_equip.pressed.connect(func() -> void:
-		if not _selected.is_empty():
-			equip_requested.emit(_selected))
-	add_child(_equip)
+	_add_label("Drag a sword to Main hand", Vector2(17, 402), 12, Style.MUTED)
 	_gold = _add_label("", Vector2(17, 439), 12, Style.ACCENT)
 	_gold.size.x = 70
 	_gold.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
@@ -73,6 +66,7 @@ func _build_equipment() -> void:
 			_gear = Style.button("")
 			_gear.custom_minimum_size = Vector2.ZERO
 			_gear.pressed.connect(_inspect_main_hand)
+			_gear.set_drag_forwarding(Callable(), _can_drop_sword, _drop_sword)
 			slot = _gear
 		else:
 			var frame := Panel.new()
@@ -115,19 +109,20 @@ func _add_label(text_value: String, at: Vector2, font_size: int, color: Color) -
 	return label
 
 
-func refresh(catalogue: Dictionary, satchel: Variant, world: Dictionary) -> void:
+func refresh(catalogue: Dictionary, satchel: Satchel, world: Dictionary) -> void:
 	_catalogue = catalogue
 	_satchel = satchel
 	if not is_node_ready():
 		return
-	if _rendered_placements != satchel.placements:
-		_rendered_placements = satchel.placements.duplicate()
+	var placements := satchel.placements
+	if _rendered_placements != placements:
+		_rendered_placements = placements
 		_render_items()
 	var held: String = satchel.equipped
 	var armed := catalogue.has(held)
 	_main_hand.texture = Catalog.icon(catalogue[held]) if armed else null
 	_main_hand_empty.visible = not armed
-	_gear.tooltip_text = str(catalogue[held]["name"]) if armed else "Main hand is empty"
+	_gear.tooltip_text = Catalog.tooltip(catalogue[held]) if armed else "Main hand is empty"
 	var two_handed := armed and int(catalogue[held]["hands"]) == 2
 	_offhand.text = "2H" if two_handed else "—"
 	_offhand.tooltip_text = "Occupied by a two-handed weapon" if two_handed else "Off hand is empty"
@@ -143,8 +138,8 @@ func refresh(catalogue: Dictionary, satchel: Variant, world: Dictionary) -> void
 
 
 func _build_cells() -> void:
-	for y in range(7):
-		for x in range(8):
+	for y in range(Satchel.HEIGHT):
+		for x in range(Satchel.WIDTH):
 			var cell := Panel.new()
 			cell.position = Vector2(x, y) * CELL
 			cell.size = Vector2(CELL - 1, CELL - 1)
@@ -158,15 +153,17 @@ func _render_items() -> void:
 		_grid.remove_child(button)
 		button.queue_free()
 	_items.clear()
-	for id: String in _satchel.placements:
+	for id: String in _rendered_placements:
 		var item: Dictionary = _catalogue[id]
-		var anchor: Vector2i = _satchel.placements[id]
+		var anchor: Vector2i = _rendered_placements[id]
 		var button := Style.button("")
 		button.name = "Item_" + id
 		button.position = Vector2(anchor) * CELL
 		button.size = Vector2(int(item["width"]), int(item["height"])) * CELL - Vector2.ONE
 		button.custom_minimum_size = Vector2.ZERO
-		button.tooltip_text = "%s\n%d–%d damage\nEnter to select" % [item["name"], item["damage_min"], item["damage_max"]]
+		button.tooltip_text = Catalog.tooltip(item) + "\n\nDrag to Main hand or press Enter"
+		button.set_drag_forwarding(_get_sword_drag_data.bind(button, id), Callable(), Callable())
+		button.gui_input.connect(_equip_with_keyboard.bind(button, id))
 		button.pressed.connect(_select.bind(id))
 		button.focus_entered.connect(_select.bind(id))
 		_grid.add_child(button)
@@ -180,6 +177,29 @@ func _render_items() -> void:
 		_items.append(button)
 
 
+func _get_sword_drag_data(_position: Vector2, button: Button, id: String) -> Dictionary:
+	var preview := TextureRect.new()
+	preview.texture = Catalog.icon(_catalogue[id])
+	preview.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.set_drag_preview(preview)
+	return {"sword_id": id}
+
+
+func _can_drop_sword(_position: Vector2, data: Variant) -> bool:
+	return data is Dictionary and data.get("sword_id") is String and _rendered_placements.has(data["sword_id"])
+
+
+func _drop_sword(_position: Vector2, data: Dictionary) -> void:
+	equip_requested.emit(data["sword_id"])
+
+
+func _equip_with_keyboard(event: InputEvent, button: Button, id: String) -> void:
+	if not event is InputEventMouse and event.is_action_pressed(&"ui_accept"):
+		button.accept_event()
+		equip_requested.emit(id)
+
+
 func _select(id: String) -> void:
 	_selected = id
 	_update_selection()
@@ -187,8 +207,6 @@ func _select(id: String) -> void:
 
 func _update_selection() -> void:
 	_selection.text = str(_catalogue[_selected]["name"]) if _catalogue.has(_selected) else "Select a sword"
-	_equip.disabled = _selected.is_empty() or _selected == str(_satchel.equipped)
-	_equip.text = "Equipped" if _selected == str(_satchel.equipped) and not _selected.is_empty() else "Equip"
 
 
 func focus_grid() -> void:

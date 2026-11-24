@@ -18,11 +18,18 @@ config/icon="res://icon.svg"
 [autoload]
 
 BeckettRuntime="*uid://do68dqybesb7r"
+DialogueManager="*uid://c3rodes2l3gxb"
+PhantomCameraManager="*uid://duq6jhf6unyis"
+ECS="*uid://dfqwl5njvdnmq"
 
 [beckett]
 
 effort_schema=2
 dock_revealed=true
+
+[clean_copy_examples]
+
+examples_paths=Array[String](["res://addons/maaacks_input_remapping/examples/"])
 
 [display]
 
@@ -32,11 +39,26 @@ window/stretch/aspect="expand"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/beckett/plugin.cfg")
+enabled=PackedStringArray("res://addons/AsepriteWizard/plugin.cfg", "res://addons/beckett/plugin.cfg", "res://addons/dialogue_manager/plugin.cfg", "res://addons/gecs/plugin.cfg", "res://addons/gloot/plugin.cfg", "res://addons/gut/plugin.cfg", "res://addons/maaacks_input_remapping/plugin.cfg", "res://addons/phantom_camera/plugin.cfg", "res://addons/plugin_updater/plugin.cfg")
+
+[internationalization]
+
+locale/translations=PackedStringArray("res://addons/maaacks_input_remapping/base/translations/menus_translations.en.translation", "res://addons/maaacks_input_remapping/base/translations/menus_translations.fr.translation")
+
+[maaacks_input_remapping]
+
+disable_install_wizard=true
 
 [physics]
 
 3d/physics_engine="Jolt Physics"
+
+[plugin_updater]
+
+plugins={
+"res://addons/maaacks_input_remapping/": "https://github.com/Maaack/Godot-Input-Remapping",
+"res://addons/plugin_updater/": "https://github.com/Maaack/Godot-Plugin-Updater"
+}
 
 [rendering]
 

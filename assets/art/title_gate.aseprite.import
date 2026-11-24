@@ -1,0 +1,14 @@
+[remap]
+
+importer="aseprite_wizard.plugin.noop"
+type="PackedDataContainer"
+uid="uid://bniq6ofos0or5"
+path="res://.godot/imported/title_gate.aseprite-72b8aa83fd29cf0050016423280d92a0.res"
+
+[deps]
+
+source_file="res://assets/art/title_gate.aseprite"
+dest_files=["res://.godot/imported/title_gate.aseprite-72b8aa83fd29cf0050016423280d92a0.res"]
+
+[params]
+

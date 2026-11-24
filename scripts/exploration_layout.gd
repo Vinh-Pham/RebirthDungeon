@@ -8,25 +8,34 @@ const Style = preload("res://scripts/menu_style.gd")
 const Stats = preload("res://scripts/character_stats.gd")
 const Store = preload("res://scripts/character_store.gd")
 const Satchel = preload("res://scripts/sword_satchel.gd")
-const Inventory = preload("res://scripts/exploration_inventory.gd")
+const InventoryPanel = preload("res://scripts/exploration_inventory.gd")
 const Status = preload("res://scripts/exploration_status.gd")
 
 const CONTENT_SIZE := Vector2(1120, 680)
 const TONIC_HEAL := 30
+const MAP_STEP_SECONDS := 0.08
 
 var map_canvas: Control
 var log_label: Label
 var choices: HBoxContainer
 var _subtitle: Label
 var _context: Button
-var _inventory: Inventory
+var _inventory: InventoryPanel
 var _status: Status
 var _catalogue: Dictionary
 var _satchel: Satchel
 var _profile: Dictionary
+var _map_grid: AStarGrid2D
+var _map_origin: Vector2
+var _map_tile_size: Vector2
+var _can_move_on_map: Callable
+var _move_map_step: Callable
+var _map_route: Array[Vector2i] = []
+var _map_step_delay := 0.0
 
 
 func _ready() -> void:
+	set_process(false)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_anchors_preset(Control.PRESET_CENTER)
 	offset_left = -CONTENT_SIZE.x * 0.5
@@ -42,7 +51,7 @@ func _ready() -> void:
 	_subtitle.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	add_child(_subtitle)
 
-	_inventory = Inventory.new()
+	_inventory = InventoryPanel.new()
 	_inventory.name = "InventoryPanel"
 	_inventory.position = Vector2(0, 82)
 	_inventory.size = Vector2(226, 466)
@@ -81,6 +90,7 @@ func _build_map_panel() -> void:
 	map_canvas.position = Vector2(6, 42)
 	map_canvas.size = Vector2(622, 414)
 	frame.add_child(map_canvas)
+	map_canvas.gui_input.connect(_on_map_input)
 
 
 func _build_message_log() -> void:
@@ -129,6 +139,68 @@ func configure(area: String, subtitle: String, dimensions: Vector2i, walkable: D
 	_catalogue = catalogue
 	_satchel = satchel
 	_status.setup_map(area, dimensions, walkable, landmarks)
+
+
+func configure_click_movement(origin: Vector2, tile_size: Vector2, blocked: Array, can_move: Callable, move_step: Callable) -> void:
+	cancel_map_movement()
+	_map_origin = origin
+	_map_tile_size = tile_size
+	_can_move_on_map = can_move
+	_move_map_step = move_step
+	_map_grid = AStarGrid2D.new()
+	_map_grid.region = Rect2i(Vector2i.ZERO, _status.dimensions)
+	_map_grid.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_NEVER
+	_map_grid.default_estimate_heuristic = AStarGrid2D.HEURISTIC_MANHATTAN
+	_map_grid.update()
+	for y in _status.dimensions.y:
+		for x in _status.dimensions.x:
+			var cell := Vector2i(x, y)
+			if not _status.walkable.has(cell) or blocked.has(cell):
+				_map_grid.set_point_solid(cell)
+	map_canvas.mouse_filter = Control.MOUSE_FILTER_STOP
+
+
+func cancel_map_movement() -> void:
+	_map_route.clear()
+	set_process(false)
+
+
+func _on_map_input(event: InputEvent) -> void:
+	if not event is InputEventMouseButton or event.button_index != MOUSE_BUTTON_LEFT or not event.pressed:
+		return
+	cancel_map_movement()
+	if not _can_move_on_map.call() or _status.slot_menu_open():
+		return
+	var target := Vector2i(((event.position - _map_origin) / _map_tile_size).floor())
+	if target == _status.player or not _map_grid.is_in_boundsv(target) or _map_grid.is_point_solid(target):
+		return
+	_map_route = _map_grid.get_id_path(_status.player, target)
+	if _map_route.is_empty():
+		return
+	_map_route.pop_front() # The path starts at the player's current tile.
+	release_inventory_focus()
+	_map_step_delay = MAP_STEP_SECONDS
+	set_process(true)
+	_follow_map_route()
+
+
+func _process(delta: float) -> void:
+	if _map_route.is_empty():
+		return
+	_map_step_delay -= delta
+	if _map_step_delay <= 0.0:
+		_map_step_delay = MAP_STEP_SECONDS
+		_follow_map_route()
+
+
+func _follow_map_route() -> void:
+	if not _can_move_on_map.call() or _status.slot_menu_open() or inventory_has_focus():
+		cancel_map_movement()
+		return
+	var next_cell: Vector2i = _map_route.pop_front()
+	_move_map_step.call(next_cell - _status.player)
+	if _status.player != next_cell or _map_route.is_empty():
+		cancel_map_movement()
 
 
 func refresh(profile: Dictionary) -> void:

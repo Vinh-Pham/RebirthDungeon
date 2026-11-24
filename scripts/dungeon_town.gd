@@ -107,7 +107,8 @@ func _build_interface() -> void:
 				walkable[cell] = true
 	for point: Vector2i in POINTS:
 		landmarks[point] = Style.TEAL
-	_layout.configure(TOWN_NAMES[town], "Safe Dungeon Town     /     WASD / Arrows  Move   E  Interact   Esc  Character Select", Vector2i(30, 11), walkable, landmarks, catalogue, satchel)
+	_layout.configure(TOWN_NAMES[town], "Safe Dungeon Town     /     Click / WASD / Arrows  Move   E  Interact   Esc  Character Select", Vector2i(30, 11), walkable, landmarks, catalogue, satchel)
+	_layout.configure_click_movement(ORIGIN, TILE, POINTS, _map_movement_available, _move)
 	_layout.map_canvas.draw.connect(_draw_world)
 	_layout.command_requested.connect(_command)
 	_layout.profile_updated.connect(_profile_updated)
@@ -128,8 +129,13 @@ func _profile_updated(updated: Dictionary) -> void:
 	_refresh()
 
 
+func _map_movement_available() -> bool:
+	return not (sheet.visible or armory.visible or _journal.visible)
+
+
 func _command(command: String) -> void:
-	if sheet.visible or armory.visible or _journal.visible:
+	_layout.cancel_map_movement()
+	if not _map_movement_available():
 		return
 	var weapon: Dictionary = catalogue.get(satchel.equipped, {})
 	match command:
@@ -222,6 +228,7 @@ func _resident_names() -> Array:
 func _input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo or sheet == null:
 		return
+	_layout.cancel_map_movement()
 	if sheet.visible:
 		if event.keycode in [KEY_C, KEY_ESCAPE]:
 			sheet.close()
@@ -252,7 +259,7 @@ func _input(event: InputEvent) -> void:
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo or sheet == null:
 		return
-	if sheet.visible or armory.visible or _journal.visible:
+	if not _map_movement_available():
 		return
 	var viewport := get_viewport()
 	match event.keycode:

@@ -114,10 +114,11 @@ func _configure_map() -> void:
 		landmarks[cell] = Style.BORDER.lightened(0.2)
 	if _crossing_blocked():
 		landmarks[WEB_CROSSING] = Style.ERROR
-	var subtitle := "%s  ·  %s     /     WASD / Arrows  Move   E  Interact   Space  Practice   Esc  Character Select" % [
+	var subtitle := "%s  ·  %s     /     Click / WASD / Arrows  Move   E  Interact   Space  Practice   Esc  Character Select" % [
 		_profile["name"], Data.TALENTS[_profile["talent"]]
 	]
 	_layout.configure("Threshold", subtitle, MAP_SIZE, floor_cells, landmarks, _catalog, _satchel)
+	_layout.configure_click_movement(MAP_ORIGIN, TILE_SIZE, [PRACTICE_POST], _map_movement_available, _move)
 	_layout.set_player(player)
 
 
@@ -216,7 +217,8 @@ func _map_point(cell: Vector2i) -> Vector2:
 func _input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo or _journal == null:
 		return
-	if _sheet.visible or _armory.visible or _warrens.visible or _journal.visible:
+	_layout.cancel_map_movement()
+	if not _map_movement_available():
 		return
 	var direction := _layout.map_arrow_direction(event.keycode)
 	if direction != Vector2i.ZERO:
@@ -277,8 +279,13 @@ func _journal_shortcut(key: int) -> String:
 		_: return ""
 
 
+func _map_movement_available() -> bool:
+	return not (_sheet.visible or _journal.visible or _armory.visible or _warrens.visible)
+
+
 func _command(command: String) -> void:
-	if _sheet.visible or _journal.visible or _armory.visible or _warrens.visible:
+	_layout.cancel_map_movement()
+	if not _map_movement_available():
 		return
 	match command:
 		"character": _open_character_sheet()

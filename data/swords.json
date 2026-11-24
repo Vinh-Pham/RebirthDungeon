@@ -2,6 +2,7 @@
   {
     "id": "ashen_arcblade",
     "name": "Ashen Arcblade",
+    "description": "Venn issues these soot-gray arcblades to delvers leaving Lantern Rest for the first time.",
     "family": "light",
     "shape": "beam",
     "damage_min": 3,
@@ -14,6 +15,7 @@
   {
     "id": "copper_arcblade",
     "name": "Copper Arcblade",
+    "description": "A copper collar holds the emitter in place, secured by mismatched screws.",
     "family": "light",
     "shape": "beam",
     "damage_min": 4,
@@ -26,6 +28,7 @@
   {
     "id": "hollow_arcblade",
     "name": "Hollow Arcblade",
+    "description": "The arc runs through an open frame scavenged from an old lamp assembly.",
     "family": "light",
     "shape": "beam",
     "damage_min": 5,
@@ -38,6 +41,7 @@
   {
     "id": "slate_arcblade",
     "name": "Slate Arcblade",
+    "description": "Overlapping ceramic plates protect the emitter from grit in the lower passages.",
     "family": "light",
     "shape": "beam",
     "damage_min": 3,
@@ -50,6 +54,7 @@
   {
     "id": "cinder_arcblade",
     "name": "Cinder Arcblade",
+    "description": "Pitted emitter rails tell of a long shift in the furnace tunnels.",
     "family": "light",
     "shape": "beam",
     "damage_min": 4,
@@ -62,6 +67,7 @@
   {
     "id": "ashen_scrapblade",
     "name": "Ashen Scrapblade",
+    "description": "A broken flue bracket has been sharpened and wedged into an ashwood grip.",
     "family": "light",
     "shape": "odd",
     "damage_min": 3,
@@ -74,6 +80,7 @@
   {
     "id": "vault_arcblade",
     "name": "Vault Arcblade",
+    "description": "A red inspection stripe identifies the emitter as equipment from a sealed vault.",
     "family": "light",
     "shape": "beam",
     "damage_min": 5,
@@ -86,6 +93,7 @@
   {
     "id": "echo_arcblade",
     "name": "Echo Arcblade",
+    "description": "Its scalloped guard was cut from a dish that once listened through stone.",
     "family": "light",
     "shape": "beam",
     "damage_min": 3,
@@ -98,6 +106,7 @@
   {
     "id": "sable_arcblade",
     "name": "Sable Arcblade",
+    "description": "Few reflections escape the matte black shell around this arcblade's emitter.",
     "family": "light",
     "shape": "beam",
     "damage_min": 4,
@@ -110,6 +119,7 @@
   {
     "id": "mist_arcblade",
     "name": "Mist Arcblade",
+    "description": "Frosted glass covers the emitter, lending its edge a hazy white outline.",
     "family": "light",
     "shape": "beam",
     "damage_min": 5,
@@ -122,6 +132,7 @@
   {
     "id": "ember_arcblade",
     "name": "Ember Arcblade",
+    "description": "Small red windows on the hilt reveal the coils beneath the casing.",
     "family": "light",
     "shape": "beam",
     "damage_min": 3,
@@ -134,6 +145,7 @@
   {
     "id": "copper_scrapblade",
     "name": "Copper Scrapblade",
+    "description": "An old copper busbar forms the spine of this patchwork steel blade.",
     "family": "light",
     "shape": "odd",
     "damage_min": 4,
@@ -146,6 +158,7 @@
   {
     "id": "ashen_cleaver",
     "name": "Ashen Cleaver",
+    "description": "Soot has settled under the rivets of a broad blade ground from a grate.",
     "family": "light",
     "shape": "broad",
     "damage_min": 3,
@@ -158,6 +171,7 @@
   {
     "id": "ashen_edge",
     "name": "Ashen Edge",
+    "description": "A simple steel blade with a grip of ashwood darkened by lamp smoke.",
     "family": "light",
     "shape": "light",
     "damage_min": 3,
@@ -170,6 +184,7 @@
   {
     "id": "hollow_scrapblade",
     "name": "Hollow Scrapblade",
+    "description": "A length of hollow conduit forms the handle of this uneven blade.",
     "family": "light",
     "shape": "odd",
     "damage_min": 5,
@@ -182,6 +197,7 @@
   {
     "id": "slate_scrapblade",
     "name": "Slate Scrapblade",
+    "description": "A snapped quarry saw gives this rough sword its gray teeth.",
     "family": "light",
     "shape": "odd",
     "damage_min": 3,
@@ -194,6 +210,7 @@
   {
     "id": "cinder_scrapblade",
     "name": "Cinder Scrapblade",
+    "description": "A slag-blackened stoker's tool has been hammered into a crooked blade.",
     "family": "light",
     "shape": "odd",
     "damage_min": 4,
@@ -206,6 +223,7 @@
   {
     "id": "brass_arcblade",
     "name": "Brass Arcblade",
+    "description": "A brass valve cap doubles as the pommel of this neatly rebuilt arcblade.",
     "family": "light",
     "shape": "beam",
     "damage_min": 4,
@@ -218,6 +236,7 @@
   {
     "id": "copper_edge",
     "name": "Copper Edge",
+    "description": "The guard's folded copper tab still carries the stamp of a cable works.",
     "family": "light",
     "shape": "light",
     "damage_min": 4,
@@ -230,6 +249,7 @@
   {
     "id": "copper_cleaver",
     "name": "Copper Cleaver",
+    "description": "A copper counterweight balances a broad blade cut from a retired pump vane.",
     "family": "light",
     "shape": "broad",
     "damage_min": 4,
@@ -242,6 +262,7 @@
   {
     "id": "vault_scrapblade",
     "name": "Vault Scrapblade",
+    "description": "A section of vault grille has been sharpened along its outermost bar.",
     "family": "light",
     "shape": "odd",
     "damage_min": 5,
@@ -254,6 +275,7 @@
   {
     "id": "hollow_edge",
     "name": "Hollow Edge",
+    "description": "A narrow recess in the pommel once held a delver's folded route map.",
     "family": "light",
     "shape": "light",
     "damage_min": 5,
@@ -266,6 +288,7 @@
   {
     "id": "slate_edge",
     "name": "Slate Edge",
+    "description": "Fine scratches on the gray blade follow the grain of a whetstone.",
     "family": "light",
     "shape": "light",
     "damage_min": 3,
@@ -278,6 +301,7 @@
   {
     "id": "cinder_edge",
     "name": "Cinder Edge",
+    "description": "Heat left a rust-red stripe down the steel beside its polished edge.",
     "family": "light",
     "shape": "light",
     "damage_min": 4,
@@ -290,6 +314,7 @@
   {
     "id": "vault_edge",
     "name": "Vault Edge",
+    "description": "The blade's serial number matches a peg in a long-empty vault armory.",
     "family": "light",
     "shape": "light",
     "damage_min": 5,
@@ -302,6 +327,7 @@
   {
     "id": "ashen_shard",
     "name": "Ashen Shard",
+    "description": "A short shard of steel is held between two soot-darkened wooden scales.",
     "family": "light",
     "shape": "dagger",
     "damage_min": 3,
@@ -314,6 +340,7 @@
   {
     "id": "echo_edge",
     "name": "Echo Edge",
+    "description": "Three engraved circles near the hilt mark a blade made for relay crews.",
     "family": "light",
     "shape": "light",
     "damage_min": 3,
@@ -326,6 +353,7 @@
   {
     "id": "sable_edge",
     "name": "Sable Edge",
+    "description": "Black lacquer has worn away where a thumb rested against the guard.",
     "family": "light",
     "shape": "light",
     "damage_min": 4,
@@ -338,6 +366,7 @@
   {
     "id": "hollow_cleaver",
     "name": "Hollow Cleaver",
+    "description": "A row of round holes runs along the back of this broad blade.",
     "family": "light",
     "shape": "broad",
     "damage_min": 5,
@@ -350,6 +379,7 @@
   {
     "id": "mist_edge",
     "name": "Mist Edge",
+    "description": "The steel has a cloudy sheen, like the glass of an unlit lantern.",
     "family": "light",
     "shape": "light",
     "damage_min": 5,
@@ -362,6 +392,7 @@
   {
     "id": "ember_edge",
     "name": "Ember Edge",
+    "description": "Orange enamel fills the maker's stamp on a finely ground steel blade.",
     "family": "light",
     "shape": "light",
     "damage_min": 3,
@@ -374,6 +405,7 @@
   {
     "id": "brass_edge",
     "name": "Brass Edge",
+    "description": "The square brass guard is polished bright at its corners from years of use.",
     "family": "light",
     "shape": "light",
     "damage_min": 4,
@@ -386,6 +418,7 @@
   {
     "id": "ashen_hookblade",
     "name": "Ashen Hookblade",
+    "description": "A curved blade with an ashwood handle scarred by a smith's clamp.",
     "family": "light",
     "shape": "curved",
     "damage_min": 3,
@@ -398,6 +431,7 @@
   {
     "id": "echo_scrapblade",
     "name": "Echo Scrapblade",
+    "description": "A broken signal horn has been flattened around the tang of a salvage blade.",
     "family": "light",
     "shape": "odd",
     "damage_min": 3,
@@ -410,6 +444,7 @@
   {
     "id": "dusk_edge",
     "name": "Dusk Edge",
+    "description": "A strip of violet cloth binds the hilt of this dark, narrow blade.",
     "family": "light",
     "shape": "light",
     "damage_min": 5,
@@ -422,6 +457,7 @@
   {
     "id": "moss_edge",
     "name": "Moss Edge",
+    "description": "Green pigment stains the fingers when you handle its old linen grip.",
     "family": "light",
     "shape": "light",
     "damage_min": 3,
@@ -434,6 +470,7 @@
   {
     "id": "dusk_arcblade",
     "name": "Dusk Arcblade",
+    "description": "Purple ceramic insulators sit between dark rails along the emitter.",
     "family": "light",
     "shape": "beam",
     "damage_min": 5,
@@ -446,6 +483,7 @@
   {
     "id": "moss_arcblade",
     "name": "Moss Arcblade",
+    "description": "Green corrosion rings the screws of an arcblade salvaged near a flooded stair.",
     "family": "light",
     "shape": "beam",
     "damage_min": 3,
@@ -458,6 +496,7 @@
   {
     "id": "iron_arcblade",
     "name": "Iron Arcblade",
+    "description": "A plain iron bracket braces the emitter, with room for a quick repair.",
     "family": "light",
     "shape": "beam",
     "damage_min": 4,
@@ -470,6 +509,7 @@
   {
     "id": "flint_arcblade",
     "name": "Flint Arcblade",
+    "description": "Chipped gray shielding exposes the emitter clamp along one side of the hilt.",
     "family": "light",
     "shape": "beam",
     "damage_min": 5,
@@ -482,6 +522,7 @@
   {
     "id": "storm_arcblade",
     "name": "Storm Arcblade",
+    "description": "An old lightning rod's braided ground wire runs through the exposed grip.",
     "family": "light",
     "shape": "beam",
     "damage_min": 3,
@@ -494,6 +535,7 @@
   {
     "id": "amber_arcblade",
     "name": "Amber Arcblade",
+    "description": "A translucent amber cover shows where a smith soldered the emitter back together.",
     "family": "light",
     "shape": "beam",
     "damage_min": 4,
@@ -506,6 +548,7 @@
   {
     "id": "rime_arcblade",
     "name": "Rime Arcblade",
+    "description": "Pale ceramic tubes carry the arc past a ridged guard made for gloved hands.",
     "family": "light",
     "shape": "beam",
     "damage_min": 5,
@@ -518,6 +561,7 @@
   {
     "id": "deep_arcblade",
     "name": "Deep Arcblade",
+    "description": "A pressure-rated shell encloses the emitter of this lower-shaft survey blade.",
     "family": "light",
     "shape": "beam",
     "damage_min": 3,
@@ -530,6 +574,7 @@
   {
     "id": "pale_arcblade",
     "name": "Pale Arcblade",
+    "description": "Off-white ceramic hides the emitter wiring under a flush, numbered access panel.",
     "family": "light",
     "shape": "beam",
     "damage_min": 4,
@@ -542,6 +587,7 @@
   {
     "id": "slate_cleaver",
     "name": "Slate Cleaver",
+    "description": "A broad quarry blade bears two red tally marks near the spine.",
     "family": "light",
     "shape": "broad",
     "damage_min": 3,
@@ -554,6 +600,7 @@
   {
     "id": "copper_shard",
     "name": "Copper Shard",
+    "description": "Soft copper rivets pin a sliver of hard steel to a pocket-sized grip.",
     "family": "light",
     "shape": "dagger",
     "damage_min": 4,
@@ -566,6 +613,7 @@
   {
     "id": "copper_hookblade",
     "name": "Copper Hookblade",
+    "description": "A copper sleeve joins a crescent blade to the handle of an old cable hook.",
     "family": "light",
     "shape": "curved",
     "damage_min": 4,
@@ -578,6 +626,7 @@
   {
     "id": "iron_edge",
     "name": "Iron Edge",
+    "description": "Fresh grinding marks show where someone straightened this well-used sword.",
     "family": "light",
     "shape": "light",
     "damage_min": 4,
@@ -590,6 +639,7 @@
   {
     "id": "flint_edge",
     "name": "Flint Edge",
+    "description": "A chipped stone inset identifies the smith who ground this narrow blade.",
     "family": "light",
     "shape": "light",
     "damage_min": 5,
@@ -602,6 +652,7 @@
   {
     "id": "storm_edge",
     "name": "Storm Edge",
+    "description": "A guard cut from a conductor plate still bears a lightning warning.",
     "family": "light",
     "shape": "light",
     "damage_min": 3,
@@ -614,6 +665,7 @@
   {
     "id": "amber_edge",
     "name": "Amber Edge",
+    "description": "A square of honey-colored resin fills a worn notch in the guard.",
     "family": "light",
     "shape": "light",
     "damage_min": 4,
@@ -626,6 +678,7 @@
   {
     "id": "ashen_arcblade_of_the_gate",
     "name": "Ashen Arcblade of the Gate",
+    "description": "Ash-dark shielding carries a Moon Gate stamp and a watch officer's initials.",
     "family": "light",
     "shape": "beam",
     "damage_min": 5,
@@ -638,6 +691,7 @@
   {
     "id": "sable_scrapblade",
     "name": "Sable Scrapblade",
+    "description": "A sharpened strip of black machine casing is bound to its handle with wire.",
     "family": "light",
     "shape": "odd",
     "damage_min": 4,
@@ -650,6 +704,7 @@
   {
     "id": "hollow_hookblade",
     "name": "Hollow Hookblade",
+    "description": "A crescent blade with a hollow spine, once hung beside an abandoned lift.",
     "family": "light",
     "shape": "curved",
     "damage_min": 5,
@@ -662,6 +717,7 @@
   {
     "id": "rime_edge",
     "name": "Rime Edge",
+    "description": "White mineral crust gathers along the fuller of this slender steel blade.",
     "family": "light",
     "shape": "light",
     "damage_min": 5,
@@ -674,6 +730,7 @@
   {
     "id": "copper_arcblade_of_the_gate",
     "name": "Copper Arcblade of the Gate",
+    "description": "Copper coils frame a luminous edge etched with the Moon Gate keeper's seal.",
     "family": "light",
     "shape": "beam",
     "damage_min": 3,
@@ -686,6 +743,7 @@
   {
     "id": "deep_edge",
     "name": "Deep Edge",
+    "description": "A dark, narrow sword recovered from a stairwell below the oldest maps.",
     "family": "light",
     "shape": "light",
     "damage_min": 3,
@@ -698,6 +756,7 @@
   {
     "id": "pale_edge",
     "name": "Pale Edge",
+    "description": "Milky metal and a linen grip give this simple sword a ghostly finish.",
     "family": "light",
     "shape": "light",
     "damage_min": 4,
@@ -710,6 +769,7 @@
   {
     "id": "ashen_edge_of_the_gate",
     "name": "Ashen Edge of the Gate",
+    "description": "Gate wardens stamped this ash-gray blade with the number of their watch.",
     "family": "light",
     "shape": "light",
     "damage_min": 5,
@@ -722,6 +782,7 @@
   {
     "id": "copper_edge_of_the_gate",
     "name": "Copper Edge of the Gate",
+    "description": "A copper guard bears tiny scratches recording journeys between the dungeon settlements.",
     "family": "light",
     "shape": "light",
     "damage_min": 3,
@@ -734,6 +795,7 @@
   {
     "id": "hollow_edge_of_the_gate",
     "name": "Hollow Edge of the Gate",
+    "description": "An open channel runs beneath the gate sigils engraved along this blade.",
     "family": "light",
     "shape": "light",
     "damage_min": 4,
@@ -746,6 +808,7 @@
   {
     "id": "mist_scrapblade",
     "name": "Mist Scrapblade",
+    "description": "Condensation beads on a jagged sword assembled from an old ventilation grille.",
     "family": "light",
     "shape": "odd",
     "damage_min": 5,
@@ -758,6 +821,7 @@
   {
     "id": "slate_edge_of_the_gate",
     "name": "Slate Edge of the Gate",
+    "description": "Slate-colored steel carries the angular route marks of a forgotten gate station.",
     "family": "light",
     "shape": "light",
     "damage_min": 5,
@@ -770,6 +834,7 @@
   {
     "id": "cinder_edge_of_the_gate",
     "name": "Cinder Edge of the Gate",
+    "description": "Cinder-darkened gate marks survive beneath the polish of this narrow sword.",
     "family": "light",
     "shape": "light",
     "damage_min": 3,
@@ -782,6 +847,7 @@
   {
     "id": "slate_hookblade",
     "name": "Slate Hookblade",
+    "description": "A stone-gray crescent with a wrapped handle worn smooth by generations of porters.",
     "family": "light",
     "shape": "curved",
     "damage_min": 3,
@@ -794,6 +860,7 @@
   {
     "id": "ember_scrapblade",
     "name": "Ember Scrapblade",
+    "description": "Old furnace plates form an uneven blade, their rivet holes still plainly visible.",
     "family": "light",
     "shape": "odd",
     "damage_min": 3,
@@ -806,6 +873,7 @@
   {
     "id": "cinder_hookblade",
     "name": "Cinder Hookblade",
+    "description": "Soot settles into the hooked tip of a blade forged beside the lower furnaces.",
     "family": "light",
     "shape": "curved",
     "damage_min": 4,
@@ -818,6 +886,7 @@
   {
     "id": "brass_scrapblade",
     "name": "Brass Scrapblade",
+    "description": "Brass machine teeth line a makeshift sword lashed to an iron handle.",
     "family": "light",
     "shape": "odd",
     "damage_min": 4,
@@ -830,6 +899,7 @@
   {
     "id": "hollow_arcblade_of_the_gate",
     "name": "Hollow Arcblade of the Gate",
+    "description": "An exposed arc housing surrounds the hollow gate emblem suspended in its guard.",
     "family": "light",
     "shape": "beam",
     "damage_min": 4,
@@ -842,6 +912,7 @@
   {
     "id": "vault_edge_of_the_gate",
     "name": "Vault Edge of the Gate",
+    "description": "A vault inventory number shares the blade with a much newer gate stamp.",
     "family": "light",
     "shape": "light",
     "damage_min": 4,
@@ -854,6 +925,7 @@
   {
     "id": "dusk_scrapblade",
     "name": "Dusk Scrapblade",
+    "description": "Dark salvage plates overlap beneath the violet cord binding this improvised hilt.",
     "family": "light",
     "shape": "odd",
     "damage_min": 5,
@@ -866,6 +938,7 @@
   {
     "id": "echo_edge_of_the_gate",
     "name": "Echo Edge of the Gate",
+    "description": "Repeated gate symbols crowd a blade whose maker apparently distrusted empty space.",
     "family": "light",
     "shape": "light",
     "damage_min": 5,
@@ -878,6 +951,7 @@
   {
     "id": "sable_edge_of_the_gate",
     "name": "Sable Edge of the Gate",
+    "description": "Black enamel surrounds a silver gate seal on this watch officer's sword.",
     "family": "light",
     "shape": "light",
     "damage_min": 3,
@@ -890,6 +964,7 @@
   {
     "id": "slate_arcblade_of_the_gate",
     "name": "Slate Arcblade of the Gate",
+    "description": "Gray ceramic shields the arc core, each plate numbered in a gatekeeper's hand.",
     "family": "light",
     "shape": "beam",
     "damage_min": 5,
@@ -902,6 +977,7 @@
   {
     "id": "cinder_arcblade_of_the_gate",
     "name": "Cinder Arcblade of the Gate",
+    "description": "A scorched emitter cage carries the faded insignia of a ruined gatehouse.",
     "family": "light",
     "shape": "beam",
     "damage_min": 3,
@@ -914,6 +990,7 @@
   {
     "id": "mist_edge_of_the_gate",
     "name": "Mist Edge of the Gate",
+    "description": "The thin blade's cloudy polish partly conceals an old Moon Gate dedication.",
     "family": "light",
     "shape": "light",
     "damage_min": 4,
@@ -926,6 +1003,7 @@
   {
     "id": "ember_edge_of_the_gate",
     "name": "Ember Edge of the Gate",
+    "description": "Red thread circles the grip beneath a gate seal darkened by furnace smoke.",
     "family": "light",
     "shape": "light",
     "damage_min": 5,
@@ -938,6 +1016,7 @@
   {
     "id": "vault_arcblade_of_the_gate",
     "name": "Vault Arcblade of the Gate",
+    "description": "A sealed arc core sits inside a guard reclaimed from a vault door.",
     "family": "light",
     "shape": "beam",
     "damage_min": 4,
@@ -950,6 +1029,7 @@
   {
     "id": "brass_edge_of_the_gate",
     "name": "Brass Edge of the Gate",
+    "description": "A brass gate token is riveted into the pommel of this service sword.",
     "family": "light",
     "shape": "light",
     "damage_min": 3,
@@ -962,6 +1042,7 @@
   {
     "id": "moss_scrapblade",
     "name": "Moss Scrapblade",
+    "description": "Green stains fill the seams between the sharpened scraps of an ancient hatch.",
     "family": "light",
     "shape": "odd",
     "damage_min": 3,
@@ -974,6 +1055,7 @@
   {
     "id": "echo_arcblade_of_the_gate",
     "name": "Echo Arcblade of the Gate",
+    "description": "Nested metal rings surround its arc emitter like the arches of a gate hall.",
     "family": "light",
     "shape": "beam",
     "damage_min": 5,
@@ -986,6 +1068,7 @@
   {
     "id": "dusk_edge_of_the_gate",
     "name": "Dusk Edge of the Gate",
+    "description": "Twilight-colored lacquer frames a gate registration scratched into the steel by hand.",
     "family": "light",
     "shape": "light",
     "damage_min": 4,
@@ -998,6 +1081,7 @@
   {
     "id": "hollow_shard",
     "name": "Hollow Shard",
+    "description": "A broken blade fitted with a grip, its hollow center left exposed.",
     "family": "light",
     "shape": "dagger",
     "damage_min": 5,
@@ -1010,6 +1094,7 @@
   {
     "id": "moss_edge_of_the_gate",
     "name": "Moss Edge of the Gate",
+    "description": "Moss-green wrapping covers a sword marked for a gate station swallowed by roots.",
     "family": "light",
     "shape": "light",
     "damage_min": 5,
@@ -1022,6 +1107,7 @@
   {
     "id": "iron_edge_of_the_gate",
     "name": "Iron Edge of the Gate",
+    "description": "A plain iron guard bears the hammered seal of the first gate watch.",
     "family": "light",
     "shape": "light",
     "damage_min": 3,
@@ -1034,6 +1120,7 @@
   {
     "id": "iron_scrapblade",
     "name": "Iron Scrapblade",
+    "description": "Sharpened rail fragments and thick wire make a sword with unmistakable workshop origins.",
     "family": "light",
     "shape": "odd",
     "damage_min": 4,
@@ -1046,6 +1133,7 @@
   {
     "id": "flint_edge_of_the_gate",
     "name": "Flint Edge of the Gate",
+    "description": "Flint-gray steel bears a gatekeeper's oath in lettering too worn to read.",
     "family": "light",
     "shape": "light",
     "damage_min": 4,
@@ -1058,6 +1146,7 @@
   {
     "id": "storm_edge_of_the_gate",
     "name": "Storm Edge of the Gate",
+    "description": "Lightning-shaped engravings converge on the small gate emblem set into its guard.",
     "family": "light",
     "shape": "light",
     "damage_min": 5,
@@ -1070,6 +1159,7 @@
   {
     "id": "vault_hookblade",
     "name": "Vault Hookblade",
+    "description": "A curved vault tool has been honed into a sword, retaining its numbered tang.",
     "family": "light",
     "shape": "curved",
     "damage_min": 5,
@@ -1082,6 +1172,7 @@
   {
     "id": "amber_edge_of_the_gate",
     "name": "Amber Edge of the Gate",
+    "description": "Amber resin seals a folded travel permit beneath the openwork guard.",
     "family": "light",
     "shape": "light",
     "damage_min": 3,
@@ -1094,6 +1185,7 @@
   {
     "id": "sable_arcblade_of_the_gate",
     "name": "Sable Arcblade of the Gate",
+    "description": "Blackened emitter fins surround a pale arc, framed by the gate watch insignia.",
     "family": "light",
     "shape": "beam",
     "damage_min": 3,
@@ -1106,6 +1198,7 @@
   {
     "id": "rime_edge_of_the_gate",
     "name": "Rime Edge of the Gate",
+    "description": "Frost-colored enamel fills the Moon Gate crest on this neatly maintained blade.",
     "family": "light",
     "shape": "light",
     "damage_min": 4,
@@ -1118,6 +1211,7 @@
   {
     "id": "echo_hookblade",
     "name": "Echo Hookblade",
+    "description": "Concentric grooves follow the blade's curve, copied from the walls of an echo chamber.",
     "family": "light",
     "shape": "curved",
     "damage_min": 3,
@@ -1130,6 +1224,7 @@
   {
     "id": "deep_edge_of_the_gate",
     "name": "Deep Edge of the Gate",
+    "description": "A gate station's name is engraved along the blade in an unfamiliar script.",
     "family": "light",
     "shape": "light",
     "damage_min": 5,
@@ -1142,6 +1237,7 @@
   {
     "id": "slate_shard",
     "name": "Slate Shard",
+    "description": "A short gray blade chipped from a longer sword and fitted with cord.",
     "family": "light",
     "shape": "dagger",
     "damage_min": 3,
@@ -1154,6 +1250,7 @@
   {
     "id": "pale_edge_of_the_gate",
     "name": "Pale Edge of the Gate",
+    "description": "Bone-white lacquer covers the guard, leaving its stamped gate number clearly visible.",
     "family": "light",
     "shape": "light",
     "damage_min": 3,
@@ -1166,6 +1263,7 @@
   {
     "id": "sable_hookblade",
     "name": "Sable Hookblade",
+    "description": "A black crescent blade curves above a grip wrapped in faded mourning cloth.",
     "family": "light",
     "shape": "curved",
     "damage_min": 4,
@@ -1178,6 +1276,7 @@
   {
     "id": "cinder_cleaver",
     "name": "Cinder Cleaver",
+    "description": "Furnace soot darkens a broad blade whose back still bears the smith's chalk marks.",
     "family": "light",
     "shape": "broad",
     "damage_min": 4,
@@ -1190,6 +1289,7 @@
   {
     "id": "vault_cleaver",
     "name": "Vault Cleaver",
+    "description": "A broad slab of polished vault steel retains a section of its original hinge.",
     "family": "light",
     "shape": "broad",
     "damage_min": 5,
@@ -1202,6 +1302,7 @@
   {
     "id": "echo_cleaver",
     "name": "Echo Cleaver",
+    "description": "Parallel channels cross this broad blade like the ribs of an empty tunnel.",
     "family": "light",
     "shape": "broad",
     "damage_min": 3,
@@ -1214,6 +1315,7 @@
   {
     "id": "sable_cleaver",
     "name": "Sable Cleaver",
+    "description": "Darkened steel and a square guard give this broad sword a severe outline.",
     "family": "light",
     "shape": "broad",
     "damage_min": 4,
@@ -1226,6 +1328,7 @@
   {
     "id": "mist_cleaver",
     "name": "Mist Cleaver",
+    "description": "Cloudy forging patterns drift across a wide blade mounted on a pale wooden grip.",
     "family": "light",
     "shape": "broad",
     "damage_min": 5,
@@ -1238,6 +1341,7 @@
   {
     "id": "ember_cleaver",
     "name": "Ember Cleaver",
+    "description": "Red scale clings beneath the guard of a broad sword from the furnace quarter.",
     "family": "light",
     "shape": "broad",
     "damage_min": 3,
@@ -1250,6 +1354,7 @@
   {
     "id": "brass_cleaver",
     "name": "Brass Cleaver",
+    "description": "A brass-capped pommel balances a broad blade stamped with a foundry worker's mark.",
     "family": "light",
     "shape": "broad",
     "damage_min": 4,
@@ -1262,6 +1367,7 @@
   {
     "id": "dusk_cleaver",
     "name": "Dusk Cleaver",
+    "description": "Violet staining crosses a broad sword recovered after the lamps failed.",
     "family": "light",
     "shape": "broad",
     "damage_min": 5,
@@ -1274,6 +1380,7 @@
   {
     "id": "ashen_edge_of_the_deep",
     "name": "Ashen Edge of the Deep",
+    "description": "A narrow ash-gray sword wrapped in cloth bearing the dust of the lower stairs.",
     "family": "light",
     "shape": "light",
     "damage_min": 4,
@@ -1286,6 +1393,7 @@
   {
     "id": "copper_edge_of_the_deep",
     "name": "Copper Edge of the Deep",
+    "description": "Copper fittings have darkened around a blade pulled from a buried survey camp.",
     "family": "light",
     "shape": "light",
     "damage_min": 5,
@@ -1298,6 +1406,7 @@
   {
     "id": "ashen_needle",
     "name": "Ashen Needle",
+    "description": "A slender dueling blade with an ashwood grip and a smoke-darkened basket guard.",
     "family": "rapier",
     "shape": "rapier",
     "damage_min": 3,
@@ -1310,6 +1419,7 @@
   {
     "id": "copper_needle",
     "name": "Copper Needle",
+    "description": "Copper wire spirals around the grip beneath a narrow, carefully polished blade.",
     "family": "rapier",
     "shape": "rapier",
     "damage_min": 4,
@@ -1322,6 +1432,7 @@
   {
     "id": "hollow_needle",
     "name": "Hollow Needle",
+    "description": "Tiny vents along this needle-thin blade whistle when drawn through the air.",
     "family": "rapier",
     "shape": "rapier",
     "damage_min": 5,
@@ -1334,6 +1445,7 @@
   {
     "id": "ashen_greatblade",
     "name": "Ashen Greatblade",
+    "description": "A broad steel blade bearing the soot-stained maker's mark of Lantern Rest.",
     "family": "heavy",
     "shape": "heavy",
     "damage_min": 6,
@@ -1346,6 +1458,7 @@
   {
     "id": "copper_greatblade",
     "name": "Copper Greatblade",
+    "description": "Hammered copper fittings surround a blade salvaged from an ancient engine housing.",
     "family": "heavy",
     "shape": "heavy",
     "damage_min": 7,
@@ -1358,6 +1471,7 @@
   {
     "id": "hollow_greatblade",
     "name": "Hollow Greatblade",
+    "description": "An open channel runs down the blade, exposing a lattice of dark metal.",
     "family": "heavy",
     "shape": "heavy",
     "damage_min": 8,
@@ -1370,6 +1484,7 @@
   {
     "id": "slate_greatblade",
     "name": "Slate Greatblade",
+    "description": "Flat gray steel and a square guard give this greatblade a mason's severity.",
     "family": "heavy",
     "shape": "heavy",
     "damage_min": 6,
@@ -1382,6 +1497,7 @@
   {
     "id": "cinder_greatblade",
     "name": "Cinder Greatblade",
+    "description": "Black scale clings to the fuller beneath a row of orange enamel studs.",
     "family": "heavy",
     "shape": "heavy",
     "damage_min": 7,
@@ -1394,6 +1510,7 @@
   {
     "id": "vault_greatblade",
     "name": "Vault Greatblade",
+    "description": "A sealed vault's numbered inventory plate still hangs from this sword's pommel.",
     "family": "heavy",
     "shape": "heavy",
     "damage_min": 8,
@@ -1406,6 +1523,7 @@
   {
     "id": "echo_greatblade",
     "name": "Echo Greatblade",
+    "description": "Its forked pommel resembles the tuning instruments found in abandoned listening chambers.",
     "family": "heavy",
     "shape": "heavy",
     "damage_min": 6,
@@ -1418,6 +1536,7 @@
   {
     "id": "sable_greatblade",
     "name": "Sable Greatblade",
+    "description": "Dark lacquer covers the guard, worn thin where generations of hands rested.",
     "family": "heavy",
     "shape": "heavy",
     "damage_min": 7,
@@ -1430,6 +1549,7 @@
   {
     "id": "mist_greatblade",
     "name": "Mist Greatblade",
+    "description": "Clouded metal catches pale reflections beneath a grip wrapped in silver-gray cloth.",
     "family": "heavy",
     "shape": "heavy",
     "damage_min": 8,
@@ -1442,6 +1562,7 @@
   {
     "id": "ember_greatblade",
     "name": "Ember Greatblade",
+    "description": "An ember-colored glass bead sits behind the guard, its surface cracked with age.",
     "family": "heavy",
     "shape": "heavy",
     "damage_min": 6,
@@ -1454,6 +1575,7 @@
   {
     "id": "brass_greatblade",
     "name": "Brass Greatblade",
+    "description": "Brass rivets secure an oversized crossguard shaped like an old pressure valve.",
     "family": "heavy",
     "shape": "heavy",
     "damage_min": 7,
@@ -1466,6 +1588,7 @@
   {
     "id": "dusk_greatblade",
     "name": "Dusk Greatblade",
+    "description": "Violet tarnish gathers in the fuller of a blade recovered beneath extinguished lamps.",
     "family": "heavy",
     "shape": "heavy",
     "damage_min": 8,
@@ -1478,6 +1601,7 @@
   {
     "id": "moss_greatblade",
     "name": "Moss Greatblade",
+    "description": "Green cord binds the hilt, matching the stains left by its flooded scabbard.",
     "family": "heavy",
     "shape": "heavy",
     "damage_min": 6,
@@ -1490,6 +1614,7 @@
   {
     "id": "iron_greatblade",
     "name": "Iron Greatblade",
+    "description": "A plain iron guard and battered leather grip frame a meticulously maintained blade.",
     "family": "heavy",
     "shape": "heavy",
     "damage_min": 7,
@@ -1502,6 +1627,7 @@
   {
     "id": "flint_greatblade",
     "name": "Flint Greatblade",
+    "description": "Angular chips decorate the guard, recalling the stone knives of the earliest delvers.",
     "family": "heavy",
     "shape": "heavy",
     "damage_min": 8,
@@ -1514,6 +1640,7 @@
   {
     "id": "storm_greatblade",
     "name": "Storm Greatblade",
+    "description": "Branching silver inlays trace the blade beside the remnants of an insulated grip.",
     "family": "heavy",
     "shape": "heavy",
     "damage_min": 6,
@@ -1526,6 +1653,7 @@
   {
     "id": "amber_greatblade",
     "name": "Amber Greatblade",
+    "description": "An amber resin pommel preserves a tiny insect from some forgotten surface forest.",
     "family": "heavy",
     "shape": "heavy",
     "damage_min": 7,
@@ -1538,6 +1666,7 @@
   {
     "id": "rime_greatblade",
     "name": "Rime Greatblade",
+    "description": "White mineral deposits remain in the fuller after years inside a frozen cistern.",
     "family": "heavy",
     "shape": "heavy",
     "damage_min": 8,
@@ -1550,6 +1679,7 @@
   {
     "id": "deep_greatblade",
     "name": "Deep Greatblade",
+    "description": "A pressure gauge's broken face has been fitted into this heavy sword's pommel.",
     "family": "heavy",
     "shape": "heavy",
     "damage_min": 6,
@@ -1562,6 +1692,7 @@
   {
     "id": "pale_greatblade",
     "name": "Pale Greatblade",
+    "description": "Bone-colored enamel covers the guard above a long blade of softly mottled steel.",
     "family": "heavy",
     "shape": "heavy",
     "damage_min": 7,
@@ -1574,6 +1705,7 @@
   {
     "id": "ashen_greatblade_of_the_gate",
     "name": "Ashen Greatblade of the Gate",
+    "description": "Ash-gray ceremonial steel bears the stamped crescent of a long-abandoned Moon Gate.",
     "family": "heavy",
     "shape": "heavy",
     "damage_min": 8,
@@ -1586,6 +1718,7 @@
   {
     "id": "copper_greatblade_of_the_gate",
     "name": "Copper Greatblade of the Gate",
+    "description": "Copper bands around the hilt carry the departure dates of vanished gatekeepers.",
     "family": "heavy",
     "shape": "heavy",
     "damage_min": 6,
@@ -1598,6 +1731,7 @@
   {
     "id": "hollow_greatblade_of_the_gate",
     "name": "Hollow Greatblade of the Gate",
+    "description": "An empty socket beneath the guard once held a Moon Gate registration crystal.",
     "family": "heavy",
     "shape": "heavy",
     "damage_min": 7,
@@ -1610,6 +1744,7 @@
   {
     "id": "slate_greatblade_of_the_gate",
     "name": "Slate Greatblade of the Gate",
+    "description": "Gray stone dust fills the engraved gate coordinates along this greatblade's spine.",
     "family": "heavy",
     "shape": "heavy",
     "damage_min": 8,
@@ -1622,6 +1757,7 @@
   {
     "id": "cinder_greatblade_of_the_gate",
     "name": "Cinder Greatblade of the Gate",
+    "description": "Scorched crescent emblems mark a sword recovered from a gatehouse furnace room.",
     "family": "heavy",
     "shape": "heavy",
     "damage_min": 6,
@@ -1634,6 +1770,7 @@
   {
     "id": "vault_greatblade_of_the_gate",
     "name": "Vault Greatblade of the Gate",
+    "description": "The gatehouse armory's seal remains intact beneath a cracked layer of blue wax.",
     "family": "heavy",
     "shape": "heavy",
     "damage_min": 7,
@@ -1646,6 +1783,7 @@
   {
     "id": "echo_greatblade_of_the_gate",
     "name": "Echo Greatblade of the Gate",
+    "description": "Repeated crescent engravings diminish toward the tip like echoes down a gate tunnel.",
     "family": "heavy",
     "shape": "heavy",
     "damage_min": 8,
@@ -1658,6 +1796,7 @@
   {
     "id": "sable_greatblade_of_the_gate",
     "name": "Sable Greatblade of the Gate",
+    "description": "Blackened steel frames a polished moon emblem worn smooth by a gatekeeper's thumb.",
     "family": "heavy",
     "shape": "heavy",
     "damage_min": 6,
@@ -1670,6 +1809,7 @@
   {
     "id": "mist_greatblade_of_the_gate",
     "name": "Mist Greatblade of the Gate",
+    "description": "A fog-stained travel ribbon hangs beneath the crescent cut into its crossguard.",
     "family": "heavy",
     "shape": "heavy",
     "damage_min": 7,
@@ -1682,6 +1822,7 @@
   {
     "id": "ember_greatblade_of_the_gate",
     "name": "Ember Greatblade of the Gate",
+    "description": "Red glass fragments decorate a gatekeeper's sword, remnants of a shattered signal lantern.",
     "family": "heavy",
     "shape": "heavy",
     "damage_min": 8,
@@ -1694,6 +1835,7 @@
   {
     "id": "brass_greatblade_of_the_gate",
     "name": "Brass Greatblade of the Gate",
+    "description": "Its broad brass guard is engraved with the operating instructions for a vanished gate.",
     "family": "heavy",
     "shape": "heavy",
     "damage_min": 6,
@@ -1706,6 +1848,7 @@
   {
     "id": "dusk_greatblade_of_the_gate",
     "name": "Dusk Greatblade of the Gate",
+    "description": "A dark violet blade carries a gatewarden's final watch tally near the hilt.",
     "family": "heavy",
     "shape": "heavy",
     "damage_min": 7,
@@ -1718,6 +1861,7 @@
   {
     "id": "ashen_lanceblade",
     "name": "Ashen Lanceblade",
+    "description": "A long, tapered blade rises from an ashwood haft reinforced with steel collars.",
     "family": "piercing",
     "shape": "piercing",
     "damage_min": 7,
@@ -1730,6 +1874,7 @@
   {
     "id": "copper_lanceblade",
     "name": "Copper Lanceblade",
+    "description": "Copper sleeves join the narrow blade to a grip wrapped in faded engine cable.",
     "family": "piercing",
     "shape": "piercing",
     "damage_min": 8,
@@ -1742,6 +1887,7 @@
   {
     "id": "hollow_lanceblade",
     "name": "Hollow Lanceblade",
+    "description": "A hollow central rib runs toward the point, ending in a sealed metal cap.",
     "family": "piercing",
     "shape": "piercing",
     "damage_min": 9,
@@ -1754,6 +1900,7 @@
   {
     "id": "slate_lanceblade",
     "name": "Slate Lanceblade",
+    "description": "Its flat gray point resembles the survey stakes once driven into unexplored dungeon floors.",
     "family": "piercing",
     "shape": "piercing",
     "damage_min": 7,
@@ -1766,6 +1913,7 @@
   {
     "id": "cinder_lanceblade",
     "name": "Cinder Lanceblade",
+    "description": "Dark forge scale surrounds a sharpened point above a grip of scorched red leather.",
     "family": "piercing",
     "shape": "piercing",
     "damage_min": 8,

@@ -1,0 +1,14 @@
+[remap]
+
+importer="aseprite_wizard.plugin.noop"
+type="PackedDataContainer"
+uid="uid://cra8y1xf71t4d"
+path="res://.godot/imported/character_atlas.aseprite-1381d09f4f7fb8062fd1f5f393d6216c.res"
+
+[deps]
+
+source_file="res://assets/art/character_atlas.aseprite"
+dest_files=["res://.godot/imported/character_atlas.aseprite-1381d09f4f7fb8062fd1f5f393d6216c.res"]
+
+[params]
+

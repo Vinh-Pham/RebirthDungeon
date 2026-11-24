@@ -33,3 +33,13 @@ static func icon(item: Dictionary) -> Texture2D:
 
 static func damage_text(item: Dictionary) -> String:
 	return "%d-%d damage" % [int(item["damage_min"]), int(item["damage_max"])]
+
+
+static func tooltip(item: Dictionary) -> String:
+	const WRAP_COLUMN := 46
+	var description: String = item["description"]
+	if description.length() > WRAP_COLUMN:
+		var line_break := description.rfind(" ", WRAP_COLUMN)
+		if line_break > 0:
+			description = description.substr(0, line_break) + "\n" + description.substr(line_break + 1)
+	return "%s\n%s\n\n%s" % [item["name"], damage_text(item), description]
