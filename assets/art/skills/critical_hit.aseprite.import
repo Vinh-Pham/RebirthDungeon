@@ -1,0 +1,14 @@
+[remap]
+
+importer="aseprite_wizard.plugin.noop"
+type="PackedDataContainer"
+uid="uid://bgvpd283115ku"
+path="res://.godot/imported/critical_hit.aseprite-d25bf5034b98321cba7de639de999f15.res"
+
+[deps]
+
+source_file="res://assets/art/skills/critical_hit.aseprite"
+dest_files=["res://.godot/imported/critical_hit.aseprite-d25bf5034b98321cba7de639de999f15.res"]
+
+[params]
+

@@ -13,6 +13,7 @@ const Stats = preload("res://scripts/character_stats.gd")
 const Data = preload("res://scripts/character_data.gd")
 const Layout = preload("res://scripts/exploration_layout.gd")
 const Journal = preload("res://scripts/exploration_journal.gd")
+const Skills = preload("res://scripts/character_skills.gd")
 const LanternMap = preload("res://scripts/lantern_rest_map.gd")
 const Activities = preload("res://scripts/town_activities.gd")
 const AMENITY_ATLAS = preload("res://assets/art/town_amenities.png")
@@ -46,6 +47,7 @@ var _tile_size := Vector2(28, 32)
 var dialogue: HBoxContainer
 var _layout: Layout
 var _journal: Journal
+var _studying_at_school := false
 var satchel := Satchel.new()
 var armory: Armory
 var sheet: Sheet
@@ -165,6 +167,10 @@ func _build_interface() -> void:
 	sheet = Sheet.new()
 	add_child(sheet)
 	_journal = Journal.new()
+	_journal.name = "ExplorationJournal"
+	_journal.advance_requested.connect(_advance_skill)
+	_journal.learn_requested.connect(_learn_skill)
+	_journal.study_requested.connect(_study_skill)
 	add_child(_journal)
 	_repair = Repair.new()
 	_repair.selected.connect(_repair_options)
@@ -259,7 +265,7 @@ func _command(command: String) -> void:
 			sheet.open(profile, stats, weapon, health, int(stats["stamina"]))
 		"inventory": _layout.open_inventory()
 		"characters": _characters()
-		"skills", "talent", "quests": _journal.open(command, profile, Stats.snapshot(profile, weapon))
+		"skills", "talent", "quests": _open_journal(command)
 		"interact": _interact()
 
 
@@ -515,6 +521,7 @@ func _interact() -> void:
 			_say("%s  ·  Stock up before taking the lower road." % resident, choices)
 		"school":
 			_say("%s  ·  I teach the skills a new delver needs to stay alive." % resident, {
+				"Study Skills": _open_school_skills,
 				"Combat lesson": _say.bind("Queue an attack or skill and it will execute when your Time gauge fills. Attack interrupts Smash, Defend softens Attack, and Smash breaks Defend. You can use a tonic anytime.", {}),
 			})
 		"church":
@@ -717,3 +724,43 @@ func _repair_item(item: Dictionary, full: bool) -> void:
 	elif _save(changes):
 		_refresh()
 		_repair_options(item)
+
+
+func _open_journal(section: String, at_school := false) -> void:
+	_studying_at_school = at_school and _at_school()
+	var weapon: Dictionary = catalogue.get(satchel.equipped, {})
+	var journal_section := "school" if _studying_at_school else section
+	_journal.open(journal_section, profile, Stats.snapshot(profile, weapon), Skills.entries(profile, _studying_at_school) if section == "skills" else [])
+
+
+func _at_school() -> bool:
+	return conversation_target >= 0 and conversation_target < _landmarks.size() and _landmarks[conversation_target]["id"] == "school"
+
+
+func _open_school_skills() -> void:
+	if _at_school():
+		_open_journal("skills", true)
+
+
+func _advance_skill(skill_id: String) -> void:
+	_apply_skill_result(Store.advance_skill(skill_id))
+
+
+func _learn_skill(skill_id: String) -> void:
+	if _studying_at_school and _at_school():
+		_apply_skill_result(Store.learn_skill(skill_id))
+
+
+func _study_skill(skill_id: String) -> void:
+	if _studying_at_school and _at_school():
+		_apply_skill_result(Store.study_skill(skill_id))
+
+
+func _apply_skill_result(result: Dictionary) -> void:
+	var saved: Dictionary = result.get("profile", {})
+	if not saved.is_empty():
+		profile = saved
+		world = profile["world"]
+		_refresh()
+		_open_journal("skills", _studying_at_school)
+	_journal.set_skill_status(str(result.get("message", "")))

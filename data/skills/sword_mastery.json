@@ -1,0 +1,656 @@
+{
+  "id": "sword_mastery",
+  "name": "Sword Mastery",
+  "kind": "passive",
+  "source": "https://wiki.mabinogiworld.com/view/Sword_Mastery",
+  "description": "Improves damage and balance when fighting with swords.",
+  "ranks": [
+    {
+      "rank": "novice",
+      "ap_cost": 0,
+      "effects": {
+        "additional_dex": 0,
+        "additional_dex_total": 0,
+        "additional_min_damage": 0,
+        "additional_max_damage": 1,
+        "additional_sword_balance": 0,
+        "skill_cp_total": 0,
+        "stat_cp_total": 0
+      },
+      "training": [
+        {
+          "id": "attack_an_enemy_with_sword",
+          "description": "Land a hit on an enemy with Sword.",
+          "points": 80.0,
+          "limit": 2
+        },
+        {
+          "id": "defeat_an_enemy_with_sword",
+          "description": "Defeat a foe with Sword.",
+          "points": 100.0,
+          "limit": 1
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "F",
+      "ap_cost": 0,
+      "effects": {
+        "additional_dex": 0,
+        "additional_dex_total": 0,
+        "additional_min_damage": 0,
+        "additional_max_damage": 2,
+        "additional_sword_balance": 1,
+        "skill_cp_total": 20,
+        "stat_cp_total": 0
+      },
+      "training": [
+        {
+          "id": "attack_an_enemy_with_sword",
+          "description": "Land a hit on an enemy with Sword.",
+          "points": 32.0,
+          "limit": 3
+        },
+        {
+          "id": "defeat_an_enemy_with_sword",
+          "description": "Defeat a foe with Sword.",
+          "points": 64.0,
+          "limit": 2
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "E",
+      "ap_cost": 1,
+      "effects": {
+        "additional_dex": 0,
+        "additional_dex_total": 0,
+        "additional_min_damage": 0,
+        "additional_max_damage": 3,
+        "additional_sword_balance": 2,
+        "skill_cp_total": 25,
+        "stat_cp_total": 0
+      },
+      "training": [
+        {
+          "id": "attack_an_enemy_with_sword",
+          "description": "Land a hit on an enemy with Sword.",
+          "points": 22.0,
+          "limit": 4
+        },
+        {
+          "id": "defeat_an_enemy_with_sword",
+          "description": "Defeat a foe with Sword.",
+          "points": 44.0,
+          "limit": 2
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "D",
+      "ap_cost": 2,
+      "effects": {
+        "additional_dex": 0,
+        "additional_dex_total": 0,
+        "additional_min_damage": 0,
+        "additional_max_damage": 4,
+        "additional_sword_balance": 3,
+        "skill_cp_total": 30,
+        "stat_cp_total": 0
+      },
+      "training": [
+        {
+          "id": "attack_an_enemy_with_sword",
+          "description": "Land a hit on an enemy with Sword.",
+          "points": 16.0,
+          "limit": 5
+        },
+        {
+          "id": "defeat_an_enemy_with_sword",
+          "description": "Defeat a foe with Sword.",
+          "points": 32.0,
+          "limit": 3
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "C",
+      "ap_cost": 3,
+      "effects": {
+        "additional_dex": 0,
+        "additional_dex_total": 0,
+        "additional_min_damage": 1,
+        "additional_max_damage": 5,
+        "additional_sword_balance": 4,
+        "skill_cp_total": 35,
+        "stat_cp_total": 0
+      },
+      "training": [
+        {
+          "id": "attack_an_enemy_with_sword",
+          "description": "Land a hit on an enemy with Sword.",
+          "points": 12.8,
+          "limit": 7
+        },
+        {
+          "id": "defeat_an_enemy_with_sword",
+          "description": "Defeat a foe with Sword.",
+          "points": 25.6,
+          "limit": 4
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "B",
+      "ap_cost": 4,
+      "effects": {
+        "additional_dex": 0,
+        "additional_dex_total": 0,
+        "additional_min_damage": 2,
+        "additional_max_damage": 5,
+        "additional_sword_balance": 5,
+        "skill_cp_total": 40,
+        "stat_cp_total": 0
+      },
+      "training": [
+        {
+          "id": "attack_an_enemy_with_sword",
+          "description": "Land a hit on an enemy with Sword.",
+          "points": 12.0,
+          "limit": 8
+        },
+        {
+          "id": "defeat_an_enemy_with_sword",
+          "description": "Defeat a foe with Sword.",
+          "points": 24.0,
+          "limit": 4
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "A",
+      "ap_cost": 5,
+      "effects": {
+        "additional_dex": 0,
+        "additional_dex_total": 0,
+        "additional_min_damage": 3,
+        "additional_max_damage": 6,
+        "additional_sword_balance": 6,
+        "skill_cp_total": 45,
+        "stat_cp_total": 0
+      },
+      "training": [
+        {
+          "id": "attack_an_enemy_with_sword",
+          "description": "Land a hit on an enemy with Sword.",
+          "points": 10.0,
+          "limit": 9
+        },
+        {
+          "id": "defeat_an_enemy_with_sword",
+          "description": "Defeat a foe with Sword.",
+          "points": 20.0,
+          "limit": 5
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "9",
+      "ap_cost": 8,
+      "effects": {
+        "additional_dex": 1,
+        "additional_dex_total": 1,
+        "additional_min_damage": 4,
+        "additional_max_damage": 7,
+        "additional_sword_balance": 7,
+        "skill_cp_total": 50,
+        "stat_cp_total": 0.1
+      },
+      "training": [
+        {
+          "id": "attack_an_enemy_with_sword",
+          "description": "Land a hit on an enemy with Sword.",
+          "points": 8.0,
+          "limit": 10
+        },
+        {
+          "id": "defeat_an_enemy_with_sword",
+          "description": "Defeat a foe with Sword.",
+          "points": 16.0,
+          "limit": 5
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "8",
+      "ap_cost": 10,
+      "effects": {
+        "additional_dex": 1,
+        "additional_dex_total": 2,
+        "additional_min_damage": 4,
+        "additional_max_damage": 8,
+        "additional_sword_balance": 8,
+        "skill_cp_total": 60,
+        "stat_cp_total": 0.2
+      },
+      "training": [
+        {
+          "id": "attack_an_enemy_with_sword",
+          "description": "Land a hit on an enemy with Sword.",
+          "points": 7.2,
+          "limit": 12
+        },
+        {
+          "id": "defeat_an_enemy_with_sword",
+          "description": "Defeat a foe with Sword.",
+          "points": 14.4,
+          "limit": 6
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "7",
+      "ap_cost": 11,
+      "effects": {
+        "additional_dex": 1,
+        "additional_dex_total": 3,
+        "additional_min_damage": 4,
+        "additional_max_damage": 9,
+        "additional_sword_balance": 9,
+        "skill_cp_total": 70,
+        "stat_cp_total": 0.3
+      },
+      "training": [
+        {
+          "id": "attack_an_enemy_with_sword",
+          "description": "Land a hit on an enemy with Sword.",
+          "points": 6.4,
+          "limit": 13
+        },
+        {
+          "id": "defeat_an_enemy_with_sword",
+          "description": "Defeat a foe with Sword.",
+          "points": 12.8,
+          "limit": 7
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "6",
+      "ap_cost": 12,
+      "effects": {
+        "additional_dex": 1,
+        "additional_dex_total": 4,
+        "additional_min_damage": 5,
+        "additional_max_damage": 10,
+        "additional_sword_balance": 10,
+        "skill_cp_total": 80,
+        "stat_cp_total": 0.4
+      },
+      "training": [
+        {
+          "id": "attack_an_enemy_with_sword",
+          "description": "Land a hit on an enemy with Sword.",
+          "points": 6.0,
+          "limit": 14
+        },
+        {
+          "id": "defeat_an_enemy_with_sword",
+          "description": "Defeat a foe with Sword.",
+          "points": 12.0,
+          "limit": 7
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "5",
+      "ap_cost": 15,
+      "effects": {
+        "additional_dex": 2,
+        "additional_dex_total": 6,
+        "additional_min_damage": 6,
+        "additional_max_damage": 11,
+        "additional_sword_balance": 11,
+        "skill_cp_total": 100,
+        "stat_cp_total": 0.6
+      },
+      "training": [
+        {
+          "id": "attack_an_enemy_with_sword",
+          "description": "Land a hit on an enemy with Sword.",
+          "points": 5.4,
+          "limit": 15
+        },
+        {
+          "id": "defeat_an_enemy_with_sword",
+          "description": "Defeat a foe with Sword.",
+          "points": 10.8,
+          "limit": 8
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "4",
+      "ap_cost": 17,
+      "effects": {
+        "additional_dex": 2,
+        "additional_dex_total": 8,
+        "additional_min_damage": 7,
+        "additional_max_damage": 13,
+        "additional_sword_balance": 12,
+        "skill_cp_total": 110,
+        "stat_cp_total": 0.8
+      },
+      "training": [
+        {
+          "id": "attack_an_enemy_with_sword",
+          "description": "Land a hit on an enemy with Sword.",
+          "points": 5.0,
+          "limit": 17
+        },
+        {
+          "id": "defeat_an_enemy_with_sword",
+          "description": "Defeat a foe with Sword.",
+          "points": 10.0,
+          "limit": 9
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "3",
+      "ap_cost": 19,
+      "effects": {
+        "additional_dex": 3,
+        "additional_dex_total": 11,
+        "additional_min_damage": 8,
+        "additional_max_damage": 16,
+        "additional_sword_balance": 13,
+        "skill_cp_total": 120,
+        "stat_cp_total": 1.1
+      },
+      "training": [
+        {
+          "id": "attack_an_enemy_with_sword",
+          "description": "Land a hit on an enemy with Sword.",
+          "points": 4.8,
+          "limit": 18
+        },
+        {
+          "id": "defeat_an_enemy_with_sword",
+          "description": "Defeat a foe with Sword.",
+          "points": 9.6,
+          "limit": 9
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "2",
+      "ap_cost": 20,
+      "effects": {
+        "additional_dex": 3,
+        "additional_dex_total": 14,
+        "additional_min_damage": 9,
+        "additional_max_damage": 18,
+        "additional_sword_balance": 14,
+        "skill_cp_total": 140,
+        "stat_cp_total": 1.4
+      },
+      "training": [
+        {
+          "id": "attack_an_enemy_with_sword",
+          "description": "Land a hit on an enemy with Sword.",
+          "points": 4.4,
+          "limit": 19
+        },
+        {
+          "id": "defeat_an_enemy_with_sword",
+          "description": "Defeat a foe with Sword.",
+          "points": 8.8,
+          "limit": 10
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "1",
+      "ap_cost": 30,
+      "effects": {
+        "additional_dex": 5,
+        "additional_dex_total": 19,
+        "additional_min_damage": 10,
+        "additional_max_damage": 20,
+        "additional_sword_balance": 15,
+        "skill_cp_total": 160,
+        "stat_cp_total": 1.9
+      },
+      "training": [
+        {
+          "id": "attack_an_enemy_with_sword",
+          "description": "Land a hit on an enemy with Sword.",
+          "points": 4.0,
+          "limit": 20
+        },
+        {
+          "id": "defeat_an_enemy_with_sword",
+          "description": "Defeat a foe with Sword.",
+          "points": 8.0,
+          "limit": 10
+        }
+      ],
+      "training_required": null
+    }
+  ],
+  "research": {
+    "retrieved_with": "Exa Contents",
+    "retrieved_on": "2026-11-24",
+    "summary_rows": [
+      [
+        "Rank",
+        "N",
+        "F",
+        "E",
+        "D",
+        "C",
+        "B",
+        "A",
+        "9",
+        "8",
+        "7",
+        "6",
+        "5",
+        "4",
+        "3",
+        "2",
+        "1"
+      ],
+      [
+        "Required AP",
+        "-",
+        "",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "8",
+        "10",
+        "11",
+        "12",
+        "15",
+        "17",
+        "19",
+        "20",
+        "30"
+      ],
+      [
+        "Required AP (Total)",
+        "-",
+        "",
+        "1",
+        "3",
+        "6",
+        "10",
+        "15",
+        "23",
+        "33",
+        "44",
+        "56",
+        "71",
+        "88",
+        "107",
+        "127",
+        "157"
+      ],
+      [
+        "Additional Dex",
+        "-",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "+1",
+        "",
+        "",
+        "",
+        "+2",
+        "",
+        "+3",
+        "",
+        "+5"
+      ],
+      [
+        "Additional Dex (Total)",
+        "-",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "+1",
+        "+2",
+        "+3",
+        "+4",
+        "+6",
+        "+8",
+        "+11",
+        "+14",
+        "+19"
+      ],
+      [
+        "Additional Min Damage",
+        "-",
+        "",
+        "",
+        "",
+        "1",
+        "2",
+        "3",
+        "4",
+        "4",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10"
+      ],
+      [
+        "Additional Max Damage",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "13",
+        "16",
+        "18",
+        "20"
+      ],
+      [
+        "Additional Sword Balance [%]",
+        "-",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15"
+      ],
+      [
+        "Skill CP (Total)",
+        "-",
+        "20",
+        "25",
+        "30",
+        "35",
+        "40",
+        "45",
+        "50",
+        "60",
+        "70",
+        "80",
+        "100",
+        "110",
+        "120",
+        "140",
+        "160"
+      ],
+      [
+        "Stat CP (Total)",
+        "-",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "0.1",
+        "0.2",
+        "0.3",
+        "0.4",
+        "0.6",
+        "0.8",
+        "1.1",
+        "1.4",
+        "1.9"
+      ]
+    ],
+    "notes": [
+      "Empty cells in the extracted summary represent merged values and are carried forward within each row. AP costs come from explicit rank sections. Training point totals require 100 points before rank advancement. Rank 1 training is retained for mastery reference."
+    ]
+  }
+}

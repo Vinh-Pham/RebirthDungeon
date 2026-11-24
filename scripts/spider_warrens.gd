@@ -12,6 +12,7 @@ const Rooms = preload("res://scripts/threshold_rooms.gd")
 const Consumables = preload("res://scripts/consumables.gd")
 const Durability = preload("res://scripts/equipment_durability.gd")
 const Stats = preload("res://scripts/character_stats.gd")
+const Skills = preload("res://scripts/character_skills.gd")
 const Store = preload("res://scripts/character_store.gd")
 const ROSTER: JSON = preload("res://data/spiders.json")
 const ATLAS = preload("res://assets/art/spider_atlas.png")
@@ -23,6 +24,8 @@ const ACTION_CAPTIONS := {
 	Combat.Action.ATTACK: "Attack",
 	Combat.Action.DEFEND: "Defend",
 	Combat.Action.SMASH: "Smash",
+	Combat.Action.COUNTERATTACK: "Counterattack",
+	Combat.Action.WINDMILL: "Windmill",
 }
 const PLAYER_STAT_CAPTIONS := ["HP", "MP", "Stamina", "XP"]
 
@@ -77,7 +80,6 @@ var _item_button: Button
 var _action_button: Button
 var _skill_options: HBoxContainer
 var _item_options: HBoxContainer
-var _smash_button: Button
 var _queued_action := -1
 var _enemy_save_retry := 0.0
 var _quick_slots: Array[Button] = []
@@ -356,8 +358,10 @@ func _build_arena(arena: VBoxContainer) -> void:
 	arena.add_child(_skill_options)
 	var defend := _add_battle_button(_skill_options, "Defend (+%d SP)" % Combat.GUARD_RECOVERY, _act.bind(Combat.Action.DEFEND))
 	defend.tooltip_text = "Recover stamina and guard against the next normal strike."
-	_smash_button = _add_battle_button(_skill_options, "Smash (%d SP)" % Combat.SMASH_COST, _act.bind(Combat.Action.SMASH))
-	_smash_button.tooltip_text = "Break the enemy's guard. An Attack can interrupt Smash."
+	var smash := _add_battle_button(_skill_options, "Smash", _act.bind(Combat.Action.SMASH))
+	smash.tooltip_text = "Break the enemy's guard. An Attack can interrupt Smash."
+	_add_battle_button(_skill_options, "Counterattack", _act.bind(Combat.Action.COUNTERATTACK))
+	_add_battle_button(_skill_options, "Windmill", _act.bind(Combat.Action.WINDMILL))
 	_item_options = HBoxContainer.new()
 	arena.add_child(_item_options)
 	_tonic_button = _add_battle_button(_item_options, "Healing Tonic", _use_item.bind(Consumables.TONIC))
@@ -503,7 +507,10 @@ func _open_skills() -> void:
 		return
 	_show_options(null if _skill_options.visible else _skill_options)
 	if _skill_options.visible:
-		_skill_options.get_child(0).grab_focus()
+		for button in _skill_options.get_children():
+			if button.visible and not button.disabled:
+				button.grab_focus()
+				break
 
 
 func _open_items() -> void:
@@ -641,6 +648,19 @@ func _begin() -> void:
 	_enemy_save_retry = 0.0
 	_queued_action = -1
 	_select_target(0)
+	var learned: Array = _character_stats.get("learned_skills", ["defense"])
+	for index in range(_skill_options.get_child_count()):
+		var skill_id: String = ["defense", "smash", "counterattack", "windmill"][index]
+		var button: Button = _skill_options.get_child(index)
+		button.visible = learned.has(skill_id)
+		var action: int = [Combat.Action.DEFEND, Combat.Action.SMASH, Combat.Action.COUNTERATTACK, Combat.Action.WINDMILL][index]
+		var stamina_text := "+%d SP" % Combat.GUARD_RECOVERY if action == Combat.Action.DEFEND else "%d SP" % _match.stamina_cost(action)
+		button.text = "%s (%s)" % [ACTION_CAPTIONS[action], stamina_text]
+		var icon_path := "res://assets/art/skills/%s.png" % skill_id
+		if ResourceLoader.exists(icon_path):
+			button.icon = load(icon_path)
+			button.expand_icon = true
+			button.add_theme_constant_override("icon_max_width", 24)
 	_set_fighting(true)
 	_update_combat_vitals(current_profile["world"])
 	_log.text = "Queue an attack or skill to use when your Time gauge fills. Items are always available."
@@ -708,7 +728,8 @@ func _update_gauges() -> void:
 		time_caption += " · Guarding"
 	_player_time_label.text = time_caption
 	_attack_button.disabled = _match.stamina < Combat.ATTACK_COST
-	_smash_button.disabled = _match.stamina < Combat.SMASH_COST
+	for index in range(_skill_options.get_child_count()):
+		_skill_options.get_child(index).disabled = _match.stamina < _match.stamina_cost([Combat.Action.DEFEND, Combat.Action.SMASH, Combat.Action.COUNTERATTACK, Combat.Action.WINDMILL][index])
 
 
 func _process(delta: float) -> void:
@@ -823,6 +844,9 @@ func _use_item(item_id: String, profile := {}) -> void:
 func _act(action: int) -> void:
 	if not _match.active or not ACTION_CAPTIONS.has(action):
 		return
+	var required := {Combat.Action.DEFEND: "defense", Combat.Action.SMASH: "smash", Combat.Action.COUNTERATTACK: "counterattack", Combat.Action.WINDMILL: "windmill"}
+	if required.has(action) and not _character_stats.get("learned_skills", ["defense"]).has(required[action]):
+		return
 	if _match.stamina < _match.stamina_cost(action):
 		_log.text = "Not enough stamina. Defend to recover it."
 		return
@@ -889,6 +913,8 @@ func _resolve_action(action: int, enemy_index := -1) -> String:
 				loot_rng.seed = _match.rng_state
 				var drops := Loot.roll(enemies, loot_rng)
 				changes["pending_loot"] = Loot.combine(world["pending_loot"], drops)
+	if not _match.training_events.is_empty():
+		changes["skills"] = Skills.train(world, _match.training_events)
 	var saved := Store.award_experience(xp, changes)
 	if saved.is_empty():
 		_match.restore(previous)

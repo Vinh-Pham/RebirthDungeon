@@ -394,3 +394,16 @@ func test_queued_skill_replaces_attack_without_spending_stamina_early() -> void:
 	assert_true(_battle._match.guarded)
 	assert_eq(_battle._match.enemy_health, before[0])
 	assert_eq(_battle._queued_action, -1)
+
+
+func test_new_character_battle_menu_hides_unlearned_skills_and_records_training() -> void:
+	_battle._skill_button.pressed.emit()
+	for index in range(_battle._skill_options.get_child_count()):
+		assert_eq(_battle._skill_options.get_child(index).visible, index == 0)
+	_battle._act(Combat.Action.SMASH)
+	assert_eq(_battle._queued_action, -1)
+	_battle._match.player_gauge = 1.0
+	_battle._attack_button.pressed.emit()
+	var skills: Dictionary = Store.load_selected()["world"]["skills"]
+	assert_eq(skills["combat_mastery"]["training"], {"attack": 1})
+	assert_eq(skills["defense"]["rank"], "novice")

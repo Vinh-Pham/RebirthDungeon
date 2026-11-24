@@ -1,0 +1,609 @@
+{
+  "id": "critical_hit",
+  "name": "Critical Hit",
+  "kind": "passive",
+  "source": "https://wiki.mabinogiworld.com/view/Critical_Hit",
+  "description": "Improves the damage dealt by critical strikes.",
+  "ranks": [
+    {
+      "rank": "F",
+      "ap_cost": 3,
+      "effects": {
+        "additional_will_total": 3,
+        "additional_damage": 50,
+        "skill_cp_total": 10,
+        "stat_cp_total": 1.5
+      },
+      "training": [
+        {
+          "id": "score_a_critical_hit",
+          "description": "Land a critical strike.",
+          "points": 100.0,
+          "limit": 1
+        },
+        {
+          "id": "watch_an_enemy_score_a_critical_hit",
+          "description": "Receive a critical strike",
+          "points": 100.0,
+          "limit": 1
+        },
+        {
+          "id": "finish_off_an_enemy_with_a_critical_hit",
+          "description": "Defeat a foe with a critical strike",
+          "points": 100.0,
+          "limit": 1
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "E",
+      "ap_cost": 3,
+      "effects": {
+        "additional_will_total": 6,
+        "additional_damage": 55,
+        "skill_cp_total": 20,
+        "stat_cp_total": 3
+      },
+      "training": [
+        {
+          "id": "score_a_critical_hit",
+          "description": "Land a critical strike.",
+          "points": 100.0,
+          "limit": 1
+        },
+        {
+          "id": "watch_an_enemy_score_a_critical_hit",
+          "description": "Receive a critical strike",
+          "points": 100.0,
+          "limit": 1
+        },
+        {
+          "id": "finish_off_an_enemy_with_a_critical_hit",
+          "description": "Defeat a foe with a critical strike",
+          "points": 100.0,
+          "limit": 1
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "D",
+      "ap_cost": 3,
+      "effects": {
+        "additional_will_total": 9,
+        "additional_damage": 60,
+        "skill_cp_total": 30,
+        "stat_cp_total": 4.5
+      },
+      "training": [
+        {
+          "id": "score_a_critical_hit",
+          "description": "Land a critical strike.",
+          "points": 100.0,
+          "limit": 1
+        },
+        {
+          "id": "watch_an_enemy_score_a_critical_hit",
+          "description": "Receive a critical strike",
+          "points": 80.0,
+          "limit": 1
+        },
+        {
+          "id": "finish_off_an_enemy_with_a_critical_hit",
+          "description": "Defeat a foe with a critical strike",
+          "points": 100.0,
+          "limit": 1
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "C",
+      "ap_cost": 3,
+      "effects": {
+        "additional_will_total": 12,
+        "additional_damage": 65,
+        "skill_cp_total": 40,
+        "stat_cp_total": 6
+      },
+      "training": [
+        {
+          "id": "score_a_critical_hit",
+          "description": "Land a critical strike.",
+          "points": 48.0,
+          "limit": 2
+        },
+        {
+          "id": "watch_an_enemy_score_a_critical_hit",
+          "description": "Receive a critical strike",
+          "points": 24.0,
+          "limit": 1
+        },
+        {
+          "id": "finish_off_an_enemy_with_a_critical_hit",
+          "description": "Defeat a foe with a critical strike",
+          "points": 72.0,
+          "limit": 2
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "B",
+      "ap_cost": 4,
+      "effects": {
+        "additional_will_total": 15,
+        "additional_damage": 70,
+        "skill_cp_total": 50,
+        "stat_cp_total": 7.5
+      },
+      "training": [
+        {
+          "id": "score_a_critical_hit",
+          "description": "Land a critical strike.",
+          "points": 24.0,
+          "limit": 2
+        },
+        {
+          "id": "watch_an_enemy_score_a_critical_hit",
+          "description": "Receive a critical strike",
+          "points": 24.0,
+          "limit": 2
+        },
+        {
+          "id": "finish_off_an_enemy_with_a_critical_hit",
+          "description": "Defeat a foe with a critical strike",
+          "points": 50.0,
+          "limit": 2
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "A",
+      "ap_cost": 5,
+      "effects": {
+        "additional_will_total": 18,
+        "additional_damage": 75,
+        "skill_cp_total": 60,
+        "stat_cp_total": 9
+      },
+      "training": [
+        {
+          "id": "score_a_critical_hit",
+          "description": "Land a critical strike.",
+          "points": 18.0,
+          "limit": 4
+        },
+        {
+          "id": "watch_an_enemy_score_a_critical_hit",
+          "description": "Receive a critical strike",
+          "points": 18.0,
+          "limit": 4
+        },
+        {
+          "id": "finish_off_an_enemy_with_a_critical_hit",
+          "description": "Defeat a foe with a critical strike",
+          "points": 40.0,
+          "limit": 3
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "9",
+      "ap_cost": 6,
+      "effects": {
+        "additional_will_total": 21,
+        "additional_damage": 90,
+        "skill_cp_total": 70,
+        "stat_cp_total": 10.5
+      },
+      "training": [
+        {
+          "id": "score_a_critical_hit",
+          "description": "Land a critical strike.",
+          "points": 10.0,
+          "limit": 6
+        },
+        {
+          "id": "watch_an_enemy_score_a_critical_hit",
+          "description": "Receive a critical strike",
+          "points": 10.0,
+          "limit": 6
+        },
+        {
+          "id": "finish_off_an_enemy_with_a_critical_hit",
+          "description": "Defeat a foe with a critical strike",
+          "points": 20.0,
+          "limit": 4
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "8",
+      "ap_cost": 7,
+      "effects": {
+        "additional_will_total": 24,
+        "additional_damage": 95,
+        "skill_cp_total": 80,
+        "stat_cp_total": 12
+      },
+      "training": [
+        {
+          "id": "score_a_critical_hit",
+          "description": "Land a critical strike.",
+          "points": 4.0,
+          "limit": 13
+        },
+        {
+          "id": "watch_an_enemy_score_a_critical_hit",
+          "description": "Receive a critical strike",
+          "points": 4.0,
+          "limit": 13
+        },
+        {
+          "id": "finish_off_an_enemy_with_a_critical_hit",
+          "description": "Defeat a foe with a critical strike",
+          "points": 14.0,
+          "limit": 8
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "7",
+      "ap_cost": 8,
+      "effects": {
+        "additional_will_total": 27,
+        "additional_damage": 100,
+        "skill_cp_total": 90,
+        "stat_cp_total": 13.5
+      },
+      "training": [
+        {
+          "id": "score_a_critical_hit",
+          "description": "Land a critical strike.",
+          "points": 2.0,
+          "limit": 25
+        },
+        {
+          "id": "watch_an_enemy_score_a_critical_hit",
+          "description": "Receive a critical strike",
+          "points": 2.0,
+          "limit": 25
+        },
+        {
+          "id": "finish_off_an_enemy_with_a_critical_hit",
+          "description": "Defeat a foe with a critical strike",
+          "points": 10.0,
+          "limit": 15
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "6",
+      "ap_cost": 10,
+      "effects": {
+        "additional_will_total": 30,
+        "additional_damage": 105,
+        "skill_cp_total": 100,
+        "stat_cp_total": 15
+      },
+      "training": [
+        {
+          "id": "score_a_critical_hit",
+          "description": "Land a critical strike.",
+          "points": 2.0,
+          "limit": 25
+        },
+        {
+          "id": "watch_an_enemy_score_a_critical_hit",
+          "description": "Receive a critical strike",
+          "points": 2.0,
+          "limit": 25
+        },
+        {
+          "id": "finish_off_an_enemy_with_a_critical_hit",
+          "description": "Defeat a foe with a critical strike",
+          "points": 10.0,
+          "limit": 15
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "5",
+      "ap_cost": 12,
+      "effects": {
+        "additional_will_total": 33,
+        "additional_damage": 110,
+        "skill_cp_total": 110,
+        "stat_cp_total": 16.5
+      },
+      "training": [
+        {
+          "id": "score_a_critical_hit",
+          "description": "Land a critical strike.",
+          "points": 0.8,
+          "limit": 60
+        },
+        {
+          "id": "watch_an_enemy_score_a_critical_hit",
+          "description": "Receive a critical strike",
+          "points": 0.8,
+          "limit": 60
+        },
+        {
+          "id": "finish_off_an_enemy_with_a_critical_hit",
+          "description": "Defeat a foe with a critical strike",
+          "points": 4.0,
+          "limit": 30
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "4",
+      "ap_cost": 14,
+      "effects": {
+        "additional_will_total": 36,
+        "additional_damage": 120,
+        "skill_cp_total": 120,
+        "stat_cp_total": 18
+      },
+      "training": [
+        {
+          "id": "score_a_critical_hit",
+          "description": "Land a critical strike.",
+          "points": 0.8,
+          "limit": 50
+        },
+        {
+          "id": "watch_an_enemy_score_a_critical_hit",
+          "description": "Receive a critical strike",
+          "points": 0.8,
+          "limit": 50
+        },
+        {
+          "id": "finish_off_an_enemy_with_a_critical_hit",
+          "description": "Defeat a foe with a critical strike",
+          "points": 2.4,
+          "limit": 43
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "3",
+      "ap_cost": 16,
+      "effects": {
+        "additional_will_total": 39,
+        "additional_damage": 130,
+        "skill_cp_total": 130,
+        "stat_cp_total": 19.5
+      },
+      "training": [
+        {
+          "id": "score_a_critical_hit",
+          "description": "Land a critical strike.",
+          "points": 0.4,
+          "limit": 113
+        },
+        {
+          "id": "watch_an_enemy_score_a_critical_hit",
+          "description": "Receive a critical strike",
+          "points": 0.4,
+          "limit": 113
+        },
+        {
+          "id": "finish_off_an_enemy_with_a_critical_hit",
+          "description": "Defeat a foe with a critical strike",
+          "points": 1.2,
+          "limit": 83
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "2",
+      "ap_cost": 18,
+      "effects": {
+        "additional_will_total": 42,
+        "additional_damage": 140,
+        "skill_cp_total": 140,
+        "stat_cp_total": 21
+      },
+      "training": [
+        {
+          "id": "score_a_critical_hit",
+          "description": "Land a critical strike.",
+          "points": 0.2,
+          "limit": 150
+        },
+        {
+          "id": "watch_an_enemy_score_a_critical_hit",
+          "description": "Receive a critical strike",
+          "points": 0.2,
+          "limit": 150
+        },
+        {
+          "id": "finish_off_an_enemy_with_a_critical_hit",
+          "description": "Defeat a foe with a critical strike",
+          "points": 1.0,
+          "limit": 100
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "1",
+      "ap_cost": 20,
+      "effects": {
+        "additional_will_total": 45,
+        "additional_damage": 150,
+        "skill_cp_total": 150,
+        "stat_cp_total": 22.5
+      },
+      "training": [
+        {
+          "id": "score_a_critical_hit",
+          "description": "Land a critical strike.",
+          "points": 0.2,
+          "limit": 200
+        },
+        {
+          "id": "watch_an_enemy_score_a_critical_hit",
+          "description": "Receive a critical strike",
+          "points": 0.2,
+          "limit": 200
+        },
+        {
+          "id": "finish_off_an_enemy_with_a_critical_hit",
+          "description": "Defeat a foe with a critical strike",
+          "points": 1.0,
+          "limit": 100
+        }
+      ],
+      "training_required": null
+    }
+  ],
+  "research": {
+    "retrieved_with": "Exa Contents",
+    "retrieved_on": "2026-11-24",
+    "summary_rows": [
+      [
+        "Rank",
+        "F",
+        "E",
+        "D",
+        "C",
+        "B",
+        "A",
+        "9",
+        "8",
+        "7",
+        "6",
+        "5",
+        "4",
+        "3",
+        "2",
+        "1"
+      ],
+      [
+        "Required AP",
+        "3",
+        "",
+        "",
+        "",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "10",
+        "12",
+        "14",
+        "16",
+        "18",
+        "20"
+      ],
+      [
+        "Required AP (Total)",
+        "3",
+        "6",
+        "9",
+        "12",
+        "16",
+        "21",
+        "27",
+        "34",
+        "42",
+        "52",
+        "64",
+        "78",
+        "94",
+        "112",
+        "132"
+      ],
+      [
+        "Additional Will (Total)",
+        "+3",
+        "+6",
+        "+9",
+        "+12",
+        "+15",
+        "+18",
+        "+21",
+        "+24",
+        "+27",
+        "+30",
+        "+33",
+        "+36",
+        "+39",
+        "+42",
+        "+45"
+      ],
+      [
+        "Additional Damage [%]",
+        "50",
+        "55",
+        "60",
+        "65",
+        "70",
+        "75",
+        "90",
+        "95",
+        "100",
+        "105",
+        "110",
+        "120",
+        "130",
+        "140",
+        "150"
+      ],
+      [
+        "Skill CP (Total)",
+        "10",
+        "20",
+        "30",
+        "40",
+        "50",
+        "60",
+        "70",
+        "80",
+        "90",
+        "100",
+        "110",
+        "120",
+        "130",
+        "140",
+        "150"
+      ],
+      [
+        "Stat CP (Total)",
+        "1.5",
+        "3.0",
+        "4.5",
+        "6.0",
+        "7.5",
+        "9.0",
+        "10.5",
+        "12.0",
+        "13.5",
+        "15.0",
+        "16.5",
+        "18.0",
+        "19.5",
+        "21.0",
+        "22.5"
+      ]
+    ],
+    "notes": [
+      "Empty cells in the extracted summary represent merged values and are carried forward within each row. AP costs come from explicit rank sections. Training point totals require 100 points before rank advancement. Rank 1 training is retained for mastery reference."
+    ]
+  }
+}

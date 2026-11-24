@@ -1,0 +1,14 @@
+[remap]
+
+importer="aseprite_wizard.plugin.noop"
+type="PackedDataContainer"
+uid="uid://c3hq651o1jvjh"
+path="res://.godot/imported/heavy_armor_mastery.aseprite-ab9804f54624635e755e458c89929931.res"
+
+[deps]
+
+source_file="res://assets/art/skills/heavy_armor_mastery.aseprite"
+dest_files=["res://.godot/imported/heavy_armor_mastery.aseprite-ab9804f54624635e755e458c89929931.res"]
+
+[params]
+

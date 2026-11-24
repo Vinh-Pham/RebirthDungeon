@@ -1,0 +1,1011 @@
+{
+  "id": "smash",
+  "name": "Smash",
+  "kind": "active",
+  "source": "https://wiki.mabinogiworld.com/view/Smash",
+  "description": "Commit to a heavy strike that breaks a defensive stance.",
+  "reference_notes": [
+    "Summary values represent source race variants. Empty merged summary cells inherit the previous displayed value. Training entries award points up to their count limit. Dan training requirements are absent from these page sections."
+  ],
+  "ranks": [
+    {
+      "rank": "novice",
+      "ap_cost": 0,
+      "effects": {
+        "required_ap_human_giant": 0,
+        "required_ap_human_giant_total": 0,
+        "required_ap_elf": 0,
+        "required_ap_total_elf": 0,
+        "additional_str_and_will_total": 0,
+        "stamina_use": 4,
+        "damage_human_elf": 150,
+        "damage_giant": 200,
+        "additional_multiplier_two_handed_weapons": "x1.2",
+        "additional_critical_two_handed_weapons": 5,
+        "splash_damage": 0,
+        "debuff_chance_human": 0,
+        "debuff_chance_elf": 0,
+        "debuff_chance_giant": 0,
+        "sword_bleed_debuff_damage_sec": 0,
+        "sword_bleed_debuff_duration_sec": 0,
+        "blunt_weapon_daze_debuff_duration_sec": 0,
+        "axe_bleed_debuff_damage_sec": 0,
+        "axe_bleed_debuff_duration_sec": 5,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 3,
+        "skill_cp_total": 0,
+        "stat_cp_total": 0
+      },
+      "training": [
+        {
+          "id": "study_skill",
+          "description": "Study Smash with an instructor or book.",
+          "points": 100.0,
+          "limit": 1
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 0,
+        "elf": 0
+      }
+    },
+    {
+      "rank": "F",
+      "ap_cost": 1,
+      "effects": {
+        "required_ap_human_giant": 1,
+        "required_ap_human_giant_total": 1,
+        "required_ap_elf": 0,
+        "required_ap_total_elf": 0,
+        "additional_str_and_will_total": 0,
+        "stamina_use": 4,
+        "damage_human_elf": 200,
+        "damage_giant": 300,
+        "additional_multiplier_two_handed_weapons": "x1.2",
+        "additional_critical_two_handed_weapons": 5,
+        "splash_damage": 0,
+        "debuff_chance_human": 30,
+        "debuff_chance_elf": 20,
+        "debuff_chance_giant": 40,
+        "sword_bleed_debuff_damage_sec": 5,
+        "sword_bleed_debuff_duration_sec": 5,
+        "blunt_weapon_daze_debuff_duration_sec": 5,
+        "axe_bleed_debuff_damage_sec": 5,
+        "axe_bleed_debuff_duration_sec": 5,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 3,
+        "skill_cp_total": 5,
+        "stat_cp_total": 0
+      },
+      "training": [
+        {
+          "id": "use_the_skill_successfully",
+          "description": "Land a Smash.",
+          "points": 40.0,
+          "limit": 5
+        },
+        {
+          "id": "get_a_critical_hit_with_smash",
+          "description": "Score a critical Smash.",
+          "points": 100.0,
+          "limit": 1
+        },
+        {
+          "id": "perform_a_finishing_blow_with_smash",
+          "description": "Finish a foe with Smash.",
+          "points": 100.0,
+          "limit": 1
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 1,
+        "elf": 0
+      }
+    },
+    {
+      "rank": "E",
+      "ap_cost": 4,
+      "effects": {
+        "required_ap_human_giant": 4,
+        "required_ap_human_giant_total": 5,
+        "required_ap_elf": 2,
+        "required_ap_total_elf": 2,
+        "additional_str_and_will_total": 0,
+        "stamina_use": 4,
+        "damage_human_elf": 210,
+        "damage_giant": 310,
+        "additional_multiplier_two_handed_weapons": "x1.2",
+        "additional_critical_two_handed_weapons": 5,
+        "splash_damage": 0,
+        "debuff_chance_human": 32,
+        "debuff_chance_elf": 22,
+        "debuff_chance_giant": 42,
+        "sword_bleed_debuff_damage_sec": 6,
+        "sword_bleed_debuff_duration_sec": 5,
+        "blunt_weapon_daze_debuff_duration_sec": 5,
+        "axe_bleed_debuff_damage_sec": 6,
+        "axe_bleed_debuff_duration_sec": 5,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 3,
+        "skill_cp_total": 10,
+        "stat_cp_total": 0
+      },
+      "training": [
+        {
+          "id": "use_the_skill_successfully",
+          "description": "Land a Smash.",
+          "points": 32.0,
+          "limit": 8
+        },
+        {
+          "id": "get_a_critical_hit_with_smash",
+          "description": "Score a critical Smash.",
+          "points": 100.0,
+          "limit": 1
+        },
+        {
+          "id": "perform_a_finishing_blow_with_smash",
+          "description": "Finish a foe with Smash.",
+          "points": 100.0,
+          "limit": 1
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 4,
+        "elf": 2
+      }
+    },
+    {
+      "rank": "D",
+      "ap_cost": 4,
+      "effects": {
+        "required_ap_human_giant": 4,
+        "required_ap_human_giant_total": 9,
+        "required_ap_elf": 4,
+        "required_ap_total_elf": 6,
+        "additional_str_and_will_total": 0,
+        "stamina_use": 4,
+        "damage_human_elf": 220,
+        "damage_giant": 320,
+        "additional_multiplier_two_handed_weapons": "x1.2",
+        "additional_critical_two_handed_weapons": 5,
+        "splash_damage": 0,
+        "debuff_chance_human": 34,
+        "debuff_chance_elf": 24,
+        "debuff_chance_giant": 44,
+        "sword_bleed_debuff_damage_sec": 7,
+        "sword_bleed_debuff_duration_sec": 5,
+        "blunt_weapon_daze_debuff_duration_sec": 6,
+        "axe_bleed_debuff_damage_sec": 7,
+        "axe_bleed_debuff_duration_sec": 5,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 3,
+        "skill_cp_total": 30,
+        "stat_cp_total": 0
+      },
+      "training": [
+        {
+          "id": "use_the_skill_successfully",
+          "description": "Land a Smash.",
+          "points": 24.0,
+          "limit": 10
+        },
+        {
+          "id": "get_a_critical_hit_with_smash",
+          "description": "Score a critical Smash.",
+          "points": 100.0,
+          "limit": 2
+        },
+        {
+          "id": "use_smash_as_the_final_blow",
+          "description": "Finish a foe with Smash.",
+          "points": 100.0,
+          "limit": 1
+        },
+        {
+          "id": "get_a_critical_hit_as_the_final_blow",
+          "description": "Finish a foe with a critical Smash.",
+          "points": 100.0,
+          "limit": 1
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 4,
+        "elf": 4
+      }
+    },
+    {
+      "rank": "C",
+      "ap_cost": 4,
+      "effects": {
+        "required_ap_human_giant": 4,
+        "required_ap_human_giant_total": 13,
+        "required_ap_elf": 6,
+        "required_ap_total_elf": 12,
+        "additional_str_and_will_total": 0,
+        "stamina_use": 4,
+        "damage_human_elf": 230,
+        "damage_giant": 330,
+        "additional_multiplier_two_handed_weapons": "x1.2",
+        "additional_critical_two_handed_weapons": 5,
+        "splash_damage": 0,
+        "debuff_chance_human": 36,
+        "debuff_chance_elf": 26,
+        "debuff_chance_giant": 46,
+        "sword_bleed_debuff_damage_sec": 8,
+        "sword_bleed_debuff_duration_sec": 5,
+        "blunt_weapon_daze_debuff_duration_sec": 6,
+        "axe_bleed_debuff_damage_sec": 8,
+        "axe_bleed_debuff_duration_sec": 5,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 3,
+        "skill_cp_total": 50,
+        "stat_cp_total": 0
+      },
+      "training": [
+        {
+          "id": "use_the_skill_successfully",
+          "description": "Land a Smash.",
+          "points": 16.0,
+          "limit": 13
+        },
+        {
+          "id": "get_a_critical_hit_with_smash",
+          "description": "Score a critical Smash.",
+          "points": 96.0,
+          "limit": 2
+        },
+        {
+          "id": "use_smash_as_the_final_blow",
+          "description": "Finish a foe with Smash.",
+          "points": 100.0,
+          "limit": 1
+        },
+        {
+          "id": "get_a_critical_hit_as_the_final_blow",
+          "description": "Finish a foe with a critical Smash.",
+          "points": 100.0,
+          "limit": 1
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 4,
+        "elf": 6
+      }
+    },
+    {
+      "rank": "B",
+      "ap_cost": 5,
+      "effects": {
+        "required_ap_human_giant": 5,
+        "required_ap_human_giant_total": 18,
+        "required_ap_elf": 8,
+        "required_ap_total_elf": 20,
+        "additional_str_and_will_total": 0,
+        "stamina_use": 5,
+        "damage_human_elf": 240,
+        "damage_giant": 340,
+        "additional_multiplier_two_handed_weapons": "x1.2",
+        "additional_critical_two_handed_weapons": 5,
+        "splash_damage": 0,
+        "debuff_chance_human": 38,
+        "debuff_chance_elf": 28,
+        "debuff_chance_giant": 48,
+        "sword_bleed_debuff_damage_sec": 9,
+        "sword_bleed_debuff_duration_sec": 5,
+        "blunt_weapon_daze_debuff_duration_sec": 7,
+        "axe_bleed_debuff_damage_sec": 9,
+        "axe_bleed_debuff_duration_sec": 5,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 3,
+        "skill_cp_total": 70,
+        "stat_cp_total": 0
+      },
+      "training": [
+        {
+          "id": "use_the_skill_successfully",
+          "description": "Land a Smash.",
+          "points": 8.0,
+          "limit": 19
+        },
+        {
+          "id": "get_a_critical_hit_with_smash",
+          "description": "Score a critical Smash.",
+          "points": 80.0,
+          "limit": 2
+        },
+        {
+          "id": "use_smash_as_the_final_blow",
+          "description": "Finish a foe with Smash.",
+          "points": 96.0,
+          "limit": 1
+        },
+        {
+          "id": "get_a_critical_hit_as_the_final_blow",
+          "description": "Finish a foe with a critical Smash.",
+          "points": 100.0,
+          "limit": 1
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 5,
+        "elf": 8
+      }
+    },
+    {
+      "rank": "A",
+      "ap_cost": 6,
+      "effects": {
+        "required_ap_human_giant": 6,
+        "required_ap_human_giant_total": 24,
+        "required_ap_elf": 10,
+        "required_ap_total_elf": 30,
+        "additional_str_and_will_total": 0,
+        "stamina_use": 5,
+        "damage_human_elf": 250,
+        "damage_giant": 350,
+        "additional_multiplier_two_handed_weapons": "x1.2",
+        "additional_critical_two_handed_weapons": 5,
+        "splash_damage": 0,
+        "debuff_chance_human": 40,
+        "debuff_chance_elf": 30,
+        "debuff_chance_giant": 50,
+        "sword_bleed_debuff_damage_sec": 10,
+        "sword_bleed_debuff_duration_sec": 5,
+        "blunt_weapon_daze_debuff_duration_sec": 7,
+        "axe_bleed_debuff_damage_sec": 10,
+        "axe_bleed_debuff_duration_sec": 5,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 3,
+        "skill_cp_total": 90,
+        "stat_cp_total": 0
+      },
+      "training": [
+        {
+          "id": "use_the_skill_successfully",
+          "description": "Land a Smash.",
+          "points": 6.4,
+          "limit": 23
+        },
+        {
+          "id": "get_a_critical_hit_with_smash",
+          "description": "Score a critical Smash.",
+          "points": 64.0,
+          "limit": 3
+        },
+        {
+          "id": "use_smash_as_the_final_blow",
+          "description": "Finish a foe with Smash.",
+          "points": 80.0,
+          "limit": 1
+        },
+        {
+          "id": "get_a_critical_hit_as_the_final_blow",
+          "description": "Finish a foe with a critical Smash.",
+          "points": 100.0,
+          "limit": 1
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 6,
+        "elf": 10
+      }
+    },
+    {
+      "rank": "9",
+      "ap_cost": 7,
+      "effects": {
+        "required_ap_human_giant": 7,
+        "required_ap_human_giant_total": 31,
+        "required_ap_elf": 11,
+        "required_ap_total_elf": 41,
+        "additional_str_and_will_total": 0,
+        "stamina_use": 6,
+        "damage_human_elf": 300,
+        "damage_giant": 400,
+        "additional_multiplier_two_handed_weapons": "x1.2",
+        "additional_critical_two_handed_weapons": 5,
+        "splash_damage": 0,
+        "debuff_chance_human": 42,
+        "debuff_chance_elf": 32,
+        "debuff_chance_giant": 52,
+        "sword_bleed_debuff_damage_sec": 11,
+        "sword_bleed_debuff_duration_sec": 5,
+        "blunt_weapon_daze_debuff_duration_sec": 8,
+        "axe_bleed_debuff_damage_sec": 11,
+        "axe_bleed_debuff_duration_sec": 5,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 3,
+        "skill_cp_total": 110,
+        "stat_cp_total": 0
+      },
+      "training": [
+        {
+          "id": "use_the_skill_successfully",
+          "description": "Land a Smash.",
+          "points": 4.0,
+          "limit": 25
+        },
+        {
+          "id": "get_a_critical_hit_with_smash",
+          "description": "Score a critical Smash.",
+          "points": 48.0,
+          "limit": 3
+        },
+        {
+          "id": "use_smash_as_the_final_blow",
+          "description": "Finish a foe with Smash.",
+          "points": 64.0,
+          "limit": 1
+        },
+        {
+          "id": "get_a_critical_hit_as_the_final_blow",
+          "description": "Finish a foe with a critical Smash.",
+          "points": 100.0,
+          "limit": 1
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 7,
+        "elf": 11
+      }
+    },
+    {
+      "rank": "8",
+      "ap_cost": 8,
+      "effects": {
+        "required_ap_human_giant": 8,
+        "required_ap_human_giant_total": 39,
+        "required_ap_elf": 11,
+        "required_ap_total_elf": 52,
+        "additional_str_and_will_total": 1,
+        "stamina_use": 6,
+        "damage_human_elf": 310,
+        "damage_giant": 410,
+        "additional_multiplier_two_handed_weapons": "x1.2",
+        "additional_critical_two_handed_weapons": 5,
+        "splash_damage": 0,
+        "debuff_chance_human": 44,
+        "debuff_chance_elf": 34,
+        "debuff_chance_giant": 54,
+        "sword_bleed_debuff_damage_sec": 12,
+        "sword_bleed_debuff_duration_sec": 5,
+        "blunt_weapon_daze_debuff_duration_sec": 8,
+        "axe_bleed_debuff_damage_sec": 12,
+        "axe_bleed_debuff_duration_sec": 5,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 3,
+        "skill_cp_total": 130,
+        "stat_cp_total": 1.5
+      },
+      "training": [
+        {
+          "id": "use_the_skill_successfully",
+          "description": "Land a Smash.",
+          "points": 2.4,
+          "limit": 25
+        },
+        {
+          "id": "get_a_critical_hit_with_smash",
+          "description": "Score a critical Smash.",
+          "points": 40.0,
+          "limit": 4
+        },
+        {
+          "id": "use_smash_as_the_final_blow",
+          "description": "Finish a foe with Smash.",
+          "points": 48.0,
+          "limit": 2
+        },
+        {
+          "id": "get_a_critical_hit_as_the_final_blow",
+          "description": "Finish a foe with a critical Smash.",
+          "points": 100.0,
+          "limit": 1
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 8,
+        "elf": 11
+      }
+    },
+    {
+      "rank": "7",
+      "ap_cost": 10,
+      "effects": {
+        "required_ap_human_giant": 10,
+        "required_ap_human_giant_total": 49,
+        "required_ap_elf": 11,
+        "required_ap_total_elf": 63,
+        "additional_str_and_will_total": 2,
+        "stamina_use": 7,
+        "damage_human_elf": 320,
+        "damage_giant": 420,
+        "additional_multiplier_two_handed_weapons": "x1.2",
+        "additional_critical_two_handed_weapons": 5,
+        "splash_damage": 0,
+        "debuff_chance_human": 46,
+        "debuff_chance_elf": 36,
+        "debuff_chance_giant": 56,
+        "sword_bleed_debuff_damage_sec": 13,
+        "sword_bleed_debuff_duration_sec": 5,
+        "blunt_weapon_daze_debuff_duration_sec": 9,
+        "axe_bleed_debuff_damage_sec": 13,
+        "axe_bleed_debuff_duration_sec": 5,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 3,
+        "skill_cp_total": 150,
+        "stat_cp_total": 3.0
+      },
+      "training": [
+        {
+          "id": "use_the_skill_successfully",
+          "description": "Land a Smash.",
+          "points": 0.8,
+          "limit": 25
+        },
+        {
+          "id": "get_a_critical_hit_with_smash",
+          "description": "Score a critical Smash.",
+          "points": 24.0,
+          "limit": 5
+        },
+        {
+          "id": "use_smash_as_the_final_blow",
+          "description": "Finish a foe with Smash.",
+          "points": 40.0,
+          "limit": 2
+        },
+        {
+          "id": "get_a_critical_hit_as_the_final_blow",
+          "description": "Finish a foe with a critical Smash.",
+          "points": 80.0,
+          "limit": 1
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 10,
+        "elf": 11
+      }
+    },
+    {
+      "rank": "6",
+      "ap_cost": 12,
+      "effects": {
+        "required_ap_human_giant": 12,
+        "required_ap_human_giant_total": 61,
+        "required_ap_elf": 11,
+        "required_ap_total_elf": 74,
+        "additional_str_and_will_total": 3,
+        "stamina_use": 7,
+        "damage_human_elf": 330,
+        "damage_giant": 430,
+        "additional_multiplier_two_handed_weapons": "x1.2",
+        "additional_critical_two_handed_weapons": 5,
+        "splash_damage": 0,
+        "debuff_chance_human": 48,
+        "debuff_chance_elf": 38,
+        "debuff_chance_giant": 58,
+        "sword_bleed_debuff_damage_sec": 14,
+        "sword_bleed_debuff_duration_sec": 5,
+        "blunt_weapon_daze_debuff_duration_sec": 9,
+        "axe_bleed_debuff_damage_sec": 14,
+        "axe_bleed_debuff_duration_sec": 5,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 3,
+        "skill_cp_total": 170,
+        "stat_cp_total": 4.5
+      },
+      "training": [
+        {
+          "id": "get_a_critical_hit_with_smash",
+          "description": "Score a critical Smash.",
+          "points": 20.0,
+          "limit": 5
+        },
+        {
+          "id": "use_smash_as_the_final_blow",
+          "description": "Finish a foe with Smash.",
+          "points": 28.0,
+          "limit": 2
+        },
+        {
+          "id": "get_a_critical_hit_as_the_final_blow",
+          "description": "Finish a foe with a critical Smash.",
+          "points": 80.0,
+          "limit": 1
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 12,
+        "elf": 11
+      }
+    },
+    {
+      "rank": "5",
+      "ap_cost": 20,
+      "effects": {
+        "required_ap_human_giant": 20,
+        "required_ap_human_giant_total": 81,
+        "required_ap_elf": 13,
+        "required_ap_total_elf": 87,
+        "additional_str_and_will_total": 4,
+        "stamina_use": 8,
+        "damage_human_elf": 400,
+        "damage_giant": 500,
+        "additional_multiplier_two_handed_weapons": "x1.2",
+        "additional_critical_two_handed_weapons": 5,
+        "splash_damage": 10,
+        "debuff_chance_human": 50,
+        "debuff_chance_elf": 40,
+        "debuff_chance_giant": 60,
+        "sword_bleed_debuff_damage_sec": 15,
+        "sword_bleed_debuff_duration_sec": 5,
+        "blunt_weapon_daze_debuff_duration_sec": 10,
+        "axe_bleed_debuff_damage_sec": 15,
+        "axe_bleed_debuff_duration_sec": 5,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 3,
+        "skill_cp_total": 200,
+        "stat_cp_total": 6.0
+      },
+      "training": [
+        {
+          "id": "get_a_critical_hit_with_smash",
+          "description": "Score a critical Smash.",
+          "points": 8.0,
+          "limit": 10
+        },
+        {
+          "id": "use_smash_as_the_final_blow",
+          "description": "Finish a foe with Smash.",
+          "points": 20.0,
+          "limit": 4
+        },
+        {
+          "id": "get_a_critical_hit_as_the_final_blow",
+          "description": "Finish a foe with a critical Smash.",
+          "points": 56.0,
+          "limit": 1
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 20,
+        "elf": 13
+      }
+    },
+    {
+      "rank": "4",
+      "ap_cost": 22,
+      "effects": {
+        "required_ap_human_giant": 22,
+        "required_ap_human_giant_total": 103,
+        "required_ap_elf": 13,
+        "required_ap_total_elf": 100,
+        "additional_str_and_will_total": 5,
+        "stamina_use": 8,
+        "damage_human_elf": 420,
+        "damage_giant": 520,
+        "additional_multiplier_two_handed_weapons": "x1.2",
+        "additional_critical_two_handed_weapons": 5,
+        "splash_damage": 10,
+        "debuff_chance_human": 50,
+        "debuff_chance_elf": 40,
+        "debuff_chance_giant": 60,
+        "sword_bleed_debuff_damage_sec": 16,
+        "sword_bleed_debuff_duration_sec": 5,
+        "blunt_weapon_daze_debuff_duration_sec": 10,
+        "axe_bleed_debuff_damage_sec": 16,
+        "axe_bleed_debuff_duration_sec": 5,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 3,
+        "skill_cp_total": 230,
+        "stat_cp_total": 7.5
+      },
+      "training": [
+        {
+          "id": "get_a_critical_hit_with_smash",
+          "description": "Score a critical Smash.",
+          "points": 8.0,
+          "limit": 15
+        },
+        {
+          "id": "use_smash_as_the_final_blow",
+          "description": "Finish a foe with Smash.",
+          "points": 13.2,
+          "limit": 6
+        },
+        {
+          "id": "get_a_critical_hit_as_the_final_blow",
+          "description": "Finish a foe with a critical Smash.",
+          "points": 56.0,
+          "limit": 2
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 22,
+        "elf": 13
+      }
+    },
+    {
+      "rank": "3",
+      "ap_cost": 24,
+      "effects": {
+        "required_ap_human_giant": 24,
+        "required_ap_human_giant_total": 127,
+        "required_ap_elf": 13,
+        "required_ap_total_elf": 113,
+        "additional_str_and_will_total": 6,
+        "stamina_use": 9,
+        "damage_human_elf": 440,
+        "damage_giant": 540,
+        "additional_multiplier_two_handed_weapons": "x1.2",
+        "additional_critical_two_handed_weapons": 5,
+        "splash_damage": 10,
+        "debuff_chance_human": 50,
+        "debuff_chance_elf": 40,
+        "debuff_chance_giant": 60,
+        "sword_bleed_debuff_damage_sec": 17,
+        "sword_bleed_debuff_duration_sec": 5,
+        "blunt_weapon_daze_debuff_duration_sec": 11,
+        "axe_bleed_debuff_damage_sec": 17,
+        "axe_bleed_debuff_duration_sec": 5,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 3,
+        "skill_cp_total": 260,
+        "stat_cp_total": 9.0
+      },
+      "training": [
+        {
+          "id": "get_a_critical_hit_with_smash",
+          "description": "Score a critical Smash.",
+          "points": 8.0,
+          "limit": 19
+        },
+        {
+          "id": "use_smash_as_the_final_blow",
+          "description": "Finish a foe with Smash.",
+          "points": 13.2,
+          "limit": 8
+        },
+        {
+          "id": "get_a_critical_hit_as_the_final_blow",
+          "description": "Finish a foe with a critical Smash.",
+          "points": 26.4,
+          "limit": 2
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 24,
+        "elf": 13
+      }
+    },
+    {
+      "rank": "2",
+      "ap_cost": 26,
+      "effects": {
+        "required_ap_human_giant": 26,
+        "required_ap_human_giant_total": 153,
+        "required_ap_elf": 13,
+        "required_ap_total_elf": 126,
+        "additional_str_and_will_total": 7,
+        "stamina_use": 9,
+        "damage_human_elf": 460,
+        "damage_giant": 560,
+        "additional_multiplier_two_handed_weapons": "x1.2",
+        "additional_critical_two_handed_weapons": 5,
+        "splash_damage": 10,
+        "debuff_chance_human": 50,
+        "debuff_chance_elf": 40,
+        "debuff_chance_giant": 60,
+        "sword_bleed_debuff_damage_sec": 18,
+        "sword_bleed_debuff_duration_sec": 5,
+        "blunt_weapon_daze_debuff_duration_sec": 11,
+        "axe_bleed_debuff_damage_sec": 18,
+        "axe_bleed_debuff_duration_sec": 5,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 3,
+        "skill_cp_total": 290,
+        "stat_cp_total": 10.5
+      },
+      "training": [
+        {
+          "id": "get_a_critical_hit_with_smash",
+          "description": "Score a critical Smash.",
+          "points": 6.0,
+          "limit": 25
+        },
+        {
+          "id": "use_smash_as_the_final_blow",
+          "description": "Finish a foe with Smash.",
+          "points": 10.0,
+          "limit": 10
+        },
+        {
+          "id": "get_a_critical_hit_as_the_final_blow",
+          "description": "Finish a foe with a critical Smash.",
+          "points": 20.0,
+          "limit": 3
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 26,
+        "elf": 13
+      }
+    },
+    {
+      "rank": "1",
+      "ap_cost": 30,
+      "effects": {
+        "required_ap_human_giant": 30,
+        "required_ap_human_giant_total": 183,
+        "required_ap_elf": 20,
+        "required_ap_total_elf": 146,
+        "additional_str_and_will_total": 8,
+        "stamina_use": 10,
+        "damage_human_elf": 500,
+        "damage_giant": 600,
+        "additional_multiplier_two_handed_weapons": "x1.2",
+        "additional_critical_two_handed_weapons": 5,
+        "splash_damage": 20,
+        "debuff_chance_human": 50,
+        "debuff_chance_elf": 40,
+        "debuff_chance_giant": 60,
+        "sword_bleed_debuff_damage_sec": 20,
+        "sword_bleed_debuff_duration_sec": 5,
+        "blunt_weapon_daze_debuff_duration_sec": 12,
+        "axe_bleed_debuff_damage_sec": 20,
+        "axe_bleed_debuff_duration_sec": 5,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 3,
+        "skill_cp_total": 320,
+        "stat_cp_total": 12.0
+      },
+      "training": [
+        {
+          "id": "get_a_critical_hit_with_smash",
+          "description": "Score a critical Smash.",
+          "points": 4.0,
+          "limit": 35
+        },
+        {
+          "id": "use_smash_as_the_final_blow",
+          "description": "Finish a foe with Smash.",
+          "points": 10.0,
+          "limit": 15
+        },
+        {
+          "id": "get_a_critical_hit_as_the_final_blow",
+          "description": "Finish a foe with a critical Smash.",
+          "points": 20.0,
+          "limit": 5
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 30,
+        "elf": 20
+      }
+    },
+    {
+      "rank": "dan_1",
+      "ap_cost": 7,
+      "effects": {
+        "required_ap_human_giant": 7,
+        "required_ap_human_giant_total": 190,
+        "required_ap_elf": 7,
+        "required_ap_total_elf": 153,
+        "additional_str_and_will_total": 8,
+        "stamina_use": 11,
+        "damage_human_elf": 600,
+        "damage_giant": 640,
+        "additional_multiplier_two_handed_weapons": "x1.2",
+        "additional_critical_two_handed_weapons": "?",
+        "splash_damage": 20,
+        "debuff_chance_human": 50,
+        "debuff_chance_elf": 40,
+        "debuff_chance_giant": 60,
+        "sword_bleed_debuff_damage_sec": 20,
+        "sword_bleed_debuff_duration_sec": 5,
+        "blunt_weapon_daze_debuff_duration_sec": 12,
+        "axe_bleed_debuff_damage_sec": 20,
+        "axe_bleed_debuff_duration_sec": 5,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 3,
+        "skill_cp_total": 350,
+        "stat_cp_total": 12.0
+      },
+      "training": [],
+      "training_required": null,
+      "ap_cost_by_race": {
+        "human_giant": 7,
+        "elf": 7
+      }
+    },
+    {
+      "rank": "dan_2",
+      "ap_cost": 10,
+      "effects": {
+        "required_ap_human_giant": 10,
+        "required_ap_human_giant_total": 200,
+        "required_ap_elf": 10,
+        "required_ap_total_elf": 163,
+        "additional_str_and_will_total": 8,
+        "stamina_use": 12,
+        "damage_human_elf": 700,
+        "damage_giant": 800,
+        "additional_multiplier_two_handed_weapons": "x1.2",
+        "additional_critical_two_handed_weapons": "?",
+        "splash_damage": 20,
+        "debuff_chance_human": 50,
+        "debuff_chance_elf": 40,
+        "debuff_chance_giant": 60,
+        "sword_bleed_debuff_damage_sec": 20,
+        "sword_bleed_debuff_duration_sec": 5,
+        "blunt_weapon_daze_debuff_duration_sec": 12,
+        "axe_bleed_debuff_damage_sec": 20,
+        "axe_bleed_debuff_duration_sec": 5,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 3,
+        "skill_cp_total": 380,
+        "stat_cp_total": 12.0
+      },
+      "training": [],
+      "training_required": null,
+      "ap_cost_by_race": {
+        "human_giant": 10,
+        "elf": 10
+      }
+    },
+    {
+      "rank": "dan_3",
+      "ap_cost": 15,
+      "effects": {
+        "required_ap_human_giant": 15,
+        "required_ap_human_giant_total": 215,
+        "required_ap_elf": 15,
+        "required_ap_total_elf": 178,
+        "additional_str_and_will_total": 8,
+        "stamina_use": 13,
+        "damage_human_elf": 800,
+        "damage_giant": 900,
+        "additional_multiplier_two_handed_weapons": "x1.2",
+        "additional_critical_two_handed_weapons": "?",
+        "splash_damage": 20,
+        "debuff_chance_human": 50,
+        "debuff_chance_elf": 40,
+        "debuff_chance_giant": 60,
+        "sword_bleed_debuff_damage_sec": 20,
+        "sword_bleed_debuff_duration_sec": 5,
+        "blunt_weapon_daze_debuff_duration_sec": 12,
+        "axe_bleed_debuff_damage_sec": 20,
+        "axe_bleed_debuff_duration_sec": 5,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 3,
+        "skill_cp_total": 410,
+        "stat_cp_total": 12.0
+      },
+      "training": [],
+      "training_required": null,
+      "ap_cost_by_race": {
+        "human_giant": 15,
+        "elf": 15
+      }
+    }
+  ]
+}

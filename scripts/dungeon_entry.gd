@@ -3,6 +3,7 @@ extends Control
 const Style = preload("res://scripts/menu_style.gd")
 const Data = preload("res://scripts/character_data.gd")
 const Store = preload("res://scripts/character_store.gd")
+const Skills = preload("res://scripts/character_skills.gd")
 const Catalog = preload("res://scripts/sword_catalog.gd")
 const Satchel = preload("res://scripts/sword_satchel.gd")
 const Armory = preload("res://scripts/armory.gd")
@@ -117,6 +118,7 @@ func _ready() -> void:
 	add_child(_sheet)
 	_journal = Journal.new()
 	_journal.name = "ExplorationJournal"
+	_journal.advance_requested.connect(_advance_skill)
 	add_child(_journal)
 
 	_show_room(_cleared_rooms())
@@ -389,7 +391,16 @@ func _command(command: String) -> void:
 func _open_journal(section: String) -> void:
 	var weapon: Dictionary = _catalog.get(_satchel.equipped, {})
 	_journal_section = section
-	_journal.open(section, _profile, Stats.snapshot(_profile, weapon))
+	_journal.open(section, _profile, Stats.snapshot(_profile, weapon), Skills.entries(_profile) if section == "skills" else [])
+
+
+func _advance_skill(id: String) -> void:
+	var result := Store.advance_skill(id)
+	if result.has("profile"):
+		_profile = result["profile"]
+		_refresh_hud()
+		_open_journal("skills")
+	_journal.set_skill_status(result.get("message", "Could not load your character."))
 
 
 func _move(direction: Vector2i) -> void:
@@ -530,6 +541,15 @@ func _strike_practice_post() -> void:
 		log_label.text = "Your sword is broken. Repair it at the blacksmith."
 		return
 	var damage := Stats.roll_melee(Stats.snapshot(_profile, held), _damage_rng)
+	var world: Dictionary = _profile["world"]
+	if world["skills"]["combat_mastery"]["rank"] == "novice":
+		var trained := Skills.train(world, ["attack"])
+		if trained != world["skills"]:
+			var saved := Store.update_world({"skills": trained})
+			if saved.is_empty():
+				log_label.text = "Could not save practice progress."
+				return
+			_profile = saved
 	log_label.text = "%s strikes the practice post for %d damage." % [held["name"], damage]
 
 

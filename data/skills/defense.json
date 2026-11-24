@@ -1,0 +1,863 @@
+{
+  "id": "defense",
+  "name": "Defense",
+  "kind": "active",
+  "source": "https://wiki.mabinogiworld.com/view/Defense",
+  "description": "Brace against the next incoming strike.",
+  "reference_notes": [
+    "Summary values represent source race variants. Empty merged summary cells inherit the previous displayed value. Training entries award points up to their count limit. Dan training requirements are absent from these page sections."
+  ],
+  "ranks": [
+    {
+      "rank": "novice",
+      "ap_cost": 0,
+      "effects": {},
+      "training": [
+        {
+          "id": "study_skill",
+          "description": "Study Defense with an instructor or book.",
+          "points": 100.0,
+          "limit": 1
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "F",
+      "ap_cost": 0,
+      "effects": {
+        "required_ap_human_giant": 0,
+        "required_ap_human_giant_total": 0,
+        "required_ap_elf": 0,
+        "required_ap_elf_total": 0,
+        "additional_hp_total": 2,
+        "additional_base_defense_human_total": 3,
+        "additional_base_defense_elf_total": 1,
+        "additional_base_defense_giant_total": 5,
+        "defense_bonus_human_elf": 20,
+        "protection_bonus_human_elf": 5,
+        "defense_bonus_giant": 30,
+        "protection_bonus_giant": 10,
+        "stamina_use": 1,
+        "party_defense_bonus": 0,
+        "party_defense_bonus_range": 0,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 7,
+        "skill_cp_total": 30,
+        "stat_cp_total": 1
+      },
+      "training": [
+        {
+          "id": "use_defense",
+          "description": "Enter a guarded stance.",
+          "points": 40.0,
+          "limit": 4
+        },
+        {
+          "id": "block_attack",
+          "description": "Take a hit with your guard up.",
+          "points": 100.0,
+          "limit": 2
+        },
+        {
+          "id": "watch_an_enemy_defend_itself",
+          "description": "See a foe put up its guard.",
+          "points": 80.0,
+          "limit": 1
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 0,
+        "elf": 0
+      }
+    },
+    {
+      "rank": "E",
+      "ap_cost": 1,
+      "effects": {
+        "required_ap_human_giant": 1,
+        "required_ap_human_giant_total": 1,
+        "required_ap_elf": 2,
+        "required_ap_elf_total": 2,
+        "additional_hp_total": 4,
+        "additional_base_defense_human_total": 4,
+        "additional_base_defense_elf_total": 2,
+        "additional_base_defense_giant_total": 6,
+        "defense_bonus_human_elf": 21,
+        "protection_bonus_human_elf": 6,
+        "defense_bonus_giant": 31,
+        "protection_bonus_giant": 11,
+        "stamina_use": 1,
+        "party_defense_bonus": 0,
+        "party_defense_bonus_range": 0,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 7,
+        "skill_cp_total": 60,
+        "stat_cp_total": 2
+      },
+      "training": [
+        {
+          "id": "block_attack",
+          "description": "Take a hit with your guard up.",
+          "points": 100.0,
+          "limit": 2
+        },
+        {
+          "id": "observe_an_enemy_using_the_defense_skill",
+          "description": "See a foe put up its guard.",
+          "points": 64.0,
+          "limit": 1
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 1,
+        "elf": 2
+      }
+    },
+    {
+      "rank": "D",
+      "ap_cost": 3,
+      "effects": {
+        "required_ap_human_giant": 3,
+        "required_ap_human_giant_total": 4,
+        "required_ap_elf": 3,
+        "required_ap_elf_total": 5,
+        "additional_hp_total": 6,
+        "additional_base_defense_human_total": 5,
+        "additional_base_defense_elf_total": 3,
+        "additional_base_defense_giant_total": 7,
+        "defense_bonus_human_elf": 22,
+        "protection_bonus_human_elf": 7,
+        "defense_bonus_giant": 32,
+        "protection_bonus_giant": 12,
+        "stamina_use": 2,
+        "party_defense_bonus": 0,
+        "party_defense_bonus_range": 0,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 7,
+        "skill_cp_total": 80,
+        "stat_cp_total": 3
+      },
+      "training": [
+        {
+          "id": "block_attack",
+          "description": "Take a hit with your guard up.",
+          "points": 100.0,
+          "limit": 2
+        },
+        {
+          "id": "observe_an_enemy_using_the_defense_skill",
+          "description": "See a foe put up its guard.",
+          "points": 48.0,
+          "limit": 1
+        },
+        {
+          "id": "land_a_special_skill_on_a_defending_enemy",
+          "description": "Hit a guarding foe with a combat skill.",
+          "points": 100.0,
+          "limit": 1
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 3,
+        "elf": 3
+      }
+    },
+    {
+      "rank": "C",
+      "ap_cost": 5,
+      "effects": {
+        "required_ap_human_giant": 5,
+        "required_ap_human_giant_total": 9,
+        "required_ap_elf": 4,
+        "required_ap_elf_total": 9,
+        "additional_hp_total": 8,
+        "additional_base_defense_human_total": 6,
+        "additional_base_defense_elf_total": 4,
+        "additional_base_defense_giant_total": 8,
+        "defense_bonus_human_elf": 24,
+        "protection_bonus_human_elf": 8,
+        "defense_bonus_giant": 33,
+        "protection_bonus_giant": 13,
+        "stamina_use": 2,
+        "party_defense_bonus": 0,
+        "party_defense_bonus_range": 0,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 7,
+        "skill_cp_total": 90,
+        "stat_cp_total": 4
+      },
+      "training": [
+        {
+          "id": "block_attack",
+          "description": "Take a hit with your guard up.",
+          "points": 0.6,
+          "limit": 160
+        },
+        {
+          "id": "watch_an_enemy_defend_itself",
+          "description": "See a foe put up its guard.",
+          "points": 1.8,
+          "limit": 32
+        },
+        {
+          "id": "successful_in_using_a_special_skill_to_attack_a_defending_enemy",
+          "description": "Hit a guarding foe with a combat skill.",
+          "points": 1.25,
+          "limit": 32
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 5,
+        "elf": 4
+      }
+    },
+    {
+      "rank": "B",
+      "ap_cost": 7,
+      "effects": {
+        "required_ap_human_giant": 7,
+        "required_ap_human_giant_total": 16,
+        "required_ap_elf": 5,
+        "required_ap_elf_total": 14,
+        "additional_hp_total": 10,
+        "additional_base_defense_human_total": 7,
+        "additional_base_defense_elf_total": 5,
+        "additional_base_defense_giant_total": 9,
+        "defense_bonus_human_elf": 26,
+        "protection_bonus_human_elf": 9,
+        "defense_bonus_giant": 35,
+        "protection_bonus_giant": 15,
+        "stamina_use": 2,
+        "party_defense_bonus": 0,
+        "party_defense_bonus_range": 0,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 7,
+        "skill_cp_total": 100,
+        "stat_cp_total": 5
+      },
+      "training": [
+        {
+          "id": "block_attack",
+          "description": "Take a hit with your guard up.",
+          "points": 0.6,
+          "limit": 160
+        },
+        {
+          "id": "watch_an_enemy_defend_itself",
+          "description": "See a foe put up its guard.",
+          "points": 1.25,
+          "limit": 32
+        },
+        {
+          "id": "successful_in_using_a_special_skill_to_attack_a_defending_enemy",
+          "description": "Hit a guarding foe with a combat skill.",
+          "points": 1.8,
+          "limit": 50
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 7,
+        "elf": 5
+      }
+    },
+    {
+      "rank": "A",
+      "ap_cost": 8,
+      "effects": {
+        "required_ap_human_giant": 8,
+        "required_ap_human_giant_total": 24,
+        "required_ap_elf": 7,
+        "required_ap_elf_total": 21,
+        "additional_hp_total": 12,
+        "additional_base_defense_human_total": 8,
+        "additional_base_defense_elf_total": 6,
+        "additional_base_defense_giant_total": 10,
+        "defense_bonus_human_elf": 28,
+        "protection_bonus_human_elf": 10,
+        "defense_bonus_giant": 37,
+        "protection_bonus_giant": 17,
+        "stamina_use": 2,
+        "party_defense_bonus": 0,
+        "party_defense_bonus_range": 0,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 7,
+        "skill_cp_total": 110,
+        "stat_cp_total": 6
+      },
+      "training": [
+        {
+          "id": "block_attack",
+          "description": "Take a hit with your guard up.",
+          "points": 0.6,
+          "limit": 160
+        },
+        {
+          "id": "watch_an_enemy_defend_itself",
+          "description": "See a foe put up its guard.",
+          "points": 0.6,
+          "limit": 32
+        },
+        {
+          "id": "successful_in_using_a_special_skill_to_attack_a_defending_enemy",
+          "description": "Hit a guarding foe with a combat skill.",
+          "points": 2.5,
+          "limit": 32
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 8,
+        "elf": 7
+      }
+    },
+    {
+      "rank": "9",
+      "ap_cost": 11,
+      "effects": {
+        "required_ap_human_giant": 11,
+        "required_ap_human_giant_total": 35,
+        "required_ap_elf": 9,
+        "required_ap_elf_total": 30,
+        "additional_hp_total": 14,
+        "additional_base_defense_human_total": 10,
+        "additional_base_defense_elf_total": 7,
+        "additional_base_defense_giant_total": 12,
+        "defense_bonus_human_elf": 32,
+        "protection_bonus_human_elf": 12,
+        "defense_bonus_giant": 39,
+        "protection_bonus_giant": 19,
+        "stamina_use": 3,
+        "party_defense_bonus": 0,
+        "party_defense_bonus_range": 0,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 7,
+        "skill_cp_total": 120,
+        "stat_cp_total": 7
+      },
+      "training": [
+        {
+          "id": "block_attack",
+          "description": "Take a hit with your guard up.",
+          "points": 0.5,
+          "limit": 200
+        },
+        {
+          "id": "watch_an_enemy_defend_itself",
+          "description": "See a foe put up its guard.",
+          "points": 0.5,
+          "limit": 40
+        },
+        {
+          "id": "successful_in_using_a_special_skill_to_attack_a_defending_enemy",
+          "description": "Hit a guarding foe with a combat skill.",
+          "points": 2.5,
+          "limit": 40
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 11,
+        "elf": 9
+      }
+    },
+    {
+      "rank": "8",
+      "ap_cost": 12,
+      "effects": {
+        "required_ap_human_giant": 12,
+        "required_ap_human_giant_total": 47,
+        "required_ap_elf": 9,
+        "required_ap_elf_total": 39,
+        "additional_hp_total": 16,
+        "additional_base_defense_human_total": 11,
+        "additional_base_defense_elf_total": 8,
+        "additional_base_defense_giant_total": 14,
+        "defense_bonus_human_elf": 34,
+        "protection_bonus_human_elf": 13,
+        "defense_bonus_giant": 41,
+        "protection_bonus_giant": 21,
+        "stamina_use": 3,
+        "party_defense_bonus": 0,
+        "party_defense_bonus_range": 0,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 7,
+        "skill_cp_total": 130,
+        "stat_cp_total": 8
+      },
+      "training": [
+        {
+          "id": "block_attack",
+          "description": "Take a hit with your guard up.",
+          "points": 24.0,
+          "limit": 7
+        },
+        {
+          "id": "observe_an_enemy_using_the_defense_skill",
+          "description": "See a foe put up its guard.",
+          "points": 6.4,
+          "limit": 5
+        },
+        {
+          "id": "land_a_special_skill_on_a_defending_enemy",
+          "description": "Hit a guarding foe with a combat skill.",
+          "points": 48.0,
+          "limit": 1
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 12,
+        "elf": 9
+      }
+    },
+    {
+      "rank": "7",
+      "ap_cost": 13,
+      "effects": {
+        "required_ap_human_giant": 13,
+        "required_ap_human_giant_total": 60,
+        "required_ap_elf": 9,
+        "required_ap_elf_total": 48,
+        "additional_hp_total": 18,
+        "additional_base_defense_human_total": 12,
+        "additional_base_defense_elf_total": 9,
+        "additional_base_defense_giant_total": 16,
+        "defense_bonus_human_elf": 38,
+        "protection_bonus_human_elf": 14,
+        "defense_bonus_giant": 45,
+        "protection_bonus_giant": 23,
+        "stamina_use": 3,
+        "party_defense_bonus": 0,
+        "party_defense_bonus_range": 0,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 7,
+        "skill_cp_total": 140,
+        "stat_cp_total": 9
+      },
+      "training": [
+        {
+          "id": "block_attack",
+          "description": "Take a hit with your guard up.",
+          "points": 16.0,
+          "limit": 10
+        },
+        {
+          "id": "observe_an_enemy_using_the_defense_skill",
+          "description": "See a foe put up its guard.",
+          "points": 4.8,
+          "limit": 7
+        },
+        {
+          "id": "land_a_special_skill_on_a_defending_enemy",
+          "description": "Hit a guarding foe with a combat skill.",
+          "points": 32.0,
+          "limit": 1
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 13,
+        "elf": 9
+      }
+    },
+    {
+      "rank": "6",
+      "ap_cost": 14,
+      "effects": {
+        "required_ap_human_giant": 14,
+        "required_ap_human_giant_total": 74,
+        "required_ap_elf": 9,
+        "required_ap_elf_total": 57,
+        "additional_hp_total": 20,
+        "additional_base_defense_human_total": 13,
+        "additional_base_defense_elf_total": 10,
+        "additional_base_defense_giant_total": 18,
+        "defense_bonus_human_elf": 42,
+        "protection_bonus_human_elf": 15,
+        "defense_bonus_giant": 50,
+        "protection_bonus_giant": 25,
+        "stamina_use": 3,
+        "party_defense_bonus": 0,
+        "party_defense_bonus_range": 0,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 7,
+        "skill_cp_total": 150,
+        "stat_cp_total": 10
+      },
+      "training": [
+        {
+          "id": "block_attack",
+          "description": "Take a hit with your guard up.",
+          "points": 8.0,
+          "limit": 19
+        },
+        {
+          "id": "observe_an_enemy_using_the_defense_skill",
+          "description": "See a foe put up its guard.",
+          "points": 4.0,
+          "limit": 8
+        },
+        {
+          "id": "land_a_special_skill_on_a_defending_enemy",
+          "description": "Hit a guarding foe with a combat skill.",
+          "points": 24.0,
+          "limit": 2
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 14,
+        "elf": 9
+      }
+    },
+    {
+      "rank": "5",
+      "ap_cost": 17,
+      "effects": {
+        "required_ap_human_giant": 17,
+        "required_ap_human_giant_total": 91,
+        "required_ap_elf": 11,
+        "required_ap_elf_total": 68,
+        "additional_hp_total": 22,
+        "additional_base_defense_human_total": 15,
+        "additional_base_defense_elf_total": 11,
+        "additional_base_defense_giant_total": 20,
+        "defense_bonus_human_elf": 46,
+        "protection_bonus_human_elf": 17,
+        "defense_bonus_giant": 55,
+        "protection_bonus_giant": 28,
+        "stamina_use": 4,
+        "party_defense_bonus": 5,
+        "party_defense_bonus_range": "?",
+        "load_time_sec": 0,
+        "cooldown_time_sec": 7,
+        "skill_cp_total": 160,
+        "stat_cp_total": 11
+      },
+      "training": [
+        {
+          "id": "block_attack",
+          "description": "Take a hit with your guard up.",
+          "points": 6.4,
+          "limit": 25
+        },
+        {
+          "id": "observe_an_enemy_using_the_defense_skill",
+          "description": "See a foe put up its guard.",
+          "points": 2.4,
+          "limit": 10
+        },
+        {
+          "id": "land_a_special_skill_on_a_defending_enemy",
+          "description": "Hit a guarding foe with a combat skill.",
+          "points": 16.0,
+          "limit": 2
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 17,
+        "elf": 11
+      }
+    },
+    {
+      "rank": "4",
+      "ap_cost": 18,
+      "effects": {
+        "required_ap_human_giant": 18,
+        "required_ap_human_giant_total": 109,
+        "required_ap_elf": 11,
+        "required_ap_elf_total": 79,
+        "additional_hp_total": 25,
+        "additional_base_defense_human_total": 16,
+        "additional_base_defense_elf_total": 12,
+        "additional_base_defense_giant_total": 22,
+        "defense_bonus_human_elf": 50,
+        "protection_bonus_human_elf": 20,
+        "defense_bonus_giant": 60,
+        "protection_bonus_giant": 32,
+        "stamina_use": 4,
+        "party_defense_bonus": 5,
+        "party_defense_bonus_range": "?",
+        "load_time_sec": 0,
+        "cooldown_time_sec": 7,
+        "skill_cp_total": 170,
+        "stat_cp_total": 12.5
+      },
+      "training": [
+        {
+          "id": "block_attack",
+          "description": "Take a hit with your guard up.",
+          "points": 6.4,
+          "limit": 25
+        },
+        {
+          "id": "observe_an_enemy_using_the_defense_skill",
+          "description": "See a foe put up its guard.",
+          "points": 2.4,
+          "limit": 10
+        },
+        {
+          "id": "land_a_special_skill_on_a_defending_enemy",
+          "description": "Hit a guarding foe with a combat skill.",
+          "points": 16.0,
+          "limit": 2
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 18,
+        "elf": 11
+      }
+    },
+    {
+      "rank": "3",
+      "ap_cost": 19,
+      "effects": {
+        "required_ap_human_giant": 19,
+        "required_ap_human_giant_total": 128,
+        "required_ap_elf": 11,
+        "required_ap_elf_total": 90,
+        "additional_hp_total": 28,
+        "additional_base_defense_human_total": 17,
+        "additional_base_defense_elf_total": 13,
+        "additional_base_defense_giant_total": 24,
+        "defense_bonus_human_elf": 55,
+        "protection_bonus_human_elf": 25,
+        "defense_bonus_giant": 65,
+        "protection_bonus_giant": 37,
+        "stamina_use": 4,
+        "party_defense_bonus": 5,
+        "party_defense_bonus_range": "?",
+        "load_time_sec": 0,
+        "cooldown_time_sec": 7,
+        "skill_cp_total": 180,
+        "stat_cp_total": 14
+      },
+      "training": [
+        {
+          "id": "block_attack",
+          "description": "Take a hit with your guard up.",
+          "points": 4.8,
+          "limit": 38
+        },
+        {
+          "id": "observe_an_enemy_using_the_defense_skill",
+          "description": "See a foe put up its guard.",
+          "points": 2.4,
+          "limit": 8
+        },
+        {
+          "id": "land_a_special_skill_on_a_defending_enemy",
+          "description": "Hit a guarding foe with a combat skill.",
+          "points": 13.2,
+          "limit": 8
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 19,
+        "elf": 11
+      }
+    },
+    {
+      "rank": "2",
+      "ap_cost": 20,
+      "effects": {
+        "required_ap_human_giant": 20,
+        "required_ap_human_giant_total": 148,
+        "required_ap_elf": 11,
+        "required_ap_elf_total": 101,
+        "additional_hp_total": 31,
+        "additional_base_defense_human_total": 18,
+        "additional_base_defense_elf_total": 14,
+        "additional_base_defense_giant_total": 26,
+        "defense_bonus_human_elf": 60,
+        "protection_bonus_human_elf": 30,
+        "defense_bonus_giant": 70,
+        "protection_bonus_giant": 40,
+        "stamina_use": 4,
+        "party_defense_bonus": 5,
+        "party_defense_bonus_range": "?",
+        "load_time_sec": 0,
+        "cooldown_time_sec": 7,
+        "skill_cp_total": 190,
+        "stat_cp_total": 15.5
+      },
+      "training": [
+        {
+          "id": "block_attack",
+          "description": "Take a hit with your guard up.",
+          "points": 4.8,
+          "limit": 38
+        },
+        {
+          "id": "observe_an_enemy_using_the_defense_skill",
+          "description": "See a foe put up its guard.",
+          "points": 2.0,
+          "limit": 10
+        },
+        {
+          "id": "land_a_special_skill_on_a_defending_enemy",
+          "description": "Hit a guarding foe with a combat skill.",
+          "points": 10.0,
+          "limit": 10
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 20,
+        "elf": 11
+      }
+    },
+    {
+      "rank": "1",
+      "ap_cost": 25,
+      "effects": {
+        "required_ap_human_giant": 25,
+        "required_ap_human_giant_total": 173,
+        "required_ap_elf": 20,
+        "required_ap_elf_total": 121,
+        "additional_hp_total": 41,
+        "additional_base_defense_human_total": 20,
+        "additional_base_defense_elf_total": 15,
+        "additional_base_defense_giant_total": 30,
+        "defense_bonus_human_elf": 65,
+        "protection_bonus_human_elf": 35,
+        "defense_bonus_giant": 80,
+        "protection_bonus_giant": 45,
+        "stamina_use": 5,
+        "party_defense_bonus": 10,
+        "party_defense_bonus_range": "~100",
+        "load_time_sec": 0,
+        "cooldown_time_sec": 7,
+        "skill_cp_total": 200,
+        "stat_cp_total": 20.5
+      },
+      "training": [
+        {
+          "id": "block_attack",
+          "description": "Take a hit with your guard up.",
+          "points": 4.0,
+          "limit": 50
+        },
+        {
+          "id": "observe_an_enemy_using_the_defense_skill",
+          "description": "See a foe put up its guard.",
+          "points": 2.0,
+          "limit": 25
+        },
+        {
+          "id": "land_a_special_skill_on_a_defending_enemy",
+          "description": "Hit a guarding foe with a combat skill.",
+          "points": 10.0,
+          "limit": 10
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 25,
+        "elf": 20
+      }
+    },
+    {
+      "rank": "dan_1",
+      "ap_cost": 7,
+      "effects": {
+        "required_ap_human_giant": 7,
+        "required_ap_human_giant_total": 180,
+        "required_ap_elf": 7,
+        "required_ap_elf_total": 128,
+        "additional_hp_total": 41,
+        "additional_base_defense_human_total": 22,
+        "additional_base_defense_elf_total": 16,
+        "additional_base_defense_giant_total": 34,
+        "defense_bonus_human_elf": 70,
+        "protection_bonus_human_elf": 35,
+        "defense_bonus_giant": 90,
+        "protection_bonus_giant": 45,
+        "stamina_use": 5,
+        "party_defense_bonus": 10,
+        "party_defense_bonus_range": "?",
+        "load_time_sec": 0,
+        "cooldown_time_sec": 7,
+        "skill_cp_total": 200,
+        "stat_cp_total": 20.5
+      },
+      "training": [],
+      "training_required": null,
+      "ap_cost_by_race": {
+        "human_giant": 7,
+        "elf": 7
+      }
+    },
+    {
+      "rank": "dan_2",
+      "ap_cost": 10,
+      "effects": {
+        "required_ap_human_giant": 10,
+        "required_ap_human_giant_total": 190,
+        "required_ap_elf": 10,
+        "required_ap_elf_total": 138,
+        "additional_hp_total": 41,
+        "additional_base_defense_human_total": 24,
+        "additional_base_defense_elf_total": 17,
+        "additional_base_defense_giant_total": 38,
+        "defense_bonus_human_elf": 75,
+        "protection_bonus_human_elf": 35,
+        "defense_bonus_giant": 100,
+        "protection_bonus_giant": 45,
+        "stamina_use": 5,
+        "party_defense_bonus": 10,
+        "party_defense_bonus_range": "?",
+        "load_time_sec": 0,
+        "cooldown_time_sec": 7,
+        "skill_cp_total": 200,
+        "stat_cp_total": 20.5
+      },
+      "training": [],
+      "training_required": null,
+      "ap_cost_by_race": {
+        "human_giant": 10,
+        "elf": 10
+      }
+    },
+    {
+      "rank": "dan_3",
+      "ap_cost": 15,
+      "effects": {
+        "required_ap_human_giant": 15,
+        "required_ap_human_giant_total": 205,
+        "required_ap_elf": 15,
+        "required_ap_elf_total": 153,
+        "additional_hp_total": 41,
+        "additional_base_defense_human_total": 26,
+        "additional_base_defense_elf_total": 18,
+        "additional_base_defense_giant_total": 42,
+        "defense_bonus_human_elf": 80,
+        "protection_bonus_human_elf": 35,
+        "defense_bonus_giant": 110,
+        "protection_bonus_giant": 45,
+        "stamina_use": 5,
+        "party_defense_bonus": 10,
+        "party_defense_bonus_range": "?",
+        "load_time_sec": 0,
+        "cooldown_time_sec": 7,
+        "skill_cp_total": 200,
+        "stat_cp_total": 20.5
+      },
+      "training": [],
+      "training_required": null,
+      "ap_cost_by_race": {
+        "human_giant": 15,
+        "elf": 15
+      }
+    }
+  ]
+}

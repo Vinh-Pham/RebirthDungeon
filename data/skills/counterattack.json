@@ -1,0 +1,971 @@
+{
+  "id": "counterattack",
+  "name": "Counterattack",
+  "kind": "active",
+  "source": "https://wiki.mabinogiworld.com/view/Counterattack",
+  "description": "Turn an incoming melee strike against its attacker.",
+  "reference_notes": [
+    "Summary values represent source race variants. Empty merged summary cells inherit the previous displayed value. Training entries award points up to their count limit. Dan training requirements are absent from these page sections."
+  ],
+  "ranks": [
+    {
+      "rank": "novice",
+      "ap_cost": 0,
+      "effects": {
+        "required_ap_human_giant": 0,
+        "required_ap_human_giant_total": 0,
+        "required_ap_elf": 0,
+        "required_ap_elf_total": 0,
+        "additional_dexterity_total": 0,
+        "damage_from_opponent_human_giant": 50,
+        "elf": 50,
+        "damage_from_self_human_elf": 50,
+        "giant": 50,
+        "additional_critical_upon_activation": 0,
+        "stamina_use": 2,
+        "stamina_use_knuckle": 20,
+        "stamina_use_sec": 1,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 7,
+        "cooldown_time_knuckle_sec": 4,
+        "skill_cp_total": 0,
+        "stat_cp_total": 0.0
+      },
+      "training": [
+        {
+          "id": "study_skill",
+          "description": "Study the counter stance with a teacher or book.",
+          "points": 1.0,
+          "limit": 100
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 0,
+        "elf": 0
+      },
+      "reference_note": "The Novice training section specifies half of each combatant's damage; the Summary omits these multipliers."
+    },
+    {
+      "rank": "F",
+      "ap_cost": 3,
+      "effects": {
+        "required_ap_human_giant": 3,
+        "required_ap_human_giant_total": 3,
+        "required_ap_elf": 0,
+        "required_ap_elf_total": 0,
+        "additional_dexterity_total": 1,
+        "damage_from_opponent_human_giant": 50,
+        "elf": 50,
+        "damage_from_self_human_elf": 100,
+        "giant": 100,
+        "additional_critical_upon_activation": 5,
+        "stamina_use": 2,
+        "stamina_use_knuckle": 20,
+        "stamina_use_sec": 1,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 7,
+        "cooldown_time_knuckle_sec": 4,
+        "skill_cp_total": 20,
+        "stat_cp_total": 0.1
+      },
+      "training": [
+        {
+          "id": "use_a_counterattack",
+          "description": "Prepare a counter stance.",
+          "points": 40.0,
+          "limit": 3
+        },
+        {
+          "id": "counter_an_enemy_s_attack",
+          "description": "Repel a foe’s regular strike.",
+          "points": 100.0,
+          "limit": 1
+        },
+        {
+          "id": "watch_an_enemy_use_counterattack",
+          "description": "Witness a foe counter a strike.",
+          "points": 100.0,
+          "limit": 1
+        },
+        {
+          "id": "counter_an_enemy_s_special_attack",
+          "description": "Repel a foe’s special move.",
+          "points": 100.0,
+          "limit": 1
+        },
+        {
+          "id": "counterattack_with_a_critical_hit",
+          "description": "Land a critical strike when countering.",
+          "points": 100.0,
+          "limit": 1
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 3,
+        "elf": 0
+      }
+    },
+    {
+      "rank": "E",
+      "ap_cost": 4,
+      "effects": {
+        "required_ap_human_giant": 4,
+        "required_ap_human_giant_total": 7,
+        "required_ap_elf": 1,
+        "required_ap_elf_total": 1,
+        "additional_dexterity_total": 2,
+        "damage_from_opponent_human_giant": 60,
+        "elf": 55,
+        "damage_from_self_human_elf": 100,
+        "giant": 105,
+        "additional_critical_upon_activation": 5,
+        "stamina_use": 2,
+        "stamina_use_knuckle": 20,
+        "stamina_use_sec": 1,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 7,
+        "cooldown_time_knuckle_sec": 4,
+        "skill_cp_total": 25,
+        "stat_cp_total": 0.2
+      },
+      "training": [
+        {
+          "id": "counter_an_enemy_s_attack",
+          "description": "Repel a foe’s regular strike.",
+          "points": 100.0,
+          "limit": 1
+        },
+        {
+          "id": "counter_an_enemy_s_special_attack",
+          "description": "Repel a foe’s special move.",
+          "points": 100.0,
+          "limit": 1
+        },
+        {
+          "id": "watch_an_enemy_use_counterattack",
+          "description": "Witness a foe counter a strike.",
+          "points": 100.0,
+          "limit": 1
+        },
+        {
+          "id": "counterattack_with_a_critical_hit",
+          "description": "Land a critical strike when countering.",
+          "points": 100.0,
+          "limit": 1
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 4,
+        "elf": 1
+      }
+    },
+    {
+      "rank": "D",
+      "ap_cost": 5,
+      "effects": {
+        "required_ap_human_giant": 5,
+        "required_ap_human_giant_total": 12,
+        "required_ap_elf": 2,
+        "required_ap_elf_total": 3,
+        "additional_dexterity_total": 3,
+        "damage_from_opponent_human_giant": 70,
+        "elf": 60,
+        "damage_from_self_human_elf": 100,
+        "giant": 110,
+        "additional_critical_upon_activation": 5,
+        "stamina_use": 2,
+        "stamina_use_knuckle": 20,
+        "stamina_use_sec": 1,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 7,
+        "cooldown_time_knuckle_sec": 4,
+        "skill_cp_total": 30,
+        "stat_cp_total": 0.3
+      },
+      "training": [
+        {
+          "id": "counter_an_enemy_s_attack",
+          "description": "Repel a foe’s regular strike.",
+          "points": 80.0,
+          "limit": 1
+        },
+        {
+          "id": "counter_an_enemy_s_special_attack",
+          "description": "Repel a foe’s special move.",
+          "points": 100.0,
+          "limit": 1
+        },
+        {
+          "id": "watch_an_enemy_use_counterattack",
+          "description": "Witness a foe counter a strike.",
+          "points": 100.0,
+          "limit": 1
+        },
+        {
+          "id": "counterattack_with_a_critical_hit",
+          "description": "Land a critical strike when countering.",
+          "points": 100.0,
+          "limit": 1
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 5,
+        "elf": 2
+      }
+    },
+    {
+      "rank": "C",
+      "ap_cost": 6,
+      "effects": {
+        "required_ap_human_giant": 6,
+        "required_ap_human_giant_total": 18,
+        "required_ap_elf": 4,
+        "required_ap_elf_total": 7,
+        "additional_dexterity_total": 4,
+        "damage_from_opponent_human_giant": 80,
+        "elf": 65,
+        "damage_from_self_human_elf": 100,
+        "giant": 115,
+        "additional_critical_upon_activation": 5,
+        "stamina_use": 2,
+        "stamina_use_knuckle": 20,
+        "stamina_use_sec": 1,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 7,
+        "cooldown_time_knuckle_sec": 4,
+        "skill_cp_total": 35,
+        "stat_cp_total": 0.4
+      },
+      "training": [
+        {
+          "id": "counter_an_enemy_s_attack",
+          "description": "Repel a foe’s regular strike.",
+          "points": 64.0,
+          "limit": 1
+        },
+        {
+          "id": "counter_an_enemy_s_special_attack",
+          "description": "Repel a foe’s special move.",
+          "points": 100.0,
+          "limit": 1
+        },
+        {
+          "id": "watch_an_enemy_use_counterattack",
+          "description": "Witness a foe counter a strike.",
+          "points": 80.0,
+          "limit": 1
+        },
+        {
+          "id": "counterattack_with_a_critical_hit",
+          "description": "Land a critical strike when countering.",
+          "points": 100.0,
+          "limit": 1
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 6,
+        "elf": 4
+      }
+    },
+    {
+      "rank": "B",
+      "ap_cost": 6,
+      "effects": {
+        "required_ap_human_giant": 6,
+        "required_ap_human_giant_total": 24,
+        "required_ap_elf": 6,
+        "required_ap_elf_total": 13,
+        "additional_dexterity_total": 5,
+        "damage_from_opponent_human_giant": 90,
+        "elf": 70,
+        "damage_from_self_human_elf": 100,
+        "giant": 120,
+        "additional_critical_upon_activation": 5,
+        "stamina_use": 2,
+        "stamina_use_knuckle": 20,
+        "stamina_use_sec": 1,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 7,
+        "cooldown_time_knuckle_sec": 4,
+        "skill_cp_total": 40,
+        "stat_cp_total": 0.5
+      },
+      "training": [
+        {
+          "id": "counter_an_enemy_s_attack",
+          "description": "Repel a foe’s regular strike.",
+          "points": 48.0,
+          "limit": 1
+        },
+        {
+          "id": "counter_an_enemy_s_special_attack",
+          "description": "Repel a foe’s special move.",
+          "points": 80.0,
+          "limit": 1
+        },
+        {
+          "id": "watch_an_enemy_use_counterattack",
+          "description": "Witness a foe counter a strike.",
+          "points": 64.0,
+          "limit": 1
+        },
+        {
+          "id": "counterattack_with_a_critical_hit",
+          "description": "Land a critical strike when countering.",
+          "points": 100.0,
+          "limit": 1
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 6,
+        "elf": 6
+      }
+    },
+    {
+      "rank": "A",
+      "ap_cost": 7,
+      "effects": {
+        "required_ap_human_giant": 7,
+        "required_ap_human_giant_total": 31,
+        "required_ap_elf": 8,
+        "required_ap_elf_total": 21,
+        "additional_dexterity_total": 6,
+        "damage_from_opponent_human_giant": 100,
+        "elf": 75,
+        "damage_from_self_human_elf": 100,
+        "giant": 125,
+        "additional_critical_upon_activation": 5,
+        "stamina_use": 2,
+        "stamina_use_knuckle": 20,
+        "stamina_use_sec": 1,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 7,
+        "cooldown_time_knuckle_sec": 4,
+        "skill_cp_total": 45,
+        "stat_cp_total": 0.6
+      },
+      "training": [
+        {
+          "id": "counter_an_enemy_s_attack",
+          "description": "Repel a foe’s regular strike.",
+          "points": 40.0,
+          "limit": 2
+        },
+        {
+          "id": "counter_an_enemy_s_special_attack",
+          "description": "Repel a foe’s special move.",
+          "points": 64.0,
+          "limit": 1
+        },
+        {
+          "id": "watch_an_enemy_use_counterattack",
+          "description": "Witness a foe counter a strike.",
+          "points": 48.0,
+          "limit": 1
+        },
+        {
+          "id": "counterattack_with_a_critical_hit",
+          "description": "Land a critical strike when countering.",
+          "points": 100.0,
+          "limit": 2
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 7,
+        "elf": 8
+      }
+    },
+    {
+      "rank": "9",
+      "ap_cost": 8,
+      "effects": {
+        "required_ap_human_giant": 8,
+        "required_ap_human_giant_total": 39,
+        "required_ap_elf": 9,
+        "required_ap_elf_total": 30,
+        "additional_dexterity_total": 7,
+        "damage_from_opponent_human_giant": 120,
+        "elf": 85,
+        "damage_from_self_human_elf": 110,
+        "giant": 135,
+        "additional_critical_upon_activation": 5,
+        "stamina_use": 3,
+        "stamina_use_knuckle": 30,
+        "stamina_use_sec": 1,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 7,
+        "cooldown_time_knuckle_sec": 4,
+        "skill_cp_total": 50,
+        "stat_cp_total": 0.7
+      },
+      "training": [
+        {
+          "id": "counter_an_enemy_s_attack",
+          "description": "Repel a foe’s regular strike.",
+          "points": 24.0,
+          "limit": 2
+        },
+        {
+          "id": "counter_an_enemy_s_special_attack",
+          "description": "Repel a foe’s special move.",
+          "points": 48.0,
+          "limit": 1
+        },
+        {
+          "id": "watch_an_enemy_use_counterattack",
+          "description": "Witness a foe counter a strike.",
+          "points": 40.0,
+          "limit": 2
+        },
+        {
+          "id": "counterattack_with_a_critical_hit",
+          "description": "Land a critical strike when countering.",
+          "points": 80.0,
+          "limit": 3
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 8,
+        "elf": 9
+      }
+    },
+    {
+      "rank": "8",
+      "ap_cost": 9,
+      "effects": {
+        "required_ap_human_giant": 9,
+        "required_ap_human_giant_total": 48,
+        "required_ap_elf": 9,
+        "required_ap_elf_total": 39,
+        "additional_dexterity_total": 8,
+        "damage_from_opponent_human_giant": 130,
+        "elf": 90,
+        "damage_from_self_human_elf": 115,
+        "giant": 140,
+        "additional_critical_upon_activation": 5,
+        "stamina_use": 3,
+        "stamina_use_knuckle": 30,
+        "stamina_use_sec": 1,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 7,
+        "cooldown_time_knuckle_sec": 4,
+        "skill_cp_total": 55,
+        "stat_cp_total": 0.8
+      },
+      "training": [
+        {
+          "id": "counter_an_enemy_s_attack",
+          "description": "Repel a foe’s regular strike.",
+          "points": 16.0,
+          "limit": 3
+        },
+        {
+          "id": "counter_an_enemy_s_special_attack",
+          "description": "Repel a foe’s special move.",
+          "points": 40.0,
+          "limit": 2
+        },
+        {
+          "id": "watch_an_enemy_use_counterattack",
+          "description": "Witness a foe counter a strike.",
+          "points": 24.0,
+          "limit": 2
+        },
+        {
+          "id": "counterattack_with_a_critical_hit",
+          "description": "Land a critical strike when countering.",
+          "points": 60.0,
+          "limit": 3
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 9,
+        "elf": 9
+      }
+    },
+    {
+      "rank": "7",
+      "ap_cost": 10,
+      "effects": {
+        "required_ap_human_giant": 10,
+        "required_ap_human_giant_total": 58,
+        "required_ap_elf": 9,
+        "required_ap_elf_total": 48,
+        "additional_dexterity_total": 9,
+        "damage_from_opponent_human_giant": 140,
+        "elf": 95,
+        "damage_from_self_human_elf": 120,
+        "giant": 145,
+        "additional_critical_upon_activation": 5,
+        "stamina_use": 3,
+        "stamina_use_knuckle": 30,
+        "stamina_use_sec": 1,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 7,
+        "cooldown_time_knuckle_sec": 4,
+        "skill_cp_total": 60,
+        "stat_cp_total": 0.9
+      },
+      "training": [
+        {
+          "id": "counter_an_enemy_s_attack",
+          "description": "Repel a foe’s regular strike.",
+          "points": 12.0,
+          "limit": 4
+        },
+        {
+          "id": "counter_an_enemy_s_special_attack",
+          "description": "Repel a foe’s special move.",
+          "points": 40.0,
+          "limit": 13
+        },
+        {
+          "id": "watch_an_enemy_use_counterattack",
+          "description": "Witness a foe counter a strike.",
+          "points": 16.0,
+          "limit": 3
+        },
+        {
+          "id": "counterattack_with_a_critical_hit",
+          "description": "Land a critical strike when countering.",
+          "points": 60.0,
+          "limit": 3
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 10,
+        "elf": 9
+      }
+    },
+    {
+      "rank": "6",
+      "ap_cost": 11,
+      "effects": {
+        "required_ap_human_giant": 11,
+        "required_ap_human_giant_total": 69,
+        "required_ap_elf": 9,
+        "required_ap_elf_total": 57,
+        "additional_dexterity_total": 10,
+        "damage_from_opponent_human_giant": 150,
+        "elf": 100,
+        "damage_from_self_human_elf": 125,
+        "giant": 150,
+        "additional_critical_upon_activation": 5,
+        "stamina_use": 3,
+        "stamina_use_knuckle": 30,
+        "stamina_use_sec": 1,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 7,
+        "cooldown_time_knuckle_sec": 4,
+        "skill_cp_total": 65,
+        "stat_cp_total": 1.0
+      },
+      "training": [
+        {
+          "id": "counter_an_enemy_s_attack",
+          "description": "Repel a foe’s regular strike.",
+          "points": 9.6,
+          "limit": 5
+        },
+        {
+          "id": "counter_an_enemy_s_special_attack",
+          "description": "Repel a foe’s special move.",
+          "points": 32.0,
+          "limit": 18
+        },
+        {
+          "id": "watch_an_enemy_use_counterattack",
+          "description": "Witness a foe counter a strike.",
+          "points": 8.0,
+          "limit": 5
+        },
+        {
+          "id": "counterattack_with_a_critical_hit",
+          "description": "Land a critical strike when countering.",
+          "points": 40.0,
+          "limit": 4
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 11,
+        "elf": 9
+      }
+    },
+    {
+      "rank": "5",
+      "ap_cost": 12,
+      "effects": {
+        "required_ap_human_giant": 12,
+        "required_ap_human_giant_total": 81,
+        "required_ap_elf": 10,
+        "required_ap_elf_total": 67,
+        "additional_dexterity_total": 11,
+        "damage_from_opponent_human_giant": 160,
+        "elf": 110,
+        "damage_from_self_human_elf": 130,
+        "giant": 160,
+        "additional_critical_upon_activation": 7,
+        "stamina_use": 4,
+        "stamina_use_knuckle": 40,
+        "stamina_use_sec": 1,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 7,
+        "cooldown_time_knuckle_sec": 4,
+        "skill_cp_total": 70,
+        "stat_cp_total": 1.1
+      },
+      "training": [
+        {
+          "id": "counter_an_enemy_s_attack",
+          "description": "Repel a foe’s regular strike.",
+          "points": 8.0,
+          "limit": 6
+        },
+        {
+          "id": "counter_an_enemy_s_special_attack",
+          "description": "Repel a foe’s special move.",
+          "points": 24.0,
+          "limit": 27
+        },
+        {
+          "id": "watch_an_enemy_use_counterattack",
+          "description": "Witness a foe counter a strike.",
+          "points": 6.4,
+          "limit": 7
+        },
+        {
+          "id": "counterattack_with_a_critical_hit",
+          "description": "Land a critical strike when countering.",
+          "points": 26.4,
+          "limit": 6
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 12,
+        "elf": 10
+      }
+    },
+    {
+      "rank": "4",
+      "ap_cost": 13,
+      "effects": {
+        "required_ap_human_giant": 13,
+        "required_ap_human_giant_total": 94,
+        "required_ap_elf": 10,
+        "required_ap_elf_total": 77,
+        "additional_dexterity_total": 12,
+        "damage_from_opponent_human_giant": 170,
+        "elf": 120,
+        "damage_from_self_human_elf": 135,
+        "giant": 170,
+        "additional_critical_upon_activation": 7,
+        "stamina_use": 4,
+        "stamina_use_knuckle": 40,
+        "stamina_use_sec": 1,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 7,
+        "cooldown_time_knuckle_sec": 4,
+        "skill_cp_total": 75,
+        "stat_cp_total": 1.2
+      },
+      "training": [
+        {
+          "id": "counter_an_enemy_s_attack",
+          "description": "Repel a foe’s regular strike.",
+          "points": 6.4,
+          "limit": 7
+        },
+        {
+          "id": "counter_an_enemy_s_special_attack",
+          "description": "Repel a foe’s special move.",
+          "points": 22.4,
+          "limit": 29
+        },
+        {
+          "id": "watch_an_enemy_use_counterattack",
+          "description": "Witness a foe counter a strike.",
+          "points": 4.8,
+          "limit": 9
+        },
+        {
+          "id": "counterattack_with_a_critical_hit",
+          "description": "Land a critical strike when countering.",
+          "points": 21.2,
+          "limit": 6
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 13,
+        "elf": 10
+      }
+    },
+    {
+      "rank": "3",
+      "ap_cost": 14,
+      "effects": {
+        "required_ap_human_giant": 14,
+        "required_ap_human_giant_total": 108,
+        "required_ap_elf": 10,
+        "required_ap_elf_total": 87,
+        "additional_dexterity_total": 13,
+        "damage_from_opponent_human_giant": 180,
+        "elf": 130,
+        "damage_from_self_human_elf": 140,
+        "giant": 180,
+        "additional_critical_upon_activation": 7,
+        "stamina_use": 4,
+        "stamina_use_knuckle": 40,
+        "stamina_use_sec": 1,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 7,
+        "cooldown_time_knuckle_sec": 4,
+        "skill_cp_total": 80,
+        "stat_cp_total": 1.3
+      },
+      "training": [
+        {
+          "id": "counter_an_enemy_s_attack",
+          "description": "Repel a foe’s regular strike.",
+          "points": 5.6,
+          "limit": 8
+        },
+        {
+          "id": "counter_an_enemy_s_special_attack",
+          "description": "Repel a foe’s special move.",
+          "points": 20.8,
+          "limit": 33
+        },
+        {
+          "id": "watch_an_enemy_use_counterattack",
+          "description": "Witness a foe counter a strike.",
+          "points": 3.2,
+          "limit": 13
+        },
+        {
+          "id": "counterattack_with_a_critical_hit",
+          "description": "Land a critical strike when countering.",
+          "points": 13.2,
+          "limit": 8
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 14,
+        "elf": 10
+      }
+    },
+    {
+      "rank": "2",
+      "ap_cost": 15,
+      "effects": {
+        "required_ap_human_giant": 15,
+        "required_ap_human_giant_total": 123,
+        "required_ap_elf": 10,
+        "required_ap_elf_total": 97,
+        "additional_dexterity_total": 14,
+        "damage_from_opponent_human_giant": 190,
+        "elf": 140,
+        "damage_from_self_human_elf": 145,
+        "giant": 190,
+        "additional_critical_upon_activation": 7,
+        "stamina_use": 4,
+        "stamina_use_knuckle": 40,
+        "stamina_use_sec": 1,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 7,
+        "cooldown_time_knuckle_sec": 4,
+        "skill_cp_total": 85,
+        "stat_cp_total": 1.4
+      },
+      "training": [
+        {
+          "id": "counter_an_enemy_s_attack",
+          "description": "Repel a foe’s regular strike.",
+          "points": 4.8,
+          "limit": 9
+        },
+        {
+          "id": "counter_an_enemy_s_special_attack",
+          "description": "Repel a foe’s special move.",
+          "points": 17.6,
+          "limit": 38
+        },
+        {
+          "id": "watch_an_enemy_use_counterattack",
+          "description": "Witness a foe counter a strike.",
+          "points": 1.6,
+          "limit": 50
+        },
+        {
+          "id": "counterattack_with_a_critical_hit",
+          "description": "Land a critical strike when countering.",
+          "points": 6.0,
+          "limit": 15
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 15,
+        "elf": 10
+      }
+    },
+    {
+      "rank": "1",
+      "ap_cost": 18,
+      "effects": {
+        "required_ap_human_giant": 18,
+        "required_ap_human_giant_total": 141,
+        "required_ap_elf": 15,
+        "required_ap_elf_total": 112,
+        "additional_dexterity_total": 15,
+        "damage_from_opponent_human_giant": 200,
+        "elf": 150,
+        "damage_from_self_human_elf": 150,
+        "giant": 200,
+        "additional_critical_upon_activation": 10,
+        "stamina_use": 6,
+        "stamina_use_knuckle": 40,
+        "stamina_use_sec": 1,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 7,
+        "cooldown_time_knuckle_sec": 4,
+        "skill_cp_total": 90,
+        "stat_cp_total": 1.5
+      },
+      "training": [
+        {
+          "id": "counter_an_enemy_s_attack",
+          "description": "Repel a foe’s regular strike.",
+          "points": 4.0,
+          "limit": 10
+        },
+        {
+          "id": "counter_an_enemy_s_special_attack",
+          "description": "Repel a foe’s special move.",
+          "points": 16.0,
+          "limit": 44
+        },
+        {
+          "id": "watch_an_enemy_use_counterattack",
+          "description": "Witness a foe counter a strike.",
+          "points": 0.8,
+          "limit": 63
+        },
+        {
+          "id": "counterattack_with_a_critical_hit",
+          "description": "Land a critical strike when countering.",
+          "points": 6.0,
+          "limit": 25
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 18,
+        "elf": 15
+      }
+    },
+    {
+      "rank": "dan_1",
+      "ap_cost": 7,
+      "effects": {
+        "required_ap_human_giant": 7,
+        "required_ap_human_giant_total": 148,
+        "required_ap_elf": 7,
+        "required_ap_elf_total": 119,
+        "additional_dexterity_total": 15,
+        "damage_from_opponent_human_giant": 210,
+        "elf": 160,
+        "damage_from_self_human_elf": 165,
+        "giant": 210,
+        "additional_critical_upon_activation": 10,
+        "stamina_use": 8,
+        "stamina_use_knuckle": 40,
+        "stamina_use_sec": 1,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 7,
+        "cooldown_time_knuckle_sec": 4,
+        "skill_cp_total": 95,
+        "stat_cp_total": 1.5
+      },
+      "training": [],
+      "training_required": null,
+      "ap_cost_by_race": {
+        "human_giant": 7,
+        "elf": 7
+      }
+    },
+    {
+      "rank": "dan_2",
+      "ap_cost": 10,
+      "effects": {
+        "required_ap_human_giant": 10,
+        "required_ap_human_giant_total": 158,
+        "required_ap_elf": 10,
+        "required_ap_elf_total": 129,
+        "additional_dexterity_total": 15,
+        "damage_from_opponent_human_giant": 220,
+        "elf": 170,
+        "damage_from_self_human_elf": 170,
+        "giant": 220,
+        "additional_critical_upon_activation": 10,
+        "stamina_use": 10,
+        "stamina_use_knuckle": 40,
+        "stamina_use_sec": 1,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 7,
+        "cooldown_time_knuckle_sec": 4,
+        "skill_cp_total": 100,
+        "stat_cp_total": 1.5
+      },
+      "training": [],
+      "training_required": null,
+      "ap_cost_by_race": {
+        "human_giant": 10,
+        "elf": 10
+      }
+    },
+    {
+      "rank": "dan_3",
+      "ap_cost": 15,
+      "effects": {
+        "required_ap_human_giant": 15,
+        "required_ap_human_giant_total": 173,
+        "required_ap_elf": 15,
+        "required_ap_elf_total": 144,
+        "additional_dexterity_total": 15,
+        "damage_from_opponent_human_giant": 230,
+        "elf": 180,
+        "damage_from_self_human_elf": 175,
+        "giant": 230,
+        "additional_critical_upon_activation": 13,
+        "stamina_use": 12,
+        "stamina_use_knuckle": 40,
+        "stamina_use_sec": 1,
+        "load_time_sec": 0,
+        "cooldown_time_sec": 7,
+        "cooldown_time_knuckle_sec": 4,
+        "skill_cp_total": 105,
+        "stat_cp_total": 1.5
+      },
+      "training": [],
+      "training_required": null,
+      "ap_cost_by_race": {
+        "human_giant": 15,
+        "elf": 15
+      }
+    }
+  ]
+}

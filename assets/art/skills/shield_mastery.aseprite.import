@@ -1,0 +1,14 @@
+[remap]
+
+importer="aseprite_wizard.plugin.noop"
+type="PackedDataContainer"
+uid="uid://cl3l5dcqvsjm"
+path="res://.godot/imported/shield_mastery.aseprite-e5159c8cf4280784a6f2985db40cade7.res"
+
+[deps]
+
+source_file="res://assets/art/skills/shield_mastery.aseprite"
+dest_files=["res://.godot/imported/shield_mastery.aseprite-e5159c8cf4280784a6f2985db40cade7.res"]
+
+[params]
+

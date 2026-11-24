@@ -2,6 +2,7 @@ extends RefCounted
 ## Local character profiles. All returned dictionaries are independent copies.
 
 const Rooms = preload("res://scripts/threshold_rooms.gd")
+const Skills = preload("res://scripts/character_skills.gd")
 const DIRECTORY := "user://characters"
 const MAX_SEED := 2147483647
 const MAX_EXPERIENCE := 2_000_000_000
@@ -15,7 +16,7 @@ const LOOT_BALANCE_KEYS := {"gold": "gold", "tonic": "tonics"}
 const WORLD_DEFAULTS := {
 	"location": "lantern_rest", "visited": [], "gates": [], "quest": 0,
 	"gold": 24, "tonics": 0, "health": -1, "dungeon_from": "lantern_rest",
-	"pending_loot": {},
+	"pending_loot": {}, "skills": Skills.STARTING, "spent_ap": 0,
 	"quick_slots": ["", "", "", ""],
 	"armor_owned": false, "equipment_durability": {},
 	"threshold_cleared": 0, "threshold_treasure_claimed": false, "threshold_treasure_chest": -1, "threshold_run": 0,
@@ -96,6 +97,30 @@ static func _merge_world(current: Dictionary, changes: Dictionary) -> Dictionary
 	return _normalize_world(merged)
 
 
+static func advance_skill(id: String) -> Dictionary:
+	var profile := load_selected()
+	return _save_skill_result(Skills.advance(profile, id)) if not profile.is_empty() else {}
+
+
+static func learn_skill(id: String) -> Dictionary:
+	var profile := load_selected()
+	return _save_skill_result(Skills.learn(profile, id)) if not profile.is_empty() else {}
+
+
+static func study_skill(id: String) -> Dictionary:
+	var profile := load_selected()
+	return _save_skill_result(Skills.study(profile["world"], id)) if not profile.is_empty() else {}
+
+
+static func _save_skill_result(result: Dictionary) -> Dictionary:
+	if not result.has("changes"):
+		return result
+	var saved := update_world(result["changes"])
+	if saved.is_empty():
+		return {"message": "Could not save your skill progress."}
+	return {"profile": saved, "message": result["message"]}
+
+
 static func supports_loot_item(item_id: Variant) -> bool:
 	return LOOT_BALANCE_KEYS.has(item_id) or WORLD_DEFAULTS["town_materials"].has(item_id)
 
@@ -147,6 +172,11 @@ static func _normalize_world(value: Variant) -> Dictionary:
 			return {}
 		pending_loot[item_id] = int(world["pending_loot"][item_id])
 	world["pending_loot"] = pending_loot
+	var skills: Variant = Skills.normalize(world["skills"])
+	if skills == null or not _integer_in_range(world["spent_ap"], 0, MAX_EXPERIENCE):
+		return {}
+	world["skills"] = skills
+	world["spent_ap"] = int(world["spent_ap"])
 	if not world["armor_owned"] is bool or not world["equipment_durability"] is Dictionary:
 		return {}
 	var durability := {}

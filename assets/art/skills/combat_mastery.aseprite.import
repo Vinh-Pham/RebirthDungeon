@@ -1,0 +1,14 @@
+[remap]
+
+importer="aseprite_wizard.plugin.noop"
+type="PackedDataContainer"
+uid="uid://cbwtihv2k1ghr"
+path="res://.godot/imported/combat_mastery.aseprite-393f401745d97b8662e327702d991b36.res"
+
+[deps]
+
+source_file="res://assets/art/skills/combat_mastery.aseprite"
+dest_files=["res://.godot/imported/combat_mastery.aseprite-393f401745d97b8662e327702d991b36.res"]
+
+[params]
+

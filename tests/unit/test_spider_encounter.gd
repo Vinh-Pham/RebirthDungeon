@@ -62,7 +62,7 @@ func test_rejected_action_preserves_state() -> void:
 	var before: Dictionary = encounter.snapshot()
 	assert_string_contains(encounter.act(Encounter.Action.SMASH, {}), "Not enough stamina")
 	assert_eq(encounter.snapshot(), before)
-	assert_eq(encounter.act(3, {}), "")
+	assert_eq(encounter.act(Encounter.Action.WINDMILL + 1, {}), "")
 	assert_eq(encounter.snapshot(), before)
 
 func test_snapshot_restores_full_action_state() -> void:

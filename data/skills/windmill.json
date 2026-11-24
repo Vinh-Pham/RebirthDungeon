@@ -1,0 +1,888 @@
+{
+  "id": "windmill",
+  "name": "Windmill",
+  "kind": "active",
+  "source": "https://wiki.mabinogiworld.com/view/Windmill",
+  "description": "Strike surrounding opponents with a spinning attack.",
+  "reference_notes": [
+    "Summary values represent source race variants. Empty merged summary cells inherit the previous displayed value. Training entries award points up to their count limit. Dan training requirements are absent from these page sections."
+  ],
+  "ranks": [
+    {
+      "rank": "novice",
+      "ap_cost": 0,
+      "effects": {},
+      "training": [],
+      "training_required": null,
+      "reference_note": "No Novice training table is provided by the source. Rebirth Dungeon uses introductory training and ATB values listed separately.",
+      "game_training_required": 100,
+      "game_training": [
+        {
+          "id": "windmill_attack",
+          "description": "Land a Windmill hit.",
+          "points": 50.0,
+          "limit": 2
+        }
+      ],
+      "game_effects": {
+        "human_giant_damage": 100,
+        "stamina_use": 8
+      }
+    },
+    {
+      "rank": "F",
+      "ap_cost": 3,
+      "effects": {
+        "required_ap_human_giant": 3,
+        "required_ap_human_giant_total": 3,
+        "required_ap_elf": 0,
+        "required_ap_elf_total": 0,
+        "additional_str_total": 1,
+        "additional_will_total": 3,
+        "human_giant_damage": 170,
+        "elf_damage": 170,
+        "stamina_use": 2,
+        "load_time_sec": 0,
+        "cooldown_time_sec_human": 4,
+        "elf": 4.5,
+        "giant": 3.5,
+        "radius_anything": 360,
+        "knuckles": "~48%",
+        "range_anything": "120%",
+        "skill_cp_total": 0,
+        "stat_cp_total": 2.5
+      },
+      "training": [
+        {
+          "id": "windmill_attack",
+          "description": "Hit a foe with Windmill.",
+          "points": 40.0,
+          "limit": 2
+        },
+        {
+          "id": "windmill_defeat_enemy",
+          "description": "Finish a foe with Windmill.",
+          "points": 40.0,
+          "limit": 2
+        },
+        {
+          "id": "attack_4_or_more_enemies",
+          "description": "Hit at least four foes in one spin.",
+          "points": 100.0,
+          "limit": 1
+        },
+        {
+          "id": "defeat_4_or_more_enemies",
+          "description": "Finish at least four foes in one spin.",
+          "points": 100.0,
+          "limit": 1
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 3,
+        "elf": 0
+      }
+    },
+    {
+      "rank": "E",
+      "ap_cost": 4,
+      "effects": {
+        "required_ap_human_giant": 4,
+        "required_ap_human_giant_total": 7,
+        "required_ap_elf": 1,
+        "required_ap_elf_total": 1,
+        "additional_str_total": 2,
+        "additional_will_total": 6,
+        "human_giant_damage": 180,
+        "elf_damage": 175,
+        "stamina_use": 2,
+        "load_time_sec": 0,
+        "cooldown_time_sec_human": 4,
+        "elf": 4.5,
+        "giant": 3.5,
+        "radius_anything": 360,
+        "knuckles": "~48%",
+        "range_anything": "120%",
+        "skill_cp_total": 5,
+        "stat_cp_total": 5
+      },
+      "training": [
+        {
+          "id": "windmill_attack",
+          "description": "Hit a foe with Windmill.",
+          "points": 20.0,
+          "limit": 3
+        },
+        {
+          "id": "windmill_defeat_enemy",
+          "description": "Finish a foe with Windmill.",
+          "points": 20.0,
+          "limit": 3
+        },
+        {
+          "id": "attack_4_or_more_enemies",
+          "description": "Hit at least four foes in one spin.",
+          "points": 100.0,
+          "limit": 1
+        },
+        {
+          "id": "defeat_4_or_more_enemies",
+          "description": "Finish at least four foes in one spin.",
+          "points": 100.0,
+          "limit": 1
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 4,
+        "elf": 1
+      }
+    },
+    {
+      "rank": "D",
+      "ap_cost": 4,
+      "effects": {
+        "required_ap_human_giant": 4,
+        "required_ap_human_giant_total": 11,
+        "required_ap_elf": 2,
+        "required_ap_elf_total": 3,
+        "additional_str_total": 3,
+        "additional_will_total": 9,
+        "human_giant_damage": 190,
+        "elf_damage": 180,
+        "stamina_use": 3,
+        "load_time_sec": 0,
+        "cooldown_time_sec_human": 4,
+        "elf": 4.5,
+        "giant": 3.5,
+        "radius_anything": 360,
+        "knuckles": "~48%",
+        "range_anything": "120%",
+        "skill_cp_total": 10,
+        "stat_cp_total": 7.5
+      },
+      "training": [
+        {
+          "id": "windmill_attack",
+          "description": "Hit a foe with Windmill.",
+          "points": 16.0,
+          "limit": 4
+        },
+        {
+          "id": "windmill_defeat_enemy",
+          "description": "Finish a foe with Windmill.",
+          "points": 16.0,
+          "limit": 4
+        },
+        {
+          "id": "attack_4_or_more_enemies",
+          "description": "Hit at least four foes in one spin.",
+          "points": 100.0,
+          "limit": 1
+        },
+        {
+          "id": "defeat_4_or_more_enemies",
+          "description": "Finish at least four foes in one spin.",
+          "points": 100.0,
+          "limit": 1
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 4,
+        "elf": 2
+      }
+    },
+    {
+      "rank": "C",
+      "ap_cost": 4,
+      "effects": {
+        "required_ap_human_giant": 4,
+        "required_ap_human_giant_total": 15,
+        "required_ap_elf": 4,
+        "required_ap_elf_total": 7,
+        "additional_str_total": 4,
+        "additional_will_total": 12,
+        "human_giant_damage": 200,
+        "elf_damage": 185,
+        "stamina_use": 3,
+        "load_time_sec": 0,
+        "cooldown_time_sec_human": 4,
+        "elf": 4.5,
+        "giant": 3.5,
+        "radius_anything": 360,
+        "knuckles": "~48%",
+        "range_anything": "120%",
+        "skill_cp_total": 15,
+        "stat_cp_total": 10
+      },
+      "training": [
+        {
+          "id": "windmill_attack",
+          "description": "Hit a foe with Windmill.",
+          "points": 10.0,
+          "limit": 5
+        },
+        {
+          "id": "windmill_defeat_enemy",
+          "description": "Finish a foe with Windmill.",
+          "points": 10.0,
+          "limit": 5
+        },
+        {
+          "id": "attack_4_or_more_enemies",
+          "description": "Hit at least four foes in one spin.",
+          "points": 80.0,
+          "limit": 1
+        },
+        {
+          "id": "defeat_4_or_more_enemies",
+          "description": "Finish at least four foes in one spin.",
+          "points": 100.0,
+          "limit": 1
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 4,
+        "elf": 4
+      }
+    },
+    {
+      "rank": "B",
+      "ap_cost": 5,
+      "effects": {
+        "required_ap_human_giant": 5,
+        "required_ap_human_giant_total": 20,
+        "required_ap_elf": 7,
+        "required_ap_elf_total": 14,
+        "additional_str_total": 5,
+        "additional_will_total": 15,
+        "human_giant_damage": 210,
+        "elf_damage": 190,
+        "stamina_use": 4,
+        "load_time_sec": 0,
+        "cooldown_time_sec_human": 4,
+        "elf": 4.5,
+        "giant": 3.5,
+        "radius_anything": 360,
+        "knuckles": "~48%",
+        "range_anything": "120%",
+        "skill_cp_total": 30,
+        "stat_cp_total": 12.5
+      },
+      "training": [
+        {
+          "id": "windmill_attack",
+          "description": "Hit a foe with Windmill.",
+          "points": 8.0,
+          "limit": 7
+        },
+        {
+          "id": "windmill_defeat_enemy",
+          "description": "Finish a foe with Windmill.",
+          "points": 8.0,
+          "limit": 7
+        },
+        {
+          "id": "attack_4_or_more_enemies",
+          "description": "Hit at least four foes in one spin.",
+          "points": 64.0,
+          "limit": 1
+        },
+        {
+          "id": "defeat_4_or_more_enemies",
+          "description": "Finish at least four foes in one spin.",
+          "points": 100.0,
+          "limit": 1
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 5,
+        "elf": 7
+      }
+    },
+    {
+      "rank": "A",
+      "ap_cost": 6,
+      "effects": {
+        "required_ap_human_giant": 6,
+        "required_ap_human_giant_total": 26,
+        "required_ap_elf": 11,
+        "required_ap_elf_total": 25,
+        "additional_str_total": 7,
+        "additional_will_total": 18,
+        "human_giant_damage": 220,
+        "elf_damage": 195,
+        "stamina_use": 4,
+        "load_time_sec": 0,
+        "cooldown_time_sec_human": 4,
+        "elf": 4.5,
+        "giant": 3.5,
+        "radius_anything": 360,
+        "knuckles": "~48%",
+        "range_anything": "120%",
+        "skill_cp_total": 50,
+        "stat_cp_total": 16
+      },
+      "training": [
+        {
+          "id": "windmill_defeat_enemy",
+          "description": "Finish a foe with Windmill.",
+          "points": 13.6,
+          "limit": 8
+        },
+        {
+          "id": "attack_4_or_more_enemies",
+          "description": "Hit at least four foes in one spin.",
+          "points": 40.0,
+          "limit": 1
+        },
+        {
+          "id": "defeat_4_or_more_enemies",
+          "description": "Finish at least four foes in one spin.",
+          "points": 80.0,
+          "limit": 1
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 6,
+        "elf": 11
+      }
+    },
+    {
+      "rank": "9",
+      "ap_cost": 7,
+      "effects": {
+        "required_ap_human_giant": 7,
+        "required_ap_human_giant_total": 33,
+        "required_ap_elf": 12,
+        "required_ap_elf_total": 37,
+        "additional_str_total": 9,
+        "additional_will_total": 21,
+        "human_giant_damage": 240,
+        "elf_damage": 205,
+        "stamina_use": 6,
+        "load_time_sec": 0,
+        "cooldown_time_sec_human": 3.5,
+        "elf": 4,
+        "giant": 3,
+        "radius_anything": 360,
+        "knuckles": "~48%",
+        "range_anything": "120%",
+        "skill_cp_total": 70,
+        "stat_cp_total": 19.5
+      },
+      "training": [
+        {
+          "id": "windmill_defeat_enemy",
+          "description": "Finish a foe with Windmill.",
+          "points": 12.0,
+          "limit": 9
+        },
+        {
+          "id": "attack_4_or_more_enemies",
+          "description": "Hit at least four foes in one spin.",
+          "points": 32.0,
+          "limit": 1
+        },
+        {
+          "id": "defeat_4_or_more_enemies",
+          "description": "Finish at least four foes in one spin.",
+          "points": 64.0,
+          "limit": 1
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 7,
+        "elf": 12
+      }
+    },
+    {
+      "rank": "8",
+      "ap_cost": 8,
+      "effects": {
+        "required_ap_human_giant": 8,
+        "required_ap_human_giant_total": 41,
+        "required_ap_elf": 13,
+        "required_ap_elf_total": 50,
+        "additional_str_total": 11,
+        "additional_will_total": 24,
+        "human_giant_damage": 260,
+        "elf_damage": 215,
+        "stamina_use": 6,
+        "load_time_sec": 0,
+        "cooldown_time_sec_human": 3.5,
+        "elf": 4,
+        "giant": 3,
+        "radius_anything": 360,
+        "knuckles": "~48%",
+        "range_anything": "120%",
+        "skill_cp_total": 90,
+        "stat_cp_total": 23
+      },
+      "training": [
+        {
+          "id": "windmill_defeat_enemy",
+          "description": "Finish a foe with Windmill.",
+          "points": 10.0,
+          "limit": 10
+        },
+        {
+          "id": "attack_4_or_more_enemies",
+          "description": "Hit at least four foes in one spin.",
+          "points": 24.0,
+          "limit": 1
+        },
+        {
+          "id": "defeat_4_or_more_enemies",
+          "description": "Finish at least four foes in one spin.",
+          "points": 48.0,
+          "limit": 1
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 8,
+        "elf": 13
+      }
+    },
+    {
+      "rank": "7",
+      "ap_cost": 10,
+      "effects": {
+        "required_ap_human_giant": 10,
+        "required_ap_human_giant_total": 51,
+        "required_ap_elf": 14,
+        "required_ap_elf_total": 64,
+        "additional_str_total": 13,
+        "additional_will_total": 27,
+        "human_giant_damage": 280,
+        "elf_damage": 225,
+        "stamina_use": 7,
+        "load_time_sec": 0,
+        "cooldown_time_sec_human": 3.5,
+        "elf": 4,
+        "giant": 3,
+        "radius_anything": 360,
+        "knuckles": "~48%",
+        "range_anything": "120%",
+        "skill_cp_total": 120,
+        "stat_cp_total": 26.5
+      },
+      "training": [
+        {
+          "id": "windmill_defeat_enemy",
+          "description": "Finish a foe with Windmill.",
+          "points": 8.0,
+          "limit": 13
+        },
+        {
+          "id": "attack_4_or_more_enemies",
+          "description": "Hit at least four foes in one spin.",
+          "points": 20.0,
+          "limit": 1
+        },
+        {
+          "id": "defeat_4_or_more_enemies",
+          "description": "Finish at least four foes in one spin.",
+          "points": 32.0,
+          "limit": 1
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 10,
+        "elf": 14
+      }
+    },
+    {
+      "rank": "6",
+      "ap_cost": 12,
+      "effects": {
+        "required_ap_human_giant": 12,
+        "required_ap_human_giant_total": 63,
+        "required_ap_elf": 15,
+        "required_ap_elf_total": 79,
+        "additional_str_total": 15,
+        "additional_will_total": 30,
+        "human_giant_damage": 300,
+        "elf_damage": 235,
+        "stamina_use": 7,
+        "load_time_sec": 0,
+        "cooldown_time_sec_human": 3.5,
+        "elf": 4,
+        "giant": 3,
+        "radius_anything": 360,
+        "knuckles": "~48%",
+        "range_anything": "120%",
+        "skill_cp_total": 150,
+        "stat_cp_total": 30
+      },
+      "training": [
+        {
+          "id": "windmill_defeat_enemy",
+          "description": "Finish a foe with Windmill.",
+          "points": 8.0,
+          "limit": 13
+        },
+        {
+          "id": "attack_4_or_more_enemies",
+          "description": "Hit at least four foes in one spin.",
+          "points": 16.0,
+          "limit": 2
+        },
+        {
+          "id": "defeat_4_or_more_enemies",
+          "description": "Finish at least four foes in one spin.",
+          "points": 30.4,
+          "limit": 2
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 12,
+        "elf": 15
+      }
+    },
+    {
+      "rank": "5",
+      "ap_cost": 18,
+      "effects": {
+        "required_ap_human_giant": 18,
+        "required_ap_human_giant_total": 81,
+        "required_ap_elf": 16,
+        "required_ap_elf_total": 95,
+        "additional_str_total": 18,
+        "additional_will_total": 34,
+        "human_giant_damage": 320,
+        "elf_damage": 250,
+        "stamina_use": 8,
+        "load_time_sec": 0,
+        "cooldown_time_sec_human": 3.5,
+        "elf": 4,
+        "giant": 3,
+        "radius_anything": 480,
+        "knuckles": "~60%",
+        "range_anything": "144%",
+        "skill_cp_total": 180,
+        "stat_cp_total": 35
+      },
+      "training": [
+        {
+          "id": "windmill_defeat_enemy",
+          "description": "Finish a foe with Windmill.",
+          "points": 6.4,
+          "limit": 16
+        },
+        {
+          "id": "attack_4_or_more_enemies",
+          "description": "Hit at least four foes in one spin.",
+          "points": 14.4,
+          "limit": 2
+        },
+        {
+          "id": "defeat_4_or_more_enemies",
+          "description": "Finish at least four foes in one spin.",
+          "points": 28.8,
+          "limit": 2
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 18,
+        "elf": 16
+      }
+    },
+    {
+      "rank": "4",
+      "ap_cost": 20,
+      "effects": {
+        "required_ap_human_giant": 20,
+        "required_ap_human_giant_total": 101,
+        "required_ap_elf": 17,
+        "required_ap_elf_total": 112,
+        "additional_str_total": 21,
+        "additional_will_total": 38,
+        "human_giant_damage": 340,
+        "elf_damage": 265,
+        "stamina_use": 8,
+        "load_time_sec": 0,
+        "cooldown_time_sec_human": 3.5,
+        "elf": 4,
+        "giant": 3,
+        "radius_anything": 480,
+        "knuckles": "~60%",
+        "range_anything": "144%",
+        "skill_cp_total": 220,
+        "stat_cp_total": 40
+      },
+      "training": [
+        {
+          "id": "windmill_defeat_enemy",
+          "description": "Finish a foe with Windmill.",
+          "points": 5.6,
+          "limit": 19
+        },
+        {
+          "id": "attack_4_or_more_enemies",
+          "description": "Hit at least four foes in one spin.",
+          "points": 12.8,
+          "limit": 2
+        },
+        {
+          "id": "defeat_4_or_more_enemies",
+          "description": "Finish at least four foes in one spin.",
+          "points": 25.6,
+          "limit": 2
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 20,
+        "elf": 17
+      }
+    },
+    {
+      "rank": "3",
+      "ap_cost": 22,
+      "effects": {
+        "required_ap_human_giant": 22,
+        "required_ap_human_giant_total": 123,
+        "required_ap_elf": 18,
+        "required_ap_elf_total": 130,
+        "additional_str_total": 24,
+        "additional_will_total": 42,
+        "human_giant_damage": 360,
+        "elf_damage": 280,
+        "stamina_use": 9,
+        "load_time_sec": 0,
+        "cooldown_time_sec_human": 3.5,
+        "elf": 4,
+        "giant": 3,
+        "radius_anything": 480,
+        "knuckles": "~60%",
+        "range_anything": "144%",
+        "skill_cp_total": 250,
+        "stat_cp_total": 45
+      },
+      "training": [
+        {
+          "id": "windmill_defeat_enemy",
+          "description": "Finish a foe with Windmill.",
+          "points": 4.0,
+          "limit": 25
+        },
+        {
+          "id": "attack_4_or_more_enemies",
+          "description": "Hit at least four foes in one spin.",
+          "points": 11.2,
+          "limit": 2
+        },
+        {
+          "id": "defeat_4_or_more_enemies",
+          "description": "Finish at least four foes in one spin.",
+          "points": 22.4,
+          "limit": 2
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 22,
+        "elf": 18
+      }
+    },
+    {
+      "rank": "2",
+      "ap_cost": 24,
+      "effects": {
+        "required_ap_human_giant": 24,
+        "required_ap_human_giant_total": 147,
+        "required_ap_elf": 19,
+        "required_ap_elf_total": 149,
+        "additional_str_total": 27,
+        "additional_will_total": 46,
+        "human_giant_damage": 380,
+        "elf_damage": 300,
+        "stamina_use": 9,
+        "load_time_sec": 0,
+        "cooldown_time_sec_human": 3.5,
+        "elf": 4,
+        "giant": 3,
+        "radius_anything": 480,
+        "knuckles": "~60%",
+        "range_anything": "144%",
+        "skill_cp_total": 300,
+        "stat_cp_total": 50
+      },
+      "training": [
+        {
+          "id": "windmill_defeat_enemy",
+          "description": "Finish a foe with Windmill.",
+          "points": 3.2,
+          "limit": 32
+        },
+        {
+          "id": "attack_4_or_more_enemies",
+          "description": "Hit at least four foes in one spin.",
+          "points": 9.6,
+          "limit": 3
+        },
+        {
+          "id": "defeat_4_or_more_enemies",
+          "description": "Finish at least four foes in one spin.",
+          "points": 19.2,
+          "limit": 2
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 24,
+        "elf": 19
+      }
+    },
+    {
+      "rank": "1",
+      "ap_cost": 30,
+      "effects": {
+        "required_ap_human_giant": 30,
+        "required_ap_human_giant_total": 177,
+        "required_ap_elf": 20,
+        "required_ap_elf_total": 169,
+        "additional_str_total": 30,
+        "additional_will_total": 50,
+        "human_giant_damage": 400,
+        "elf_damage": 320,
+        "stamina_use": 10,
+        "load_time_sec": 0,
+        "cooldown_time_sec_human": 3.5,
+        "elf": 4,
+        "giant": 3,
+        "radius_anything": 600,
+        "knuckles": "~72%",
+        "range_anything": "180%",
+        "skill_cp_total": 350,
+        "stat_cp_total": 55
+      },
+      "training": [
+        {
+          "id": "windmill_defeat_enemy",
+          "description": "Finish a foe with Windmill.",
+          "points": 1.6,
+          "limit": 63
+        },
+        {
+          "id": "attack_4_or_more_enemies",
+          "description": "Hit at least four foes in one spin.",
+          "points": 4.0,
+          "limit": 5
+        },
+        {
+          "id": "defeat_4_or_more_enemies",
+          "description": "Finish at least four foes in one spin.",
+          "points": 16.0,
+          "limit": 3
+        }
+      ],
+      "training_required": 100,
+      "ap_cost_by_race": {
+        "human_giant": 30,
+        "elf": 20
+      }
+    },
+    {
+      "rank": "dan_1",
+      "ap_cost": 7,
+      "effects": {
+        "required_ap_human_giant": 7,
+        "required_ap_human_giant_total": 184,
+        "required_ap_elf": 7,
+        "required_ap_elf_total": 176,
+        "additional_str_total": 30,
+        "additional_will_total": 50,
+        "human_giant_damage": 430,
+        "elf_damage": 350,
+        "stamina_use": 11,
+        "load_time_sec": 0,
+        "cooldown_time_sec_human": 3.5,
+        "elf": 4,
+        "giant": 3,
+        "radius_anything": 600,
+        "knuckles": "~72%",
+        "range_anything": "180%",
+        "skill_cp_total": 400,
+        "stat_cp_total": 55
+      },
+      "training": [],
+      "training_required": null,
+      "ap_cost_by_race": {
+        "human_giant": 7,
+        "elf": 7
+      }
+    },
+    {
+      "rank": "dan_2",
+      "ap_cost": 10,
+      "effects": {
+        "required_ap_human_giant": 10,
+        "required_ap_human_giant_total": 194,
+        "required_ap_elf": 10,
+        "required_ap_elf_total": 186,
+        "additional_str_total": 30,
+        "additional_will_total": 50,
+        "human_giant_damage": 460,
+        "elf_damage": 380,
+        "stamina_use": 12,
+        "load_time_sec": 0,
+        "cooldown_time_sec_human": 3.5,
+        "elf": 4,
+        "giant": 3,
+        "radius_anything": 600,
+        "knuckles": "~72%",
+        "range_anything": "180%",
+        "skill_cp_total": 450,
+        "stat_cp_total": 55
+      },
+      "training": [],
+      "training_required": null,
+      "ap_cost_by_race": {
+        "human_giant": 10,
+        "elf": 10
+      }
+    },
+    {
+      "rank": "dan_3",
+      "ap_cost": 15,
+      "effects": {
+        "required_ap_human_giant": 15,
+        "required_ap_human_giant_total": 209,
+        "required_ap_elf": 15,
+        "required_ap_elf_total": 201,
+        "additional_str_total": 30,
+        "additional_will_total": 50,
+        "human_giant_damage": 500,
+        "elf_damage": 420,
+        "stamina_use": 13,
+        "load_time_sec": 0,
+        "cooldown_time_sec_human": 3.5,
+        "elf": 4,
+        "giant": 3,
+        "radius_anything": 600,
+        "knuckles": "~72%",
+        "range_anything": "180%",
+        "skill_cp_total": 500,
+        "stat_cp_total": 55
+      },
+      "training": [],
+      "training_required": null,
+      "ap_cost_by_race": {
+        "human_giant": 15,
+        "elf": 15
+      }
+    }
+  ]
+}

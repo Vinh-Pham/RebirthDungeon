@@ -1,0 +1,834 @@
+{
+  "id": "dual_wield_mastery",
+  "name": "Dual Wield Mastery",
+  "kind": "passive",
+  "source": "https://wiki.mabinogiworld.com/view/Dual_Wield_Mastery",
+  "description": "Improves combat performance while holding a weapon in each hand.",
+  "ranks": [
+    {
+      "rank": "novice",
+      "ap_cost": 0,
+      "effects": {
+        "additional_strength": 0,
+        "additional_strength_total": 0,
+        "additional_minimum_damage": 0,
+        "additional_maximum_damage": 0,
+        "additional_balance": 0,
+        "additional_critical": 0,
+        "additional_auto_defense": 0,
+        "additional_armor_pierce": 0,
+        "skill_cp_total": 0,
+        "stat_cp_total": 0,
+        "close_combat_talent_exp": 0,
+        "close_combat_talent_exp_total": 0
+      },
+      "training": [
+        {
+          "id": "attack_an_enemy_while_dual_wielding",
+          "description": "Land a hit on an enemy while Dual Wielding.",
+          "points": 40.0,
+          "limit": 3
+        },
+        {
+          "id": "defeat_an_enemy_while_dual_wielding",
+          "description": "Defeat a foe while Dual Wielding.",
+          "points": 80.0,
+          "limit": 2
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "F",
+      "ap_cost": 0,
+      "effects": {
+        "additional_strength": 0,
+        "additional_strength_total": 0,
+        "additional_minimum_damage": 2,
+        "additional_maximum_damage": 2,
+        "additional_balance": 0,
+        "additional_critical": 0,
+        "additional_auto_defense": 0,
+        "additional_armor_pierce": 0,
+        "skill_cp_total": 20,
+        "stat_cp_total": 0,
+        "close_combat_talent_exp": 1000,
+        "close_combat_talent_exp_total": 1000
+      },
+      "training": [
+        {
+          "id": "attack_an_enemy_while_dual_wielding",
+          "description": "Land a hit on an enemy while Dual Wielding.",
+          "points": 16.0,
+          "limit": 5
+        },
+        {
+          "id": "defeat_an_enemy_while_dual_wielding",
+          "description": "Defeat a foe while Dual Wielding.",
+          "points": 32.0,
+          "limit": 3
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "E",
+      "ap_cost": 1,
+      "effects": {
+        "additional_strength": 0,
+        "additional_strength_total": 0,
+        "additional_minimum_damage": 3,
+        "additional_maximum_damage": 3,
+        "additional_balance": 0,
+        "additional_critical": 0,
+        "additional_auto_defense": 0,
+        "additional_armor_pierce": 0,
+        "skill_cp_total": 25,
+        "stat_cp_total": 0,
+        "close_combat_talent_exp": 1000,
+        "close_combat_talent_exp_total": 2000
+      },
+      "training": [
+        {
+          "id": "attack_an_enemy_while_dual_wielding",
+          "description": "Land a hit on an enemy while Dual Wielding.",
+          "points": 11.0,
+          "limit": 8
+        },
+        {
+          "id": "defeat_an_enemy_while_dual_wielding",
+          "description": "Defeat a foe while Dual Wielding.",
+          "points": 22.0,
+          "limit": 4
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "D",
+      "ap_cost": 2,
+      "effects": {
+        "additional_strength": 0,
+        "additional_strength_total": 0,
+        "additional_minimum_damage": 4,
+        "additional_maximum_damage": 4,
+        "additional_balance": 0,
+        "additional_critical": 0,
+        "additional_auto_defense": 0,
+        "additional_armor_pierce": 0,
+        "skill_cp_total": 30,
+        "stat_cp_total": 0,
+        "close_combat_talent_exp": 2000,
+        "close_combat_talent_exp_total": 4000
+      },
+      "training": [
+        {
+          "id": "attack_an_enemy_while_dual_wielding",
+          "description": "Land a hit on an enemy while Dual Wielding.",
+          "points": 8.0,
+          "limit": 10
+        },
+        {
+          "id": "defeat_an_enemy_while_dual_wielding",
+          "description": "Defeat a foe while Dual Wielding.",
+          "points": 16.0,
+          "limit": 5
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "C",
+      "ap_cost": 4,
+      "effects": {
+        "additional_strength": 0,
+        "additional_strength_total": 0,
+        "additional_minimum_damage": 5,
+        "additional_maximum_damage": 5,
+        "additional_balance": 0,
+        "additional_critical": 0,
+        "additional_auto_defense": 0,
+        "additional_armor_pierce": 0,
+        "skill_cp_total": 35,
+        "stat_cp_total": 0,
+        "close_combat_talent_exp": 3000,
+        "close_combat_talent_exp_total": 7000
+      },
+      "training": [
+        {
+          "id": "attack_an_enemy_while_dual_wielding",
+          "description": "Land a hit on an enemy while Dual Wielding.",
+          "points": 6.4,
+          "limit": 13
+        },
+        {
+          "id": "defeat_an_enemy_while_dual_wielding",
+          "description": "Defeat a foe while Dual Wielding.",
+          "points": 12.8,
+          "limit": 7
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "B",
+      "ap_cost": 6,
+      "effects": {
+        "additional_strength": 1,
+        "additional_strength_total": 1,
+        "additional_minimum_damage": 5,
+        "additional_maximum_damage": 5,
+        "additional_balance": 1,
+        "additional_critical": 0,
+        "additional_auto_defense": 0,
+        "additional_armor_pierce": 0,
+        "skill_cp_total": 40,
+        "stat_cp_total": 1,
+        "close_combat_talent_exp": 4000,
+        "close_combat_talent_exp_total": 11000
+      },
+      "training": [
+        {
+          "id": "attack_an_enemy_while_dual_wielding",
+          "description": "Land a hit on an enemy while Dual Wielding.",
+          "points": 6.0,
+          "limit": 15
+        },
+        {
+          "id": "defeat_an_enemy_while_dual_wielding",
+          "description": "Defeat a foe while Dual Wielding.",
+          "points": 12.0,
+          "limit": 8
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "A",
+      "ap_cost": 7,
+      "effects": {
+        "additional_strength": 1,
+        "additional_strength_total": 2,
+        "additional_minimum_damage": 6,
+        "additional_maximum_damage": 6,
+        "additional_balance": 2,
+        "additional_critical": 0,
+        "additional_auto_defense": 0,
+        "additional_armor_pierce": 0,
+        "skill_cp_total": 45,
+        "stat_cp_total": 2,
+        "close_combat_talent_exp": 5000,
+        "close_combat_talent_exp_total": 16000
+      },
+      "training": [
+        {
+          "id": "attack_an_enemy_while_dual_wielding",
+          "description": "Land a hit on an enemy while Dual Wielding.",
+          "points": 5.0,
+          "limit": 18
+        },
+        {
+          "id": "defeat_an_enemy_while_dual_wielding",
+          "description": "Defeat a foe while Dual Wielding.",
+          "points": 10.0,
+          "limit": 9
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "9",
+      "ap_cost": 12,
+      "effects": {
+        "additional_strength": 1,
+        "additional_strength_total": 3,
+        "additional_minimum_damage": 6,
+        "additional_maximum_damage": 6,
+        "additional_balance": 3,
+        "additional_critical": 1,
+        "additional_auto_defense": 0,
+        "additional_armor_pierce": 0,
+        "skill_cp_total": 50,
+        "stat_cp_total": 3,
+        "close_combat_talent_exp": 8000,
+        "close_combat_talent_exp_total": 24000
+      },
+      "training": [
+        {
+          "id": "attack_an_enemy_while_dual_wielding",
+          "description": "Land a hit on an enemy while Dual Wielding.",
+          "points": 4.0,
+          "limit": 20
+        },
+        {
+          "id": "defeat_an_enemy_while_dual_wielding",
+          "description": "Defeat a foe while Dual Wielding.",
+          "points": 8.0,
+          "limit": 10
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "8",
+      "ap_cost": 15,
+      "effects": {
+        "additional_strength": 1,
+        "additional_strength_total": 4,
+        "additional_minimum_damage": 7,
+        "additional_maximum_damage": 7,
+        "additional_balance": 4,
+        "additional_critical": 2,
+        "additional_auto_defense": 0,
+        "additional_armor_pierce": 0,
+        "skill_cp_total": 60,
+        "stat_cp_total": 4,
+        "close_combat_talent_exp": 10000,
+        "close_combat_talent_exp_total": 34000
+      },
+      "training": [
+        {
+          "id": "attack_an_enemy_while_dual_wielding",
+          "description": "Land a hit on an enemy while Dual Wielding.",
+          "points": 3.6,
+          "limit": 23
+        },
+        {
+          "id": "defeat_an_enemy_while_dual_wielding",
+          "description": "Defeat a foe while Dual Wielding.",
+          "points": 7.2,
+          "limit": 12
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "7",
+      "ap_cost": 16,
+      "effects": {
+        "additional_strength": 1,
+        "additional_strength_total": 5,
+        "additional_minimum_damage": 7,
+        "additional_maximum_damage": 7,
+        "additional_balance": 5,
+        "additional_critical": 3,
+        "additional_auto_defense": 0,
+        "additional_armor_pierce": 0,
+        "skill_cp_total": 70,
+        "stat_cp_total": 5,
+        "close_combat_talent_exp": 11000,
+        "close_combat_talent_exp_total": 45000
+      },
+      "training": [
+        {
+          "id": "attack_an_enemy_while_dual_wielding",
+          "description": "Land a hit on an enemy while Dual Wielding.",
+          "points": 3.2,
+          "limit": 25
+        },
+        {
+          "id": "defeat_an_enemy_while_dual_wielding",
+          "description": "Defeat a foe while Dual Wielding.",
+          "points": 6.4,
+          "limit": 13
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "6",
+      "ap_cost": 18,
+      "effects": {
+        "additional_strength": 1,
+        "additional_strength_total": 6,
+        "additional_minimum_damage": 8,
+        "additional_maximum_damage": 8,
+        "additional_balance": 6,
+        "additional_critical": 4,
+        "additional_auto_defense": 0,
+        "additional_armor_pierce": 0,
+        "skill_cp_total": 80,
+        "stat_cp_total": 6,
+        "close_combat_talent_exp": 12000,
+        "close_combat_talent_exp_total": 57000
+      },
+      "training": [
+        {
+          "id": "attack_an_enemy_while_dual_wielding",
+          "description": "Land a hit on an enemy while Dual Wielding.",
+          "points": 3.0,
+          "limit": 28
+        },
+        {
+          "id": "defeat_an_enemy_while_dual_wielding",
+          "description": "Defeat a foe while Dual Wielding.",
+          "points": 6.0,
+          "limit": 14
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "5",
+      "ap_cost": 22,
+      "effects": {
+        "additional_strength": 1,
+        "additional_strength_total": 7,
+        "additional_minimum_damage": 8,
+        "additional_maximum_damage": 8,
+        "additional_balance": 7,
+        "additional_critical": 6,
+        "additional_auto_defense": 1,
+        "additional_armor_pierce": 0,
+        "skill_cp_total": 100,
+        "stat_cp_total": 7,
+        "close_combat_talent_exp": 15000,
+        "close_combat_talent_exp_total": 72000
+      },
+      "training": [
+        {
+          "id": "attack_an_enemy_while_dual_wielding",
+          "description": "Land a hit on an enemy while Dual Wielding.",
+          "points": 2.8,
+          "limit": 30
+        },
+        {
+          "id": "defeat_an_enemy_while_dual_wielding",
+          "description": "Defeat a foe while Dual Wielding.",
+          "points": 5.4,
+          "limit": 15
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "4",
+      "ap_cost": 25,
+      "effects": {
+        "additional_strength": 2,
+        "additional_strength_total": 9,
+        "additional_minimum_damage": 9,
+        "additional_maximum_damage": 9,
+        "additional_balance": 9,
+        "additional_critical": 8,
+        "additional_auto_defense": 2,
+        "additional_armor_pierce": 2,
+        "skill_cp_total": 110,
+        "stat_cp_total": 9,
+        "close_combat_talent_exp": 17000,
+        "close_combat_talent_exp_total": 89000
+      },
+      "training": [
+        {
+          "id": "attack_an_enemy_while_dual_wielding",
+          "description": "Land a hit on an enemy while Dual Wielding.",
+          "points": 2.56,
+          "limit": 33
+        },
+        {
+          "id": "defeat_an_enemy_while_dual_wielding",
+          "description": "Defeat a foe while Dual Wielding.",
+          "points": 5.0,
+          "limit": 17
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "3",
+      "ap_cost": 28,
+      "effects": {
+        "additional_strength": 2,
+        "additional_strength_total": 11,
+        "additional_minimum_damage": 9,
+        "additional_maximum_damage": 9,
+        "additional_balance": 11,
+        "additional_critical": 10,
+        "additional_auto_defense": 3,
+        "additional_armor_pierce": 4,
+        "skill_cp_total": 120,
+        "stat_cp_total": 11,
+        "close_combat_talent_exp": 19000,
+        "close_combat_talent_exp_total": 108000
+      },
+      "training": [
+        {
+          "id": "attack_an_enemy_while_dual_wielding",
+          "description": "Land a hit on an enemy while Dual Wielding.",
+          "points": 2.4,
+          "limit": 35
+        },
+        {
+          "id": "defeat_an_enemy_while_dual_wielding",
+          "description": "Defeat a foe while Dual Wielding.",
+          "points": 4.8,
+          "limit": 18
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "2",
+      "ap_cost": 30,
+      "effects": {
+        "additional_strength": 2,
+        "additional_strength_total": 13,
+        "additional_minimum_damage": 10,
+        "additional_maximum_damage": 10,
+        "additional_balance": 13,
+        "additional_critical": 12,
+        "additional_auto_defense": 4,
+        "additional_armor_pierce": 6,
+        "skill_cp_total": 140,
+        "stat_cp_total": 13,
+        "close_combat_talent_exp": 20000,
+        "close_combat_talent_exp_total": 128000
+      },
+      "training": [
+        {
+          "id": "attack_an_enemy_while_dual_wielding",
+          "description": "Land a hit on an enemy while Dual Wielding.",
+          "points": 2.2,
+          "limit": 38
+        },
+        {
+          "id": "defeat_an_enemy_while_dual_wielding",
+          "description": "Defeat a foe while Dual Wielding.",
+          "points": 4.4,
+          "limit": 19
+        }
+      ],
+      "training_required": 100
+    },
+    {
+      "rank": "1",
+      "ap_cost": 45,
+      "effects": {
+        "additional_strength": 4,
+        "additional_strength_total": 17,
+        "additional_minimum_damage": 10,
+        "additional_maximum_damage": 10,
+        "additional_balance": 15,
+        "additional_critical": 14,
+        "additional_auto_defense": 5,
+        "additional_armor_pierce": 9,
+        "skill_cp_total": 160,
+        "stat_cp_total": 17,
+        "close_combat_talent_exp": 30000,
+        "close_combat_talent_exp_total": 158000
+      },
+      "training": [
+        {
+          "id": "attack_an_enemy_while_dual_wielding",
+          "description": "Land a hit on an enemy while Dual Wielding.",
+          "points": 2.0,
+          "limit": 40
+        },
+        {
+          "id": "defeat_an_enemy_while_dual_wielding",
+          "description": "Defeat a foe while Dual Wielding.",
+          "points": 4.0,
+          "limit": 20
+        }
+      ],
+      "training_required": null
+    }
+  ],
+  "research": {
+    "retrieved_with": "Exa Contents",
+    "retrieved_on": "2026-11-24",
+    "summary_rows": [
+      [
+        "Rank",
+        "N",
+        "F",
+        "E",
+        "D",
+        "C",
+        "B",
+        "A",
+        "9",
+        "8",
+        "7",
+        "6",
+        "5",
+        "4",
+        "3",
+        "2",
+        "1"
+      ],
+      [
+        "AP Cost",
+        "-",
+        "0",
+        "1",
+        "2",
+        "4",
+        "6",
+        "7",
+        "12",
+        "15",
+        "16",
+        "18",
+        "22",
+        "25",
+        "28",
+        "30",
+        "45"
+      ],
+      [
+        "AP Cost (Total)",
+        "-",
+        "0",
+        "1",
+        "3",
+        "7",
+        "13",
+        "20",
+        "32",
+        "47",
+        "63",
+        "81",
+        "103",
+        "128",
+        "156",
+        "186",
+        "231"
+      ],
+      [
+        "Additional Strength",
+        "-",
+        "",
+        "",
+        "",
+        "",
+        "+1",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "+2",
+        "",
+        "",
+        "+4"
+      ],
+      [
+        "Additional Strength (Total)",
+        "-",
+        "",
+        "",
+        "",
+        "",
+        "+1",
+        "+2",
+        "+3",
+        "+4",
+        "+5",
+        "+6",
+        "+7",
+        "+9",
+        "+11",
+        "+13",
+        "+17"
+      ],
+      [
+        "Additional Minimum Damage",
+        "0",
+        "2",
+        "3",
+        "4",
+        "5",
+        "",
+        "6",
+        "",
+        "7",
+        "",
+        "8",
+        "",
+        "9",
+        "",
+        "10",
+        ""
+      ],
+      [
+        "Additional Maximum Damage",
+        "0",
+        "2",
+        "3",
+        "4",
+        "5",
+        "",
+        "6",
+        "",
+        "7",
+        "",
+        "8",
+        "",
+        "9",
+        "",
+        "10",
+        ""
+      ],
+      [
+        "Additional Balance (%)",
+        "0",
+        "",
+        "",
+        "",
+        "",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "9",
+        "11",
+        "13",
+        "15"
+      ],
+      [
+        "Additional Critical (%)",
+        "0",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "1",
+        "2",
+        "3",
+        "4",
+        "6",
+        "8",
+        "10",
+        "12",
+        "14"
+      ],
+      [
+        "Additional Auto Defense (%)",
+        "0",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      [
+        "Additional Armor Pierce",
+        "0",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "2",
+        "4",
+        "6",
+        "9"
+      ],
+      [
+        "Skill CP (Total)",
+        "0",
+        "20",
+        "25",
+        "30",
+        "35",
+        "40",
+        "45",
+        "50",
+        "60",
+        "70",
+        "80",
+        "100",
+        "110",
+        "120",
+        "140",
+        "160"
+      ],
+      [
+        "Stat CP (Total)",
+        "0",
+        "",
+        "",
+        "",
+        "",
+        "1.0",
+        "2.0",
+        "3.0",
+        "4.0",
+        "5.0",
+        "6.0",
+        "7.0",
+        "9.0",
+        "11.0",
+        "13.0",
+        "17.0"
+      ],
+      [
+        "Close Combat Talent EXP",
+        "0",
+        "1,000",
+        "",
+        "2,000",
+        "3,000",
+        "4,000",
+        "5,000",
+        "8,000",
+        "10,000",
+        "11,000",
+        "12,000",
+        "15,000",
+        "17,000",
+        "19,000",
+        "20,000",
+        "30,000"
+      ],
+      [
+        "Close Combat Talent EXP (Total)",
+        "0",
+        "1,000",
+        "2,000",
+        "4,000",
+        "7,000",
+        "11,000",
+        "16,000",
+        "24,000",
+        "34,000",
+        "45,000",
+        "57,000",
+        "72,000",
+        "89,000",
+        "108,000",
+        "128,000",
+        "158,000"
+      ]
+    ],
+    "notes": [
+      "Empty cells in the extracted summary represent merged values and are carried forward within each row. AP costs come from explicit rank sections. Training point totals require 100 points before rank advancement. Rank 1 training is retained for mastery reference.",
+      "Some summary bonuses differ from prose in rank sections. Structured effects follow the Summary chart requested by the user."
+    ]
+  },
+  "game_available": false,
+  "game_note": "Training unlocks when off-hand weapons are available."
+}
