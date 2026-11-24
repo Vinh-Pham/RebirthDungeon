@@ -8,6 +8,7 @@ const Satchel = preload("res://scripts/sword_satchel.gd")
 const Armory = preload("res://scripts/armory.gd")
 const Warrens = preload("res://scripts/spider_warrens.gd")
 const Rooms = preload("res://scripts/threshold_rooms.gd")
+const EnemyMovement = preload("res://scripts/dungeon_enemy_movement.gd")
 const Stats = preload("res://scripts/character_stats.gd")
 const Durability = preload("res://scripts/equipment_durability.gd")
 const Sheet = preload("res://scripts/character_sheet.gd")
@@ -62,6 +63,8 @@ var _resume_warrens := false
 var _seed := 0
 var _rack_icons: Dictionary = {}
 var _damage_rng := RandomNumberGenerator.new()
+var _enemy_movement_rng := RandomNumberGenerator.new()
+var _enemy_blockers: Dictionary
 
 
 func _ready() -> void:
@@ -76,6 +79,7 @@ func _ready() -> void:
 	_seed = int(_profile["seed"]) + int(_profile["world"]["threshold_run"]) * 104729
 	_rooms = Rooms.generate(_seed)
 	_damage_rng.seed = _seed
+	_enemy_movement_rng.seed = _seed
 	_catalog = Catalog.items_by_id()
 	_satchel.open(_profile["id"], _catalog)
 	for item: Dictionary in _catalog.values():
@@ -116,6 +120,10 @@ func _ready() -> void:
 func _show_room(index: int, arriving_from_east := false) -> void:
 	_room_index = index
 	_room = _rooms[index]
+	_enemy_blockers = {_room["entry"]: true, _room["exit"]: true}
+	if _room_index == 0:
+		_enemy_blockers[PRACTICE_POST] = true
+		_enemy_blockers.merge(WEAPON_RACKS)
 	player = _room["exit"] if arriving_from_east else _room["entry"]
 	_configure_map()
 	_refresh_hud()
@@ -172,6 +180,13 @@ func _room_title() -> String:
 
 
 func _configure_map() -> void:
+	_layout.configure(_room_title(), Rooms.MAP_SIZE, _room["floor"], _map_landmarks(), _catalog, _satchel)
+	var blocked := [PRACTICE_POST] if _room_index == 0 else []
+	_layout.configure_click_movement(MAP_ORIGIN, TILE_SIZE, blocked, _map_movement_available, _move)
+	_layout.set_player(player)
+
+
+func _map_landmarks() -> Dictionary:
 	var landmarks := {
 		_room["entry"]: Style.TEAL,
 		_room["exit"]: Style.ERROR if _monster_present() else Style.TEAL,
@@ -179,17 +194,13 @@ func _configure_map() -> void:
 	if _monster_present():
 		for cell: Vector2i in _room["enemies"]:
 			landmarks[cell] = Style.ACCENT
-	var blocked := []
 	if _room_index == 0:
-		blocked.append(PRACTICE_POST)
 		landmarks[PRACTICE_POST] = Style.MUTED
 		for cell: Vector2i in WEAPON_RACKS:
 			landmarks[cell] = Style.BORDER.lightened(0.2)
 	if _room_index == Rooms.ROOM_COUNT and not _profile["world"]["threshold_treasure_claimed"]:
 		landmarks[_room["chest"]] = Style.ACCENT
-	_layout.configure(_room_title(), Rooms.MAP_SIZE, _room["floor"], landmarks, _catalog, _satchel)
-	_layout.configure_click_movement(MAP_ORIGIN, TILE_SIZE, blocked, _map_movement_available, _move)
-	_layout.set_player(player)
+	return landmarks
 
 
 func _refresh_hud() -> void:
@@ -364,6 +375,8 @@ func _open_journal(section: String) -> void:
 
 
 func _move(direction: Vector2i) -> void:
+	if direction.length_squared() != 1:
+		return
 	var destination := player + direction
 	if not _room["floor"].has(destination):
 		log_label.text = "Cold stone blocks the way."
@@ -371,12 +384,11 @@ func _move(direction: Vector2i) -> void:
 	if _room_index == 0 and destination == PRACTICE_POST:
 		log_label.text = "A practice post blocks the way. Press Space to test your sword."
 		return
-	if _monster_present() and _room["enemies"].has(destination):
-		_layout.cancel_map_movement()
-		var weapon: Dictionary = _catalog.get(_satchel.equipped, {})
+	if _monster_present():
 		var target: int = _room["enemies"].find(destination)
-		_warrens.open_room_enemies(weapon, player_sprite, _seed, _room_index, _enemies(), target)
-		return
+		if target >= 0:
+			_start_battle(target)
+			return
 	if destination == _room["exit"] and _room_index < Rooms.ROOM_COUNT:
 		_advance_room()
 		return
@@ -384,8 +396,20 @@ func _move(direction: Vector2i) -> void:
 		_show_room(_room_index - 1, true)
 		return
 	player = destination
+	var contact := -1
+	if _monster_present():
+		contact = EnemyMovement.step(_room["enemies"], player, _room["floor"], _enemy_blockers, _enemy_movement_rng)
+		_layout.set_map_landmarks(_map_landmarks())
 	_layout.set_player(player)
 	_update_interaction()
+	if contact >= 0:
+		_start_battle(contact)
+
+
+func _start_battle(target: int) -> void:
+	_layout.cancel_map_movement()
+	var weapon: Dictionary = _catalog.get(_satchel.equipped, {})
+	_warrens.open_room_enemies(weapon, player_sprite, _seed, _room_index, _enemies(), target)
 
 
 func _advance_room() -> void:

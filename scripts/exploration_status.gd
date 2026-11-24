@@ -75,6 +75,10 @@ func setup_map(location: String, size_cells: Vector2i, cells: Dictionary, marker
 	_location_heading.text = location
 	dimensions = Vector2i(maxi(1, size_cells.x), maxi(1, size_cells.y))
 	walkable = cells.duplicate()
+	set_landmarks(markers)
+
+
+func set_landmarks(markers: Dictionary) -> void:
 	landmarks = markers.duplicate()
 	if is_instance_valid(map):
 		map.queue_redraw()

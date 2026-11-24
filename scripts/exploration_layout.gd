@@ -204,6 +204,10 @@ func refresh(profile: Dictionary) -> void:
 	_status.refresh(Stats.snapshot(profile, weapon), world)
 
 
+func set_map_landmarks(landmarks: Dictionary) -> void:
+	_status.set_landmarks(landmarks)
+
+
 func set_player(cell: Vector2i) -> void:
 	_status.set_player(cell)
 	map_canvas.queue_redraw()

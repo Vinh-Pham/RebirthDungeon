@@ -49,7 +49,6 @@ static func generate(seed_value: int) -> Array[Dictionary]:
 				if not enemies.has(cell):
 					enemies.append(cell)
 			room["enemies"] = enemies
-			room["enemy"] = enemies[0]
 		else:
 			room["chest"] = Vector2i(20, 7)
 		rooms.append(room)

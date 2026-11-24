@@ -31,18 +31,18 @@ func test_eight_combat_rooms_precede_connected_treasure_room() -> void:
 			for cell: Vector2i in floor_cells:
 				assert_true(Rect2i(Vector2i.ONE, Rooms.MAP_SIZE - Vector2i(2, 2)).has_point(cell))
 			if index < Rooms.ROOM_COUNT:
-				assert_true(visited.has(room["enemy"]))
+				assert_true(visited.has(room["enemies"][0]))
 				assert_false(room.has("chest"))
 			else:
 				assert_true(visited.has(room["chest"]))
-				assert_false(room.has("enemy"))
+				assert_false(room.has("enemies"))
 
 
 func test_first_room_reserves_equipment_and_practice_space() -> void:
 	var first: Dictionary = Rooms.generate(27)[0]
 	for cell in [Vector2i(5, 4), Vector2i(5, 6), Vector2i(5, 8), Vector2i(5, 10), Vector2i(8, 4)]:
 		assert_true(first["floor"].has(cell))
-		assert_ne(first["enemy"], cell)
+		assert_false(first["enemies"].has(cell))
 		assert_ne(first["entry"], cell)
 		assert_ne(first["exit"], cell)
 
