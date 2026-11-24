@@ -41,8 +41,13 @@ const BOSS := {
 	"name": "Giant Black Spider", "sprite": 36, "health": 62,
 	"damage_min": 8, "damage_max": 13, "defense": 2, "protection": 0, "experience": 100,
 }
-const TREASURE_GOLD := 60
-const TREASURE_TONICS := 3
+const TREASURE_REWARDS := [
+	{"gold": 60, "tonic": 3},
+	{"gold": 45, "cobweb": 6},
+	{"gold": 50, "cloth": 4},
+	{"gold": 70, "fish": 8},
+	{"gold": 85, "fiber": 5},
+]
 
 var player := Vector2i.ZERO
 var _rooms: Array[Dictionary] = []
@@ -129,7 +134,10 @@ func _show_room(index: int, arriving_from_east := false) -> void:
 	_configure_map()
 	_refresh_hud()
 	if _room_index == Rooms.ROOM_COUNT:
-		log_label.text = "You enter the treasure chamber. The exit leads to %s." % _destination_town().capitalize()
+		if _profile["world"]["threshold_treasure_claimed"]:
+			log_label.text = "The remaining chests are sealed. The exit leads to %s." % _destination_town().capitalize()
+		else:
+			log_label.text = "Choose one chest. Opening it seals the other four. The exit leads to %s." % _destination_town().capitalize()
 	elif _monster_present():
 		var enemies: Array = _room["enemies"]
 		var threat: String = _enemy()["name"] if enemies.size() == 1 else "enemies in this chamber"
@@ -183,6 +191,8 @@ func _room_title() -> String:
 func _configure_map() -> void:
 	_layout.configure(_room_title(), Rooms.MAP_SIZE, _room["floor"], _map_landmarks(), _catalog, _satchel)
 	var blocked := [PRACTICE_POST] if _room_index == 0 else []
+	if _room_index == Rooms.ROOM_COUNT:
+		blocked.append_array(_room["chests"])
 	_layout.configure_click_movement(MAP_ORIGIN, TILE_SIZE, blocked, _map_movement_available, _move)
 	_layout.set_player(player)
 
@@ -199,8 +209,9 @@ func _map_landmarks() -> Dictionary:
 		landmarks[PRACTICE_POST] = Style.MUTED
 		for cell: Vector2i in WEAPON_RACKS:
 			landmarks[cell] = Style.BORDER.lightened(0.2)
-	if _room_index == Rooms.ROOM_COUNT and not _profile["world"]["threshold_treasure_claimed"]:
-		landmarks[_room["chest"]] = Style.ACCENT
+	if _room_index == Rooms.ROOM_COUNT:
+		for index in _room["chests"].size():
+			landmarks[_room["chests"][index]] = _chest_color(index)
 	return landmarks
 
 
@@ -215,6 +226,7 @@ func _on_profile_updated(profile: Dictionary) -> void:
 
 func _update_interaction() -> void:
 	var label := ""
+	var chest := _nearby_chest()
 	if _near_cell(_room["entry"]):
 		label = String(_profile["world"]["dungeon_from"]).capitalize() if _room_index == 0 else "Previous room"
 	elif _near_cell(_room["exit"]):
@@ -224,8 +236,8 @@ func _update_interaction() -> void:
 			label = "Locked door"
 		else:
 			label = "Treasure chamber" if _room_index == Rooms.ROOM_COUNT - 1 else "Next room"
-	elif _near_chest() and not _profile["world"]["threshold_treasure_claimed"]:
-		label = "Open treasure chest"
+	elif chest >= 0 and not _profile["world"]["threshold_treasure_claimed"]:
+		label = "Open Chest"
 	elif not _nearby_rack().is_empty():
 		label = "Inspect Rack"
 	_layout.set_context(label)
@@ -255,7 +267,11 @@ func _draw_map() -> void:
 	_draw_marker(_room["exit"], "×" if locked else ">", Style.ERROR if locked else Style.TEAL)
 	if _room_index == Rooms.ROOM_COUNT:
 		var claimed: bool = _profile["world"]["threshold_treasure_claimed"]
-		_draw_marker(_room["chest"], "–" if claimed else "$", Style.MUTED if claimed else Style.ACCENT)
+		for index in _room["chests"].size():
+			var glyph := "$"
+			if claimed:
+				glyph = "o" if index == int(_profile["world"]["threshold_treasure_chest"]) else "×"
+			_draw_marker(_room["chests"][index], glyph, _chest_color(index))
 	if locked:
 		var enemies := _enemies()
 		for index in enemies.size():
@@ -304,7 +320,7 @@ func _input(event: InputEvent) -> void:
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo or _journal == null:
 		return
-	if _layout.inventory_is_open():
+	if _layout.inventory_is_open() or _layout.game_menu_is_open():
 		return
 	var viewport := get_viewport()
 	if _sheet.visible:
@@ -355,7 +371,7 @@ func _journal_shortcut(key: int) -> String:
 
 
 func _map_movement_available() -> bool:
-	return not (_layout.inventory_is_open() or _sheet.visible or _journal.visible or _armory.visible or _warrens.visible)
+	return not (_layout.inventory_is_open() or _layout.game_menu_is_open() or _sheet.visible or _journal.visible or _armory.visible or _warrens.visible)
 
 
 func _command(command: String) -> void:
@@ -365,6 +381,7 @@ func _command(command: String) -> void:
 	match command:
 		"character": _open_character_sheet()
 		"inventory": _layout.open_inventory()
+		"characters": _return_to_characters()
 		"interact": _interact()
 		"skills", "talent", "quests": _open_journal(command)
 
@@ -385,6 +402,9 @@ func _move(direction: Vector2i) -> void:
 	if _room_index == 0 and destination == PRACTICE_POST:
 		log_label.text = "A practice post blocks the way. Press Space to test your sword."
 		return
+	if _room_index == Rooms.ROOM_COUNT and _room["chests"].has(destination):
+		log_label.text = "The chests are sealed." if _profile["world"]["threshold_treasure_claimed"] else "Press E to open an adjacent chest."
+		return
 	if _monster_present():
 		var target: int = _room["enemies"].find(destination)
 		if target >= 0:
@@ -399,7 +419,7 @@ func _move(direction: Vector2i) -> void:
 	player = destination
 	var contact := -1
 	if _monster_present():
-		contact = EnemyMovement.step(_room["enemies"], player, _room["floor"], _enemy_blockers, _enemy_movement_rng)
+		contact = EnemyMovement.step(_room["enemies"], player, _room["floor"], _enemy_blockers, _enemy_movement_rng, self)
 		_layout.set_map_landmarks(_map_landmarks())
 	_layout.set_player(player)
 	_update_interaction()
@@ -434,11 +454,23 @@ func _near_cell(cell: Vector2i) -> bool:
 	return player.distance_squared_to(cell) <= 1
 
 
-func _near_chest() -> bool:
-	return _room_index == Rooms.ROOM_COUNT and _near_cell(_room["chest"])
+func _nearby_chest() -> int:
+	if _room_index == Rooms.ROOM_COUNT:
+		for index in _room["chests"].size():
+			if _near_cell(_room["chests"][index]):
+				return index
+	return -1
+
+
+func _chest_color(index: int) -> Color:
+	var world: Dictionary = _profile["world"]
+	if not world["threshold_treasure_claimed"]:
+		return Style.ACCENT
+	return Style.TEAL if index == int(world["threshold_treasure_chest"]) else Style.MUTED
 
 
 func _interact() -> void:
+	var chest := _nearby_chest()
 	if _near_cell(_room["entry"]):
 		if _room_index == 0:
 			_travel_to_town(_profile["world"]["dungeon_from"])
@@ -446,8 +478,8 @@ func _interact() -> void:
 			_show_room(_room_index - 1, true)
 	elif _near_cell(_room["exit"]):
 		_advance_room()
-	elif _near_chest():
-		_claim_treasure()
+	elif chest >= 0:
+		_claim_treasure(chest)
 	else:
 		var family := _nearby_rack()
 		if family.is_empty():
@@ -456,28 +488,34 @@ func _interact() -> void:
 			_armory.open_rack(family)
 
 
-func _claim_treasure() -> void:
-	var world: Dictionary = _profile["world"]
-	if _cleared_rooms() < Rooms.ROOM_COUNT:
+func _claim_treasure(index: int) -> void:
+	var current := Store.load_selected()
+	if current.get("id") != _profile["id"]:
+		return
+	var world: Dictionary = current["world"]
+	if int(world["threshold_cleared"]) < Rooms.ROOM_COUNT:
+		return
+	if not world["pending_loot"].is_empty():
+		_warrens.open_pending_loot(current)
 		return
 	if world["threshold_treasure_claimed"]:
-		log_label.text = "The treasure chest is empty."
+		log_label.text = "You can open only one chest per run."
 		return
+
 	var saved := Store.update_world({
 		"threshold_treasure_claimed": true,
-		"gold": mini(int(world["gold"]) + TREASURE_GOLD, Store.MAX_EXPERIENCE),
-		"tonics": mini(int(world["tonics"]) + TREASURE_TONICS, Store.MAX_EXPERIENCE),
+		"threshold_treasure_chest": index,
+		"pending_loot": TREASURE_REWARDS[index],
 	})
 	if saved.is_empty():
 		log_label.text = "Could not save the treasure. The chest remains closed."
 		return
 	_profile = saved
-	_configure_map()
+	_layout.set_map_landmarks(_map_landmarks())
+	_layout.map_canvas.queue_redraw()
 	_refresh_hud()
-	log_label.text = "Found %d gold and %d Healing Tonics." % [
-		int(saved["world"]["gold"]) - int(world["gold"]),
-		int(saved["world"]["tonics"]) - int(world["tonics"]),
-	]
+	log_label.text = "The other chests seal."
+	_warrens.open_pending_loot(saved)
 
 
 func _strike_practice_post() -> void:

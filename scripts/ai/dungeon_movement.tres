@@ -1,0 +1,24 @@
+[gd_resource type="BehaviorTree" format=3 uid="uid://cxyxhnrkg76ax"]
+
+[ext_resource type="Script" uid="uid://ccx8aq6dms013" path="res://scripts/ai/dungeon_movement_choice.gd" id="1"]
+
+[sub_resource type="BTAction" id="Pursue"]
+custom_name = "Pursue Nearby Player"
+script = ExtResource("1")
+
+[sub_resource type="BTAction" id="Wander"]
+custom_name = "Wander"
+script = ExtResource("1")
+mode = 1
+
+[sub_resource type="BTAction" id="Hold"]
+custom_name = "Hold Position"
+script = ExtResource("1")
+mode = 2
+
+[sub_resource type="BTSelector" id="Movement"]
+children = [SubResource("Pursue"), SubResource("Wander"), SubResource("Hold")]
+
+[resource]
+description = "Choose one legal movement step after the player moves."
+root_task = SubResource("Movement")

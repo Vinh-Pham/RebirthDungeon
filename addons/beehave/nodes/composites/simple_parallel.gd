@@ -33,7 +33,7 @@ func _get_configuration_warnings() -> PackedStringArray:
 	return warnings
 
 
-func tick(actor: Node, blackboard: Blackboard) -> int:
+func tick(actor: Node, blackboard: BeehaveBlackboard) -> int:
 	for c in get_children():
 		var node_index: int = c.get_index()
 		if node_index == 0 and not main_task_finished:
@@ -79,12 +79,12 @@ func tick(actor: Node, blackboard: Blackboard) -> int:
 	return RUNNING
 
 
-func before_run(actor: Node, blackboard: Blackboard) -> void:
+func before_run(actor: Node, blackboard: BeehaveBlackboard) -> void:
 	secondary_node_repeat_left = secondary_node_repeat_count
 	super(actor, blackboard)
 
 
-func interrupt(actor: Node, blackboard: Blackboard) -> void:
+func interrupt(actor: Node, blackboard: BeehaveBlackboard) -> void:
 	if not main_task_finished:
 		get_child(0).interrupt(actor, blackboard)
 	if secondary_node_running:
@@ -93,7 +93,7 @@ func interrupt(actor: Node, blackboard: Blackboard) -> void:
 	super(actor, blackboard)
 
 
-func after_run(actor: Node, blackboard: Blackboard) -> void:
+func after_run(actor: Node, blackboard: BeehaveBlackboard) -> void:
 	_reset()
 	super(actor, blackboard)
 
@@ -104,7 +104,7 @@ func _reset() -> void:
 
 
 ## Changes `running_action` and `running_child` after the node finishes executing.
-func _cleanup_running_task(finished_action: Node, actor: Node, blackboard: Blackboard):
+func _cleanup_running_task(finished_action: Node, actor: Node, blackboard: BeehaveBlackboard):
 	var blackboard_name = str(actor.get_instance_id())
 	if finished_action == running_child:
 		running_child = null

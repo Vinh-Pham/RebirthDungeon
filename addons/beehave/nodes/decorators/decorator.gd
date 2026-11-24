@@ -16,14 +16,14 @@ func _get_configuration_warnings() -> PackedStringArray:
 	return warnings
 
 
-func interrupt(actor: Node, blackboard: Blackboard) -> void:
+func interrupt(actor: Node, blackboard: BeehaveBlackboard) -> void:
 	if running_child != null:
 		running_child.interrupt(actor, blackboard)
 		running_child = null
 	super.interrupt(actor, blackboard)
 
 
-func after_run(actor: Node, blackboard: Blackboard) -> void:
+func after_run(actor: Node, blackboard: BeehaveBlackboard) -> void:
 	running_child = null
 
 

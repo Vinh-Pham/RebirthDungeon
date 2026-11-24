@@ -32,9 +32,11 @@ func test_eight_combat_rooms_precede_connected_treasure_room() -> void:
 				assert_true(Rect2i(Vector2i.ONE, Rooms.MAP_SIZE - Vector2i(2, 2)).has_point(cell))
 			if index < Rooms.ROOM_COUNT:
 				assert_true(visited.has(room["enemies"][0]))
-				assert_false(room.has("chest"))
+				assert_false(room.has("chests"))
 			else:
-				assert_true(visited.has(room["chest"]))
+				assert_eq(room["chests"].size(), Rooms.CHEST_COUNT)
+				for chest: Vector2i in room["chests"]:
+					assert_true(visited.has(chest))
 				assert_false(room.has("enemies"))
 
 
@@ -62,3 +64,19 @@ func test_groups_have_distinct_reachable_cells_and_include_multiple_enemies() ->
 			assert_between(occupied.size(), 1, 3)
 		assert_eq(rooms[0]["enemies"].size(), 1)
 		assert_eq(rooms[7]["enemies"].size(), 1)
+
+
+func test_treasure_chests_are_spaced_and_have_reachable_approaches() -> void:
+	for seed_value in range(20):
+		var room: Dictionary = Rooms.generate(seed_value)[Rooms.ROOM_COUNT]
+		var occupied := {}
+		for chest: Vector2i in room["chests"]:
+			assert_false(occupied.has(chest))
+			assert_gt(chest.distance_squared_to(room["entry"]), 4)
+			assert_gt(chest.distance_squared_to(room["exit"]), 4)
+			for other: Vector2i in occupied:
+				assert_gt(chest.distance_squared_to(other), 4)
+			for direction in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+				assert_true(room["floor"].has(chest + direction))
+			occupied[chest] = true
+		assert_eq(occupied.size(), Rooms.CHEST_COUNT)

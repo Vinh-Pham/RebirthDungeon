@@ -19,6 +19,11 @@ const CELL := Vector2i(16, 24)
 const ATLAS_COLUMNS := 8
 const ENEMY_SAVE_RETRY_SECONDS := 1.0
 const PORTRAIT_BAR_WIDTH := 96.0
+const ACTION_CAPTIONS := {
+	Combat.Action.ATTACK: "Attack",
+	Combat.Action.DEFEND: "Defend",
+	Combat.Action.SMASH: "Smash",
+}
 const PLAYER_STAT_CAPTIONS := ["HP", "MP", "Stamina", "XP"]
 
 class EnemyCard:
@@ -73,7 +78,7 @@ var _action_button: Button
 var _skill_options: HBoxContainer
 var _item_options: HBoxContainer
 var _smash_button: Button
-var _defend_button: Button
+var _queued_action := -1
 var _enemy_save_retry := 0.0
 var _quick_slots: Array[Button] = []
 var _battle_frame: Control
@@ -148,7 +153,9 @@ func open_pending_loot(profile: Dictionary) -> void:
 func _show_loot(profile: Dictionary) -> void:
 	_loot_profile_id = profile["id"]
 	_battle_frame.hide()
-	_loot_panel.show_loot(profile["world"]["pending_loot"])
+	var world: Dictionary = profile["world"]
+	var title := "Treasure Loot" if int(world["threshold_treasure_chest"]) >= 0 else "Battle Loot"
+	_loot_panel.show_loot(world["pending_loot"], title)
 
 
 func _take_loot(ids: Array) -> void:
@@ -347,8 +354,8 @@ func _build_arena(arena: VBoxContainer) -> void:
 	_skill_options = HBoxContainer.new()
 	_skill_options.add_theme_constant_override("separation", 9)
 	arena.add_child(_skill_options)
-	_defend_button = _add_battle_button(_skill_options, "Defend (+%d SP)" % Combat.GUARD_RECOVERY, _act.bind(Combat.Action.DEFEND))
-	_defend_button.tooltip_text = "Recover stamina and guard against the next normal strike."
+	var defend := _add_battle_button(_skill_options, "Defend (+%d SP)" % Combat.GUARD_RECOVERY, _act.bind(Combat.Action.DEFEND))
+	defend.tooltip_text = "Recover stamina and guard against the next normal strike."
 	_smash_button = _add_battle_button(_skill_options, "Smash (%d SP)" % Combat.SMASH_COST, _act.bind(Combat.Action.SMASH))
 	_smash_button.tooltip_text = "Break the enemy's guard. An Attack can interrupt Smash."
 	_item_options = HBoxContainer.new()
@@ -492,7 +499,7 @@ func _add_battle_button(row: HBoxContainer, text_value: String, activate := Call
 
 
 func _open_skills() -> void:
-	if not _match.player_ready():
+	if not _match.active:
 		return
 	_show_options(null if _skill_options.visible else _skill_options)
 	if _skill_options.visible:
@@ -629,18 +636,21 @@ func _begin() -> void:
 	_character_stats = Stats.snapshot(current_profile, _weapon)
 	var encounter_seed := _seed + (_room_index * 97 if _room_index >= 0 else int(_entry["sprite"]) * 97 + _variants.selected)
 	var enemies := _room_enemies if _room_index >= 0 else [variant]
-	if not _match.begin_group(enemies, encounter_seed, _character_stats, int(current_profile["world"]["health"])):
+	if not _match.begin_group(enemies, encounter_seed, _character_stats, int(current_profile["world"]["health"]), self):
 		return
 	_enemy_save_retry = 0.0
+	_queued_action = -1
 	_select_target(0)
 	_set_fighting(true)
 	_update_combat_vitals(current_profile["world"])
-	_log.text = "Attack or use a skill when your Time gauge fills. Items are always available."
+	_log.text = "Queue an attack or skill to use when your Time gauge fills. Items are always available."
 	if _target_cards.size() > 1:
 		_log.text += " Select enemies by clicking or using Left and Right."
 
 
 func _set_fighting(fighting: bool) -> void:
+	if not fighting:
+		_queued_action = -1
 	_search.editable = not fighting
 	_list.mouse_filter = Control.MOUSE_FILTER_IGNORE if fighting else Control.MOUSE_FILTER_STOP
 	_list.focus_mode = Control.FOCUS_NONE if fighting else Control.FOCUS_ALL
@@ -691,15 +701,14 @@ func _update_gauges() -> void:
 		for index in range(_target_cards.size()):
 			var enemy := _match.enemy_at(index)
 			_target_cards[index].gauge.value = enemy.gauge if enemy.health > 0 and _match.active else 0.0
-	var ready_to_act := _match.player_ready()
-	var time_caption := "Ready" if ready_to_act else "Time"
+	var time_caption := "Ready" if _match.player_ready() else "Time"
+	if _queued_action >= 0:
+		time_caption = "%s queued" % ACTION_CAPTIONS[_queued_action]
 	if _match.guarded:
 		time_caption += " · Guarding"
 	_player_time_label.text = time_caption
-	_attack_button.disabled = not ready_to_act or _match.stamina < Combat.ATTACK_COST
-	_skill_button.disabled = not ready_to_act
-	_defend_button.disabled = not ready_to_act
-	_smash_button.disabled = not ready_to_act or _match.stamina < Combat.SMASH_COST
+	_attack_button.disabled = _match.stamina < Combat.ATTACK_COST
+	_smash_button.disabled = _match.stamina < Combat.SMASH_COST
 
 
 func _process(delta: float) -> void:
@@ -715,6 +724,9 @@ func _process(delta: float) -> void:
 			var message := _resolve_action(_match.enemy_at(index).intent, index)
 			if not message.is_empty():
 				messages.append(message)
+	var player_message := _execute_queued_action()
+	if not player_message.is_empty():
+		messages.append(player_message)
 	if not messages.is_empty():
 		_log.text = "  ".join(messages)
 	_update_gauges()
@@ -809,10 +821,25 @@ func _use_item(item_id: String, profile := {}) -> void:
 
 
 func _act(action: int) -> void:
-	if _match.player_ready():
-		var message := _resolve_action(action)
-		if not message.is_empty():
-			_log.text = message
+	if not _match.active or not ACTION_CAPTIONS.has(action):
+		return
+	if _match.stamina < _match.stamina_cost(action):
+		_log.text = "Not enough stamina. Defend to recover it."
+		return
+	_queued_action = action
+	_show_options()
+	var message := _execute_queued_action()
+	if not message.is_empty():
+		_log.text = message
+	_update_gauges()
+
+
+func _execute_queued_action() -> String:
+	if _queued_action < 0 or not _match.player_ready():
+		return ""
+	var action := _queued_action
+	_queued_action = -1
+	return _resolve_action(action)
 
 
 func _resolve_action(action: int, enemy_index := -1) -> String:
@@ -882,8 +909,6 @@ func _resolve_action(action: int, enemy_index := -1) -> String:
 	_defeated = _match.health <= 0
 	_crossing_cleared = _crossing and not _match.active and not _defeated
 	_update_combat_vitals(saved_world)
-	if not enemy_action:
-		_show_options()
 	if not _match.active:
 		if xp > 0:
 			message += " +%d XP." % xp
@@ -947,6 +972,7 @@ func _input(event: InputEvent) -> void:
 
 
 func _back() -> void:
+	_queued_action = -1
 	if _loot_panel.visible:
 		_close_loot()
 		return

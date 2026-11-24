@@ -48,7 +48,7 @@ signal tree_disabled
 
 ## Custom blackboard node. An internal blackboard will be used
 ## if no blackboard is provided explicitly.
-@export var blackboard: Blackboard:
+@export var blackboard: BeehaveBlackboard:
 	set(b):
 		blackboard = b
 		if blackboard and _internal_blackboard:
@@ -56,13 +56,13 @@ signal tree_disabled
 			_internal_blackboard.free()
 			_internal_blackboard = null
 		elif not blackboard and not _internal_blackboard:
-			_internal_blackboard = Blackboard.new()
+			_internal_blackboard = BeehaveBlackboard.new()
 			add_child(_internal_blackboard, false, Node.INTERNAL_MODE_BACK)
 	get:
 		# in case blackboard is accessed before this node is,
 		# we need to ensure that the internal blackboard is used.
 		if not blackboard and not _internal_blackboard:
-			_internal_blackboard = Blackboard.new()
+			_internal_blackboard = BeehaveBlackboard.new()
 			add_child(_internal_blackboard, false, Node.INTERNAL_MODE_BACK)
 		return blackboard if blackboard else _internal_blackboard
 
@@ -95,7 +95,7 @@ signal tree_disabled
 var status: int = -1
 var last_tick: int = -1
 
-var _internal_blackboard: Blackboard
+var _internal_blackboard: BeehaveBlackboard
 var _process_time_metric_name: String
 var _process_time_metric_value: float = 0.0
 var _can_send_message: bool = false

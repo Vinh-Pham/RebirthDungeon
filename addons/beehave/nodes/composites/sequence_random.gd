@@ -24,7 +24,7 @@ func _ready() -> void:
 		randomize()
 
 
-func tick(actor: Node, blackboard: Blackboard) -> int:
+func tick(actor: Node, blackboard: BeehaveBlackboard) -> int:
 	if _children_bag.is_empty():
 		_reset()
 
@@ -63,13 +63,13 @@ func tick(actor: Node, blackboard: Blackboard) -> int:
 	return SUCCESS
 
 
-func after_run(actor: Node, blackboard: Blackboard) -> void:
+func after_run(actor: Node, blackboard: BeehaveBlackboard) -> void:
 	if not resume_on_failure:
 		_reset()
 	super(actor, blackboard)
 
 
-func interrupt(actor: Node, blackboard: Blackboard) -> void:
+func interrupt(actor: Node, blackboard: BeehaveBlackboard) -> void:
 	if not resume_on_interrupt:
 		if running_child != null:
 			running_child.interrupt(actor, blackboard)

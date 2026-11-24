@@ -11,7 +11,7 @@ Build a playable slice of Rebirth Dungeon around one procedurally generated floo
 
 ## Active Time Battle
 
-The player's Time gauge fills in 2.5 seconds and resets after an attack or skill. Each enemy fills its own gauge and automatically triggers its displayed intent. The first enemy charges in 4.5 seconds, with another 0.65 seconds added for each later enemy in the group. Attack and Smash affect the selected enemy. Defeating the whole group opens the room's exit. Both clocks run while choosing a combat skill or item. Consumables and quick slots can be used at any gauge level. The timing follows the Active mode and gauge readiness rules described by Square Enix. [Square Enix Active Time Battle reference](https://gb.store.square-enix-games.com/chrono-trigger---digital)
+The player's Time gauge fills in 2.5 seconds. Players can queue one attack or skill while it fills. A new choice replaces the queued command. The command executes at full charge and resets the gauge. Each enemy fills its own gauge and automatically triggers its displayed intent. The first enemy charges in 4.5 seconds, with another 0.65 seconds added for each later enemy in the group. Attack and Smash affect the selected enemy. Defeating the whole group opens the room's exit. Both clocks run while choosing a combat skill or item. Consumables and quick slots can be used at any gauge level. The timing follows the Active mode and gauge readiness rules described by Square Enix. [Square Enix Active Time Battle reference](https://gb.store.square-enix-games.com/chrono-trigger---digital)
 
 ## Original paired-turn prototype
 

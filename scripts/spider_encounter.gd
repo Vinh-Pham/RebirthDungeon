@@ -2,6 +2,7 @@ extends RefCounted
 ## Independent readiness clocks and deterministic melee counter resolution.
 
 const Stats = preload("res://scripts/character_stats.gd")
+const IntentAI = preload("res://scripts/combat_intent_ai.gd")
 
 enum Action { ATTACK, DEFEND, SMASH }
 
@@ -55,6 +56,7 @@ class EnemyState:
 	var can_attack := false
 
 var _enemies: Array[EnemyState] = []
+var _intent_owner: Node
 var _character: Dictionary = {}
 var _rng := RandomNumberGenerator.new()
 var rng_state: int:
@@ -68,8 +70,9 @@ func begin(enemy_stats: Dictionary, seed_value: int, character_stats: Dictionary
 	return begin_group([enemy_stats], seed_value, character_stats, current_health)
 
 
-func begin_group(enemies: Array, seed_value: int, character_stats: Dictionary, current_health := -1) -> bool:
+func begin_group(enemies: Array, seed_value: int, character_stats: Dictionary, current_health := -1, owner_node: Node = null) -> bool:
 	active = false
+	_intent_owner = owner_node
 	_enemies.clear()
 	for data in enemies:
 		if not data is Dictionary or not _number(data.get("health")) or float(data["health"]) <= 0.0:
@@ -94,6 +97,8 @@ func begin_group(enemies: Array, seed_value: int, character_stats: Dictionary, c
 	last_player_hit = false
 	last_enemy_hit = false
 	_rng.seed = seed_value
+	for enemy in _enemies:
+		enemy.intent = IntentAI.choose(enemy.can_attack, enemy.actions, _intent_owner)
 	active = true
 	return true
 
@@ -246,7 +251,7 @@ func act_enemy(index := 0) -> String:
 	health = maxi(0, health - damage)
 	enemy.gauge = 0.0
 	enemy.actions += 1
-	enemy.intent = [Action.DEFEND, Action.ATTACK, Action.SMASH][enemy.actions % 3] if enemy.can_attack else Action.DEFEND
+	enemy.intent = IntentAI.choose(enemy.can_attack, enemy.actions, _intent_owner)
 	active = health > 0 and _living_enemies()
 	if not last_enemy_hit:
 		return reason

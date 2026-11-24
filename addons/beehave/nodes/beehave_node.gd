@@ -17,23 +17,23 @@ func _get_configuration_warnings() -> PackedStringArray:
 
 ## Executes this node and returns a status code.
 ## This method must be overwritten.
-func tick(actor: Node, blackboard: Blackboard) -> int:
+func tick(actor: Node, blackboard: BeehaveBlackboard) -> int:
 	return SUCCESS
 
 
 ## Called when this node needs to be interrupted before it can return FAILURE or SUCCESS.
-func interrupt(actor: Node, blackboard: Blackboard) -> void:
+func interrupt(actor: Node, blackboard: BeehaveBlackboard) -> void:
 	BeehaveDebuggerMessages.process_interrupt(self.get_instance_id(), blackboard.get_debug_data())
 
 
 ## Called before the first time it ticks by the parent.
-func before_run(actor: Node, blackboard: Blackboard) -> void:
+func before_run(actor: Node, blackboard: BeehaveBlackboard) -> void:
 	pass
 
 
 ## Called after the last time it ticks and returns
 ## [code]SUCCESS[/code] or [code]FAILURE[/code].
-func after_run(actor: Node, blackboard: Blackboard) -> void:
+func after_run(actor: Node, blackboard: BeehaveBlackboard) -> void:
 	pass
 
 
@@ -41,11 +41,11 @@ func get_class_name() -> Array[StringName]:
 	return [&"BeehaveNode"]
 
 
-func can_send_message(blackboard: Blackboard) -> bool:
+func can_send_message(blackboard: BeehaveBlackboard) -> bool:
 	return blackboard.get_value("can_send_message", false)
 
 
-func _safe_tick(actor: Node, blackboard: Blackboard) -> int:
+func _safe_tick(actor: Node, blackboard: BeehaveBlackboard) -> int:
 	var response = tick(actor, blackboard)
 	if not response is int:
 		push_error("All tick methods must return an int, got %s" % response)

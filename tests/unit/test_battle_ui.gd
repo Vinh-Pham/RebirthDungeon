@@ -110,19 +110,19 @@ func test_turn_save_failure_preserves_battle_state_and_damage_roll() -> void:
 
 func test_attacks_wait_for_a_full_gauge_and_reset_it() -> void:
 	var before := _enemy_state()
-	assert_true(_battle._attack_button.disabled)
-	assert_true(_battle._skill_button.disabled)
-	_battle._act(Combat.Action.ATTACK)
-	assert_eq(_enemy_state(), before)
-	_battle._process(Combat.PLAYER_CHARGE_SECONDS)
 	assert_false(_battle._attack_button.disabled)
 	assert_false(_battle._skill_button.disabled)
-	assert_eq(_battle._player_gauge.value, 1.0)
 	_battle._attack_button.pressed.emit()
+	assert_eq(_enemy_state(), before)
+	assert_eq(_battle._queued_action, Combat.Action.ATTACK)
+	_battle._process(Combat.PLAYER_CHARGE_SECONDS)
 	assert_eq(_battle._match.player_gauge, 0.0)
 	assert_eq(_battle._player_gauge.value, 0.0)
-	assert_true(_battle._attack_button.disabled)
 	assert_eq(_battle._match.round_number, 1)
+	assert_eq(_battle._queued_action, -1)
+	_battle._process(Combat.PLAYER_CHARGE_SECONDS)
+	assert_eq(_battle._match.round_number, 1)
+	assert_eq(_battle._match.player_gauge, 1.0)
 
 
 func test_active_clock_continues_while_browsing_skills_or_items() -> void:
@@ -367,11 +367,30 @@ func test_group_enemy_hp_bars_track_selected_target_only() -> void:
 	assert_eq(second.value, 100.0)
 	assert_eq(first.max_value, 100.0)
 	assert_eq(second.max_value, 100.0)
-	_battle._select_target(1)
-	_battle._match.player_gauge = 1.0
 	_battle._act(Combat.Action.ATTACK)
+	_battle._select_target(1)
+	_battle._process(Combat.PLAYER_CHARGE_SECONDS)
 	assert_eq(first.value, 100.0)
 	assert_lt(second.value, 100.0)
 	assert_eq(second.value, float(_battle._match.enemy_at(1).health))
 	assert_false(first.show_percentage)
 	assert_false(second.show_percentage)
+
+
+func test_queued_skill_replaces_attack_without_spending_stamina_early() -> void:
+	var before := _enemy_state()
+	_battle._attack_button.pressed.emit()
+	_battle._skill_button.pressed.emit()
+	assert_true(_battle._skill_options.visible)
+	var defend := _battle._skill_options.get_child(0) as Button
+	defend.pressed.emit()
+	assert_eq(_battle._queued_action, Combat.Action.DEFEND)
+	assert_eq(_enemy_state(), before)
+	_battle._process(Combat.PLAYER_CHARGE_SECONDS * 0.5)
+	assert_eq(_battle._match.round_number, 0)
+	assert_eq(_battle._match.stamina, before[3])
+	_battle._process(Combat.PLAYER_CHARGE_SECONDS * 0.5)
+	assert_eq(_battle._match.round_number, 1)
+	assert_true(_battle._match.guarded)
+	assert_eq(_battle._match.enemy_health, before[0])
+	assert_eq(_battle._queued_action, -1)

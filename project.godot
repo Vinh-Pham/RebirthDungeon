@@ -21,6 +21,7 @@ BeckettRuntime="*uid://do68dqybesb7r"
 DialogueManager="*uid://c3rodes2l3gxb"
 PhantomCameraManager="*uid://duq6jhf6unyis"
 ECS="*uid://dfqwl5njvdnmq"
+QuestSystem="*uid://b77kvbliweux5"
 
 [beckett]
 
@@ -39,7 +40,7 @@ window/stretch/aspect="expand"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/AsepriteWizard/plugin.cfg", "res://addons/beckett/plugin.cfg", "res://addons/dialogue_manager/plugin.cfg", "res://addons/gecs/plugin.cfg", "res://addons/gloot/plugin.cfg", "res://addons/gut/plugin.cfg", "res://addons/maaacks_input_remapping/plugin.cfg", "res://addons/phantom_camera/plugin.cfg", "res://addons/plugin_updater/plugin.cfg")
+enabled=PackedStringArray("res://addons/AsepriteWizard/plugin.cfg", "res://addons/beckett/plugin.cfg", "res://addons/dialogue_manager/plugin.cfg", "res://addons/gecs/plugin.cfg", "res://addons/gloot/plugin.cfg", "res://addons/gut/plugin.cfg", "res://addons/maaacks_input_remapping/plugin.cfg", "res://addons/phantom_camera/plugin.cfg", "res://addons/plugin_updater/plugin.cfg", "res://addons/quest_system/plugin.cfg")
 
 [internationalization]
 

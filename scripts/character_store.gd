@@ -11,13 +11,14 @@ const LIMITS := {
 	"eyes": [0, 2], "eye_color": [0, 3], "face": [0, 2], "talent": [0, 2]
 }
 const TOWNS := ["lantern_rest", "spindle_hollow"]
+const LOOT_BALANCE_KEYS := {"gold": "gold", "tonic": "tonics"}
 const WORLD_DEFAULTS := {
 	"location": "lantern_rest", "visited": [], "gates": [], "quest": 0,
 	"gold": 24, "tonics": 0, "health": -1, "dungeon_from": "lantern_rest",
 	"pending_loot": {},
 	"quick_slots": ["", "", "", ""],
 	"armor_owned": false, "equipment_durability": {},
-	"threshold_cleared": 0, "threshold_treasure_claimed": false, "threshold_run": 0,
+	"threshold_cleared": 0, "threshold_treasure_claimed": false, "threshold_treasure_chest": -1, "threshold_run": 0,
 	"town_materials": {"fish": 0, "grain": 0, "flour": 0, "fiber": 0, "thread": 0, "cloth": 0, "cobweb": 0},
 }
 static var _selected_id: String = ""
@@ -95,6 +96,10 @@ static func _merge_world(current: Dictionary, changes: Dictionary) -> Dictionary
 	return _normalize_world(merged)
 
 
+static func supports_loot_item(item_id: Variant) -> bool:
+	return LOOT_BALANCE_KEYS.has(item_id) or WORLD_DEFAULTS["town_materials"].has(item_id)
+
+
 static func _normalize_world(value: Variant) -> Dictionary:
 	if not value is Dictionary:
 		return {}
@@ -138,7 +143,7 @@ static func _normalize_world(value: Variant) -> Dictionary:
 		return {}
 	var pending_loot := {}
 	for item_id in world["pending_loot"]:
-		if item_id not in ["cobweb", "gold"] or not _integer_in_range(world["pending_loot"][item_id], 1, MAX_EXPERIENCE):
+		if not supports_loot_item(item_id) or not _integer_in_range(world["pending_loot"][item_id], 1, MAX_EXPERIENCE):
 			return {}
 		pending_loot[item_id] = int(world["pending_loot"][item_id])
 	world["pending_loot"] = pending_loot
@@ -150,12 +155,14 @@ static func _normalize_world(value: Variant) -> Dictionary:
 			return {}
 		durability[item_id] = int(world["equipment_durability"][item_id])
 	world["equipment_durability"] = durability
-	var bounds := {"quest": [0, 3], "gold": [0, MAX_EXPERIENCE], "tonics": [0, MAX_EXPERIENCE], "health": [-1, 2500], "threshold_cleared": [0, Rooms.ROOM_COUNT], "threshold_run": [0, MAX_EXPERIENCE]}
+	var bounds := {"quest": [0, 3], "gold": [0, MAX_EXPERIENCE], "tonics": [0, MAX_EXPERIENCE], "health": [-1, 2500], "threshold_cleared": [0, Rooms.ROOM_COUNT], "threshold_run": [0, MAX_EXPERIENCE], "threshold_treasure_chest": [-1, Rooms.CHEST_COUNT - 1]}
 	for key in bounds:
 		if not _integer_in_range(world[key], bounds[key][0], bounds[key][1]):
 			return {}
 		world[key] = int(world[key])
 	if not world["threshold_treasure_claimed"] is bool:
+		return {}
+	if world["threshold_treasure_chest"] >= 0 and not world["threshold_treasure_claimed"]:
 		return {}
 	if world["threshold_treasure_claimed"] and world["threshold_cleared"] != Rooms.ROOM_COUNT:
 		return {}

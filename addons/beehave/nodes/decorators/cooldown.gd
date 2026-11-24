@@ -13,7 +13,7 @@ class_name CooldownDecorator
 @onready var cache_key = "cooldown_%s" % self.get_instance_id()
 
 
-func tick(actor: Node, blackboard: Blackboard) -> int:
+func tick(actor: Node, blackboard: BeehaveBlackboard) -> int:
 	var c: BeehaveNode = get_child(0)
 	var actor_id := str(actor.get_instance_id())
 	var end_time: float = blackboard.get_value(cache_key, 0.0, actor_id)
@@ -49,7 +49,7 @@ func tick(actor: Node, blackboard: Blackboard) -> int:
 
 	return response
 
-func interrupt(actor: Node, blackboard: Blackboard) -> void:
+func interrupt(actor: Node, blackboard: BeehaveBlackboard) -> void:
 	# Reset the cooldown when the branch changes
 	blackboard.set_value(cache_key, 0.0, str(actor.get_instance_id()))
 	super.interrupt(actor, blackboard)

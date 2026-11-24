@@ -10,11 +10,11 @@ class_name RepeaterDecorator extends Decorator
 var current_count: int = 0
 
 
-func before_run(actor: Node, blackboard: Blackboard) -> void:
+func before_run(actor: Node, blackboard: BeehaveBlackboard) -> void:
 	current_count = 0
 
 
-func tick(actor: Node, blackboard: Blackboard) -> int:
+func tick(actor: Node, blackboard: BeehaveBlackboard) -> int:
 	var child: BeehaveNode = get_child(0)
 
 	if current_count < repetitions:
@@ -53,7 +53,7 @@ func tick(actor: Node, blackboard: Blackboard) -> int:
 		return SUCCESS
 
 
-func interrupt(actor: Node, blackboard: Blackboard) -> void:
+func interrupt(actor: Node, blackboard: BeehaveBlackboard) -> void:
 	# Reset the internal counter when the node is interrupted
 	current_count = 0
 		

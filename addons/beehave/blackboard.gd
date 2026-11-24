@@ -1,5 +1,5 @@
 @icon("icons/blackboard.svg")
-class_name Blackboard extends Node
+class_name BeehaveBlackboard extends Node
 
 const DEFAULT = "default"
 
@@ -71,8 +71,8 @@ static func _sanitize_for_debug(value: Variant, depth: int = 0) -> Variant:
 		TYPE_DICTIONARY:
 			var result := {}
 			for key in value.keys():
-				var safe_key := _sanitize_for_debug(key, depth + 1)
-				var safe_val := _sanitize_for_debug(value[key], depth + 1)
+				var safe_key: Variant = _sanitize_for_debug(key, depth + 1)
+				var safe_val: Variant = _sanitize_for_debug(value[key], depth + 1)
 				result[safe_key] = safe_val
 			return result
 

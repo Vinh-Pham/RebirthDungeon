@@ -6,6 +6,7 @@ const GATE_ART := "res://assets/art/title_gate.png"
 
 
 func _ready() -> void:
+	preload("res://scripts/game_audio_settings.gd").apply_saved()
 	theme = Style.make_theme()
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	Style.background(self)

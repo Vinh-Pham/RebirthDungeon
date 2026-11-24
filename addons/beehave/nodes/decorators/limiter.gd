@@ -11,7 +11,7 @@ class_name LimiterDecorator extends Decorator
 @export var max_count: int = 0
 
 
-func tick(actor: Node, blackboard: Blackboard) -> int:
+func tick(actor: Node, blackboard: BeehaveBlackboard) -> int:
 	if not get_child_count() == 1:
 		return FAILURE
 
@@ -44,14 +44,14 @@ func tick(actor: Node, blackboard: Blackboard) -> int:
 		return FAILURE
 
 
-func before_run(actor: Node, blackboard: Blackboard) -> void:
+func before_run(actor: Node, blackboard: BeehaveBlackboard) -> void:
 	# Initialize the counter to 0 when we first start running
 	_reset_counter(actor, blackboard)
 	if get_child_count() > 0:
 		get_child(0).before_run(actor, blackboard)
 
 
-func interrupt(actor: Node, blackboard: Blackboard) -> void:
+func interrupt(actor: Node, blackboard: BeehaveBlackboard) -> void:
 	# The tree is changing branches, so the count should reset
 	_reset_counter(actor, blackboard)
 	
@@ -60,7 +60,7 @@ func interrupt(actor: Node, blackboard: Blackboard) -> void:
 
 
 # Resets the counter in the blackboard
-func _reset_counter(actor: Node, blackboard: Blackboard) -> void:
+func _reset_counter(actor: Node, blackboard: BeehaveBlackboard) -> void:
 	blackboard.set_value(cache_key, 0, str(actor.get_instance_id()))
 
 

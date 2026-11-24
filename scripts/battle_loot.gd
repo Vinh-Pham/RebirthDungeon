@@ -1,7 +1,11 @@
 extends RefCounted
 
 const Store = preload("res://scripts/character_store.gd")
-const ITEM_NAMES := {"cobweb": "Cobweb", "gold": "Gold"}
+const Consumables = preload("res://scripts/consumables.gd")
+
+
+static func item_name(item_id: String) -> String:
+	return "Healing Tonic" if item_id == Consumables.TONIC else item_id.capitalize()
 
 
 static func roll(enemies: Array, rng: RandomNumberGenerator) -> Dictionary:
@@ -18,9 +22,9 @@ static func roll(enemies: Array, rng: RandomNumberGenerator) -> Dictionary:
 
 static func combine(pending: Dictionary, drops: Dictionary) -> Dictionary:
 	var combined := pending.duplicate()
-	for item_id in ITEM_NAMES:
-		var amount := int(drops.get(item_id, 0))
-		if amount > 0:
+	for item_id in drops:
+		var amount := int(drops[item_id])
+		if amount > 0 and Store.supports_loot_item(item_id):
 			combined[item_id] = mini(Store.MAX_EXPERIENCE, int(combined.get(item_id, 0)) + amount)
 	return combined
 
@@ -28,18 +32,19 @@ static func combine(pending: Dictionary, drops: Dictionary) -> Dictionary:
 static func collect(world: Dictionary, ids: Array) -> Dictionary:
 	var pending: Dictionary = world.get("pending_loot", {}).duplicate()
 	var materials: Dictionary = world.get("town_materials", {}).duplicate()
-	var gold := int(world.get("gold", 0))
 	var changes := {}
-	for item_id in ITEM_NAMES:
-		if not ids.has(item_id) or not pending.has(item_id):
+	for item_id in pending.keys():
+		if not ids.has(item_id) or not Store.supports_loot_item(item_id):
 			continue
 		var count := int(pending[item_id])
-		var current := gold if item_id == "gold" else int(materials.get(item_id, 0))
+		var world_balance := Store.LOOT_BALANCE_KEYS.has(item_id)
+		var balance_key: String = Store.LOOT_BALANCE_KEYS.get(item_id, item_id)
+		var balances := world if world_balance else materials
+		var current := int(balances.get(balance_key, 0))
 		if count > Store.MAX_EXPERIENCE - current:
 			continue
-		if item_id == "gold":
-			gold += count
-			changes["gold"] = gold
+		if world_balance:
+			changes[balance_key] = current + count
 		else:
 			materials[item_id] = current + count
 			changes["town_materials"] = materials

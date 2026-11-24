@@ -7,7 +7,7 @@ class_name UntilFailDecorator
 extends Decorator
 
 
-func tick(actor: Node, blackboard: Blackboard) -> int:
+func tick(actor: Node, blackboard: BeehaveBlackboard) -> int:
 	var c: BeehaveNode = get_child(0)
 
 	if c != running_child:

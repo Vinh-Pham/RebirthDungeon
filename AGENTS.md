@@ -6,7 +6,7 @@ Rebirth Dungeon is a text-driven, tile-based roguelike dungeon crawler built in 
 
 - **Skills and talents.** Let players train and rank up individual skills through relevant actions. Group related skills into talents that reward specialization while allowing players to learn skills across talents.
 - **Inventory.** Use a grid inventory where items occupy space according to their size. Support stackable items, equipment slots, and bags that expand storage. Keep inventory management keyboard-friendly.
-- **Combat.** Use Chrono Trigger-inspired Active Time Battle. The player's Time gauge gates Attack and Skill commands. Enemies act automatically on their own clock, and items leave the player's gauge intact. **Smash** breaks **Defend** and bypasses its damage reduction. **Defend** reduces damage from a **Normal Attack**. **Normal Attack** interrupts **Smash**. Show enemy preparation through readable cues and explain each outcome in the message log.
+- **Combat.** Use Chrono Trigger-inspired Active Time Battle. Players can queue an attack or skill while their Time gauge fills. The latest queued command executes at full charge. Enemies act automatically on their own clock, and items leave the player's gauge intact. **Smash** breaks **Defend** and bypasses its damage reduction. **Defend** reduces damage from a **Normal Attack**. **Normal Attack** interrupts **Smash**. Show enemy preparation through readable cues and explain each outcome in the message log.
 - **Dungeon Towns.** Keep settlements inside the dungeon. These monster-free hubs offer NPCs, quests, shops, blacksmiths, and healer houses. Connect them through hostile, explorable dungeon passages.
 - **Moon Gates.** Let players register a gate by interacting with it in person. Save activated gates per character and allow instant travel between them at any time.
 
@@ -39,20 +39,27 @@ Use the Aseprite MCP server configured in [`.codex/config.toml`](.codex/config.t
 
 ## Godot plugins
 
-Beckett, GUT, GLoot, Maaack’s Input Remapping, Plugin Updater, Aseprite Wizard, and Phantom Camera are enabled in [project settings](project.godot). Gaea, GECS, Beehave, and Dialogue Manager are installed for future integration.
+Beckett, GUT, GLoot, Maaack’s Input Remapping, Plugin Updater, Aseprite Wizard, Phantom Camera, GECS, Dialogue Manager, and QuestSystem are enabled in [project settings](project.godot). QuestSystem is registered as the `QuestSystem` autoload. LimboAI is installed as a GDExtension. Gaea is installed for future integration. Beehave is bundled and disabled. Its blackboard is named `BeehaveBlackboard` to avoid a global class collision with LimboAI’s `Blackboard`.
 
 | Plugin | Use in Rebirth Dungeon |
 | --- | --- |
 | [Beckett](addons/beckett/plugin.cfg) | Connect the Godot editor to MCP for scene and script authoring, playtesting, screenshots, and runtime logs. |
 | [Gaea](addons/gaea/plugin.cfg) | Generate tile-based dungeon floors, including room and corridor layouts, and render them to tile maps. |
 | [GECS](addons/gecs/plugin.cfg) | Model the player, creatures, and items with reusable components such as grid position and health. Keep shared rules, such as movement and status effects, in systems that query those components. |
-| [Beehave](addons/beehave/plugin.cfg) | Use behavior trees to choose enemy and NPC actions, such as patrolling, pursuing, attacking, or retreating. |
+| [Beehave](addons/beehave/plugin.cfg) | Bundled as a reference for behavior trees. LimboAI runs the game’s monster AI. |
+| [LimboAI 1.8.1](addons/limboai/bin/limboai.gdextension) | Run monster behavior trees for dungeon pursuit and wandering, and choose combat intents when enemies finish their actions. |
 | [Dialogue Manager](addons/dialogue_manager/plugin.cfg) | Author branching NPC conversations, quest-related choices, and conditional lore reveals. Render dialogue text in Source Code Pro. |
+| [QuestSystem 2.0.2](addons/quest_system/plugin.cfg) | Define quests as resources with stable integer IDs. Track which quests are available, active, or completed, and use that state to drive the Quests journal and quest-related NPC dialogue. |
 | [Phantom Camera](addons/phantom_camera/plugin.cfg) | Follow the player with a damped, pixel-snapped 2D camera in Lantern Rest. The map scrolls inside the HUD panel and stops at the town boundary. |
 | [GUT 9.7.1](addons/gut/plugin.cfg) | Run the automated GDScript tests in [`tests/unit/`](tests/unit/) for combat, character stats, inventory, and save compatibility. |
 | [GLoot 3.0.2](addons/gloot/plugin.cfg) | Manage the sword satchel's 8×7 bag grid, item footprints, and main-hand equipment slot. The HUD and armory share this inventory and load existing character weapon saves. |
 | [Maaack’s Input Remapping 1.8.0](addons/maaacks_input_remapping/plugin.cfg) | Add a rebinding menu after gameplay controls move to named `InputMap` actions. The addon bundles [Plugin Updater 0.5.1](addons/plugin_updater/plugin.cfg) and its setup helpers. |
 | [Aseprite Wizard 9.8.0](addons/AsepriteWizard/plugin.cfg) | Import tagged Aseprite animations into Godot when needed. Use manual imports alongside the existing PNG atlases. |
+
+### LimboAI and QuestSystem integration
+
+- **LimboAI.** Edit the [dungeon movement tree](scripts/ai/dungeon_movement.tres) for pursuit, wandering, and holding position. The dungeon controller passes legal tiles and path distances through a blackboard and manually ticks the tree after each successful player step. Edit the [combat intent tree](scripts/ai/combat_intent.tres) to choose a monster’s next move after its current action resolves. The combat model advances the Time gauges and resolves stamina, damage, and counters. [BehaviorTree reference](https://limboai.readthedocs.io/en/stable/classes/class_behaviortree.html)
+- **QuestSystem.** Register quest resources with `mark_quest_as_available()`, then call `start_quest()` from NPC interactions. Feed committed gameplay events such as boss defeats or item deliveries into `update_quest()`, and refresh the journal on `quest_accepted` and `quest_completed`. When integrating the autoload, save both pool membership and quest state in the selected character’s profile. Reset and restore the pools when switching characters, and migrate the current `world.quest` progress from [CharacterStore](scripts/character_store.gd). [QuestSystem addon documentation](https://store.godotengine.org/asset/shomy/quest-system/)
 
 ## Godot development workflow
 

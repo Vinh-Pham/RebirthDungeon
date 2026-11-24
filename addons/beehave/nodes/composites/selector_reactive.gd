@@ -12,7 +12,7 @@ class_name SelectorReactiveComposite extends Composite
 var previous_success_or_running_index: int = -1
 var ready_to_interrupt_all: bool = false
 
-func tick(actor: Node, blackboard: Blackboard) -> int:
+func tick(actor: Node, blackboard: BeehaveBlackboard) -> int:
 	var children := get_children()
 	var children_count = children.size()
 	var processed_count = 0
@@ -67,11 +67,11 @@ func tick(actor: Node, blackboard: Blackboard) -> int:
 	return FAILURE
 
 
-func after_run(actor: Node, blackboard: Blackboard) -> void:
+func after_run(actor: Node, blackboard: BeehaveBlackboard) -> void:
 	super(actor, blackboard)
 
 
-func interrupt(actor: Node, blackboard: Blackboard) -> void:
+func interrupt(actor: Node, blackboard: BeehaveBlackboard) -> void:
 	if ready_to_interrupt_all:
 		# If all children failed, interrupt all children
 		var children = get_children()

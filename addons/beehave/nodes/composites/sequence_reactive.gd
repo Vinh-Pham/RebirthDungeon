@@ -14,7 +14,7 @@ var previous_failure_index: int = -1
 var previous_running_index: int = -1
 
 
-func tick(actor: Node, blackboard: Blackboard) -> int:
+func tick(actor: Node, blackboard: BeehaveBlackboard) -> int:
 	var children = get_children()
 	for i in range(children.size()):
 		var c = children[i]
@@ -61,7 +61,7 @@ func tick(actor: Node, blackboard: Blackboard) -> int:
 	return SUCCESS
 
 
-func interrupt(actor: Node, blackboard: Blackboard) -> void:
+func interrupt(actor: Node, blackboard: BeehaveBlackboard) -> void:
 	_interrupt_children(actor, blackboard, -1, previous_running_index if previous_running_index > previous_failure_index else previous_failure_index)
 	if running_child != null:
 		running_child.interrupt(actor, blackboard)

@@ -11,7 +11,7 @@ class_name TimeLimiterDecorator extends Decorator
 @onready var cache_key: String = "time_limiter_%s" % self.get_instance_id()
 
 
-func tick(actor: Node, blackboard: Blackboard) -> int:
+func tick(actor: Node, blackboard: BeehaveBlackboard) -> int:
 	if not get_child_count() == 1:
 		return FAILURE
 
@@ -42,13 +42,13 @@ func tick(actor: Node, blackboard: Blackboard) -> int:
 		return FAILURE
 
 
-func before_run(actor: Node, blackboard: Blackboard) -> void:
+func before_run(actor: Node, blackboard: BeehaveBlackboard) -> void:
 	blackboard.set_value(cache_key, 0.0, str(actor.get_instance_id()))
 	if get_child_count() > 0:
 		get_child(0).before_run(actor, blackboard)
 
 
-func interrupt(actor: Node, blackboard: Blackboard) -> void:
+func interrupt(actor: Node, blackboard: BeehaveBlackboard) -> void:
 	# Reset the timer when the node is interrupted
 	blackboard.set_value(cache_key, 0.0, str(actor.get_instance_id()))
 		

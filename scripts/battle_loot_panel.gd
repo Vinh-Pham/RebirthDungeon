@@ -6,6 +6,7 @@ signal leave_requested
 const Style = preload("res://scripts/menu_style.gd")
 const BattleLoot = preload("res://scripts/battle_loot.gd")
 
+var _heading: Label
 var _rows: VBoxContainer
 var _status: Label
 var _selected: Dictionary = {}
@@ -34,7 +35,8 @@ func _ready() -> void:
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 14)
 	Style.inset(panel, 22, 20).add_child(column)
-	column.add_child(Style.label("Battle Loot", 28, Style.ACCENT))
+	_heading = Style.label("", 28, Style.ACCENT)
+	column.add_child(_heading)
 	column.add_child(Style.rule())
 	_rows = VBoxContainer.new()
 	_rows.add_theme_constant_override("separation", 8)
@@ -59,24 +61,25 @@ func _ready() -> void:
 	actions.add_child(_leave)
 
 
-func show_loot(loot: Dictionary) -> void:
+func show_loot(loot: Dictionary, title := "Battle Loot") -> void:
+	_heading.text = title
 	_loot = loot.duplicate()
 	_selected.clear()
 	for child in _rows.get_children():
 		_rows.remove_child(child)
 		child.queue_free()
-	for id in BattleLoot.ITEM_NAMES:
+	for id: String in _loot:
 		if int(_loot.get(id, 0)) <= 0:
 			continue
 		var row := CheckBox.new()
 		row.name = "Loot_" + id
-		row.text = "%s ×%d" % [BattleLoot.ITEM_NAMES[id], int(_loot[id])]
+		row.text = "%s ×%d" % [BattleLoot.item_name(id), int(_loot[id])]
 		row.custom_minimum_size.y = 38
 		row.toggled.connect(_select_item.bind(id))
 		_rows.add_child(row)
 	_take_selected.disabled = true
 	_take_all.disabled = _loot.is_empty()
-	_status.text = "Untaken drops will be left behind." if not _loot.is_empty() else "No items dropped."
+	_status.text = "Untaken loot will be left behind." if not _loot.is_empty() else "No loot to take."
 	show()
 	if _rows.get_child_count() > 0:
 		_rows.get_child(0).grab_focus()

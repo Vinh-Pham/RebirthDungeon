@@ -244,7 +244,7 @@ func _profile_updated(updated: Dictionary) -> void:
 
 
 func _map_movement_available() -> bool:
-	return not (_layout.inventory_is_open() or sheet.visible or armory.visible or _journal.visible or _repair.visible)
+	return not (_layout.inventory_is_open() or _layout.game_menu_is_open() or sheet.visible or armory.visible or _journal.visible or _repair.visible)
 
 
 func _command(command: String) -> void:
@@ -258,6 +258,7 @@ func _command(command: String) -> void:
 			var health := int(stats["life"]) if int(world["health"]) < 0 else int(world["health"])
 			sheet.open(profile, stats, weapon, health, int(stats["stamina"]))
 		"inventory": _layout.open_inventory()
+		"characters": _characters()
 		"skills", "talent", "quests": _journal.open(command, profile, Stats.snapshot(profile, weapon))
 		"interact": _interact()
 
@@ -395,7 +396,7 @@ func _input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo or sheet == null:
 		return
 	_layout.cancel_map_movement()
-	if _layout.inventory_is_open():
+	if _layout.inventory_is_open() or _layout.game_menu_is_open():
 		return
 	if sheet.visible:
 		if event.keycode in [KEY_C, KEY_ESCAPE]:
@@ -514,7 +515,7 @@ func _interact() -> void:
 			_say("%s  ·  Stock up before taking the lower road." % resident, choices)
 		"school":
 			_say("%s  ·  I teach the skills a new delver needs to stay alive." % resident, {
-				"Combat lesson": _say.bind("Act when your Time gauge fills. Attack interrupts Smash, Defend softens Attack, and Smash breaks Defend. You can use a tonic anytime.", {}),
+				"Combat lesson": _say.bind("Queue an attack or skill and it will execute when your Time gauge fills. Attack interrupts Smash, Defend softens Attack, and Smash breaks Defend. You can use a tonic anytime.", {}),
 			})
 		"church":
 			_say("%s  ·  The Moon Gates join the towns we remember." % resident, {
@@ -629,7 +630,7 @@ func _heal() -> void:
 func _leave() -> void:
 	var departure := {"location": "threshold", "dungeon_from": town}
 	if int(world["threshold_cleared"]) == 8:
-		departure.merge({"threshold_cleared": 0, "threshold_treasure_claimed": false, "threshold_run": mini(int(world["threshold_run"]) + 1, Store.MAX_EXPERIENCE)})
+		departure.merge({"threshold_cleared": 0, "threshold_treasure_claimed": false, "threshold_treasure_chest": -1, "threshold_run": mini(int(world["threshold_run"]) + 1, Store.MAX_EXPERIENCE)})
 	if town == "lantern_rest" and int(world["quest"]) == 0:
 		departure["quest"] = 1
 	if _save(departure):

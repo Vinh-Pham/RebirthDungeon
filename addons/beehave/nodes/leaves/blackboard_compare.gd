@@ -30,7 +30,7 @@ enum Operators {
 @onready var _right_expression: Expression = _parse_expression(right_operand)
 
 
-func tick(actor: Node, blackboard: Blackboard) -> int:
+func tick(actor: Node, blackboard: BeehaveBlackboard) -> int:
 	var left: Variant = _left_expression.execute([], blackboard)
 
 	if _left_expression.has_execute_failed():

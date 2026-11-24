@@ -11,6 +11,9 @@ const Consumables = preload("res://scripts/consumables.gd")
 const Satchel = preload("res://scripts/sword_satchel.gd")
 const InventoryPanel = preload("res://scripts/exploration_inventory.gd")
 const Status = preload("res://scripts/exploration_status.gd")
+const AudioSettings = preload("res://scripts/game_audio_settings.gd")
+
+enum MenuAction { CHARACTERS, SETTINGS, EXIT }
 
 const CONTENT_SIZE := Vector2(1120, 680)
 const MAP_PANEL_SIZE := Vector2(874, 548)
@@ -21,6 +24,8 @@ var log_label: Label
 var choices: HBoxContainer
 var _context: Button
 var _inventory: InventoryPanel
+var _game_menu: MenuButton
+var _game_settings: AudioSettings
 var _status: Status
 var _catalogue: Dictionary
 var _satchel: Satchel
@@ -63,6 +68,11 @@ func _ready() -> void:
 	_inventory.equip_requested.connect(_equip)
 	_inventory.close_requested.connect(close_inventory)
 	add_child(_inventory)
+
+	_game_settings = AudioSettings.new()
+	_game_settings.name = "GameSettings"
+	_game_settings.close_requested.connect(_close_settings)
+	add_child(_game_settings)
 
 
 func _build_map_panel() -> void:
@@ -113,6 +123,42 @@ func _build_navigation() -> void:
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.pressed.connect(command_requested.emit.bind(entry[1]))
 		row.add_child(button)
+
+	_game_menu = MenuButton.new()
+	_game_menu.name = "GameMenu"
+	_game_menu.text = "Menu (M)"
+	_game_menu.flat = false
+	_game_menu.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
+	_game_menu.focus_mode = Control.FOCUS_ALL
+	_game_menu.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	_game_menu.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_game_menu.about_to_popup.connect(cancel_map_movement)
+	var popup := _game_menu.get_popup()
+	popup.add_item("Characters", MenuAction.CHARACTERS)
+	popup.add_item("Settings", MenuAction.SETTINGS)
+	popup.add_item("Exit", MenuAction.EXIT)
+	popup.id_pressed.connect(_on_game_menu_choice)
+	row.add_child(_game_menu)
+
+
+func game_menu_is_open() -> bool:
+	return _game_settings.visible or _game_menu.get_popup().visible
+
+
+func _on_game_menu_choice(action: int) -> void:
+	_game_menu.get_popup().hide()
+	match action:
+		MenuAction.CHARACTERS:
+			command_requested.emit("characters")
+		MenuAction.SETTINGS:
+			_game_settings.open()
+		MenuAction.EXIT:
+			get_tree().quit()
+
+
+func _close_settings() -> void:
+	_game_settings.hide()
+	_game_menu.grab_focus()
 
 
 func _panel(origin: Vector2, extent: Vector2, color: Color) -> Panel:
@@ -234,10 +280,20 @@ func inventory_is_open() -> bool:
 
 
 func _input(event: InputEvent) -> void:
-	if not inventory_is_open() or not event is InputEventKey or not event.pressed or event.echo:
+	if not event is InputEventKey or not event.pressed or event.echo:
 		return
-	if event.keycode in [KEY_I, KEY_ESCAPE]:
-		close_inventory()
+	if _game_settings.visible:
+		if event.keycode in [KEY_M, KEY_ESCAPE]:
+			_close_settings()
+			get_viewport().set_input_as_handled()
+		return
+	if inventory_is_open():
+		if event.keycode in [KEY_I, KEY_ESCAPE]:
+			close_inventory()
+			get_viewport().set_input_as_handled()
+		return
+	if event.keycode == KEY_M and _can_move_on_map.is_valid() and _can_move_on_map.call() and not _status.slot_menu_open():
+		_game_menu.show_popup()
 		get_viewport().set_input_as_handled()
 
 

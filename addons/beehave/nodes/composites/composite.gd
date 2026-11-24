@@ -18,14 +18,14 @@ func _get_configuration_warnings() -> PackedStringArray:
 	return warnings
 
 
-func interrupt(actor: Node, blackboard: Blackboard) -> void:
+func interrupt(actor: Node, blackboard: BeehaveBlackboard) -> void:
 	if running_child != null:
 		running_child.interrupt(actor, blackboard)
 		running_child = null
 	super.interrupt(actor, blackboard)
 
 
-func after_run(actor: Node, blackboard: Blackboard) -> void:
+func after_run(actor: Node, blackboard: BeehaveBlackboard) -> void:
 	running_child = null
 
 
@@ -35,7 +35,7 @@ func get_class_name() -> Array[StringName]:
 	return classes
 	
 	
-func _cleanup_running(child: Node, actor: Node, blackboard: Blackboard) -> void:
+func _cleanup_running(child: Node, actor: Node, blackboard: BeehaveBlackboard) -> void:
 	if child == running_child:
 		running_child = null
 		var id = str(actor.get_instance_id())
@@ -43,7 +43,7 @@ func _cleanup_running(child: Node, actor: Node, blackboard: Blackboard) -> void:
 			blackboard.set_value("running_action", null, id)
 	
 	
-func _interrupt_children(actor: Node, blackboard: Blackboard, from_index: int, last_index: int) -> void:
+func _interrupt_children(actor: Node, blackboard: BeehaveBlackboard, from_index: int, last_index: int) -> void:
 	var children = get_children()
 	var start = from_index + 1
 	var end = 0

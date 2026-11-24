@@ -2,6 +2,7 @@ extends RefCounted
 
 const MAP_SIZE := Vector2i(31, 15)
 const ROOM_COUNT := 8
+const CHEST_COUNT := 5
 
 
 static func generate(seed_value: int) -> Array[Dictionary]:
@@ -50,6 +51,9 @@ static func generate(seed_value: int) -> Array[Dictionary]:
 					enemies.append(cell)
 			room["enemies"] = enemies
 		else:
-			room["chest"] = Vector2i(20, 7)
+			var chests: Array[Vector2i] = []
+			for chest_index in range(CHEST_COUNT):
+				chests.append(Vector2i(8 + chest_index * 4, 7))
+			room["chests"] = chests
 		rooms.append(room)
 	return rooms

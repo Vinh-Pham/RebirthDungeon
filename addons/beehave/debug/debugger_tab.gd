@@ -6,7 +6,7 @@ const Utils      = preload("res://addons/beehave/utils/utils.gd")
 const TREE_ICON  = preload("../icons/tree.svg")
 const OldGraph   = preload("old_graph_edit.gd")
 const NewGraph   = preload("new_graph_edit.gd")
-const Blackboard = preload("new_node_blackboard.gd")
+const BlackboardPanel = preload("new_node_blackboard.gd")
 
 signal make_floating
 
@@ -201,7 +201,7 @@ func _on_graph_node_selected(node: GraphNode) -> void:
 	for child in blackboard_vbox.get_children():
 		child.free()
 	blackboard_vbox.show()
-	blackboard_vbox.add_child(Blackboard.new(Utils.get_frames(), node))
+	blackboard_vbox.add_child(BlackboardPanel.new(Utils.get_frames(), node))
 
 
 func _on_graph_node_deselected(node: GraphNode) -> void:

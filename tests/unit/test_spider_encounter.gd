@@ -127,3 +127,12 @@ func test_group_clocks_and_rollback_are_independent() -> void:
 	encounter.advance_time(10.0)
 	assert_eq(encounter.enemy_at(1).gauge, 0.0)
 	assert_false(encounter.enemy_ready(1))
+
+
+func test_limbo_intent_tree_preserves_cadence_and_defensive_variants() -> void:
+	var brain = load("res://scripts/combat_intent_ai.gd")
+	assert_eq(brain.choose(true, 0), Encounter.Action.DEFEND)
+	assert_eq(brain.choose(true, 1), Encounter.Action.ATTACK)
+	assert_eq(brain.choose(true, 2), Encounter.Action.SMASH)
+	assert_eq(brain.choose(true, 3), Encounter.Action.DEFEND)
+	assert_eq(brain.choose(false, 2), Encounter.Action.DEFEND)
