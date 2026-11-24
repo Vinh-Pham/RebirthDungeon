@@ -2,6 +2,7 @@ extends RefCounted
 ## Independent readiness clocks and deterministic melee counter resolution.
 
 const Stats = preload("res://scripts/character_stats.gd")
+const Catalog = preload("res://scripts/sword_catalog.gd")
 const IntentAI = preload("res://scripts/combat_intent_ai.gd")
 
 enum Action { ATTACK, DEFEND, SMASH, COUNTERATTACK, WINDMILL }
@@ -171,7 +172,7 @@ func act(player_action: int, weapon: Dictionary, target_index := 0) -> String:
 		training_events.append("attack")
 		if player_action in [Action.SMASH, Action.WINDMILL]:
 			training_events.append("knock_down_an_enemy")
-		if not weapon.is_empty():
+		if Catalog.is_sword(weapon):
 			training_events.append("attack_an_enemy_with_sword")
 		if player_action == Action.SMASH:
 			training_events.append("use_the_skill_successfully")
@@ -225,7 +226,7 @@ func act(player_action: int, weapon: Dictionary, target_index := 0) -> String:
 					defeated += 1
 					training_events.append("windmill_defeat_enemy")
 					training_events.append("defeat_enemy")
-					if not weapon.is_empty():
+					if Catalog.is_sword(weapon):
 						training_events.append("defeat_an_enemy_with_sword")
 		if targets > 1:
 			reason += " Windmill hits %d enemies." % targets
@@ -237,7 +238,7 @@ func act(player_action: int, weapon: Dictionary, target_index := 0) -> String:
 		training_events.append("defeat_enemy")
 		if critical:
 			training_events.append("finish_off_an_enemy_with_a_critical_hit")
-		if not weapon.is_empty():
+		if Catalog.is_sword(weapon):
 			training_events.append("defeat_an_enemy_with_sword")
 		if player_action == Action.SMASH:
 			training_events.append("use_smash_as_the_final_blow")

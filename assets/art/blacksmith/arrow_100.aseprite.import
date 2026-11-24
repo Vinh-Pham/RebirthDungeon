@@ -1,0 +1,14 @@
+[remap]
+
+importer="aseprite_wizard.plugin.noop"
+type="PackedDataContainer"
+uid="uid://bcwfy1rvene5w"
+path="res://.godot/imported/arrow_100.aseprite-2c2c980a1845dfe7bdca8a809feb4a64.res"
+
+[deps]
+
+source_file="res://assets/art/blacksmith/arrow_100.aseprite"
+dest_files=["res://.godot/imported/arrow_100.aseprite-2c2c980a1845dfe7bdca8a809feb4a64.res"]
+
+[params]
+

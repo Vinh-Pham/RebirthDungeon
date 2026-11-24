@@ -4,6 +4,7 @@ extends RefCounted
 ## original Rebirth Dungeon balance. Appearance choices do not alter attributes.
 
 const Durability = preload("res://scripts/equipment_durability.gd")
+const Catalog = preload("res://scripts/sword_catalog.gd")
 const Skills = preload("res://scripts/character_skills.gd")
 
 const LINEAGE_BONUSES := [
@@ -55,13 +56,14 @@ static func snapshot(profile: Dictionary, weapon: Dictionary = {}) -> Dictionary
 	var defense: Dictionary = skill_effects.get("defense", {})
 	var critical_hit: Dictionary = skill_effects.get("critical_hit", {})
 	var sword_mastery: Dictionary = skill_effects.get("sword_mastery", {})
-	var sword := sword_mastery if not weapon.is_empty() else {}
+	var sword := sword_mastery if Catalog.is_sword(weapon) else {}
 	var windmill: Dictionary = skill_effects.get("windmill", {})
 	var counter: Dictionary = skill_effects.get("counterattack", {})
 	var smash: Dictionary = skill_effects.get("smash", {})
-	var armor_defense := Durability.armor_defense(world)
-	var light_armor: Dictionary = skill_effects.get("light_armor_mastery", {}) if armor_defense > 0 else {}
-	stats["light_armor_equipped"] = armor_defense > 0
+	var armor := Durability.equipped_armor(world)
+	var light_armor_equipped: bool = armor.get("armor_class") == "light" and Durability.current(world, armor) > 0
+	var light_armor: Dictionary = skill_effects.get("light_armor_mastery", {}) if light_armor_equipped else {}
+	stats["light_armor_equipped"] = light_armor_equipped
 	stats["life"] += int(mastery.get("additional_hp_total", 0)) + int(defense.get("additional_hp_total", 0))
 	stats["strength"] += int(mastery.get("additional_strength_human_total", 0)) + int(windmill.get("additional_str_total", 0)) + int(smash.get("additional_str_and_will_total", 0))
 	stats["dexterity"] += int(mastery.get("additional_dexterity_human_total", 0)) + int(counter.get("additional_dexterity_total", 0)) + int(sword_mastery.get("additional_dex_total", 0))
@@ -91,7 +93,7 @@ static func snapshot(profile: Dictionary, weapon: Dictionary = {}) -> Dictionary
 	stats["balance"] = clampf(dex_balance + weapon_balance + skill_balance, 0.0, 80.0)
 	stats["critical"] = maxf(0.0, will / 10.0 + luck / 5.0 + (10.0 if weapon.is_empty() else 0.0))
 	stats["critical_multiplier"] = 1.0 + float(critical_hit.get("additional_damage", 50)) / 100.0
-	stats["defense"] = int(floor(strength / 10.0)) + armor_defense + int(defense.get("additional_base_defense_human_total", 0)) + int(light_armor.get("additional_defense", 0))
+	stats["defense"] = int(floor(strength / 10.0)) + Durability.equipment_defense(world) + int(defense.get("additional_base_defense_human_total", 0)) + int(light_armor.get("additional_defense", 0))
 	stats["protection"] = float(light_armor.get("additional_protection", 0))
 	stats["magic_attack"] = intelligence / 5.0
 	stats["magic_defense"] = int(floor(will / 10.0)) + int(light_armor.get("additional_magic_defense", 0))

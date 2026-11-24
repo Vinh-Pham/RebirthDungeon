@@ -1,0 +1,14 @@
+[remap]
+
+importer="aseprite_wizard.plugin.noop"
+type="PackedDataContainer"
+uid="uid://dds0bw5eonai5"
+path="res://.godot/imported/lorica_gloves.aseprite-55fa6f1c5c6488dd0f0496efb500c3a6.res"
+
+[deps]
+
+source_file="res://assets/art/blacksmith/lorica_gloves.aseprite"
+dest_files=["res://.godot/imported/lorica_gloves.aseprite-55fa6f1c5c6488dd0f0496efb500c3a6.res"]
+
+[params]
+

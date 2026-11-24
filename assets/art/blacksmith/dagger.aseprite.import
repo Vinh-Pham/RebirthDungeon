@@ -1,0 +1,14 @@
+[remap]
+
+importer="aseprite_wizard.plugin.noop"
+type="PackedDataContainer"
+uid="uid://cd2regetl2enr"
+path="res://.godot/imported/dagger.aseprite-f633242f1c8e12f1c4f222e64462ec66.res"
+
+[deps]
+
+source_file="res://assets/art/blacksmith/dagger.aseprite"
+dest_files=["res://.godot/imported/dagger.aseprite-f633242f1c8e12f1c4f222e64462ec66.res"]
+
+[params]
+

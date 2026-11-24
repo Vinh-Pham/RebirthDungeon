@@ -121,7 +121,8 @@ func _ready() -> void:
 	_journal.advance_requested.connect(_advance_skill)
 	add_child(_journal)
 
-	_show_room(_cleared_rooms())
+	_show_room(_resume_room())
+	_restore_position()
 	_warrens.open_pending_loot(_profile)
 
 
@@ -378,6 +379,10 @@ func _map_movement_available() -> bool:
 
 func _command(command: String) -> void:
 	_layout.cancel_map_movement()
+	if command == "exit":
+		if _save_position():
+			get_tree().quit()
+		return
 	if not _map_movement_available():
 		return
 	match command:
@@ -592,7 +597,7 @@ func _travel_to_town(town_id: String) -> void:
 	var visited: Array = _profile["world"]["visited"].duplicate()
 	if not visited.has(town_id):
 		visited.append(town_id)
-	if Store.update_world({"location": town_id, "visited": visited}).is_empty():
+	if Store.update_world({"location": town_id, "visited": visited, "map_position": {}}).is_empty():
 		log_label.text = "Could not save travel. The stairs remain open."
 		return
 	_open_town_scene()
@@ -603,4 +608,59 @@ func _open_town_scene() -> void:
 
 
 func _return_to_characters() -> void:
-	get_tree().change_scene_to_file(CHARACTERS)
+	if _profile.is_empty() or _save_position():
+		get_tree().change_scene_to_file(CHARACTERS)
+
+
+func _save_position() -> bool:
+	if _profile.is_empty():
+		return true
+	var current := Store.load_selected()
+	if current.get("id") != _profile["id"]:
+		return false
+	if current["world"]["location"] != "threshold":
+		return true
+	if Store.save_map_position(_profile["id"], "threshold", player, _room_index, int(_profile["world"]["threshold_run"])):
+		return true
+	log_label.text = "Could not save your position. Please try again."
+	return false
+
+
+func _resume_room() -> int:
+	var checkpoint: Dictionary = _profile["world"].get("map_position", {})
+	if checkpoint.get("location") == "threshold" and checkpoint.get("run") == _profile["world"]["threshold_run"]:
+		var index := int(checkpoint.get("room", -1))
+		if index >= 0 and index <= _cleared_rooms():
+			return index
+	return _cleared_rooms()
+
+
+func _restore_position() -> void:
+	var checkpoint: Dictionary = _profile["world"].get("map_position", {})
+	if checkpoint.get("location") != "threshold" or checkpoint.get("run") != _profile["world"]["threshold_run"] or checkpoint.get("room") != _room_index:
+		return
+	var cell := Vector2i(int(checkpoint["x"]), int(checkpoint["y"]))
+	if not _room["floor"].has(cell):
+		return
+	if _room_index == 0 and cell == PRACTICE_POST:
+		return
+	if _room_index == Rooms.ROOM_COUNT and _room["chests"].has(cell):
+		return
+	if _monster_present() and _room["enemies"].has(cell):
+		var occupied: Array = _room["enemies"]
+		var closest := Vector2i.ZERO
+		var distance := 2147483647
+		for candidate: Vector2i in _room["floor"]:
+			if candidate == cell or _enemy_blockers.has(candidate) or occupied.has(candidate):
+				continue
+			var separation := candidate.distance_squared_to(cell)
+			if separation < distance:
+				distance = separation
+				closest = candidate
+		if distance == 2147483647:
+			return
+		occupied[occupied.find(cell)] = closest
+		_layout.set_map_landmarks(_map_landmarks())
+	player = cell
+	_layout.set_player(player)
+	_update_interaction()

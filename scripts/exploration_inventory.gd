@@ -1,6 +1,7 @@
 extends Control
 
 signal equip_requested(id: String)
+signal slot_equip_requested(id: String, slot: String)
 signal close_requested
 
 const Style = preload("res://scripts/menu_style.gd")
@@ -14,13 +15,14 @@ const EQUIPMENT_SLOTS := [
 	"Armor", "Headgear", "Gloves", "Shoes"
 ]
 
+var _slots: Dictionary = {}
+var _slot_states: Dictionary = {}
 var _catalogue: Dictionary = {}
 var _satchel: Satchel
 var _selected := ""
 var _items: Array[Button] = []
 var _gear: Button
-var _main_hand: TextureRect
-var _main_hand_empty: Label
+var _slot_icons: Dictionary = {}
 var _armor: Control
 var _armor_state: Label
 var _offhand: Label
@@ -67,10 +69,10 @@ func _ready() -> void:
 	_grid.size = Vector2(Satchel.WIDTH, Satchel.HEIGHT) * CELL
 	_body.add_child(_grid)
 	_build_cells()
-	_selection = _add_label("Select a sword", Vector2(24, 428), 16, Style.TEXT)
+	_selection = _add_label("Select equipment", Vector2(24, 428), 16, Style.TEXT)
 	_selection.size.x = 612
 	_selection.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	_add_label("Drag a sword to Main hand", Vector2(24, 463), 14, Style.MUTED)
+	_add_label("Drag equipment to a matching slot", Vector2(24, 463), 14, Style.MUTED)
 	_materials = _add_label("", Vector2(24, 286), 12, Style.TEXT)
 	_materials.size = Vector2(252, 72)
 	_materials.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
@@ -99,33 +101,35 @@ func _build_equipment() -> void:
 			_gear = Style.button("")
 			_gear.custom_minimum_size = Vector2.ZERO
 			_gear.pressed.connect(_inspect_main_hand)
-			_gear.set_drag_forwarding(Callable(), _can_drop_sword, _drop_sword)
 			slot = _gear
 		else:
-			var frame := Panel.new()
-			frame.add_theme_stylebox_override("panel", Style.box(Style.BACK, Style.BORDER))
-			frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			slot = frame
+			slot = Style.button("")
 		slot.custom_minimum_size = Vector2(94, 28)
+		var slot_id := caption.to_lower().replace(" ", "_")
+		_slots[slot_id] = slot
+		slot.set_drag_forwarding(Callable(), _can_drop_equipment.bind(slot_id), _drop_equipment.bind(slot_id))
 		slot.name = caption.replace(" ", "")
 		equipment.add_child(slot)
 
 		var label := Style.label(caption, 11, Style.TEXT)
 		label.position = Vector2(6, 5)
+		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		slot.add_child(label)
 		var state := Style.label("—", 11, Style.MUTED)
 		state.position = Vector2(75, 5)
+		state.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_slot_states[slot_id] = state
 		slot.add_child(state)
+		var slot_icon := TextureRect.new()
+		slot_icon.position = Vector2(73, 2)
+		slot_icon.size = Vector2(16, 24)
+		slot_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		slot_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		slot_icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		slot_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		slot.add_child(slot_icon)
+		_slot_icons[slot_id] = slot_icon
 		match caption:
-			"Main hand":
-				_main_hand_empty = state
-				_main_hand = TextureRect.new()
-				_main_hand.position = Vector2(73, 2)
-				_main_hand.size = Vector2(16, 24)
-				_main_hand.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-				_main_hand.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-				_main_hand.mouse_filter = Control.MOUSE_FILTER_IGNORE
-				slot.add_child(_main_hand)
 			"Off hand":
 				_offhand = state
 			"Armor":
@@ -157,25 +161,44 @@ func refresh(catalogue: Dictionary, satchel: Satchel, world: Dictionary) -> void
 		_render_items()
 	var held: String = satchel.equipped
 	var armed := catalogue.has(held)
-	_main_hand.texture = Catalog.icon(catalogue[held]) if armed else null
-	_main_hand_empty.visible = not armed
-	_gear.tooltip_text = Catalog.tooltip(catalogue[held]) + "\n" + Durability.condition_text(world, catalogue[held], true) if armed else "Main hand is empty"
 	for button in _items:
 		var id := button.name.trim_prefix("Item_")
-		button.tooltip_text = Catalog.tooltip(catalogue[id]) + "\n" + Durability.condition_text(world, catalogue[id], true) + "\n\nDrag to Main hand or press Enter"
-	var armored: bool = world.get("armor_owned", false)
+		var item: Dictionary = catalogue[id]
+		var slot: String = item.get("slot", "main_hand")
+		button.tooltip_text = Catalog.tooltip(item) + "\n" + Durability.condition_text(world, item, true)
+		button.tooltip_text += "\n\nDrag to %s or press Enter" % slot.replace("_", " ").capitalize()
+	var armor_id: String = satchel.equipped_in("armor")
+	var armored: bool = world.get("armor_owned", false) or not armor_id.is_empty()
 	var armor_defense := Durability.armor_defense(world)
 	_armor_state.text = ("!" if armor_defense == 0 else "+") if armored else "—"
 	_armor.tooltip_text = "%s\n%s\nDefense +%d" % [Durability.ARMOR["name"], Durability.condition_text(world, Durability.ARMOR), armor_defense] if armored else "Armor is empty"
 	var two_handed := armed and int(catalogue[held]["hands"]) == 2
 	_offhand.text = "2H" if two_handed else "—"
 	_offhand.tooltip_text = "Occupied by a two-handed weapon" if two_handed else "Off hand is empty"
+	for slot_id: String in _slots:
+		var equipped_id: String = satchel.equipped_in(slot_id)
+		var slot_icon: TextureRect = _slot_icons[slot_id]
+		slot_icon.texture = null
+		_slot_states[slot_id].show()
+		if catalogue.has(equipped_id):
+			var item: Dictionary = catalogue[equipped_id]
+			_slots[slot_id].tooltip_text = Catalog.tooltip(item) + "\n" + Durability.condition_text(world, item, true)
+			_slot_states[slot_id].text = item.get("glyph", "+")
+			slot_icon.texture = Catalog.icon(item)
+			_slot_states[slot_id].visible = slot_icon.texture == null
+		elif slot_id not in ["armor", "off_hand"]:
+			_slot_states[slot_id].text = "—"
+			_slots[slot_id].tooltip_text = slot_id.replace("_", " ").capitalize() + " is empty"
 	var materials: Dictionary = world.get("town_materials", {})
 	var entries: Array[String] = []
 	for key: String in ["cobweb", "fish", "grain", "flour", "fiber", "thread", "cloth"]:
 		var count := int(materials.get(key, 0))
 		if count > 0:
 			entries.append("%s ×%d" % [key.capitalize(), count])
+	for key: String in world.get("shop_supplies", {}):
+		var count := int(world["shop_supplies"][key])
+		if count > 0:
+			entries.append("%s ×%d" % [key.replace("_", " ").capitalize(), count])
 	var rows: Array[String] = []
 	for index in range(0, entries.size(), 2):
 		rows.append("  ·  ".join(entries.slice(index, index + 2)))
@@ -214,10 +237,11 @@ func _render_items() -> void:
 		var anchor: Vector2i = _rendered_placements[id]
 		var button := Style.button("")
 		button.name = "Item_" + id
+		if Catalog.icon(item) == null:
+			button.text = item.get("glyph", item["name"].left(2))
 		button.position = Vector2(anchor) * CELL
 		button.size = Vector2(int(item["width"]), int(item["height"])) * CELL - Vector2.ONE
 		button.custom_minimum_size = Vector2.ZERO
-		button.tooltip_text = Catalog.tooltip(item) + "\n\nDrag to Main hand or press Enter"
 		button.set_drag_forwarding(_get_sword_drag_data.bind(button, id), Callable(), Callable())
 		button.gui_input.connect(_equip_with_keyboard.bind(button, id))
 		button.pressed.connect(_select.bind(id))
@@ -234,9 +258,16 @@ func _render_items() -> void:
 
 
 func _get_sword_drag_data(_position: Vector2, button: Button, id: String) -> Dictionary:
-	var preview := TextureRect.new()
-	preview.texture = Catalog.icon(_catalogue[id])
-	preview.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	var item: Dictionary = _catalogue[id]
+	var icon := Catalog.icon(item)
+	var preview: Control
+	if icon != null:
+		var sprite := TextureRect.new()
+		sprite.texture = icon
+		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		preview = sprite
+	else:
+		preview = Style.label(item.get("glyph", "+"), 20, Style.ACCENT)
 	preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.set_drag_preview(preview)
 	return {"sword_id": id}
@@ -244,6 +275,18 @@ func _get_sword_drag_data(_position: Vector2, button: Button, id: String) -> Dic
 
 func _can_drop_sword(_position: Vector2, data: Variant) -> bool:
 	return data is Dictionary and data.get("sword_id") is String and _rendered_placements.has(data["sword_id"])
+
+
+func _can_drop_equipment(_position: Vector2, data: Variant, slot: String) -> bool:
+	if not _can_drop_sword(_position, data):
+		return false
+	var item: Dictionary = _catalogue[data["sword_id"]]
+	var target: String = item.get("slot", "main_hand")
+	return target == slot or (target == "accessory" and slot.begins_with("accessory_"))
+
+
+func _drop_equipment(_position: Vector2, data: Dictionary, slot: String) -> void:
+	slot_equip_requested.emit(data["sword_id"], slot)
 
 
 func _drop_sword(_position: Vector2, data: Dictionary) -> void:
@@ -262,7 +305,7 @@ func _select(id: String) -> void:
 
 
 func _update_selection() -> void:
-	_selection.text = str(_catalogue[_selected]["name"]) if _catalogue.has(_selected) else "Select a sword"
+	_selection.text = str(_catalogue[_selected]["name"]) if _catalogue.has(_selected) else "Select equipment"
 
 
 func focus_grid() -> void:

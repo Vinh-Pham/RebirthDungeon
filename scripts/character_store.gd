@@ -13,12 +13,15 @@ const LIMITS := {
 }
 const TOWNS := ["lantern_rest", "spindle_hollow"]
 const LOOT_BALANCE_KEYS := {"gold": "gold", "tonic": "tonics"}
+const GEAR_SLOTS := ["off_hand", "armor", "headgear", "gloves", "shoes", "accessory_1", "accessory_2"]
+const SHOP_SUPPLIES := ["arrow", "bolt", "altar_of_restoration"]
 const WORLD_DEFAULTS := {
-	"location": "lantern_rest", "visited": [], "gates": [], "quest": 0,
+	"location": "lantern_rest", "map_position": {}, "visited": [], "gates": [], "quest": 0,
 	"gold": 24, "tonics": 0, "health": -1, "dungeon_from": "lantern_rest",
 	"pending_loot": {}, "skills": Skills.STARTING, "spent_ap": 0,
 	"quick_slots": ["", "", "", ""],
 	"armor_owned": false, "equipment_durability": {},
+	"starter_sword_claimed": false, "gear_inventory": {}, "shop_supplies": {},
 	"threshold_cleared": 0, "threshold_treasure_claimed": false, "threshold_treasure_chest": -1, "threshold_run": 0,
 	"town_materials": {"fish": 0, "grain": 0, "flour": 0, "fiber": 0, "thread": 0, "cloth": 0, "cobweb": 0},
 }
@@ -86,6 +89,24 @@ static func update_world(changes: Dictionary) -> Dictionary:
 	profile["world"] = world
 	var destination := DIRECTORY.path_join(_selected_id + ".json")
 	return profile if _write_profile(profile, destination) else {}
+
+
+static func save_map_position(character_id: String, location: String, cell: Vector2i, room := -1, run := -1) -> bool:
+	var profile := load_selected()
+	if profile.is_empty() or profile["id"] != character_id:
+		return false
+	var world: Dictionary = profile["world"]
+	var position := {"location": location, "x": cell.x, "y": cell.y}
+	if location == "threshold":
+		position["room"] = room
+		position["run"] = run
+	position = _normalize_map_position(position, world)
+	if position.is_empty():
+		return false
+	if world["map_position"] == position:
+		return true
+	world["map_position"] = position
+	return _write_profile(profile, DIRECTORY.path_join(character_id + ".json"))
 
 
 static func _merge_world(current: Dictionary, changes: Dictionary) -> Dictionary:
@@ -185,6 +206,17 @@ static func _normalize_world(value: Variant) -> Dictionary:
 			return {}
 		durability[item_id] = int(world["equipment_durability"][item_id])
 	world["equipment_durability"] = durability
+	var gear: Variant = _normalize_gear_inventory(world["gear_inventory"])
+	if gear == null or not world["starter_sword_claimed"] is bool or not world["shop_supplies"] is Dictionary:
+		return {}
+	world["gear_inventory"] = gear
+	var supplies := {}
+	for id in world["shop_supplies"]:
+		var count: Variant = world["shop_supplies"][id]
+		if id not in SHOP_SUPPLIES or not _integer_in_range(count, 1, MAX_EXPERIENCE):
+			return {}
+		supplies[id] = int(count)
+	world["shop_supplies"] = supplies
 	var bounds := {"quest": [0, 3], "gold": [0, MAX_EXPERIENCE], "tonics": [0, MAX_EXPERIENCE], "health": [-1, 2500], "threshold_cleared": [0, Rooms.ROOM_COUNT], "threshold_run": [0, MAX_EXPERIENCE], "threshold_treasure_chest": [-1, Rooms.CHEST_COUNT - 1]}
 	for key in bounds:
 		if not _integer_in_range(world[key], bounds[key][0], bounds[key][1]):
@@ -196,7 +228,59 @@ static func _normalize_world(value: Variant) -> Dictionary:
 		return {}
 	if world["threshold_treasure_claimed"] and world["threshold_cleared"] != Rooms.ROOM_COUNT:
 		return {}
+	world["map_position"] = _normalize_map_position(world["map_position"], world)
 	return world
+
+
+static func _normalize_map_position(value: Variant, world: Dictionary) -> Dictionary:
+	if not value is Dictionary or value.get("location") != world["location"]:
+		return {}
+	var location: String = world["location"]
+	if location != "threshold" and location not in TOWNS:
+		return {}
+	var x: Variant = value.get("x")
+	var y: Variant = value.get("y")
+	if not _integer_in_range(x, 0, MAX_SEED) or not _integer_in_range(y, 0, MAX_SEED):
+		return {}
+	var position := {"location": location, "x": int(x), "y": int(y)}
+	if location == "threshold":
+		var room: Variant = value.get("room")
+		var run: Variant = value.get("run")
+		if not _integer_in_range(room, 0, world["threshold_cleared"]) or not _integer_in_range(run, world["threshold_run"], world["threshold_run"]):
+			return {}
+		position["room"] = int(room)
+		position["run"] = int(run)
+	return position
+
+
+static func _normalize_gear_inventory(value: Variant) -> Variant:
+	if not value is Dictionary:
+		return null
+	if value.is_empty():
+		return {}
+	if not value.get("placements") is Dictionary or not value.get("equipped") is String or not value.get("slots", {}) is Dictionary:
+		return null
+	var seen := {}
+	var equipped: String = value["equipped"]
+	if not equipped.is_empty():
+		seen[equipped] = true
+	var placements := {}
+	for id in value["placements"]:
+		var coordinates: Variant = value["placements"][id]
+		if not id is String or id.is_empty() or seen.has(id) or not coordinates is Array or coordinates.size() != 2:
+			return null
+		if not _integer_in_range(coordinates[0], 0, 7) or not _integer_in_range(coordinates[1], 0, 6):
+			return null
+		seen[id] = true
+		placements[id] = [int(coordinates[0]), int(coordinates[1])]
+	var slots := {}
+	for slot in value.get("slots", {}):
+		var id: Variant = value["slots"][slot]
+		if slot not in GEAR_SLOTS or not id is String or id.is_empty() or seen.has(id):
+			return null
+		seen[id] = true
+		slots[slot] = id
+	return {"placements": placements, "equipped": equipped, "slots": slots}
 
 
 static func _write_profile(profile: Dictionary, destination: String) -> bool:

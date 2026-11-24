@@ -1,0 +1,14 @@
+[remap]
+
+importer="aseprite_wizard.plugin.noop"
+type="PackedDataContainer"
+uid="uid://yqgc5f5e7n6h"
+path="res://.godot/imported/altar_of_restoration.aseprite-2227afb23891fc728dd2a3ec2c293db7.res"
+
+[deps]
+
+source_file="res://assets/art/blacksmith/altar_of_restoration.aseprite"
+dest_files=["res://.godot/imported/altar_of_restoration.aseprite-2227afb23891fc728dd2a3ec2c293db7.res"]
+
+[params]
+

@@ -212,7 +212,7 @@ func _fill_list(preferred := "") -> void:
 		if _browsing_rack:
 			if item["family"] != _rack_family or (not filter.is_empty() and not item["name"].to_lower().contains(filter)):
 				continue
-		elif not _satchel.owns(id):
+		elif not _satchel.owns(id) or item.get("slot", "main_hand") != "main_hand":
 			continue
 		_ids.append(id)
 	_ids.sort_custom(func(a: String, b: String) -> bool:
@@ -259,7 +259,7 @@ func _inspect(index: int) -> void:
 		Catalog.damage_text(item), grip, int(item["width"]), int(item["height"])
 	]
 	_primary.disabled = _satchel.owns(id) if _browsing_rack else id == held
-	_return.disabled = false
+	_return.disabled = item["family"] == "shop"
 	_paint_grid(id)
 
 
@@ -298,7 +298,7 @@ func _use_selected() -> void:
 
 func _return_selected() -> void:
 	var id := _selected_id()
-	if id.is_empty() or _rack_family.is_empty() or _browsing_rack:
+	if id.is_empty() or _rack_family.is_empty() or _browsing_rack or _return.disabled:
 		return
 	_complete(_satchel.return_to_rack(id), "Returned " + str(_catalog[id]["name"]) + ".")
 

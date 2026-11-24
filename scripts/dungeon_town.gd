@@ -2,6 +2,7 @@ extends Control
 
 const Durability = preload("res://scripts/equipment_durability.gd")
 const Repair = preload("res://scripts/equipment_repair.gd")
+const Shop = preload("res://scripts/blacksmith_shop.gd")
 
 const Style = preload("res://scripts/menu_style.gd")
 const Store = preload("res://scripts/character_store.gd")
@@ -52,6 +53,7 @@ var satchel := Satchel.new()
 var armory: Armory
 var sheet: Sheet
 var _repair: Repair
+var _shop: Shop
 var wall_cells: Dictionary = {}
 var _water_cells: Dictionary = {}
 var _road_cells: Dictionary = {}
@@ -86,6 +88,8 @@ func _ready() -> void:
 			get_tree().change_scene_to_file.call_deferred("res://scenes/character.tscn")
 			return
 	satchel.open(profile["id"], catalogue)
+	if satchel.owns("ashen_arcblade") and not world["starter_sword_claimed"]:
+		_save({"starter_sword_claimed": true})
 	_build_map()
 	_build_interface()
 	_refresh()
@@ -93,6 +97,7 @@ func _ready() -> void:
 
 
 func _build_map() -> void:
+	var gate_arrival: bool = _gate_arrival_id == profile["id"]
 	if town == "lantern_rest":
 		var generated := LanternMap.generate(int(profile["seed"]))
 		_landmarks = generated["landmarks"]
@@ -116,6 +121,12 @@ func _build_map() -> void:
 		if place["id"] == "gate" and _gate_arrival_id == profile["id"]:
 			player = cell + Vector2i.UP
 			_gate_arrival_id = ""
+	if not gate_arrival:
+		var checkpoint: Dictionary = world.get("map_position", {})
+		if checkpoint.get("location") == town:
+			var saved := Vector2i(int(checkpoint["x"]), int(checkpoint["y"]))
+			if saved.x >= 0 and saved.y >= 0 and saved.x < _map_size.x and saved.y < _map_size.y and not wall_cells.has(saved) and not _points.has(saved):
+				player = saved
 
 
 func _build_spindle_walls() -> void:
@@ -175,6 +186,11 @@ func _build_interface() -> void:
 	_repair = Repair.new()
 	_repair.selected.connect(_repair_options)
 	add_child(_repair)
+	_shop = Shop.new()
+	_shop.name = "BlacksmithShop"
+	_shop.purchase_requested.connect(_purchase_shop_item)
+	_shop.closed.connect(_blacksmith_menu)
+	add_child(_shop)
 
 
 func _build_town_view() -> void:
@@ -250,11 +266,17 @@ func _profile_updated(updated: Dictionary) -> void:
 
 
 func _map_movement_available() -> bool:
-	return not (_layout.inventory_is_open() or _layout.game_menu_is_open() or sheet.visible or armory.visible or _journal.visible or _repair.visible)
+	return not (_layout.inventory_is_open() or _layout.game_menu_is_open() or sheet.visible or armory.visible or _journal.visible or _repair.visible or _shop.visible)
 
 
 func _command(command: String) -> void:
 	_layout.cancel_map_movement()
+	if command == "exit":
+		_exit_game()
+		return
+	if command == "characters":
+		_characters()
+		return
 	if not _map_movement_available():
 		return
 	var weapon: Dictionary = catalogue.get(satchel.equipped, {})
@@ -264,7 +286,6 @@ func _command(command: String) -> void:
 			var health := int(stats["life"]) if int(world["health"]) < 0 else int(world["health"])
 			sheet.open(profile, stats, weapon, health, int(stats["stamina"]))
 		"inventory": _layout.open_inventory()
-		"characters": _characters()
 		"skills", "talent", "quests": _open_journal(command)
 		"interact": _interact()
 
@@ -310,7 +331,7 @@ func _show_status() -> void:
 	var message := "Visit the shops, workstations, or fishing pools. Take the east stairs to the Threshold dungeon."
 	if town == "spindle_hollow":
 		message = "Rest, resupply, or speak with Watchkeeper Oren. The Threshold stairs lead back toward Lantern Rest."
-	elif int(world["quest"]) == 0:
+	elif int(world["quest"]) == 0 and not world["starter_sword_claimed"]:
 		message = "Welcome to Lantern Rest. Speak to Warden Nera and visit Venn for a starter sword before taking the east stairs."
 	_say(message, {})
 
@@ -409,7 +430,7 @@ func _input(event: InputEvent) -> void:
 			sheet.close()
 			get_viewport().set_input_as_handled()
 		return
-	if armory.visible or _repair.visible:
+	if armory.visible or _repair.visible or _shop.visible:
 		return
 	if _journal.visible:
 		if event.keycode in [KEY_ESCAPE, KEY_Z, KEY_T, KEY_Q]:
@@ -507,12 +528,7 @@ func _interact() -> void:
 		"warden":
 			_elder()
 		"blacksmith":
-			_say("%s  ·  Take a dependable blade before entering the passage." % resident, {
-				"Claim starter sword": _starter,
-				"Browse swords": _browse_swords,
-				"Claim Riveted Jack": _claim_armor,
-				"Repair equipment": _open_repairs,
-			})
+			_blacksmith_menu()
 		"general_shop":
 			var choices := {"Buy tonic · 8 gold": _buy}
 			if town == "lantern_rest":
@@ -600,17 +616,97 @@ func _reward() -> void:
 		_refresh()
 
 
-func _starter() -> void:
-	var error := ""
-	if not satchel.owns("ashen_arcblade"):
-		error = satchel.take("ashen_arcblade")
-	if error.is_empty() and satchel.equipped.is_empty():
-		error = satchel.equip("ashen_arcblade")
-	if error.is_empty():
-		_say("%s: Your starter sword is ready. Inspect it in your satchel before leaving." % _landmarks[conversation_target]["name"], {})
+func _blacksmith_menu(message := "") -> void:
+	if not _at_blacksmith():
+		return
+	var choices := {}
+	if town == "lantern_rest":
+		choices["Shop"] = _open_shop
 	else:
-		_say(error, {})
-	_refresh()
+		choices["Browse swords"] = _browse_swords
+	if not world["starter_sword_claimed"] and not satchel.owns("ashen_arcblade"):
+		choices["Claim starter sword"] = _starter
+	choices["Claim Riveted Jack"] = _claim_armor
+	choices["Repair equipment"] = _open_repairs
+	var resident: String = _landmarks[conversation_target]["name"]
+	var greeting := "%s · Need equipment or repairs?" % resident
+	_say(greeting if message.is_empty() else message, choices)
+
+
+func _at_blacksmith() -> bool:
+	return conversation_target >= 0 and conversation_target < _landmarks.size() \
+		and _landmarks[conversation_target]["id"] == "blacksmith" \
+		and player.distance_squared_to(_points[conversation_target]) <= 1
+
+
+func _starter() -> void:
+	if not _at_blacksmith() or world["starter_sword_claimed"] or satchel.owns("ashen_arcblade"):
+		return
+	var error := satchel.take("ashen_arcblade", {"starter_sword_claimed": true}, true)
+	if not error.is_empty():
+		_blacksmith_menu(error)
+		return
+	_profile_updated(Store.load_selected())
+	var resident: String = _landmarks[conversation_target]["name"]
+	_blacksmith_menu("%s: Your starter sword is ready." % resident)
+
+
+func _open_shop() -> void:
+	if town != "lantern_rest" or not _at_blacksmith():
+		return
+	_layout.cancel_map_movement()
+	_shop.open(Catalog.shop_categories(), _shop_rows(), int(world["gold"]))
+
+
+func _shop_rows() -> Array:
+	var rows := Catalog.shop_stock().values()
+	for item: Dictionary in rows:
+		if satchel.owns(item["id"]):
+			item["available"] = false
+			item["unavailable_reason"] = "You already own this equipment."
+	return rows
+
+
+func _purchase_shop_item(id: String) -> void:
+	if not _shop.visible or town != "lantern_rest" or not _at_blacksmith():
+		return
+	var active := Store.load_selected()
+	if active.get("id") != profile["id"] or active["world"]["location"] != town:
+		_shop.set_status("Could not load your character.")
+		return
+	var item: Dictionary = Catalog.shop_stock().get(id, {})
+	if item.is_empty():
+		return
+	var active_world: Dictionary = active["world"]
+	var price := int(item["price"])
+	if int(active_world["gold"]) < price:
+		_shop.set_status("You need %d gold to buy this item." % price)
+		return
+	var changes := {"gold": int(active_world["gold"]) - price}
+	var saved: Dictionary
+	if item.has("stack_key"):
+		var key: String = item["stack_key"]
+		var supplies: Dictionary = active_world["shop_supplies"].duplicate()
+		var total := int(supplies.get(key, 0)) + int(item["quantity"])
+		if total > Store.MAX_EXPERIENCE:
+			_shop.set_status("You cannot carry more of this supply.")
+			return
+		supplies[key] = total
+		changes["shop_supplies"] = supplies
+		saved = Store.update_world(changes)
+	else:
+		var error := satchel.take(id, changes)
+		if not error.is_empty():
+			_shop.set_status(error)
+			return
+		saved = Store.load_selected()
+	if saved.is_empty():
+		_shop.set_status("Could not save your purchase.")
+		return
+	_profile_updated(saved)
+	_shop.refresh(int(world["gold"]), _shop_rows())
+	_shop.set_status("Purchased %s." % item["name"])
+
 
 
 func _browse_swords() -> void:
@@ -635,7 +731,7 @@ func _heal() -> void:
 
 
 func _leave() -> void:
-	var departure := {"location": "threshold", "dungeon_from": town}
+	var departure := {"location": "threshold", "dungeon_from": town, "map_position": {}}
 	if int(world["threshold_cleared"]) == 8:
 		departure.merge({"threshold_cleared": 0, "threshold_treasure_claimed": false, "threshold_treasure_chest": -1, "threshold_run": mini(int(world["threshold_run"]) + 1, Store.MAX_EXPERIENCE)})
 	if town == "lantern_rest" and int(world["quest"]) == 0:
@@ -669,7 +765,7 @@ func _travel(destination: String) -> void:
 		return
 	if not world["gates"].has(destination) or not world["visited"].has(destination):
 		return
-	if _save({"location": destination}):
+	if _save({"location": destination, "map_position": {}}):
 		_gate_arrival_id = str(profile["id"])
 		if get_tree().change_scene_to_file("res://scenes/dungeon_town.tscn") != OK:
 			_gate_arrival_id = ""
@@ -677,7 +773,23 @@ func _travel(destination: String) -> void:
 
 
 func _characters() -> void:
-	get_tree().change_scene_to_file("res://scenes/character.tscn")
+	if _save_map_position():
+		get_tree().change_scene_to_file("res://scenes/character.tscn")
+
+
+func _save_map_position() -> bool:
+	if profile.is_empty():
+		return false
+	if Store.save_map_position(profile["id"], town, player):
+		return true
+	_layout.log_label.text = "Could not save your position. Please try again."
+	return false
+
+
+func _exit_game() -> void:
+	if _save_map_position():
+		get_tree().quit()
+
 
 
 

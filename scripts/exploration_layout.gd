@@ -40,6 +40,23 @@ var _map_route: Array[Vector2i] = []
 var _map_step_delay := 0.0
 
 
+var _previous_auto_accept_quit := true
+
+
+func _enter_tree() -> void:
+	_previous_auto_accept_quit = get_tree().auto_accept_quit
+	get_tree().auto_accept_quit = false
+
+
+func _exit_tree() -> void:
+	get_tree().auto_accept_quit = _previous_auto_accept_quit
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST and is_node_ready():
+		command_requested.emit("exit")
+
+
 func _ready() -> void:
 	set_process(false)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -66,6 +83,7 @@ func _ready() -> void:
 	_inventory = InventoryPanel.new()
 	_inventory.name = "InventoryPanel"
 	_inventory.equip_requested.connect(_equip)
+	_inventory.slot_equip_requested.connect(_equip)
 	_inventory.close_requested.connect(close_inventory)
 	add_child(_inventory)
 
@@ -153,7 +171,7 @@ func _on_game_menu_choice(action: int) -> void:
 		MenuAction.SETTINGS:
 			_game_settings.open()
 		MenuAction.EXIT:
-			get_tree().quit()
+			command_requested.emit("exit")
 
 
 func _close_settings() -> void:
@@ -308,11 +326,14 @@ func map_arrow_direction(key: int) -> Vector2i:
 		_: return Vector2i.ZERO
 
 
-func _equip(id: String) -> void:
-	var error := _satchel.equip(id)
+func _equip(id: String, slot := "") -> void:
+	var error := _satchel.equip(id, slot)
 	var message := error
 	if error.is_empty():
 		message = "Equipped %s." % _catalogue[id]["name"]
+		var saved := Store.load_selected()
+		if not saved.is_empty() and saved.get("id") == _profile.get("id"):
+			_profile = saved
 		refresh(_profile)
 		profile_updated.emit(_profile)
 	log_label.text = message

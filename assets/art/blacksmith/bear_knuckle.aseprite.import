@@ -1,0 +1,14 @@
+[remap]
+
+importer="aseprite_wizard.plugin.noop"
+type="PackedDataContainer"
+uid="uid://74ru6wg4kxfq"
+path="res://.godot/imported/bear_knuckle.aseprite-3f821948ef511e022cd45a5b45449582.res"
+
+[deps]
+
+source_file="res://assets/art/blacksmith/bear_knuckle.aseprite"
+dest_files=["res://.godot/imported/bear_knuckle.aseprite-3f821948ef511e022cd45a5b45449582.res"]
+
+[params]
+

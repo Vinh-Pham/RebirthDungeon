@@ -924,11 +924,14 @@ func _resolve_action(action: int, enemy_index := -1) -> String:
 	var saved_world: Dictionary = saved["world"]
 	var broke_weapon := not weapon.is_empty() and Durability.usable_weapon(saved_world, weapon).is_empty()
 	var broke_armor := Durability.armor_defense(world) > 0 and Durability.armor_defense(saved_world) == 0
+	var lost_defense := Durability.equipment_defense(saved_world) < Durability.equipment_defense(world)
 	if broke_weapon:
 		message += " Your weapon broke. You now fight bare-handed."
 	if broke_armor:
 		message += " Your armor broke."
-	if xp > 0 or broke_weapon or broke_armor:
+	elif lost_defense:
+		message += " A piece of protective equipment broke."
+	if xp > 0 or broke_weapon or lost_defense:
 		_character_stats = Stats.snapshot(saved, _weapon)
 		if _match.active:
 			_match.refresh_character_stats(_character_stats)

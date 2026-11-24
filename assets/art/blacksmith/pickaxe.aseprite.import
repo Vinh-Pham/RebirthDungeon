@@ -1,0 +1,14 @@
+[remap]
+
+importer="aseprite_wizard.plugin.noop"
+type="PackedDataContainer"
+uid="uid://ds68hdk4qjtee"
+path="res://.godot/imported/pickaxe.aseprite-cf982467aadb11bf08db7c94a57e451a.res"
+
+[deps]
+
+source_file="res://assets/art/blacksmith/pickaxe.aseprite"
+dest_files=["res://.godot/imported/pickaxe.aseprite-cf982467aadb11bf08db7c94a57e451a.res"]
+
+[params]
+
