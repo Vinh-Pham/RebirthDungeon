@@ -91,3 +91,17 @@ func test_rejected_step_stops_route() -> void:
 	_finish_route()
 	assert_eq(_player, Vector2i.ZERO)
 	assert_eq(_steps.size(), 1)
+
+
+func test_open_inventory_cancels_and_blocks_map_routes() -> void:
+	await _click(Vector2i(4, 0))
+	var stopped := _player
+	assert_ne(stopped, Vector2i.ZERO)
+	_layout.open_inventory()
+	await _click(Vector2i(4, 0))
+	_finish_route()
+	assert_eq(_player, stopped)
+	_layout.close_inventory()
+	await _click(Vector2i(4, 0))
+	_finish_route()
+	assert_eq(_player, Vector2i(4, 0))

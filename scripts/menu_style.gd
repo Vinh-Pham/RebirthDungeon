@@ -4,6 +4,7 @@ const UI_FONT = preload("res://assets/fonts/DepartureMono/DepartureMono-Regular.
 const PROSE_FONT = preload("res://assets/fonts/SourceCodePro/OTF/SourceCodePro-Regular.otf")
 
 const BACK := Color("#28353e")
+const OVERLAY_SHADE := Color(0.0, 0.0, 0.0, 0.28)
 const SURFACE := Color("#2e222f")
 const PANEL := Color("#344a5a")
 const BORDER := Color("#407080")

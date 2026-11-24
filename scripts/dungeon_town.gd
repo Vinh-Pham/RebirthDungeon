@@ -16,7 +16,8 @@ const POINTS := [
 	Vector2i(20, 4), Vector2i(24, 8), Vector2i(26, 5)
 ]
 const ORIGIN := Vector2(11, 42)
-const TILE := Vector2(20, 30)
+const TILE := Vector2(28, 32)
+const SPRITE_INSET := Vector2(6, 4)
 const SERVICES := ["Warden", "Blacksmith", "Provisioner", "Healer's House"]
 const TOWN_NAMES := {"lantern_rest": "Lantern Rest", "spindle_hollow": "Spindle Hollow"}
 
@@ -130,7 +131,7 @@ func _profile_updated(updated: Dictionary) -> void:
 
 
 func _map_movement_available() -> bool:
-	return not (sheet.visible or armory.visible or _journal.visible)
+	return not (_layout.inventory_is_open() or sheet.visible or armory.visible or _journal.visible)
 
 
 func _command(command: String) -> void:
@@ -143,7 +144,7 @@ func _command(command: String) -> void:
 			var stats := Stats.snapshot(profile, weapon)
 			var health := int(stats["life"]) if int(world["health"]) < 0 else int(world["health"])
 			sheet.open(profile, stats, weapon, health, int(stats["stamina"]))
-		"inventory": _layout.focus_inventory()
+		"inventory": _layout.open_inventory()
 		"skills", "talent", "quests": _journal.open(command, profile, Stats.snapshot(profile, weapon))
 		"interact": _interact()
 
@@ -192,7 +193,7 @@ func _draw_world() -> void:
 			if y == 7 or (x == 24 and y >= 6):
 				_layout.map_canvas.draw_rect(Rect2(point, TILE), road)
 			var is_wall := wall_cells.has(cell)
-			_layout.map_canvas.draw_string(Style.UI_FONT, point + Vector2(3, 22), "#" if is_wall else ".", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, masonry)
+			_layout.map_canvas.draw_string(Style.UI_FONT, point + Vector2(9, 23), "#" if is_wall else ".", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, masonry)
 
 	for index in range(4):
 		var point := ORIGIN + Vector2(POINTS[index]) * TILE
@@ -201,7 +202,7 @@ func _draw_world() -> void:
 			caption = "Watchkeeper"
 		_layout.map_canvas.draw_string(Style.UI_FONT, Vector2(point.x - 32, ORIGIN.y - 2), caption, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Style.TEXT)
 		var door := ORIGIN + Vector2(POINTS[index].x, 5) * TILE
-		_layout.map_canvas.draw_line(door + Vector2(2, 27), door + Vector2(18, 27), Style.ACCENT)
+		_layout.map_canvas.draw_line(door + Vector2(2, 29), door + Vector2(26, 29), Style.ACCENT)
 
 	var names := _resident_names()
 	for index in POINTS.size():
@@ -212,11 +213,11 @@ func _draw_world() -> void:
 			var slot := index + (1 if town == "lantern_rest" else 5)
 			if index == 4:
 				slot = 9
-			_layout.map_canvas.draw_texture_rect_region(atlas, Rect2(point + Vector2(2, 3), Vector2(16, 24)), Rect2(slot * 16, 0, 16, 24))
+			_layout.map_canvas.draw_texture_rect_region(atlas, Rect2(point + SPRITE_INSET, Vector2(16, 24)), Rect2(slot * 16, 0, 16, 24))
 		else:
-			_layout.map_canvas.draw_string(Style.UI_FONT, point + Vector2(3, 22), ">", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Style.ACCENT)
+			_layout.map_canvas.draw_string(Style.UI_FONT, point + Vector2(9, 23), ">", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Style.ACCENT)
 		_layout.map_canvas.draw_string(Style.UI_FONT, point + Vector2(-13, -4), names[index], HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Style.TEXT)
-	_layout.map_canvas.draw_texture(portrait, ORIGIN + Vector2(player) * TILE + Vector2(2, 3))
+	_layout.map_canvas.draw_texture(portrait, ORIGIN + Vector2(player) * TILE + SPRITE_INSET)
 
 
 func _resident_names() -> Array:
@@ -229,6 +230,8 @@ func _input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo or sheet == null:
 		return
 	_layout.cancel_map_movement()
+	if _layout.inventory_is_open():
+		return
 	if sheet.visible:
 		if event.keycode in [KEY_C, KEY_ESCAPE]:
 			sheet.close()
@@ -243,8 +246,6 @@ func _input(event: InputEvent) -> void:
 		return
 	if event.keycode == KEY_ESCAPE:
 		get_viewport().set_input_as_handled()
-		if _layout.release_inventory_focus():
-			return
 		if conversation_target >= 0:
 			_show_status()
 		else:

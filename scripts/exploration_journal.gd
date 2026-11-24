@@ -17,7 +17,7 @@ func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	hide()
 	var shade := ColorRect.new()
-	shade.color = Color(Style.SURFACE, 0.94)
+	shade.color = Style.OVERLAY_SHADE
 	add_child(shade)
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var frame := Style.panel(Style.inset(self, 160, 70, true), Style.BACK)

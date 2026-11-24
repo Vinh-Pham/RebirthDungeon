@@ -14,9 +14,10 @@ const Journal = preload("res://scripts/exploration_journal.gd")
 const CHARACTERS := "res://scenes/character.tscn"
 const TOWN := "res://scenes/dungeon_town.tscn"
 const SPIDER_ATLAS = preload("res://assets/art/spider_atlas.png")
-const MAP_ORIGIN := Vector2(1, 24)
-const TILE_SIZE := Vector2(20, 24)
-const SPRITE_INSET := Vector2(2, 0)
+const MAP_ORIGIN := Vector2(12, 12)
+const TILE_SIZE := Vector2(27, 26)
+const SPRITE_INSET := Vector2(5, 1)
+const GLYPH_INSET := Vector2(7, 21)
 const MAP_SIZE := Vector2i(31, 15)
 const PRACTICE_POST := Vector2i(8, 4)
 const WARRENS_STAIRS := Vector2i(27, 7)
@@ -170,7 +171,7 @@ func _draw_map() -> void:
 			var is_floor := floor_cells.has(cell)
 			var glyph := "." if is_floor else "#"
 			var color := Color("#788a87") if is_floor else Style.BORDER
-			canvas.draw_string(Style.UI_FONT, position_on_map + Vector2(4, 21), glyph, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, color)
+			canvas.draw_string(Style.UI_FONT, position_on_map + GLYPH_INSET, glyph, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, color)
 	for cell: Vector2i in WEAPON_RACKS:
 		var point := _map_point(cell)
 		canvas.draw_rect(Rect2(point, TILE_SIZE), Style.SURFACE)
@@ -181,12 +182,12 @@ func _draw_map() -> void:
 	if not floor_cells.is_empty():
 		var post_position := _map_point(PRACTICE_POST)
 		canvas.draw_rect(Rect2(post_position, TILE_SIZE), Style.SURFACE)
-		canvas.draw_string(Style.UI_FONT, post_position + Vector2(5, 21), "+", HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Style.ACCENT)
+		canvas.draw_string(Style.UI_FONT, post_position + GLYPH_INSET, "+", HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Style.ACCENT)
 	if not floor_cells.is_empty():
 		var stair_position := _map_point(WARRENS_STAIRS)
 		canvas.draw_rect(Rect2(stair_position, TILE_SIZE), Style.SURFACE)
 		canvas.draw_rect(Rect2(stair_position, TILE_SIZE), Style.ACCENT, false, 1)
-		canvas.draw_string(Style.UI_FONT, stair_position + Vector2(5, 21), ">", HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Style.ACCENT)
+		canvas.draw_string(Style.UI_FONT, stair_position + GLYPH_INSET, ">", HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Style.ACCENT)
 	if not floor_cells.is_empty():
 		_draw_marker(WEST_EXIT, "<", Style.TEAL)
 		_draw_marker(EAST_EXIT, ">", Style.TEAL)
@@ -207,7 +208,7 @@ func _draw_marker(cell: Vector2i, glyph: String, color: Color) -> void:
 	var canvas := _layout.map_canvas
 	var point := _map_point(cell)
 	canvas.draw_rect(Rect2(point, TILE_SIZE), Style.SURFACE)
-	canvas.draw_string(Style.UI_FONT, point + Vector2(5, 21), glyph, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, color)
+	canvas.draw_string(Style.UI_FONT, point + GLYPH_INSET, glyph, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, color)
 
 
 func _map_point(cell: Vector2i) -> Vector2:
@@ -228,6 +229,8 @@ func _input(event: InputEvent) -> void:
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo or _journal == null:
+		return
+	if _layout.inventory_is_open():
 		return
 	var viewport := get_viewport()
 	if _sheet.visible:
@@ -256,11 +259,9 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		viewport.set_input_as_handled()
 		return
 	match event.keycode:
-		KEY_ESCAPE:
-			if not _layout.release_inventory_focus():
-				_return_to_characters()
+		KEY_ESCAPE: _return_to_characters()
 		KEY_E: _interact()
-		KEY_I: _layout.focus_inventory()
+		KEY_I: _layout.open_inventory()
 		KEY_1, KEY_2, KEY_3, KEY_4: _layout.use_slot(event.keycode - KEY_1)
 		KEY_SPACE: _strike_practice_post()
 		KEY_W: _move(Vector2i.UP)
@@ -280,7 +281,7 @@ func _journal_shortcut(key: int) -> String:
 
 
 func _map_movement_available() -> bool:
-	return not (_sheet.visible or _journal.visible or _armory.visible or _warrens.visible)
+	return not (_layout.inventory_is_open() or _sheet.visible or _journal.visible or _armory.visible or _warrens.visible)
 
 
 func _command(command: String) -> void:
@@ -289,7 +290,7 @@ func _command(command: String) -> void:
 		return
 	match command:
 		"character": _open_character_sheet()
-		"inventory": _layout.focus_inventory()
+		"inventory": _layout.open_inventory()
 		"interact": _interact()
 		"skills", "talent", "quests": _open_journal(command)
 

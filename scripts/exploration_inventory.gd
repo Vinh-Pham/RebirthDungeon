@@ -1,12 +1,13 @@
 extends Control
 
 signal equip_requested(id: String)
+signal close_requested
 
 const Style = preload("res://scripts/menu_style.gd")
 const Catalog = preload("res://scripts/sword_catalog.gd")
 const Satchel = preload("res://scripts/sword_satchel.gd")
-const CELL := 24
-const GRID_ORIGIN := Vector2(17, 205)
+const CELL := 38
+const GRID_ORIGIN := Vector2(300, 132)
 const EQUIPMENT_SLOTS := [
 	"Main hand", "Off hand", "Accessory 1", "Accessory 2",
 	"Armor", "Headgear", "Gloves", "Shoes"
@@ -25,41 +26,66 @@ var _gold: Label
 var _tonics: Label
 var _grid: Control
 var _rendered_placements: Dictionary = {}
+var _body: Control
+var _status: Label
 
 
 func _ready() -> void:
 	theme = Style.make_theme()
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	custom_minimum_size = Vector2(226, 465)
-	var frame := Style.panel(self, Style.SURFACE)
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	hide()
+	var shade := ColorRect.new()
+	shade.color = Style.OVERLAY_SHADE
+	add_child(shade)
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_body = Control.new()
+	add_child(_body)
+	_body.set_anchors_preset(Control.PRESET_CENTER)
+	_body.offset_left = -330
+	_body.offset_top = -285
+	_body.offset_right = 330
+	_body.offset_bottom = 285
+	var frame := Style.panel(_body, Style.SURFACE)
 	frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_add_label("Inventory", Vector2(14, 10), 19, Style.TEAL)
-	_add_label("Equipment", Vector2(17, 39), 12, Style.MUTED)
+	_add_label("Inventory", Vector2(24, 20), 30, Style.TEXT)
+	var back := Style.button("Back")
+	back.position = Vector2(528, 19)
+	back.size = Vector2(108, 38)
+	back.pressed.connect(func() -> void: close_requested.emit())
+	_body.add_child(back)
+	_add_label("Equipment", Vector2(24, 94), 16, Style.TEAL)
 	_build_equipment()
-	_add_label("Basic bag", Vector2(17, 186), 13, Style.TEXT)
+	_add_label("Basic bag", Vector2(300, 94), 16, Style.TEAL)
 	_grid = Control.new()
 	_grid.position = GRID_ORIGIN
 	_grid.size = Vector2(Satchel.WIDTH, Satchel.HEIGHT) * CELL
-	add_child(_grid)
+	_body.add_child(_grid)
 	_build_cells()
-	_selection = _add_label("Select a sword", Vector2(17, 378), 12, Style.TEXT)
-	_selection.size.x = 192
+	_selection = _add_label("Select a sword", Vector2(24, 428), 16, Style.TEXT)
+	_selection.size.x = 612
 	_selection.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	_add_label("Drag a sword to Main hand", Vector2(17, 402), 12, Style.MUTED)
-	_gold = _add_label("", Vector2(17, 439), 12, Style.ACCENT)
-	_gold.size.x = 70
-	_gold.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	_tonics = _add_label("", Vector2(91, 439), 12, Style.TEXT)
+	_add_label("Drag a sword to Main hand", Vector2(24, 463), 14, Style.MUTED)
+	_gold = _add_label("", Vector2(24, 375), 14, Style.ACCENT)
+	_gold.size.x = 240
+	_tonics = _add_label("", Vector2(300, 411), 14, Style.TEXT)
+	_status = _add_label("", Vector2(24, 505), 14, Style.TEXT)
+	_status.size = Vector2(612, 42)
+	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+
+
+func set_status(message: String) -> void:
+	_status.text = message
 
 
 func _build_equipment() -> void:
 	var equipment := GridContainer.new()
 	equipment.columns = 2
-	equipment.position = Vector2(17, 56)
+	equipment.position = Vector2(24, 132)
 	equipment.add_theme_constant_override("h_separation", 4)
 	equipment.add_theme_constant_override("v_separation", 4)
-	add_child(equipment)
+	_body.add_child(equipment)
 	for caption: String in EQUIPMENT_SLOTS:
 		var slot: Control
 		if caption == "Main hand":
@@ -105,7 +131,7 @@ func _inspect_main_hand() -> void:
 func _add_label(text_value: String, at: Vector2, font_size: int, color: Color) -> Label:
 	var label := Style.label(text_value, font_size, color)
 	label.position = at
-	add_child(label)
+	_body.add_child(label)
 	return label
 
 
@@ -129,7 +155,7 @@ func refresh(catalogue: Dictionary, satchel: Satchel, world: Dictionary) -> void
 	_gold.text = "Gold %s" % str(world.get("gold", 0))
 	_gold.tooltip_text = _gold.text
 	_tonics.text = "Healing Tonic ×%s" % str(world.get("tonics", 0))
-	_tonics.size.x = 118
+	_tonics.size.x = 304
 	_tonics.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	_tonics.tooltip_text = _tonics.text
 	if not satchel.owns(_selected):

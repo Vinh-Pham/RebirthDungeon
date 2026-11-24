@@ -12,6 +12,7 @@ const InventoryPanel = preload("res://scripts/exploration_inventory.gd")
 const Status = preload("res://scripts/exploration_status.gd")
 
 const CONTENT_SIZE := Vector2(1120, 680)
+const MAP_PANEL_SIZE := Vector2(874, 466)
 const TONIC_HEAL := 30
 const MAP_STEP_SECONDS := 0.08
 
@@ -51,17 +52,10 @@ func _ready() -> void:
 	_subtitle.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	add_child(_subtitle)
 
-	_inventory = InventoryPanel.new()
-	_inventory.name = "InventoryPanel"
-	_inventory.position = Vector2(0, 82)
-	_inventory.size = Vector2(226, 466)
-	_inventory.equip_requested.connect(_equip)
-	add_child(_inventory)
-
 	_build_map_panel()
 	_status = Status.new()
 	_status.name = "ExplorationStatus"
-	_status.position = Vector2(888, 82)
+	_status.position = Vector2(MAP_PANEL_SIZE.x + 14, 82)
 	_status.size = Vector2(232, 466)
 	_status.slot_changed.connect(_assign_slot)
 	_status.slot_used.connect(use_slot)
@@ -70,16 +64,22 @@ func _ready() -> void:
 	_build_message_log()
 	_build_navigation()
 
+	_inventory = InventoryPanel.new()
+	_inventory.name = "InventoryPanel"
+	_inventory.equip_requested.connect(_equip)
+	_inventory.close_requested.connect(close_inventory)
+	add_child(_inventory)
+
 
 func _build_map_panel() -> void:
-	var frame := _panel(Vector2(240, 82), Vector2(634, 466), Style.BACK)
+	var frame := _panel(Vector2(0, 82), MAP_PANEL_SIZE, Style.BACK)
 	var caption := Style.label("Local Map", 14, Style.TEAL)
 	caption.position = Vector2(12, 12)
 	frame.add_child(caption)
 	_context = Style.button("")
 	_context.focus_mode = Control.FOCUS_NONE
-	_context.position = Vector2(360, 5)
 	_context.size = Vector2(263, 34)
+	_context.position = Vector2(MAP_PANEL_SIZE.x - _context.size.x - 11, 5)
 	_context.pressed.connect(command_requested.emit.bind("interact"))
 	frame.add_child(_context)
 	set_context("")
@@ -88,7 +88,7 @@ func _build_map_panel() -> void:
 	map_canvas.name = "WorldMap"
 	map_canvas.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	map_canvas.position = Vector2(6, 42)
-	map_canvas.size = Vector2(622, 414)
+	map_canvas.size = MAP_PANEL_SIZE - Vector2(12, 52)
 	frame.add_child(map_canvas)
 	map_canvas.gui_input.connect(_on_map_input)
 
@@ -169,7 +169,7 @@ func _on_map_input(event: InputEvent) -> void:
 	if not event is InputEventMouseButton or event.button_index != MOUSE_BUTTON_LEFT or not event.pressed:
 		return
 	cancel_map_movement()
-	if not _can_move_on_map.call() or _status.slot_menu_open():
+	if inventory_is_open() or not _can_move_on_map.call() or _status.slot_menu_open():
 		return
 	var target := Vector2i(((event.position - _map_origin) / _map_tile_size).floor())
 	if target == _status.player or not _map_grid.is_in_boundsv(target) or _map_grid.is_point_solid(target):
@@ -178,7 +178,6 @@ func _on_map_input(event: InputEvent) -> void:
 	if _map_route.is_empty():
 		return
 	_map_route.pop_front() # The path starts at the player's current tile.
-	release_inventory_focus()
 	_map_step_delay = MAP_STEP_SECONDS
 	set_process(true)
 	_follow_map_route()
@@ -194,7 +193,7 @@ func _process(delta: float) -> void:
 
 
 func _follow_map_route() -> void:
-	if not _can_move_on_map.call() or _status.slot_menu_open() or inventory_has_focus():
+	if inventory_is_open() or not _can_move_on_map.call() or _status.slot_menu_open():
 		cancel_map_movement()
 		return
 	var next_cell: Vector2i = _map_route.pop_front()
@@ -221,24 +220,31 @@ func set_context(label: String) -> void:
 	_context.text = label + " [E]"
 
 
-func focus_inventory() -> void:
+func open_inventory() -> void:
+	cancel_map_movement()
+	_inventory.set_status("")
+	_inventory.show()
 	_inventory.focus_grid()
 
 
-func inventory_has_focus() -> bool:
-	var owner := get_viewport().gui_get_focus_owner()
-	return owner != null and (owner == _inventory or _inventory.is_ancestor_of(owner))
+func close_inventory() -> void:
+	_inventory.hide()
 
 
-func release_inventory_focus() -> bool:
-	if not inventory_has_focus():
-		return false
-	get_viewport().gui_get_focus_owner().release_focus()
-	return true
+func inventory_is_open() -> bool:
+	return _inventory.visible
+
+
+func _input(event: InputEvent) -> void:
+	if not inventory_is_open() or not event is InputEventKey or not event.pressed or event.echo:
+		return
+	if event.keycode in [KEY_I, KEY_ESCAPE]:
+		close_inventory()
+		get_viewport().set_input_as_handled()
 
 
 func map_arrow_direction(key: int) -> Vector2i:
-	if inventory_has_focus() or _status.slot_menu_open():
+	if inventory_is_open() or _status.slot_menu_open():
 		return Vector2i.ZERO
 	match key:
 		KEY_UP: return Vector2i.UP
@@ -249,15 +255,15 @@ func map_arrow_direction(key: int) -> Vector2i:
 
 
 func _equip(id: String) -> void:
-	var used_inventory_focus := release_inventory_focus()
 	var error := _satchel.equip(id)
+	var message := error
 	if error.is_empty():
-		log_label.text = "Equipped %s." % _catalogue[id]["name"]
+		message = "Equipped %s." % _catalogue[id]["name"]
 		refresh(_profile)
 		profile_updated.emit(_profile)
-	else:
-		log_label.text = error
-	if used_inventory_focus:
+	log_label.text = message
+	_inventory.set_status(message)
+	if inventory_is_open():
 		_inventory.focus_grid()
 
 

@@ -241,6 +241,7 @@ func test_dragging_sword_to_main_hand_keeps_both_weapons_when_swap_does_not_fit(
 	await _drag_item(sword, panel._gear)
 
 	assert_eq(layout.log_label.text, "Make room for your equipped weapon first.")
+	assert_eq(panel._status.text, layout.log_label.text)
 	assert_eq(_satchel.equipped, "ember_greatblade")
 	assert_eq(_satchel.placements, placements)
 	assert_eq(_read_save(), saved)
@@ -251,27 +252,46 @@ func test_focused_sword_can_be_equipped_with_enter() -> void:
 	_satchel.open(_character_id, catalog)
 	assert_eq(_satchel.take("amber_arcblade"), "")
 	var layout := _build_exploration_layout(catalog)
-	layout.focus_inventory()
 	var event := InputEventKey.new()
 	event.keycode = KEY_ENTER
 	event.pressed = true
-	get_viewport().push_input(event, true)
+	layout.get_viewport().push_input(event, true)
 	await get_tree().process_frame
 
 	assert_eq(_satchel.equipped, "amber_arcblade")
 
 
-func _build_exploration_layout(catalog: Dictionary) -> Layout:
+func test_inventory_screen_starts_hidden_and_can_be_opened_and_closed() -> void:
+	var catalog := Catalog.items_by_id()
 	var layout := Layout.new()
 	add_child_autofree(layout)
 	layout.configure("Lantern Rest", "", Vector2i.ONE, {}, {}, catalog, _satchel)
 	layout.refresh({"world": {}})
+	assert_false(layout.inventory_is_open())
+	assert_false(layout._inventory.visible)
+	layout.open_inventory()
+	assert_true(layout.inventory_is_open())
+	assert_true(layout._inventory.visible)
+	layout.close_inventory()
+	assert_false(layout.inventory_is_open())
+	assert_false(layout._inventory.visible)
+
+
+func _build_exploration_layout(catalog: Dictionary) -> Layout:
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(1152, 720)
+	add_child_autofree(viewport)
+	var layout := Layout.new()
+	viewport.add_child(layout)
+	layout.configure("Lantern Rest", "", Vector2i.ONE, {}, {}, catalog, _satchel)
+	layout.refresh({"world": {}})
+	layout.open_inventory()
 	return layout
 
 
 func _drag_item(source: Control, destination: Control) -> void:
 	await get_tree().process_frame
-	var viewport := get_viewport()
+	var viewport := source.get_viewport()
 	var start := source.get_global_rect().get_center()
 	var finish := destination.get_global_rect().get_center()
 	var motion := InputEventMouseMotion.new()
