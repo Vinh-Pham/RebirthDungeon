@@ -130,6 +130,9 @@ function on_input(self, action_id, action)
 		return true
 	end
 	if self.session.screen == "world" and not self.session.panel and (action.pressed or action.repeated) then
+		if action_id == hash("key_enter") and action.pressed and self.view:activate_focused_log() then
+			return true
+		end
 		local command, params = self.session.input:resolve_hash(action_id, hash)
 		if command then
 			self.view:dispatch(command, params)

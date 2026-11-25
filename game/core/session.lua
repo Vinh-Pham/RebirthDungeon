@@ -706,6 +706,7 @@ function S:dispatch(id, args)
 		or id == "character"
 		or id == "gates"
 		or id == "libraries"
+		or id == "log" and self.screen == "world"
 	then
 		self:open_panel(id)
 		return true

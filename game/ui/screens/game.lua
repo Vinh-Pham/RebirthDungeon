@@ -13,6 +13,14 @@ local TILE_WIDTH, TILE_HEIGHT = GridRenderer.tile_width, GridRenderer.tile_heigh
 local STATUS_BAR_WIDTH = 212
 local TIME_BAR_WIDTH = MAP_VIEW.w - 40
 local ACTION_Y = 693
+local LOG_LINE_HEIGHT = 18
+local LOG_VIEW_HEIGHT = 450
+local LOG_SCROLL_KEYS = {
+	[hash("key_up")] = -LOG_LINE_HEIGHT,
+	[hash("key_down")] = LOG_LINE_HEIGHT,
+	[hash("key_home")] = -math.huge,
+	[hash("key_end")] = math.huge,
+}
 local palette = {
 	back = "28353e",
 	dark = "2e222f",
@@ -214,6 +222,8 @@ function V:clear()
 	self.gauges = {}
 	self.focus_lines = nil
 	self.drag_ghost = nil
+	self.log_hit = nil
+	self.log_button_focus = nil
 end
 function V:header()
 	self:text(24, 27, "REBIRTH DUNGEON", "gold")
@@ -426,31 +436,90 @@ function V:wrap(text, width)
 	return wrap(text, width)
 end
 
-function V:logs()
-	local logs = list(self.s.log)
-	local first = math.max(1, #logs - 4)
-	local dungeon = self.s.world.currentLocation == "threshold"
-	local x, y = MAP_VIEW.x, 580
-	if dungeon then
-		x, y = 1038, 380
-		self:box(1144, 511, 240, 300, "panel")
-	end
-	self:text(x, y, "CHRONICLE", "gold")
+local function log_lines(logs, first, width, single_line)
 	local lines = {}
 	for i = first, #logs do
 		local value = logs[i]
 		if type(value) == "table" then
 			value = value.message
 		end
-		local entry = wrap(value, dungeon and 22 or 96)
-		for j = 1, dungeon and #entry or 1 do
+		local entry = wrap(value, width)
+		for j = 1, single_line and 1 or #entry do
 			lines[#lines + 1] = entry[j]
 		end
 	end
+	return lines
+end
+
+function V:logs()
+	local logs = list(self.s.log)
+	local dungeon = self.s.world.currentLocation == "threshold"
+	local x, y = MAP_VIEW.x, 580
+	self.log_hit = { x = MAP_VIEW.x, y = 565, w = MAP_VIEW.w, h = 111 }
+	if dungeon then
+		x, y = 1038, 380
+		self.log_hit = { x = 1024, y = 361, w = 240, h = 300 }
+		self:box(1144, 511, 240, 300, "panel")
+	end
+	self:text(x, y, "LOG", "gold")
+	self:button(self.log_hit.x + self.log_hit.w - 106, y, 92, "Expand", "log")
+	if not self.s.panel then
+		self.log_button_focus = #self.buttons
+	end
+	local lines = log_lines(logs, math.max(1, #logs - 4), dungeon and 22 or 96, not dungeon)
 	local top = math.max(1, #lines - 15)
 	for i = top, #lines do
 		Chronicle.line(self, x, y + 20 + (i - top) * 16, lines[i], color("muted"))
 	end
+end
+
+function V:activate_focused_log()
+	if self.focus ~= self.log_button_focus then
+		return false
+	end
+	self:dispatch("log")
+	return true
+end
+
+function V:log_panel()
+	local lines = log_lines(list(self.s.log), 1, 80)
+	if #lines == 0 then
+		self:text(250, 175, "No messages yet.", "muted", "prose")
+		return
+	end
+	local scroll = self.log_scroll or FlowScene.Scroll({
+		key = "expanded_log_scroll",
+		style = { height = LOG_VIEW_HEIGHT, padding_left = 12, padding_right = 14 },
+		color = color_hex("back"),
+		_bounce = false,
+		_momentum = false,
+	})
+	local height = #lines * LOG_LINE_HEIGHT
+	local max_offset = math.max(0, height - LOG_VIEW_HEIGHT)
+	if not self.log_scroll_max or scroll._scroll_y >= self.log_scroll_max then
+		scroll._scroll_y = max_offset
+	end
+	self.log_scroll, self.log_scroll_max = scroll, max_offset
+	scroll._scroll_y = math.min(scroll._scroll_y, max_offset)
+	scroll._virtual_height = height
+	local first = math.floor(scroll._scroll_y / LOG_LINE_HEIGHT) + 1
+	local last = math.min(#lines, math.ceil((scroll._scroll_y + LOG_VIEW_HEIGHT) / LOG_LINE_HEIGHT))
+	local children = { FlowScene.Box({
+		key = "expanded_log_spacer",
+		color = "transparent",
+		style = { height = (first - 1) * LOG_LINE_HEIGHT },
+	}) }
+	for i = first, last do
+		children[#children + 1] = FlowScene.Text({
+			key = "expanded_log_line_" .. i,
+			text = lines[i],
+			font = "prose",
+			color = color_hex("text"),
+			style = { height = LOG_LINE_HEIGHT },
+		})
+	end
+	scroll.children = children
+	self.flow:place(scroll, 238, 156, 804, LOG_VIEW_HEIGHT)
 end
 function V:battle()
 	local c = self.s.combat
@@ -1191,6 +1260,8 @@ function V:panel()
 		self:armory_panel()
 	elseif panel == "character" then
 		self:character_panel()
+	elseif panel == "log" then
+		self:log_panel()
 	elseif panel == "gates" then
 		self:gates_panel()
 	elseif panel == "settings" then
@@ -1217,7 +1288,7 @@ function V:panel()
 	else
 		self:paragraph(256, 187, self.s.message or "Choose an action below.", 84, "muted")
 	end
-	if self.s.message then
+	if self.s.message and panel ~= "log" then
 		self:paragraph(238, 642, self.s.message, 80, "gold", 2)
 	end
 end
@@ -1231,6 +1302,7 @@ function V:render()
 		self.previous_screen = screen
 		self.skill_detail = nil
 		self.dropdown = nil
+		self.log_scroll, self.log_scroll_max = nil, nil
 		self.armory_query, self.armory_edit, self.selected_sword = nil, nil, nil
 		self.hover_cell, self.hover_slot, self.inventory_buttons = nil, nil, nil
 		self.selected_item, self.held, self.drag, self.drag_pointer = nil, nil, nil, nil
@@ -1252,9 +1324,9 @@ function V:render()
 	else
 		self:character_status()
 		self:map()
-		self:logs()
 		self:world_actions()
 		self:battle()
+		self:logs()
 	end
 	self.drawing_panel = true
 	self:panel()
@@ -1532,6 +1604,13 @@ function V:on_input(id, a)
 	if self.s.panel == "inventory" and self:inventory_input(id, a) then
 		return true
 	end
+	local log_scroll = self.log_scroll
+	local log_delta = LOG_SCROLL_KEYS[id]
+	if self.s.panel == "log" and log_scroll and log_delta and (a.pressed or a.repeated) then
+		log_scroll._scroll_y = math.max(0, math.min(self.log_scroll_max, log_scroll._scroll_y + log_delta))
+		self.dirty = true
+		return true
+	end
 	local wheel = id == hash("mouse_wheel_up") or id == hash("mouse_wheel_down")
 	if self.dropdown and self.s.screen == "creation" then
 		if id == hash("key_tab") and a.pressed then
@@ -1569,8 +1648,9 @@ function V:on_input(id, a)
 		end
 		return true
 	end
+	local log_offset = log_scroll and log_scroll._scroll_y
 	if self.flow:on_input(id, a) then
-		if self.dropdown and wheel then
+		if self.dropdown and wheel or log_scroll and log_scroll._scroll_y ~= log_offset then
 			self.dirty = true
 		end
 		if self.clicked then
@@ -1655,10 +1735,14 @@ function V:on_input(id, a)
 			return true
 		end
 	end
-	if id == hash("touch") and a.pressed and self.map_view then
+	if id == hash("touch") and a.pressed and (self.log_hit or self.map_view) then
 		local x, y = self:pointer(a)
+		if self.log_hit and inside(x, y, self.log_hit) then
+			self:dispatch("log")
+			return true
+		end
 		local r = self.map_view
-		if inside(x, y, r) then
+		if r and inside(x, y, r) then
 			local col = math.floor(r.ox + (x - r.x) / (r.tile_width or TILE_WIDTH))
 			local row = math.floor(r.oy + (y - r.y) / (r.tile_height or TILE_HEIGHT))
 			local target_x, target_y = GridRenderer.path_target(self.s.world, self.map_preview, col, row)
@@ -1686,6 +1770,7 @@ function V:state()
 		editing_name = self.name_edit,
 		bindings = self.binding_mode,
 		dropdown_options = self.dropdown and self.dropdown.options,
+		log_scroll_y = self.log_scroll and self.log_scroll._scroll_y,
 	}
 end
 function V:final()

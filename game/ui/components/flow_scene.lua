@@ -106,4 +106,5 @@ end
 
 M.Text = flow.ui.cp.Text
 M.Box = flow.ui.cp.Box
+M.Scroll = flow.ui.cp.Scroll
 return M
