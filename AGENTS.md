@@ -48,6 +48,41 @@ Use the Aseprite MCP server configured in [`.codex/config.toml`](.codex/config.t
 5. **Shade with intent.** Use `adjust_hsl` to explore shadow colors and `outline_cel` where it improves readability. Keep the final colors within Dungeon-20. Reserve `apply_dither_gradient` for blends on larger artwork and use flat tones on 16×24 sprites.
 6. **Animate with cel tools.** Use `propagate_cels` to reuse cels, then `tween_cel_positions_eased` or `oscillate_cel_positions` for rigid parts and secondary motion. Verify frames and alignment with `view_sprite`, `compare_frames`, and `get_bounds`. Export with `export_animation` or `export_tag`.
 
+## Defold plugins and Lua libraries
+
+The [dependency lock](dependencies.lock.json) records the 11 pinned packages
+and their source revisions. See the [dependency guide](docs/defold-dependencies.md)
+for installation, licenses, and runtime adapters.
+
+| Plugin or library | Purpose in this project |
+| --- | --- |
+| [Asefold](vendor/asefold/) | Aseprite-side authoring tool for exporting sprite artwork for Defold. |
+| [Automation Bridge](vendor/automation-bridge/) | Debug native extension for input automation, game state inspection, and screenshots. |
+| [Defold Aseprite Scripts](vendor/das/) | Defold editor integration for working with Aseprite source files. |
+| [Decore](vendor/decore/) | Entity-component-system library used to index landmarks for service proximity checks. |
+| [DefTest](vendor/deftest/) | Runs the shared gameplay test suites inside the Defold engine. |
+| [Defold Event](vendor/event/) | Publish/subscribe events used by Decore and the legacy session. |
+| [Flow](vendor/flow/) | Primary GUI library for declarative components, layout, and pointer input. |
+| [defold-ink](vendor/ink/) | Runs compiled Ink dialogue, including Ilex’s arrival conversation. |
+| [Monarch](vendor/monarch/) | Manages playable screen lifetimes through Defold collection proxies. |
+| [Defold RichText](vendor/richtext/) | Renders the Chronicle’s prose and supports styled text markup. |
+| [rotLove](vendor/rotlove/) | Supplies the town perimeter algorithm and a tested shadowcasting utility through the [Lua adapter](game/vendor/rot.lua). |
+
+The [legacy toolchain manifest](tools/dependencies.json) records dependencies
+for the older controller and fixtures. SessionLock is a project-local native
+extension.
+
+| Plugin or library | Legacy purpose |
+| --- | --- |
+| Defold RNG | Seeded random streams and replay for older gameplay fixtures. |
+| Defold A* | Grid route search for legacy world movement. |
+| DefSave | Profile reads and writes for the legacy save service, including A/B recovery. |
+| Defold Tweener | Tweening for legacy screen and presentation effects. |
+| Defold Quest | Manages objectives and progress in the legacy quest service. |
+| [Lume](vendor/lume.lua) | Lua utilities used for table copying in the legacy world. |
+| [Lester](tests/vendor/lester.lua) | Lua test framework used by the older unit and engine fixtures. |
+| [SessionLock](native/session_lock/) | Native lock used by the legacy save service to coordinate profile writers. |
+
 ## Defold development and verification
 
 - Write Lua 5.1-compatible runtime code. Put deterministic rules in pure `.lua`

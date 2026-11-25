@@ -1,0 +1,323 @@
+return function(t)
+	local R = require("game.core.rng")
+	local G = require("game.generation.zones")
+	local W = require("game.core.world")
+	t.test("rotLove shadowcasting sees walls and hides cells behind them", function()
+		local Visibility = require("game.rendering.visibility")
+		local visible = Visibility.compute({ width = 7, height = 7, walls = { ["3,3"] = true } }, 2, 3, 3)
+		t.eq(visible["2,3"], 1)
+		t.ok(visible["3,3"])
+		t.ok(not visible["4,3"])
+		t.ok(visible["1,3"])
+	end)
+	t.test("seeded rooms repeat and contain eight combat rooms plus treasure", function()
+		t.eq(G.rooms(41), G.rooms(41))
+		local rooms = G.rooms(41)
+		t.eq(#rooms, 9)
+		t.eq(#rooms[9].chests, 5)
+		t.ok(#rooms[2].enemies >= 2)
+	end)
+	t.test("town movement rejects walls and pathfinds", function()
+		local w = W.new({ seed = 41, world = { location = "lantern_rest" } })
+		t.ok(w:walkable(3, 20))
+		t.ok(#w:path_to(20, 20) > 0)
+		local x = w.player.x
+		t.eq(w:move(2, 0), false)
+		t.eq(w.player.x, x)
+	end)
+	t.test("gates require in person registration", function()
+		local w = W.new({ seed = 1, world = { location = "lantern_rest", gates = {} } })
+		t.eq(w:register_gate(), false)
+		t.eq(w:travel("spindle_hollow"), false)
+	end)
+	t.test("dungeon advances only after combat", function()
+		local w = W.new({ seed = 1, world = { location = "lantern_rest", threshold_cleared = 0 } })
+		w:enter_dungeon()
+		t.eq(w:advance_room(), false)
+		w:commit_combat_win()
+		t.ok(w:advance_room())
+		t.eq(w.room, 2)
+	end)
+	t.test("all original town services exist and fishing spots are distinct", function()
+		local m = G.town(713, "lantern_rest")
+		local ids = {}
+		local fishing = 0
+		for _, p in ipairs(m.landmarks) do
+			ids[p.id] = true
+			if p.id == "fishing" then
+				fishing = fishing + 1
+			end
+		end
+		t.eq(fishing, 2)
+		for _, id in ipairs({
+			"warden",
+			"blacksmith",
+			"general_shop",
+			"school",
+			"church",
+			"grocery_store",
+			"healer",
+			"oven",
+			"loom",
+			"spinning_wheel",
+			"fishing",
+			"windmill",
+			"gate",
+			"dungeon",
+			"bank",
+			"tree",
+		}) do
+			t.ok(ids[id], id)
+		end
+	end)
+	t.test("generated amenities retain the original object art instead of NPC sprites", function()
+		local sprites = { oven = 0, loom = 1, spinning_wheel = 2, windmill = 3, fishing = 4 }
+		for _, seed in ipairs({ 1, 42, 713 }) do
+			local count = 0
+			for _, p in ipairs(G.town(seed, "lantern_rest").landmarks) do
+				if sprites[p.id] ~= nil then
+					t.eq(p.amenity_sprite, sprites[p.id], p.id .. " seed " .. seed)
+					t.eq(p.sprite, nil, p.id .. " must not use the NPC atlas")
+					count = count + 1
+				end
+			end
+			t.eq(count, 6)
+		end
+	end)
+	t.test("seven service buildings have open doors and interior floors", function()
+		local m = G.town(713, "lantern_rest")
+		local n = 0
+		for _, p in ipairs(m.landmarks) do
+			if p.building then
+				n = n + 1
+				t.ok(m.floor[p.door.x .. "," .. p.door.y])
+				t.ok(m.floor[p.x .. "," .. p.y])
+				t.eq(m.walls[p.door.x .. "," .. p.door.y], nil)
+			end
+		end
+		t.eq(n, 7)
+	end)
+	t.test("town topology varies with seeds", function()
+		local a, b = G.town(42), G.town(94)
+		local differs = false
+		for key in pairs(a.walls) do
+			if not b.walls[key] then
+				differs = true
+			end
+		end
+		t.ok(differs)
+	end)
+	t.test("spindle retains original dimensions and residents", function()
+		local m = G.town(42, "spindle_hollow")
+		t.eq(m.width, 30)
+		t.eq(m.height, 11)
+		t.eq(m.landmarks[1].name, "Oren")
+		t.eq(m.landmarks[2].name, "Brann")
+		t.eq(m.landmarks[3].name, "Rill")
+		t.eq(m.landmarks[4].name, "Ada")
+	end)
+	t.test("town amenities are reachable across representative seeds", function()
+		for seed = 1, 8 do
+			local m = G.town(seed)
+			local w = W.new({ seed = seed, world = { location = "lantern_rest" } })
+			for _, p in ipairs(m.landmarks) do
+				local reachable = false
+				for _, d in ipairs({ { 0, -1 }, { 1, 0 }, { 0, 1 }, { -1, 0 } }) do
+					if #w:path_to(p.x + d[1], p.y + d[2]) > 0 then
+						reachable = true
+					end
+				end
+				t.ok(reachable, p.id .. " seed " .. seed)
+			end
+		end
+	end)
+	t.test("enemy pursuit routes around walls", function()
+		local move = require("game.systems.movement")
+		local floor = {}
+		for x = 0, 11 do
+			for y = 0, 3 do
+				floor[x .. "," .. y] = true
+			end
+		end
+		local enemies = { { x = 3, y = 1 } }
+		move.step(enemies, { x = 1, y = 1 }, floor, { ["2,1"] = true, ["3,0"] = true }, R.new(42))
+		t.eq(enemies[1], { x = 3, y = 2 })
+	end)
+	t.test("adjacent enemies report contact without occupying player cell", function()
+		local move = require("game.systems.movement")
+		local enemies = { { x = 2, y = 1 } }
+		t.eq(move.step(enemies, { x = 1, y = 1 }, { ["1,1"] = true, ["2,1"] = true }, {}, R.new(1)), 1)
+		t.eq(enemies[1], { x = 2, y = 1 })
+	end)
+	t.test("distant enemies wander uniquely and deterministically", function()
+		local move = require("game.systems.movement")
+		local floor = {}
+		for x = 0, 11 do
+			for y = 0, 3 do
+				floor[x .. "," .. y] = true
+			end
+		end
+		local a = { { x = 10, y = 1 }, { x = 10, y = 2 } }
+		local b = { { x = 10, y = 1 }, { x = 10, y = 2 } }
+		move.step(a, { x = 0, y = 0 }, floor, {}, R.new(42))
+		move.step(b, { x = 0, y = 0 }, floor, {}, R.new(42))
+		t.eq(a, b)
+		t.ok(a[1].x ~= a[2].x or a[1].y ~= a[2].y)
+	end)
+	t.test("treasure allows one chest per run and preserves pending rewards", function()
+		local w = W.new({ seed = 42, world = { location = "threshold", threshold_cleared = 8, pending_loot = {} } })
+		t.ok(w:open_chest(1))
+		t.eq(w.world.pending_loot, { gold = 60, tonic = 3 })
+		t.eq(w:open_chest(2), false)
+		t.eq(w.world.threshold_treasure_chest, 0)
+	end)
+	t.test("exported legacy geometry loads without regeneration", function()
+		local json = require("game.json")
+		local text
+		if sys and sys.load_resource then
+			text = assert(sys.load_resource("/tests/fixtures/legacy-layouts-42.json"))
+		else
+			local f = assert(io.open("tests/fixtures/legacy-layouts-42.json"))
+			text = f:read("*a")
+			f:close()
+		end
+		local data = json.decode(text)
+		local w = W.new({ seed = 42, world = { location = "lantern_rest", legacy_layouts = data.layouts } })
+		t.eq(w.map, data.layouts.lantern_rest)
+		t.eq(w.map.spawn, { x = 3, y = 12 })
+		w:enter_dungeon()
+		t.eq(w.map, data.layouts.threshold[1])
+	end)
+
+	t.test("checkpoint resumes a cleared prior room without respawning enemies", function()
+		local w = W.new({
+			seed = 42,
+			world = {
+				location = "threshold",
+				threshold_cleared = 3,
+				threshold_run = 2,
+				map_position = { location = "threshold", room = 1, run = 2, x = 8, y = 7 },
+			},
+		})
+		t.eq(w.room, 2)
+		t.eq(#w.enemies, 0)
+		t.eq(w.player, { x = 8, y = 7 })
+		w:save_position()
+		t.eq(w.world.map_position.room, 1)
+	end)
+	t.test("stale checkpoint run cannot restore position or room", function()
+		local w = W.new({
+			seed = 42,
+			world = {
+				location = "threshold",
+				threshold_cleared = 3,
+				threshold_run = 2,
+				map_position = { location = "threshold", room = 1, run = 1, x = 8, y = 7 },
+			},
+		})
+		t.eq(w.room, 4)
+		t.eq(w.player, w.map.entry)
+		t.ok(#w.enemies > 0)
+	end)
+	t.test("checkpoint cannot enter an uncleared future room", function()
+		local w = W.new({
+			seed = 42,
+			world = {
+				location = "threshold",
+				threshold_cleared = 1,
+				threshold_run = 0,
+				map_position = { location = "threshold", room = 6, run = 0, x = 8, y = 7 },
+			},
+		})
+		t.eq(w.room, 2)
+		t.ok(#w.enemies > 0)
+	end)
+	t.test("backtracking enters previous room through its eastern door", function()
+		local w = W.new({ seed = 42, world = { location = "threshold", threshold_cleared = 2 } })
+		t.eq(w.room, 3)
+		t.ok(w:previous_room())
+		t.eq(w.room, 2)
+		t.eq(w.player, w.map.exit)
+		t.eq(#w.enemies, 0)
+		t.eq(w.world.threshold_cleared, 2)
+	end)
+	t.test("room one exposes four family racks and practice post", function()
+		local w = W.new({ seed = 42, world = { location = "threshold", threshold_cleared = 0 } })
+		local count = 0
+		for _, p in ipairs(w.landmarks) do
+			if p.id == "rack" then
+				count = count + 1
+				t.eq(p.x, 5)
+				t.ok(p.family)
+			elseif p.id == "practice" then
+				t.eq(p.x, 8)
+				t.eq(p.y, 4)
+			end
+			t.ok(w.enemy_blockers[p.x .. "," .. p.y])
+			t.eq(w:walkable(p.x, p.y), false)
+		end
+		t.eq(count, 4)
+		w.player = { x = 4, y = 4 }
+		t.eq(w:interact().id, "rack")
+	end)
+	t.test("room entry movement backtracks and persists prior room", function()
+		local w = W.new({ seed = 42, world = { location = "threshold", threshold_cleared = 2 } })
+		w.player = { x = w.map.entry.x + 1, y = w.map.entry.y }
+		t.ok(w:move(-1, 0))
+		t.eq(w.room, 2)
+		t.eq(w.world.map_position.room, 1)
+	end)
+	t.test("new room arrival excludes blocked saved actors", function()
+		local base = G.rooms(42)
+		local enemy = base[1].enemies[1]
+		local w = W.new({
+			seed = 42,
+			world = {
+				location = "threshold",
+				threshold_cleared = 0,
+				threshold_run = 0,
+				map_position = { location = "threshold", room = 0, run = 0, x = enemy.x, y = enemy.y },
+			},
+		})
+		t.eq(w.player, w.map.entry)
+	end)
+	t.test("rng snapshot restore reproduces next draw", function()
+		local r = R.new(9)
+		local state = r:state()
+		local draw = r:range(1, 100)
+		r:restore(state)
+		t.eq(r:range(1, 100), draw)
+		t.reject(function()
+			r:restore(0)
+		end)
+	end)
+	t.test("dungeon landmark checkpoint resumes adjacent to threshold", function()
+		for _, town in ipairs({ "lantern_rest", "spindle_hollow" }) do
+			local w =
+				W.new({ seed = 42, world = { location = town, map_position = { location = town, landmark = "dungeon" } } })
+			local door
+			for _, p in ipairs(w.landmarks) do
+				if p.id == "dungeon" then
+					door = p
+				end
+			end
+			t.eq(w.player, { x = door.x - 1, y = door.y })
+			t.ok(w:walkable(w.player.x, w.player.y))
+		end
+	end)
+	t.test("gate travel arrives above the registered destination gate", function()
+		local w =
+			W.new({ seed = 42, world = { location = "lantern_rest", gates = { "lantern_rest", "spindle_hollow" } } })
+		t.ok(w:travel("spindle_hollow"))
+		t.eq(w.player, { x = 24, y = 7 })
+		t.eq(w.player, w:landmark_spawn("gate"))
+		t.eq(w.world.map_position.x, 24)
+		t.eq(w.world.map_position.y, 7)
+	end)
+	t.test("landmark spawn skips blocked approaches and rejects missing landmarks", function()
+		local w = W.new({ seed = 42, world = { location = "spindle_hollow" } })
+		w.map.floor["24,7"] = nil
+		t.eq(w:landmark_spawn("gate"), { x = 23, y = 8 })
+		t.eq(w:landmark_spawn("missing"), nil)
+	end)
+end

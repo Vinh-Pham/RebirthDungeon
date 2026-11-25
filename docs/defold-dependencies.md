@@ -1,10 +1,23 @@
 # Installed Defold dependency sources
 
-All twenty requested packages are installed under `vendor/`, pinned to full upstream commits in `dependencies.lock.json`. Original upstream licenses and notices are retained in each source tree. `tools/defold/dependencies.settings` declares the fourteen packages which expose Defold libraries and are applicable as archive dependencies. Pure Lua packages and Asefold remain source/authoring tools rather than invented runtime plugins.
+All eleven pinned packages are installed under `vendor/`, pinned to full upstream commits in `dependencies.lock.json`. Original upstream licenses and notices are retained in each source tree. `tools/defold/dependencies.settings` declares the nine packages which expose Defold libraries and are applicable as archive dependencies. Pure Lua packages and Asefold remain source/authoring tools rather than invented runtime plugins.
 
 Run `python3 tools/defold/check-dependencies.py` to check the source inventory. Review each pinned package's LICENSE before redistribution. Reproduce a source installation by downloading its lockfile archive and extracting into its recorded directory; do not silently replace a pinned version with a branch head.
 
-Flow is the primary UI library. Event remains installed for committed notifications. Gooey is an available alternative. Narrator and defold-ink are separate narrative alternatives. tiny-ecs, Jumper, rotLove and lua-state-machine are available source packages; their upstream module layout must be adapted at the call site. rotLove's display layer targets LÖVE and must not be loaded in Defold; algorithm reuse requires an isolated loader. This installation does not claim untested algorithm compatibility.
+Flow owns the interactive GUI. The requested gameplay libraries are used as
+follows.
+
+| Library | Playable use |
+| --- | --- |
+| [rotLove](https://github.com/paulofmandown/rotLove) | Lua-only Arena algorithm supplies the town perimeter. The portable subset also exposes seeded RNG and shadowcasting. |
+| [Decore](https://github.com/Insality/decore) | Per-session ECS landmark index supports service proximity checks. |
+| [defold-ink](https://github.com/abadonna/defold-ink) | Reads the compiled Ilex intro from `game/data/dialogue/`. |
+| [Defold RichText](https://github.com/britzl/defold-richtext) | Renders the Chronicle with the project's prose font. |
+| [Monarch](https://github.com/britzl/monarch) | Tracks playable screen lifetimes through collection proxies. |
+
+The RichText pin includes its upstream update to the Defold 1.14 font metrics API.
+Decore's pinned tag 4 declares MIT in its README. The archive's license-file
+omission is recorded in its [source notice](../assets/licenses/decore/SOURCE.txt).
 
 Asefold is an Aseprite-side authoring tool; follow its upstream installation instructions in vendor/asefold before using its UI. DAS provides Defold editor scripts and needs an Aseprite executable. Neither is a runtime sprite renderer. Existing PNG atlases remain the game rendering input.
 
@@ -14,10 +27,22 @@ Project skills are installed at `.agents/skills/rebirth-defold-development/SKILL
 
 ## Runtime adapters
 
-Portable runtime copies are installed at `game/lib/tiny.lua`, `game/lib/jumper/`, `game/lib/luaunit.lua`, `game/lib/statemachine.lua` and `game/lib/rot.lua`. Their source licenses remain in the pinned vendor trees. The rotLove adapter deliberately exposes RNG, Arena generation and Precise FOV, excluding LÖVE display modules and upstream global table/string mutations. All five load successfully with LuaJIT. `game.integrations.libraries.check()` reports actual require success/failures; it never silently labels an unavailable runtime usable.
+The portable rotLove adapter is installed at `game/vendor/rot.lua` with modules
+under `game/vendor/rot/`. Source licenses remain in the pinned vendor tree. The
+adapter exposes RNG, Arena generation and Precise FOV. Its portable algorithms
+run under LuaJIT. `game.integrations.libraries.check()` reports actual import
+success or failure for retained runtime libraries.
 
 `game.integrations.automation.attach({state=function,command=function})` registers debug semantic commands `rebirth.state` and `rebirth.command`, and publishes `rebirth.game`. The host must enable `automation_bridge.application_api = 1`. Commands pass through the game's own validation; the adapter grants no raw evaluator. The vendor includes the matching Python wrapper; add its `automation-bridge-python` directory to a local Python path to use it. Native game verification can run `python3 tools/defold/run-native.py <bundled executable>`.
 
 An Exa MCP fragment is provided at `tools/defold/exa-mcp.settings.toml`, pinning exa-mcp-server 3.5.1 and forwarding only the environment variable name `EXA_API_KEY`. No credential is committed.
 
-Bob discovers Lua resources through literal `require("module")` calls. The integration registry therefore wraps literal imports in protected loader functions and lists the selected Jumper/rotLove dependency closure explicitly. Dynamic `pcall(require, path)` alone is insufficient and would produce a build with missing optional modules. The unused upstream Jumper `core/lookuptable.lua` contains an invalid declaration and is excluded; it is not part of the pathfinder dependency closure. Native verification fails on any logged unavailable runtime package rather than treating a source checkout as runtime readiness.
+Bob discovers Lua resources through literal `require("module")` calls. The
+integration registry and rotLove adapter use literal imports so Bob includes
+their dependencies. Native verification fails on any logged unavailable runtime
+package.
+
+The dependency audit removed Gooey, Narrator, LPeg, Defold Orthographic, Defold
+Input, Defold Behavior Tree, Jumper, standalone tiny-ecs, Lua State Machine and
+LuaUnit. Flow, project-owned input and gameplay rules, Decore's internal ECS,
+and the existing test runners cover their former optional roles.

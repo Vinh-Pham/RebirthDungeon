@@ -1,5 +1,5 @@
 -- Host-Lua parity suites. Run from repository root with LuaJIT.
-package.path = "./?.lua;./?/init.lua;" .. package.path
+package.path = "./?.lua;./?/init.lua;./vendor/ink/?.lua;" .. package.path
 local M = { count = 0, failed = 0 }
 local function equal(a, b, path)
 	if type(a) ~= type(b) then
@@ -50,7 +50,7 @@ if arg and arg[1] then
 	suites = { arg[1] }
 end
 for _, name in ipairs(suites) do
-	local ok, suite = pcall(require, "tests.test_" .. name)
+	local ok, suite = pcall(require, "game.tests.test_" .. name)
 	if ok then
 		suite(M)
 	elseif name ~= "session" then

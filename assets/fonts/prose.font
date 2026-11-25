@@ -1,5 +1,5 @@
 font: "/assets/fonts/prose.otf"
-material: "/ui/text.material"
+material: "/game/ui/components/text.material"
 size: 16
 antialias: 1
 characters: ""

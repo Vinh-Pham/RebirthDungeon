@@ -1,0 +1,6 @@
+Decore tag 4
+https://github.com/Insality/decore
+Commit d430ac6b37ad09b4b0bffc0b2d4cad663c98bda6
+
+Upstream README declares MIT. This archive does not contain a separate LICENSE file.
+The vendored README retains the upstream declaration.

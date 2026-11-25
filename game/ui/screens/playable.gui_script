@@ -1,0 +1,158 @@
+local Decore = require("decore.decore")
+local Session = require("game.core.session")
+local View = require("game.ui.screens.game")
+local Libraries = require("game.integrations.libraries")
+local Automation = require("game.integrations.automation")
+local Storage = require("game.persistence.save")
+local Settings = require("game.services.settings")
+local U = require("game.util")
+
+function init(self)
+	local options = { decore = Decore }
+	if sys.get_config_boolean("rebirth.test_mode", false) then
+		-- Automated journeys never touch personal character profiles.
+		local memory = {}
+		options.store = Storage.new({
+			read = function(key)
+				return U.copy(memory[key])
+			end,
+			write = function(key, value)
+				memory[key] = U.copy(value)
+				return true
+			end,
+			remove = function(key)
+				memory[key] = nil
+				return true
+			end,
+		})
+		options.input_options = {
+			read = function()
+				return U.copy(memory.controls)
+			end,
+			write = function(value)
+				memory.controls = U.copy(value)
+				return true
+			end,
+		}
+		options.settings = { master = 1, music = 1, effects = 1 }
+		options.save_settings = function(value)
+			memory.audio = U.copy(value)
+			return true
+		end
+	end
+	self.session = Session.new(options)
+	Settings.apply(self.session.settings)
+	self.session.library_health = Libraries.check()
+	for name, result in pairs(self.session.library_health) do
+		print(
+			"REBIRTH_LIBRARY "
+				.. name
+				.. " "
+				.. (result.available and "ready" or "unavailable: " .. tostring(result.error))
+		)
+	end
+	self.view = View.new(self.session)
+	self.view:render()
+	self.last_navigation = self.session.screen
+	msg.post("/bootstrap#bootstrap", "navigate", { screen = self.last_navigation })
+	self.publish_clock = 0
+	self.web_debug = html5 and sys.get_engine_info().is_debug
+	Automation.attach({
+		state = function()
+			local state = self.session:state()
+			state.ui = self.view:state()
+			state.libraries = self.session.library_health
+			return state
+		end,
+		command = function(data)
+			if data.command == "set_form" and sys.get_config_boolean("rebirth.test_mode", false) then
+				for key, value in pairs(data.params or {}) do
+					self.session.forms[key] = value
+				end
+				self.session:touch()
+			else
+				self.session:dispatch(data.command, data.params)
+			end
+			return self.session:state()
+		end,
+	})
+	msg.post(".", "acquire_input_focus")
+	print("REBIRTH_GAME_READY screen=title engine=1.14.1")
+end
+
+function update(self, dt)
+	self.session:update(dt)
+	self.view:update(dt)
+	if self.last_navigation ~= self.session.screen then
+		self.last_navigation = self.session.screen
+		msg.post("/bootstrap#bootstrap", "navigate", { screen = self.last_navigation })
+	end
+	self.publish_clock = self.publish_clock + dt
+	if self.publish_clock >= 0.1 then
+		self.publish_clock = 0
+		Automation.publish()
+		if self.web_debug then
+			html5.run("window.rebirthGameState = " .. json.encode(self.session:state()) .. ";")
+			local command = html5.run("JSON.stringify((window.rebirthGameCommands || []).shift() || null)")
+			if command and command ~= "null" then
+				local ok, data = pcall(json.decode, command)
+				if ok and type(data) == "table" then
+					self.session:dispatch(data.command, data.params)
+				end
+			end
+		end
+	end
+end
+
+function on_input(self, action_id, action)
+	if self.session.pending_binding and action.pressed then
+		if action_id == hash("key_esc") then
+			self.session.pending_binding = nil
+			self.session:touch()
+			return true
+		end
+		local Input = require("game.services.input")
+		for _, key in ipairs(Input.PHYSICAL_KEYS or {}) do
+			if action_id == hash(key) then
+				local ok, err = self.session.input:bind(self.session.pending_binding, key)
+				if ok then
+					self.session.pending_binding = nil
+				end
+				self.session:note(ok and "Control updated." or err)
+				return true
+			end
+		end
+		return true
+	end
+	if self.session.screen == "world" and not self.session.panel and (action.pressed or action.repeated) then
+		local command, params = self.session.input:resolve_hash(action_id, hash)
+		if command then
+			self.session:dispatch(command, params)
+			return true
+		end
+		-- Unassigned gameplay keys must not fall through to the view's menu
+		-- shortcuts after a rebind. Reserved UI and quick-slot keys still do.
+		local Input = require("game.services.input")
+		for _, key in ipairs(Input.PHYSICAL_KEYS) do
+			if action_id == hash(key) and Input.is_bindable(key) then
+				return true
+			end
+		end
+	end
+	return self.view:on_input(action_id, action)
+end
+
+function on_message(self, message_id)
+	if message_id == hash("navigation_ready") then
+		msg.post(".", "acquire_input_focus")
+	end
+end
+
+function final(self)
+	if self.session and self.session.entities then
+		self.session.entities:final()
+	end
+	if self.view then
+		self.view:final()
+	end
+end

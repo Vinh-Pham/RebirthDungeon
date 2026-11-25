@@ -1,24 +1,36 @@
-# Defold architecture and save boundaries
+# Rebirth Dungeon architecture
 
-The playable GUI in `ui/view.lua` uses [Flow](references/defold/flow.md) for controls and layout. Its session owns navigation, keyboard focus and editable fields. Native Defold nodes draw the clipped map. The older Monarch GUI under `game/ui/` also routes pointer controls through Flow. The architecture below describes the original first-slice design.
+Open the repository-root [game.project](../game.project) to build the game.
+Defold collections and tooling resolve resources relative to that root.
+The playable Lua code and game-facing assets live under `game/`.
 
-**Architecture contract**, governed by the [game plan](game-plan.md). The starter slice now has pinned dependencies and executable modules; [implementation status](implementation-status.md) maps the current files. More granular module paths below remain proposed refinements.
-
-## Ownership
-
-| Layer / path | Responsibility |
+| Directory | Ownership |
 | --- | --- |
-| `game/domain/` | Pure Lua character, combat, inventory, economy, progression, reward rules and validators |
-| `game/content/` | Versioned catalogs; stable IDs separate definitions from saved instances |
-| `game/runtime/` | One session owner, serialized commands, explicit Lua workflow state machines |
-| `game/services/` | Save, RNG, A*, Quest, Ink, and audio adapters |
-| `main/` | Persistent bootstrap, service lifetimes, screen registration, HUD |
-| `screens/` | Monarch-managed world/battle collections and proxies |
-| `ui/` | Defold GUI resources and Druid controls; transient forms, selection, focus |
+| `game/core/` | Session commands, world and grid state, Decore landmark index, movement scheduler, bounded Chronicle events, seeded RNG |
+| `game/systems/` | Movement and AI, ATB combat and guard effects, anatomy and progression, inventory and equipment, economy, factions, environment and dialogue |
+| `game/generation/` | Settlement links, terrain and town generation, dungeon rooms, checkpoint history and encounter scaling |
+| `game/data/` | Character, enemy, item, skill and faction definitions, plus authored and compiled Ink dialogue |
+| `game/rendering/` | Clipped grid renderer, tile atlas and rotLove shadowcasting utility |
+| `game/ui/` | Active Flow screen and components, Chronicle text, Monarch screen proxies |
+| `game/persistence/` | Profile storage, validation and save migration |
+| `game/vendor/rot/` | Lua-only rotLove modules |
+| `game/tests/` | Shared LuaJIT and DefTest suites, launched by the root `tests/` entry points |
 
-Monarch owns navigation and input focus, not domain phases. Defold Event publishes committed notifications, not required gameplay work. World scripts own movement, collisions, sprites, camera and presentation. GUI consumers receive copies or read-only projections of committed state; Lua module tables are not immutable. Lume's shallow `clone` does not isolate nested candidates.
+The session owns gameplay state and commits profile changes through
+`game/persistence/save.lua`. The Decore index is transient, refreshes when the
+world's landmarks change and supplies live service proximity checks. Flow owns
+the persistent GUI and input. Monarch tracks the title, character list, creation,
+arrival and world screen lifetimes. Existing profile keys and save locations
+remain compatible after the module moves.
 
-Use annotated Lua table contracts plus runtime structural and domain validation. Save finite numbers, strings, booleans, plain tables and stable string IDs. Engine hashes/URLs, vectors, native RNG/map handles, functions, GUI nodes, subscriptions, and tween handles stay transient.
+The mutation catalog is ready for authored definitions. The current game has no
+mutation effects in its encounters or profiles. The visibility module exposes
+shadowcasting for callers that need it. The playable map continues to show its
+full viewport.
+
+See the [dependency inventory](defold-dependencies.md) for the exact commits and
+runtime integration points. The sections below record the original first-slice
+design for the legacy controller and its fixtures.
 
 ## One command, one durable result
 

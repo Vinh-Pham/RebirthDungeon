@@ -49,7 +49,7 @@ identifies it as a community integration.
 
 The game dependencies are checked in at reviewed commits. To reproduce their
 source installation, use `python3 tools/defold/install-sources.py`; validate with
-`python3 tools/defold/check-dependencies.py`. Defold resolves the 14 archive
+`python3 tools/defold/check-dependencies.py`. Defold resolves the 9 archive
 libraries declared in `game.project`. Portable Lua adapters and authoring tools
 are included separately. Defold Event uses GitHub's codeload archive endpoint
 for the same immutable commit after the normal archive endpoint returned HTTP
@@ -74,7 +74,7 @@ then stops its own process. First use needs network access. macOS desktop runs
 need a graphical session. Build/editor output is ignored by Git.
 
 **Native engine selection matters:** the upstream `defold_run` always selects a
-stock cached engine. This game includes LPeg and the debug Automation Bridge, so
+stock cached engine. This game includes the debug Automation Bridge, so
 launch the generated native bundle instead. `verify-mcp.mjs --run` does that
 through `run-native.py`. It parses `CFBundleExecutable` rather than assuming the
 app's display name is its executable name. A normal `defold_build` without
@@ -120,7 +120,7 @@ HTML5 debug builds use a small browser-side state/command queue for tests;
 release builds do not enable that debug queue. Keep tokens and personal saves
 out of prompts, reports and version control.
 
-The game runtime and editor-only tools are separated. Alternatives such as
-Gooey, Ink runtimes and ECS are installed and load-checked, while Flow and the
-project's session/model code own the active game flow. See the dependency file
-for exact source/license evidence, including upstream license omissions.
+The game runtime and editor-only tools are separated. The
+[architecture guide](architecture.md) lists the playable source directories.
+The [dependency inventory](defold-dependencies.md) records runtime uses, exact
+pins and source licenses.

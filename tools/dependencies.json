@@ -58,6 +58,11 @@
       "repository": "https://github.com/Pause-Games/flow",
       "commit": "20250e81c483715e09f935ff10b1c7138796a880",
       "archive": "https://github.com/Pause-Games/flow/archive/20250e81c483715e09f935ff10b1c7138796a880.zip"
+    },
+    "decore": {
+      "repository": "https://github.com/Insality/decore",
+      "commit": "d430ac6b37ad09b4b0bffc0b2d4cad663c98bda6",
+      "archive": "https://github.com/Insality/decore/archive/d430ac6b37ad09b4b0bffc0b2d4cad663c98bda6.zip"
     }
   },
   "authoring": {

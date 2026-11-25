@@ -38,17 +38,18 @@ Escape closes panels. Keyboard bindings can be changed in Settings.
 ## Migration and tools
 
 - [Defold migration and reference revision](docs/defold-migration-plan.md)
+- [Playable architecture](docs/architecture.md)
 - [Installed dependency inventory and licenses](docs/defold-dependencies.md)
 - [Original plugin research](docs/defold-plugin-research.md)
 - [MCP and verification workflow](docs/defold-tooling.md)
 - [Verification results](docs/defold-verification.md)
 - [Defold agent instructions](AGENTS.md)
 
-All 20 researched upstream packages are installed and pinned. Flow owns the
-interactive UI; alternative frameworks and algorithms are available through
-explicit adapters rather than competing for input. Asefold and Defold Aseprite
-Scripts are authoring tools. See the dependency inventory for exact versions and
-the portable subset of rotLove.
+The project pins 11 upstream packages. Flow handles the interactive UI and
+Monarch manages screen lifetimes. The playable game uses Decore for its landmark
+index, rotLove for town perimeter generation, defold-ink for arrival dialogue and
+Defold RichText for the Chronicle. Asefold and Defold Aseprite Scripts support
+art authoring.
 
 The configured AI tools are Defold MCP, Exa MCP and Aseprite MCP. Repository
 skills live under `.agents/skills/`.

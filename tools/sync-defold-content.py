@@ -51,7 +51,7 @@ for hair in range(12):
 for path in (ROOT/'assets/art').rglob('*.png'):
  if path.stem.endswith('atlas') or path.stem=='character_hair_extra':continue
  export(Image.open(path).convert('RGBA'),('skill_' if path.parent.name=='skills' else 'item_' if path.parent.name=='blacksmith' else '')+path.stem)
-(DEST/'game.atlas').write_text('\n'.join('images { image: "'+name+'" }' for name in sorted(set(images)))+'\nmargin: 0\nextrude_borders: 2\ninner_padding: 0\n')
+(ROOT/'game/rendering/tiles.atlas').write_text('\n'.join('images { image: "'+name+'" }' for name in sorted(set(images)))+'\nmargin: 0\nextrude_borders: 2\ninner_padding: 0\n')
 for folder,filename,out in [('DepartureMono','DepartureMono-Regular.otf','ui'),('SourceCodePro/OTF','SourceCodePro-Regular.otf','prose')]:
  shutil.copyfile(ROOT/'assets/fonts'/folder/filename,DEST/'fonts'/(out+'.otf'))
 for path in list((ROOT/'assets/fonts').rglob('*')):
