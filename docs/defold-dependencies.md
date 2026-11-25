@@ -1,6 +1,6 @@
 # Installed Defold dependency sources
 
-All eleven pinned packages are installed under `vendor/`, pinned to full upstream commits in `dependencies.lock.json`. Original upstream licenses and notices are retained in each source tree. `tools/defold/dependencies.settings` declares the nine packages which expose Defold libraries and are applicable as archive dependencies. Pure Lua packages and Asefold remain source/authoring tools rather than invented runtime plugins.
+All twelve pinned packages are installed under `vendor/`, pinned to full upstream commits in `dependencies.lock.json`. Original upstream licenses and notices are retained in each source tree. `tools/defold/dependencies.settings` declares the ten packages which expose Defold libraries and are applicable as archive dependencies. Pure Lua packages and Asefold remain source/authoring tools rather than invented runtime plugins.
 
 Run `python3 tools/defold/check-dependencies.py` to check the source inventory. Review each pinned package's LICENSE before redistribution. Reproduce a source installation by downloading its lockfile archive and extracting into its recorded directory; do not silently replace a pinned version with a branch head.
 
@@ -9,6 +9,7 @@ follows.
 
 | Library | Playable use |
 | --- | --- |
+| [Defold Saver](https://github.com/Insality/defold-saver) | Persistent character data and resume checkpoints through the profile service. Tag 10 is pinned to `36bdd1fc90da9175eb19a01948c02d157f45134e`. |
 | [rotLove](https://github.com/paulofmandown/rotLove) | Room and Corridor generate the seeded Threshold floor plan. Arena supplies town perimeters and IceyMaze restores earlier dungeon runs. |
 | [Decore](https://github.com/Insality/decore) | Per-session ECS landmark index supports service proximity checks. |
 | [defold-ink](https://github.com/abadonna/defold-ink) | Reads the compiled Ilex intro from `game/data/dialogue/`. |

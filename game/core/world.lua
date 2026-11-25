@@ -68,6 +68,40 @@ function W:reveal()
 	explored[index] = known
 	self.world.threshold_explored = explored
 end
+local function make_room_at_checkpoint(world, checkpoint)
+	local occupied, displaced = {}, nil
+	for _, enemy in ipairs(world.enemies) do
+		occupied[k(enemy.x, enemy.y)] = true
+		if enemy.x == checkpoint.x and enemy.y == checkpoint.y then
+			displaced = enemy
+		end
+	end
+	if not displaced then
+		return true
+	end
+	-- Regenerated enemies can spawn on a tile the player reached after they moved.
+	local blockers = world.enemy_blockers or {}
+	local best_x, best_y, best_distance
+	for y = 0, world.map.height - 1 do
+		for x = 0, world.map.width - 1 do
+			local key = k(x, y)
+			local distance = math.abs(x - checkpoint.x) + math.abs(y - checkpoint.y)
+			if
+				(not best_distance or distance < best_distance)
+				and not occupied[key]
+				and not blockers[key]
+				and world:walkable(x, y)
+			then
+				best_x, best_y, best_distance = x, y, distance
+			end
+		end
+	end
+	if best_x then
+		displaced.x, displaced.y = best_x, best_y
+		return true
+	end
+	return false
+end
 function W:load(location)
 	self.currentLocation = location or "lantern_rest"
 	self.world.location = self.currentLocation
@@ -98,16 +132,8 @@ function W:load(location)
 			self.player = approach
 		end
 	end
-	if p and p.location == self.currentLocation and self:walkable(p.x, p.y) then
-		local occupied = false
-		for _, e in ipairs(self.enemies) do
-			if e.x == p.x and e.y == p.y then
-				occupied = true
-			end
-		end
-		if not occupied then
-			self.player = { x = p.x, y = p.y }
-		end
+	if p and p.location == self.currentLocation and self:walkable(p.x, p.y) and make_room_at_checkpoint(self, p) then
+		self.player = { x = p.x, y = p.y }
 	end
 	self:reveal()
 	return self.map

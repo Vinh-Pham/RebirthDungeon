@@ -24,6 +24,9 @@ local palette = {
 	red = "993d41",
 	floor = "576069",
 	water = "508da0",
+	mp = "5689b4",
+	stamina = "f2ec8b",
+	xp = "85b5ef",
 }
 local function color(name)
 	local s = palette[name] or name
@@ -328,9 +331,9 @@ function V:character_status()
 	local health, max_health, stamina, max_stamina = character_vitals(s)
 	self.gauges.health = self:status_bar(left, top + 51, "HP", health, max_health, "red")
 	-- The playable session derives maximum MP and has no separate mana pool.
-	self:status_bar(left, top + 94, "MP", st.mana, st.mana, "water")
-	self.gauges.stamina = self:status_bar(left, top + 137, "STAMINA", stamina, max_stamina, "teal")
-	self:status_bar(left, top + 180, "XP", st.experience, st.next_level_experience, "gold")
+	self:status_bar(left, top + 94, "MP", st.mana, st.mana, "mp")
+	self.gauges.stamina = self:status_bar(left, top + 137, "STAMINA", stamina, max_stamina, "stamina")
+	self:status_bar(left, top + 180, "XP", st.experience, st.next_level_experience, "xp")
 	self:box(1144, top + 218, STATUS_BAR_WIDTH, 1, "border")
 	self:text(left, top + 239, "NEARBY", "gold")
 	local place = s.world and s.world:interact()
@@ -948,15 +951,15 @@ function V:character_panel()
 	local hp, max_hp, stamina, max_stamina = character_vitals(s)
 	character_card(self, "vitals", 238, 249, 404, 134, "VITALS")
 	character_meter(self, 252, 628, 290, "HP", hp, max_hp, "red")
-	character_meter(self, 252, 628, 323, "MP", st.mana, st.mana, "water")
-	character_meter(self, 252, 628, 356, "Stamina", stamina, max_stamina, "teal")
+	character_meter(self, 252, 628, 323, "MP", st.mana, st.mana, "mp")
+	character_meter(self, 252, 628, 356, "Stamina", stamina, max_stamina, "stamina")
 
 	character_card(self, "progression", 654, 249, 404, 134, "PROGRESSION")
 	character_value(self, 668, 1044, 290, "Level", st.level)
 	character_value(self, 668, 1044, 323, "AP", st.ability_points)
 	local xp, next_xp = st.experience, st.next_level_experience
 	local xp_detail = string.format("%d / %d  (%.1f%%)", xp, next_xp, xp / next_xp * 100)
-	character_meter(self, 668, 1044, 356, "XP", xp, next_xp, "gold", xp_detail)
+	character_meter(self, 668, 1044, 356, "XP", xp, next_xp, "xp", xp_detail)
 
 	character_stats(self, "attributes", 238, 242, "ATTRIBUTES", {
 		{ "Strength", st.strength },
@@ -1071,6 +1074,9 @@ function V:settings_panel()
 		82,
 		"muted"
 	)
+	if self.s.screen == "world" then
+		self:button(256, 520, 785, "Return to title", "title")
+	end
 end
 function V:repair_panel()
 	local inv = self.s.inventory

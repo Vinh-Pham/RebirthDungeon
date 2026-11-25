@@ -2,7 +2,7 @@
 #if defined(_WIN32)
 #include <windows.h>
 static HANDLE handle = INVALID_HANDLE_VALUE;
-#else
+#elif !defined(__EMSCRIPTEN__)
 #include <sys/file.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -14,6 +14,10 @@ static int Acquire(lua_State* L) {
  if (handle != INVALID_HANDLE_VALUE) { lua_pushboolean(L, 1); return 1; }
  handle = CreateFileA(path, GENERIC_READ|GENERIC_WRITE, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
  lua_pushboolean(L, handle != INVALID_HANDLE_VALUE);
+#elif defined(__EMSCRIPTEN__)
+ (void)path;
+ // Browser storage does not support the legacy desktop writer lock.
+ lua_pushboolean(L, 0);
 #else
  if (handle >= 0) { lua_pushboolean(L, 1); return 1; }
  int fd = open(path, O_CREAT|O_RDWR, 0600);
@@ -26,7 +30,7 @@ static int Acquire(lua_State* L) {
 static int Release(lua_State* L) {
 #if defined(_WIN32)
  if(handle != INVALID_HANDLE_VALUE) { CloseHandle(handle); handle = INVALID_HANDLE_VALUE; }
-#else
+#elif !defined(__EMSCRIPTEN__)
  if(handle >= 0) { flock(handle, LOCK_UN); close(handle); handle = -1; }
 #endif
  return 0;

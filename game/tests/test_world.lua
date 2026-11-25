@@ -342,6 +342,21 @@ return function(t)
 		t.eq(w.room, 2)
 		t.ok(#w.enemies > 0)
 	end)
+	t.test("checkpoint keeps the player's tile when a regenerated enemy spawns there", function()
+		local profile = {
+			seed = 42,
+			world = { location = "threshold", generator_version = Dungeons.CHAMBER_VERSION, threshold_cleared = 0 },
+		}
+		local w = W.new(profile)
+		local spawn = { x = w.enemies[1].x, y = w.enemies[1].y }
+		profile.world.map_position = { location = "threshold", room = 0, run = 0, x = spawn.x, y = spawn.y }
+		local restored = W.new(profile)
+		t.eq(restored.player, spawn)
+		t.eq(#restored.enemies, #w.enemies)
+		for _, enemy in ipairs(restored.enemies) do
+			t.ok(enemy.x ~= spawn.x or enemy.y ~= spawn.y)
+		end
+	end)
 	t.test("backtracking enters previous room through its eastern door", function()
 		local w = W.new({ seed = 42, world = { location = "threshold", generator_version = Dungeons.CHAMBER_VERSION, threshold_cleared = 2 } })
 		t.eq(w.room, 3)
@@ -377,16 +392,14 @@ return function(t)
 		t.eq(w.room, 2)
 		t.eq(w.world.map_position.room, 1)
 	end)
-	t.test("new room arrival excludes blocked saved actors", function()
-		local base = G.rooms(42)
-		local enemy = base[1].enemies[1]
+	t.test("new room arrival rejects a checkpoint on a blocked landmark", function()
 		local w = W.new({
 			seed = 42,
 			world = {
 				location = "threshold",
 				threshold_cleared = 0,
 				threshold_run = 0,
-				map_position = { location = "threshold", room = 0, run = 0, x = enemy.x, y = enemy.y },
+				map_position = { location = "threshold", room = 0, run = 0, x = 8, y = 4 },
 			},
 		})
 		t.eq(w.player, w.map.entry)

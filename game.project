@@ -11,6 +11,7 @@ dependencies#5 = https://github.com/abadonna/defold-ink/archive/5e871c42f645689e
 dependencies#6 = https://github.com/britzl/monarch/archive/5c33c39830489925493163e741d5b22b4e5e3b9d.zip
 dependencies#7 = https://github.com/britzl/defold-richtext/archive/bacbc0c369724c0133827d85a9ac76f7439afc23.zip
 dependencies#8 = https://github.com/Insality/decore/archive/d430ac6b37ad09b4b0bffc0b2d4cad663c98bda6.zip
+dependencies#9 = https://github.com/Insality/defold-saver/archive/36bdd1fc90da9175eb19a01948c02d157f45134e.zip
 
 [bootstrap]
 main_collection = /main/main.collectionc

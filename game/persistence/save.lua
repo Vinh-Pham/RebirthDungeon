@@ -5,25 +5,42 @@ local M = {}
 function M.new(opts)
 	opts = opts or {}
 	local mem = {}
+	local saver = sys and not (opts.read or opts.write or opts.remove) and require("saver.saver")
+	local function path(key)
+		return opts.directory and (opts.directory .. "/" .. key) or sys.get_save_file("rebirth_dungeon", key)
+	end
 	local rawread = opts.read
 		or function(key)
-			if sys then
-				return sys.load(sys.get_save_file("rebirth_dungeon", key))
+			if saver then
+				local filename = path(key)
+				local value = saver.load_file_by_path(filename, saver.FORMAT.SERIALIZED)
+				-- Existing web saves live in Defold's virtual filesystem.
+				if value == nil and html5 then
+					return sys.load(filename)
+				end
+				return value
 			end
 			return mem[key]
 		end
 	local rawwrite = opts.write
 		or function(key, value)
-			if sys then
-				return sys.save(sys.get_save_file("rebirth_dungeon", key), value)
+			if saver then
+				local filename = path(key)
+				if html5 then
+					-- Saver treats the browser's string result "false" as truthy.
+					-- Verify the bytes before reporting a committed write.
+					local bytes = sys.serialize(value)
+					return saver.save_binary_by_path(bytes, filename) and saver.load_binary_by_path(filename) == bytes
+				end
+				return saver.save_file_by_path(value, filename, saver.FORMAT.SERIALIZED)
 			end
 			mem[key] = U.copy(value)
 			return true
 		end
 	local rawremove = opts.remove
 		or function(key)
-			if sys then
-				return os.remove(sys.get_save_file("rebirth_dungeon", key))
+			if saver then
+				return saver.delete_file_by_path(path(key))
 			end
 			mem[key] = nil
 			return true
@@ -182,6 +199,15 @@ function M.new(opts)
 	end
 	function self:load_selected()
 		return self.selected and read_profile(self.selected) or nil
+	end
+	function self:resume_id()
+		local value = read("last_character")
+		if type(value) == "table" and validid(value.id) and contains(read_manifest().ids, value.id) then
+			return value.id
+		end
+	end
+	function self:remember_selected()
+		return self.selected and write("last_character", { id = self.selected })
 	end
 	function self:update(changes)
 		local profile = self:load_selected()

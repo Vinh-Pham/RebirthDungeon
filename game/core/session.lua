@@ -67,6 +67,10 @@ function M.new(options)
 	self.form = self.forms
 	self.input = options.input or Input.new(options.input_options)
 	self.profiles = self.store:list()
+	local last_character = self.store:resume_id()
+	if last_character then
+		self:load_character(last_character, true)
+	end
 	return self
 end
 
@@ -286,7 +290,7 @@ function S:choose_service(place)
 	end
 end
 
-function S:load_character(id)
+function S:load_character(id, resuming)
 	if not self.store:select(id) then
 		self:note("Could not load that character.")
 		return false
@@ -304,10 +308,15 @@ function S:load_character(id)
 		profile = self.store:save(profile) or profile
 	end
 	self.combat, self.panel, self.modal, self.service = nil, nil, nil, nil
+	self.move_queue = {}
+	self.arrival_spoken = false
 	self:adopt(profile, true)
 	self.screen = profile.world.location == "arrival" and "arrival" or "world"
 	if next(profile.world.pending_loot) then
 		self:open_panel("loot")
+	end
+	if not resuming and not self.store:remember_selected() then
+		self:note("Could not remember the selected character for next launch.")
 	end
 	return true
 end
@@ -317,17 +326,13 @@ function S:create_character()
 		self:note("Enter a character name first.")
 		return false
 	end
+	form.world = form.world or { location = "arrival" }
 	local profile, err = self.store:create(form)
 	if not profile then
 		self:note(err)
 		return false
 	end
-	self:load_character(profile.id)
-	-- Arrival is an introduction; the current source's saved default is town.
-	self.screen = "arrival"
-	self.arrival_spoken = false
-	self:touch()
-	return true
+	return self:load_character(profile.id)
 end
 function S:cycle_form(field, direction)
 	local count =
@@ -623,6 +628,8 @@ function S:dispatch(id, args)
 	elseif id == "title" or id == "back" then
 		self.screen = "title"
 		self.panel = nil
+		self.move_queue = {}
+		self.combat = nil
 		self:touch()
 		return true
 	elseif id == "create" then

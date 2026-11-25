@@ -50,9 +50,9 @@ def map_pick_test(label):
  old=state()['position'];moved=command('move',dx=1,dy=0)
  if moved['position']==old:moved=command('move',dx=-1,dy=0)
  check(label+' establishes legal neighbor',moved['position']!=old,moved)
- current=moved['position'];map_info=moved['map'];ox=max(0,min(current['x']-31,max(0,map_info['width']-62)));oy=max(0,min(current['y']-9,max(0,map_info['height']-19)))
+ current=moved['position'];map_info=moved['map'];ox=max(0,min(current['x']-31,max(0,map_info['width']-62)));oy=max(0,min(current['y']-11,max(0,map_info['height']-23)))
  page.wait_for_timeout(650)
- logical_x=24+(old['x']-ox)*16;logical_y=121+(old['y']-oy)*24
+ logical_x=24+(old['x']-ox)*16;logical_y=25+(old['y']-oy)*24
  assert logical_x < 254, 'Expected a destination in the expanded left side of the map'
  x,y,rect=canvas_point(logical_x,logical_y)
  page.mouse.click(x,y,delay=100);page.wait_for_timeout(200)
@@ -101,17 +101,16 @@ try:
   focus_canvas();map_pick_test('1280x720')
   page.set_viewport_size({'width':900,'height':700});page.wait_for_timeout(300);focus_canvas();shot('05-web-resized-900x700');map_pick_test('900x700')
   page.set_viewport_size({'width':1280,'height':720});page.wait_for_timeout(300);shot('06-web-restored-1280x720')
-  before_reload=state();page.wait_for_timeout(1500);page.reload(wait_until='domcontentloaded',timeout=30000);wait('window.rebirthGameState && window.rebirthGameState.screen === "title"',45000)
-  command('load',id=character_id);wait('window.rebirthGameState.screen === "world"')
-  loaded=state();check('IndexedDB preserves character across reload',loaded['character_id']==character_id and loaded['character']=='Web Signal',loaded)
-  check('IndexedDB preserves position, quest and inventory',loaded['position']==before_reload['position'] and loaded['quest']==before_reload['quest'] and loaded['gear_inventory']==before_reload['gear_inventory'],{'before':before_reload,'after':loaded});shot('07-web-reloaded')
+  before_reload=state();page.reload(wait_until='domcontentloaded',timeout=30000);wait('window.rebirthGameState && window.rebirthGameState.screen === "world"',45000)
+  loaded=state();check('Saver automatically resumes the character after reload',loaded['character_id']==character_id and loaded['character']=='Web Signal',loaded)
+  check('Saver restores location, position, quest and inventory',all(loaded[k]==before_reload[k] for k in ('location','room','position','quest','gear_inventory')),{'before':before_reload,'after':loaded});shot('07-web-reloaded')
   focus_canvas();key('k');check('canvas focus restored after reload',state()['panel']=='skills');shot('08-web-skills')
   library_lines=[e['text'] for e in console if 'REBIRTH_LIBRARY' in e['text']]
   unavailable=[line for line in library_lines if 'unavailable' in line and 'automation_bridge' not in line]
   check('all web-capable libraries load',not unavailable,{'unavailable':unavailable,'all':library_lines})
   script_errors=[e for e in console if re.search(r'ERROR:(SCRIPT|RESOURCE|GAMEOBJECT|GRAPHICS|SHADER)|WARNING:RENDER',e['text'])]
   check('no browser or Lua/render errors',not errors and not script_errors,{'pageerrors':errors,'engineerrors':script_errors})
-  summary={'passed':True,'elapsed_seconds':round(time.monotonic()-started,2),'checks':checks,'screenshots':shots,'browser':'Chromium','storage':'isolated browser context / IndexedDB'}
+  summary={'passed':True,'elapsed_seconds':round(time.monotonic()-started,2),'checks':checks,'screenshots':shots,'browser':'Chromium','storage':'isolated browser context / localStorage'}
   context.close();browser.close();browser=None
 except BaseException as error:
  summary={'passed':False,'elapsed_seconds':round(time.monotonic()-started,2),'error':str(error),'traceback':traceback.format_exc(),'checks':checks,'screenshots':shots}

@@ -12,19 +12,24 @@ function init(self)
 	if sys.get_config_boolean("rebirth.test_mode", false) then
 		-- Automated journeys never touch personal character profiles.
 		local memory = {}
-		options.store = Storage.new({
-			read = function(key)
-				return U.copy(memory[key])
-			end,
-			write = function(key, value)
-				memory[key] = U.copy(value)
-				return true
-			end,
-			remove = function(key)
-				memory[key] = nil
-				return true
-			end,
-		})
+		local directory = sys.get_config_string("rebirth.save_directory", "")
+		if directory ~= "" then
+			options.store = Storage.new({ directory = directory })
+		else
+			options.store = Storage.new({
+				read = function(key)
+					return U.copy(memory[key])
+				end,
+				write = function(key, value)
+					memory[key] = U.copy(value)
+					return true
+				end,
+				remove = function(key)
+					memory[key] = nil
+					return true
+				end,
+			})
+		end
 		options.input_options = {
 			read = function()
 				return U.copy(memory.controls)
@@ -77,7 +82,7 @@ function init(self)
 		end,
 	})
 	msg.post(".", "acquire_input_focus")
-	print("REBIRTH_GAME_READY screen=title engine=1.14.1")
+	print("REBIRTH_GAME_READY screen=" .. self.session.screen .. " engine=1.14.1")
 end
 
 function update(self, dt)

@@ -70,6 +70,8 @@ and keep their evidence outside the repository:
 python3 tools/defold/playtest.py \
   "bundle/verification/Rebirth Dungeon.app/Contents/MacOS/RebirthDungeon" \
   --output /tmp/rebirth-desktop-playtest
+python3 tools/defold/playtest-restart.py \
+  "bundle/verification/Rebirth Dungeon.app/Contents/MacOS/RebirthDungeon"
 uv run --with playwright python tools/defold/playtest-web.py \
   bundle/html5/RebirthDungeon --output /tmp/rebirth-browser-playtest
 ```

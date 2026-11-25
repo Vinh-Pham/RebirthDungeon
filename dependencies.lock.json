@@ -87,6 +87,14 @@
       "path": "vendor/rotlove",
       "archive": "https://github.com/paulofmandown/rotLove/archive/4e0d9bfcb5bbcd47bc9ac0b93acf17a62f33b70f.zip",
       "defold_library": false
+    },
+    {
+      "id": "saver",
+      "repository": "https://github.com/Insality/defold-saver",
+      "commit": "36bdd1fc90da9175eb19a01948c02d157f45134e",
+      "path": "vendor/saver",
+      "archive": "https://github.com/Insality/defold-saver/archive/36bdd1fc90da9175eb19a01948c02d157f45134e.zip",
+      "defold_library": true
     }
   ]
 }

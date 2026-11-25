@@ -50,7 +50,7 @@ Use the Aseprite MCP server configured in [`.codex/config.toml`](.codex/config.t
 
 ## Defold plugins and Lua libraries
 
-The [dependency lock](dependencies.lock.json) records the 11 pinned packages
+The [dependency lock](dependencies.lock.json) records the 12 pinned packages
 and their source revisions. See the [dependency guide](docs/defold-dependencies.md)
 for installation, licenses, and runtime adapters.
 
@@ -61,6 +61,7 @@ for installation, licenses, and runtime adapters.
 | [Defold Aseprite Scripts](vendor/das/) | Defold editor integration for working with Aseprite source files. |
 | [Decore](vendor/decore/) | Entity-component-system library used to index landmarks for service proximity checks. |
 | [DefTest](vendor/deftest/) | Runs the shared gameplay test suites inside the Defold engine. |
+| [Defold Saver](vendor/saver/) | Persists character profiles and resume checkpoints. |
 | [Defold Event](vendor/event/) | Publish/subscribe events used by Decore and the legacy session. |
 | [Flow](vendor/flow/) | Primary GUI library for declarative components, layout, and pointer input. |
 | [defold-ink](vendor/ink/) | Runs compiled Ink dialogue, including Ilex’s arrival conversation. |

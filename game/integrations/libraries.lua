@@ -8,6 +8,7 @@ local modules = {
 	richtext = "richtext.richtext",
 	ink = "ink.story",
 	deftest = "deftest.deftest",
+	saver = "saver.saver",
 }
 local loaders = {
 	decore = function()
@@ -33,6 +34,9 @@ local loaders = {
 	end,
 	deftest = function()
 		return require("deftest.deftest")
+	end,
+	saver = function()
+		return require("saver.saver")
 	end,
 }
 function M.available()

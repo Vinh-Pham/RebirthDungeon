@@ -49,7 +49,7 @@ identifies it as a community integration.
 
 The game dependencies are checked in at reviewed commits. To reproduce their
 source installation, use `python3 tools/defold/install-sources.py`; validate with
-`python3 tools/defold/check-dependencies.py`. Defold resolves the 9 archive
+`python3 tools/defold/check-dependencies.py`. Defold resolves the 10 archive
 libraries declared in `game.project`. Portable Lua adapters and authoring tools
 are included separately. Defold Event uses GitHub's codeload archive endpoint
 for the same immutable commit after the normal archive endpoint returned HTTP
