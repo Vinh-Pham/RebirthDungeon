@@ -1,5 +1,5 @@
 font: "/assets/fonts/ui.otf"
-material: "/builtins/fonts/font.material"
+material: "/ui/text.material"
 size: 16
 antialias: 0
 characters: ""

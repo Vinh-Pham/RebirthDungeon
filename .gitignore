@@ -4,6 +4,7 @@
 
 # Defold build output and local editor state (including editor tokens).
 /.internal/
+/.deps/
 /.editor_settings
 /build/
 /bundle/

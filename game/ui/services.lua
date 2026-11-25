@@ -89,7 +89,7 @@ local function stock_cell(self, view, row, x, y)
 	local fn = function()
 		submit(self, row.action)
 	end
-	self.druid:new_button(node, fn)
+	self.controls:new_button(node, fn)
 	table.insert(self.buttons, { node = node, fn = fn, enabled = row.action.enabled, label = row.action.label })
 end
 
@@ -154,7 +154,7 @@ function M.render(self, view, context, service, dialogue)
 		view.text(self, 741, 536, "Quantity", 15, c.muted)
 		local node = view.box(self, 875, 536, 76, 32, c.bg)
 		local label = view.plain_text(self, 875, 536, self.service_quantity, 17, c.white, nil, false, true)
-		local input = self.druid:new_input(node, label)
+		local input = self.controls:new_input(node, label)
 		self.service_input = input
 		input:set_max_length(2)
 		input:set_text(self.service_quantity)

@@ -1,6 +1,6 @@
 font: "/assets/fonts/prose.otf"
-material: "/builtins/fonts/font.material"
+material: "/ui/text.material"
 size: 16
-antialias: 0
+antialias: 1
 characters: ""
 all_chars: true

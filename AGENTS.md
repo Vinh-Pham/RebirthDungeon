@@ -23,6 +23,8 @@ See the [gameplay implementation plan](docs/mabinogi-inspired-gameplay-plan.md) 
 
 ## Interface
 
+Read the [Flow reference sheet](docs/references/defold/flow.md) before creating or updating any game UI.
+
 Use Caves of Qud as a reference for how a dense, keyboard-friendly roguelike presents information. Keep the dungeon map central, with player status and a message log easy to scan during exploration. Make inventory, quests, and skills easy to reach through keyboard-friendly menus. Use an original layout, icons, and artwork for Rebirth Dungeon.
 
 Use [Departure Mono](assets/fonts/DepartureMono/) for the game UI, including menus, HUD labels, and button text. Use [Source Code Pro](assets/fonts/SourceCodePro/) for all long-form text, including dialogue, lore, and journal entries.

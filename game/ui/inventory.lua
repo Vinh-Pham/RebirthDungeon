@@ -90,7 +90,7 @@ end
 local function quantity_input(self, view, x, y, field, value, maximum)
 	local node = view.box(self, x + 38, y, 76, 32, view.colors.bg)
 	local text = view.plain_text(self, x + 38, y, value, 16, view.colors.white, nil, false, true)
-	local input = self.druid:new_input(node, text)
+	local input = self.controls:new_input(node, text)
 	self.inventory_inputs[field] = input
 	input:set_max_length(10)
 	input:set_text(tostring(value))
@@ -107,7 +107,7 @@ local function quantity_input(self, view, x, y, field, value, maximum)
 			self.dirty = true
 		end
 	end)
-	-- Register text entry in the same Tab/Enter path as the Druid buttons.
+	-- Register text entry in the same Tab/Enter path as the Flow buttons.
 	table.insert(self.buttons, {
 		node = node,
 		enabled = true,
@@ -153,7 +153,7 @@ local function equipment_section(self, view, equipment)
 			local fn = function()
 				select_item(self, entry.id)
 			end
-			self.druid:new_button(node, fn)
+			self.controls:new_button(node, fn)
 			table.insert(self.buttons, { node = node, fn = fn, enabled = true, label = entry.name })
 		else
 			view.box(self, x, y, EQUIP_CELL, EQUIP_CELL, c.bg)
@@ -176,7 +176,7 @@ local function item_grid(self, view, model)
 		local fn = function()
 			select_item(self, row.id)
 		end
-		self.druid:new_button(node, fn)
+		self.controls:new_button(node, fn)
 		table.insert(self.buttons, { node = node, fn = fn, enabled = true, label = row.name })
 	end
 	if #model.rows == 0 then

@@ -314,7 +314,6 @@ function S:load_character(id)
 	self.combat, self.panel, self.modal, self.service = nil, nil, nil, nil
 	self:adopt(profile, true)
 	self.screen = profile.world.location == "arrival" and "arrival" or "world"
-	self:note("Welcome, " .. profile.name .. ". Your journey continues.")
 	if next(profile.world.pending_loot) then
 		self:open_panel("loot")
 	end

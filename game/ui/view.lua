@@ -1,4 +1,4 @@
-local druid = require("druid.druid")
+local controls = require("game.ui.controls")
 local richtext = require("richtext.richtext")
 local Bridge = require("game.ui.session")
 local M = {}
@@ -40,7 +40,7 @@ function M.box(self, x, y, w, h, color)
 	gui.set_color(n, color or c.panel)
 	return n
 end
--- Plain text node, only for Druid text input fields and other nodes mutated after creation.
+-- Plain text node for project-owned editable fields and nodes mutated after creation.
 function M.plain_text(self, x, y, text, size, color, width, bold, center)
 	local n = parent(self, gui.new_text_node(vmath.vector3(x - 640, y - 360, 0), tostring(text)))
 	gui.set_font(n, bold and "heading" or "body")
@@ -96,7 +96,7 @@ function M.button(self, x, y, w, label, fn, enabled, accent)
 		M.box(self, x, y, w, 38, enabled == false and c.bg or accent and c.edge or vmath.vector4(0.13, 0.19, 0.23, 1))
 	M.text(self, x, y, label, 16, enabled == false and c.muted or accent and c.teal or c.white, nil, true, true)
 	local index = #self.buttons + 1
-	local button = self.druid:new_button(b, function()
+	local button = self.controls:new_button(b, function()
 		if enabled ~= false then
 			self.focus = index
 			M.focus(self)
@@ -327,7 +327,7 @@ local function creation(self, p, rebirth)
 	local field = M.box(self, 345, 482, 475, 44, c.bg)
 	local text = M.plain_text(self, 122, 482, f.name, 22)
 	if not rebirth then
-		local input = self.druid:new_input(field, text)
+		local input = self.controls:new_input(field, text)
 		input:set_max_length(24)
 		input:set_text(f.name)
 		input.on_input_text:subscribe(function(_, value)
@@ -668,7 +668,7 @@ local function map_panel(self, p)
 		local fn = function()
 			Bridge.intent(self, "route", { x = v.x, y = v.y, service = v.service })
 		end
-		self.druid:new_button(node, fn)
+		self.controls:new_button(node, fn)
 		self.buttons[#self.buttons + 1] = { node = node, fn = fn, enabled = true, label = v.name }
 	end
 	M.text(self, 110, 191, "Click a marker to travel there. Gold markers are destinations; teal is you.", 16, c.muted)
@@ -958,8 +958,8 @@ function M.render(self)
 		self.service_key = nil
 		self.shop_inventory = false
 	end
-	if self.druid then
-		self.druid:final()
+	if self.controls then
+		self.controls:final()
 	end
 	for _, node in ipairs(self.nodes or {}) do
 		gui.cancel_animations(node)
@@ -974,7 +974,7 @@ function M.render(self)
 	self.name_input = nil
 	self.service_input = nil
 	self.inventory_inputs = {}
-	self.druid = druid.new(self)
+	self.controls = controls.new(self)
 	local p = S.snapshot()
 	local screen = S.screen
 	local playing = p and screen == p.phase
@@ -1018,8 +1018,8 @@ function M.render(self)
 	hud(self, playing and p or nil)
 	if S.modal then
 		-- Keep the backdrop visible, but remove every underlying input component.
-		self.druid:final()
-		self.druid = druid.new(self)
+		self.controls:final()
+		self.controls = controls.new(self)
 		self.buttons = {}
 		self.name_input = nil
 		modal(self, p, S.modal)
@@ -1032,8 +1032,8 @@ function M.render(self)
 		end)
 	end
 	if S.error and S.modal ~= "log" then
-		self.druid:final()
-		self.druid = druid.new(self)
+		self.controls:final()
+		self.controls = controls.new(self)
 		self.buttons = {}
 		self.focus = nil
 		self.name_input = nil

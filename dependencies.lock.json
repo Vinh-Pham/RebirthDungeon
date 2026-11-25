@@ -41,11 +41,11 @@
       "defold_library": true
     },
     {
-      "id": "druid",
-      "repository": "https://github.com/Insality/druid",
-      "commit": "425f7c7db17ae544a59686a312cd4cf8e5f10221",
-      "path": "vendor/druid",
-      "archive": "https://github.com/Insality/druid/archive/425f7c7db17ae544a59686a312cd4cf8e5f10221.zip",
+      "id": "flow",
+      "repository": "https://github.com/Pause-Games/flow",
+      "commit": "20250e81c483715e09f935ff10b1c7138796a880",
+      "path": "vendor/flow",
+      "archive": "https://github.com/Pause-Games/flow/archive/20250e81c483715e09f935ff10b1c7138796a880.zip",
       "defold_library": true
     },
     {

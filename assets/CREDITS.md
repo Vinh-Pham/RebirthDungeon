@@ -7,7 +7,7 @@ Downloaded 2026-09-20. Both packs are CC0 1.0; their original licenses accompany
 
 ## Fonts
 
-The regular and bold Roboto fonts are supplied by the pinned Druid dependency, under the Apache 2.0 license included in `fonts/LICENSE-Roboto.txt`. The local `.font` resources configure rendering and character coverage; they do not alter the font files.
+The game uses Departure Mono for interface text and Source Code Pro for long-form text. Their licenses are in [fonts](fonts/).
 
 ## Audio
 

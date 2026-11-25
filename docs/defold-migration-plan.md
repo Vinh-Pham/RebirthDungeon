@@ -1,5 +1,7 @@
 # Godot to Defold migration
 
+The playable project now uses [Flow](references/defold/flow.md) for the GUI. The migration record below documents the original Defold cutover.
+
 Research and baseline: 2026-11-24. Target: **Defold 1.14.1 and Lua 5.1-compatible
 runtime code**. This is a staged rewrite of engine code, preserving Rebirth
 Dungeon's original setting, content, assets, and gameplay. It is not an automatic

@@ -1,4 +1,4 @@
-font: "/druid/fonts/Roboto-Bold.ttf"
+font: "/assets/fonts/ui.otf"
 material: "/builtins/fonts/font-df.material"
 size: 40
 output_format: TYPE_DISTANCE_FIELD

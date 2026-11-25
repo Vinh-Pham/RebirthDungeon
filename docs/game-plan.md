@@ -1,5 +1,7 @@
 # Rebirth Dungeon — Defold implementation plan
 
+The playable bootstrap now uses [Flow](references/defold/flow.md) and direct session navigation. The plan below records the original first-slice architecture.
+
 ## 1. Scope and project baseline
 
 Build a desktop-first, local single-player, top-down RPG in **Defold and Lua**:

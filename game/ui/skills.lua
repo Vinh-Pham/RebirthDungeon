@@ -117,7 +117,7 @@ function M.render(self, view, context)
 		local fn = function()
 			select_skill(self, row.id)
 		end
-		self.druid:new_button(node, fn)
+		self.controls:new_button(node, fn)
 		table.insert(self.buttons, { node = node, fn = fn, enabled = true, label = row.name })
 	end
 	if #model.rows == 0 then

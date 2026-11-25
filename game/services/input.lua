@@ -1,5 +1,5 @@
--- Project-owned semantic action bindings. Native Defold dispatch and Druid still
--- own input focus/consumption; this module never routes text or mouse input.
+-- Project-owned semantic action bindings. The GUI handles keyboard focus,
+-- text entry and pointer dispatch.
 local U = require("game.util")
 local M = {}
 local B = {}

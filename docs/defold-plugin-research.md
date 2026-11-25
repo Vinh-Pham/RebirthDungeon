@@ -1,5 +1,7 @@
 # Defold/Lua dependency research for Rebirth Dungeon
 
+> Historical reference. The game now uses [Flow](https://github.com/Pause-Games/flow). See [the current dependency lock](../dependencies.lock.json) for installed revisions.
+
 Implementation update: the user subsequently requested the full assessed list.
 All 20 upstream packages are now installed and pinned; see the
 [installed inventory](defold-dependencies.md) and [implementation status](defold-migration-plan.md).

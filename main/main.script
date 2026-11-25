@@ -1,6 +1,5 @@
 local session = require("game.runtime.session")
 local monarch = require("monarch.monarch")
-local druid = require("druid.druid")
 local tweener = require("tweener.tweener")
 local inventory = require("game.runtime.inventory_presenter")
 local ui = require("game.runtime.ui_presenter")
@@ -116,7 +115,6 @@ end
 function init(self)
 	msg.post("@render:", "use_fixed_fit_projection", { near = -1, far = 1 })
 	window.set_listener(function(_, event)
-		druid.on_window_callback(event)
 		if event == window.WINDOW_EVENT_FOCUS_LOST or event == window.WINDOW_EVENT_ICONIFIED then
 			if session.world_checkpoint then
 				session.world_checkpoint()

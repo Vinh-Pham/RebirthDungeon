@@ -1,0 +1,5 @@
+font: "/assets/fonts/ui.otf"
+material: "/ui/text.material"
+size: 11
+antialias: 0
+all_chars: true

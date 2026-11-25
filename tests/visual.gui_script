@@ -343,7 +343,7 @@ local function run(self)
         assert(math.abs(width/height-sys.get_config_int("test.width",1024)/sys.get_config_int("test.height",768))<.01,"Window aspect mismatch")
         assert(S.screen=="title");press(self,1);self.step=.1
     elseif self.step==.1 then
-        assert(S.screen=="characters","Druid Start did not activate");self.step=1;print("VISUAL PASS Druid button hit-test and Title → Characters")
+        assert(S.screen=="characters","Flow Start did not activate");self.step=1;print("VISUAL PASS Flow button hit-test and Title → Characters")
     elseif self.step==1 then
         -- Use a fresh fixture name; save directory is isolated from player profiles.
         local index=#(S.profiles or {})>0 and math.min(6,#S.profiles)+1 or 1
@@ -353,7 +353,7 @@ local function run(self)
     elseif self.step==2 then
         assert(self.name_input);self.name_input:select()
         Controller.on_input(self,hash("text"),{text="QA "..os.time()})
-        assert(self.form.name:match("^QA "),"Druid text entry did not update the form")
+        assert(self.form.name:match("^QA "),"Flow text entry did not update the form")
         Controller.on_input(self,hash("inventory"),{pressed=true});Controller.on_input(self,hash("up"),{pressed=true})
         assert(S.screen=="create" and not S.modal and not S.controls.up,"Name typing leaked shortcuts")
         self.name_input:unselect()

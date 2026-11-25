@@ -1,11 +1,11 @@
-local druid = require("druid.druid")
+local FlowScene = require("ui.flow_scene")
 local Data = require("game.model.character_data")
 local Catalog = require("game.catalog")
 local Equipment = require("game.model.equipment")
 local M = {}
 local V = {}
 V.__index = V
-local MAP_VIEW = { x = 16, y = 109, w = 992, h = 456 }
+local MAP_VIEW = { x = 16, y = 13, w = 992, h = 552 }
 local TILE_WIDTH, TILE_HEIGHT = 16, 24
 local STATUS_BAR_WIDTH = 212
 local TIME_BAR_WIDTH = MAP_VIEW.w - 40
@@ -60,10 +60,10 @@ local function wrap(text, width)
 	end
 	return out
 end
-function M.new(owner, session)
+function M.new(session)
 	return setmetatable(
 		{
-			owner = owner,
+			flow = FlowScene.new(),
 			s = session,
 			nodes = {},
 			buttons = {},
@@ -83,31 +83,33 @@ function V:box(x, y, w, h, c, parent)
 	gui.set_color(n, color(c))
 	if parent then
 		gui.set_parent(n, parent, true)
+	else
+		self.flow:add_native(n)
 	end
 	self.nodes[#self.nodes + 1] = n
 	return n
 end
-function V:text(x, y, value, c, prose, parent, scale)
-	local n = gui.new_text_node(vmath.vector3(x, 720 - y, 0), tostring(value or ""))
-	gui.set_font(n, prose and "prose" or "ui")
-	gui.set_pivot(n, gui.PIVOT_W)
-	gui.set_color(n, color(c or "text"))
-	if parent then
-		gui.set_parent(n, parent, true)
-	end
-	if scale then
-		gui.set_scale(n, vmath.vector3(scale, scale, 1))
-	end
-	self.nodes[#self.nodes + 1] = n
-	return n
+local function color_hex(name)
+	return "#" .. (palette[name] or name)
 end
+
+function V:text(x, y, value, c, font)
+	local text = FlowScene.Text({
+		key = "text_" .. (#self.flow.anchors + 1),
+		text = tostring(value or ""),
+		font = font or "ui",
+		color = color_hex(c or "text"),
+	})
+	self.flow:place(text, x, y, 0, 0)
+end
+
 function V:paragraph(x, y, value, width, c, limit)
 	if self.s.panel and x >= 238 and x <= 900 then
 		width = math.max(12, math.min(width, 78, math.floor((1040 - x) / 9.6)))
 	end
 	local lines = wrap(value, width)
 	for i = 1, math.min(#lines, limit or 20) do
-		self:text(x, y + (i - 1) * 22, lines[i], c, true)
+		self:text(x, y + (i - 1) * 22, lines[i], c, "prose")
 	end
 	return y + math.min(#lines, limit or 20) * 22
 end
@@ -138,22 +140,46 @@ function V:portrait(x, y, p, scale, parent)
 	local n = self:art(x, y, 16 * scale, 24 * scale, "hair_mask_" .. (p.hair or 0), parent)
 	gui.set_color(n, color(scale == 1 and "28353e" or hairs[(p.hair_color or 0) + 1] or hairs[1]))
 end
-function V:button(x, y, w, label, id, args, disabled)
-	local n = self:box(x + w / 2, y, w, 30, disabled and "dark" or "border")
-	self:text(x + 10, y, label, disabled and "muted" or "text")
-	if not disabled then
-		local b = { node = n, id = id, args = args, label = label, x = x, y = y, w = w }
-		self.buttons[#self.buttons + 1] = b
-		self.druid:new_button(n, function()
-			if type(id) == "function" then
-				id()
-			else
-				self:dispatch(id, args)
-			end
-		end)
+function V:button_element(x, y, w, label, id, args, disabled)
+	local key = table.concat({ "button", self.s.screen, self.s.panel or "", self.page, x, y, label }, "_")
+	local props = {
+		key = key,
+		style = { width = w, height = 30, padding_left = 10, justify_content = "center" },
+		color = color_hex(disabled and "dark" or "border"),
+		children = {
+			FlowScene.Text({
+				key = key .. "_label",
+				text = label,
+				font = "ui",
+				color = color_hex(disabled and "muted" or "text"),
+				style = { height = 0 },
+			}),
+		},
+	}
+	if disabled or (self.s.panel and not self.drawing_panel) then
+		props.key = key .. "_inactive"
+		return FlowScene.Box(props)
 	end
-	return n
+	local function activate()
+		if type(id) == "function" then
+			id()
+		else
+			self:dispatch(id, args)
+		end
+	end
+	props.on_click = function()
+		self.clicked = activate
+	end
+	local element = self.flow:button(key, props)
+	self.buttons[#self.buttons + 1] =
+		{ element = element, args = args, label = label, x = x, y = y, w = w, activate = activate }
+	return element
 end
+
+function V:button(x, y, w, label, id, args, disabled)
+	self.flow:place(self:button_element(x, y, w, label, id, args, disabled), x, y - 15, w, 30)
+end
+
 function V:bar(x, y, w, value, c)
 	self:box(x + w / 2, y, w, 6, "dark")
 	local n = self:box(x, y, w, 6, c)
@@ -161,10 +187,13 @@ function V:bar(x, y, w, value, c)
 	gui.set_size(n, vmath.vector3(math.max(0, math.min(1, value or 0)) * w, 6, 0))
 	return n
 end
+
+function V:status_bar(x, y, label, value, maximum, c)
+	self:text(x, y, string.format("%s  %d / %d", label, value, maximum))
+	return self:bar(x, y + 17, STATUS_BAR_WIDTH, value / maximum, c)
+end
+
 function V:clear()
-	if self.druid then
-		self.druid:final()
-	end
 	for i = #self.nodes, 1, -1 do
 		gui.delete_node(self.nodes[i])
 	end
@@ -175,18 +204,16 @@ function V:clear()
 	self.gauges = {}
 	self.focus_lines = nil
 	self.drag_ghost = nil
-	self.druid = druid.new(self.owner)
 end
 function V:header()
-	self.coordinate_node = self:box(640, 360, 1280, 720, "back")
 	self:text(24, 27, "REBIRTH DUNGEON", "gold")
 	self:text(24, 53, "THE LONG WAY BELOW", "muted")
-	self:text(1026, 28, "A SIGNAL IN THE STONE", "teal", false, nil, 0.75)
+	self:text(1026, 28, "A SIGNAL IN THE STONE", "teal", "ui_small")
 	self:box(640, 70, 1232, 1, "border")
 end
 function V:title()
 	self:art(925, 312, 256, 384, "title_gate")
-	self:text(116, 184, "THE DUNGEON REMEMBERS.", "gold", false, nil, 1.4)
+	self:text(116, 184, "THE DUNGEON REMEMBERS.", "gold", "ui_large")
 	self:paragraph(
 		116,
 		242,
@@ -194,11 +221,19 @@ function V:title()
 		56,
 		"muted"
 	)
-	self:button(116, 365, 360, "[N] New character", "new_character")
-	self:button(116, 410, 360, "[L] Your characters", "characters")
-	self:button(116, 455, 360, "Settings", "settings")
+	local actions = FlowScene.Box({
+		key = "title_actions",
+		color = "transparent",
+		style = { height = 120, gap = 15 },
+		children = {
+			self:button_element(116, 365, 360, "[N] New character", "new_character"),
+			self:button_element(116, 410, 360, "[L] Your characters", "characters"),
+			self:button_element(116, 455, 360, "Settings", "settings"),
+		},
+	})
+	self.flow:place(actions, 116, 350, 360, 120)
 	self:text(116, 576, "Arrow keys / WASD  ·  Enter / E to interact", "muted")
-	self:text(116, 608, "Original science-fantasy roguelike", "teal", true)
+	self:text(116, 608, "Original science-fantasy roguelike", "teal", "prose")
 end
 function V:characters()
 	self:text(114, 130, "CHOOSE YOUR DELVER", "gold")
@@ -223,7 +258,7 @@ function V:creation()
 	self:portrait(940, 302, f, 8)
 	self:button(116, 178, 580, (self.name_edit and "> " or "") .. "Name: " .. (f.name or "Delver"), function()
 		self.name_edit = true
-		self:render()
+		self.dirty = true
 	end)
 	local rows = {
 		{ "race", Data.RACES },
@@ -269,47 +304,35 @@ function V:arrival()
 end
 function V:character_status()
 	local s = self.s
-	local p = s.profile or {}
-	local st = s.stats or {}
-	local w = p.world or {}
-	local left = 1038
-	self:box(1144, 371, 240, 576, "panel")
-	self:portrait(left + 21, 126, p, 2)
-	local display_name = p.name or "Delver"
-	if #display_name > 15 then
-		display_name = require("game.util").utf8_prefix(display_name, 14) .. "…"
+	local st = s.stats
+	local combat = s.combat
+	local left, top = 1038, MAP_VIEW.y
+	self:box(1144, top + 168, 240, 336, "panel")
+	self:text(left, top + 22, "Level " .. st.level, "muted")
+	local health = combat and combat.health or s.profile.world.health
+	local max_health = combat and combat.max_health or st.life
+	if health < 0 then
+		health = max_health
 	end
-	self:text(left + 51, 114, display_name, "gold")
-	self:text(left + 51, 139, "Level " .. tostring(st.level or 1), "muted")
-	local h = s.combat and s.combat.health or w.health
-	if not h or h < 0 then
-		h = st.life or 100
-	end
-	self:text(left, 180, "LIFE  " .. math.ceil(h) .. " / " .. tostring(st.life or 100))
-	self.gauges.health = self:bar(left, 198, STATUS_BAR_WIDTH, h / (st.life or 100), "red")
-	self:text(left, 228, "STAMINA  " .. tostring(math.floor(s.combat and s.combat.stamina or st.stamina or 40)))
-	self.gauges.stamina =
-		self:bar(left, 246, STATUS_BAR_WIDTH, (s.combat and s.combat.stamina or st.stamina or 40) / (st.stamina or 40), "teal")
-	local y = 284
-	for _, k in ipairs({ "strength", "dexterity", "intelligence", "will", "luck", "defense" }) do
-		self:text(left, y, string.format("%-13s %s", human(k), tostring(st[k] or 0)))
-		y = y + 26
-	end
-	self:text(left, 462, "AP " .. tostring(st.ability_points or 0), "teal")
-	self:text(left, 493, "Gold  " .. tostring(w.gold or 0), "gold")
-	self:text(left, 524, "Bank  " .. tostring(w.bank_gold or 0), "muted")
-	self:box(1144, 546, STATUS_BAR_WIDTH, 1, "border")
-	self:text(left, 566, "NEARBY", "gold")
+	local stamina = combat and combat.stamina or st.stamina
+	local max_stamina = combat and combat.max_stamina or st.stamina
+	self.gauges.health = self:status_bar(left, top + 51, "HP", math.ceil(health), max_health, "red")
+	-- The playable session derives maximum MP and has no separate mana pool.
+	self:status_bar(left, top + 94, "MP", st.mana, st.mana, "water")
+	self.gauges.stamina = self:status_bar(left, top + 137, "STAMINA", stamina, max_stamina, "teal")
+	self:status_bar(left, top + 180, "XP", st.experience, st.next_level_experience, "gold")
+	self:box(1144, top + 218, STATUS_BAR_WIDTH, 1, "border")
+	self:text(left, top + 239, "NEARBY", "gold")
 	local place = s.world and s.world:interact()
 	self:paragraph(
 		left,
-		590,
-		place and (place.label or place.name or human(place.id)) or "Explore the surrounding passages.",
+		top + 263,
+		place and (place.label or place.name or human(place.id)) or "Nothing.",
 		22,
 		"muted",
 		2
 	)
-	self:text(left, 643, "MOVE  WASD / ARROWS", "muted", false, nil, 0.75)
+	self:text(left, top + 318, "MOVE  WASD / ARROWS", "muted")
 end
 function V:world_actions()
 	local buttons = {
@@ -321,14 +344,30 @@ function V:world_actions()
 		{ "Interact [E]", "interact" },
 		{ "Settings", "settings" },
 	}
-	local gap = 8
-	local step = (1248 + gap) / #buttons
+	local gap, width = 8, 1248
+	local step = (width + gap) / #buttons
+	local actions = FlowScene.Box({
+		key = "world_actions",
+		color = "transparent",
+		style = { flex_direction = "row", height = 30, gap = gap },
+		children = {},
+	})
 	for i, row in ipairs(buttons) do
 		local x = 16 + math.floor((i - 1) * step)
-		local width = 16 + math.floor(i * step) - x - gap
-		self:button(x, ACTION_Y, width, row[1], row[2])
+		local button_width = 16 + math.floor(i * step) - x - gap
+		actions.children[i] = self:button_element(x, ACTION_Y, button_width, row[1], row[2])
 	end
+	self.flow:place(actions, 16, ACTION_Y - 15, width, 30)
 end
+function V:map_text(clip, x, y, value, c, font, pivot)
+	local node = gui.new_text_node(vmath.vector3(x, 720 - y, 0), value)
+	gui.set_font(node, font or "ui")
+	gui.set_pivot(node, pivot or gui.PIVOT_W)
+	gui.set_color(node, color(c))
+	gui.set_parent(node, clip, true)
+	self.nodes[#self.nodes + 1] = node
+end
+
 function V:map()
 	local world = self.s.world
 	if not world or not world.map then
@@ -350,12 +389,6 @@ function V:map()
 	self.map_view = { x = view.x, y = view.y, w = view.w, h = view.h, ox = ox, oy = oy }
 	local center_x = view.x + (0.5 - ox) * TILE_WIDTH
 	local center_y = view.y + (0.5 - oy) * TILE_HEIGHT
-	local location_label = human(world.currentLocation)
-	if world.currentLocation == "threshold" then
-		location_label = (world.room or 1) <= 8 and ("Threshold · Room " .. tostring(world.room or 1) .. "/8")
-			or "Treasure Chamber"
-	end
-	self:text(view.x, 91, location_label:upper(), "teal")
 	local clip = self:box(view.x + view.w / 2, view.y + view.h / 2, view.w, view.h, "back")
 	gui.set_clipping_mode(clip, gui.CLIPPING_MODE_STENCIL)
 	gui.set_clipping_visible(clip, false)
@@ -383,7 +416,7 @@ function V:map()
 	-- Keep all terrain boxes before all terrain text. Alternating box/font per
 	-- cell creates hundreds of font render batches and exhausts the renderer.
 	for _, g in ipairs(glyphs) do
-		self:text(g.x, g.y, g.text, g.color, false, clip)
+		self:map_text(clip, g.x, g.y, g.text, g.color)
 	end
 	for _, a in ipairs(list(world.landmarks)) do
 		local x, y = a.x, a.y
@@ -405,7 +438,8 @@ function V:map()
 			elseif a.name then
 				self:art(px, py, 16, 24, "town_atlas_1", clip)
 			else
-				self:text(
+				self:map_text(
+					clip,
 					px - 6,
 					py,
 					a.glyph
@@ -416,9 +450,7 @@ function V:map()
 							or a.id == "practice" and "T"
 							or "&"
 						),
-					"gold",
-					false,
-					clip
+					"gold"
 				)
 			end
 			if a.amenity_sprite ~= nil then
@@ -426,11 +458,10 @@ function V:map()
 				-- cannot fit adjacent left-aligned "Spinning Wheel" labels.
 				local lines = wrap(a.label or a.name, 10)
 				for i, line in ipairs(lines) do
-					local caption = self:text(px, py - 21 - (#lines - i) * 14, line, "muted", false, clip, 0.75)
-					gui.set_pivot(caption, gui.PIVOT_CENTER)
+					self:map_text(clip, px, py - 21 - (#lines - i) * 14, line, "muted", "ui_small", gui.PIVOT_CENTER)
 				end
 			elseif a.name then
-				self:text(px - 12, py - 21, a.name, "muted", false, clip, 0.75)
+				self:map_text(clip, px - 12, py - 21, a.name, "muted", "ui_small")
 			end
 		end
 	end
@@ -448,8 +479,8 @@ function V:logs()
 		if type(value) == "table" then
 			value = value.message
 		end
-		local line = wrap(value, 100)[1]
-		self:text(MAP_VIEW.x, 600 + (i - first) * 16, line, "muted", true, nil, 0.9)
+		local line = wrap(value, 96)[1]
+		self:text(MAP_VIEW.x, 600 + (i - first) * 16, line, "muted", "prose")
 	end
 end
 function V:battle()
@@ -503,12 +534,12 @@ function V:pagination(count, size, y)
 	self.page = math.min(self.page, pages - 1)
 	self:button(824, y, 92, "< Prev", function()
 		self.page = math.max(0, self.page - 1)
-		self:render()
+		self.dirty = true
 	end, nil, self.page == 0)
 	self:text(928, y, tostring(self.page + 1) .. "/" .. pages, "muted")
 	self:button(982, y, 92, "Next >", function()
 		self.page = math.min(pages - 1, self.page + 1)
-		self:render()
+		self.dirty = true
 	end, nil, self.page >= pages - 1)
 end
 function V:item_icon(x, y, item, scale)
@@ -562,32 +593,44 @@ function V:inventory_tooltip()
 		return
 	end
 	local grid = self.inventory_view
-	local item = self.hover_cell and self:item_at(
-		grid.x + self.hover_cell.x * grid.unit + 1,
-		grid.y + self.hover_cell.y * grid.unit + 1
-	)
+	local item, anchor
+	if self.hover_cell then
+		item, anchor = self:item_at(
+			grid.x + self.hover_cell.x * grid.unit + 1,
+			grid.y + self.hover_cell.y * grid.unit + 1
+		)
+	end
 	local focused = self.buttons[self.focus]
 	local text
 	for _, slot in ipairs(self.slot_hits) do
 		if slot.slot == self.hover_slot or (not item and self.inventory_buttons and focused and focused.args
 			and slot.slot == focused.args.slot) then
 			text = slot.item and self:inventory_description(slot.item) or slot.status
+			anchor = slot
 			break
 		end
 	end
-	local x = text and 258 or 636
 	if not text and (item or self.selected_item) then
 		text = self:inventory_description(item or self.selected_item)
 	end
 	if not text then
 		return
 	end
-	local lines = wrap(text, 38)
+	local lines = wrap(text, 33)
 	local count = math.min(#lines, 12)
 	local width, height = 350, 18 + count * 22
-	self:box(x + width / 2, 180 + height / 2, width, height, "dark")
+	local x, y = 636, 180
+	if anchor then
+		local gap = 8
+		x = anchor.x + anchor.w + gap
+		if x + width > self.flow.width - gap then
+			x = anchor.x - width - gap
+		end
+		y = math.min(anchor.y, self.flow.height - height - gap)
+	end
+	self:box(x + width / 2, y + height / 2, width, height, "dark")
 	for i = 1, count do
-		self:text(x + 10, 200 + (i - 1) * 22, lines[i], "text", true, nil, 0.85)
+		self:text(x + 10, y + 20 + (i - 1) * 22, lines[i], "text", "prose")
 	end
 end
 function V:inventory_panel()
@@ -616,7 +659,7 @@ function V:inventory_panel()
 			self:box(px + width * unit / 2, py + height * unit / 2, width * unit - 3, height * unit - 3, "border")
 			self:item_icon(px + width * unit / 2, py + height * unit / 2, item, math.min(2, height))
 			if item.count then
-				self:text(px + 3, py + height * unit - 8, item.count, "gold", false, nil, 0.65)
+				self:text(px + 3, py + height * unit - 8, item.count, "gold", "ui_small")
 			end
 			self.item_hits[#self.item_hits + 1] = { x = px, y = py, w = width * unit, h = height * unit, item = item }
 		end
@@ -735,7 +778,7 @@ function V:skills_panel()
 		self:text(256, 182, e.name .. "  " .. tostring(e.rank or ""), "teal")
 		self:button(877, 181, 164, "All skills", function()
 			self.skill_detail = nil
-			self:render()
+			self.dirty = true
 		end)
 		local y = self:paragraph(256, 226, e.description or "", 78, "muted", 3) + 20
 		self:text(256, y, "TRAINING", "gold")
@@ -758,11 +801,11 @@ function V:skills_panel()
 		end
 		self:button(256, 522, 125, "< Previous", function()
 			self.skill_task_page = math.max(0, self.skill_task_page - 1)
-			self:render()
+			self.dirty = true
 		end, nil, self.skill_task_page == 0)
 		self:button(395, 522, 125, "Next >", function()
 			self.skill_task_page = math.min(pages - 1, self.skill_task_page + 1)
-			self:render()
+			self.dirty = true
 		end, nil, self.skill_task_page >= pages - 1)
 		self:text(548, 522, "Training " .. (self.skill_task_page + 1) .. " / " .. pages, "muted")
 		self:button(
@@ -857,7 +900,7 @@ function V:armory_panel()
 	end
 	self:button(256, 163, 785, "Search swords  " .. (self.armory_query or "") .. (self.armory_edit and "_" or ""), function()
 		self.armory_edit = true
-		self:render()
+		self.dirty = true
 	end)
 	local inv = self.s.inventory
 	local gear = inv and inv:serialize() or { placements = {}, slots = {} }
@@ -874,7 +917,7 @@ function V:armory_panel()
 		self:item_icon(270, y, item, 1)
 		self:button(292, y - 7, 345, item.name, function()
 			self.selected_sword = item
-			self:render()
+			self.dirty = true
 		end)
 		self:text(
 			302,
@@ -975,7 +1018,7 @@ function V:bindings_panel()
 	self:button(865, 181, 175, "Audio", function()
 		self.binding_mode = false
 		self.page = 0
-		self:render()
+		self.dirty = true
 	end)
 	local rows = self.s.input and self.s.input.bindings and self.s.input:bindings() or {}
 	local first = self.page * 7 + 1
@@ -1026,7 +1069,7 @@ function V:settings_panel()
 	self:button(256, 383, 785, "Keyboard bindings", function()
 		self.binding_mode = true
 		self.page = 0
-		self:render()
+		self.dirty = true
 	end)
 	self:paragraph(
 		256,
@@ -1087,7 +1130,6 @@ function V:panel()
 	self.buttons = {}
 	local shade = self:box(640, 360, 1280, 720, "back")
 	gui.set_alpha(shade, 0.72)
-	self.druid:new_blocker(shade)
 	self:box(640, 366, 870, 526, "border")
 	self:box(640, 366, 868, 524, "panel")
 	self:text(238, 129, human(panel):upper(), "gold")
@@ -1152,7 +1194,11 @@ function V:render()
 		self.selected_item, self.held, self.drag, self.drag_pointer = nil, nil, nil, nil
 	end
 	self:clear()
-	self:header()
+	self.flow:begin()
+	self.coordinate_node = self:box(640, 360, 1280, 720, "back")
+	if screen ~= "world" then
+		self:header()
+	end
 	if screen == "title" then
 		self:title()
 	elseif screen == "characters" then
@@ -1168,7 +1214,9 @@ function V:render()
 		self:world_actions()
 		self:battle()
 	end
+	self.drawing_panel = true
 	self:panel()
+	self.drawing_panel = false
 	if self.s.message and not self.s.panel and screen ~= "world" then
 		self:paragraph(116, 665, self.s.message, 105, "gold", 2)
 	end
@@ -1179,11 +1227,13 @@ function V:render()
 		self.drag_ghost = self:box(self.drag_pointer.x, self.drag_pointer.y, 30, 42, "teal")
 		gui.set_alpha(self.drag_ghost, 0.5)
 	end
+	self.flow:render()
+	self.dirty = false
 end
 function V:highlight()
 	self.focus = math.max(1, math.min(self.focus, #self.buttons))
 	for i, b in ipairs(self.buttons) do
-		gui.set_color(b.node, color(i == self.focus and "back" or "border"))
+		b.element.color = color_hex(i == self.focus and "back" or "border")
 	end
 	local focused = self.buttons[self.focus]
 	if not focused then
@@ -1221,11 +1271,10 @@ function V:update(dt)
 			camera_moved = camera_moved or math.floor(previous + 0.5) ~= math.floor(value + 0.5)
 		end
 	end
-	if self.revision ~= self.s.revision or camera_moved then
+	-- Defold reclaims deleted GUI nodes at the end of the frame. Coalesce
+	-- input, camera and model changes into a single scene rebuild.
+	if self.dirty or self.revision ~= self.s.revision or camera_moved then
 		self:render()
-	end
-	if self.druid then
-		self.druid:update(dt)
 	end
 	local c = self.s.combat
 	if c and c.active then
@@ -1260,7 +1309,7 @@ end
 function V:item_at(x, y)
 	for _, r in ipairs(self.item_hits) do
 		if inside(x, y, r) then
-			return r.item
+			return r.item, r
 		end
 	end
 end
@@ -1283,7 +1332,7 @@ function V:inventory_input(id, a)
 		if item_x ~= old_x or item_y ~= old_y or slot ~= self.hover_slot then
 			self.hover_cell = item and { x = item_x, y = item_y }
 			self.hover_slot = slot
-			self:render()
+			self.dirty = true
 		end
 	end
 	if id == hash("touch") then
@@ -1293,7 +1342,7 @@ function V:inventory_input(id, a)
 			if self.drag then
 				self.selected_item = self.drag
 				self.drag_pointer = { x = x, y = y }
-				self:render()
+				self.dirty = true
 				return true
 			end
 		elseif a.released and self.drag then
@@ -1319,14 +1368,16 @@ function V:inventory_input(id, a)
 				end
 				return true
 			end
-			self:render()
+			self.dirty = true
 			return true
 		end
 	end
-	if self.drag_ghost and a.x and a.y then
+	if self.drag_pointer and a.x and a.y then
 		local px, py = self:pointer(a)
 		self.drag_pointer.x, self.drag_pointer.y = px, py
-		gui.set_position(self.drag_ghost, vmath.vector3(px, 720 - py, 0))
+		if self.drag_ghost then
+			gui.set_position(self.drag_ghost, vmath.vector3(px, 720 - py, 0))
+		end
 	end
 	if not (a.pressed or a.repeated) then
 		return false
@@ -1338,14 +1389,14 @@ function V:inventory_input(id, a)
 			self.cursor.x = math.max(0, math.min(7, self.cursor.x + d[1]))
 			self.cursor.y = math.max(0, math.min(6, self.cursor.y + d[2]))
 			self.selected_item = self.held or self:item_at(g.x + self.cursor.x * g.unit + 1, g.y + self.cursor.y * g.unit + 1)
-			self:render()
+			self.dirty = true
 			return true
 		end
 	end
 	if id == hash("key_esc") and self.held then
 		self.held = nil
 		self.selected_item = nil
-		self:render()
+		self.dirty = true
 		return true
 	end
 	if (id == hash("key_delete") or id == hash("key_del")) and self.selected_item and not self.selected_item.count then
@@ -1367,7 +1418,7 @@ function V:inventory_input(id, a)
 		else
 			self.held = self:item_at(g.x + self.cursor.x * g.unit + 1, g.y + self.cursor.y * g.unit + 1)
 			self.selected_item = self.held
-			self:render()
+			self.dirty = true
 		end
 		return true
 	elseif id == hash("key_e") then
@@ -1392,7 +1443,7 @@ function V:on_input(id, a)
 			return true
 		end
 		self.page = 0
-		self:render()
+		self.dirty = true
 		return true
 	end
 	if self.s.pending_binding then
@@ -1417,7 +1468,7 @@ function V:on_input(id, a)
 		if id == hash("key_enter") or id == hash("key_esc") then
 			if a.pressed then
 				self.name_edit = false
-				self:render()
+				self.dirty = true
 			end
 			return true
 		end
@@ -1429,21 +1480,25 @@ function V:on_input(id, a)
 		self.focus = ((self.focus - 1 + (self.shift and -1 or 1)) % math.max(1, #self.buttons)) + 1
 		self.inventory_buttons = true
 		self.hover_cell, self.hover_slot = nil, nil
-		self:render()
+		self.dirty = true
 		return true
 	end
 	if id == hash("key_enter") and a.pressed and (self.s.panel or self.s.screen ~= "world") then
 		local b = self.buttons[self.focus]
 		if b then
-			if type(b.id) == "function" then
-				b.id()
-			else
-				self:dispatch(b.id, b.args)
-			end
+			b.activate()
 		end
 		return true
 	end
-	if self.druid and self.druid:on_input(id, a) then
+	if self.flow:on_input(id, a) then
+		if self.clicked then
+			local callback = self.clicked
+			self.clicked = nil
+			callback()
+		end
+		return true
+	end
+	if self.s.panel and id == hash("touch") then
 		return true
 	end
 	if not (a.pressed or a.repeated) then
@@ -1456,10 +1511,10 @@ function V:on_input(id, a)
 	if self.s.panel then
 		if id == hash("mouse_wheel_down") then
 			self.page = math.min((self.pages or 1) - 1, self.page + 1)
-			self:render()
+			self.dirty = true
 		elseif id == hash("mouse_wheel_up") then
 			self.page = math.max(0, self.page - 1)
-			self:render()
+			self.dirty = true
 		end
 		return true
 	end
@@ -1546,6 +1601,6 @@ function V:state()
 end
 function V:final()
 	self:clear()
-	self.druid:final()
+	self.flow:final()
 end
 return M

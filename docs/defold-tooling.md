@@ -121,6 +121,6 @@ release builds do not enable that debug queue. Keep tokens and personal saves
 out of prompts, reports and version control.
 
 The game runtime and editor-only tools are separated. Alternatives such as
-Gooey, Ink runtimes and ECS are installed and load-checked, while Druid and the
+Gooey, Ink runtimes and ECS are installed and load-checked, while Flow and the
 project's session/model code own the active game flow. See the dependency file
 for exact source/license evidence, including upstream license omissions.

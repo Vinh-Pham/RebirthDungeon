@@ -5,7 +5,7 @@ local modules = {
 	luaunit = "game.lib.luaunit",
 	state_machine = "game.lib.statemachine",
 	rotlove = "game.lib.rot",
-	druid = "druid.druid",
+	flow = "flow.flow",
 	event = "event.event",
 	monarch = "monarch.monarch",
 	orthographic = "orthographic.camera",
@@ -33,8 +33,8 @@ local loaders = {
 	rotlove = function()
 		return require("game.lib.rot")
 	end,
-	druid = function()
-		return require("druid.druid")
+	flow = function()
+		return require("game.integrations.flow")
 	end,
 	event = function()
 		return require("event.event")
@@ -105,6 +105,6 @@ function M.check()
 	return results
 end
 function M.primary()
-	return { ui = "druid", navigation = "monarch", models = "project", tests = "deftest" }
+	return { ui = "flow", navigation = "monarch", models = "project", tests = "deftest" }
 end
 return M

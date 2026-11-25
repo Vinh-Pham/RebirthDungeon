@@ -1,5 +1,7 @@
 # Defold extension references
 
+[Flow](flow.md) is the current GUI library. The Druid reference records the original UI integration.
+
 These guides support the [Defold game plan](../../game-plan.md). They summarize upstream documentation retrieved with Firecrawl on **2026-09-20**, then describe proposed project integration and verification. They are not copies of entire upstream manuals.
 
 **Installation status:** nine pinned project dependencies plus vendored Lume and test-only Lester are present. [Dependency pins](../../../tools/dependencies.json), [implementation status](../../implementation-status.md) and [verification](../../verification.md) record the actual integration. Rolling upstream README examples remain discovery material.

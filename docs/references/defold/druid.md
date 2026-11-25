@@ -1,8 +1,10 @@
 # Druid
 
+> Historical reference. The game now uses [Flow](https://github.com/Pause-Games/flow). See [the current dependency lock](../../../dependencies.lock.json) for installed revisions.
+
 [Upstream documentation](https://github.com/Insality/druid) · Reviewed **2026-09-20** through Firecrawl.
 
-**Status:** integrated at the exact revision in [dependencies.json](../../../tools/dependencies.json). API notes below describe the original research; [verification](../../verification.md) records tests of the selected revision. Expansion contracts remain requirements, not automatic completion claims.
+**Original integration:** The API notes describe the historical setup, and [verification](../../verification.md) records the tests at that time. Expansion contracts remain requirements, not automatic completion claims.
 
 ## Purpose and setup
 

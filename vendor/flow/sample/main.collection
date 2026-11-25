@@ -1,0 +1,34 @@
+name: "main"
+scale_along_z: 0
+embedded_instances {
+  id: "go"
+  data: "components {\n"
+  "  id: \"sample1\"\n"
+  "  component: \"/sample/sample.gui\"\n"
+  "}\n"
+  ""
+}
+embedded_instances {
+  id: "fps"
+  data: "components {\n"
+  "  id: \"fps\"\n"
+  "  component: \"/sample/fps/fps.gui\"\n"
+  "}\n"
+  ""
+}
+embedded_instances {
+  id: "navigation"
+  data: "components {\n"
+  "  id: \"navigation_bootstrap\"\n"
+  "  component: \"/sample/navigation_bootstrap.script\"\n"
+  "}\n"
+  ""
+}
+embedded_instances {
+  id: "bottom_sheet_host"
+  data: "components {\n"
+  "  id: \"bottom_sheet_host\"\n"
+  "  component: \"/sample/bottom_sheet_host.gui\"\n"
+  "}\n"
+  ""
+}

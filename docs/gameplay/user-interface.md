@@ -1,5 +1,7 @@
 # Defold user interface plan
 
+The playable interface now uses [Flow](../references/defold/flow.md) for controls and layout. The remaining notes record the original first-slice design and its proposed follow-ups.
+
 **First-release implementation updated 2026-09-20.** Use Defold `.gui`/`.gui_script` resources with [Druid](../references/defold/druid.md) controls and [Monarch](../references/defold/monarch.md) navigation. The [game plan](../game-plan.md) owns scope; [panel behavior](../wmkit.md) owns first-slice modal policy and later window proposals.
 
 ## Screens and HUD

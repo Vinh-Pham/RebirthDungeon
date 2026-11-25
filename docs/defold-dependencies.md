@@ -4,7 +4,7 @@ All twenty requested packages are installed under `vendor/`, pinned to full upst
 
 Run `python3 tools/defold/check-dependencies.py` to check the source inventory. Review each pinned package's LICENSE before redistribution. Reproduce a source installation by downloading its lockfile archive and extracting into its recorded directory; do not silently replace a pinned version with a branch head.
 
-Druid/Event is the primary UI path. Gooey is an available alternative. Narrator and defold-ink are separate narrative alternatives. tiny-ecs, Jumper, rotLove and lua-state-machine are available source packages; their upstream module layout must be adapted at the call site. rotLove's display layer targets LÖVE and must not be loaded in Defold; algorithm reuse requires an isolated loader. This installation does not claim untested algorithm compatibility.
+Flow is the primary UI library. Event remains installed for committed notifications. Gooey is an available alternative. Narrator and defold-ink are separate narrative alternatives. tiny-ecs, Jumper, rotLove and lua-state-machine are available source packages; their upstream module layout must be adapted at the call site. rotLove's display layer targets LÖVE and must not be loaded in Defold; algorithm reuse requires an isolated loader. This installation does not claim untested algorithm compatibility.
 
 Asefold is an Aseprite-side authoring tool; follow its upstream installation instructions in vendor/asefold before using its UI. DAS provides Defold editor scripts and needs an Aseprite executable. Neither is a runtime sprite renderer. Existing PNG atlases remain the game rendering input.
 

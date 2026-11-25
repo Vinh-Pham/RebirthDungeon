@@ -1,5 +1,7 @@
 # Defold architecture and save boundaries
 
+The playable GUI in `ui/view.lua` uses [Flow](references/defold/flow.md) for controls and layout. Its session owns navigation, keyboard focus and editable fields. Native Defold nodes draw the clipped map. The older Monarch GUI under `game/ui/` also routes pointer controls through Flow. The architecture below describes the original first-slice design.
+
 **Architecture contract**, governed by the [game plan](game-plan.md). The starter slice now has pinned dependencies and executable modules; [implementation status](implementation-status.md) maps the current files. More granular module paths below remain proposed refinements.
 
 ## Ownership

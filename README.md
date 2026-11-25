@@ -44,7 +44,7 @@ Escape closes panels. Keyboard bindings can be changed in Settings.
 - [Verification results](docs/defold-verification.md)
 - [Defold agent instructions](AGENTS.md)
 
-All 20 researched upstream packages are installed and pinned. Druid owns the
+All 20 researched upstream packages are installed and pinned. Flow owns the
 interactive UI; alternative frameworks and algorithms are available through
 explicit adapters rather than competing for input. Asefold and Defold Aseprite
 Scripts are authoring tools. See the dependency inventory for exact versions and

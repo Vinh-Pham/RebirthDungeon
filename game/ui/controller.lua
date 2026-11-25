@@ -85,12 +85,11 @@ function M.update(self, dt)
 		self.dirty = false
 		V.render(self)
 	end
-	self.druid:update(dt)
 	V.labels(self)
 end
 
 function M.on_input(self, id, action)
-	if not self.druid then
+	if not self.controls then
 		return
 	end
 	local S = self.ui
@@ -141,7 +140,7 @@ function M.on_input(self, id, action)
 		end
 		return true
 	end
-	if self.druid:on_input(id, action) then
+	if self.controls:on_input(id, action) then
 		return true
 	end
 	if is_typing then
@@ -222,9 +221,6 @@ function M.on_message(self, id, message, sender)
 	if id == hash("focus") then
 		msg.post(".", "acquire_input_focus")
 	end
-	if self.druid then
-		self.druid:on_message(id, message, sender)
-	end
 end
 function M.on_reload(self)
 	Bridge.request(self)
@@ -232,8 +228,8 @@ function M.on_reload(self)
 end
 function M.final(self)
 	msg.post("/bootstrap#session", "ui_unsubscribe")
-	if self.druid then
-		self.druid:final()
+	if self.controls then
+		self.controls:final()
 	end
 	for _, node in ipairs(self.nodes) do
 		gui.cancel_animations(node)

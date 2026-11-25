@@ -10,6 +10,7 @@
 /tools
 /vendor
 /.agents
+/.deps
 /.beckett
 /.codex
 /.git
