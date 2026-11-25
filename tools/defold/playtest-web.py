@@ -50,8 +50,10 @@ def map_pick_test(label):
  old=state()['position'];moved=command('move',dx=1,dy=0)
  if moved['position']==old:moved=command('move',dx=-1,dy=0)
  check(label+' establishes legal neighbor',moved['position']!=old,moved)
- current=moved['position'];map_info=moved['map'];ox=max(0,min(current['x']-23,max(0,map_info['width']-47)));oy=max(0,min(current['y']-9,max(0,map_info['height']-18)))
- logical_x=262+(old['x']-ox)*16;logical_y=121+(old['y']-oy)*24
+ current=moved['position'];map_info=moved['map'];ox=max(0,min(current['x']-31,max(0,map_info['width']-62)));oy=max(0,min(current['y']-9,max(0,map_info['height']-19)))
+ page.wait_for_timeout(650)
+ logical_x=24+(old['x']-ox)*16;logical_y=121+(old['y']-oy)*24
+ assert logical_x < 254, 'Expected a destination in the expanded left side of the map'
  x,y,rect=canvas_point(logical_x,logical_y)
  page.mouse.click(x,y,delay=100);page.wait_for_timeout(200)
  check(label+' click receipt',True,{'target':old,'before':current,'after':state()['position'],'queued':state()['move_queued'],'canvas':rect,'click':{'x':x,'y':y}})
@@ -76,6 +78,11 @@ try:
   key('Enter');page.keyboard.type('Web Signal',delay=60);wait('window.rebirthGameState.forms.name === "Web Signal"',5000);key('Escape');check('complete name typed into canvas',state()['forms']['name']=='Web Signal',state()['forms']);shot('02-web-creation')
   command('create');command('arrival_continue');command('arrival_continue');wait('window.rebirthGameState.screen === "world"')
   saved=state();character_id=saved['character_id'];check('created isolated browser character in Lantern Rest',saved['location']=='lantern_rest');shot('03-web-world')
+  x,y,_=canvas_point(98,693)
+  page.mouse.click(x,y,delay=100)
+  wait('window.rebirthGameState.panel === "inventory"')
+  check('bottom Inventory button opens the panel',state()['panel']=='inventory')
+  key('Escape')
   focus_canvas();key('i');check('physical I opens inventory',state()['panel']=='inventory');position=state()['position'];key('w');check('modal blocks world input',state()['position']==position);shot('04-web-inventory')
   # A new satchel allocates its starting gold at the first free cell.
   # The anchor is persisted after the first inventory change.

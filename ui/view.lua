@@ -5,6 +5,11 @@ local Equipment = require("game.model.equipment")
 local M = {}
 local V = {}
 V.__index = V
+local MAP_VIEW = { x = 16, y = 109, w = 992, h = 456 }
+local TILE_WIDTH, TILE_HEIGHT = 16, 24
+local STATUS_BAR_WIDTH = 212
+local TIME_BAR_WIDTH = MAP_VIEW.w - 40
+local ACTION_Y = 693
 local palette = {
 	back = "28353e",
 	dark = "2e222f",
@@ -262,36 +267,51 @@ function V:arrival()
 	)
 	self:button(510, 468, 540, "Follow the lanterns to Lantern Rest", "arrival_continue")
 end
-function V:sidebar()
+function V:character_status()
 	local s = self.s
 	local p = s.profile or {}
 	local st = s.stats or {}
 	local w = p.world or {}
-	self:box(124, 323, 216, 480, "panel")
-	self:portrait(50, 126, p, 2)
+	local left = 1038
+	self:box(1144, 371, 240, 576, "panel")
+	self:portrait(left + 21, 126, p, 2)
 	local display_name = p.name or "Delver"
 	if #display_name > 15 then
 		display_name = require("game.util").utf8_prefix(display_name, 14) .. "…"
 	end
-	self:text(80, 114, display_name, "gold")
-	self:text(80, 139, "Level " .. tostring(st.level or 1), "muted")
+	self:text(left + 51, 114, display_name, "gold")
+	self:text(left + 51, 139, "Level " .. tostring(st.level or 1), "muted")
 	local h = s.combat and s.combat.health or w.health
 	if not h or h < 0 then
 		h = st.life or 100
 	end
-	self:text(29, 180, "LIFE  " .. math.ceil(h) .. " / " .. tostring(st.life or 100))
-	self.gauges.health = self:bar(29, 198, 188, h / (st.life or 100), "red")
-	self:text(29, 228, "STAMINA  " .. tostring(math.floor(s.combat and s.combat.stamina or st.stamina or 40)))
+	self:text(left, 180, "LIFE  " .. math.ceil(h) .. " / " .. tostring(st.life or 100))
+	self.gauges.health = self:bar(left, 198, STATUS_BAR_WIDTH, h / (st.life or 100), "red")
+	self:text(left, 228, "STAMINA  " .. tostring(math.floor(s.combat and s.combat.stamina or st.stamina or 40)))
 	self.gauges.stamina =
-		self:bar(29, 246, 188, (s.combat and s.combat.stamina or st.stamina or 40) / (st.stamina or 40), "teal")
+		self:bar(left, 246, STATUS_BAR_WIDTH, (s.combat and s.combat.stamina or st.stamina or 40) / (st.stamina or 40), "teal")
 	local y = 284
 	for _, k in ipairs({ "strength", "dexterity", "intelligence", "will", "luck", "defense" }) do
-		self:text(29, y, string.format("%-13s %s", human(k), tostring(st[k] or 0)))
+		self:text(left, y, string.format("%-13s %s", human(k), tostring(st[k] or 0)))
 		y = y + 26
 	end
-	self:text(29, 462, "AP " .. tostring(st.ability_points or 0), "teal")
-	self:text(29, 493, "Gold  " .. tostring(w.gold or 0), "gold")
-	self:text(29, 524, "Bank  " .. tostring(w.bank_gold or 0), "muted")
+	self:text(left, 462, "AP " .. tostring(st.ability_points or 0), "teal")
+	self:text(left, 493, "Gold  " .. tostring(w.gold or 0), "gold")
+	self:text(left, 524, "Bank  " .. tostring(w.bank_gold or 0), "muted")
+	self:box(1144, 546, STATUS_BAR_WIDTH, 1, "border")
+	self:text(left, 566, "NEARBY", "gold")
+	local place = s.world and s.world:interact()
+	self:paragraph(
+		left,
+		590,
+		place and (place.label or place.name or human(place.id)) or "Explore the surrounding passages.",
+		22,
+		"muted",
+		2
+	)
+	self:text(left, 643, "MOVE  WASD / ARROWS", "muted", false, nil, 0.75)
+end
+function V:world_actions()
 	local buttons = {
 		{ "Inventory [I]", "inventory" },
 		{ "Skills [K]", "skills" },
@@ -301,19 +321,13 @@ function V:sidebar()
 		{ "Interact [E]", "interact" },
 		{ "Settings", "settings" },
 	}
+	local gap = 8
+	local step = (1248 + gap) / #buttons
 	for i, row in ipairs(buttons) do
-		self:button(1040, 105 + i * 43, 222, row[1], row[2])
+		local x = 16 + math.floor((i - 1) * step)
+		local width = 16 + math.floor(i * step) - x - gap
+		self:button(x, ACTION_Y, width, row[1], row[2])
 	end
-	self:text(1044, 467, "NEARBY", "gold")
-	local place = s.world and s.world:interact()
-	self:paragraph(
-		1044,
-		495,
-		place and (place.label or place.name or human(place.id)) or "Explore the surrounding passages.",
-		22,
-		"muted",
-		4
-	)
 end
 function V:map()
 	local world = self.s.world
@@ -322,36 +336,41 @@ function V:map()
 	end
 	local map = world.map
 	local p = world.player
-	local cols, rows = 47, 18
+	local view = MAP_VIEW
+	local cols, rows = view.w / TILE_WIDTH, view.h / TILE_HEIGHT
 	local ox = math.floor(math.max(0, math.min(p.x - math.floor(cols / 2), math.max(0, (map.width or 68) - cols))))
 	local oy = math.floor(math.max(0, math.min(p.y - math.floor(rows / 2), math.max(0, (map.height or 42) - rows))))
-	self.camera_target = { x = ox * 16, y = oy * 24 }
+	self.camera_target = { x = ox * TILE_WIDTH, y = oy * TILE_HEIGHT }
 	if self.camera_map ~= map then
 		self.camera_map = map
-		self.camera_position = { x = ox * 16, y = oy * 24 }
+		self.camera_position = { x = self.camera_target.x, y = self.camera_target.y }
 	end
-	ox = math.floor(self.camera_position.x + 0.5) / 16
-	oy = math.floor(self.camera_position.y + 0.5) / 24
-	self.map_view = { x = 254, y = 109, w = 752, h = 432, ox = ox, oy = oy }
+	ox = math.floor(self.camera_position.x + 0.5) / TILE_WIDTH
+	oy = math.floor(self.camera_position.y + 0.5) / TILE_HEIGHT
+	self.map_view = { x = view.x, y = view.y, w = view.w, h = view.h, ox = ox, oy = oy }
+	local center_x = view.x + (0.5 - ox) * TILE_WIDTH
+	local center_y = view.y + (0.5 - oy) * TILE_HEIGHT
 	local location_label = human(world.currentLocation)
 	if world.currentLocation == "threshold" then
 		location_label = (world.room or 1) <= 8 and ("Threshold · Room " .. tostring(world.room or 1) .. "/8")
 			or "Treasure Chamber"
 	end
-	self:text(254, 91, location_label:upper(), "teal")
-	local clip = self:box(630, 325, 752, 432, "back")
+	self:text(view.x, 91, location_label:upper(), "teal")
+	local clip = self:box(view.x + view.w / 2, view.y + view.h / 2, view.w, view.h, "back")
 	gui.set_clipping_mode(clip, gui.CLIPPING_MODE_STENCIL)
 	gui.set_clipping_visible(clip, false)
 	local glyphs = {}
 	for yy = math.floor(oy), math.ceil(oy + rows) - 1 do
 		for xx = math.floor(ox), math.ceil(ox + cols) - 1 do
 			local key = xx .. "," .. yy
-			local x, y = 262 + (xx - ox) * 16, 121 + (yy - oy) * 24
+			local x, y = center_x + xx * TILE_WIDTH, center_y + yy * TILE_HEIGHT
 			local wall = map.walls and map.walls[key]
 			local floor = map.floor and map.floor[key]
 			local water = map.water and map.water[key]
 			local road = map.roads and map.roads[key]
-			self:box(x, y, 16, 24, water and "border" or wall and "dark" or "back", clip)
+			if water or wall then
+				self:box(x, y, TILE_WIDTH, TILE_HEIGHT, water and "border" or "dark", clip)
+			end
 			if wall then
 				glyphs[#glyphs + 1] = { x = x - 6, y = y, text = "#", color = "border" }
 			elseif water then
@@ -372,7 +391,7 @@ function V:map()
 			x, y = cell(a.cell)
 		end
 		if x and y then
-			local px, py = 262 + (x - ox) * 16, 121 + (y - oy) * 24
+			local px, py = center_x + x * TILE_WIDTH, center_y + y * TILE_HEIGHT
 			if a.sprite then
 				self:art(px, py, 16, 24, "town_atlas_" .. a.sprite, clip)
 			elseif a.amenity_sprite then
@@ -416,33 +435,21 @@ function V:map()
 		end
 	end
 	for _, e in ipairs(list(world.enemies)) do
-		self:art(262 + (e.x - ox) * 16, 121 + (e.y - oy) * 24, 16, 24, "spider_atlas_" .. tostring(e.sprite or 0), clip)
+		self:art(center_x + e.x * TILE_WIDTH, center_y + e.y * TILE_HEIGHT, TILE_WIDTH, TILE_HEIGHT, "spider_atlas_" .. tostring(e.sprite or 0), clip)
 	end
-	self:portrait(262 + (p.x - ox) * 16, 121 + (p.y - oy) * 24, self.s.profile, 1, clip)
+	self:portrait(center_x + p.x * TILE_WIDTH, center_y + p.y * TILE_HEIGHT, self.s.profile, 1, clip)
 end
 function V:logs()
 	local logs = list(self.s.log)
 	local first = math.max(1, #logs - 4)
-	self:text(254, 565, "CHRONICLE", "gold")
+	self:text(MAP_VIEW.x, 580, "CHRONICLE", "gold")
 	for i = first, #logs do
 		local value = logs[i]
 		if type(value) == "table" then
 			value = value.message
 		end
-		local line = wrap(value, 78)[1]
-		self:text(254, 590 + (i - first) * 20, line, "muted", true)
-	end
-	self:text(24, 692, "MOVE  WASD / ARROWS", "muted", false, nil, 0.75)
-	if not (self.s.combat and self.s.combat.active) then
-		self:text(
-			254,
-			692,
-			"E  Interact    I  Inventory    K  Skills    Q  Journal    G  Moon Gates",
-			"muted",
-			false,
-			nil,
-			0.75
-		)
+		local line = wrap(value, 100)[1]
+		self:text(MAP_VIEW.x, 600 + (i - first) * 16, line, "muted", true, nil, 0.9)
 	end
 end
 function V:battle()
@@ -450,15 +457,16 @@ function V:battle()
 	if not c or not c.active then
 		return
 	end
-	self:box(630, 351, 752, 380, "dark")
-	self:text(275, 184, "READ THE INTENT. CHOOSE YOUR COUNTER.", "gold")
+	local left = MAP_VIEW.x + 20
+	self:box(MAP_VIEW.x + MAP_VIEW.w / 2, 362, MAP_VIEW.w, 402, "dark")
+	self:text(left, 184, "READ THE INTENT. CHOOSE YOUR COUNTER.", "gold")
 	for i, e in ipairs(c.enemies or {}) do
-		local x = 290 + (i - 1) * 178
+		local x = left + 15 + (i - 1) * 228
 		self:art(x + 50, 274, 48, 72, "spider_atlas_" .. tostring((e.stats or {}).sprite or 0))
 		self:button(
 			x - 4,
 			331,
-			166,
+			212,
 			(c.target == i and "> " or "") .. ((e.stats or {}).name or "Enemy"),
 			"target",
 			{ index = i },
@@ -469,13 +477,15 @@ function V:battle()
 		self.gauges["enemy" .. i] = self:bar(x, 410, 150, e.gauge, "gold")
 	end
 	self:text(
-		275,
+		left,
 		452,
 		"TIME  " .. (c.queued_action and ("Queued: " .. human(c.queued_action)) or "Choose an attack or skill"),
 		"teal"
 	)
-	self.gauges.time = self:bar(275, 475, 708, c.player_gauge, "teal")
-	self:paragraph(275, 506, "Attack interrupts Smash. Defend softens Attack. Smash breaks Defend.", 80, "muted", 2)
+	self.gauges.time = self:bar(left, 475, TIME_BAR_WIDTH, c.player_gauge, "teal")
+	self:paragraph(left, 506, "Attack interrupts Smash. Defend softens Attack. Smash breaks Defend.", 80, "muted", 2)
+	local action_x = left
+	local action_widths = { 152, 152, 152, 172, 152, 132 }
 	for i, a in ipairs({ "attack", "defend", "smash", "counterattack", "windmill", "tonic" }) do
 		local disabled
 		if a == "tonic" then
@@ -483,7 +493,8 @@ function V:battle()
 		else
 			disabled = c.allowed and not c:allowed(a) or false
 		end
-		self:button(254 + (i - 1) * 166, 693, 156, i .. " " .. human(a), a, nil, disabled)
+		self:button(action_x, 540, action_widths[i], i .. " " .. human(a), a, nil, disabled)
+		action_x = action_x + action_widths[i] + 8
 	end
 end
 function V:pagination(count, size, y)
@@ -1151,9 +1162,10 @@ function V:render()
 	elseif screen == "arrival" then
 		self:arrival()
 	else
-		self:sidebar()
+		self:character_status()
 		self:map()
 		self:logs()
+		self:world_actions()
 		self:battle()
 	end
 	self:panel()
@@ -1218,13 +1230,13 @@ function V:update(dt)
 	local c = self.s.combat
 	if c and c.active then
 		if self.gauges.time then
-			gui.set_size(self.gauges.time, vmath.vector3(c.player_gauge * 708, 6, 0))
+			gui.set_size(self.gauges.time, vmath.vector3(c.player_gauge * TIME_BAR_WIDTH, 6, 0))
 		end
 		if self.gauges.health then
-			gui.set_size(self.gauges.health, vmath.vector3(c.health / c.max_health * 188, 6, 0))
+			gui.set_size(self.gauges.health, vmath.vector3(c.health / c.max_health * STATUS_BAR_WIDTH, 6, 0))
 		end
 		if self.gauges.stamina then
-			gui.set_size(self.gauges.stamina, vmath.vector3(c.stamina / c.max_stamina * 188, 6, 0))
+			gui.set_size(self.gauges.stamina, vmath.vector3(c.stamina / c.max_stamina * STATUS_BAR_WIDTH, 6, 0))
 		end
 		for i, e in ipairs(c.enemies) do
 			local n = self.gauges["enemy" .. i]
@@ -1507,7 +1519,10 @@ function V:on_input(id, a)
 		local x, y = self:pointer(a)
 		local r = self.map_view
 		if inside(x, y, r) then
-			self:dispatch("path", { x = math.floor(r.ox + (x - r.x) / 16), y = math.floor(r.oy + (y - r.y) / 24) })
+			self:dispatch("path", {
+				x = math.floor(r.ox + (x - r.x) / TILE_WIDTH),
+				y = math.floor(r.oy + (y - r.y) / TILE_HEIGHT),
+			})
 			return true
 		end
 	end

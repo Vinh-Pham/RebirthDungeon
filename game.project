@@ -28,6 +28,7 @@ width = 1280
 height = 720
 
 [graphics]
+max_characters = 16384
 default_texture_min_filter = nearest
 default_texture_mag_filter = nearest
 max_font_batches = 4096

@@ -32,6 +32,11 @@ def key(name):
  time.sleep(.12)
  return state()
 
+def click_game(x, y):
+ point = g.convert_point((x/1280, y/720), 'normalized_viewport', 'window')
+ receipt = g.click(point, wait=True, timeout=3)
+ receipts.append({'kind':'click','x':x,'y':y,'receipt':str(receipt)})
+
 def wait(predicate,timeout=5,label='state transition'):
  end=time.monotonic()+timeout;last={}
  while time.monotonic()<end:
@@ -90,6 +95,21 @@ try:
  command('create');record('new character enters arrival',state()['screen']=='arrival')
  command('arrival_continue');command('arrival_continue');s=wait(lambda x:x['screen']=='world')
  record('arrival reaches Lantern Rest',s['location']=='lantern_rest');character_id=s['character_id'];shot('03-world')
+ click_game(98,693)
+ record('bottom Inventory button opens the panel',wait(lambda v:v['panel']=='inventory')['panel']=='inventory')
+ key('ESCAPE')
+ origin = state()['position']
+ moved = command('move',dx=1,dy=0)
+ if moved['position'] == origin:
+  moved = command('move',dx=-1,dy=0)
+ assert moved['position'] != origin, 'Could not establish an open neighbor'
+ time.sleep(.65)
+ map_view = ui_state()['ui']['map_view']
+ pick_x = map_view['x'] + (origin['x'] - map_view['ox'] + .5) * 16
+ pick_y = map_view['y'] + (origin['y'] - map_view['oy'] + .5) * 24
+ assert pick_x < 254, 'Expected a map cell within the former sidebar'
+ click_game(pick_x,pick_y)
+ record('clicking the expanded left map selects the correct tile',wait(lambda v:v['position']==origin)['position']==origin)
  # Keep the rendered town fixtures in the playtest: missing art metadata used
  # to make these six landmarks fall back to the default NPC silhouette.
  amenity_sprites={'oven':0,'loom':1,'spinning_wheel':2,'windmill':3,'fishing':4}
