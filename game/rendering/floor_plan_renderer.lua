@@ -1,5 +1,6 @@
 local Grid = require("game.core.grid")
 local M = {}
+local TILE_SIZE = 12
 
 local function transform(room, x, y)
 	return room.layout.x + (room.layout.reverse and room.width - 1 - x or x), room.layout.y + y
@@ -134,11 +135,19 @@ end
 function M.render(view, bounds)
 	local world = view.s.world
 	local plan = world.rooms[1].floor_plan
-	local size = math.max(2, math.floor(math.min(bounds.w / plan.width, bounds.h / plan.height)))
-	local left = bounds.x + math.floor((bounds.w - plan.width * size) / 2)
-	local top = bounds.y + math.floor((bounds.h - plan.height * size) / 2)
-	view.camera_target, view.camera_position, view.camera_map = nil, nil, nil
 	local active = world.map.layout
+	local size = TILE_SIZE
+	local px, py = transform(world.map, world.player.x, world.player.y)
+	local function camera_offset(cell, length, extent)
+		return math.floor(math.max(0, math.min((cell + 0.5) * size - length / 2, extent * size - length)))
+	end
+	local offset_x = camera_offset(px, bounds.w, plan.width)
+	local offset_y = camera_offset(py, bounds.h, plan.height)
+	local left, top = bounds.x - offset_x, bounds.y - offset_y
+	local first_x, first_y = math.floor(offset_x / size), math.floor(offset_y / size)
+	local last_x = math.min(plan.width, math.ceil((offset_x + bounds.w) / size))
+	local last_y = math.min(plan.height, math.ceil((offset_y + bounds.h) / size))
+	view.camera_target, view.camera_position, view.camera_map = nil, nil, nil
 	local exit_x, exit_y = transform(world.map, world.map.exit.x, world.map.exit.y)
 	local entry_x, entry_y = transform(world.map, world.map.entry.x, world.map.entry.y)
 	view.map_preview = {
@@ -152,17 +161,20 @@ function M.render(view, bounds)
 		entry_y = entry_y,
 	}
 	view.map_view = {
-		x = left,
-		y = top,
-		w = plan.width * size,
-		h = plan.height * size,
-		ox = 0,
-		oy = 0,
+		x = bounds.x,
+		y = bounds.y,
+		w = bounds.w,
+		h = bounds.h,
+		ox = offset_x / size,
+		oy = offset_y / size,
 		tile_width = size,
 		tile_height = size,
 	}
+	local clip = view:box(bounds.x + bounds.w / 2, bounds.y + bounds.h / 2, bounds.w, bounds.h, "back")
+	gui.set_clipping_mode(clip, gui.CLIPPING_MODE_STENCIL)
+	gui.set_clipping_visible(clip, false)
 	local function tile(x, y, tint, w, h)
-		return view:box(left + (x + 0.5) * size, top + (y + 0.5) * size, w or size, h or size, tint)
+		return view:box(left + (x + 0.5) * size, top + (y + 0.5) * size, w or size, h or size, tint, clip)
 	end
 	local cells = {}
 	-- Corridors are revealed only after both adjoining rooms have been visited.
@@ -195,16 +207,16 @@ function M.render(view, bounds)
 	local function strips(cells)
 		-- Draw continuous horizontal strips so the full floor plan stays within
 		-- Defold's GUI node budget while preserving sharp square edges.
-		for y = 0, plan.height - 1 do
-			local x = 0
-			while x < plan.width do
+		for y = first_y, last_y - 1 do
+			local x = first_x
+			while x < last_x do
 				local tint = cells[Grid.key(x, y)]
 				if tint then
 					local start = x
 					repeat
 						x = x + 1
-					until x == plan.width or cells[Grid.key(x, y)] ~= tint
-					view:box(left + (start + x) * size / 2, top + (y + 0.5) * size, (x - start) * size, size, tint)
+					until x == last_x or cells[Grid.key(x, y)] ~= tint
+					view:box(left + (start + x) * size / 2, top + (y + 0.5) * size, (x - start) * size, size, tint, clip)
 				else
 					x = x + 1
 				end
@@ -238,13 +250,14 @@ function M.render(view, bounds)
 			for _, enemy in ipairs(world.enemies) do
 				if visible(world, index, enemy.x, enemy.y) then
 					local ex, ey = transform(room, enemy.x, enemy.y)
-					tile(ex, ey, "dark", math.max(9, size + 2), math.max(12, size + 4))
+					tile(ex, ey, "dark", 16, 24)
 					view:art(
 						left + (ex + 0.5) * size,
 						top + (ey + 0.5) * size,
-						math.max(8, size),
-						math.max(12, size * 1.5),
-						"spider_atlas_" .. tostring(enemy.sprite or 0)
+						16,
+						24,
+						"spider_atlas_" .. tostring(enemy.sprite or 0),
+						clip
 					)
 				end
 			end
@@ -264,9 +277,7 @@ function M.render(view, bounds)
 			end
 		end
 	end
-	local p = world.player
-	local px, py = transform(world.map, p.x, p.y)
-	tile(px, py, "dark", math.max(9, size + 2), math.max(12, size + 4))
-	view:portrait(left + (px + 0.5) * size, top + (py + 0.5) * size, view.s.profile, math.max(0.5, size / 24))
+	tile(px, py, "dark", 16, 24)
+	view:portrait(left + (px + 0.5) * size, top + (py + 0.5) * size, view.s.profile, 1, clip)
 end
 return M

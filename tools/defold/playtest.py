@@ -155,7 +155,7 @@ try:
  dungeon=state()
  wait(lambda _: (ui_state()['ui'].get('map_preview') or {}).get('floor_plan'),label='render the Threshold floor plan')
  ui=ui_state()['ui'];view=ui['map_view'];preview=ui['map_preview']
- record('connected dungeon floor plan uses square tiles across the map area',preview.get('floor_plan') and view['tile_width']==view['tile_height'] and 500<view['h']<=648,view)
+ record('dungeon camera uses enlarged square tiles within the map area',preview.get('floor_plan') and view['tile_width']==view['tile_height']==12 and view['h']==648,view)
  shot('06-threshold-map')
  record('fog initially hides every future room',dungeon['map']['discovered_rooms']==1,dungeon['map'])
  initial_explored=dungeon['map']['explored_tiles']
@@ -190,8 +190,9 @@ try:
  door_approach={'x':exit_cell['x']-1,'y':exit_cell['y']}
  command('path',**door_approach)
  wait(lambda v:v['position']==door_approach,20,'explore the first room exit')
- door_x=view['x']+(preview['exit_x']+.5)*view['tile_width']
- door_y=view['y']+(preview['exit_y']+.5)*view['tile_height']
+ view=state()['ui']['map_view']
+ door_x=view['x']+(preview['exit_x']-view['ox']+.5)*view['tile_width']
+ door_y=view['y']+(preview['exit_y']-view['oy']+.5)*view['tile_height']
  click_game(door_x,door_y)
  arrived=wait(lambda v:v['room']==2,45,'walk into the next room from a map click')
  record('clicking the unlocked door enters the next room',arrived['position']==arrived['map']['entry'],arrived['position'])
