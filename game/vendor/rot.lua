@@ -12,5 +12,10 @@ function Class:setRNG(rng)self._rng=rng or ROT.RNG;return self end
 ROT.FOV=require("game.vendor.rot.fov")
 ROT.FOV.Precise=require("game.vendor.rot.fov.precise")
 ROT.Map=require("game.vendor.rot.map")
+ROT.Type={PointSet=require("game.vendor.rot.type.pointSet")}
+ROT.Map.Feature=require("game.vendor.rot.map.feature")
+ROT.Map.Room=require("game.vendor.rot.map.room")
+ROT.Map.Corridor=require("game.vendor.rot.map.corridor")
 ROT.Map.Arena=require("game.vendor.rot.map.arena")
+ROT.Map.IceyMaze=require("game.vendor.rot.map.iceyMaze")
 return ROT

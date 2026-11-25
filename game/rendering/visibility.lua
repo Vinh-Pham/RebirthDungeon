@@ -4,7 +4,8 @@ local M = {}
 function M.compute(map, x, y, radius)
 	local visible = {}
 	local fov = ROT.FOV.Precise:new(function(_, cx, cy)
-		return Grid.contains(map, cx, cy) and not map.walls[Grid.key(cx, cy)]
+		local cell = Grid.key(cx, cy)
+		return Grid.contains(map, cx, cy) and not map.walls[cell] and (not map.floor or map.floor[cell])
 	end)
 	fov:compute(x, y, radius, function(cx, cy, _, amount)
 		if Grid.contains(map, cx, cy) then

@@ -73,6 +73,15 @@ function C:sync()
 	self.player_stamina = self.stamina
 	self.enemy_gauge = self.enemies[1] and self.enemies[1].gauge or 0
 	self.won = #self.enemies > 0 and self.health > 0 and not self:living()
+	local selected = self.enemies[self.target]
+	if selected and selected.health == 0 and self.active then
+		for i, enemy in ipairs(self.enemies) do
+			if enemy.health > 0 then
+				self.target = i
+				break
+			end
+		end
+	end
 end
 function C:living()
 	for _, e in ipairs(self.enemies) do

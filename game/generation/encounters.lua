@@ -1,5 +1,6 @@
 local U = require("game.util")
 local room_spiders = require("game.data.enemies.threshold")
+local dungeon_enemies = require("game.data.enemies.dungeon")
 
 local M = {}
 
@@ -22,6 +23,25 @@ function M.spiders(room, enemy_count)
 				protection = 0,
 				experience = 100,
 			}
+		end
+		enemies[i] = entry
+	end
+	return enemies
+end
+
+function M.for_room(map, room)
+	local actors = map.enemies or {}
+	if not actors[1] or not actors[1].kind then
+		return M.spiders(room, #actors)
+	end
+	local enemies = {}
+	for i, actor in ipairs(actors) do
+		local definition = assert(dungeon_enemies[actor.kind], "Unknown dungeon enemy kind")
+		local entry = U.copy(definition)
+		entry.protection = 0
+		if not entry.boss then
+			entry.health = entry.health + room
+			entry.experience = entry.experience + room * 2
 		end
 		enemies[i] = entry
 	end

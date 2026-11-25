@@ -1,10 +1,37 @@
+local Grid = require("game.core.grid")
+local FloorPlan = require("game.rendering.floor_plan_renderer")
 local M = {}
 local MAP_VIEW = { x = 16, y = 13, w = 992, h = 552 }
+local DUNGEON_VIEW = { x = 16, y = 13, w = 992, h = 648 }
 local TILE_WIDTH, TILE_HEIGHT = 16, 24
 M.view = MAP_VIEW
 M.tile_width, M.tile_height = TILE_WIDTH, TILE_HEIGHT
-local function list(value) return type(value) == "table" and value or {} end
-local function cell(p) return p and (p.x or p[1]), p and (p.y or p[2]) end
+function M.view_for(world)
+	if world and world.currentLocation == "threshold" then
+		return DUNGEON_VIEW
+	end
+	return MAP_VIEW
+end
+
+function M.path_target(world, preview, x, y)
+	if preview and preview.floor_plan then
+		return FloorPlan.path_target(world, x, y)
+	end
+	if not preview then
+		local explored = (world.world.threshold_explored or {})[tostring(world.room)] or {}
+		if world.currentLocation == "threshold" and not explored[Grid.key(x, y)] then
+			return nil
+		end
+		return x, y
+	end
+	return nil
+end
+local function list(value)
+	return type(value) == "table" and value or {}
+end
+local function cell(p)
+	return p and (p.x or p[1]), p and (p.y or p[2])
+end
 function M.map_text(self, clip, x, y, value, c, font, pivot)
 	local node = gui.new_text_node(vmath.vector3(x, 720 - y, 0), value)
 	gui.set_font(node, font or "ui")
@@ -21,10 +48,27 @@ function M.render(self)
 	end
 	local map = world.map
 	local p = world.player
-	local view = MAP_VIEW
+	local view = M.view_for(world)
+	local dungeon = world.currentLocation == "threshold"
+	if dungeon and map.chamber then
+		FloorPlan.prepare(world.rooms)
+		return FloorPlan.render(self, view)
+	end
+	self.map_preview = nil
+	local explored = dungeon and (world.world.threshold_explored or {})[tostring(world.room)] or {}
+	local function seen(x, y)
+		return not dungeon or explored and explored[Grid.key(x, y)]
+	end
+	local function visible(x, y)
+		return not dungeon or world.visible and world.visible[Grid.key(x, y)]
+	end
 	local cols, rows = view.w / TILE_WIDTH, view.h / TILE_HEIGHT
-	local ox = math.floor(math.max(0, math.min(p.x - math.floor(cols / 2), math.max(0, (map.width or 68) - cols))))
-	local oy = math.floor(math.max(0, math.min(p.y - math.floor(rows / 2), math.max(0, (map.height or 42) - rows))))
+	local left = 0
+	local top = 0
+	local right = map.width
+	local bottom = map.height
+	local ox = math.floor(math.max(left, math.min(p.x - math.floor(cols / 2), (right or 68) - cols)))
+	local oy = math.floor(math.max(top, math.min(p.y - math.floor(rows / 2), (bottom or 42) - rows)))
 	self.camera_target = { x = ox * TILE_WIDTH, y = oy * TILE_HEIGHT }
 	if self.camera_map ~= map then
 		self.camera_map = map
@@ -47,15 +91,19 @@ function M.render(self)
 			local floor = map.floor and map.floor[key]
 			local water = map.water and map.water[key]
 			local road = map.roads and map.roads[key]
-			if water or wall then
+			if not seen(xx, yy) then
+				wall, floor, water = nil, nil, nil
+			end
+			if water or wall and not dungeon then
 				self:box(x, y, TILE_WIDTH, TILE_HEIGHT, water and "border" or "dark", clip)
 			end
 			if wall then
-				glyphs[#glyphs + 1] = { x = x - 6, y = y, text = "#", color = "border" }
+				glyphs[#glyphs + 1] = { x = x - 6, y = y, text = "#", color = visible(xx, yy) and "border" or "floor" }
 			elseif water then
 				glyphs[#glyphs + 1] = { x = x - 6, y = y, text = "~", color = "water" }
 			elseif floor then
-				glyphs[#glyphs + 1] = { x = x - 6, y = y, text = ".", color = road and "muted" or "floor" }
+				local tint = dungeon and (visible(xx, yy) and "muted" or "floor") or road and "muted" or "floor"
+				glyphs[#glyphs + 1] = { x = x - 6, y = y, text = ".", color = tint }
 			end
 		end
 	end
@@ -64,14 +112,45 @@ function M.render(self)
 	for _, g in ipairs(glyphs) do
 		self:map_text(clip, g.x, g.y, g.text, g.color)
 	end
+	if dungeon then
+		for _, door in ipairs({ map.entry, map.exit }) do
+			if seen(door.x, door.y) then
+				self:map_text(
+					clip,
+					center_x + door.x * TILE_WIDTH,
+					center_y + door.y * TILE_HEIGHT,
+					door == map.exit and ">" or "<",
+					"gold",
+					nil,
+					gui.PIVOT_CENTER
+				)
+			end
+		end
+		for _, chest in ipairs(list(map.chests)) do
+			if seen(chest.x, chest.y) then
+				self:map_text(
+					clip,
+					center_x + chest.x * TILE_WIDTH,
+					center_y + chest.y * TILE_HEIGHT,
+					"?",
+					"gold",
+					nil,
+					gui.PIVOT_CENTER
+				)
+			end
+		end
+	end
 	for _, a in ipairs(list(world.landmarks)) do
 		local x, y = a.x, a.y
 		if not x then
 			x, y = cell(a.cell)
 		end
-		if x and y then
+		if x and y and seen(x, y) then
 			local px, py = center_x + x * TILE_WIDTH, center_y + y * TILE_HEIGHT
-			if a.sprite then
+			local fixture = dungeon and (a.id == "rack" or a.id == "practice")
+			if fixture then
+				self:map_text(clip, px, py, a.id == "rack" and "+" or "T", "gold", nil, gui.PIVOT_CENTER)
+			elseif a.sprite then
 				self:art(px, py, 16, 24, "town_atlas_" .. a.sprite, clip)
 			elseif a.amenity_sprite then
 				self:art(px, py, 16, 24, "town_amenities_" .. a.amenity_sprite, clip)
@@ -106,13 +185,22 @@ function M.render(self)
 				for i, line in ipairs(lines) do
 					self:map_text(clip, px, py - 21 - (#lines - i) * 14, line, "muted", "ui_small", gui.PIVOT_CENTER)
 				end
-			elseif a.name then
+			elseif a.name and not fixture then
 				self:map_text(clip, px - 12, py - 21, a.name, "muted", "ui_small")
 			end
 		end
 	end
 	for _, e in ipairs(list(world.enemies)) do
-		self:art(center_x + e.x * TILE_WIDTH, center_y + e.y * TILE_HEIGHT, TILE_WIDTH, TILE_HEIGHT, "spider_atlas_" .. tostring(e.sprite or 0), clip)
+		if visible(e.x, e.y) then
+			self:art(
+				center_x + e.x * TILE_WIDTH,
+				center_y + e.y * TILE_HEIGHT,
+				TILE_WIDTH,
+				TILE_HEIGHT,
+				"spider_atlas_" .. tostring(e.sprite or 0),
+				clip
+			)
+		end
 	end
 	self:portrait(center_x + p.x * TILE_WIDTH, center_y + p.y * TILE_HEIGHT, self.s.profile, 1, clip)
 end

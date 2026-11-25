@@ -26,6 +26,7 @@ return function(t)
 				return 1000
 			end,
 		})
+		s.forms.seed = 42
 		s:dispatch("set_name", { name = "Signal Keeper" })
 		assert(s:dispatch("create"))
 		s:dispatch("arrive")
@@ -204,8 +205,10 @@ return function(t)
 		for _, e in ipairs(c.enemies) do
 			e.health = 1
 		end
-		c.player_gauge = 1
-		t.ok(s:dispatch("attack"))
+		for _ = 1, #c.enemies do
+			c.player_gauge = 1
+			t.ok(s:dispatch("attack"))
+		end
 		t.eq(s.profile.world.threshold_cleared, 1)
 		if next(s.profile.world.pending_loot) then
 			t.ok(s:dispatch("take_loot"))
@@ -234,7 +237,10 @@ return function(t)
 		t.eq(s.profile, profile)
 		t.eq(s.world.world.threshold_cleared, 0)
 		control.fail = false
-		t.ok(s:dispatch("attack"))
+		for _ = 1, #c.enemies do
+			c.player_gauge = 1
+			t.ok(s:dispatch("attack"))
+		end
 		t.ok(s.profile.experience > profile.experience)
 	end)
 	t.test("session failed gate registration restores world as well as profile", function()

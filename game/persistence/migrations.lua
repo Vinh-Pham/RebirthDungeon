@@ -1,5 +1,6 @@
 local U = require("game.util")
 local S = require("game.systems.skills")
+local Dungeons = require("game.generation.dungeons")
 local M = {}
 local defaults = {
 	location = "lantern_rest",
@@ -21,13 +22,17 @@ local defaults = {
 	gear_inventory = {},
 	shop_supplies = {},
 	threshold_cleared = 0,
+	threshold_defeated = {},
+	threshold_explored = {},
+	threshold_links = {},
 	threshold_treasure_claimed = false,
 	threshold_treasure_chest = -1,
 	threshold_run = 0,
+	threshold_completions = 0,
 	town_materials = { fish = 0, grain = 0, flour = 0, fiber = 0, thread = 0, cloth = 0, cobweb = 0, firewood = 0 },
 	tree_harvests = {},
 	legacy_layouts = {},
-	generator_version = "defold-v1",
+	generator_version = Dungeons.VERSION,
 }
 function M.defaults()
 	local w = U.copy(defaults)
@@ -49,7 +54,8 @@ local function position(v, w)
 	end
 	local p = { location = w.location, x = v.x, y = v.y }
 	if w.location == "threshold" then
-		if not U.integer(v.room, 0, w.threshold_cleared) or v.run ~= w.threshold_run then
+		local last = w.generator_version == Dungeons.VERSION and 8 or w.threshold_cleared
+		if not U.integer(v.room, 0, last) or v.run ~= w.threshold_run then
 			return {}
 		end
 		p.room = v.room
@@ -72,6 +78,10 @@ function M.validate_world(w)
 	end
 	if not ({ arrival = true, lantern_rest = true, spindle_hollow = true, threshold = true })[n.location] then
 		return bad("location")
+	end
+	local imported = type(n.legacy_layouts) == "table" and n.legacy_layouts.threshold
+	if imported or (w.generator_version == nil and n.location == "threshold") then
+		n.generator_version = Dungeons.LEGACY_VERSION
 	end
 	if n.dungeon_from ~= "lantern_rest" and n.dungeon_from ~= "spindle_hollow" then
 		return bad("dungeon_from")
@@ -122,12 +132,49 @@ function M.validate_world(w)
 		health = { -1, 2500 },
 		threshold_cleared = { 0, 8 },
 		threshold_run = { 0, 2000000000 },
+		threshold_completions = { 0, 2000000000 },
 		threshold_treasure_chest = { -1, 4 },
 		spent_ap = { 0, 2000000000 },
 	}
 	for k, b in pairs(bounds) do
 		if not U.integer(n[k], b[1], b[2]) then
 			return bad(k)
+		end
+	end
+	if type(n.threshold_defeated) ~= "table" or type(n.threshold_explored) ~= "table" or type(n.threshold_links) ~= "table" then
+		return bad("dungeon exploration")
+	end
+	local defeated = 0
+	for room, value in pairs(n.threshold_defeated) do
+		if type(room) ~= "string" or not room:match("^[1-8]$") or value ~= true then
+			return bad("dungeon encounters")
+		end
+		defeated = defeated + 1
+	end
+	if n.generator_version == Dungeons.VERSION and defeated ~= n.threshold_cleared then
+		return bad("dungeon encounters")
+	end
+	for room, cells in pairs(n.threshold_explored) do
+		if type(room) ~= "string" or not room:match("^[1-9]$") or type(cells) ~= "table" then
+			return bad("dungeon exploration")
+		end
+		for cell, value in pairs(cells) do
+			local x, y
+			if type(cell) == "string" then
+				x, y = cell:match("^(%d+),(%d+)$")
+			end
+			if value ~= true or not U.integer(tonumber(x), 0, 127) or not U.integer(tonumber(y), 0, 127) then
+				return bad("dungeon exploration")
+			end
+		end
+	end
+	for link, value in pairs(n.threshold_links) do
+		local a, b
+		if type(link) == "string" then
+			a, b = link:match("^([1-9]):([1-9])$")
+		end
+		if value ~= true or not a or a >= b then
+			return bad("dungeon passages")
 		end
 	end
 	for _, k in ipairs({ "armor_owned", "starter_sword_claimed", "threshold_treasure_claimed" }) do

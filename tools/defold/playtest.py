@@ -21,9 +21,9 @@ def result(record):
 def state():return result(g.command('rebirth.state',timeout=3))
 def ui_state():return g.state('rebirth.game').value
 
-def command(name,**params):
- value=result(g.command('rebirth.command',{'command':name,'params':params},timeout=3))
- receipts.append({'kind':'command','command':name,'params':params,'revision':value.get('revision')})
+def command(action,**params):
+ value=result(g.command('rebirth.command',{'command':action,'params':params},timeout=3))
+ receipts.append({'kind':'command','command':action,'params':params,'revision':value.get('revision')})
  return value
 
 def key(name):
@@ -92,10 +92,20 @@ try:
  key('N');record('physical N opens character creation',state()['screen']=='creation')
  key('ENTER');r=g.type_text('Signal Keeper',wait=True,timeout=3);receipts.append({'kind':'text','receipt':str(r)})
  key('ESCAPE');record('physical name entry preserved completely',state()['forms']['name']=='Signal Keeper',state()['forms']);shot('02-character-creation')
+ command('set_form',seed=42)
  command('create');record('new character enters arrival',state()['screen']=='arrival')
  command('arrival_continue');command('arrival_continue');s=wait(lambda x:x['screen']=='world')
  record('arrival reaches Lantern Rest',s['location']=='lantern_rest');character_id=s['character_id'];shot('03-world')
+ world_buttons=ui_state()['ui']['buttons']
+ record('Character appears before Inventory in the bottom bar',world_buttons==['Character [C]','Inventory [I]','Skills [K]','Journal [Q]','Settings'],world_buttons)
  click_game(98,693)
+ record('first bottom button opens Character',wait(lambda v:v['panel']=='character')['panel']=='character')
+ fields=['Signal Keeper','ACTIVE TALENT','HP','MP','Stamina','XP','AP','Strength','Magic Protection','Injury Rate','STATUS EFFECTS']
+ missing=[label for label in fields if not g.elements(text_exact=label,visible=True,limit=1)]
+ record('character sheet renders identity, resources, progression and combat stats',not missing,missing);shot('03-character')
+ key('ESCAPE')
+ key('C');record('physical C opens Character',state()['panel']=='character');key('ESCAPE')
+ click_game(390,693)
  record('bottom Inventory button opens the panel',wait(lambda v:v['panel']=='inventory')['panel']=='inventory')
  key('ESCAPE')
  origin = state()['position']
@@ -142,6 +152,14 @@ try:
  shot('05-armory-search');key('ESCAPE')
  walk('gate');command('gate_register');record('Moon Gate registered in person','lantern_rest' in state()['gates'])
  walk('dungeon');command('enter_dungeon');record('Threshold entered from settlement',state()['location']=='threshold')
+ dungeon=state()
+ wait(lambda _: (ui_state()['ui'].get('map_preview') or {}).get('floor_plan'),label='render the Threshold floor plan')
+ ui=ui_state()['ui'];view=ui['map_view'];preview=ui['map_preview']
+ record('connected dungeon floor plan uses square tiles across the map area',preview.get('floor_plan') and view['tile_width']==view['tile_height'] and 500<view['h']<=648,view)
+ shot('06-threshold-map')
+ record('fog initially hides every future room',dungeon['map']['discovered_rooms']==1,dungeon['map'])
+ initial_explored=dungeon['map']['explored_tiles']
+ record('the first door stays locked with monsters in its room',dungeon['map']['exit_locked'] and bool(dungeon['map']['enemies']))
  until=time.monotonic()+20
  while not state()['combat'] and time.monotonic()<until:
   s=state();enemies=s['map'].get('enemies',[]);assert enemies,'First room has no enemies'
@@ -150,7 +168,8 @@ try:
    for dx,dy in [(-1,0),(1,0),(0,-1),(0,1)]:
     command('path',x=enemy['x']+dx,y=enemy['y']+dy)
     if state().get('move_queued'):break
-  wait(lambda v:v['combat'] or not v.get('move_queued'),8,'enemy approach')
+  approach_timeout=max(8,min(30,state()['move_queued']*.16+3))
+  wait(lambda v:v['combat'] or not v.get('move_queued'),approach_timeout,'enemy approach')
   if not state()['combat']:
    s=state();p=s['position'];dx=enemy['x']-p['x'];dy=enemy['y']-p['y']
    if abs(dx)+abs(dy)==1:command('move',dx=dx,dy=dy)
@@ -164,6 +183,24 @@ try:
  record('battle awarded experience',s.get('experience',0)>0,s.get('experience'))
  if s['pending_loot']:command('take_loot')
  record('loot collection cleared pending drops',not state()['pending_loot'])
+ record('the first door opens after combat',not state()['map']['exit_locked'])
+ record('walking reveals more of the dungeon',state()['map']['explored_tiles']>initial_explored)
+ # The doorway must be explored before a pointer may select it through fog.
+ exit_cell=state()['map']['exit']
+ door_approach={'x':exit_cell['x']-1,'y':exit_cell['y']}
+ command('path',**door_approach)
+ wait(lambda v:v['position']==door_approach,20,'explore the first room exit')
+ door_x=view['x']+(preview['exit_x']+.5)*view['tile_width']
+ door_y=view['y']+(preview['exit_y']+.5)*view['tile_height']
+ click_game(door_x,door_y)
+ arrived=wait(lambda v:v['room']==2,45,'walk into the next room from a map click')
+ record('clicking the unlocked door enters the next room',arrived['position']==arrived['map']['entry'],arrived['position'])
+ record('the second room offers multiple connected chambers',len(arrived['map']['doors'])>=3,arrived['map']['doors'])
+ record('fog reveals only visited rooms',arrived['map']['discovered_rooms']==2,arrived['map']['discovered_rooms'])
+ remembered=arrived['map']['explored_tiles']
+ command('title');command('load',id=character_id)
+ restored=wait(lambda v:v['screen']=='world' and v['room']==2,label='restore the explored dungeon')
+ record('fog memory survives save and reload',restored['map']['explored_tiles']>=remembered and restored['map']['discovered_rooms']==2)
  command('leave_dungeon');record('returned safely to town',state()['location']=='lantern_rest')
  # Loot can legitimately add stack anchors. Compare the committed post-loot
  # inventory across reload, while separately checking the original equipment.
@@ -172,6 +209,30 @@ try:
  command('title');command('load',id=character_id);s=state()
  record('save/reload preserves character, quest, gear and gate',s['character_id']==character_id and s['quest']==1 and s.get('gear_inventory')==committed_gear and 'lantern_rest' in s['gates'],s)
  shot('07-reloaded-town')
+ command('title');command('set_form',name='Corridor Cartographer',world={'location':'threshold','threshold_cleared':3,'generator_version':'defold-v3'})
+ corridor=command('create');command('load',id=corridor['character_id'])
+ corridor=wait(lambda v:v['screen']=='world' and v['room']==4 and (ui_state()['ui'].get('map_preview') or {}).get('reverse'),label='render a room on the reversed row')
+ record('the descending route reverses the second row of rooms',ui_state()['ui']['map_preview']['reverse'])
+ key('LEFT')
+ record('Left moves left on the reversed row',state()['position']['x']==corridor['position']['x']+1)
+ command('title');command('set_form',name='Vault Cartographer',world={'location':'threshold','threshold_cleared':8,'generator_version':'defold-v3','quest':1})
+ vault=command('create');command('load',id=vault['character_id'])
+ vault=wait(lambda v:v['screen']=='world' and v['room']==9,label='load a completed run at the treasure chamber')
+ record('the final treasury contains five chests',len(vault['map']['chests'])==5 and vault['threshold_completions']==0)
+ shot('08-threshold-treasure')
+ for chest_index in range(2):
+  chest=vault['map']['chests'][chest_index]
+  beside={'x':chest['x'],'y':chest['y']-1}
+  command('path',**beside);wait(lambda v:v['position']==beside,label='approach treasure chest')
+  key('E')
+  if chest_index==0:
+   record('interacting opens the chosen chest',state()['treasure_chest']==0 and state()['panel']=='loot')
+   command('take_loot')
+  else:
+   record('the second chest stays sealed',state()['treasure_chest']==0 and not state()['pending_loot'])
+ command('path',**vault['map']['exit'])
+ completed=wait(lambda v:v['location']=='spindle_hollow',label='walk through the treasure room exit')
+ record('leaving the treasury completes the dungeon',completed['threshold_completions']==1 and completed['quest']==2,completed['threshold_completions'])
  log.seek(0);text=log.read().decode(errors='replace');(out/'engine.log').write_text(text)
  record('no renderer, sound or script warnings/errors',not re.search(r'(?:ERROR|WARNING):(SCRIPT|RESOURCE|GAMEOBJECT|GRAPHICS|SHADER|RENDER|SOUND)',text),text)
  summary={'passed':True,'elapsed_seconds':round(time.monotonic()-started,2),'checks':checks,'receipts':receipts,'screenshots':shots}

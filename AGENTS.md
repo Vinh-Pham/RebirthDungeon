@@ -66,7 +66,7 @@ for installation, licenses, and runtime adapters.
 | [defold-ink](vendor/ink/) | Runs compiled Ink dialogue, including Ilex’s arrival conversation. |
 | [Monarch](vendor/monarch/) | Manages playable screen lifetimes through Defold collection proxies. |
 | [Defold RichText](vendor/richtext/) | Renders the Chronicle’s prose and supports styled text markup. |
-| [rotLove](vendor/rotlove/) | Supplies the town perimeter algorithm and a tested shadowcasting utility through the [Lua adapter](game/vendor/rot.lua). |
+| [rotLove](vendor/rotlove/) | Generates Threshold rooms and corridors and town perimeters, and provides shadowcasting through the [Lua adapter](game/vendor/rot.lua). |
 
 The [legacy toolchain manifest](tools/dependencies.json) records dependencies
 for the older controller and fixtures. SessionLock is a project-local native

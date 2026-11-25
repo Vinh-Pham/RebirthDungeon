@@ -78,7 +78,7 @@ try:
   key('Enter');page.keyboard.type('Web Signal',delay=60);wait('window.rebirthGameState.forms.name === "Web Signal"',5000);key('Escape');check('complete name typed into canvas',state()['forms']['name']=='Web Signal',state()['forms']);shot('02-web-creation')
   command('create');command('arrival_continue');command('arrival_continue');wait('window.rebirthGameState.screen === "world"')
   saved=state();character_id=saved['character_id'];check('created isolated browser character in Lantern Rest',saved['location']=='lantern_rest');shot('03-web-world')
-  x,y,_=canvas_point(98,693)
+  x,y,_=canvas_point(390,693)
   page.mouse.click(x,y,delay=100)
   wait('window.rebirthGameState.panel === "inventory"')
   check('bottom Inventory button opens the panel',state()['panel']=='inventory')

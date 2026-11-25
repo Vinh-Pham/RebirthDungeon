@@ -32,7 +32,7 @@ function M.roll(enemies, rng)
 		return math.random(a, b)
 	end
 	for _, e in ipairs(enemies) do
-		if (e.name or ""):lower():find("spider") then
+		if e.drops_cobweb or (e.name or ""):lower():find("spider") then
 			local n = range(0, 3)
 			if n > 0 then
 				d.cobweb = (d.cobweb or 0) + n

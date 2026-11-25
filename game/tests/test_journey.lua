@@ -47,9 +47,9 @@ return function(t)
 			assert(not (s.combat and s.combat.active), "Unexpected combat while walking clear route")
 			local p = s.world:path_to(x, y)
 			assert(p[1], "No path to " .. x .. "," .. y)
-			local oldroom = s.world.room
+			local oldroom, location = s.world.room, s.world.currentLocation
 			assert(s:dispatch("move", { dx = p[1].x - s.world.player.x, dy = p[1].y - s.world.player.y }), s.message)
-			if s.world.room ~= oldroom then
+			if s.world.room ~= oldroom or s.world.currentLocation ~= location then
 				return
 			end
 		end
@@ -137,14 +137,33 @@ return function(t)
 			s:dispatch("move", { dx = p[1].x - s.world.player.x, dy = p[1].y - s.world.player.y })
 		end
 	end
-	t.test("complete eight-room natural combat treasure quest gate save journey", function()
+	t.test("complete branching dungeon combat treasure quest gate save journey", function()
 		local s, control = fresh()
 		prepare(s)
-		for room = 1, 8 do
+		local route = { 1, 2, 4, 7, 5, 3, 5, 6, 8, 9 }
+		local cleared = 0
+		for step = 1, #route - 1 do
+			local room, next_room = route[step], route[step + 1]
 			t.eq(s.world.room, room)
-			engage(s)
-			combat(s)
-			t.eq(s.profile.world.threshold_cleared, room)
+			if room == 4 then
+				local explored = U.copy(s.profile.world.threshold_explored)
+				t.ok(s:dispatch("load", { id = s.profile.id }))
+				t.eq(s.world.room, 4)
+				t.eq(s.profile.world.threshold_explored, explored)
+				t.ok(s.world:link_explored(2, 4))
+			end
+			if not s.world:room_cleared(room) then
+				t.ok(s.world:exit_locked())
+				engage(s)
+				if room == 8 then
+					t.ok(s.world.map.boss)
+					t.eq(s.combat.enemies[1].stats.name, "Vault Warden")
+				end
+				combat(s)
+				cleared = cleared + 1
+			end
+			t.ok(not s.world:exit_locked())
+			t.eq(s.profile.world.threshold_cleared, cleared)
 			t.eq(#s.world.enemies, 0)
 			if room == 1 then
 				local id = s.profile.id
@@ -165,21 +184,31 @@ return function(t)
 				t.eq(#s.world.enemies, 0)
 				control.fail = false
 			end
-			local old = room
-			walk(s, s.world.map.exit.x, s.world.map.exit.y)
-			t.eq(s.world.room, old + 1)
+			local target
+			for _, door in ipairs(s.world.map.doors) do
+				if door.target == next_room then target = door end
+			end
+			assert(target, "Missing passage to room " .. next_room)
+			walk(s, target.x, target.y)
+			t.eq(s.world.room, next_room)
 		end
 		t.eq(s.world.room, 9)
+		t.eq(s.profile.world.quest, 1)
+		t.eq(s.profile.world.threshold_completions, 0)
+		t.eq(#s.world.map.chests, 5)
 		local chest = s.world.map.chests[1]
 		approach(s, chest)
 		t.ok(s:dispatch("chest", { index = 1 }))
 		t.eq(s.profile.world.pending_loot, { gold = 60, tonic = 3 })
-		t.eq(s:dispatch("chest", { index = 1 }), false)
 		t.ok(s:dispatch("take_loot"))
 		close(s)
-		approach(s, s.world.map.exit)
-		t.ok(s:dispatch("interact"))
+		approach(s, s.world.map.chests[2])
+		t.eq(s:dispatch("chest", { index = 2 }), false)
+		t.eq(s.profile.world.threshold_treasure_chest, 0)
+		walk(s, s.world.map.exit.x, s.world.map.exit.y)
 		t.eq(s.profile.world.location, "spindle_hollow")
+		t.eq(s.profile.world.quest, 2)
+		t.eq(s.profile.world.threshold_completions, 1)
 		approach(s, "warden")
 		t.ok(s:dispatch("quest_reward"))
 		local xp = s.profile.experience
@@ -192,6 +221,7 @@ return function(t)
 		t.ok(s:dispatch("gate_travel", { town = "lantern_rest" }))
 		local id = s.profile.id
 		t.ok(s:dispatch("load", { id = id }))
+		t.eq(s.profile.world.threshold_completions, 1)
 		t.eq(s.profile.world.location, "lantern_rest")
 		t.eq(s.profile.world.quest, 3)
 		t.eq(s.profile.world.gates, { "lantern_rest", "spindle_hollow" })

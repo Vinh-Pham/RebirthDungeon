@@ -78,6 +78,9 @@ function M.new(session)
 	)
 end
 function V:dispatch(id, args)
+	if id == "move" and self.map_preview and self.map_preview.reverse then
+		args = { dx = -args.dx, dy = args.dy }
+	end
 	self.s:dispatch(id, args)
 end
 function V:box(x, y, w, h, c, parent)
@@ -95,12 +98,13 @@ local function color_hex(name)
 	return "#" .. (palette[name] or name)
 end
 
-function V:text(x, y, value, c, font)
+function V:text(x, y, value, c, font, align)
 	local text = FlowScene.Text({
 		key = "text_" .. (#self.flow.anchors + 1),
 		text = tostring(value or ""),
 		font = font or "ui",
 		color = color_hex(c or "text"),
+		align = align,
 	})
 	self.flow:place(text, x, y, 0, 0)
 end
@@ -182,8 +186,8 @@ function V:button(x, y, w, label, id, args, disabled)
 	self.flow:place(self:button_element(x, y, w, label, id, args, disabled), x, y - 15, w, 30)
 end
 
-function V:bar(x, y, w, value, c)
-	self:box(x + w / 2, y, w, 6, "dark")
+function V:bar(x, y, w, value, c, track)
+	self:box(x + w / 2, y, w, 6, track or "dark")
 	local n = self:box(x, y, w, 6, c)
 	gui.set_pivot(n, gui.PIVOT_W)
 	gui.set_size(n, vmath.vector3(math.max(0, math.min(1, value or 0)) * w, 6, 0))
@@ -304,13 +308,8 @@ function V:arrival()
 	)
 	self:button(510, 468, 540, "Follow the lanterns to Lantern Rest", "arrival_continue")
 end
-function V:character_status()
-	local s = self.s
-	local st = s.stats
-	local combat = s.combat
-	local left, top = 1038, MAP_VIEW.y
-	self:box(1144, top + 168, 240, 336, "panel")
-	self:text(left, top + 22, "Level " .. st.level, "muted")
+local function character_vitals(s)
+	local st, combat = s.stats, s.combat
 	local health = combat and combat.health or s.profile.world.health
 	local max_health = combat and combat.max_health or st.life
 	if health < 0 then
@@ -318,7 +317,16 @@ function V:character_status()
 	end
 	local stamina = combat and combat.stamina or st.stamina
 	local max_stamina = combat and combat.max_stamina or st.stamina
-	self.gauges.health = self:status_bar(left, top + 51, "HP", math.ceil(health), max_health, "red")
+	return math.ceil(health), max_health, stamina, max_stamina
+end
+function V:character_status()
+	local s = self.s
+	local st = s.stats
+	local left, top = 1038, MAP_VIEW.y
+	self:box(1144, top + 168, 240, 336, "panel")
+	self:text(left, top + 22, "Level " .. st.level, "muted")
+	local health, max_health, stamina, max_stamina = character_vitals(s)
+	self.gauges.health = self:status_bar(left, top + 51, "HP", health, max_health, "red")
 	-- The playable session derives maximum MP and has no separate mana pool.
 	self:status_bar(left, top + 94, "MP", st.mana, st.mana, "water")
 	self.gauges.stamina = self:status_bar(left, top + 137, "STAMINA", stamina, max_stamina, "teal")
@@ -326,10 +334,11 @@ function V:character_status()
 	self:box(1144, top + 218, STATUS_BAR_WIDTH, 1, "border")
 	self:text(left, top + 239, "NEARBY", "gold")
 	local place = s.world and s.world:interact()
+	local nearby = place and (place.id == "rack" and human(place.name) or place.label or place.name or human(place.id))
 	self:paragraph(
 		left,
 		top + 263,
-		place and (place.label or place.name or human(place.id)) or "Nothing.",
+		nearby or "Nothing.",
 		22,
 		"muted",
 		2
@@ -338,12 +347,10 @@ function V:character_status()
 end
 function V:world_actions()
 	local buttons = {
+		{ "Character [C]", "character" },
 		{ "Inventory [I]", "inventory" },
 		{ "Skills [K]", "skills" },
 		{ "Journal [Q]", "quests" },
-		{ "Character [C]", "character" },
-		{ "Moon Gates [G]", "gates" },
-		{ "Interact [E]", "interact" },
 		{ "Settings", "settings" },
 	}
 	local gap, width = 8, 1248
@@ -377,14 +384,27 @@ end
 function V:logs()
 	local logs = list(self.s.log)
 	local first = math.max(1, #logs - 4)
-	self:text(MAP_VIEW.x, 580, "CHRONICLE", "gold")
+	local dungeon = self.s.world.currentLocation == "threshold"
+	local x, y = MAP_VIEW.x, 580
+	if dungeon then
+		x, y = 1038, 380
+		self:box(1144, 511, 240, 300, "panel")
+	end
+	self:text(x, y, "CHRONICLE", "gold")
+	local lines = {}
 	for i = first, #logs do
 		local value = logs[i]
 		if type(value) == "table" then
 			value = value.message
 		end
-		local line = wrap(value, 96)[1]
-		Chronicle.line(self, MAP_VIEW.x, 600 + (i - first) * 16, line, color("muted"))
+		local entry = wrap(value, dungeon and 22 or 96)
+		for j = 1, dungeon and #entry or 1 do
+			lines[#lines + 1] = entry[j]
+		end
+	end
+	local top = math.max(1, #lines - 15)
+	for i = top, #lines do
+		Chronicle.line(self, x, y + 20 + (i - top) * 16, lines[i], color("muted"))
 	end
 end
 function V:battle()
@@ -393,7 +413,7 @@ function V:battle()
 		return
 	end
 	local left = MAP_VIEW.x + 20
-	self:box(MAP_VIEW.x + MAP_VIEW.w / 2, 362, MAP_VIEW.w, 402, "dark")
+	self:box(MAP_VIEW.x + MAP_VIEW.w / 2, 382, MAP_VIEW.w, 442, "dark")
 	self:text(left, 184, "READ THE INTENT. CHOOSE YOUR COUNTER.", "gold")
 	for i, e in ipairs(c.enemies or {}) do
 		local x = left + 15 + (i - 1) * 228
@@ -408,7 +428,8 @@ function V:battle()
 			e.health <= 0
 		)
 		self:text(x, 366, human(e.intent), "gold")
-		self:text(x, 389, "Life " .. tostring(e.health), "muted")
+		self:bar(x, 389, 150, e.health / e.stats.health, "red", "panel")
+		self:text(x + 160, 389, "HP", "muted", "ui_small")
 		self.gauges["enemy" .. i] = self:bar(x, 410, 150, e.gauge, "gold")
 	end
 	self:text(
@@ -419,17 +440,27 @@ function V:battle()
 	)
 	self.gauges.time = self:bar(left, 475, TIME_BAR_WIDTH, c.player_gauge, "teal")
 	self:paragraph(left, 506, "Attack interrupts Smash. Defend softens Attack. Smash breaks Defend.", 80, "muted", 2)
+	local world = self.s.profile.world
+	local tonics = world.tonics or 0
+	local tonic_unavailable = tonics == 0 or c.health >= c.max_health
 	local action_x = left
 	local action_widths = { 152, 152, 152, 172, 152, 132 }
 	for i, a in ipairs({ "attack", "defend", "smash", "counterattack", "windmill", "tonic" }) do
 		local disabled
 		if a == "tonic" then
-			disabled = (self.s.profile.world.tonics or 0) < 1 or c.health >= c.max_health
+			disabled = tonic_unavailable
 		else
 			disabled = c.allowed and not c:allowed(a) or false
 		end
 		self:button(action_x, 540, action_widths[i], i .. " " .. human(a), a, nil, disabled)
 		action_x = action_x + action_widths[i] + 8
+	end
+	local slots = world.quick_slots or {}
+	local gap, width = 8, (TIME_BAR_WIDTH - 3 * 8) / 4
+	for i = 1, 4 do
+		local assigned = slots[i] == "tonic"
+		local label = "F" .. i .. (assigned and " Tonic ×" .. tonics or " Empty")
+		self:button(left + (i - 1) * (width + gap), 580, width, label, "tonic", nil, not assigned or tonic_unavailable)
 	end
 end
 function V:pagination(count, size, y)
@@ -869,39 +900,97 @@ function V:journal_panel()
 	self:text(256, 339, "THRESHOLD", "gold")
 	self:text(256, 378, "Cleared rooms: " .. tostring(w.threshold_cleared or 0) .. " / 8")
 	self:text(256, 414, "Treasure claimed: " .. tostring(w.threshold_treasure_claimed or false))
+	self:text(256, 449, "Completed runs: " .. tostring(w.threshold_completions or 0))
 	self:text(256, 475, "REGISTERED MOON GATES", "gold")
 	self:paragraph(256, 512, table.concat(w.gates or {}, ", "), 84, "teal")
 end
-function V:character_panel()
-	local p = self.s.profile
-	local st = self.s.stats
-	self:portrait(323, 297, p, 5)
-	self:text(431, 181, p.name, "gold")
-	self:text(431, 218, (Data.RACES or {})[(p.race or 0) + 1] or "Human")
-	self:text(
-		431,
-		253,
-		"Age " .. p.age .. "  ·  " .. ((Data.TALENTS or {})[(p.talent or 0) + 1] or "Close Combat"),
-		"teal"
-	)
-	local keys = {
-		"damage_min",
-		"damage_max",
-		"balance",
-		"critical",
-		"defense",
-		"protection",
-		"magic_attack",
-		"magic_defense",
-		"armor_pierce",
-		"ability_points",
-	}
-	for i, k in ipairs(keys) do
-		local x = 431 + math.floor((i - 1) / 5) * 290
-		local y = 310 + ((i - 1) % 5) * 43
-		self:text(x, y, human(k), "muted")
-		self:text(x + 190, y, string.format("%.1f", st[k] or 0))
+local function character_card(view, key, x, y, width, height, title)
+	view.flow:place(FlowScene.Box({
+		key = "character_" .. key,
+		color = color_hex("back"),
+		style = { width = width, height = height },
+	}), x, y, width, height)
+	if title then
+		view:text(x + 14, y + 19, title, "teal")
 	end
+end
+
+local function character_value(view, x, right, y, label, value)
+	view:text(x, y, label, "muted")
+	view:text(right, y, value, "text", nil, "right")
+end
+
+local function character_meter(view, x, right, y, label, value, maximum, tint, detail)
+	character_value(view, x, right, y, label, detail or string.format("%d / %d", value, maximum))
+	view:bar(x, y + 13, right - x, value / maximum, tint)
+end
+
+local function character_stats(view, key, x, width, title, rows)
+	character_card(view, key, x, 394, width, 185, title)
+	for i, row in ipairs(rows) do
+		character_value(view, x + 14, x + width - 14, 438 + (i - 1) * 24, row[1], row[2])
+	end
+end
+
+function V:character_panel()
+	local s = self.s
+	local p, st, combat = s.profile, s.stats, s.combat
+	local race = Data.RACES[(p.race or 0) + 1] or Data.RACES[1]
+	local gender = Data.GENDERS[(p.gender or 0) + 1] or Data.GENDERS[1]
+	local talent = Data.TALENTS[(p.talent or 0) + 1] or Data.TALENTS[1]
+	character_card(self, "identity", 238, 154, 820, 84)
+	self:portrait(278, 196, p, 2)
+	self:text(316, 180, p.name, "gold", "ui_large")
+	self:text(316, 212, string.format("%s  ·  %s  ·  %d years old", race, gender, p.age), "muted")
+	self:text(737, 179, "ACTIVE TALENT", "teal")
+	self:text(737, 210, talent)
+
+	local hp, max_hp, stamina, max_stamina = character_vitals(s)
+	character_card(self, "vitals", 238, 249, 404, 134, "VITALS")
+	character_meter(self, 252, 628, 290, "HP", hp, max_hp, "red")
+	character_meter(self, 252, 628, 323, "MP", st.mana, st.mana, "water")
+	character_meter(self, 252, 628, 356, "Stamina", stamina, max_stamina, "teal")
+
+	character_card(self, "progression", 654, 249, 404, 134, "PROGRESSION")
+	character_value(self, 668, 1044, 290, "Level", st.level)
+	character_value(self, 668, 1044, 323, "AP", st.ability_points)
+	local xp, next_xp = st.experience, st.next_level_experience
+	local xp_detail = string.format("%d / %d  (%.1f%%)", xp, next_xp, xp / next_xp * 100)
+	character_meter(self, 668, 1044, 356, "XP", xp, next_xp, "gold", xp_detail)
+
+	character_stats(self, "attributes", 238, 242, "ATTRIBUTES", {
+		{ "Strength", st.strength },
+		{ "Intelligence", st.intelligence },
+		{ "Dexterity", st.dexterity },
+		{ "Will", st.will },
+		{ "Luck", st.luck },
+	})
+	character_stats(self, "defense", 492, 258, "DEFENSE", {
+		{ "Defense", st.defense },
+		{ "Protection", string.format("%g%%", st.protection) },
+		{ "Magic Defense", st.magic_defense },
+		{ "Magic Protection", st.magic_protection },
+	})
+	character_stats(self, "offense", 762, 296, "OFFENSE", {
+		{ "Damage", string.format("%d–%d", st.damage_min, st.damage_max) },
+		{ "Magic Attack", string.format("%g", st.magic_attack) },
+		{ "Injury Rate", string.format("%.1f–%.1f%%", st.injury_min, st.injury_max) },
+		{ "Critical", string.format("%.1f%%", st.critical) },
+		{ "Balance", string.format("%.1f%%", st.balance) },
+		{ "Armor Pierce", st.armor_pierce },
+	})
+
+	local status = "None"
+	if combat and combat.active then
+		if combat.guarded then
+			status = "Guarding"
+		elseif combat.countering then
+			status = "Counterattack ready"
+		end
+	end
+	character_card(self, "status", 238, 590, 820, 32)
+	self:text(252, 606, "STATUS EFFECTS", "teal")
+	self:text(433, 606, status)
 end
 function V:gates_panel()
 	local w = self.s.profile.world
@@ -1478,10 +1567,12 @@ function V:on_input(id, a)
 		local x, y = self:pointer(a)
 		local r = self.map_view
 		if inside(x, y, r) then
-			self:dispatch("path", {
-				x = math.floor(r.ox + (x - r.x) / TILE_WIDTH),
-				y = math.floor(r.oy + (y - r.y) / TILE_HEIGHT),
-			})
+			local col = math.floor(r.ox + (x - r.x) / (r.tile_width or TILE_WIDTH))
+			local row = math.floor(r.oy + (y - r.y) / (r.tile_height or TILE_HEIGHT))
+			local target_x, target_y = GridRenderer.path_target(self.s.world, self.map_preview, col, row)
+			if target_x then
+				self:dispatch("path", { x = target_x, y = target_y })
+			end
 			return true
 		end
 	end
@@ -1499,6 +1590,7 @@ function V:state()
 		buttons = buttons,
 		inventory_cursor = self.cursor,
 		map_view = self.map_view,
+		map_preview = self.map_preview,
 		editing_name = self.name_edit,
 		bindings = self.binding_mode,
 	}

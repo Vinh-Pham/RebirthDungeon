@@ -127,7 +127,7 @@ function on_input(self, action_id, action)
 	if self.session.screen == "world" and not self.session.panel and (action.pressed or action.repeated) then
 		local command, params = self.session.input:resolve_hash(action_id, hash)
 		if command then
-			self.session:dispatch(command, params)
+			self.view:dispatch(command, params)
 			return true
 		end
 		-- Unassigned gameplay keys must not fall through to the view's menu

@@ -9,7 +9,7 @@ follows.
 
 | Library | Playable use |
 | --- | --- |
-| [rotLove](https://github.com/paulofmandown/rotLove) | Lua-only Arena algorithm supplies the town perimeter. The portable subset also exposes seeded RNG and shadowcasting. |
+| [rotLove](https://github.com/paulofmandown/rotLove) | Room and Corridor generate the seeded Threshold floor plan. Arena supplies town perimeters and IceyMaze restores earlier dungeon runs. |
 | [Decore](https://github.com/Insality/decore) | Per-session ECS landmark index supports service proximity checks. |
 | [defold-ink](https://github.com/abadonna/defold-ink) | Reads the compiled Ilex intro from `game/data/dialogue/`. |
 | [Defold RichText](https://github.com/britzl/defold-richtext) | Renders the Chronicle with the project's prose font. |
@@ -29,7 +29,7 @@ Project skills are installed at `.agents/skills/rebirth-defold-development/SKILL
 
 The portable rotLove adapter is installed at `game/vendor/rot.lua` with modules
 under `game/vendor/rot/`. Source licenses remain in the pinned vendor tree. The
-adapter exposes RNG, Arena generation and Precise FOV. Its portable algorithms
+adapter exposes RNG, Room, Corridor, Arena, IceyMaze and Precise FOV. Its portable algorithms
 run under LuaJIT. `game.integrations.libraries.check()` reports actual import
 success or failure for retained runtime libraries.
 

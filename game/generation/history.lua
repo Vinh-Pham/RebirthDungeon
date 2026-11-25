@@ -1,13 +1,15 @@
 local M = {}
-function M.room_checkpoint(world, checkpoint)
-	local index = math.min(8, world.threshold_cleared or 0)
+function M.room_checkpoint(world, checkpoint, branching)
+	local last = branching and 8 or math.min(8, world.threshold_cleared or 0)
+	local index = branching and 0 or last
 	if checkpoint
 		and checkpoint.location == "threshold"
 		and checkpoint.run == (world.threshold_run or 0)
 		and type(checkpoint.room) == "number"
 		and checkpoint.room % 1 == 0
 		and checkpoint.room >= 0
-		and checkpoint.room <= index
+		and checkpoint.room <= last
+		and (not branching or checkpoint.room == 0 or (world.threshold_explored or {})[tostring(checkpoint.room + 1)])
 	then
 		index = checkpoint.room
 	end

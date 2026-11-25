@@ -270,6 +270,8 @@ function S:choose_service(place)
 		)
 	elseif id == "exit" then
 		self:dispatch("next_room")
+	elseif id == "passage" then
+		self:dispatch("dungeon_passage", { target = place.target })
 	elseif id:find("chest") then
 		local number = tonumber(id:match("(%d+)$")) or 0
 		self:dispatch("chest", { index = number + 1 })
@@ -363,15 +365,20 @@ function S:move(dx, dy)
 	if not ok then
 		if reason == "encounter" then
 			self:start_combat(enemy)
+		elseif reason == "Defeat all enemies first."
+			or reason == "Clear the remaining chambers before entering the boss room."
+			or reason == "Collect or leave the treasure before exiting." then
+			self:note(reason)
 		end
 		return false
 	end
 	local changes = U.copy(self.world.world)
 	self.profile = previous
-	if not self:commit(changes) then
+	if not self:commit(changes, reason ~= "encounter" and reason or nil) then
 		self.world.player = before
 		self.world.profile = previous
 		self.world.world = previous.world
+		self.world.visible = previous_world.visible
 		self.world.enemies = previous_enemies
 		self.world.map.enemies = previous_enemies
 		self.world.rng:restore(previous_random)
@@ -420,7 +427,7 @@ function S:start_combat()
 		return false
 	end
 	local room = (self.world.room or 1) - 1
-	local enemies = Encounters.spiders(room, #self.world.enemies)
+	local enemies = Encounters.for_room(self.world.map, room)
 	if #enemies == 0 then
 		return false
 	end
@@ -461,27 +468,27 @@ function S:combat_result(events, before)
 	local won = not self.combat.active and self.combat.health > 0
 	local lost = self.combat.health <= 0
 	if won then
-		if w.threshold_cleared == (self.world.room - 1) then
-			changes.threshold_cleared = self.world.room
+		local progress = self.world:cleared_room_changes()
+		if progress then
+			for field, value in pairs(progress) do
+				changes[field] = value
+			end
 			for _, e in ipairs(self.encounter_enemies) do
 				xp = xp + (e.experience or 0)
 			end
 			changes.pending_loot =
 				Loot.combine(w.pending_loot, Loot.roll(self.encounter_enemies, Rng.new(self.combat.seed)))
-			if self.world.room == 8 and w.quest == 1 then
-				changes.quest = 2
-			end
 		end
 	elseif lost then
 		changes.location = w.dungeon_from
 		changes.health = -1
 		changes.threshold_cleared = 0
+		changes.threshold_defeated, changes.threshold_explored, changes.threshold_links = {}, {}, {}
 		changes.threshold_treasure_claimed = false
 		changes.threshold_treasure_chest = -1
 		changes.threshold_run = w.threshold_run + 1
 		changes.pending_loot = {}
 		changes.map_position = { location = w.dungeon_from, landmark = "dungeon" }
-		changes.generator_version = "defold-v1"
 		changes.legacy_layouts = {}
 	end
 	if not self:commit(changes, nil, xp) then
@@ -493,7 +500,8 @@ function S:combat_result(events, before)
 	end
 	if won then
 		self.world:commit_combat_win()
-		self:note("Room cleared." .. (xp > 0 and " +" .. xp .. " XP." or ""))
+		local cleared = self.world.map.boss and "Boss defeated. The treasure room is open." or "Room cleared. The door opens."
+		self:note(cleared .. (xp > 0 and " +" .. xp .. " XP." or ""))
 		if next(self.profile.world.pending_loot) then
 			self:open_panel("loot")
 		else
@@ -924,7 +932,17 @@ function S:dispatch(id, args)
 		return self:transition(function(world)
 			return world:leave_dungeon()
 		end)
+	elseif id == "dungeon_passage" then
+		return self:transition(function(world)
+			return world:cross_door(args.target, true)
+		end)
 	elseif id == "next_room" then
+		local world = self.world
+		local exit = world.currentLocation == "threshold" and world.map.exit
+		if not exit or math.abs(exit.x - world.player.x) + math.abs(exit.y - world.player.y) > 1 then
+			self:note("Move next to the exit first.")
+			return false
+		end
 		return self:transition(function(world)
 			return world:advance_room()
 		end)
@@ -1100,6 +1118,13 @@ function S:dispatch(id, args)
 end
 
 function S:state()
+	local discovered_rooms, explored_tiles = 0, 0
+	for _, tiles in pairs(self.profile and self.profile.world.threshold_explored or {}) do
+		discovered_rooms = discovered_rooms + 1
+		for _ in pairs(tiles) do
+			explored_tiles = explored_tiles + 1
+		end
+	end
 	return {
 		screen = self.screen,
 		panel = self.panel or "",
@@ -1117,6 +1142,8 @@ function S:state()
 		starter_sword_claimed = self.profile and self.profile.world.starter_sword_claimed or false,
 		quest = self.profile and self.profile.world.quest or 0,
 		room = self.world and self.world.room or 0,
+		threshold_completions = self.profile and self.profile.world.threshold_completions or 0,
+		treasure_chest = self.profile and self.profile.world.threshold_treasure_chest or -1,
 		pending_loot = self.profile and U.copy(self.profile.world.pending_loot) or {},
 		gates = self.profile and U.copy(self.profile.world.gates) or {},
 		combat = self.combat and self.combat.active or false,
@@ -1129,6 +1156,14 @@ function S:state()
 		map = self.world and {
 			width = self.world.map.width,
 			height = self.world.map.height,
+			entry = U.copy(self.world.map.entry),
+			exit = U.copy(self.world.map.exit),
+			doors = U.copy(self.world.map.doors),
+			discovered_rooms = discovered_rooms,
+			explored_tiles = explored_tiles,
+			exit_locked = self.world:exit_locked(),
+			boss = self.world.map.boss,
+			chests = U.copy(self.world.map.chests),
 			landmarks = U.copy(self.world.landmarks),
 			enemies = U.copy(self.world.enemies),
 		} or {},
