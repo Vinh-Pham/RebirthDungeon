@@ -92,7 +92,54 @@ try:
  key('N');record('physical N opens character creation',state()['screen']=='creation')
  key('ENTER');r=g.type_text('Signal Keeper',wait=True,timeout=3);receipts.append({'kind':'text','receipt':str(r)})
  key('ESCAPE');record('physical name entry preserved completely',state()['forms']['name']=='Signal Keeper',state()['forms']);shot('02-character-creation')
- command('set_form',seed=42)
+ click_game(300,346);time.sleep(.15)
+ record('Talent dropdown opens without changing the selection',state()['forms']['talent']==0)
+ shot('02-talent-dropdown')
+ menu=ui_state()['ui'].get('dropdown_options') or []
+ record('Talent menu shows available options',any(option['label']=='Magic' for option in menu),menu)
+ record('Talent options are rendered inside the menu',bool(g.elements(text_exact='Magic',visible=True,limit=1)))
+ key('DOWN');key('ENTER')
+ record('Talent keyboard selection commits Magic',state()['forms']['talent']==1,state()['forms'])
+ key('ENTER');key('DOWN');key('ESCAPE')
+ record('Escape cancels the highlighted Talent choice',state()['forms']['talent']==1 and not ui_state()['ui'].get('dropdown_options'))
+ click_game(300,412);time.sleep(.15)
+ shot('02-hair-dropdown')
+ click_game(300,472);time.sleep(.15)
+ record('Hair pointer selection commits Sweep',state()['forms']['hair']==1,state()['forms'])
+ key('ENTER')
+ wheel_point=g.convert_point((300/1280,530/720),'normalized_viewport','window')
+ wheel=g.wheel(wheel_point,steps=-3,wait=True,timeout=3)
+ receipts.append({'kind':'wheel','steps':-3,'receipt':str(wheel)})
+ click_game(300,654);time.sleep(.15)
+ record('Wheel makes the last hairstyle selectable',state()['forms']['hair']==11,state()['forms'])
+ key('ENTER');key('TAB')
+ ui=ui_state()['ui']
+ record('Tab closes the dropdown and moves focus to Hair color',not ui.get('dropdown_options') and ui['buttons'][ui['focus']-1].startswith('Hair color'))
+ command('set_form',race=1,talent=0)
+ click_game(300,346);time.sleep(.15)
+ labels={option['label'] for option in ui_state()['ui']['dropdown_options']}
+ record('Elf Talent menu includes Archery and excludes Lance Combat','Archery' in labels and 'Lance Combat' not in labels)
+ key('ESCAPE')
+ command('set_form',race=2,talent=0)
+ click_game(300,346);time.sleep(.15)
+ labels={option['label'] for option in ui_state()['ui']['dropdown_options']}
+ record('Giant Talent menu includes Lance Combat and excludes Archery','Lance Combat' in labels and 'Archery' not in labels)
+ key('ESCAPE')
+ for field,y,initial,expected,count in [
+  ('age',313,17,16,8),('body',379,1,2,3),('hair_color',445,0,1,10),
+  ('skin',478,1,2,4),('eyes',511,0,1,3),('eye_color',544,0,1,10),('face',577,0,1,3)]:
+  click_game(681,y);time.sleep(.15)
+  options=ui_state()['ui'].get('dropdown_options') or []
+  record(field+' opens all dropdown choices without changing its value',len(options)==count and state()['forms'][field]==initial,options)
+  if field=='eye_color':
+   shot('02-eye-color-dropdown-above')
+   click_game(300,332);time.sleep(.15)
+  else:
+   key('UP' if field=='age' else 'DOWN');key('ENTER')
+  record(field+' dropdown commits the selected value',state()['forms'][field]==expected,state()['forms'])
+ shot('02-character-choices')
+ command('set_form',age=17,body=1,hair_color=0,skin=1,eyes=0,eye_color=0,face=0)
+ command('set_form',seed=42,race=0,talent=0,hair=0)
  command('create');record('new character enters arrival',state()['screen']=='arrival')
  command('arrival_continue');command('arrival_continue');s=wait(lambda x:x['screen']=='world')
  record('arrival reaches Lantern Rest',s['location']=='lantern_rest');character_id=s['character_id'];shot('03-world')

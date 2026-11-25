@@ -1,5 +1,6 @@
 local GridRenderer = require("game.rendering.grid_renderer")
 local Chronicle = require("game.ui.components.chronicle")
+local Dropdown = require("game.ui.components.dropdown")
 local FlowScene = require("game.ui.components.flow_scene")
 local Data = require("game.data.characters")
 local Catalog = require("game.data.catalog")
@@ -261,6 +262,51 @@ function V:characters()
 	self:button(400, 630, 180, "Back", "title")
 	self:pagination(#profiles, 8, 670)
 end
+function V:form_dropdown(field, labels, form, x, y, width, caption)
+	local opener = #self.buttons + 1
+	local button = self:button_element(x, y, width, caption, function()
+		local options = {}
+		if field == "talent" then
+			for _, id in ipairs(Data.available_talents(form.race)) do
+				options[#options + 1] = { label = labels[id + 1], value = id }
+			end
+		elseif field == "age" then
+			for age = Data.MIN_START_AGE, Data.MAX_START_AGE do
+				options[#options + 1] = { label = tostring(age), value = age }
+			end
+		else
+			for i, label in ipairs(labels) do
+				options[i] = { label = label, value = i - 1 }
+			end
+		end
+		self.name_edit = false
+		self.focus = opener
+		self.dropdown = Dropdown.new(field, options, form[field], { x = x, y = y - 15, w = width, h = 30 }, self.flow.height)
+		self.dirty = true
+	end)
+	button.style.flex_direction = "row"
+	button.style.padding_right = 10
+	button.children[1].style = { flex_grow = 1, height = 30 }
+	button.children[2] = FlowScene.Text({
+		key = button.key .. "_indicator",
+		text = "▼",
+		font = "ui",
+		color = "#ffffff",
+		align = "right",
+		style = { width = 12, height = 30 },
+	})
+	self.flow:place(button, x, y - 15, width, 30)
+end
+
+function V:close_dropdown(value)
+	local field = self.dropdown.key
+	self.dropdown = nil
+	self.dirty = true
+	if value ~= nil then
+		self:dispatch("choose_form", { field = field, value = value })
+	end
+end
+
 function V:creation()
 	local f = self.s.form or self.s.forms or {}
 	self:text(116, 122, "CREATE A DELVER", "gold")
@@ -270,32 +316,28 @@ function V:creation()
 		self.dirty = true
 	end)
 	local rows = {
-		{ "race", Data.RACES },
-		{ "gender", Data.GENDERS },
-		{ "age" },
-		{ "talent", Data.TALENTS },
-		{ "body", Data.BUILDS },
-		{ "hair", Data.HAIR },
-		{ "hair_color", Data.HAIR_TONES },
-		{ "skin", Data.SKIN_TONES },
-		{ "eyes", Data.EYES },
-		{ "eye_color", Data.EYE_TONES },
-		{ "face", Data.FACES },
+		"race", "gender", "age", "talent", "body", "hair", "hair_color", "skin", "eyes", "eye_color", "face",
 	}
-	for i, row in ipairs(rows) do
-		local index = f[row[1]] or 0
-		local label = row[2] and row[2][index + 1] or tostring(index)
-		self:button(116, 214 + i * 33, 580, human(row[1]) .. "   " .. tostring(label), "cycle_form", { field = row[1] })
+	for i, field in ipairs(rows) do
+		local value, labels = f[field] or 0, Data.CREATION_CHOICES[field]
+		local label = labels and labels[value + 1] or tostring(value)
+		local y = 214 + i * 33
+		local caption = human(field) .. "   " .. label
+		if field == "race" or field == "gender" then
+			self:button(116, y, 580, caption, "cycle_form", { field = field })
+		else
+			self:form_dropdown(field, labels, f, 116, y, 580, caption)
+		end
 	end
 	self:button(785, 514, 330, "Begin descent", "create")
 	self:button(785, 558, 330, "Back", "characters")
 	self:paragraph(
 		785,
 		610,
-		"Click a field to cycle it. Select the name field to type. Escape cancels editing.",
+		"Tab moves focus. Click or press Enter to use a field. In a list, use arrows and Enter. Escape closes it.",
 		36,
 		"muted",
-		3
+		4
 	)
 end
 function V:arrival()
@@ -1188,6 +1230,7 @@ function V:render()
 		self.previous_panel = panel
 		self.previous_screen = screen
 		self.skill_detail = nil
+		self.dropdown = nil
 		self.armory_query, self.armory_edit, self.selected_sword = nil, nil, nil
 		self.hover_cell, self.hover_slot, self.inventory_buttons = nil, nil, nil
 		self.selected_item, self.held, self.drag, self.drag_pointer = nil, nil, nil, nil
@@ -1221,6 +1264,20 @@ function V:render()
 	end
 	self.revision = self.s.revision
 	self:highlight()
+	local dropdown = self.dropdown
+	if dropdown then
+		dropdown:render(self.flow, {
+			focus = color_hex("back"),
+			border = color_hex("border"),
+			background = color_hex("panel"),
+			text = color_hex("text"),
+			selected = color_hex("teal"),
+		}, function(value)
+			if self.dropdown == dropdown then
+				self:close_dropdown(value)
+			end
+		end)
+	end
 	self:inventory_tooltip()
 	if self.drag_pointer then
 		self.drag_ghost = self:box(self.drag_pointer.x, self.drag_pointer.y, 30, 42, "teal")
@@ -1475,6 +1532,29 @@ function V:on_input(id, a)
 	if self.s.panel == "inventory" and self:inventory_input(id, a) then
 		return true
 	end
+	local wheel = id == hash("mouse_wheel_up") or id == hash("mouse_wheel_down")
+	if self.dropdown and self.s.screen == "creation" then
+		if id == hash("key_tab") and a.pressed then
+			self:close_dropdown()
+		elseif id == hash("key_esc") and a.pressed then
+			self:close_dropdown()
+			return true
+		elseif id == hash("key_enter") and a.pressed then
+			self:close_dropdown(self.dropdown.options[self.dropdown.index].value)
+			return true
+		elseif id == hash("key_up") or id == hash("key_down") then
+			if a.pressed or a.repeated then
+				self.dropdown:move(id == hash("key_up") and -1 or 1)
+				self.dirty = true
+			end
+			return true
+		elseif id == hash("touch") and a.pressed and not self.dropdown:contains(self:pointer(a)) then
+			self:close_dropdown()
+			return true
+		elseif id ~= nil and id ~= hash("touch") and not wheel then
+			return true
+		end
+	end
 	if id == hash("key_tab") and a.pressed then
 		self.focus = ((self.focus - 1 + (self.shift and -1 or 1)) % math.max(1, #self.buttons)) + 1
 		self.inventory_buttons = true
@@ -1490,11 +1570,17 @@ function V:on_input(id, a)
 		return true
 	end
 	if self.flow:on_input(id, a) then
+		if self.dropdown and wheel then
+			self.dirty = true
+		end
 		if self.clicked then
 			local callback = self.clicked
 			self.clicked = nil
 			callback()
 		end
+		return true
+	end
+	if self.dropdown then
 		return true
 	end
 	if self.s.panel and id == hash("touch") then
@@ -1599,6 +1685,7 @@ function V:state()
 		map_preview = self.map_preview,
 		editing_name = self.name_edit,
 		bindings = self.binding_mode,
+		dropdown_options = self.dropdown and self.dropdown.options,
 	}
 end
 function V:final()

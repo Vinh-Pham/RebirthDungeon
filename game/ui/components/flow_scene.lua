@@ -56,6 +56,11 @@ local function order_element(nodes, element, previous)
 	if previous then
 		gui.move_above(node, previous)
 	end
+	-- Flow parents scroll content to its stencil node. Ordering those children
+	-- against the flat scene would move them out of their clipping hierarchy.
+	if element.type == "scroll" then
+		return node
+	end
 	for _, child in ipairs(element.children or {}) do
 		node = order_element(nodes, child, node)
 	end
@@ -81,9 +86,14 @@ function Scene:render()
 end
 
 local TOUCH = hash("touch")
+local WHEEL = { [hash("mouse_wheel_up")] = hash("scroll_up"), [hash("mouse_wheel_down")] = hash("scroll_down") }
 function Scene:on_input(id, action)
-	if (id == TOUCH or id == nil) and action.x and action.y then
-		return flow.ui.on_input(self, id, action)
+	local wheel = WHEEL[id]
+	if wheel and not (action.pressed or action.repeated) then
+		return false
+	end
+	if (id == TOUCH or id == nil or wheel) and action.x and action.y then
+		return flow.ui.on_input(self, wheel or id, action)
 	end
 	return false
 end

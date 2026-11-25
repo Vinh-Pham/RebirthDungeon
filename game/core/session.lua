@@ -335,11 +335,11 @@ function S:create_character()
 	return self:load_character(profile.id)
 end
 function S:cycle_form(field, direction)
-	local count =
-		{ race = 3, gender = 3, body = 3, hair = 12, hair_color = 10, skin = 4, eyes = 3, eye_color = 10, face = 3 }
+	local choices = Data.CREATION_CHOICES[field]
 	direction = direction or 1
 	if field == "age" then
-		self.forms.age = 10 + (self.forms.age - 10 + direction) % 8
+		local min_age, max_age = Data.MIN_START_AGE, Data.MAX_START_AGE
+		self.forms.age = min_age + (self.forms.age - min_age + direction) % (max_age - min_age + 1)
 	elseif field == "talent" then
 		local available = Data.available_talents(self.forms.race)
 		local index = 1
@@ -349,8 +349,8 @@ function S:cycle_form(field, direction)
 			end
 		end
 		self.forms.talent = available[(index - 1 + direction) % #available + 1]
-	elseif count[field] then
-		self.forms[field] = (self.forms[field] + direction) % count[field]
+	elseif choices then
+		self.forms[field] = (self.forms[field] + direction) % #choices
 		if field == "race" and not U.contains(Data.available_talents(self.forms.race), self.forms.talent) then
 			self.forms.talent = 0
 		end
@@ -643,6 +643,18 @@ function S:dispatch(id, args)
 		return self:dispatch("new_character")
 	elseif id == "cycle_form" then
 		self:cycle_form(args.field, args.direction)
+		return true
+	elseif id == "choose_form" then
+		local field, value = args.field, args.value
+		local choices = Data.CREATION_CHOICES[field]
+		local valid = field == "talent" and U.contains(Data.available_talents(self.forms.race), value)
+			or field == "age" and U.integer(value, Data.MIN_START_AGE, Data.MAX_START_AGE)
+			or field ~= "talent" and field ~= "race" and field ~= "gender" and choices and U.integer(value, 0, #choices - 1)
+		if self.screen ~= "creation" or not valid then
+			return false
+		end
+		self.forms[field] = value
+		self:touch()
 		return true
 	elseif id == "edit_name" then
 		self.name_editing = true

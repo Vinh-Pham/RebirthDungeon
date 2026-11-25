@@ -72,6 +72,18 @@ M.EYE_TONES = {
 	"Silver",
 }
 M.FACES = { "Soft", "Angular", "Square" }
+M.CREATION_CHOICES = {
+	race = M.RACES,
+	gender = M.GENDERS,
+	talent = M.TALENTS,
+	body = M.BUILDS,
+	hair = M.HAIR,
+	hair_color = M.HAIR_TONES,
+	skin = M.SKIN_TONES,
+	eyes = M.EYES,
+	eye_color = M.EYE_TONES,
+	face = M.FACES,
+}
 function M.race_index(p)
 	return math.max(0, math.min(2, p.race or 0))
 end
