@@ -35,6 +35,13 @@ block movement.
 The [Aseprite terrain sheet](../assets/art/town_terrain.aseprite) supplies
 the artwork for Wall, Water, Grass, Bush, and Dirt Path.
 Use **Entities** to move the **PlayerStart** and **Landmark** markers.
+
+Lantern Rest's lower-right grass clearing contains four wolf spawn Landmark
+markers. Their `ServiceId` values start with `wolf_spawn_gray_` or
+`wolf_spawn_white_`, followed by a unique suffix. Move these markers onto Grass
+to relocate the wolves. Wolves roam on connected grass within five steps of
+their marker. Spawn markers are imported as wildlife locations.
+
 `DisplayName` changes the displayed name. Keep the landmark's `ServiceId`
 when moving a service such as the school, Moon Gate, or dungeon entrance.
 

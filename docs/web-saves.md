@@ -12,6 +12,15 @@ the prior snapshot available. Reloading the same browser origin resumes the
 active character and their skill bar assignments. Saves created before skill
 slots were added load with ten empty slots.
 
+The first load after the XP curve update converts a character's XP to the new
+thresholds. Saves keep their level up to 200, their earned AP, and the same
+fractional progress within their level, rounded down to a whole XP point.
+
+Saves hold current Life, Mana, Stamina, wounds, and Deadly status. Older
+saves keep their Life up to the recalculated maximum and recover their last
+saved battle stamina when available. On first load, an older save begins
+tracking weekly aging from the latest Saturday noon Pacific boundary.
+
 Town visits use the current LDtk layout. Opening an existing save in a town
 also refreshes its layout when the authored map changes. The player's tile
 is preserved when it is free and reachable from the town spawn. If the tile

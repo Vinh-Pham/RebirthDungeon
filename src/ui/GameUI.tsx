@@ -235,12 +235,13 @@ export function GameUI({
                 ).map(([resource, label, value, max]) => (
                   <div className={`resource resource-${resource}`} key={resource}>
                     <div className="resource-label">
-                      <span>{label}</span>
                       <span>
-                        {Math.floor(value)} / {max}
+                        {label}
+                        {resource === "hp" && (player.deadly ? " · Deadly" : player.wounds ? " · Wounded" : "")}
                       </span>
+                      <span>{resource === "xp" && max === 0 ? "Max level" : `${Math.floor(value)} / ${max}`}</span>
                     </div>
-                    <meter aria-label={label} value={value} max={max} />
+                    {max > 0 && <meter aria-label={label} value={Math.max(0, value)} max={max} />}
                   </div>
                 ))}
               </>
@@ -311,6 +312,23 @@ export function GameUI({
             </>
           ) : (
             <p className="panel-copy">{view.details.body}</p>
+          )}
+          {view.panel === "character" && view.characterStats && (
+            <div className="character-stat-groups">
+              {view.characterStats.map((group) => (
+                <section className="character-stat-group" key={group.title}>
+                  <h3>{group.title}</h3>
+                  <dl>
+                    {group.stats.map((stat) => (
+                      <div className="character-stat-row" key={stat.label}>
+                        <dt>{stat.label}</dt>
+                        <dd>{stat.value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </section>
+              ))}
+            </div>
           )}
           {view.panel === "settings" && (
             <>

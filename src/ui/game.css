@@ -1023,7 +1023,41 @@ select:focus-visible {
   font: inherit;
   font-size: 10px;
 }
+.character-dialog.window-dialog {
+  width: min(720px, calc(100vw - 24px));
+}
+.character-stat-groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+.character-stat-group h3 {
+  margin: 0 0 8px;
+}
+.character-stat-group dl {
+  margin: 0;
+}
+.character-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 4px 0;
+}
+.character-stat-row dt {
+  color: var(--muted);
+}
+.character-stat-row dd {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
 @media (max-width: 640px) {
+  .character-stat-groups {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
   .inventory-layout {
     grid-template-columns: minmax(0, 1fr);
   }

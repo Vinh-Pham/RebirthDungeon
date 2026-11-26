@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import fc from "fast-check";
-import { levelForXp, xpForLevel } from "../../src/game/core/stats";
+import { levelForXp, maxExperience, maxLevel, xpForLevel, xpProgress } from "../../src/game/content/level-experience";
 import { Combat } from "../../src/game/systems/combat";
 import {
   canPlace,
@@ -22,8 +22,15 @@ const enemy = { name: "Spider", health: 100, damage_min: 8, damage_max: 8 };
 describe("ported gameplay rules", () => {
   it("starts each level at the XP threshold used by the progress bar", () => {
     expect(xpForLevel(1)).toBe(0);
-    expect(xpForLevel(2)).toBe(100);
-    for (const level of [2, 3, 10, 100]) {
+    expect(xpForLevel(2)).toBe(400);
+    expect(xpForLevel(3)).toBe(1_100);
+    expect(xpForLevel(100)).toBe(18_323_500);
+    expect(xpForLevel(101) - xpForLevel(100)).toBe(249_000);
+    expect(maxLevel).toBe(200);
+    expect(maxExperience).toBe(279_988_500);
+    expect(levelForXp(maxExperience + 1)).toBe(maxLevel);
+    expect(xpProgress(maxLevel, maxExperience)).toEqual({ xpInLevel: 0, xpToAdvance: 0 });
+    for (let level = 2; level <= maxLevel; level++) {
       const threshold = xpForLevel(level);
       expect(levelForXp(threshold - 1)).toBe(level - 1);
       expect(levelForXp(threshold)).toBe(level);

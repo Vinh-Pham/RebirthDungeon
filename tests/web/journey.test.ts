@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { Compiler } from "inkjs/full";
 import { expect, it, vi } from "vitest";
 import { GameSession } from "../../src/game/core/session";
+import { maxExperience } from "../../src/game/content/level-experience";
 import { arrive, newProfile, type Profile } from "../../src/game/core/profile";
 import { GameDatabase, SaveService } from "../../src/game/persistence";
 import type { Point } from "../../src/app/contracts";
@@ -37,6 +38,7 @@ it("crosses the six-room Threshold in both directions with quest, gates and dura
   );
   // A durable high-level fixture makes the journey about routing and transaction integration.
   profile.level = 200;
+  profile.xp = maxExperience;
   profile.hp = 911;
   profile.tonics = 10;
   arrive(profile, "lantern_rest");

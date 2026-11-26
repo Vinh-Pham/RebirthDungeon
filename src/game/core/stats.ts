@@ -2,57 +2,40 @@ import type { CharacterForm } from "../../app/contracts";
 import { rankData, type RankedSkill } from "../content/skills";
 import type { Combatant } from "../systems/combat";
 
-const raceBonuses = [
-  { life: 5, will: 3 },
-  { mana: 10, intelligence: 4, dexterity: 2 },
-  { life: 10, strength: 4, stamina: 5 },
-];
-const talentBonuses = [
-  { life: 10, strength: 4, will: 2 },
-  { mana: 15, intelligence: 6 },
-  { stamina: 10, dexterity: 4, luck: 4 },
-];
-const talentGrowth = [
-  { strength: 0.5 },
-  { intelligence: 0.5 },
-  { life: 0.25, stamina: 0.25 },
-  { dexterity: 0.5 },
-  { mana: 0.5, stamina: 0.5 },
-  { strength: 0.25, will: 0.25 },
-  { stamina: 0.5 },
-  { dexterity: 0.25, luck: 0.25 },
-  { stamina: 0.25, dexterity: 0.25 },
-  {},
-  { strength: 0.25, intelligence: 0.25 },
-  { stamina: 0.25, strength: 0.25 },
-  { intelligence: 0.5 },
-  { strength: 0.5 },
-  { will: 0.5 },
-  { stamina: 0.25, will: 0.25 },
-  { luck: 0.5 },
-  { life: 0.25, stamina: 0.25 },
-  { strength: 0.25, will: 0.25 },
-  { will: 0.25, luck: 0.25 },
-  { stamina: 0.25, dexterity: 0.25 },
-  { stamina: 0.25, dexterity: 0.25 },
-  { stamina: 0.25, dexterity: 0.25 },
-  { mana: 0.5, stamina: 0.5 },
-];
-const xpThresholdFactor = 50;
+import { startingAttributes, talentAgeGrowth, talentBaseBonuses, talentLevelGrowth } from "../content/character-growth";
+import { effectiveProtection } from "../content/protection";
 
-export function levelForXp(xp: number) {
-  return Math.max(1, Math.floor((1 + Math.sqrt(1 + 4 * xp / xpThresholdFactor)) / 2));
+export const resourceRegen = { health: 0.12, mana: 0.05, stamina: 0.4 } as const;
+export const movementSpeed = (race: number) => (race === 1 ? 1.14 : 1);
+
+export interface Attributes {
+  life: number;
+  mana: number;
+  stamina: number;
+  strength: number;
+  intelligence: number;
+  dexterity: number;
+  will: number;
+  luck: number;
 }
-
-export function xpForLevel(level: number) {
-  return xpThresholdFactor * level * (level - 1);
+export interface GearStats {
+  armor?: "light" | "heavy";
+  shield?: boolean;
+  dualWield?: boolean;
+  protection?: number;
+  magicDefense?: number;
+  magicProtection?: number;
+  bonusDamage?: number;
+  attributes?: Partial<Attributes>;
+  age?: number;
 }
-
 interface Weapon {
   damage_min?: number;
   damage_max?: number;
   weapon_type?: string;
   hands?: number;
+  balance?: number;
+  critical?: number;
 }
 
 export function deriveStats(
@@ -61,39 +44,27 @@ export function deriveStats(
   skills: Record<string, RankedSkill> = {},
   weapon?: Weapon,
   equipmentDefense = 0,
+  gear: GearStats = {},
 ) {
-  const growth = level - 1;
-  const age = form.age - 17;
-  const stats = {
-    life: 100 + growth * 5 + age * 2,
-    mana: 35 + growth * 3,
-    stamina: 40 + growth * 3 + age,
-    strength: 18 + growth + age * 0.5,
-    intelligence: 18 + growth,
-    dexterity: 18 + growth,
-    will: 18 + growth + age * 0.5,
-    luck: 16 + growth * 0.5,
-  };
-  function add(bonuses: Partial<typeof stats> | undefined, multiplier = 1) {
-    for (const key of Object.keys(bonuses ?? {}) as Array<keyof typeof stats>)
+  const stats: Attributes = { ...startingAttributes };
+  function add(bonuses: Partial<Attributes> | undefined, multiplier = 1) {
+    for (const key of Object.keys(bonuses ?? {}) as Array<keyof Attributes>)
       stats[key] += (bonuses?.[key] ?? 0) * multiplier;
   }
-  add(raceBonuses[form.race]);
-  add(talentBonuses[form.talent]);
-  add(talentGrowth[form.talent], growth + (form.talent > 2 ? 8 : 0));
-  if (form.talent === 9) add({ dexterity: 4, will: 4 });
+  add(talentLevelGrowth[form.talent], level - 1);
+  add(talentBaseBonuses[form.talent]);
+  add(talentAgeGrowth[form.talent], Math.max(0, Math.min(20, gear.age ?? form.age) - form.age));
   const effects = Object.fromEntries(
     Object.entries(skills).map(([id, progress]) => {
       const rank = rankData(id, progress.rank);
       return [id, rank?.game_effects ?? rank?.effects ?? {}];
     }),
   ) as NonNullable<Combatant["skill_effects"]>;
-  const effect = (id: string, key: string, fallback = 0) =>
-    Number(effects[id]?.[key] ?? fallback);
-  const mastery = (key: string) => effect("combat_mastery", key);
+  const effect = (id: string, key: string, fallback = 0) => Number(effects[id]?.[key] ?? fallback);
+  const race = ["human", "elf", "giant"][form.race];
+  const mastery = (key: string) => effect("combat_mastery", key.replace("_human_", `_${race}_`));
   add({
-    life:
-      mastery("additional_hp_total") + effect("defense", "additional_hp_total"),
+    life: mastery("additional_hp_total") + effect("defense", "additional_hp_total"),
     strength:
       mastery("additional_strength_human_total") +
       effect("smash", "additional_str_and_will_total") +
@@ -107,45 +78,121 @@ export function deriveStats(
       effect("windmill", "additional_will_total") +
       effect("smash", "additional_str_and_will_total"),
   });
+  add(gear.attributes);
+  const armorSkill = gear.armor ? `${gear.armor}_armor_mastery` : "";
+  if (gear.armor === "heavy") stats.dexterity *= 1 - effect(armorSkill, `dex_reduction_${race}`) / 100;
+  for (const key of Object.keys(stats) as (keyof Attributes)[])
+    stats[key] = Math.max(0, Math.round(stats[key] * 10) / 10);
+  for (const key of ["strength", "intelligence", "dexterity", "will", "luck"] as const)
+    stats[key] = Math.min(1500, stats[key]);
   const str = Math.max(0, stats.strength - 10);
-  const sword =
-    weapon && (!weapon.weapon_type || weapon.weapon_type === "sword");
-  return {
-    name: form.name,
-    health: Math.min(2500, Math.floor(stats.life)),
-    mana: Math.min(2500, Math.floor(stats.mana)),
-    stamina: Math.min(2500, Math.floor(stats.stamina)),
-    damage_min:
-      (weapon?.damage_min ?? 4) +
-      Math.floor(str / 3) +
-      mastery("additional_min_damage_human_total") +
-      (sword ? effect("sword_mastery", "additional_min_damage") : 0),
-    damage_max:
-      (weapon?.damage_max ?? 4) +
-      Math.floor(str / 2.5) +
+  const dex = Math.max(0, stats.dexterity - 10);
+  const int = Math.max(0, stats.intelligence - 10);
+  const will = Math.max(0, stats.will - 10);
+  const luck = Math.max(0, stats.luck - 10);
+  const kind = weapon?.weapon_type ?? "sword";
+  const sword = Boolean(weapon) && kind === "sword";
+  const ratios: Record<string, [number, number]> = {
+    control_bar: [str / 5 + dex / 5, str / 3.5 + dex / 3.5],
+    atlatl: [str / 5, str / 3],
+    dual_gun: [(str + int) / 5, (str + int) / 4],
+    shuriken: [(str + will) / 5, (str + will) / 4],
+    bow: [dex / 3.5, dex / 2.5],
+    crossbow: [dex / 3.5, dex / 2.5],
+    chain_blade: [dex / 3.5 + luck / 5, dex / 2.5 + luck / 4],
+    knuckle: [will / 3.5, will / 3],
+  };
+  const [low, high] = ratios[kind] ?? [str / 3, str / 2.5];
+  const damageMax = Math.floor(
+    (weapon?.damage_max ?? 8) +
+      high +
       mastery("additional_max_damage_human_total") +
       (sword ? effect("sword_mastery", "additional_max_damage") : 0),
-    defense:
-      Math.floor(str / 10) +
-      effect("defense", "additional_base_defense_human_total") +
-      equipmentDefense,
-    balance: Math.min(
-      80,
-      30 +
-        8.728944 * Math.log2((stats.dexterity + 9.814582) / 20.34565) +
-        (weapon ? 5 : 0) +
-        (sword ? effect("sword_mastery", "additional_sword_balance") : 0) +
-        mastery("additional_melee_balance_total"),
-    ),
-    critical: Math.max(
+  );
+  const damageMin = Math.floor(
+    (weapon?.damage_min ?? 0) +
+      low +
+      mastery("additional_min_damage_human_total") +
+      (sword ? effect("sword_mastery", "additional_min_damage") : 0),
+  );
+  const protection = Math.max(
+    0,
+    (gear.protection ?? 0) +
+      effect(armorSkill, "additional_protection") +
+      (gear.shield ? effect("shield_mastery", "small_shield_protection_bonus") : 0),
+  );
+  const magicProtection = Math.max(
+    0,
+    int / 20 +
+      (gear.magicProtection ?? 0) +
+      effect(armorSkill, "additional_magic_protection") +
+      (gear.shield ? effect("shield_mastery", "small_shield_magic_protection_bonus") : 0),
+  );
+  return {
+    ...stats,
+    name: form.name,
+    race: form.race,
+    health: Math.max(1, Math.min(2500, stats.life)),
+    mana: Math.max(0, Math.min(2500, stats.mana)),
+    stamina: Math.max(0, Math.min(2500, stats.stamina)),
+    damage_min: Math.max(0, Math.min(damageMin, damageMax)),
+    damage_max: Math.max(0, damageMax),
+    bonus_damage: gear.bonusDamage ?? 0,
+    defense: Math.max(
       0,
-      (stats.will - 10) / 10 + (stats.luck - 10) / 5 + (weapon ? 0 : 10),
+      str / 10 +
+        effect("defense", `additional_base_defense_${race}_total`) +
+        equipmentDefense +
+        effect(armorSkill, "additional_defense") +
+        (gear.shield ? effect("shield_mastery", "small_shield_defense_bonus") : 0),
     ),
-    critical_multiplier:
-      1 + effect("critical_hit", "additional_damage", 50) / 100,
-    armor_pierce: Math.floor(Math.max(0, stats.dexterity - 10) / 15),
-    weapon_type: weapon ? (weapon.weapon_type ?? "sword") : undefined,
+    protection,
+    effective_protection: effectiveProtection(protection),
+    magic_defense: Math.max(
+      0,
+      will / 10 +
+        (gear.magicDefense ?? 0) +
+        effect(armorSkill, "additional_magic_defense") +
+        (gear.shield ? effect("shield_mastery", "small_shield_magic_defense_bonus") : 0),
+    ),
+    magic_protection: magicProtection,
+    effective_magic_protection: effectiveProtection(magicProtection, true),
+    magic_attack: int / 5,
+    magic_balance: Math.min(100, 30 + int / 4),
+    magic_cast_reduction: int / 5000,
+    magic_mana_reduction: int / 5000,
+    balance: Math.max(
+      0,
+      Math.min(
+        80,
+        Math.min(50, 8.728944 * Math.log2((stats.dexterity + 9.814582) / 20.34565)) +
+          (weapon?.balance ?? (weapon ? 0 : 30)) +
+          mastery("additional_melee_balance_total") +
+          (sword ? effect("sword_mastery", "additional_sword_balance") * (gear.dualWield ? 2 : 1) : 0),
+      ),
+    ),
+    critical: Math.min(
+      999.9,
+      Math.max(0, (stats.will - 10) / 10 + (stats.luck - 10) / 5 + (weapon?.critical ?? (weapon ? 0 : 10))),
+    ),
+    critical_cap: 30,
+    critical_enabled: Boolean(rankData("critical_hit", skills.critical_hit?.rank ?? "")),
+    deadly_enabled: true,
+    unarmed_min: Math.floor(str / 3 + mastery("additional_min_damage_human_total")),
+    unarmed_max: Math.floor(8 + str / 2.5 + mastery("additional_max_damage_human_total")),
+    critical_multiplier: 1 + effect("critical_hit", "additional_damage", 50) / 100,
+    armor_pierce: dex / 15,
+    injury_min: (dex + will) / 20,
+    injury_max: dex / 10 + will / 5,
+    movement_speed: movementSpeed(form.race),
+    alchemic_damage: (Math.min(2500, stats.life) + Math.min(2500, stats.mana) + Math.min(2500, stats.stamina)) / 15,
+    life_skill_success_bonus: Math.min(18, stats.dexterity / 10),
+    lucky_gather: stats.luck / 2000,
+    huge_lucky_gather: stats.luck / 50000,
+    lucky_finish_multiplier: 1 + Math.min(180, stats.luck) * 0.005,
+    weapon_type: weapon ? kind : undefined,
     weapon_hands: weapon?.hands,
+    light_armor_equipped: gear.armor === "light",
     learned_skills: Object.keys(skills),
     skill_effects: effects,
   };

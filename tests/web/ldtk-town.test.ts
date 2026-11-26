@@ -126,8 +126,11 @@ it("refreshes an old active town durably without changing progression or a saved
     expect(session.store.getState().view.error).toBe("");
     const migrated = (await saves.load("town"))!;
     expect(migrated.revision).toBe(original.revision + 1);
-    expect(migrated.snapshot.map).toEqual(createTown("lantern_rest"));
-    expect(migrated.snapshot.position).toEqual(createTown("lantern_rest").entry);
+    const town = createTown("lantern_rest");
+    const { enemies, ...map } = migrated.snapshot.map!;
+    expect({ ...map, enemies: [] }).toEqual(town);
+    expect(enemies.map((enemy) => enemy.id)).toEqual(town.wolfSpawns?.map((spawn) => spawn.id));
+    expect(migrated.snapshot.position).toEqual(town.entry);
     expect(migrated.snapshot.layouts["threshold-preserved"]).toEqual(profile.layouts["threshold-preserved"]);
     expect([migrated.snapshot.quest, migrated.snapshot.gold]).toEqual([2, 321]);
     const resumed = new GameSession(saves);

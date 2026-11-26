@@ -1,3 +1,4 @@
+import Alea from "alea";
 import { addPouch, pouchKind, pouches, syncStacks } from "./stacks";
 import { createStore } from "zustand/vanilla";
 import { skillSlotKeys } from "../../app/contracts";
@@ -12,9 +13,11 @@ import type {
   Point,
   Screen,
 } from "../../app/contracts";
-import { dungeonEnemies } from "../content/enemies";
+import { dungeonEnemies, isWolfKind, wolves } from "../content/enemies";
+import { ageInterval } from "../content/character-aging";
 import swords from "../content/data/swords.json";
-import { deriveStats, levelForXp, xpForLevel } from "./stats";
+import { levelForXp, maxExperience, xpProgress } from "../content/level-experience";
+import { deriveStats, movementSpeed, resourceRegen } from "./stats";
 import {
   advanceDialogue,
   chooseDialogue,
@@ -53,6 +56,7 @@ import {
   type WorldMap,
 } from "../world/world";
 import { legacyDoorBlocked } from "../world/legacy-threshold";
+import { roamTownWolves, spawnTownWolves, wolfRespawnMs, wolfRoamSeconds } from "../world/town-wolves";
 import {
   arrive,
   canLeaveForSpindleHollow,
@@ -60,6 +64,7 @@ import {
   mapKey,
   maxDurability,
   maxHealth,
+  migrateExperience,
   newProfile,
   restoreCombat,
   starterItems,
@@ -72,7 +77,15 @@ import {
   type Profile,
   type Town,
 } from "./profile";
-import { describeService, option, serviceOptions, serviceStory, shopItems, type ServiceId } from "./services";
+import {
+  describeService,
+  option,
+  serviceOptions,
+  serviceStory,
+  shopItems,
+  signalQuestReward,
+  type ServiceId,
+} from "./services";
 
 const bindings = {
   up: "w",
@@ -112,12 +125,18 @@ const emptyInventory: GameView["inventory"] = {
   quickSlots: [],
 };
 const range = (a: Point, b: Point) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
-const maxLife = (p: Profile) => maxHealth(p.form, p.level, p.skills);
+const maxLife = (p: Profile) => maxHealth(p.form, p.level, p.skills, p.age);
+const healableLife = (p: Profile) => Math.max(0, maxLife(p) - (p.wounds ?? 0));
+const stepInterval = (p: Profile) => 0.1 / movementSpeed(p.form.race);
 const link = (a: number, b: number) => [a, b].sort((x, y) => x - y).join(":");
 
 function roomEnemies(p: Profile, room = p.room) {
   const enemies = p.map?.enemies ?? [];
   return p.thresholdVersion === 3 ? enemies.filter((enemy) => enemy.room === room) : enemies;
+}
+
+function encounterEnemies(p: Profile) {
+  return p.wolfOpponent ? (p.map?.enemies ?? []).filter((enemy) => enemy.id === p.wolfOpponent) : roomEnemies(p);
 }
 
 function rememberThresholdVisibility(p: Profile) {
@@ -217,8 +236,13 @@ export class GameSession {
   private dialogueView?: DialogueView;
   private combat?: Combat;
   private route: Point[] = [];
-  private routeTarget?: Landmark;
+  private routeTarget?: Landmark | MapEnemy;
   private movementTime = 0;
+  private keyMovementTime = 0;
+  private recoveryElapsed = 0;
+  private recoveryCredit = { hp: 0, mp: 0, stamina: 0 };
+  private wildlifeTime = 0;
+  private wildlifeStep = 0;
   private hudTime = 0;
   private mapView?: MapView;
   private indexedMap?: WorldMap;
@@ -227,7 +251,10 @@ export class GameSession {
   private busy = false;
   private error = "";
 
-  constructor(private readonly saves = new SaveService<Profile>()) {}
+  constructor(
+    private readonly saves = new SaveService<Profile>(),
+    private readonly now = Date.now,
+  ) {}
 
   async initialize() {
     await this.perform(async () => {
@@ -269,7 +296,13 @@ export class GameSession {
       if (entrance) entrance.name = "Dungeon Entrance";
     }
     this.profile = record;
-    if (reopen) this.screen = record.snapshot.location === "arrival" ? "arrival" : "world";
+    if (reopen) {
+      this.screen = record.snapshot.location === "arrival" ? "arrival" : "world";
+      this.wildlifeTime = 0;
+      this.wildlifeStep = 0;
+      this.recoveryElapsed = 0;
+      this.recoveryCredit = { hp: 0, mp: 0, stamina: 0 };
+    }
     this.combat = record.snapshot.battle ? restoreCombat(record.snapshot.battle) : undefined;
     this.records = [...this.records.filter((entry) => entry.id !== record.id), record];
     this.mapView = undefined;
@@ -278,29 +311,66 @@ export class GameSession {
   private async openCharacter(record: SaveRecord<Profile>, select = false) {
     const { snapshot, id, name, revision } = record;
     const { location } = snapshot;
-    if (location !== "arrival" && location !== "threshold") {
-      const map = createTown(location);
-      if (snapshot.map?.generator !== map.generator) {
-        const updated = structuredClone(snapshot);
-        updated.map = map;
-        updated.layouts[location] = map;
+    let updated: Profile | undefined;
+    if (snapshot.xpCurveVersion === undefined) {
+      updated = structuredClone(snapshot);
+      migrateExperience(updated);
+    }
+    const now = this.now();
+    const { boundary, weeks } = ageInterval(now, snapshot.ageBoundary ?? now);
+    if (snapshot.age === undefined || snapshot.ageBoundary === undefined || weeks > 0) {
+      updated ??= structuredClone(snapshot);
+      const previousAge = snapshot.age ?? snapshot.form.age;
+      updated.age = previousAge + weeks;
+      updated.ageBoundary = boundary;
+      if (weeks > 0) {
+        const ap = 5 * (Math.min(25, updated.age) - Math.min(25, previousAge));
+        updated.ap += ap;
+        append(updated, `You are now age ${updated.age}.${ap ? ` +${ap} AP.` : ""}`);
+      }
+    }
+    const maximum = this.battleStats(updated ?? snapshot);
+    if (
+      snapshot.mp === undefined ||
+      snapshot.stamina === undefined ||
+      snapshot.wounds === undefined ||
+      snapshot.hp > maximum.health
+    ) {
+      updated ??= structuredClone(snapshot);
+    }
+    if (location !== "arrival" && location !== "threshold" && !snapshot.battle) {
+      const authoredMap = createTown(location);
+      let map = snapshot.map;
+      if (!map || map.generator !== authoredMap.generator) {
+        updated ??= structuredClone(snapshot);
+        updated.map = map = authoredMap;
+        updated.layouts[location] = structuredClone(authoredMap);
         if (
           occupied(map, updated.position) ||
           (range(map.entry, updated.position) !== 0 && !findPath(map, map.entry, updated.position).length)
         )
           updated.position = map.entry;
-        const saved = await this.saves.save({ id, name, snapshot: updated }, revision, select);
-        this.adopt(saved, true);
-        return;
+      }
+      const current = updated ?? snapshot;
+      const enemies = spawnTownWolves(map, current.position, current.wolfRespawns ?? {}, now);
+      if (enemies !== map.enemies) {
+        updated ??= structuredClone(snapshot);
+        updated.map = { ...map, enemies };
       }
     }
-    if (select) await this.saves.setSetting("active", id);
+    if (updated) {
+      this.syncVitals(updated);
+      record = await this.saves.save({ id, name, snapshot: updated }, revision, select);
+    } else if (select) await this.saves.setSetting("active", id);
     this.adopt(record, true);
   }
 
   private async commit(profile: Profile) {
     if (!this.profile) return;
     if (!syncStacks(profile)) throw new Error("Your satchel has no room for all of these items.");
+    this.syncVitals(profile);
+    if (profile.map?.wolfSpawns && !profile.battle)
+      profile.map.enemies = spawnTownWolves(profile.map, profile.position, profile.wolfRespawns ?? {}, this.now());
     const record = await this.saves.save(
       { id: this.profile.id, name: profile.form.name, snapshot: profile },
       this.profile.revision,
@@ -445,11 +515,10 @@ export class GameSession {
   private publish() {
     const p = this.profile?.snapshot;
     const subtitle = p?.map?.subtitle ? ` · ${p.map.subtitle}` : "";
-    const xpAtLevelStart = p ? xpForLevel(p.level) : 0;
     const battle = this.combat;
-    const encounterEnemies = p && battle?.active ? roomEnemies(p) : [];
+    const participants = p && battle?.active ? encounterEnemies(p) : [];
     const nearby = p ? this.nearby(p) : undefined;
-    const stats = p ? deriveStats(p.form, p.level, p.skills) : undefined;
+    const stats = p ? this.battleStats(p) : undefined;
     if (!this.mapView && p?.map && this.screen === "world") {
       const visible = p.location === "threshold" ? visibleCells(p.map, p.position) : undefined;
       this.mapView = {
@@ -483,12 +552,13 @@ export class GameSession {
                 level: p.level,
                 hp: battle?.health ?? p.hp,
                 maxHp: stats.health,
-                mp: stats.mana,
+                wounds: battle?.playerWounds ?? p.wounds,
+                deadly: battle?.playerDeadly ?? p.deadly,
+                mp: p.mp ?? stats.mana,
                 maxMp: stats.mana,
-                stamina: battle?.stamina ?? stats.stamina,
+                stamina: battle?.stamina ?? p.stamina ?? stats.stamina,
                 maxStamina: stats.stamina,
-                xpInLevel: Math.max(0, p.xp - xpAtLevelStart),
-                xpToAdvance: xpForLevel(p.level + 1) - xpAtLevelStart,
+                ...xpProgress(p.level, p.xp),
               }
             : undefined,
         location:
@@ -512,17 +582,18 @@ export class GameSession {
           ? {
               gauge: battle.playerGauge,
               enemyRoom: p?.thresholdVersion === 3 ? p.room : undefined,
+              enemyId: p?.wolfOpponent,
               actionDetails: battle.actionDetails,
               available: (["attack", "defend", "smash", "counterattack", "windmill", "tonic"] as const).filter(
                 (command) =>
                   command === "tonic"
-                    ? Boolean(p?.tonics && battle.health < battle.player.health)
+                    ? Boolean(p?.tonics && battle.health < battle.player.health - battle.playerWounds)
                     : battle.canQueue(command),
               ),
               queued: battle.queuedAction ?? undefined,
               target: String(battle.target),
               enemies: battle.enemies.flatMap((enemy, index) => {
-                const position = encounterEnemies[index];
+                const position = participants[index];
                 if (enemy.health <= 0 || !position) return [];
                 return [
                   {
@@ -539,6 +610,7 @@ export class GameSession {
             }
           : undefined,
         details: this.details(p),
+        characterStats: p && stats && this.panel === "character" ? this.statGroups(p, stats) : undefined,
         loot:
           p && this.panel === "loot"
             ? Object.entries(p.pending).map(([id, count]) => ({
@@ -663,14 +735,18 @@ export class GameSession {
       );
     } else if (occupied(map, destination)) {
       const enemy = map.enemies.find((item) => range(item, destination) === 0);
-      if (enemy) this.beginCombat(p, enemy.room);
+      if (p.location === "threshold" && enemy) this.beginCombat(p, enemy.room);
+      else if (enemy && isWolfKind(enemy.sprite)) {
+        p.wolfOpponent = enemy.id;
+        this.startBattle(p, [enemy]);
+      }
       this.route = [];
     } else {
       p.position = destination;
       const continuous = p.location === "threshold" && p.thresholdVersion === 3;
       const room = continuous ? roomAt(map, destination) : undefined;
       if (room !== undefined) p.room = room;
-      if (map.enemies.length && (!continuous || room !== undefined)) {
+      if (p.location === "threshold" && map.enemies.length && (!continuous || room !== undefined)) {
         map.enemies = advanceWorldActors(map, destination, room);
         if (roomEnemies(p).some((enemy) => range(destination, enemy) <= 1)) this.beginCombat(p);
       }
@@ -682,28 +758,130 @@ export class GameSession {
     const enemies = roomEnemies(p, room);
     if (!enemies.length || p.cleared.includes(room)) return;
     p.room = room;
+    this.startBattle(p, enemies);
+  }
+
+  private startBattle(p: Profile, enemies: MapEnemy[]) {
     const encounter = new Combat(
       this.battleStats(p),
-      enemies.map((enemy) => this.combatStats(enemy, p.room)),
+      enemies.map((enemy) => (isWolfKind(enemy.sprite) ? wolves[enemy.sprite] : this.combatStats(enemy, p.room))),
       Math.max(1, (p.seed + (p.room - 1) * 97) % 2147483647),
     );
     encounter.health = p.hp;
+    encounter.stamina = p.stamina ?? encounter.stamina;
+    encounter.playerWounds = p.wounds ?? 0;
+    encounter.playerDeadly = p.deadly ?? false;
     p.battle = encounter.snapshot();
     this.route = [];
-    append(p, `${enemies.map((enemy) => enemy.name).join(", ")} engage you.`);
+    this.routeTarget = undefined;
+    append(p, `${enemies.map((enemy) => enemy.name).join(", ")} ${enemies.length === 1 ? "engages" : "engage"} you.`);
   }
 
   private battleStats(p: Profile) {
     const equipped = p.inventory.items.filter((item) => item.equipped && (item.durability ?? 1) > 0);
     const weapon = equipped.find((item) => item.slot === "main_hand");
+    const armor = equipped.find((item) => item.slot === "armor");
+    const shopGear = equipped.flatMap((item) => shopItems.find((definition) => definition.id === item.id) ?? []);
     const definition =
       swords.find((item) => item.id === weapon?.id) ?? shopItems.find((item) => item.id === weapon?.id);
-    const defense = equipped.reduce(
-      (sum, item) =>
-        sum + (item.id === "riveted_jack" ? 2 : (shopItems.find((entry) => entry.id === item.id)?.defense ?? 0)),
-      0,
-    );
-    return deriveStats(p.form, p.level, p.skills, definition, defense);
+    const riveted = armor?.id === "riveted_jack";
+    const armorClass = riveted ? "light" : shopGear.find((item) => item.id === armor?.id)?.armor_class;
+    const defense = shopGear.reduce((sum, item) => sum + (item.defense ?? 0), riveted ? 2 : 0);
+    return deriveStats(p.form, p.level, p.skills, definition, defense, {
+      age: p.age,
+      armor: armorClass === "light" || armorClass === "heavy" ? armorClass : undefined,
+      shield: shopGear.some((item) => item.equipment_type === "shield"),
+      protection: shopGear.reduce((sum, item) => sum + (item.protection ?? 0), 0),
+      magicDefense: shopGear.reduce((sum, item) => sum + (item.magic_defense ?? 0), 0),
+      magicProtection: shopGear.reduce((sum, item) => sum + (item.magic_protection ?? 0), 0),
+      bonusDamage: shopGear.reduce((sum, item) => sum + (item.bonus_damage ?? 0), 0),
+    });
+  }
+
+  private syncVitals(p: Profile) {
+    const maximum = this.battleStats(p);
+    const battle = p.battle;
+    p.wounds = Math.min(maximum.health, battle?.playerWounds ?? p.wounds ?? 0);
+    p.hp = Math.max(-maximum.health, Math.min(maximum.health - p.wounds, battle?.health ?? p.hp));
+    p.deadly = p.hp <= 0 && (battle?.playerDeadly ?? p.deadly ?? false);
+    p.mp = Math.min(maximum.mana, p.mp ?? maximum.mana);
+    p.stamina = Math.min(maximum.stamina, battle?.stamina ?? p.stamina ?? maximum.stamina);
+    if (battle) {
+      battle.player = maximum;
+      battle.health = p.hp;
+      battle.stamina = p.stamina;
+      battle.playerWounds = p.wounds;
+      battle.playerDeadly = p.deadly;
+    }
+  }
+
+  private restoreVitals(p: Profile) {
+    const stats = this.battleStats(p);
+    p.hp = stats.health;
+    p.mp = stats.mana;
+    p.stamina = stats.stamina;
+    p.wounds = 0;
+    p.deadly = false;
+  }
+
+  private statGroups(p: Profile, s: ReturnType<GameSession["battleStats"]>): GameView["characterStats"] {
+    const number = (value: number, decimals = 1) => value.toLocaleString("en-US", { maximumFractionDigits: decimals });
+    const percent = (value: number, decimals = 1) => `${number(value, decimals)}%`;
+    const age = p.age ?? p.form.age;
+    const group = (title: string, entries: [string, string | number][]) => ({
+      title,
+      stats: entries.map(([label, value]) => ({ label, value: typeof value === "number" ? number(value) : value })),
+    });
+    return [
+      group("Attributes", [
+        ["Age", age > 25 ? `${age - 25} past 25` : age],
+        ["Strength", s.strength],
+        ["Intelligence", s.intelligence],
+        ["Dexterity", s.dexterity],
+        ["Will", s.will],
+        ["Luck", s.luck],
+      ]),
+      group("Resources", [
+        ["Life", `${number(this.combat?.health ?? p.hp)} / ${number(s.health)}`],
+        ["Mana", `${number(p.mp ?? s.mana)} / ${number(s.mana)}`],
+        ["Stamina", `${number(this.combat?.stamina ?? p.stamina ?? s.stamina)} / ${number(s.stamina)}`],
+        ["Wounds", this.combat?.playerWounds ?? p.wounds ?? 0],
+        ["Life status", (this.combat?.playerDeadly ?? p.deadly) ? "Deadly" : "Conscious"],
+      ]),
+      group("Physical Combat", [
+        ["Damage", `${s.damage_min}–${s.damage_max}`],
+        ["Bonus damage", percent(s.bonus_damage)],
+        ["Balance", percent(s.balance)],
+        ["Critical", percent(s.critical)],
+        ["Critical limit", percent(s.critical_cap)],
+        [
+          "Critical damage bonus",
+          s.critical_enabled ? percent((s.critical_multiplier - 1) * 100) : "Requires Critical Hit F",
+        ],
+        ["Injury", `${percent(s.injury_min)}–${percent(s.injury_max)}`],
+        ["Armor pierce", s.armor_pierce],
+      ]),
+      group("Defense", [
+        ["Defense", s.defense],
+        ["Protection", `${number(s.protection)} (${percent(s.effective_protection)})`],
+        ["Magic defense", s.magic_defense],
+        ["Magic protection", `${number(s.magic_protection)} (${percent(s.effective_magic_protection)})`],
+      ]),
+      group("Magic and Alchemy", [
+        ["Magic attack", s.magic_attack],
+        ["Magic balance", percent(s.magic_balance)],
+        ["Advanced spell cast reduction", percent(s.magic_cast_reduction * 100)],
+        ["Advanced spell mana reduction", percent(s.magic_mana_reduction * 100)],
+        ["Base alchemic damage", s.alchemic_damage],
+      ]),
+      group("Travel and Gathering", [
+        ["Movement speed", percent(s.movement_speed * 100)],
+        ["Life skill success bonus", percent(s.life_skill_success_bonus)],
+        ["Lucky gather", percent(s.lucky_gather * 100, 3)],
+        ["Huge lucky gather", percent(s.huge_lucky_gather * 100, 3)],
+        ["Lucky finish multiplier", `${number(s.lucky_finish_multiplier, 3)}×`],
+      ]),
+    ];
   }
 
   private combatStats(enemy: MapEnemy, room: number) {
@@ -716,26 +894,36 @@ export class GameSession {
     };
   }
 
-  private gainXp(p: Profile, xp: number) {
-    const priorMaximum = maxLife(p);
-    p.xp = Math.min(2_000_000_000, p.xp + xp);
+  private gainXp(p: Profile, xp: number, message: string) {
+    const earned = Math.min(xp, maxExperience - p.xp);
+    p.xp += earned;
+    append(p, earned > 0 ? `${message} +${earned} XP.` : message);
     const level = levelForXp(p.xp);
     if (level <= p.level) return;
-    p.ap += level - p.level;
+    const gained = level - p.level;
+    p.ap += gained;
     p.level = level;
-    p.hp += maxLife(p) - priorMaximum;
+    this.restoreVitals(p);
+    append(p, `You reached level ${level}. +${gained} AP.`);
   }
 
   private finishBattle(p: Profile, battle: Combat) {
     p.hp = battle.health;
+    p.stamina = battle.stamina;
+    p.wounds = battle.playerWounds;
+    p.deadly = battle.playerDeadly;
     if (battle.active) {
       battle.player = this.battleStats(p);
       p.battle = battle.snapshot();
       return;
     }
     delete p.battle;
+    if (p.wolfOpponent) {
+      this.finishWolfBattle(p, battle);
+      return;
+    }
     if (!battle.won) {
-      p.hp = maxLife(p);
+      this.restoreVitals(p);
       p.pending = {};
       this.resetThreshold(p);
       this.arriveAtTownLandmark(p, p.origin, "dungeon");
@@ -761,8 +949,28 @@ export class GameSession {
       if (cobweb) p.pending.cobweb = (p.pending.cobweb ?? 0) + cobweb;
       if (roll(3) === 0) p.pending.gold = (p.pending.gold ?? 0) + roll(6) + 1;
     }
-    this.gainXp(p, xp);
-    append(p, `Chamber ${p.room} cleared. +${xp} XP.`);
+    this.gainXp(p, xp, `Chamber ${p.room} cleared.`);
+  }
+
+  private finishWolfBattle(p: Profile, battle: Combat) {
+    const [enemy] = encounterEnemies(p);
+    delete p.wolfOpponent;
+    if (!p.map || !enemy || !isWolfKind(enemy.sprite)) return;
+    if (!battle.won) {
+      this.restoreVitals(p);
+      p.position = p.map.entry;
+      append(p, "You wake back at the settlement entrance.");
+      return;
+    }
+    p.map.enemies = p.map.enemies.filter((other) => other.id !== enemy.id);
+    (p.wolfRespawns ??= {})[enemy.id] = this.now() + wolfRespawnMs;
+    const {
+      experience,
+      gold: [min, max],
+    } = wolves[enemy.sprite];
+    const gold = min + (((battle.seed * 16807) % 2147483647) % (max - min + 1));
+    p.pending.gold = (p.pending.gold ?? 0) + gold;
+    this.gainXp(p, experience, `You defeat the ${enemy.name}.`);
   }
 
   travelTo = (target: Point) => {
@@ -770,7 +978,7 @@ export class GameSession {
     if (!p?.map || this.panel || this.combat || this.busy || !walkable(p.map, target.x, target.y)) return;
     const map = p.map;
     const landmark = map.landmarks.find((place) => range(place, target) === 0);
-    this.routeTarget = landmark;
+    const enemy = map.wolfSpawns && map.enemies.find((actor) => range(actor, target) === 0);
     const choices = landmark
       ? [
           { x: target.x + 1, y: target.y },
@@ -790,14 +998,17 @@ export class GameSession {
       if (path.length && (!shortest || path.length < shortest.length)) shortest = path;
     }
     this.route = shortest ?? [];
+    this.routeTarget = shortest ? (landmark ?? enemy) : undefined;
     if (shortest?.length === 0 && landmark) this.interact();
   };
 
-  step = (dx: number, dy: number) => {
+  step = (dx: number, dy: number, repeat = false) => {
     const p = this.profile?.snapshot;
     this.route = [];
     this.routeTarget = undefined;
-    if (!p || this.screen !== "world" || this.panel || this.combat) return;
+    if (!p || this.screen !== "world" || this.panel || this.combat || this.busy) return;
+    if (repeat && this.keyMovementTime < stepInterval(p)) return;
+    this.keyMovementTime = 0;
     this.update((candidate) =>
       this.moveCandidate(candidate, {
         x: candidate.position.x + dx,
@@ -806,14 +1017,68 @@ export class GameSession {
     );
   };
 
+  private tickWildlife(p: Profile, dt: number) {
+    const map = p.map;
+    if (!map?.wolfSpawns || (this.wildlifeTime += dt) < wolfRoamSeconds) return false;
+    this.wildlifeTime %= wolfRoamSeconds;
+    const roaming = roamTownWolves(map, p.position, p.seed + ++this.wildlifeStep);
+    const enemies = spawnTownWolves({ ...map, enemies: roaming }, p.position, p.wolfRespawns ?? {}, this.now());
+    if (enemies === map.enemies) return false;
+    this.update((candidate) => {
+      if (candidate.map) candidate.map.enemies = enemies;
+    });
+    return true;
+  }
+
+  private regenerate(p: Profile, dt: number) {
+    this.recoveryElapsed += dt;
+    if (this.recoveryElapsed < 0.25) return;
+    const elapsed = this.recoveryElapsed;
+    this.recoveryElapsed = 0;
+    const stats = this.battleStats(p);
+    const battle = this.combat;
+    const rates = [
+      ["hp", battle?.health ?? p.hp, stats.health - (battle?.playerWounds ?? p.wounds ?? 0), resourceRegen.health],
+      ["mp", p.mp ?? stats.mana, stats.mana, resourceRegen.mana],
+      ["stamina", battle?.stamina ?? p.stamina ?? stats.stamina, stats.stamina, resourceRegen.stamina],
+    ] as const;
+    const recovered: Partial<Pick<Profile, "hp" | "mp" | "stamina">> = {};
+    let changed = false;
+    for (const [key, value, max, rate] of rates) {
+      const missing = max - value;
+      if (missing <= 0) {
+        this.recoveryCredit[key] = 0;
+        continue;
+      }
+      const credit = this.recoveryCredit[key] + rate * elapsed;
+      const whole = Math.floor(credit + 1e-9);
+      const restored = credit + 1e-9 >= missing ? missing : whole;
+      this.recoveryCredit[key] = Math.max(0, credit - restored);
+      if (restored > 0) {
+        recovered[key] = value + restored;
+        changed = true;
+      }
+    }
+    return changed ? recovered : undefined;
+  }
+
   tick = (dt: number) => {
-    if (!this.profile || this.busy || this.screen !== "world") return;
+    if (!this.profile || this.busy || this.screen !== "world" || !Number.isFinite(dt) || dt <= 0) return;
+    const p = this.profile.snapshot;
+    this.keyMovementTime += dt;
+    const recovered = this.regenerate(p, dt);
     const battle = this.combat;
     if (battle) {
+      if (recovered?.hp !== undefined) {
+        battle.health = recovered.hp;
+        if (battle.health > 0) battle.playerDeadly = false;
+      }
+      if (recovered?.stamina !== undefined) battle.stamina = recovered.stamina;
       const events = battle.advance(dt);
-      if (events.length || !battle.active) {
+      if (events.length || !battle.active || recovered) {
         this.update(
           (p) => {
+            if (recovered?.mp !== undefined) p.mp = recovered.mp;
             append(p, ...events.map((event) => event.message));
             const training = events.flatMap((event) => event.training);
             if (training.length) p.skills = recordTraining(p.skills, training);
@@ -835,16 +1100,34 @@ export class GameSession {
         this.hudTime = 0;
         this.publish();
       }
-    } else if (!this.panel && (this.route.length || this.routeTarget)) {
+    } else if (recovered) {
+      this.update((p) => Object.assign(p, recovered));
+    } else if (
+      !this.panel &&
+      !this.tickWildlife(this.profile.snapshot, dt) &&
+      (this.route.length || this.routeTarget)
+    ) {
       this.movementTime += dt;
-      if (this.movementTime < 0.1) return;
+      if (this.movementTime < stepInterval(p)) return;
       this.movementTime = 0;
+      const target = this.routeTarget;
+      if (target && "speed" in target) {
+        const map = this.profile.snapshot.map;
+        const current = map?.enemies.find((enemy) => enemy.id === target.id);
+        if (!map || !current) {
+          this.route = [];
+          this.routeTarget = undefined;
+          return;
+        }
+        const next = this.route[0];
+        if (range(current, target) !== 0 || (next && range(next, current) !== 0 && occupied(map, next)))
+          this.travelTo(current);
+      }
       const next = this.route.shift();
       if (next) this.update((p) => this.moveCandidate(p, next));
       else {
-        const target = this.routeTarget;
         this.routeTarget = undefined;
-        if (target && range(target, this.profile.snapshot.position) <= 1) this.interact();
+        if (target && !("speed" in target) && range(target, this.profile.snapshot.position) <= 1) this.interact();
       }
     }
   };
@@ -878,12 +1161,12 @@ export class GameSession {
     const battle = this.combat;
     this.update((p) => {
       if (!p.tonics) throw new Error("No Healing Tonics remain.");
-      if ((battle?.health ?? p.hp) >= maxLife(p)) throw new Error("Life is already full.");
+      if ((battle?.health ?? p.hp) >= healableLife(p)) throw new Error("Unwounded Life is already full.");
       p.tonics--;
       if (battle) {
         p.hp = battle.useTonic();
         p.battle = battle.snapshot();
-      } else p.hp = Math.min(maxLife(p), p.hp + tonicHealing);
+      } else p.hp = Math.min(healableLife(p), p.hp + tonicHealing);
       append(p, "You drink a Healing Tonic. Your Time gauge is unchanged.");
     });
   }
@@ -1002,8 +1285,9 @@ export class GameSession {
       case "quest-reward":
         if (p.quest === 2) {
           p.quest = 3;
-          p.gold += 32;
-          append(p, "Quest complete. You receive 32 gold.");
+          const { gold, xp } = signalQuestReward;
+          p.gold += gold;
+          this.gainXp(p, xp, `Quest complete. You receive ${gold} gold.`);
         }
         return;
       case "gate-register":
@@ -1096,6 +1380,8 @@ export class GameSession {
         return;
       case "heal":
         p.hp = maxLife(p);
+        p.wounds = 0;
+        p.deadly = false;
         append(p, "You rest until your strength returns.");
         return;
       case "repair": {
@@ -1128,7 +1414,7 @@ export class GameSession {
         const deposit = action === "deposit";
         const result =
           action === "craft"
-            ? craft(economy, arg, maxLife(p))
+            ? craft(economy, arg, healableLife(p))
             : transferGold(economy, arg === "all" ? (deposit ? p.gold : p.bank) : Number(arg), deposit);
         if (!result) throw new Error("You lack the resources or space for that action.");
         p.gold = result.gold;
@@ -1140,17 +1426,23 @@ export class GameSession {
       }
       case "harvest": {
         const location = `${p.location}:${this.service?.x},${this.service?.y}`;
-        const time = Date.now();
+        const time = this.now();
         const old = p.harvests[location] ?? { count: 5, at: time };
-        const regrown = Math.floor((time - old.at) / 300000);
-        const count = Math.min(5, old.count + Math.max(0, regrown));
+        const regrown = Math.max(0, Math.floor((time - old.at) / 300000));
+        const count = Math.min(5, old.count + regrown);
         if (!count) throw new Error("This tree needs more time to regrow.");
+        const gathers = (old.gathers ?? 0) + 1;
         p.harvests[location] = {
           count: count - 1,
           at: count === 5 ? time : old.at + regrown * 300000,
+          gathers,
         };
-        p.materials.firewood++;
-        append(p, "You collect a piece of firewood.");
+        const stats = this.battleStats(p);
+        const roll = Alea(p.seed, location, gathers)();
+        const amount =
+          roll < stats.huge_lucky_gather ? 20 : roll < stats.huge_lucky_gather + stats.lucky_gather ? 2 : 1;
+        p.materials.firewood += amount;
+        append(p, amount === 1 ? "You collect a piece of firewood." : `Lucky gather! You collect ${amount} firewood.`);
         return;
       }
       case "practice": {
@@ -1292,7 +1584,7 @@ export class GameSession {
         if (this.records.length >= 20) throw new Error("All 20 character slots are occupied.");
         const id = crypto.randomUUID();
         const seed = (crypto.getRandomValues(new Uint32Array(1))[0] % 2147483646) + 1;
-        const snapshot = newProfile(candidate, seed);
+        const snapshot = newProfile(candidate, seed, this.now());
         syncStacks(snapshot);
         const record = await this.saves.save({ id, name, snapshot }, 0, true);
         this.adopt(record, true);

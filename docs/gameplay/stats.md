@@ -1,6 +1,28 @@
 # Rebirth Dungeon: Stats and effects
 
-**Planned Defold domain rules.** The [game plan](../game-plan.md) and [turn-based contract](../turn-based-plan.md) govern scope and timing; [stats implementation](stats-implementation.md) supplies adopted numeric conversions. Mabinogi's [Stats snapshot](../references/mabinogi-stats.md) supplies vocabulary, not automatic rules.
+## Web character stat rules
+
+The web game uses the current Mabinogi World Wiki Stats page, retrieved through
+Exa, for its character rules. The linked Level and Talent pages provide starting
+values and talent bonuses, the Protection table converts ratings to percentages,
+and Bare Hands and Lucky Gather supply their specific values. [Stats](https://wiki.mabinogiworld.com/view/Stats) · [Level](https://wiki.mabinogiworld.com/view/Level#Starting_Stats) · [Talent](https://wiki.mabinogiworld.com/view/Talent) · [Protection](https://wiki.mabinogiworld.com/view/Stats/Protection) · [Bare Hands](https://wiki.mabinogiworld.com/view/Bare_Hands) · [Lucky Gather](https://wiki.mabinogiworld.com/view/Lucky_Gather)
+
+| Wiki section | Web behavior |
+| --- | --- |
+| Overview, age and AP | Shared starting attributes, talent-specific growth, rank and equipment modifiers. New characters get 5 AP and levels award 1 AP. Saturday noon Pacific age-ups are applied on load, with age AP through 25 and sourced talent age bonuses through 20. |
+| Life, Mana and Stamina | Current pools persist. Natural recovery is 0.12 Life, 0.05 Mana and 0.4 Stamina per active second. The underground map uses the standard mana rate. Level-up refills all pools and clears wounds. |
+| Wounds, injury and Deadly | Wounds restrict ordinary healing. Physical attacks can inflict wounds after effective protection. A lethal hit from at least half Life triggers the wiki's guaranteed Deadly outcome. The chance below half Life is undocumented. |
+| Strength, Dexterity, Will and Luck | Weapon-specific scaling, physical and magic Defense, Balance, Injury, Critical and Armor Pierce. Normal attacks at zero Stamina use bare-handed damage. Wood gathering uses Luck for 2× and 20× yields. |
+| Intelligence, magic and alchemy | Magic Attack, Magic Balance, Magic Defense, Magic Protection, alchemic damage and advanced spell reductions are derived and visible. Spell-specific damage and mana costs require playable spells and their rank data. |
+| Damage, critical and mitigation | ATB uses weapon ranges and Balance, the Critical Hit rank gate, a 30% critical chance cap and protection before Defense. The equipped skill set supplies applicable modifiers, including the Windmill critical exception. |
+| Movement | Human and Giant share a baseline. Elf route and held-key movement use a 1.14× multiplier. |
+| Hunger, bonuses, Pet Points and status effects | The active rules cover injury and Deadly. Hunger sources, pet perks, enchantments, titles, Arcana, equipment sets, and spell or alchemy effects require their respective content systems. Craft recipes currently have fixed outcomes and use no success rolls. |
+
+## Planned Defold domain rules
+
+The [game plan](../game-plan.md) and [turn-based contract](../turn-based-plan.md)
+govern the Defold design. [Stats implementation](stats-implementation.md)
+supplies its proposed numeric conversions.
 
 ## 1. Ownership
 

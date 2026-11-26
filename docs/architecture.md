@@ -17,6 +17,7 @@ canvas projections.
 | `src/game/world/world.ts` | ROT maps, FOV, lighting, paths, names, schedulers and Miniplex index |
 | `src/game/world/ldtk-town.ts` | Town terrain, spawn and landmark import from the LDtk project |
 | `src/game/content/` | Skill, enemy, item data and Ink continuation adapter |
+| `src/game/content/level-experience.ts` | Normal level thresholds, level lookup and XP meter projection |
 | `src/game/persistence/` | Dexie transactions, revisions, settings and local checkpoints |
 | `src/render/WorldCanvas.tsx` | `@pixi/react` application, tilemap, viewport and GSAP movement |
 | `src/ui/` | HeroUI title, creation, HUD, panels and controls |

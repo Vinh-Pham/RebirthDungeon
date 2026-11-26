@@ -1,16 +1,23 @@
-export type CombatAction =
-  | "attack"
-  | "defend"
-  | "smash"
-  | "counterattack"
-  | "windmill";
+import { effectiveProtection } from "../content/protection";
+
+export type CombatAction = "attack" | "defend" | "smash" | "counterattack" | "windmill";
 export interface Combatant {
   name: string;
+  race?: number;
   health: number;
   damage_min?: number;
   damage_max?: number;
+  bonus_damage?: number;
   defense?: number;
   protection?: number;
+  effective_protection?: number;
+  critical_cap?: number;
+  critical_enabled?: boolean;
+  deadly_enabled?: boolean;
+  unarmed_min?: number;
+  unarmed_max?: number;
+  injury_min?: number;
+  injury_max?: number;
   balance?: number;
   critical?: number;
   critical_multiplier?: number;
@@ -27,6 +34,7 @@ export interface EnemyState {
   gauge: number;
   intent: CombatAction;
   actions: number;
+  wounds?: number;
 }
 export interface CombatEvent {
   message: string;
@@ -54,15 +62,15 @@ const costs: Record<CombatAction, number> = {
   counterattack: 4,
   windmill: 8,
 };
+const protectionOf = (actor: Combatant) => actor.effective_protection ?? actor.protection ?? 0;
 const mitigate = (damage: number, defense = 0, protection = 0) =>
-  Math.ceil(
-    Math.max(0, damage - defense) *
-      (1 - Math.min(100, Math.max(0, protection)) / 100),
-  );
+  Math.ceil(Math.max(0, damage * (1 - Math.min(90, Math.max(0, protection)) / 100) - Math.max(0, defense)));
 export class Combat {
   health: number;
   stamina: number;
   playerGauge = 0;
+  playerWounds = 0;
+  playerDeadly = false;
   guarded = false;
   countering = false;
   target = 0;
@@ -88,16 +96,16 @@ export class Combat {
     return this.player.skill_effects?.[action] ?? {};
   }
   private cost(action: CombatAction) {
-    return Number(this.effect(action).stamina_use ?? costs[action]);
+    return action === "attack" && this.stamina <= 0 && this.player.unarmed_min !== undefined
+      ? 0
+      : Number(this.effect(action).stamina_use ?? costs[action]);
   }
   get actionDetails(): CombatActionDetails[] {
     const [min, max] = this.meleeRange();
     return (Object.keys(costs) as CombatAction[]).map((action) => {
       const stamina = this.cost(action);
-      if (action === "defend")
-        return { action, stamina, staminaRecovered: defendRecovery };
-      if (action === "counterattack")
-        return { action, stamina, counter: this.counterRatios() };
+      if (action === "defend") return { action, stamina, staminaRecovered: defendRecovery };
+      if (action === "counterattack") return { action, stamina, counter: this.counterRatios() };
       return {
         action,
         stamina,
@@ -109,13 +117,11 @@ export class Combat {
     });
   }
   get active() {
-    return this.health > 0 && this.enemies.some((e) => e.health > 0);
+    return (this.health > 0 || this.playerDeadly) && this.enemies.some((e) => e.health > 0);
   }
   get won() {
     return (
-      this.health > 0 &&
-      this.enemies.length > 0 &&
-      this.enemies.every((e) => e.health <= 0)
+      (this.health > 0 || this.playerDeadly) && this.enemies.length > 0 && this.enemies.every((e) => e.health <= 0)
     );
   }
   canQueue(action: CombatAction, target = this.target) {
@@ -135,12 +141,7 @@ export class Combat {
         windmill: "windmill",
       } as Partial<Record<CombatAction, string>>
     )[action];
-    if (
-      required &&
-      this.player.learned_skills &&
-      !this.player.learned_skills.includes(required)
-    )
-      return false;
+    if (required && this.player.learned_skills && !this.player.learned_skills.includes(required)) return false;
     return true;
   }
   queue(action: CombatAction, target = this.target) {
@@ -150,7 +151,8 @@ export class Combat {
     return true;
   }
   useTonic() {
-    this.health = Math.min(this.player.health, this.health + tonicHealing);
+    this.health = Math.min(this.player.health - this.playerWounds, this.health + tonicHealing);
+    if (this.health > 0) this.playerDeadly = false;
     return this.health;
   }
   private random() {
@@ -158,40 +160,30 @@ export class Combat {
     return this.seed / 2147483647;
   }
   private meleeRange() {
-    const low = this.player.damage_min ?? 4;
-    return [low, Math.max(low, this.player.damage_max ?? low)] as const;
+    const unarmed = this.stamina <= 0 && this.player.unarmed_min !== undefined;
+    const low = unarmed ? this.player.unarmed_min! : (this.player.damage_min ?? 4);
+    return [low, Math.max(low, (unarmed ? this.player.unarmed_max : this.player.damage_max) ?? low)] as const;
   }
   private melee() {
     const [low, high] = this.meleeRange();
     if (high <= low) return low;
     const median = low + ((high - low) * (this.player.balance ?? 50)) / 100;
-    const standard =
-      Math.sqrt(-2 * Math.log(Math.max(1e-10, this.random()))) *
-      Math.cos(6.283185307 * this.random());
-    return Math.min(
-      high,
-      Math.max(
-        low,
-        Math.round(
-          median + (standard * Math.max(median - low, high - median)) / 2,
-        ),
-      ),
-    );
+    const standard = Math.sqrt(-2 * Math.log(Math.max(1e-10, this.random()))) * Math.cos(6.283185307 * this.random());
+    return Math.min(high, Math.max(low, Math.round(median + (standard * Math.max(median - low, high - median)) / 2)));
   }
   private attackPower(action: CombatAction, base: number) {
+    const bonus = 1 + (this.player.bonus_damage ?? 0) / 100;
     if (action === "smash") {
       const effects = this.effect(action);
       const scaled = Math.ceil((base * Number(effects.damage_human_elf ?? 100)) / 100);
       const damage = scaled + (Object.keys(effects).length ? 0 : 3);
-      if (this.player.weapon_hands !== 2) return damage;
-      const multiplier = Number(
-        String(effects.additional_multiplier_two_handed_weapons ?? "1.2").replace(/^x/, ""),
-      );
-      return Math.ceil(damage * multiplier);
+      if (this.player.weapon_hands !== 2) return damage * bonus;
+      const multiplier = Number(String(effects.additional_multiplier_two_handed_weapons ?? "1.2").replace(/^x/, ""));
+      return Math.ceil(damage * multiplier) * bonus;
     }
     if (action === "windmill")
-      return Math.ceil((base * Number(this.effect(action).human_giant_damage ?? 100)) / 100);
-    return base;
+      return Math.ceil((base * Number(this.effect(action).human_giant_damage ?? 100)) / 100) * bonus;
+    return base * bonus;
   }
   private counterRatios() {
     const effects = this.effect("counterattack");
@@ -200,11 +192,15 @@ export class Combat {
       self: Number(effects.damage_from_self_human_elf ?? 50),
     };
   }
+  private woundAmount(damage: number, attacker: Combatant, target: Combatant) {
+    if (!attacker.injury_min && !attacker.injury_max) return 0;
+    const min = Math.max(0, (attacker.injury_min ?? 0) - protectionOf(target));
+    const max = Math.max(min, (attacker.injury_max ?? attacker.injury_min ?? 0) - protectionOf(target));
+    return Math.floor((damage * Math.min(100, min + this.random() * (max - min))) / 100);
+  }
   private enemyRoll(enemy: Combatant) {
     const low = enemy.damage_min ?? 4;
-    return (
-      low + Math.floor(this.random() * ((enemy.damage_max ?? low) - low + 1))
-    );
+    return low + Math.floor(this.random() * ((enemy.damage_max ?? low) - low + 1));
   }
   private emit(
     message: string,
@@ -228,10 +224,12 @@ export class Combat {
   private playerAct() {
     const action = this.queuedAction;
     if (!action || this.stamina < this.cost(action)) return;
-    if (this.enemies[this.target].health <= 0)
-      this.target = this.enemies.findIndex((enemy) => enemy.health > 0);
+    if (this.enemies[this.target].health <= 0) this.target = this.enemies.findIndex((enemy) => enemy.health > 0);
     const enemy = this.enemies[this.target];
     if (!enemy) return;
+    const exhausted = this.stamina <= 0 && this.player.unarmed_min !== undefined;
+    const rolledDamage = action === "attack" || action === "smash" || action === "windmill" ? this.melee() : 0;
+    const maximumDamage = this.meleeRange()[1];
     this.stamina -= this.cost(action);
     this.queuedAction = null;
     this.playerGauge = 0;
@@ -239,15 +237,11 @@ export class Combat {
     this.countering = action === "counterattack";
     if (this.guarded) {
       this.stamina = Math.min(this.player.stamina ?? 50, this.stamina + defendRecovery);
-      this.emit("You defend and recover stamina.", 0, "player", action, [
-        "use_defense",
-      ]);
+      this.emit("You defend and recover stamina.", 0, "player", action, ["use_defense"]);
       return;
     }
     if (this.countering) {
-      this.emit("You prepare Counterattack.", 0, "player", action, [
-        "use_a_counterattack",
-      ]);
+      this.emit("You prepare Counterattack.", 0, "player", action, ["use_a_counterattack"]);
       return;
     }
     if (action === "smash" && enemy.intent === "attack") {
@@ -255,45 +249,37 @@ export class Combat {
       return;
     }
     const training = ["attack"];
-    if (this.player.weapon_type === "sword")
-      training.push("attack_an_enemy_with_sword");
-    if (action === "smash")
-      training.push("use_the_skill_successfully", "knock_down_an_enemy");
-    if (action === "windmill")
-      training.push("windmill_attack", "knock_down_an_enemy");
-    let base = this.attackPower(action, this.melee());
+    if (this.player.weapon_type === "sword") training.push("attack_an_enemy_with_sword");
+    if (action === "smash") training.push("use_the_skill_successfully", "knock_down_an_enemy");
+    if (action === "windmill") training.push("windmill_attack", "knock_down_an_enemy");
+    let base = rolledDamage;
     const critical = Math.max(
       0,
       Math.min(
-        30,
+        this.player.critical_cap ?? 30,
         (this.player.critical ?? 0) -
-          (enemy.stats.protection ?? 0) * 2 +
+          (action === "windmill" ? 0 : protectionOf(enemy.stats) * 2) +
           (action === "smash" && this.player.weapon_hands === 2
-            ? Number(
-                this.effect("smash").additional_critical_two_handed_weapons ??
-                  5,
-              )
+            ? Number(this.effect("smash").additional_critical_two_handed_weapons ?? 5)
             : 0),
       ),
     );
-    if (critical > 0) {
+    if (critical > 0 && this.player.critical_enabled !== false) {
       if (this.random() * 100 < critical) {
-        base = Math.ceil(base * (this.player.critical_multiplier ?? 1.5));
+        base += maximumDamage * ((this.player.critical_multiplier ?? 1.5) - 1);
         training.push("score_a_critical_hit");
         if (action === "smash") training.push("get_a_critical_hit_with_smash");
       }
     }
+    base = this.attackPower(action, base);
     let damage = mitigate(
       base,
       Math.max(0, (enemy.stats.defense ?? 0) - (this.player.armor_pierce ?? 0)),
-      enemy.stats.protection,
+      protectionOf(enemy.stats),
     );
     if (enemy.intent === "defend" && action !== "smash") {
       damage = Math.ceil(damage / 2);
-      training.push(
-        "observe_an_enemy_using_the_defense_skill",
-        "watch_an_enemy_defend_itself",
-      );
+      training.push("observe_an_enemy_using_the_defense_skill", "watch_an_enemy_defend_itself");
     } else if (enemy.intent === "defend" && action === "smash")
       training.push(
         "land_a_special_skill_on_a_defending_enemy",
@@ -304,10 +290,7 @@ export class Combat {
       enemy.intent = "defend";
       this.emit("Normal Attack interrupts the enemy Smash.", 0, "player");
     }
-    const targets =
-      action === "windmill"
-        ? this.enemies.filter((e) => e.health > 0)
-        : [enemy];
+    const targets = action === "windmill" ? this.enemies.filter((e) => e.health > 0) : [enemy];
     let totalDamage = 0;
     for (const target of targets) {
       let hit =
@@ -315,39 +298,30 @@ export class Combat {
           ? damage
           : mitigate(
               base,
-              Math.max(
-                0,
-                (target.stats.defense ?? 0) - (this.player.armor_pierce ?? 0),
-              ),
-              target.stats.protection,
+              Math.max(0, (target.stats.defense ?? 0) - (this.player.armor_pierce ?? 0)),
+              protectionOf(target.stats),
             );
-      if (target !== enemy && target.intent === "defend")
-        hit = Math.ceil(hit / 2);
+      if (target !== enemy && target.intent === "defend") hit = Math.ceil(hit / 2);
+      if (action === "attack" || action === "smash")
+        target.wounds = Math.min(
+          target.stats.health,
+          (target.wounds ?? 0) + this.woundAmount(hit, this.player, target.stats),
+        );
       target.health = Math.max(0, target.health - hit);
       totalDamage += hit;
       if (target.health === 0) {
         training.push("defeat_enemy");
-        if (this.player.weapon_type === "sword")
-          training.push("defeat_an_enemy_with_sword");
+        if (this.player.weapon_type === "sword") training.push("defeat_an_enemy_with_sword");
         if (action === "windmill") training.push("windmill_defeat_enemy");
-        if (action === "smash")
-          training.push(
-            "use_smash_as_the_final_blow",
-            "perform_a_finishing_blow_with_smash",
-          );
+        if (action === "smash") training.push("use_smash_as_the_final_blow", "perform_a_finishing_blow_with_smash");
         if (training.includes("score_a_critical_hit")) {
           training.push("finish_off_an_enemy_with_a_critical_hit");
-          if (action === "smash")
-            training.push("get_a_critical_hit_as_the_final_blow");
+          if (action === "smash") training.push("get_a_critical_hit_as_the_final_blow");
         }
       }
     }
-    if (action === "windmill" && targets.length >= 4)
-      training.push("attack_4_or_more_enemies");
-    if (
-      action === "windmill" &&
-      targets.filter((target) => target.health === 0).length >= 4
-    )
+    if (action === "windmill" && targets.length >= 4) training.push("attack_4_or_more_enemies");
+    if (action === "windmill" && targets.filter((target) => target.health === 0).length >= 4)
       training.push("defeat_4_or_more_enemies");
     this.emit(
       action === "windmill"
@@ -359,7 +333,7 @@ export class Combat {
       "player",
       action,
       training,
-      action === "smash" ? 30 : 25,
+      exhausted ? 0 : action === "smash" ? 30 : 25,
     );
     if (enemy.health <= 0)
       this.target = Math.max(
@@ -375,30 +349,16 @@ export class Combat {
       let boundary = remaining;
       for (const enemy of this.enemies)
         if (enemy.health > 0)
-          boundary = Math.min(
-            boundary,
-            Math.max(
-              0,
-              (1 - enemy.gauge) * (4.5 + this.enemies.indexOf(enemy) * 0.65),
-            ),
-          );
+          boundary = Math.min(boundary, Math.max(0, (1 - enemy.gauge) * (4.5 + this.enemies.indexOf(enemy) * 0.65)));
       if (this.queuedAction && this.stamina >= this.cost(this.queuedAction))
-        boundary = Math.min(
-          boundary,
-          Math.max(0, (1 - this.playerGauge) * 2.5),
-        );
+        boundary = Math.min(boundary, Math.max(0, (1 - this.playerGauge) * 2.5));
       this.playerGauge = Math.min(1, this.playerGauge + boundary / 2.5);
       for (const [index, enemy] of this.enemies.entries())
-        if (enemy.health > 0)
-          enemy.gauge = Math.min(
-            1,
-            enemy.gauge + boundary / (4.5 + index * 0.65),
-          );
+        if (enemy.health > 0) enemy.gauge = Math.min(1, enemy.gauge + boundary / (4.5 + index * 0.65));
       remaining = Math.max(0, remaining - boundary);
       let resolved = false;
       for (const enemy of this.enemies) {
-        if (!this.active || enemy.health <= 0 || enemy.gauge < 1 - 1e-10)
-          continue;
+        if (!this.active || enemy.health <= 0 || enemy.gauge < 1 - 1e-10) continue;
         resolved = true;
         enemy.gauge = 0;
         if (enemy.intent === "defend")
@@ -411,63 +371,48 @@ export class Combat {
           let damage = mitigate(
             normal + (enemy.intent === "smash" ? 3 : 0),
             this.player.defense,
-            this.player.protection,
+            protectionOf(this.player),
           );
           if (this.countering) {
             const effects = this.effect("counterattack");
-            const chance =
-              (enemy.stats.critical ?? 0) +
-              Number(effects.additional_critical_upon_activation ?? 0);
-            const critical =
-              chance > 0 && this.random() * 100 < Math.min(chance, 30);
+            const chance = (enemy.stats.critical ?? 0) + Number(effects.additional_critical_upon_activation ?? 0);
+            const critical = chance > 0 && this.random() * 100 < Math.min(chance, 30);
             const ratios = this.counterRatios();
             const opponent = (normal * ratios.enemy) / 100;
             const self = (this.melee() * ratios.self) / 100;
             const reflected = mitigate(
-              Math.ceil(opponent * (critical ? 1.5 : 1) + self),
-              Math.max(
-                0,
-                (enemy.stats.defense ?? 0) - (this.player.armor_pierce ?? 0),
-              ),
-              enemy.stats.protection,
+              this.attackPower("counterattack", Math.ceil(opponent * (critical ? 1.5 : 1) + self)),
+              Math.max(0, (enemy.stats.defense ?? 0) - (this.player.armor_pierce ?? 0)),
+              protectionOf(enemy.stats),
             );
             enemy.health = Math.max(0, enemy.health - reflected);
             this.countering = false;
-            this.emit(
-              `Counterattack returns ${reflected} damage.`,
-              reflected,
-              "player",
-              "counterattack",
-              [
-                "attack",
-                "knock_down_an_enemy",
-                enemy.intent === "smash"
-                  ? "counter_an_enemy_s_special_attack"
-                  : "counter_an_enemy_s_attack",
-                ...(enemy.health === 0 ? ["defeat_enemy"] : []),
-                ...(critical
-                  ? [
-                      "score_a_critical_hit",
-                      "counterattack_with_a_critical_hit",
-                    ]
-                  : []),
-              ],
-            );
+            this.emit(`Counterattack returns ${reflected} damage.`, reflected, "player", "counterattack", [
+              "attack",
+              "knock_down_an_enemy",
+              enemy.intent === "smash" ? "counter_an_enemy_s_special_attack" : "counter_an_enemy_s_attack",
+              ...(enemy.health === 0 ? ["defeat_enemy"] : []),
+              ...(critical ? ["score_a_critical_hit", "counterattack_with_a_critical_hit"] : []),
+            ]);
           } else {
             const blocked = this.guarded && enemy.intent === "attack";
-            if (blocked)
-              damage = Math.ceil(
-                mitigate(
-                  normal,
-                  (this.player.defense ?? 0) +
-                    Number(this.effect("defense").defense_bonus_human_elf ?? 0),
-                  (this.player.protection ?? 0) +
-                    Number(
-                      this.effect("defense").protection_bonus_human_elf ?? 0,
-                    ),
-                ) / 2,
-              );
-            this.health = Math.max(0, this.health - damage);
+            if (blocked) {
+              const defense = this.effect("defense");
+              const race = this.player.race === 2 ? "giant" : "human_elf";
+              const flat = Number(defense[`defense_bonus_${race}`] ?? 0);
+              const rating = Number(defense[`protection_bonus_${race}`] ?? 0);
+              damage = flat || rating ? mitigate(damage, flat, effectiveProtection(rating)) : Math.ceil(damage / 2);
+            }
+            this.playerWounds = Math.min(
+              this.player.health,
+              this.playerWounds + this.woundAmount(damage, enemy.stats, this.player),
+            );
+            const wasHealthy = this.health >= this.player.health / 2;
+            const nextHealth = this.health - damage;
+            this.playerDeadly =
+              (this.playerDeadly && damage === 0) ||
+              Boolean(this.player.deadly_enabled && wasHealthy && nextHealth <= 0);
+            this.health = this.playerDeadly ? Math.max(-this.player.health, nextHealth) : Math.max(0, nextHealth);
             const guardBroken = this.guarded && enemy.intent === "smash";
             this.guarded = false;
             this.emit(
@@ -481,9 +426,7 @@ export class Combat {
               enemy.intent,
               [
                 ...(blocked ? ["block_attack"] : []),
-                ...(this.player.light_armor_equipped
-                  ? ["take_melee_attacks_while_wearing_light_armor"]
-                  : []),
+                ...(this.player.light_armor_equipped ? ["take_melee_attacks_while_wearing_light_armor"] : []),
               ],
               0,
               true,
@@ -491,9 +434,7 @@ export class Combat {
           }
         }
         enemy.actions++;
-        enemy.intent = (["defend", "attack", "smash"] as const)[
-          enemy.actions % 3
-        ];
+        enemy.intent = (["defend", "attack", "smash"] as const)[enemy.actions % 3];
       }
       if (this.active && this.playerGauge >= 1 - 1e-10 && this.queuedAction) {
         this.playerGauge = 1;
@@ -508,6 +449,8 @@ export class Combat {
     return structuredClone({
       player: this.player,
       health: this.health,
+      playerWounds: this.playerWounds,
+      playerDeadly: this.playerDeadly,
       stamina: this.stamina,
       playerGauge: this.playerGauge,
       guarded: this.guarded,

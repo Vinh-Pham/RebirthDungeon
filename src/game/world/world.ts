@@ -21,6 +21,11 @@ export interface MapEnemy extends Point {
   due?: number;
   room?: number;
 }
+export type WolfKind = "gray_wolf" | "white_wolf";
+export interface WolfSpawn extends Point {
+  id: string;
+  kind: WolfKind;
+}
 export interface Door extends Point {
   target: number;
   arrival: Point;
@@ -32,6 +37,7 @@ export interface WorldMap {
   tiles: number[];
   landmarks: Landmark[];
   enemies: MapEnemy[];
+  wolfSpawns?: WolfSpawn[];
   entry: Point;
   exit: Point;
   generator: string;

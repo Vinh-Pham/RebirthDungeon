@@ -49,7 +49,7 @@ agent-browser wait --fn '(() => {
     log.top === map.bottom && log.left === map.left && log.width === map.width &&
     meters.map(meter => meter.getAttribute("aria-label")).join(",") === "HP,Mana,Stamina,XP" &&
     new Set(meters.map(meter => getComputedStyle(meter).getPropertyValue("--meter-fill"))).size === 4 &&
-    xp.value === 0 && xp.max === 100 && !document.querySelector(".status-rail").textContent.includes(" AP");
+    xp.value === 0 && xp.max === 400 && !document.querySelector(".status-rail").textContent.includes(" AP");
 })()'
 agent-browser eval 'window.initialMinimap = document.querySelector(".world-minimap").toDataURL(); true'
 assert_world_fits

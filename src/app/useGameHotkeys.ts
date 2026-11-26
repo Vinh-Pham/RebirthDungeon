@@ -80,7 +80,7 @@ export function useGameHotkeys(game: GameSession, view: GameView) {
           event.target.hasAttribute("data-game-scroll")
         ) return;
         event.preventDefault();
-        game.step(...direction);
+        game.step(...direction, event.repeat);
         return;
       }
 

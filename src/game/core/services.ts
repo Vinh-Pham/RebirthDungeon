@@ -18,6 +18,14 @@ interface ShopItem {
   damage_min?: number;
   damage_max?: number;
   defense?: number;
+  protection?: number;
+  magic_defense?: number;
+  magic_protection?: number;
+  bonus_damage?: number;
+  armor_class?: string;
+  equipment_type?: string;
+  balance?: number;
+  critical?: number;
   hands?: number;
   weapon_type?: string;
 }
@@ -31,6 +39,8 @@ export const serviceStory = {
   general_shop: "shop",
 } as const;
 export type ServiceId = keyof typeof serviceStory;
+export const signalQuestReward = { gold: 32, xp: 400 } as const;
+
 export const descriptions: Record<string, string> = {
   warden: "Carry our signal through the Threshold. The Watchkeeper waits in Spindle Hollow.",
   blacksmith: "A good blade and sound armor will bring you back to town.",
@@ -105,7 +115,8 @@ export function serviceOptions(place: Landmark, p: Profile): ActionOption[] {
   switch (place.id) {
     case "warden":
       if (p.location === "lantern_rest" && p.quest === 0) return [option("quest-accept", "Accept Passage Quest")];
-      if (p.location === "spindle_hollow" && p.quest === 2) return [option("quest-reward", "Complete Quest · 32 Gold")];
+      if (p.location === "spindle_hollow" && p.quest === 2)
+        return [option("quest-reward", `Complete Quest · ${signalQuestReward.gold} Gold · ${signalQuestReward.xp} XP`)];
       return [];
     case "blacksmith":
       return [

@@ -50,7 +50,7 @@ it.each([undefined, "novice"])("learns rank F Windmill from the school with prio
     await idle();
     const saved = (await saves.load("lesson"))!.snapshot;
     expect(saved.skills.windmill).toEqual({ rank: "F", training: {} });
-    expect(saved.ap).toBe(0);
+    expect(saved.ap).toBe(profile.ap);
     expect(view().skillSlots.every((slot) => slot === null)).toBe(true);
     const resumed = new GameSession(saves);
     await resumed.initialize();

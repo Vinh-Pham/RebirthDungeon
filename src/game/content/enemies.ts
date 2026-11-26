@@ -1,4 +1,5 @@
 import type { Combatant } from "../systems/combat";
+import type { WolfKind } from "../world/world";
 export interface DungeonEnemy extends Combatant {
   sprite: number;
   experience: number;
@@ -57,3 +58,34 @@ export const dungeonEnemies: Record<string, DungeonEnemy> = {
     boss: true,
   },
 };
+
+interface Wolf extends Combatant {
+  experience: number;
+  gold: readonly [min: number, max: number];
+}
+
+// Mabinogi World Wiki, Wolf (Family), normal Gray Wolf and White Wolf.
+export const wolves: Record<WolfKind, Wolf> = {
+  gray_wolf: {
+    name: "Gray Wolf",
+    health: 90,
+    damage_min: 12,
+    damage_max: 17,
+    defense: 1,
+    protection: 0,
+    experience: 93,
+    gold: [11, 50],
+  },
+  white_wolf: {
+    name: "White Wolf",
+    health: 160,
+    damage_min: 10,
+    damage_max: 30,
+    defense: 1,
+    protection: 0,
+    experience: 110,
+    gold: [20, 80],
+  },
+};
+
+export const isWolfKind = (sprite: string): sprite is WolfKind => Object.hasOwn(wolves, sprite);

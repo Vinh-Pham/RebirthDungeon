@@ -5,7 +5,7 @@ import { Viewport } from "pixi-viewport";
 import { gsap } from "gsap";
 import { eyes, hairs, outfits, skins } from "../game/content/appearance";
 import type { CharacterForm, GameView } from "../app/contracts";
-import { dungeonEnemies } from "../game/content/enemies";
+import { dungeonEnemies, isWolfKind } from "../game/content/enemies";
 import { BUSH, CLOSED_DUNGEON_GATE, DIRT_PATH, DUNGEON_FLOOR_GENERATOR, GRASS, WATER } from "../game/world/world";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { CombatMarkers } from "./CombatMarkers";
@@ -100,6 +100,7 @@ function Scene({
   input.current = { onTravel, onTarget, encounter, visible };
   const livingEnemyIds = encounter?.enemies.map(({ id }) => id).join(",");
   const enemyRoom = encounter?.enemyRoom;
+  const enemyId = encounter?.enemyId;
   const [sheet, setSheet] = useState<Spritesheet | null>(null);
   useEffect(() => {
     let active = true;
@@ -299,18 +300,19 @@ function Scene({
     const aliveInBattle = livingEnemyIds === undefined ? undefined : new Set(livingEnemyIds.split(","));
     let battleIndex = 0;
     for (const enemy of map.enemies ?? []) {
-      if (aliveInBattle && (!continuous || enemy.room === enemyRoom)) {
+      if (aliveInBattle && (enemyId ? enemy.id === enemyId : !continuous || enemy.room === enemyRoom)) {
         const id = String(battleIndex++);
         if (!aliveInBattle.has(id)) continue;
       }
       if (enemy.alive === false || (seen && !seen.has(`${enemy.x},${enemy.y}`))) continue;
-      const enemyType = dungeonEnemies[enemy.sprite ?? "glass_mite"];
-      art(`spider_atlas_${enemyType?.sprite ?? 16}`, enemy.x, enemy.y);
+      const sprite = enemy.sprite ?? "glass_mite";
+      const frame = isWolfKind(sprite) ? sprite : `spider_atlas_${dungeonEnemies[sprite]?.sprite ?? 16}`;
+      art(frame, enemy.x, enemy.y);
     }
     return () => {
       layer.removeChildren().forEach((child) => child.destroy({ children: true }));
     };
-  }, [app, isInitialised, map, visible, explored, sheet, lighting, livingEnemyIds, continuous, enemyRoom]);
+  }, [app, isInitialised, map, visible, explored, sheet, lighting, livingEnemyIds, continuous, enemyRoom, enemyId]);
   useEffect(() => {
     const figure = actor.current;
     if (!figure) return;

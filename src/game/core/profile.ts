@@ -2,6 +2,10 @@ import swords from "../content/data/swords.json";
 import { deriveStats } from "./stats";
 import { skillSlotKeys, type CharacterForm, type Point } from "../../app/contracts";
 import type { SavedDialogue } from "../content/ink";
+import { isWolfKind } from "../content/enemies";
+import { ageInterval } from "../content/character-aging";
+import { startingAp } from "../content/character-growth";
+import { levelForXp, maxExperience, maxLevel, xpForLevel } from "../content/level-experience";
 import { Combat } from "../systems/combat";
 import { canPlace, type Inventory, type InventoryItem } from "../systems/inventory";
 import { skillCommands, type RankedSkill } from "../content/skills";
@@ -49,8 +53,15 @@ export interface Profile {
   quest: number;
   level: number;
   xp: number;
+  xpCurveVersion?: 1;
   ap: number;
   hp: number;
+  mp?: number;
+  stamina?: number;
+  wounds?: number;
+  deadly?: boolean;
+  age?: number;
+  ageBoundary?: number;
   gold: number;
   bank: number;
   tonics: number;
@@ -60,9 +71,11 @@ export interface Profile {
   materials: Record<Material, number>;
   pending: Record<string, number>;
   skills: Record<string, RankedSkill>;
-  harvests: Record<string, { count: number; at: number }>;
+  harvests: Record<string, { count: number; at: number; gathers?: number }>;
   log: string[];
   battle?: Battle;
+  wolfOpponent?: string;
+  wolfRespawns?: Record<string, number>;
   dialogue?: SavedDialogue;
   arrivalText?: string;
 }
@@ -139,8 +152,29 @@ export const swordItems = swords
   }))
   .map((sword) => ({ ...sword, durability: maxDurability(sword) }));
 
-export function maxHealth(form: CharacterForm, level: number, skills?: Profile["skills"]) {
-  return deriveStats(form, level, skills).health;
+export function maxHealth(form: CharacterForm, level: number, skills?: Profile["skills"], age?: number) {
+  return deriveStats(form, level, skills, undefined, 0, { age }).health;
+}
+
+export function migrateExperience(profile: Profile) {
+  const { level, xp } = profile;
+  profile.level = Math.min(level, maxLevel);
+  if (level >= maxLevel) {
+    profile.xp = maxExperience;
+  } else {
+    const oldThreshold = 50 * level * (level - 1);
+    const start = xpForLevel(level);
+    const span = xpForLevel(level + 1) - start;
+    const oldSpan = 100 * level;
+    const oldProgress = Math.min(oldSpan, Math.max(0, xp - oldThreshold));
+    profile.xp = start + Math.min(span - 1, Math.floor((oldProgress * span) / oldSpan));
+  }
+  if (level > maxLevel) {
+    const health = maxHealth(profile.form, maxLevel, profile.skills);
+    profile.hp = Math.min(profile.hp, health);
+    if (profile.battle) profile.battle.health = Math.min(profile.battle.health, health);
+  }
+  profile.xpCurveVersion = 1;
 }
 
 export function layout(profile: Profile, location: Town | "threshold", room = 1) {
@@ -176,7 +210,12 @@ export function layout(profile: Profile, location: Town | "threshold", room = 1)
   return map;
 }
 
-export function newProfile(form: CharacterForm, seed: number): Profile {
+export function newProfile(form: CharacterForm, seed: number, now = Date.now()): Profile {
+  const skills: Profile["skills"] = {
+    combat_mastery: { rank: "novice", training: {} },
+    defense: { rank: "novice", training: {} },
+  };
+  const stats = deriveStats(form, 1, skills);
   return {
     version: 1,
     form,
@@ -197,8 +236,14 @@ export function newProfile(form: CharacterForm, seed: number): Profile {
     quest: 0,
     level: 1,
     xp: 0,
-    ap: 0,
-    hp: maxHealth(form, 1),
+    xpCurveVersion: 1,
+    ap: startingAp,
+    hp: stats.health,
+    mp: stats.mana,
+    stamina: stats.stamina,
+    wounds: 0,
+    age: form.age,
+    ageBoundary: ageInterval(now, now).boundary,
     gold: 24,
     bank: 0,
     tonics: 0,
@@ -207,10 +252,7 @@ export function newProfile(form: CharacterForm, seed: number): Profile {
     inventory: { width: 8, height: 7, items: [] },
     materials: { ...materials },
     pending: {},
-    skills: {
-      combat_mastery: { rank: "novice", training: {} },
-      defense: { rank: "novice", training: {} },
-    },
+    skills,
     harvests: {},
     log: [],
   };
@@ -232,6 +274,7 @@ export function arrive(profile: Profile, location: Town | "threshold", room = 1,
   profile.map = layout(profile, location, room);
   profile.position = position && walkable(profile.map, position.x, position.y) ? position : profile.map.entry;
   delete profile.battle;
+  delete profile.wolfOpponent;
 }
 
 function thresholdMapKey(profile: Profile, room: number) {
@@ -245,6 +288,9 @@ export function mapKey(profile: Profile) {
 function record(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
+
+const finite = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
+const nonnegative = (value: unknown): value is number => finite(value) && value >= 0;
 const uint = (value: unknown): value is number => Number.isSafeInteger(value) && Number(value) >= 0;
 const isTown = (value: unknown): value is Town => value === "lantern_rest" || value === "spindle_hollow";
 const isLocation = (value: unknown): value is Location => value === "arrival" || value === "threshold" || isTown(value);
@@ -338,6 +384,19 @@ function validMap(value: unknown): value is WorldMap {
   return (
     inBounds(value.entry) &&
     inBounds(value.exit) &&
+    (value.wolfSpawns === undefined ||
+      (Array.isArray(value.wolfSpawns) &&
+        value.wolfSpawns.every(
+          (spawn) =>
+            record(spawn) &&
+            isPoint(spawn) &&
+            inBounds(spawn) &&
+            "id" in spawn &&
+            typeof spawn.id === "string" &&
+            "kind" in spawn &&
+            typeof spawn.kind === "string" &&
+            isWolfKind(spawn.kind),
+        ))) &&
     value.landmarks.every(validEntity) &&
     value.enemies.every(
       (entity) =>
@@ -387,9 +446,19 @@ export function validateProfile(value: unknown): value is Profile {
   const roomCount = value.thresholdVersion ? THRESHOLD_ROOM_COUNT : 9;
   const encounterCount = value.thresholdVersion ? roomCount : roomCount - 1;
   if (
-    !["seed", "room", "run", "level", "xp", "ap", "hp", "gold", "bank", "tonics", "quest", "completions"].every((key) =>
+    !["seed", "room", "run", "level", "xp", "ap", "gold", "bank", "tonics", "quest", "completions"].every((key) =>
       uint(value[key]),
     ) ||
+    !finite(value.hp) ||
+    (value.hp < 0 && value.deadly !== true) ||
+    (value.deadly !== undefined && typeof value.deadly !== "boolean") ||
+    ![value.mp, value.stamina, value.wounds].every((pool) => pool === undefined || nonnegative(pool)) ||
+    (value.age !== undefined && (!uint(value.age) || value.age < value.form.age)) ||
+    (value.ageBoundary !== undefined && !uint(value.ageBoundary)) ||
+    (value.xpCurveVersion !== undefined &&
+      (value.xpCurveVersion !== 1 ||
+        Number(value.xp) > maxExperience ||
+        value.level !== levelForXp(Number(value.xp)))) ||
     !Array.isArray(value.cleared) ||
     !value.cleared.every((room) => uint(room) && room >= 1 && room <= encounterCount) ||
     typeof value.treasure !== "boolean" ||
@@ -406,7 +475,9 @@ export function validateProfile(value: unknown): value is Profile {
     !record(value.materials) ||
     !record(value.skills) ||
     !record(value.pending) ||
-    !record(value.harvests)
+    !record(value.harvests) ||
+    (value.wolfRespawns !== undefined &&
+      (!record(value.wolfRespawns) || !Object.values(value.wolfRespawns).every(uint)))
   )
     return false;
   const inv = value.inventory;
@@ -472,6 +543,18 @@ export function validateProfile(value: unknown): value is Profile {
   )
     return false;
   const inventory = inv as unknown as Inventory;
+  if (value.wolfOpponent !== undefined) {
+    const map = value.map as WorldMap | undefined;
+    if (
+      typeof value.wolfOpponent !== "string" ||
+      !isTown(value.location) ||
+      !record(value.battle) ||
+      !Array.isArray(value.battle.enemies) ||
+      value.battle.enemies.length !== 1 ||
+      !map?.enemies.some((enemy) => enemy.id === value.wolfOpponent && isWolfKind(enemy.sprite))
+    )
+      return false;
+  }
   return (
     new Set(inventory.items.map((item) => item.id)).size === inventory.items.length &&
     inventory.items.every((item) => item.equipped || canPlace(inventory, item, item.x, item.y)) &&
@@ -490,25 +573,28 @@ function validBattle(value: unknown): boolean {
     !uint(value.seed)
   )
     return false;
-  const number = (value: unknown) => typeof value === "number" && Number.isFinite(value) && value >= 0;
   const actions = ["attack", "defend", "smash", "counterattack", "windmill"];
   return (
-    number(value.health) &&
-    number(value.stamina) &&
-    number(value.playerGauge) &&
+    finite(value.health) &&
+    (value.health >= 0 || value.playerDeadly === true) &&
+    (value.playerDeadly === undefined || typeof value.playerDeadly === "boolean") &&
+    (value.playerWounds === undefined || nonnegative(value.playerWounds)) &&
+    nonnegative(value.stamina) &&
+    nonnegative(value.playerGauge) &&
     typeof value.player.name === "string" &&
-    number(value.player.health) &&
+    nonnegative(value.player.health) &&
     (value.queuedAction === null || actions.includes(String(value.queuedAction))) &&
     value.enemies.every(
       (enemy) =>
         record(enemy) &&
-        number(enemy.health) &&
-        number(enemy.gauge) &&
-        number(enemy.actions) &&
+        nonnegative(enemy.health) &&
+        nonnegative(enemy.gauge) &&
+        nonnegative(enemy.actions) &&
+        (enemy.wounds === undefined || nonnegative(enemy.wounds)) &&
         actions.includes(String(enemy.intent)) &&
         record(enemy.stats) &&
         typeof enemy.stats.name === "string" &&
-        number(enemy.stats.health),
+        nonnegative(enemy.stats.health),
     )
   );
 }

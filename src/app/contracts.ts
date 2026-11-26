@@ -60,6 +60,8 @@ export interface GameView {
     level: number;
     hp: number;
     maxHp: number;
+    wounds?: number;
+    deadly?: boolean;
     mp: number;
     maxMp: number;
     stamina: number;
@@ -75,6 +77,7 @@ export interface GameView {
   encounter?: {
     gauge: number;
     enemyRoom?: number;
+    enemyId?: string;
     actionDetails: CombatActionDetails[];
     available: CombatCommand[];
     queued?: CombatCommand;
@@ -90,6 +93,7 @@ export interface GameView {
     }[];
   };
   panel?: Panel;
+  characterStats?: { title: string; stats: { label: string; value: string }[] }[];
   details: { title: string; body: string; options: ActionOption[] };
   loot: { id: string; name: string; count: number; icon?: string }[];
   inventory: {

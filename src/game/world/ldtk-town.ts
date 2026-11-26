@@ -119,7 +119,7 @@ export function importLdtkTowns(source: string): Map<string, WorldMap> {
     });
     const starts = positions.filter(({ entity }) => entity.__identifier === "PlayerStart");
     requireValue(starts.length === 1, `${id} needs exactly one PlayerStart.`);
-    const landmarks = positions
+    const markers = positions
       .filter(({ entity }) => entity.__identifier === "Landmark")
       .map<Landmark>(({ entity, x, y }) => ({
         id: field(entity.fieldInstances, "ServiceId"),
@@ -129,9 +129,23 @@ export function importLdtkTowns(source: string): Map<string, WorldMap> {
       }))
       .sort((a, b) => (a.id < b.id ? -1 : Number(a.id !== b.id)));
     requireValue(
-      new Set(landmarks.map((place) => place.id)).size === landmarks.length,
+      new Set(markers.map((place) => place.id)).size === markers.length,
       `${id} has duplicate ServiceId values.`,
     );
+    const terrainCells = terrain.intGridCsv;
+    const wolfSpawns = markers
+      .filter((place) => place.id.startsWith("wolf_spawn_"))
+      .map((place) => {
+        requireValue(/^wolf_spawn_(gray|white)_[a-zA-Z0-9_]+$/.test(place.id), `${id} has an invalid wolf spawn.`);
+        requireValue(terrainCells[place.y * width + place.x] === 6, `${id} wolf spawns need Grass terrain.`);
+        return {
+          id: place.id,
+          kind: place.id.startsWith("wolf_spawn_gray_") ? ("gray_wolf" as const) : ("white_wolf" as const),
+          x: place.x,
+          y: place.y,
+        };
+      });
+    const landmarks = markers.filter((place) => !place.id.startsWith("wolf_spawn_"));
     const dungeon = landmarks.find((place) => place.id === "dungeon");
     requireValue(dungeon, `${id} needs a dungeon Landmark.`);
     requireValue(
@@ -151,6 +165,7 @@ export function importLdtkTowns(source: string): Map<string, WorldMap> {
       tiles,
       landmarks,
       enemies: [],
+      ...(wolfSpawns.length ? { wolfSpawns } : {}),
       entry: { x, y },
       exit: { x: dungeon.x, y: dungeon.y },
       generator: "",
