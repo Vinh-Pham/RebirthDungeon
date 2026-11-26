@@ -35,6 +35,26 @@ export const descriptions: Record<string, string> = {
   warden: "Carry our signal through the Threshold. The Watchkeeper waits in Spindle Hollow.",
   blacksmith: "A good blade and sound armor will bring you back to town.",
   school: "Study the principles, train through action, then spend AP to advance your rank.",
+  magic_school:
+    "Welcome to the Lantern Rest Magic School. I am Archivist Ivara. The old conduits beneath our town still carry aether. Our first lesson is to listen before drawing upon it.\n\nSet both feet on the stone, breathe slowly, and watch the orrery. Let its light settle before you reach toward the next ring. A steady focus begins with patience.",
+  magic_school_bookshelf:
+    "Field journals and carefully repaired spell primers fill the Aether Shelves. Ivara has marked a beginner's passage about tracing aether through the dungeon's stone.",
+  magic_school_focus:
+    "The Aether Orrery holds a pale mote between its rings. Each ring turns as the conduits beneath Lantern Rest pulse. A brass plate asks students to observe before touching.",
+  magic_school_chart:
+    "The Glyph Board maps the flow of aether through branching conduits. Ivara's notes connect each symbol to a breath, a stance, and a moment of stillness.",
+  magic_school_sign: "Lantern Rest Magic School. Archivist Ivara welcomes new students at the orrery.",
+  lantern_notice_board:
+    "Nera has pinned up patrol routes, missing gear notices, and a sketch of the Threshold entrance.",
+  lantern_anvil: "Hammer marks cover Venn's anvil. A shallow groove runs down the horn where Venn tests blade edges.",
+  lantern_smith_forge: "A clay-lined hearth holds enough heat to soften the salvage Venn brings up from the dungeon.",
+  lantern_training_shelf: "Elian keeps illustrated footwork drills, field notes, and practice journals on this shelf.",
+  lantern_shrine: "Maelin keeps a lamp lit for travelers crossing the Threshold. Its glass is warm to the touch.",
+  lantern_grocery_display: "Corin has stacked cave roots and fresh bread by the open entrance.",
+  lantern_healer_cot: "A clean blanket and a rolled bandage wait on Sera's recovery cot.",
+  lantern_healer_cot_east: "Sera has set aside this cot for travelers who need a quiet place to recover.",
+  lantern_shop_rack: "Tamsin's rack holds spare straps, trail packs, and bottles wrapped for travel.",
+  lantern_bank_safe: "Thick iron plates cover the safe behind the Ledger Keeper's counter.",
   church: "Touch a Moon Gate to register it. Once awakened, you can travel to it from anywhere.",
   general_shop: "Stock up before taking the lower road.",
   grocery_store: "Mill grain into flour at the windmill, then bake it at the oven.",

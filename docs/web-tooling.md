@@ -33,7 +33,7 @@ is walkable. Unpainted cells
 inside the town import as walkable ground. Painted walls, water, and bushes
 block movement.
 The [Aseprite terrain sheet](../assets/art/town_terrain.aseprite) supplies
-the artwork for Water, Grass, Bush, and Dirt Path.
+the artwork for Wall, Water, Grass, Bush, and Dirt Path.
 Use **Entities** to move the **PlayerStart** and **Landmark** markers.
 `DisplayName` changes the displayed name. Keep the landmark's `ServiceId`
 when moving a service such as the school, Moon Gate, or dungeon entrance.

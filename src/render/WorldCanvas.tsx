@@ -39,25 +39,30 @@ export interface WorldCanvasProps {
   onTarget: (id: string) => void;
 }
 const CELL = 24;
+const lanternRestResidents: Record<string, string> = {
+  warden: "lantern_nera",
+  blacksmith: "lantern_venn",
+  school: "lantern_elian",
+  church: "lantern_maelin",
+  grocery_store: "lantern_corin",
+  healer: "lantern_sera",
+  general_shop: "lantern_tamsin",
+  bank: "lantern_ledger_keeper",
+};
 
 function terrainTexture(kind: number): Texture {
   const canvas = document.createElement("canvas");
   canvas.width = CELL;
   canvas.height = CELL;
   const context = canvas.getContext("2d")!;
-  context.fillStyle = ["#172d34", "#243c46", "#193b3b", "#293c43"][kind] ?? "#172d34";
+  context.fillStyle = ["#172d34", "#344a5a", "#193b3b", "#293c43"][kind] ?? "#172d34";
   context.fillRect(0, 0, CELL, CELL);
-  context.fillStyle = kind === 1 ? "#496672" : kind === 2 ? "#4d7664" : "#48616a";
-  if (kind === 1) {
-    context.fillRect(7, 4, 2, 15);
-    context.fillRect(14, 4, 2, 15);
-    context.fillRect(4, 8, 15, 2);
-    context.fillRect(4, 14, 15, 2);
-  } else if (kind === 3) {
+  context.fillStyle = kind === 2 ? "#4d7664" : "#48616a";
+  if (kind === 3) {
     context.fillRect(0, 23, 24, 1);
     context.fillRect(23, 0, 1, 24);
     context.fillRect(11, 11, 2, 2);
-  } else {
+  } else if (kind !== 1) {
     context.fillRect(11, 11, 2, 2);
     if (kind === 2) context.fillRect(14, 8, 1, 4);
   }
@@ -199,6 +204,7 @@ function Scene({
     layer.addChild(tiles);
     const terrainTextures = (textures.current ??= [0, 1, 2, 3].map(terrainTexture));
     const authoredTerrain: Record<number, Texture | undefined> = {
+      1: sheet?.textures.stone_wall,
       [WATER]: sheet?.textures.town_water,
       [GRASS]: sheet?.textures.town_grass,
       [BUSH]: sheet?.textures.town_bush,
@@ -252,12 +258,29 @@ function Scene({
         fishing: "town_amenities_4",
         blacksmith: "town_atlas_2",
         healer: "town_atlas_4",
+        magic_school: "magic_school_instructor",
+        magic_school_bookshelf: "magic_school_bookshelf",
+        magic_school_focus: "magic_school_focus",
+        magic_school_chart: "magic_school_chart",
+        magic_school_sign: "magic_school_sign",
+        lantern_notice_board: "lantern_notice_board",
+        lantern_anvil: "lantern_anvil",
+        lantern_smith_forge: "town_amenities_0",
+        lantern_training_shelf: "magic_school_bookshelf",
+        lantern_shrine: "lantern_shrine",
+        lantern_grocery_display: "lantern_grocery_display",
+        lantern_healer_cot: "lantern_healer_cot",
+        lantern_healer_cot_east: "lantern_healer_cot",
+        lantern_shop_rack: "lantern_shop_rack",
+        lantern_bank_safe: "lantern_bank_safe",
         dungeon: "dungeon_entrance",
         return: "dungeon_entrance",
         "far-exit": "dungeon_entrance",
       };
       if (id === "exit" || (id === "return" && !continuous && map.id !== "threshold-1")) continue;
-      art(id?.startsWith("chest-") ? "gold_pouch_small" : (ids[id ?? ""] ?? "town_atlas_1"), landmark.x, landmark.y);
+      const resident = map.id === "lantern_rest" ? lanternRestResidents[id ?? ""] : undefined;
+      const frame = id?.startsWith("chest-") ? "gold_pouch_small" : (resident ?? ids[id ?? ""] ?? "town_atlas_1");
+      art(frame, landmark.x, landmark.y);
     }
     for (const door of map.doors ?? []) {
       const key = `${door.x},${door.y}`;

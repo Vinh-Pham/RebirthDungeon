@@ -15,6 +15,16 @@ service markers, and existing characters pick up town edits on load or
 arrival. Water, Grass, Bush, and Dirt Path can be painted in either town and use
 original terrain art. See [editing towns in LDtk](web-tooling.md#editing-towns-in-ldtk).
 
+Lantern Rest's Magic School is east of the Ledger Keeper. Archivist Ivara
+offers an introductory lesson on aether. Students can inspect the Aether
+Shelves, Aether Orrery, and Glyph Board inside.
+
+Lantern Rest's eight other staffed buildings have service-specific layouts and
+resident sprites drawn in Aseprite. The open smithy and produce stall, reading
+alcove, chapel, treatment bays, and bank partitions distinguish the services on
+the map. Players can inspect furnishings such as Nera's patrol board and the
+Ledger Keeper's safe.
+
 The Threshold has one continuous floor with six compact rooms linked by
 straight corridors. Each corridor gate disappears automatically when you
 defeat the monsters in the preceding room. Walk through the opening to
