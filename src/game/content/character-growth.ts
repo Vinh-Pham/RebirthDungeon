@@ -95,3 +95,32 @@ export const talentAgeGrowth: Partial<Attributes>[] = [
   { stamina: 2, dexterity: 1 }, // Tailoring
   { mana: 2, stamina: 2 }, // Transmutation
 ];
+
+export const characterRaces = ["Human", "Elf", "Giant"];
+
+export const characterTalents = [
+  "Close Combat",
+  "Magic",
+  "Adventure",
+  "Archery",
+  "Battle Alchemy",
+  "Battle Astrology",
+  "Carpentry",
+  "Chain Slash",
+  "Cooking",
+  "Fate Astrology",
+  "Glyphwrighting",
+  "Gunslinger",
+  "Holy Arts",
+  "Lance Combat",
+  "Martial Arts",
+  "Medicine",
+  "Mercantile",
+  "Music",
+  "Ninja",
+  "Pet Training",
+  "Puppetry",
+  "Smithing",
+  "Tailoring",
+  "Transmutation",
+];

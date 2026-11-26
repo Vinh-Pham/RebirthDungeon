@@ -1,4 +1,5 @@
 import { eyes, hairs, outfits, skins } from "../game/content/appearance";
+import { characterRaces, characterTalents } from "../game/content/character-growth";
 import { useState } from "react";
 import {
   Alert,
@@ -13,34 +14,8 @@ import {
 } from "@heroui/react";
 import type { CharacterForm, GameActions } from "../app/contracts";
 
-const talents = [
-  "Close Combat",
-  "Magic",
-  "Adventure",
-  "Archery",
-  "Battle Alchemy",
-  "Battle Astrology",
-  "Carpentry",
-  "Chain Slash",
-  "Cooking",
-  "Fate Astrology",
-  "Glyphwrighting",
-  "Gunslinger",
-  "Holy Arts",
-  "Lance Combat",
-  "Martial Arts",
-  "Medicine",
-  "Mercantile",
-  "Music",
-  "Ninja",
-  "Pet Training",
-  "Puppetry",
-  "Smithing",
-  "Tailoring",
-  "Transmutation",
-];
 const choices = {
-  race: ["Human", "Elf", "Giant"],
+  race: characterRaces,
   gender: ["Male", "Female", "Nonbinary"],
   body: ["Compact", "Balanced", "Broad"],
   skin: ["Pale", "Sand", "Umber", "Deep"],
@@ -111,7 +86,7 @@ const ageOptions = Array.from({ length: 8 }, (_, index) => ({
 }));
 const indexed = (labels: string[]) =>
   labels.map((label, id) => ({ id, label }));
-const talentOptions = indexed(talents);
+const talentOptions = indexed(characterTalents);
 const talentAllowed = (race: number, talent: number) =>
   talent !== 2 &&
   !(race === 1 && talent === 13) &&
@@ -319,7 +294,7 @@ export function CharacterCreation({
               {form.name || "Your Traveler"}
             </Card.Title>
             <Card.Description>
-              {choices.race[form.race]} · {talents[form.talent]}
+              {choices.race[form.race]} · {characterTalents[form.talent]}
             </Card.Description>
           </Card.Header>
           <Card.Content className="creation-preview-copy">

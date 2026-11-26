@@ -1,9 +1,5 @@
 import { Button, Modal, Tooltip } from "@heroui/react";
-import {
-  attachDesktop,
-  createWindowManager,
-  type WindowManager,
-} from "@surdeddd/wmkit";
+import { attachDesktop, createWindowManager, type WindowManager } from "@surdeddd/wmkit";
 import { useId, useLayoutEffect, useRef, type ReactNode } from "react";
 import type { Point } from "../app/contracts";
 
@@ -21,6 +17,7 @@ interface GameDialogProps {
   positions: Map<string, Point>;
   className?: string;
   escapeHandledByGame?: boolean;
+  nonModal?: boolean;
   children: ReactNode;
 }
 
@@ -29,7 +26,8 @@ function WindowTitleBar({
   title,
   onClose,
   positions,
-}: Pick<GameDialogProps, "id" | "title" | "onClose" | "positions">) {
+  nonModal,
+}: Pick<GameDialogProps, "id" | "title" | "onClose" | "positions" | "nonModal">) {
   const titleId = useId();
   const handleRef = useRef<HTMLDivElement>(null);
   const managerRef = useRef<WindowManager | null>(null);
@@ -121,9 +119,15 @@ function WindowTitleBar({
           managerRef.current?.moveBy(id, ...direction);
         }}
       >
-        <Modal.Heading id={titleId} data-wm-title="">
-          {title}
-        </Modal.Heading>
+        {nonModal ? (
+          <h2 id={titleId} data-wm-title="">
+            {title}
+          </h2>
+        ) : (
+          <Modal.Heading id={titleId} data-wm-title="">
+            {title}
+          </Modal.Heading>
+        )}
       </div>
       <Tooltip>
         <Button isIconOnly variant="ghost" aria-label="Close [Esc]" onPress={onClose}>
@@ -142,8 +146,41 @@ export function GameDialog({
   positions,
   className = "",
   escapeHandledByGame = false,
+  nonModal = false,
   children,
 }: GameDialogProps) {
+  const frameRef = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    if (!nonModal) return;
+    const frame = frameRef.current;
+    const previous = document.activeElement;
+    frame?.focus({ preventScroll: true });
+    return () => {
+      const active = document.activeElement;
+      if (
+        (active === document.body || frame?.contains(active)) &&
+        previous instanceof HTMLElement &&
+        previous.isConnected
+      )
+        previous.focus({ preventScroll: true });
+    };
+  }, [nonModal]);
+
+  if (nonModal)
+    return (
+      <div className="window-desktop non-modal-desktop">
+        <section
+          ref={frameRef}
+          role="dialog"
+          aria-label={title}
+          tabIndex={-1}
+          className={`game-panel window-dialog ${className}`}
+        >
+          <WindowTitleBar id={id} title={title} onClose={onClose} positions={positions} nonModal />
+          <div className="window-dialog-body">{children}</div>
+        </section>
+      </div>
+    );
   return (
     <Modal.Backdrop
       isOpen
@@ -153,10 +190,7 @@ export function GameDialog({
       }}
     >
       <Modal.Container className="window-desktop" size="lg" scroll="inside">
-        <Modal.Dialog
-          className={`game-panel window-dialog ${className}`}
-          aria-label={title}
-        >
+        <Modal.Dialog className={`game-panel window-dialog ${className}`} aria-label={title}>
           <WindowTitleBar id={id} title={title} onClose={onClose} positions={positions} />
           <div className="window-dialog-body">{children}</div>
         </Modal.Dialog>

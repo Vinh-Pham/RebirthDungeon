@@ -14,6 +14,7 @@ export type Panel =
   | "loot";
 export type CombatCommand = "attack" | "defend" | "smash" | "counterattack" | "windmill" | "tonic";
 export const skillSlotKeys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"] as const;
+export type SkillCategory = "combat" | "magic" | "life";
 export interface Point {
   x: number;
   y: number;
@@ -50,6 +51,21 @@ export interface InventoryItem {
   equipped?: boolean;
   equipmentSlot?: EquipmentSlot;
 }
+export interface CharacterStatGroup {
+  title: string;
+  stats: { label: string; value: string }[];
+}
+
+export interface CharacterSheet {
+  age: string;
+  race: string;
+  talent: string;
+  ap: number;
+  levelCap: number;
+  totalXp: number;
+  groups: Record<"attributes" | "defense" | "combat" | "magic" | "gathering", CharacterStatGroup>;
+}
+
 export interface GameView {
   screen: Screen;
   busy: boolean;
@@ -93,7 +109,7 @@ export interface GameView {
     }[];
   };
   panel?: Panel;
-  characterStats?: { title: string; stats: { label: string; value: string }[] }[];
+  characterSheet?: CharacterSheet;
   details: { title: string; body: string; options: ActionOption[] };
   loot: { id: string; name: string; count: number; icon?: string }[];
   inventory: {
@@ -109,6 +125,7 @@ export interface GameView {
     id: string;
     label: string;
     rank: string;
+    category: SkillCategory;
     training: number;
     description: string;
     canAdvance: boolean;

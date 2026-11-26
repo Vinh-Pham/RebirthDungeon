@@ -9,7 +9,7 @@ import swordMastery from "./data/sword_mastery.json";
 import windmill from "./data/windmill.json";
 import shieldMastery from "./data/shield_mastery.json";
 import smash from "./data/smash.json";
-import type { CombatCommand } from "../../app/contracts";
+import type { CombatCommand, SkillCategory } from "../../app/contracts";
 
 export const skillCommands: Partial<Record<string, Exclude<CombatCommand, "tonic">>> = {
   combat_mastery: "attack",
@@ -38,6 +38,7 @@ export interface SkillDefinition {
   id: string;
   name: string;
   description: string;
+  category: SkillCategory;
   ranks: SkillRank[];
 }
 export const skillCatalog = Object.fromEntries(
@@ -53,7 +54,7 @@ export const skillCatalog = Object.fromEntries(
     windmill,
     shieldMastery,
     smash,
-  ].map((skill) => [skill.id, skill]),
+  ].map((skill) => [skill.id, { ...skill, category: "combat" }]),
 ) as unknown as Record<string, SkillDefinition>;
 export interface RankedSkill {
   rank: string;

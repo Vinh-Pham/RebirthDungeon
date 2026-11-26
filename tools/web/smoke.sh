@@ -90,15 +90,15 @@ agent-browser wait --fn '(() => {
 })()'
 agent-browser press k
 agent-browser wait '.skills-dialog'
-agent-browser drag '.skills-dialog [data-skill-source="combat_mastery"]' '.skills-dialog [data-skill-slot="1"]'
-agent-browser wait --fn 'document.querySelector(".skills-dialog [data-skill-slot=\"1\"]")?.getAttribute("aria-label") === "Skill slot 1, Normal Attack"'
+agent-browser drag '.skills-dialog [data-skill-source="combat_mastery"]' '.action-bar [data-skill-slot="1"]'
+agent-browser wait --fn 'document.querySelector(".action-bar [data-skill-slot=\"1\"]")?.getAttribute("aria-label") === "Skill slot 1, Normal Attack"'
 agent-browser focus '.skills-dialog [data-skill-source="defense"]'
 agent-browser press Enter
-agent-browser focus '.skills-dialog [data-skill-slot="0"]'
+agent-browser focus '.action-bar [data-skill-slot="0"]'
 agent-browser press Enter
-agent-browser wait --fn 'document.querySelector(".skills-dialog [data-skill-slot=\"0\"]")?.getAttribute("aria-label") === "Skill slot 0, Defend"'
-agent-browser drag '.skills-dialog [data-skill-slot="1"]' '.skills-dialog [data-skill-slot="0"]'
-agent-browser wait --fn 'document.querySelector(".skills-dialog [data-skill-slot=\"1\"]")?.getAttribute("aria-label") === "Skill slot 1, Defend" && document.querySelector(".skills-dialog [data-skill-slot=\"0\"]")?.getAttribute("aria-label") === "Skill slot 0, Normal Attack"'
+agent-browser wait --fn 'document.querySelector(".action-bar [data-skill-slot=\"0\"]")?.getAttribute("aria-label") === "Skill slot 0, Defend"'
+agent-browser drag '.action-bar [data-skill-slot="1"]' '.action-bar [data-skill-slot="0"]'
+agent-browser wait --fn 'document.querySelector(".action-bar [data-skill-slot=\"1\"]")?.getAttribute("aria-label") === "Skill slot 1, Defend" && document.querySelector(".action-bar [data-skill-slot=\"0\"]")?.getAttribute("aria-label") === "Skill slot 0, Normal Attack"'
 agent-browser find role button click --name 'Close [Esc]'
 agent-browser wait --fn '!document.querySelector("[role=dialog]")'
 

@@ -1,10 +1,11 @@
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Button } from "@heroui/react";
 import type { GameActions, GameView, Point } from "../app/contracts";
 import "./game.css";
 import { CharacterCreation } from "./CharacterCreation";
+import { CharacterPanel } from "./CharacterPanel";
 import { GameDialog } from "./GameDialog";
-import { ActionBar } from "./ActionBar";
+import { ActionBar, type SkillSelection } from "./ActionBar";
 import { SkillsPanel } from "./SkillsPanel";
 import { InventoryPanel } from "./InventoryPanel";
 import { LootPanel } from "./LootPanel";
@@ -24,6 +25,12 @@ export function GameUI({
 }) {
   const windowPositions = useRef(new Map<string, Point>());
   const [deleteId, setDeleteId] = useState<string>();
+  const [selectedSkill, selectSkill] = useState<SkillSelection>();
+  const skillsOpen = view.screen === "world" && view.panel === "skills";
+  useEffect(() => {
+    if (!skillsOpen) selectSkill(undefined);
+  }, [skillsOpen]);
+  const skillEditor = skillsOpen ? { selected: selectedSkill, select: selectSkill } : undefined;
   const deleteTarget = view.characters.find((character) => character.id === deleteId);
   const action = (id: string) => actions.choose(id);
   const options = view.details.options.map((option) => (
@@ -212,7 +219,20 @@ export function GameUI({
               </div>
             </div>
           </section>
-          <ActionBar view={view} actions={actions} />
+          <ActionBar view={view} actions={actions} editor={skillEditor} />
+          {skillEditor && (
+            <GameDialog
+              id="skills"
+              title="Skills"
+              onClose={() => actions.panel()}
+              positions={windowPositions.current}
+              className="skills-dialog"
+              nonModal
+            >
+              {error}
+              <SkillsPanel view={view} actions={actions} editor={skillEditor} />
+            </GameDialog>
+          )}
         </div>
         <aside className="game-sidebar" aria-label="Minimap and character status" tabIndex={0} data-game-scroll>
           {minimapView && (
@@ -279,7 +299,7 @@ export function GameUI({
           </Button>
         ))}
       </nav>
-      {view.panel && (
+      {view.panel && view.panel !== "skills" && (
         <GameDialog
           key={view.panel}
           id={view.panel}
@@ -287,9 +307,11 @@ export function GameUI({
           onClose={() => actions.panel()}
           positions={windowPositions.current}
           className={`${view.panel}-dialog`}
-          escapeHandledByGame
+          escapeHandledByGame={view.panel !== "character"}
         >
-          {view.panel === "inventory" ? (
+          {view.panel === "character" && player && view.characterSheet ? (
+            <CharacterPanel player={player} sheet={view.characterSheet} />
+          ) : view.panel === "inventory" ? (
             <>
               {error}
               <InventoryPanel view={view} actions={actions} />
@@ -305,30 +327,8 @@ export function GameUI({
                 <p key={i}>{line}</p>
               )) : <p className="muted">No messages yet.</p>}
             </div>
-          ) : view.panel === "skills" ? (
-            <>
-              {error}
-              <SkillsPanel view={view} actions={actions} />
-            </>
           ) : (
             <p className="panel-copy">{view.details.body}</p>
-          )}
-          {view.panel === "character" && view.characterStats && (
-            <div className="character-stat-groups">
-              {view.characterStats.map((group) => (
-                <section className="character-stat-group" key={group.title}>
-                  <h3>{group.title}</h3>
-                  <dl>
-                    {group.stats.map((stat) => (
-                      <div className="character-stat-row" key={stat.label}>
-                        <dt>{stat.label}</dt>
-                        <dd>{stat.value}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                </section>
-              ))}
-            </div>
           )}
           {view.panel === "settings" && (
             <>

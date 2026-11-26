@@ -15,8 +15,9 @@ import type {
 } from "../../app/contracts";
 import { dungeonEnemies, isWolfKind, wolves } from "../content/enemies";
 import { ageInterval } from "../content/character-aging";
+import { characterRaces, characterTalents } from "../content/character-growth";
 import swords from "../content/data/swords.json";
-import { levelForXp, maxExperience, xpProgress } from "../content/level-experience";
+import { levelForXp, maxExperience, maxLevel, xpProgress } from "../content/level-experience";
 import { deriveStats, movementSpeed, resourceRegen } from "./stats";
 import {
   advanceDialogue,
@@ -405,11 +406,7 @@ export class GameSession {
     if (!p || !this.panel) return emptyDetails;
     switch (this.panel) {
       case "character":
-        return {
-          title: p.form.name,
-          body: `Level ${p.level} · ${p.xp} Experience · ${p.ap} AP`,
-          options: [],
-        };
+        return { ...emptyDetails, title: "Character" };
       case "inventory":
         return {
           title: "Inventory",
@@ -420,11 +417,7 @@ export class GameSession {
           options: [],
         };
       case "skills":
-        return {
-          title: "Skills",
-          body: "Train through practice and combat. Advance a ready rank with AP.",
-          options: [],
-        };
+        return { ...emptyDetails, title: "Skills" };
       case "journal":
         return {
           title: "Journal",
@@ -610,7 +603,7 @@ export class GameSession {
             }
           : undefined,
         details: this.details(p),
-        characterStats: p && stats && this.panel === "character" ? this.statGroups(p, stats) : undefined,
+        characterSheet: p && stats && this.panel === "character" ? this.characterSheet(p, stats) : undefined,
         loot:
           p && this.panel === "loot"
             ? Object.entries(p.pending).map(([id, count]) => ({
@@ -636,6 +629,7 @@ export class GameSession {
                 {
                   id,
                   label: skill.name,
+                  category: skill.category,
                   rank: progress.rank,
                   description: skill.description,
                   training: max ? Math.min(100, Math.floor((points / max) * 100)) : 0,
@@ -824,7 +818,7 @@ export class GameSession {
     p.deadly = false;
   }
 
-  private statGroups(p: Profile, s: ReturnType<GameSession["battleStats"]>): GameView["characterStats"] {
+  private characterSheet(p: Profile, s: ReturnType<GameSession["battleStats"]>): GameView["characterSheet"] {
     const number = (value: number, decimals = 1) => value.toLocaleString("en-US", { maximumFractionDigits: decimals });
     const percent = (value: number, decimals = 1) => `${number(value, decimals)}%`;
     const age = p.age ?? p.form.age;
@@ -832,56 +826,53 @@ export class GameSession {
       title,
       stats: entries.map(([label, value]) => ({ label, value: typeof value === "number" ? number(value) : value })),
     });
-    return [
-      group("Attributes", [
-        ["Age", age > 25 ? `${age - 25} past 25` : age],
-        ["Strength", s.strength],
-        ["Intelligence", s.intelligence],
-        ["Dexterity", s.dexterity],
-        ["Will", s.will],
-        ["Luck", s.luck],
-      ]),
-      group("Resources", [
-        ["Life", `${number(this.combat?.health ?? p.hp)} / ${number(s.health)}`],
-        ["Mana", `${number(p.mp ?? s.mana)} / ${number(s.mana)}`],
-        ["Stamina", `${number(this.combat?.stamina ?? p.stamina ?? s.stamina)} / ${number(s.stamina)}`],
-        ["Wounds", this.combat?.playerWounds ?? p.wounds ?? 0],
-        ["Life status", (this.combat?.playerDeadly ?? p.deadly) ? "Deadly" : "Conscious"],
-      ]),
-      group("Physical Combat", [
-        ["Damage", `${s.damage_min}–${s.damage_max}`],
-        ["Bonus damage", percent(s.bonus_damage)],
-        ["Balance", percent(s.balance)],
-        ["Critical", percent(s.critical)],
-        ["Critical limit", percent(s.critical_cap)],
-        [
-          "Critical damage bonus",
-          s.critical_enabled ? percent((s.critical_multiplier - 1) * 100) : "Requires Critical Hit F",
-        ],
-        ["Injury", `${percent(s.injury_min)}–${percent(s.injury_max)}`],
-        ["Armor pierce", s.armor_pierce],
-      ]),
-      group("Defense", [
-        ["Defense", s.defense],
-        ["Protection", `${number(s.protection)} (${percent(s.effective_protection)})`],
-        ["Magic defense", s.magic_defense],
-        ["Magic protection", `${number(s.magic_protection)} (${percent(s.effective_magic_protection)})`],
-      ]),
-      group("Magic and Alchemy", [
-        ["Magic attack", s.magic_attack],
-        ["Magic balance", percent(s.magic_balance)],
-        ["Advanced spell cast reduction", percent(s.magic_cast_reduction * 100)],
-        ["Advanced spell mana reduction", percent(s.magic_mana_reduction * 100)],
-        ["Base alchemic damage", s.alchemic_damage],
-      ]),
-      group("Travel and Gathering", [
-        ["Movement speed", percent(s.movement_speed * 100)],
-        ["Life skill success bonus", percent(s.life_skill_success_bonus)],
-        ["Lucky gather", percent(s.lucky_gather * 100, 3)],
-        ["Huge lucky gather", percent(s.huge_lucky_gather * 100, 3)],
-        ["Lucky finish multiplier", `${number(s.lucky_finish_multiplier, 3)}×`],
-      ]),
-    ];
+    return {
+      age: age > 25 ? `${age - 25} past 25` : `${age} years`,
+      race: characterRaces[p.form.race],
+      talent: characterTalents[p.form.talent],
+      ap: p.ap,
+      levelCap: maxLevel,
+      totalXp: p.xp,
+      groups: {
+        attributes: group("Attributes", [
+          ["Strength", s.strength],
+          ["Intelligence", s.intelligence],
+          ["Dexterity", s.dexterity],
+          ["Will", s.will],
+          ["Luck", s.luck],
+        ]),
+        combat: group("Physical Combat", [
+          ["Damage", `${s.damage_min}–${s.damage_max}`],
+          ["Bonus damage", percent(s.bonus_damage)],
+          ["Balance", percent(s.balance)],
+          ["Critical", percent(s.critical)],
+          ["Critical limit", percent(s.critical_cap)],
+          ["Critical bonus", s.critical_enabled ? percent((s.critical_multiplier - 1) * 100) : "Needs Critical Hit F"],
+          ["Injury", `${percent(s.injury_min)}–${percent(s.injury_max)}`],
+          ["Armor pierce", s.armor_pierce],
+        ]),
+        defense: group("Defense", [
+          ["Defense", s.defense],
+          ["Protection", `${number(s.protection)} (${percent(s.effective_protection)})`],
+          ["Magic defense", s.magic_defense],
+          ["Magic protection", `${number(s.magic_protection)} (${percent(s.effective_magic_protection)})`],
+        ]),
+        magic: group("Magic and Alchemy", [
+          ["Magic attack", s.magic_attack],
+          ["Magic balance", percent(s.magic_balance)],
+          ["Advanced cast reduction", percent(s.magic_cast_reduction * 100)],
+          ["Advanced mana reduction", percent(s.magic_mana_reduction * 100)],
+          ["Base alchemic damage", s.alchemic_damage],
+        ]),
+        gathering: group("Travel and Gathering", [
+          ["Movement speed", percent(s.movement_speed * 100)],
+          ["Life skill success bonus", percent(s.life_skill_success_bonus)],
+          ["Lucky gather", percent(s.lucky_gather * 100, 3)],
+          ["Huge lucky gather", percent(s.huge_lucky_gather * 100, 3)],
+          ["Lucky finish multiplier", `${number(s.lucky_finish_multiplier, 3)}×`],
+        ]),
+      },
+    };
   }
 
   private combatStats(enemy: MapEnemy, room: number) {

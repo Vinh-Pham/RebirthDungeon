@@ -46,6 +46,7 @@ function ActionIcon({
   empty = false,
   active = true,
   highlighted,
+  keyshortcuts,
   ...button
 }: {
   label: string;
@@ -57,10 +58,13 @@ function ActionIcon({
   empty?: boolean;
   active?: boolean;
   highlighted?: boolean;
-} & Pick<ComponentProps<typeof Button>, "ref" | "onPress" | "aria-label" | "aria-pressed"> &
+  keyshortcuts?: string;
+} & Pick<ComponentProps<typeof Button>, "ref" | "onPress" | "onKeyDown" | "aria-label" | "aria-pressed"> &
   Partial<
-    Record<"data-skill-slot" | "data-skill-source", string> & Record<"data-movable" | "data-drop-target", boolean>
+    Record<"data-skill-slot" | "data-skill-source" | "data-skill-category", string> &
+      Record<"data-movable" | "data-drop-target", boolean>
   >) {
+  const assetBase = `${import.meta.env.BASE_URL}assets/`;
   return (
     <Tooltip delay={300}>
       <Button
@@ -68,11 +72,11 @@ function ActionIcon({
         variant={highlighted ? "primary" : empty ? "outline" : "secondary"}
         isIconOnly
         aria-label={label}
-        aria-keyshortcuts={shortcut ? hotkey : undefined}
+        aria-keyshortcuts={keyshortcuts ?? (shortcut ? hotkey : undefined)}
         aria-disabled={!active || undefined}
         {...button}
       >
-        {icon && <img src={`${import.meta.env.BASE_URL}assets/${icon}`} alt="" draggable={false} />}
+        {icon ? <img src={`${assetBase}${icon}`} alt="" draggable={false} /> : null}
         {hotkey && <kbd aria-hidden="true">{hotkey}</kbd>}
       </Button>
       <Tooltip.Content className="action-tooltip" placement="top">
@@ -93,7 +97,7 @@ function ActionIcon({
   );
 }
 
-interface SlotEditor {
+export interface SlotEditor {
   selected?: SkillSelection;
   select: (selection?: SkillSelection) => void;
 }
@@ -195,14 +199,23 @@ function SkillSlot({
       highlighted={editor ? selected : queued}
       aria-pressed={editor && command ? !!selected : queued}
       data-skill-slot={hotkey}
+      data-skill-category={skill?.category}
       data-movable={movable}
       data-drop-target={isOver}
       onPress={available ? press : undefined}
+      keyshortcuts={editor && command ? "Delete Backspace" : undefined}
+      onKeyDown={(event) => {
+        if (!editor || busy || !command || (event.key !== "Delete" && event.key !== "Backspace")) return;
+        event.preventDefault();
+        event.stopPropagation();
+        actions.assignSkillSlot(index, null);
+        editor.select();
+      }}
     />
   );
 }
 
-export function SkillSlots({ view, actions, editor }: { view: GameView; actions: GameActions; editor?: SlotEditor }) {
+function SkillSlots({ view, actions, editor }: { view: GameView; actions: GameActions; editor?: SlotEditor }) {
   return (
     <div className="skill-slots" role="group" aria-label="Skill slots">
       {skillSlotKeys.map((key, index) => (
@@ -227,7 +240,7 @@ export function SkillSource({
   const icon = command && id !== "combat_mastery" ? commands[command][2] : `frames/skill_${id}.png`;
   const [, drag] = useDrag<SkillSelection>({
     type: dragType,
-    canDrag: !busy,
+    canDrag: !busy && Boolean(command),
     item: () => {
       select();
       return { skillId: id };
@@ -240,7 +253,12 @@ export function SkillSource({
     [drag],
   );
 
-  if (!command) return <img className="skill-passive-icon" src={`${import.meta.env.BASE_URL}assets/${icon}`} alt="" />;
+  if (!command)
+    return (
+      <span className="skill-passive-icon" data-skill-category={skill.category}>
+        <img src={`${import.meta.env.BASE_URL}assets/${icon}`} alt="" draggable={false} />
+      </span>
+    );
   const [name] = commands[command];
   return (
     <ActionIcon
@@ -253,13 +271,14 @@ export function SkillSource({
       aria-pressed={selected}
       active={!busy}
       data-skill-source={id}
+      data-skill-category={skill.category}
       data-movable={!busy}
       onPress={busy ? undefined : () => select(selected ? undefined : { skillId: id })}
     />
   );
 }
 
-export function ActionBar({ view, actions }: { view: GameView; actions: GameActions }) {
+export function ActionBar({ view, actions, editor }: { view: GameView; actions: GameActions; editor?: SlotEditor }) {
   const { inventory, encounter, player, busy } = view;
   const { tonics, quickSlots } = inventory;
   const canHeal = encounter
@@ -272,7 +291,7 @@ export function ActionBar({ view, actions }: { view: GameView; actions: GameActi
 
   return (
     <div className="action-bar">
-      <SkillSlots view={view} actions={actions} />
+      <SkillSlots view={view} actions={actions} editor={editor} />
       <div className="tonic-quick-slots" role="group" aria-label="Tonic quick slots">
         {quickSlots.map((assigned, index) => {
           const hotkey = `F${index + 1}`;

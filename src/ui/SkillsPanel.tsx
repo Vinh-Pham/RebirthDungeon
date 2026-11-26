@@ -1,23 +1,97 @@
-import { useState } from "react";
-import { Button } from "@heroui/react";
-import { skillSlotKeys, type GameActions, type GameView } from "../app/contracts";
-import { SkillSlots, SkillSource, type SkillSelection } from "./ActionBar";
+import { Button, ProgressBar, Tabs } from "@heroui/react";
+import { skillSlotKeys, type GameActions, type GameView, type SkillCategory } from "../app/contracts";
+import { SkillSource, type SlotEditor } from "./ActionBar";
 
-export function SkillsPanel({ view, actions }: { view: GameView; actions: GameActions }) {
-  const [selected, select] = useState<SkillSelection>();
+const categories = [
+  ["all", "All"],
+  ["life", "Life"],
+  ["combat", "Combat"],
+  ["magic", "Magic"],
+] as const satisfies readonly [SkillCategory | "all", string][];
+
+export function SkillsPanel({ view, actions, editor }: { view: GameView; actions: GameActions; editor: SlotEditor }) {
+  const { selected, select } = editor;
   const selectedSlot = selected && "slot" in selected ? selected.slot : undefined;
-  const selectedSkill = view.skills.find((skill) => selected && "skillId" in selected && skill.id === selected.skillId);
+  const selectedName =
+    selected && "skillId" in selected ? view.skills.find((skill) => skill.id === selected.skillId)?.label : undefined;
+
   return (
-    <>
-      <div className="skill-editor">
-        <p className="skill-editor-instructions" aria-live="polite">
-          {selectedSkill
-            ? `Choose a slot for ${selectedSkill.label}.`
+    <div className="skills-sheet">
+      <Tabs className="skill-tabs" defaultSelectedKey="all" variant="secondary">
+        <Tabs.ListContainer>
+          <Tabs.List aria-label="Skill category">
+            {categories.map(([id, label]) => (
+              <Tabs.Tab key={id} id={id}>
+                {label}
+              </Tabs.Tab>
+            ))}
+          </Tabs.List>
+        </Tabs.ListContainer>
+        {categories.map(([id, label]) => {
+          const skills = id === "all" ? view.skills : view.skills.filter((skill) => skill.category === id);
+          return (
+            <Tabs.Panel key={id} id={id} className="skill-tab-panel">
+              {skills.length ? (
+                <div className="skill-list">
+                  {skills.map((skill) => (
+                    <section key={skill.id} className="skill-entry" aria-label={skill.label}>
+                      <SkillSource
+                        skill={skill}
+                        busy={view.busy}
+                        select={select}
+                        selected={Boolean(selected && "skillId" in selected && selected.skillId === skill.id)}
+                      />
+                      <div className="skill-identity">
+                        <h3>{skill.label}</h3>
+                        {!skill.command && <span className="skill-passive-tag">Passive</span>}
+                        <p>{skill.description}</p>
+                      </div>
+                      <div className="skill-rank-progress">
+                        <div className="skill-rank-line">
+                          <span>{skill.rank === "novice" ? "Novice" : `Rank ${skill.rank}`}</span>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            aria-label={`Advance ${skill.label}`}
+                            isDisabled={view.busy || !skill.canAdvance}
+                            onPress={() => actions.choose(`advance:${skill.id}`)}
+                          >
+                            Advance
+                          </Button>
+                        </div>
+                        <ProgressBar
+                          size="sm"
+                          className="skill-training"
+                          aria-label={`${skill.label} training`}
+                          value={skill.training}
+                        >
+                          <span>Training</span>
+                          <ProgressBar.Output />
+                          <ProgressBar.Track>
+                            <ProgressBar.Fill />
+                          </ProgressBar.Track>
+                        </ProgressBar>
+                      </div>
+                    </section>
+                  ))}
+                </div>
+              ) : (
+                <p className="skill-empty">
+                  {id === "all" ? "No skills learned yet." : `No ${label.toLowerCase()} skills learned yet.`}
+                </p>
+              )}
+            </Tabs.Panel>
+          );
+        })}
+      </Tabs>
+      <footer className="skill-assignment">
+        <p className="skill-drag-instructions" aria-live="polite">
+          {selectedName
+            ? `Choose a HUD slot for ${selectedName}.`
             : selectedSlot !== undefined
               ? `Choose a destination for slot ${skillSlotKeys[selectedSlot]}.`
-              : "Drag a skill icon to a slot, or select the icon and then a slot."}
+              : "Drag an icon to the HUD, or select the icon and then a HUD slot."}
         </p>
-        <SkillSlots view={view} actions={actions} editor={{ selected, select }} />
         {selectedSlot !== undefined && (
           <Button
             size="sm"
@@ -25,39 +99,13 @@ export function SkillsPanel({ view, actions }: { view: GameView; actions: GameAc
             isDisabled={view.busy}
             onPress={() => {
               actions.assignSkillSlot(selectedSlot, null);
-              select(undefined);
+              select();
             }}
           >
             Clear slot {skillSlotKeys[selectedSlot]}
           </Button>
         )}
-      </div>
-      <p className="panel-copy">{view.details.body}</p>
-      <div className="skill-list">
-        {view.skills.map((skill) => (
-          <section key={skill.id} className="skill-entry">
-            <SkillSource skill={skill} busy={view.busy} select={select} selected={selectedSkill?.id === skill.id} />
-            <div>
-              <h3>
-                {skill.label} · Rank {skill.rank}
-              </h3>
-              {!skill.command && <span className="muted">Passive</span>}
-              <p className="panel-copy">{skill.description}</p>
-              <div className="skill-training">
-                <span>{skill.training}% training</span>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  isDisabled={view.busy || !skill.canAdvance}
-                  onPress={() => actions.choose(`advance:${skill.id}`)}
-                >
-                  Advance
-                </Button>
-              </div>
-            </div>
-          </section>
-        ))}
-      </div>
-    </>
+      </footer>
+    </div>
   );
 }

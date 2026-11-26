@@ -38,7 +38,9 @@ Level 2 starts at 400 total XP, and level 200 is the cap. Combat and the
 Carry the Signal quest grant XP. Each level gained grants 1 AP and the
 character's level and talent growth. The quest grants 400 XP and 32 gold.
 
-The Character panel shows attributes, current and maximum resources, injury,
+The Character panel uses a two-column stat sheet and live HP, MP, Stamina,
+Level, and XP bars. Level tracks progress toward the cap. XP tracks progress
+toward the next level. The panel shows attributes, injury,
 weapon damage, critical and balance values, effective protection, magic and
 alchemy statistics, movement speed, and gathering odds. Starting attributes,
 growth, recovery, and combat conversions follow the [web character stat rules](gameplay/stats.md#web-character-stat-rules).
@@ -69,10 +71,15 @@ Save & Exit is available in Settings.
 The Log above the panel buttons shows recent messages. Expand opens a
 scrollable window with all retained messages.
 Exploration and combat share a bar with ten skill slots (1–0) and four tonic
-quick slots (F1–F4). Skill slots start empty. Open Skills and drag an active
-skill icon to a slot, or select the icon and then the slot. Combat Mastery
-assigns Normal Attack. Move or swap slots by dragging them, and select an
-occupied slot in Skills to clear it. Assignments are saved per character.
+quick slots (F1–F4). The floating Skills window lists learned skills in All,
+Life, Combat, and Magic tabs, with colored icons and training bars. Combat
+icons use original Dungeon-20 pixel art on the shared orange backing.
+Windmill uses a static sword icon with a circular sweep in the Skills window and the HUD.
+Skill slots start empty. Drag an active skill icon directly to a HUD slot, or
+select the icon and then the slot. Combat Mastery assigns Normal Attack.
+Drag a HUD slot to move or swap it. While Skills is open, select a HUD slot
+to clear it with the window's Clear button, or focus the slot and press
+Delete. Assignments are saved per character.
 During combat, the player's ATB gauge appears beneath their sprite. Skill
 tooltips show damage and stamina costs, and the bar highlights the queued
 skill. Tonic quick slots use the assignments from Inventory. Visible enemies

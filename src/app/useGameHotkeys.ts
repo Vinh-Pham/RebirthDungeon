@@ -44,7 +44,7 @@ export function useGameHotkeys(game: GameSession, view: GameView) {
       actions.panel(view.panel ? undefined : "settings");
     },
     {
-      enabled: view.screen === "world",
+      enabled: view.screen === "world" && view.panel !== "character",
       enableOnFormTags: Boolean(view.panel),
       enableOnContentEditable: Boolean(view.panel),
       ignoreModifiers: true,
