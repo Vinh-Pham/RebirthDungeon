@@ -14,6 +14,38 @@ const WorldCanvas = lazy(() =>
 const game = new GameSession();
 let initialization: Promise<void> | undefined;
 
+function WorldMap({
+  map,
+  combatCue,
+  encounter,
+  reducedMotion,
+}: {
+  map: NonNullable<ReturnType<typeof game.store.getState>["mapView"]>;
+  combatCue?: { id: string; outcome: "hit" | "victory" };
+  encounter: ReturnType<typeof game.store.getState>["view"]["encounter"];
+  reducedMotion: boolean;
+}) {
+  const townResidents = useStore(game.store, (state) => state.townResidents);
+  return (
+    <Suspense fallback={<p className="muted">Loading the map…</p>}>
+      <WorldCanvas
+        map={map.map}
+        townResidents={townResidents}
+        player={map.position}
+        appearance={map.appearance}
+        visible={map.visible}
+        explored={map.explored}
+        lighting={map.lighting}
+        combatCue={combatCue}
+        encounter={encounter}
+        reducedMotion={reducedMotion}
+        onTravel={game.travelTo}
+        onTarget={game.actions.target}
+      />
+    </Suspense>
+  );
+}
+
 export function App() {
   const view = useStore(game.store, (state) => state.view);
   const map = useStore(game.store, (state) => state.mapView);
@@ -57,21 +89,12 @@ export function App() {
         minimapView={map}
         mapView={
           map && (
-            <Suspense fallback={<p className="muted">Loading the map…</p>}>
-              <WorldCanvas
-                map={map.map}
-                player={map.position}
-                appearance={map.appearance}
-                visible={map.visible}
-                explored={map.explored}
-                lighting={map.lighting}
-                combatCue={combatCue}
-                encounter={view.encounter}
-                reducedMotion={view.settings.reducedMotion}
-                onTravel={game.travelTo}
-                onTarget={game.actions.target}
-              />
-            </Suspense>
+            <WorldMap
+              map={map}
+              combatCue={combatCue}
+              encounter={view.encounter}
+              reducedMotion={view.settings.reducedMotion}
+            />
           )
         }
       />

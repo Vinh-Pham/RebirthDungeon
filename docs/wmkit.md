@@ -7,9 +7,9 @@ window.
 
 Character, Skills, Journal, Inventory, Moon Gates, Settings, services, loot,
 and character deletion use the same [GameDialog](../src/ui/GameDialog.tsx)
-shell. The game presents one modal at a time. HeroUI owns modal focus,
-dismissal, and the backdrop. The backdrop blocks interaction with the map
-while a dialog is open.
+shell. The game presents one modal at a time. HeroUI owns modal focus and
+dismissal. The transparent backdrop keeps the map and HUD undimmed while
+blocking interaction with the map during a modal dialog.
 
 The shell attaches the wmkit desktop controller after the HeroUI portal
 mounts. wmkit handles pointer movement and clamps the whole frame to the

@@ -26,6 +26,9 @@ export interface WolfSpawn extends Point {
   id: string;
   kind: WolfKind;
 }
+export interface TownResident extends Point {
+  id: string;
+}
 export interface Door extends Point {
   target: number;
   arrival: Point;
@@ -38,6 +41,7 @@ export interface WorldMap {
   landmarks: Landmark[];
   enemies: MapEnemy[];
   wolfSpawns?: WolfSpawn[];
+  residentSpawns?: TownResident[];
   entry: Point;
   exit: Point;
   generator: string;

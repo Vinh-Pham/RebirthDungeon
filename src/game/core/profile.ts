@@ -384,6 +384,17 @@ function validMap(value: unknown): value is WorldMap {
   return (
     inBounds(value.entry) &&
     inBounds(value.exit) &&
+    (value.residentSpawns === undefined ||
+      (Array.isArray(value.residentSpawns) &&
+        value.residentSpawns.every(
+          (spawn) =>
+            record(spawn) &&
+            isPoint(spawn) &&
+            inBounds(spawn) &&
+            typeof spawn.id === "string" &&
+            /^town_resident_(0[1-9]|10)$/.test(spawn.id),
+        ) &&
+        new Set(value.residentSpawns.map((spawn) => spawn.id)).size === value.residentSpawns.length)) &&
     (value.wolfSpawns === undefined ||
       (Array.isArray(value.wolfSpawns) &&
         value.wolfSpawns.every(

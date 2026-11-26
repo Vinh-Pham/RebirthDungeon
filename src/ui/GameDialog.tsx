@@ -184,6 +184,7 @@ export function GameDialog({
   return (
     <Modal.Backdrop
       isOpen
+      variant="transparent"
       isKeyboardDismissDisabled={escapeHandledByGame}
       onOpenChange={(open) => {
         if (!open) onClose();

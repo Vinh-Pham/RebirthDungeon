@@ -1239,6 +1239,566 @@
 							],
 							"__worldX": 1464,
 							"__worldY": 816
+						},
+						{
+							"__identifier": "Landmark",
+							"__grid": [
+								4,
+								12
+							],
+							"__pivot": [
+								0,
+								0
+							],
+							"__tags": [],
+							"__tile": null,
+							"__smartColor": "#FBB954",
+							"iid": "8f167af8-b3bf-4fba-bb21-f47c98e0e5ea",
+							"width": 24,
+							"height": 24,
+							"defUid": 7,
+							"px": [
+								96,
+								288
+							],
+							"fieldInstances": [
+								{
+									"__identifier": "DisplayName",
+									"__type": "String",
+									"__value": "Town Resident 1",
+									"__tile": null,
+									"defUid": 4,
+									"realEditorValues": [
+										{
+											"id": "V_String",
+											"params": [
+												"Town Resident 1"
+											]
+										}
+									]
+								},
+								{
+									"__identifier": "ServiceId",
+									"__type": "String",
+									"__value": "town_resident_01",
+									"__tile": null,
+									"defUid": 5,
+									"realEditorValues": [
+										{
+											"id": "V_String",
+											"params": [
+												"town_resident_01"
+											]
+										}
+									]
+								}
+							],
+							"__worldX": -456,
+							"__worldY": 48
+						},
+						{
+							"__identifier": "Landmark",
+							"__grid": [
+								9,
+								16
+							],
+							"__pivot": [
+								0,
+								0
+							],
+							"__tags": [],
+							"__tile": null,
+							"__smartColor": "#FBB954",
+							"iid": "b1bdcdb0-37a3-4dc4-8cc1-a1dd5e6e48bf",
+							"width": 24,
+							"height": 24,
+							"defUid": 7,
+							"px": [
+								216,
+								384
+							],
+							"fieldInstances": [
+								{
+									"__identifier": "DisplayName",
+									"__type": "String",
+									"__value": "Town Resident 2",
+									"__tile": null,
+									"defUid": 4,
+									"realEditorValues": [
+										{
+											"id": "V_String",
+											"params": [
+												"Town Resident 2"
+											]
+										}
+									]
+								},
+								{
+									"__identifier": "ServiceId",
+									"__type": "String",
+									"__value": "town_resident_02",
+									"__tile": null,
+									"defUid": 5,
+									"realEditorValues": [
+										{
+											"id": "V_String",
+											"params": [
+												"town_resident_02"
+											]
+										}
+									]
+								}
+							],
+							"__worldX": -336,
+							"__worldY": 144
+						},
+						{
+							"__identifier": "Landmark",
+							"__grid": [
+								14,
+								17
+							],
+							"__pivot": [
+								0,
+								0
+							],
+							"__tags": [],
+							"__tile": null,
+							"__smartColor": "#FBB954",
+							"iid": "8e2d4dc9-9f75-431b-aa4d-86195078af9f",
+							"width": 24,
+							"height": 24,
+							"defUid": 7,
+							"px": [
+								336,
+								408
+							],
+							"fieldInstances": [
+								{
+									"__identifier": "DisplayName",
+									"__type": "String",
+									"__value": "Town Resident 3",
+									"__tile": null,
+									"defUid": 4,
+									"realEditorValues": [
+										{
+											"id": "V_String",
+											"params": [
+												"Town Resident 3"
+											]
+										}
+									]
+								},
+								{
+									"__identifier": "ServiceId",
+									"__type": "String",
+									"__value": "town_resident_03",
+									"__tile": null,
+									"defUid": 5,
+									"realEditorValues": [
+										{
+											"id": "V_String",
+											"params": [
+												"town_resident_03"
+											]
+										}
+									]
+								}
+							],
+							"__worldX": -216,
+							"__worldY": 168
+						},
+						{
+							"__identifier": "Landmark",
+							"__grid": [
+								20,
+								14
+							],
+							"__pivot": [
+								0,
+								0
+							],
+							"__tags": [],
+							"__tile": null,
+							"__smartColor": "#FBB954",
+							"iid": "06378887-87f1-42db-b54a-cca06bf16cb6",
+							"width": 24,
+							"height": 24,
+							"defUid": 7,
+							"px": [
+								480,
+								336
+							],
+							"fieldInstances": [
+								{
+									"__identifier": "DisplayName",
+									"__type": "String",
+									"__value": "Town Resident 4",
+									"__tile": null,
+									"defUid": 4,
+									"realEditorValues": [
+										{
+											"id": "V_String",
+											"params": [
+												"Town Resident 4"
+											]
+										}
+									]
+								},
+								{
+									"__identifier": "ServiceId",
+									"__type": "String",
+									"__value": "town_resident_04",
+									"__tile": null,
+									"defUid": 5,
+									"realEditorValues": [
+										{
+											"id": "V_String",
+											"params": [
+												"town_resident_04"
+											]
+										}
+									]
+								}
+							],
+							"__worldX": -72,
+							"__worldY": 96
+						},
+						{
+							"__identifier": "Landmark",
+							"__grid": [
+								23,
+								16
+							],
+							"__pivot": [
+								0,
+								0
+							],
+							"__tags": [],
+							"__tile": null,
+							"__smartColor": "#FBB954",
+							"iid": "06a16604-85f2-4a41-b729-af4d51a8fc67",
+							"width": 24,
+							"height": 24,
+							"defUid": 7,
+							"px": [
+								552,
+								384
+							],
+							"fieldInstances": [
+								{
+									"__identifier": "DisplayName",
+									"__type": "String",
+									"__value": "Town Resident 5",
+									"__tile": null,
+									"defUid": 4,
+									"realEditorValues": [
+										{
+											"id": "V_String",
+											"params": [
+												"Town Resident 5"
+											]
+										}
+									]
+								},
+								{
+									"__identifier": "ServiceId",
+									"__type": "String",
+									"__value": "town_resident_05",
+									"__tile": null,
+									"defUid": 5,
+									"realEditorValues": [
+										{
+											"id": "V_String",
+											"params": [
+												"town_resident_05"
+											]
+										}
+									]
+								}
+							],
+							"__worldX": 0,
+							"__worldY": 144
+						},
+						{
+							"__identifier": "Landmark",
+							"__grid": [
+								30,
+								13
+							],
+							"__pivot": [
+								0,
+								0
+							],
+							"__tags": [],
+							"__tile": null,
+							"__smartColor": "#FBB954",
+							"iid": "3fb20fcf-58ff-49fe-b6be-d6e619e5ec8d",
+							"width": 24,
+							"height": 24,
+							"defUid": 7,
+							"px": [
+								720,
+								312
+							],
+							"fieldInstances": [
+								{
+									"__identifier": "DisplayName",
+									"__type": "String",
+									"__value": "Town Resident 6",
+									"__tile": null,
+									"defUid": 4,
+									"realEditorValues": [
+										{
+											"id": "V_String",
+											"params": [
+												"Town Resident 6"
+											]
+										}
+									]
+								},
+								{
+									"__identifier": "ServiceId",
+									"__type": "String",
+									"__value": "town_resident_06",
+									"__tile": null,
+									"defUid": 5,
+									"realEditorValues": [
+										{
+											"id": "V_String",
+											"params": [
+												"town_resident_06"
+											]
+										}
+									]
+								}
+							],
+							"__worldX": 168,
+							"__worldY": 72
+						},
+						{
+							"__identifier": "Landmark",
+							"__grid": [
+								33,
+								22
+							],
+							"__pivot": [
+								0,
+								0
+							],
+							"__tags": [],
+							"__tile": null,
+							"__smartColor": "#FBB954",
+							"iid": "e5051ef9-efcf-4928-b9f3-5845a3a7136a",
+							"width": 24,
+							"height": 24,
+							"defUid": 7,
+							"px": [
+								792,
+								528
+							],
+							"fieldInstances": [
+								{
+									"__identifier": "DisplayName",
+									"__type": "String",
+									"__value": "Town Resident 7",
+									"__tile": null,
+									"defUid": 4,
+									"realEditorValues": [
+										{
+											"id": "V_String",
+											"params": [
+												"Town Resident 7"
+											]
+										}
+									]
+								},
+								{
+									"__identifier": "ServiceId",
+									"__type": "String",
+									"__value": "town_resident_07",
+									"__tile": null,
+									"defUid": 5,
+									"realEditorValues": [
+										{
+											"id": "V_String",
+											"params": [
+												"town_resident_07"
+											]
+										}
+									]
+								}
+							],
+							"__worldX": 240,
+							"__worldY": 288
+						},
+						{
+							"__identifier": "Landmark",
+							"__grid": [
+								43,
+								13
+							],
+							"__pivot": [
+								0,
+								0
+							],
+							"__tags": [],
+							"__tile": null,
+							"__smartColor": "#FBB954",
+							"iid": "2d9eba3b-7be9-48e5-ac13-b5fec8839ead",
+							"width": 24,
+							"height": 24,
+							"defUid": 7,
+							"px": [
+								1032,
+								312
+							],
+							"fieldInstances": [
+								{
+									"__identifier": "DisplayName",
+									"__type": "String",
+									"__value": "Town Resident 8",
+									"__tile": null,
+									"defUid": 4,
+									"realEditorValues": [
+										{
+											"id": "V_String",
+											"params": [
+												"Town Resident 8"
+											]
+										}
+									]
+								},
+								{
+									"__identifier": "ServiceId",
+									"__type": "String",
+									"__value": "town_resident_08",
+									"__tile": null,
+									"defUid": 5,
+									"realEditorValues": [
+										{
+											"id": "V_String",
+											"params": [
+												"town_resident_08"
+											]
+										}
+									]
+								}
+							],
+							"__worldX": 480,
+							"__worldY": 72
+						},
+						{
+							"__identifier": "Landmark",
+							"__grid": [
+								58,
+								14
+							],
+							"__pivot": [
+								0,
+								0
+							],
+							"__tags": [],
+							"__tile": null,
+							"__smartColor": "#FBB954",
+							"iid": "fcd9e72b-a533-49ff-bbc6-3abbe8fc5b09",
+							"width": 24,
+							"height": 24,
+							"defUid": 7,
+							"px": [
+								1392,
+								336
+							],
+							"fieldInstances": [
+								{
+									"__identifier": "DisplayName",
+									"__type": "String",
+									"__value": "Town Resident 9",
+									"__tile": null,
+									"defUid": 4,
+									"realEditorValues": [
+										{
+											"id": "V_String",
+											"params": [
+												"Town Resident 9"
+											]
+										}
+									]
+								},
+								{
+									"__identifier": "ServiceId",
+									"__type": "String",
+									"__value": "town_resident_09",
+									"__tile": null,
+									"defUid": 5,
+									"realEditorValues": [
+										{
+											"id": "V_String",
+											"params": [
+												"town_resident_09"
+											]
+										}
+									]
+								}
+							],
+							"__worldX": 840,
+							"__worldY": 96
+						},
+						{
+							"__identifier": "Landmark",
+							"__grid": [
+								72,
+								14
+							],
+							"__pivot": [
+								0,
+								0
+							],
+							"__tags": [],
+							"__tile": null,
+							"__smartColor": "#FBB954",
+							"iid": "490fdf03-6a06-44d1-8a96-da0ca69d44ec",
+							"width": 24,
+							"height": 24,
+							"defUid": 7,
+							"px": [
+								1728,
+								336
+							],
+							"fieldInstances": [
+								{
+									"__identifier": "DisplayName",
+									"__type": "String",
+									"__value": "Town Resident 10",
+									"__tile": null,
+									"defUid": 4,
+									"realEditorValues": [
+										{
+											"id": "V_String",
+											"params": [
+												"Town Resident 10"
+											]
+										}
+									]
+								},
+								{
+									"__identifier": "ServiceId",
+									"__type": "String",
+									"__value": "town_resident_10",
+									"__tile": null,
+									"defUid": 5,
+									"realEditorValues": [
+										{
+											"id": "V_String",
+											"params": [
+												"town_resident_10"
+											]
+										}
+									]
+								}
+							],
+							"__worldX": 1176,
+							"__worldY": 96
 						}
 					]
 				},

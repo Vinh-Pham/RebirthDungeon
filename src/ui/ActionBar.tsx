@@ -36,6 +36,12 @@ type Skill = GameView["skills"][number];
 export type SkillSelection = { skillId: string } | { slot: number };
 const dragType = "game-skill";
 
+function skillRankLabel(rank: string) {
+  if (rank === "novice") return "Novice";
+  if (rank.startsWith("dan_")) return `Dan ${rank.slice(4)}`;
+  return `Rank ${rank}`;
+}
+
 function ActionIcon({
   label,
   description,
@@ -122,7 +128,7 @@ function SkillSlot({
   const skill = view.skills.find((entry) => entry.id === view.skillSlots[index]);
   const command = skill?.command;
   const hotkey = skillSlotKeys[index];
-  const movable = !!command && !busy;
+  const movable = !!command;
   const [{ isOver }, drop] = useDrop<SkillSelection, void, { isOver: boolean }>({
     accept: dragType,
     canDrop: (source) => !busy && ("skillId" in source || source.slot !== index),
@@ -134,7 +140,7 @@ function SkillSlot({
   });
   const [, drag] = useDrag<SkillSelection>({
     type: dragType,
-    canDrag: movable,
+    canDrag: movable && !busy,
     item: () => {
       editor?.select();
       return { slot: index };
@@ -154,6 +160,7 @@ function SkillSlot({
         "Empty",
         editor ? "Drop a skill here or choose this slot after selecting a skill." : "Open Skills to assign a skill.",
       ];
+  const label = command && skill ? `${name} (${skillRankLabel(skill.rank)})` : name;
   const detail = encounter?.actionDetails.find(({ action }) => action === command);
   const stats: Stat[] = [];
   if (detail) {
@@ -171,7 +178,7 @@ function SkillSlot({
 
   const queued = command && encounter ? encounter.queued === command : undefined;
   const selected = editor?.selected && "slot" in editor.selected && editor.selected.slot === index;
-  const available = !busy && (!!editor || !command || !!encounter?.available.includes(command));
+  const available = !!editor || !command || !!encounter?.available.includes(command);
   const press = () => {
     if (!editor) {
       if (command) actions.useSkillSlot(index);
@@ -187,7 +194,7 @@ function SkillSlot({
   return (
     <ActionIcon
       ref={connect}
-      label={name}
+      label={label}
       aria-label={`Skill slot ${hotkey}, ${name}`}
       description={description}
       stats={stats}
@@ -202,7 +209,7 @@ function SkillSlot({
       data-skill-category={skill?.category}
       data-movable={movable}
       data-drop-target={isOver}
-      onPress={available ? press : undefined}
+      onPress={available && !busy ? press : undefined}
       keyshortcuts={editor && command ? "Delete Backspace" : undefined}
       onKeyDown={(event) => {
         if (!editor || busy || !command || (event.key !== "Delete" && event.key !== "Backspace")) return;
@@ -269,10 +276,10 @@ export function SkillSource({
       icon={icon}
       highlighted={selected}
       aria-pressed={selected}
-      active={!busy}
+      active
       data-skill-source={id}
       data-skill-category={skill.category}
-      data-movable={!busy}
+      data-movable
       onPress={busy ? undefined : () => select(selected ? undefined : { skillId: id })}
     />
   );
@@ -295,7 +302,7 @@ export function ActionBar({ view, actions, editor }: { view: GameView; actions: 
       <div className="tonic-quick-slots" role="group" aria-label="Tonic quick slots">
         {quickSlots.map((assigned, index) => {
           const hotkey = `F${index + 1}`;
-          const active = assigned && canHeal && !busy;
+          const active = assigned && canHeal;
           return (
             <ActionIcon
               key={hotkey}
@@ -306,7 +313,7 @@ export function ActionBar({ view, actions, editor }: { view: GameView; actions: 
               icon={assigned ? tonicIcon : undefined}
               active={active}
               empty={!assigned}
-              onPress={active ? () => actions.useQuickSlot(index) : undefined}
+              onPress={active && !busy ? () => actions.useQuickSlot(index) : undefined}
             />
           );
         })}

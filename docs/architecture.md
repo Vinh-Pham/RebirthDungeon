@@ -33,6 +33,11 @@ map representation used by pathfinding and rendering. Renderer objects and
 GSAP timelines stay outside saved profiles. React consumes projections and
 issues semantic commands. Animation completion never grants gameplay rewards.
 
+LDtk resident markers provide spawn positions. The session simulates their
+movement on a separate seeded stream and publishes it to a dedicated canvas
+layer. Live resident positions are transient and leave town services and player
+pathfinding accessible.
+
 The Threshold's continuous floor shares one layout and exploration record per
 run. Room ownership determines encounter participants. Winning an encounter
 removes that room's enemies and opens its corridor in the same saved command.

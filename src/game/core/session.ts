@@ -54,9 +54,11 @@ import {
   walkable,
   type Landmark,
   type MapEnemy,
+  type TownResident,
   type WorldMap,
 } from "../world/world";
 import { legacyDoorBlocked } from "../world/legacy-threshold";
+import { residentRoamSeconds, roamTownResidents } from "../world/town-residents";
 import { roamTownWolves, spawnTownWolves, wolfRespawnMs, wolfRoamSeconds } from "../world/town-wolves";
 import {
   arrive,
@@ -206,11 +208,14 @@ export interface MapView {
 interface State {
   view: GameView;
   mapView?: MapView;
+  townResidents: readonly TownResident[];
 }
 type Update = (profile: Profile) => void;
+const noTownResidents: readonly TownResident[] = [];
 
 export class GameSession {
   readonly store = createStore<State>(() => ({
+    townResidents: noTownResidents,
     view: {
       screen: "title",
       busy: true,
@@ -244,6 +249,9 @@ export class GameSession {
   private recoveryCredit = { hp: 0, mp: 0, stamina: 0 };
   private wildlifeTime = 0;
   private wildlifeStep = 0;
+  private residentTime = 0;
+  private residentStep = 0;
+  private townResidents = noTownResidents;
   private hudTime = 0;
   private mapView?: MapView;
   private indexedMap?: WorldMap;
@@ -295,6 +303,13 @@ export class GameSession {
     if (record.snapshot.location === "threshold" && record.snapshot.room === 1) {
       const entrance = record.snapshot.map?.landmarks.find((place) => place.id === "return");
       if (entrance) entrance.name = "Dungeon Entrance";
+    }
+    const map = record.snapshot.map;
+    const previousMap = this.profile?.snapshot.map;
+    if (reopen || map?.id !== previousMap?.id || map?.generator !== previousMap?.generator) {
+      this.townResidents = map?.residentSpawns ?? noTownResidents;
+      this.residentTime = 0;
+      this.residentStep = 0;
     }
     this.profile = record;
     if (reopen) {
@@ -525,6 +540,7 @@ export class GameSession {
     }
     this.store.setState({
       mapView: this.screen === "world" ? this.mapView : undefined,
+      townResidents: this.screen === "world" ? this.townResidents : noTownResidents,
       view: {
         screen: this.screen,
         busy: this.busy,
@@ -1021,6 +1037,15 @@ export class GameSession {
     return true;
   }
 
+  private tickTownResidents(p: Profile, dt: number) {
+    if (!p.map?.residentSpawns?.length || (this.residentTime += dt) < residentRoamSeconds) return;
+    this.residentTime %= residentRoamSeconds;
+    const next = roamTownResidents(p.map, this.townResidents, p.position, p.seed, ++this.residentStep);
+    if (next === this.townResidents) return;
+    this.townResidents = next;
+    this.store.setState({ townResidents: next });
+  }
+
   private regenerate(p: Profile, dt: number) {
     this.recoveryElapsed += dt;
     if (this.recoveryElapsed < 0.25) return;
@@ -1056,6 +1081,7 @@ export class GameSession {
   tick = (dt: number) => {
     if (!this.profile || this.busy || this.screen !== "world" || !Number.isFinite(dt) || dt <= 0) return;
     const p = this.profile.snapshot;
+    if (!this.combat && !this.panel) this.tickTownResidents(p, dt);
     this.keyMovementTime += dt;
     const recovered = this.regenerate(p, dt);
     const battle = this.combat;

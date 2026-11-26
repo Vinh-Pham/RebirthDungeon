@@ -145,7 +145,21 @@ export function importLdtkTowns(source: string): Map<string, WorldMap> {
           y: place.y,
         };
       });
-    const landmarks = markers.filter((place) => !place.id.startsWith("wolf_spawn_"));
+    const residentSpawns = markers
+      .filter((place) => place.id.startsWith("town_resident_"))
+      .map(({ id: residentId, x, y }) => {
+        requireValue(/^town_resident_(0[1-9]|10)$/.test(residentId), `${id} has an invalid town resident.`);
+        requireValue([0, 1, 3, 6, 8].includes(terrainCells[y * width + x]), `${id} residents need exterior ground.`);
+        requireValue(
+          markers.filter((place) => place.x === x && place.y === y).length === 1 &&
+            (starts[0].x !== x || starts[0].y !== y),
+          `${id} residents need an unoccupied spawn.`,
+        );
+        return { id: residentId, x, y };
+      });
+    const landmarks = markers.filter(
+      (place) => !place.id.startsWith("wolf_spawn_") && !place.id.startsWith("town_resident_"),
+    );
     const dungeon = landmarks.find((place) => place.id === "dungeon");
     requireValue(dungeon, `${id} needs a dungeon Landmark.`);
     requireValue(
@@ -166,6 +180,7 @@ export function importLdtkTowns(source: string): Map<string, WorldMap> {
       landmarks,
       enemies: [],
       ...(wolfSpawns.length ? { wolfSpawns } : {}),
+      ...(residentSpawns.length ? { residentSpawns } : {}),
       entry: { x, y },
       exit: { x: dungeon.x, y: dungeon.y },
       generator: "",

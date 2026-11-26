@@ -42,6 +42,10 @@ markers. Their `ServiceId` values start with `wolf_spawn_gray_` or
 to relocate the wolves. Wolves roam on connected grass within five steps of
 their marker. Spawn markers are imported as wildlife locations.
 
+Ten `town_resident_01` through `town_resident_10` Landmark markers place the
+roaming townspeople. Move them to free exterior tiles and keep each `ServiceId`
+to retain its matching sprite. They are background characters.
+
 `DisplayName` changes the displayed name. Keep the landmark's `ServiceId`
 when moving a service such as the school, Moon Gate, or dungeon entrance.
 

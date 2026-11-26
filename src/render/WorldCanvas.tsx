@@ -6,7 +6,16 @@ import { gsap } from "gsap";
 import { eyes, hairs, outfits, skins } from "../game/content/appearance";
 import type { CharacterForm, GameView } from "../app/contracts";
 import { dungeonEnemies, isWolfKind } from "../game/content/enemies";
-import { BUSH, CLOSED_DUNGEON_GATE, DIRT_PATH, DUNGEON_FLOOR_GENERATOR, GRASS, WATER } from "../game/world/world";
+import { townNpcSprite } from "../game/content/town-npcs";
+import {
+  BUSH,
+  CLOSED_DUNGEON_GATE,
+  DIRT_PATH,
+  DUNGEON_FLOOR_GENERATOR,
+  GRASS,
+  WATER,
+  type TownResident,
+} from "../game/world/world";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { CombatMarkers } from "./CombatMarkers";
 
@@ -27,6 +36,7 @@ export interface RenderMap {
 }
 export interface WorldCanvasProps {
   map: RenderMap;
+  townResidents: readonly TownResident[];
   player: MapPoint;
   appearance?: CharacterForm;
   visible?: ReadonlySet<string>;
@@ -39,16 +49,6 @@ export interface WorldCanvasProps {
   onTarget: (id: string) => void;
 }
 const CELL = 24;
-const lanternRestResidents: Record<string, string> = {
-  warden: "lantern_nera",
-  blacksmith: "lantern_venn",
-  school: "lantern_elian",
-  church: "lantern_maelin",
-  grocery_store: "lantern_corin",
-  healer: "lantern_sera",
-  general_shop: "lantern_tamsin",
-  bank: "lantern_ledger_keeper",
-};
 
 function terrainTexture(kind: number): Texture {
   const canvas = document.createElement("canvas");
@@ -73,6 +73,7 @@ function terrainTexture(kind: number): Texture {
 
 function Scene({
   map,
+  townResidents,
   player,
   appearance,
   visible,
@@ -95,6 +96,8 @@ function Scene({
   const continuous = map.generator === DUNGEON_FLOOR_GENERATOR;
   const camera = useRef<Viewport | null>(null);
   const terrain = useRef<Container | null>(null);
+  const residentLayer = useRef<Container | null>(null);
+  const residentSprites = useRef<Map<string, Sprite>>(null);
   const textures = useRef<Texture[] | null>(null);
   const input = useRef({ onTravel, onTarget, encounter, visible });
   input.current = { onTravel, onTarget, encounter, visible };
@@ -139,6 +142,11 @@ function Scene({
     const layer = new Container();
     terrain.current = layer;
     viewport.addChild(layer);
+    const residents = new Container({ eventMode: "none" });
+    const sprites = new Map<string, Sprite>();
+    residentLayer.current = residents;
+    residentSprites.current = sprites;
+    viewport.addChild(residents);
     const figure = new Container();
     figure.position.set(player.x * CELL, player.y * CELL);
     actor.current = figure;
@@ -190,6 +198,9 @@ function Scene({
     return () => {
       observer.disconnect();
       gsap.killTweensOf(figure.position);
+      for (const sprite of sprites.values()) gsap.killTweensOf(sprite.position);
+      residentLayer.current = null;
+      residentSprites.current = null;
       renderer.off("resize", resize);
       if (!viewport.destroyed) viewport.destroy({ children: true });
       onViewport(null);
@@ -257,9 +268,6 @@ function Scene({
         practice: "town_amenities_2",
         treasure: "gold_pouch_large",
         fishing: "town_amenities_4",
-        blacksmith: "town_atlas_2",
-        healer: "town_atlas_4",
-        magic_school: "magic_school_instructor",
         magic_school_bookshelf: "magic_school_bookshelf",
         magic_school_focus: "magic_school_focus",
         magic_school_chart: "magic_school_chart",
@@ -279,8 +287,8 @@ function Scene({
         "far-exit": "dungeon_entrance",
       };
       if (id === "exit" || (id === "return" && !continuous && map.id !== "threshold-1")) continue;
-      const resident = map.id === "lantern_rest" ? lanternRestResidents[id ?? ""] : undefined;
-      const frame = id?.startsWith("chest-") ? "gold_pouch_small" : (resident ?? ids[id ?? ""] ?? "town_atlas_1");
+      const npc = townNpcSprite(map.id, id ?? "");
+      const frame = id?.startsWith("chest-") ? "gold_pouch_small" : (npc ?? ids[id ?? ""] ?? "town_atlas_1");
       art(frame, landmark.x, landmark.y);
     }
     for (const door of map.doors ?? []) {
@@ -313,6 +321,34 @@ function Scene({
       layer.removeChildren().forEach((child) => child.destroy({ children: true }));
     };
   }, [app, isInitialised, map, visible, explored, sheet, lighting, livingEnemyIds, continuous, enemyRoom, enemyId]);
+  useEffect(() => {
+    const layer = residentLayer.current;
+    const sprites = residentSprites.current;
+    if (!layer || !sprites || !sheet) return;
+    const active = new Set(townResidents.map(({ id }) => id));
+    for (const [id, sprite] of sprites) {
+      if (active.has(id)) continue;
+      gsap.killTweensOf(sprite.position);
+      sprite.destroy();
+      sprites.delete(id);
+    }
+    const duration = reducedMotion || matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 0.24;
+    for (const resident of townResidents) {
+      const x = resident.x * CELL + 4;
+      const y = resident.y * CELL;
+      const sprite = sprites.get(resident.id);
+      if (sprite) {
+        if (sprite.x !== x || sprite.y !== y) gsap.to(sprite.position, { x, y, duration, overwrite: true });
+        continue;
+      }
+      const texture = sheet.textures[resident.id];
+      if (!texture) continue;
+      const figure = new Sprite(texture);
+      figure.position.set(x, y);
+      sprites.set(resident.id, figure);
+      layer.addChild(figure);
+    }
+  }, [app, isInitialised, map.width, map.height, continuous, townResidents, sheet, reducedMotion]);
   useEffect(() => {
     const figure = actor.current;
     if (!figure) return;

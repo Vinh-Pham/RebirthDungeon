@@ -25,6 +25,10 @@ alcove, chapel, treatment bays, and bank partitions distinguish the services on
 the map. Players can inspect furnishings such as Nera's patrol board and the
 Ledger Keeper's safe.
 
+Ten townspeople in varied outfits stroll around Lantern Rest's paths and
+grounds. Players can walk through their tiles. Clicking a townsperson is
+treated as clicking the ground, and there is no dialogue or combat.
+
 Two Gray Wolves and two White Wolves roam the grass in Lantern Rest's
 southeast corner. Click a wolf or walk into its tile to fight it. Each
 defeated wolf respawns after two minutes, and its timer persists when the
@@ -66,7 +70,8 @@ encounter at 170% base melee damage and costs 2 stamina total.
 
 The map fills the space between the HUD controls within the viewport. The
 square minimap sits above character status on wide screens and beside it on
-narrow screens. It tracks the player and respects dungeon fog of war.
+narrow screens. It tracks the player and respects dungeon fog of war. Blue
+squares mark interactable NPCs in Lantern Rest and Spindle Hollow.
 Save & Exit is available in Settings.
 The Log above the panel buttons shows recent messages. Expand opens a
 scrollable window with all retained messages.
@@ -80,8 +85,9 @@ select the icon and then the slot. Combat Mastery assigns Normal Attack.
 Drag a HUD slot to move or swap it. While Skills is open, select a HUD slot
 to clear it with the window's Clear button, or focus the slot and press
 Delete. Assignments are saved per character.
-During combat, the player's ATB gauge appears beneath their sprite. Skill
-tooltips show damage and stamina costs, and the bar highlights the queued
+Hotbar tooltips show the current rank of assigned skills. During combat, the
+player's ATB gauge appears beneath their sprite. Skill tooltips also show
+damage and stamina costs, and the bar highlights the queued
 skill. Tonic quick slots use the assignments from Inventory. Visible enemies
 show their name, intent, HP and ATB on the map and can be selected there.
 The Loot dialog shows item stacks with their counts. All stacks start

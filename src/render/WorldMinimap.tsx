@@ -1,8 +1,11 @@
 import { useEffect, useRef } from "react";
+import { townNpcSprite } from "../game/content/town-npcs";
 import type { MapView } from "../game/core/session";
-import { BUSH, CLOSED_DUNGEON_GATE, DIRT_PATH, GRASS, WATER, key } from "../game/world/world";
+import { BUSH, CLOSED_DUNGEON_GATE, DIRT_PATH, GRASS, WATER, key, type Point } from "../game/world/world";
 
 const cellSize = 4;
+const npcMarkerSize = 8;
+const npcMarkerColor = "#83b9ff";
 const terrainColors: Record<number, string> = {
   1: "#788a87",
   [WATER]: "#508da0",
@@ -35,11 +38,21 @@ export function WorldMinimap({ view, location }: { view: MapView; location: stri
       }
     }
     const closedGates = (map.gates ?? []).filter(({ x, y }) => map.tiles[y * map.width + x] === CLOSED_DUNGEON_GATE);
+    const npcMarkers: Point[] = [];
     for (const marker of [...map.landmarks, ...(map.doors ?? []), ...closedGates]) {
       const cell = key(marker.x, marker.y);
       if (visible && !visible.has(cell) && !known?.has(cell)) continue;
+      if ("id" in marker && townNpcSprite(map.id, marker.id)) {
+        npcMarkers.push(marker);
+        continue;
+      }
       ctx.fillStyle = "id" in marker && marker.id !== "gate" ? "#b0a987" : "#5bbfc5";
       ctx.fillRect(offsetX + marker.x * cellSize, offsetY + marker.y * cellSize, cellSize, cellSize);
+    }
+    const npcInset = (cellSize - npcMarkerSize) / 2;
+    ctx.fillStyle = npcMarkerColor;
+    for (const { x, y } of npcMarkers) {
+      ctx.fillRect(offsetX + x * cellSize + npcInset, offsetY + y * cellSize + npcInset, npcMarkerSize, npcMarkerSize);
     }
 
     const x = offsetX + position.x * cellSize;
