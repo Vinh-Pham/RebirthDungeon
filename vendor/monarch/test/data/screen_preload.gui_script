@@ -1,5 +1,0 @@
-function init(self)
-	local monarch = require "monarch.monarch"
-	local data = monarch.data(hash("screen_preload"))
-	if data then data.count = data.count + 1 end
-end

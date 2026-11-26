@@ -177,7 +177,7 @@ Use versioned Lua enchant/recipe definitions in proposed `game/content/` and pur
 
 A failed save discards candidate state and RNG; uncertain writes require read-back before retry. Event notifications and Tweener reveals present the saved result only. Ink can open the service or request a command, never perform a second roll. Quest evidence, when applicable, joins the same transaction through its adapter.
 
-Lester fixtures prove chance boundaries, prefix/suffix independence, maximum output-capacity checks, no-refill source changes and failed-save retry. Engine tests prove native RNG continuation, actual persistence, GUI confirmation/focus and character switching. See [library integration](../turn-based-rpg-battle-libraries.md) and [verification](../verification.md).
+Lester fixtures prove chance boundaries, prefix/suffix independence, maximum output-capacity checks, no-refill source changes and failed-save retry. Engine tests prove native RNG continuation, actual persistence, GUI confirmation/focus and character switching. See library integration and [verification](../verification.md).
 
 ## Research notes
 

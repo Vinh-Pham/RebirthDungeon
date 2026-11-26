@@ -1,6 +1,6 @@
 # Gameplay contracts
 
-All systems below are **planned for Defold**, not implemented in this starter. The [game plan](../game-plan.md) governs scope and delivery; [architecture](../architecture.md) governs ownership and saving. Use [fixed-Speed combat](../turn-based-plan.md) throughout.
+See the [current gameplay plan](../mabinogi-inspired-gameplay-plan.md) for ATB and the footprint inventory. These records preserve earlier design proposals, including the [fixed-Speed combat design](../turn-based-plan.md).
 
 | Contract | First-loop scope | Later scope |
 | --- | --- | --- |
@@ -11,9 +11,9 @@ All systems below are **planned for Defold**, not implemented in this starter. T
 | [Town](towns.md) | Town1 services and original Ink dialogue | More locations, crafting/gathering |
 | [Gates](dungeon-gates.md) | Three required encounters unlock boss; optional rooms stay optional | New room templates |
 | [Inventory](inventory.md) | 30 carried slots, 60 bank slots, stacks of 99 | 6×10 footprint grid and nine equipment slots |
-| [Quests](quests.md) | Defold Quest onboarding and explicit claims | Broader catalog, tracking, overflow, Aren's memory |
-| [UI](user-interface.md) | Druid HUD/panels and Monarch navigation | Rich windows and journals |
+| [Quests](quests.md) | Quest onboarding and explicit claims | Broader catalog, tracking, overflow, Aren's memory |
+| [UI](user-interface.md) | HUD, panels and navigation | Rich windows and journals |
 | [Titles](titles.md) | Deferred | Per-hero awards and equipped modifiers |
 | [Enchants](enchants.md) | Deferred | Prefix/suffix application and burning |
 
-A subsystem's later “first slice” means its own milestone-6 introduction, not an expansion of the first Alby release. Mabinogi snapshots preserve reference mechanics; project adaptations and validation determine executable Lua content.
+A subsystem's later “first slice” means its own milestone-6 introduction, not an expansion of the first Alby release. Mabinogi snapshots preserve reference mechanics; project adaptations and validation determine playable content.

@@ -1,8 +1,0 @@
-{
-  "defold_version": "1.14.1",
-  "java_minimum_major": 25,
-  "defold_engine_sha1": "ee283d4dad9fa451dd6399d83602e1dc25133681",
-  "mcp_repository": "https://github.com/Fulviuus/defold-mcp.git",
-  "mcp_commit": "59f4bcbff636643daf413b6bec959313b37426db",
-  "mcp_package_version": "1.0.2"
-}

@@ -1,11 +1,12 @@
 # Rebirth Dungeon
 
-Open [`game.project`](game.project) for the playable project.
-Follow the [tooling guide](docs/defold-tooling.md) for MCP setup, development,
-and verification.
+Run `pnpm dev` for the Vite + TypeScript game. The browser entry is
+[`src/main.tsx`](src/main.tsx). Read [web tooling](docs/web-tooling.md),
+[architecture](docs/architecture.md), [status](docs/implementation-status.md),
+and the [migration plan](docs/web-migration-plan.md) before making changes.
 
-Rebirth Dungeon is a text-driven, tile-based roguelike dungeon crawler built in
-Defold. Mabinogi is the main gameplay reference for trainable skills, talent
+Rebirth Dungeon is a text-driven, tile-based science-fantasy roguelike using
+React, HeroUI and PixiJS through `@pixi/react`. Mabinogi is the main gameplay reference for trainable skills, talent
 specializations, inventory, and melee counters. The player explores procedurally
 generated dungeons, collects and equips items, completes quests, and ranks up
 skills while uncovering the mystery of the dungeon. Develop original characters,
@@ -23,7 +24,10 @@ See the [gameplay implementation plan](docs/mabinogi-inspired-gameplay-plan.md) 
 
 ## Interface
 
-Read the [Flow reference sheet](docs/references/defold/flow.md) before creating or updating any game UI.
+For web UI, apply the `heroui-pro-design-taste` skill and look up each
+component’s API with the HeroUI MCP. Use semantic theme variants, accessible
+overlays, visible focus, and a DOM message log. Keep PixiJS responsible for the
+world canvas and HeroUI responsible for the interface.
 
 Use Caves of Qud as a reference for how a dense, keyboard-friendly roguelike presents information. Keep the dungeon map central, with player status and a message log easy to scan during exploration. Make inventory, quests, and skills easy to reach through keyboard-friendly menus. Use an original layout, icons, and artwork for Rebirth Dungeon.
 
@@ -35,7 +39,9 @@ Draw inspiration from Caves of Qud for the game's original pixel art. Use the [r
 
 Minimalist ASCII-inspired roguelike pixel art, 16×24 pixel sprites, two-tone coloring, restricted color palette, high-contrast silhouettes, orthographic top-down perspective, retro CRT terminal aesthetic, dark teal background, science-fantasy setting, no anti-aliasing, no smooth gradients.
 
-Use nearest-neighbor filtering for pixel art in Defold to keep sprite edges crisp. Make the player, creatures, items, and terrain distinguishable by silhouette as well as color.
+Use nearest-neighbor filtering and pixel-grid alignment to keep sprite edges
+crisp. Make the player, creatures, items, and terrain distinguishable by
+silhouette as well as color.
 
 ## Game art workflow
 
@@ -48,77 +54,27 @@ Use the Aseprite MCP server configured in [`.codex/config.toml`](.codex/config.t
 5. **Shade with intent.** Use `adjust_hsl` to explore shadow colors and `outline_cel` where it improves readability. Keep the final colors within Dungeon-20. Reserve `apply_dither_gradient` for blends on larger artwork and use flat tones on 16×24 sprites.
 6. **Animate with cel tools.** Use `propagate_cels` to reuse cels, then `tween_cel_positions_eased` or `oscillate_cel_positions` for rigid parts and secondary motion. Verify frames and alignment with `view_sprite`, `compare_frames`, and `get_bounds`. Export with `export_animation` or `export_tag`.
 
-## Defold plugins and Lua libraries
+## Web development and verification
 
-The [dependency lock](dependencies.lock.json) records the 12 pinned packages
-and their source revisions. See the [dependency guide](docs/defold-dependencies.md)
-for installation, licenses, and runtime adapters.
-
-| Plugin or library | Purpose in this project |
-| --- | --- |
-| [Asefold](vendor/asefold/) | Aseprite-side authoring tool for exporting sprite artwork for Defold. |
-| [Automation Bridge](vendor/automation-bridge/) | Debug native extension for input automation, game state inspection, and screenshots. |
-| [Defold Aseprite Scripts](vendor/das/) | Defold editor integration for working with Aseprite source files. |
-| [Decore](vendor/decore/) | Entity-component-system library used to index landmarks for service proximity checks. |
-| [DefTest](vendor/deftest/) | Runs the shared gameplay test suites inside the Defold engine. |
-| [Defold Saver](vendor/saver/) | Persists character profiles and resume checkpoints. |
-| [Defold Event](vendor/event/) | Publish/subscribe events used by Decore and the legacy session. |
-| [Flow](vendor/flow/) | Primary GUI library for declarative components, layout, and pointer input. |
-| [defold-ink](vendor/ink/) | Runs compiled Ink dialogue, including Ilex’s arrival conversation. |
-| [Monarch](vendor/monarch/) | Manages playable screen lifetimes through Defold collection proxies. |
-| [Defold RichText](vendor/richtext/) | Renders the Chronicle’s prose and supports styled text markup. |
-| [rotLove](vendor/rotlove/) | Generates Threshold rooms and corridors and town perimeters, and provides shadowcasting through the [Lua adapter](game/vendor/rot.lua). |
-
-The [legacy toolchain manifest](tools/dependencies.json) records dependencies
-for the older controller and fixtures. SessionLock is a project-local native
-extension.
-
-| Plugin or library | Legacy purpose |
-| --- | --- |
-| Defold RNG | Seeded random streams and replay for older gameplay fixtures. |
-| Defold A* | Grid route search for legacy world movement. |
-| DefSave | Profile reads and writes for the legacy save service, including A/B recovery. |
-| Defold Tweener | Tweening for legacy screen and presentation effects. |
-| Defold Quest | Manages objectives and progress in the legacy quest service. |
-| [Lume](vendor/lume.lua) | Lua utilities used for table copying in the legacy world. |
-| [Lester](tests/vendor/lester.lua) | Lua test framework used by the older unit and engine fixtures. |
-| [SessionLock](native/session_lock/) | Native lock used by the legacy save service to coordinate profile writers. |
-
-## Defold development and verification
-
-- Write Lua 5.1-compatible runtime code. Put deterministic rules in pure `.lua`
-  modules; keep `.script`, `.gui_script`, and rendering adapters thin. Explicitly
-  create/reset per-character state; required modules are shared, cached tables.
-- Use Exa to search official Defold manuals/API docs and each library's upstream
-  docs; open the relevant source before applying it. Match the engine version in
-  `tools/defold/toolchain.json`. Use MCP API search for that version as well.
-- Use the configured `defold` MCP for project inspection, build/run/log checks,
-  and bounded iteration. Pass the pinned `version` to versioned tools and build
-  with `archive: true` to keep native bundle manifests current; the
-  server's default `stable` floats. Use `aseprite` for game art.
-- Follow Defold's [AI agents guide](https://defold.com/manuals/ai-agents/): define
-  acceptance criteria, inspect → change → build/test → inspect logs and required
-  screenshots. Keep build/test steps reproducible without an agent. Limit repair
-  loops to three attempts before reporting the remaining failure.
-- When an editor is open, read `.internal/editor.port` and discover its current
-  `/openapi.json`; never assume fixed editor endpoints or confuse editor and
-  engine ports. Check runtime extension health/version/capabilities before use.
-- Keep editor tokens and credentials local. Use stdio/loopback controls. Do not
-  add unrestricted `/eval` tooling. The requested MCP setup is authorized;
-  proceed with dependencies/native extensions already authorized by an
-  implementation task. Seek approval for unapproved dependency or release
-  changes per the guide, and for publishing, signing or destructive cleanup.
-- Run `luajit tests/run.lua` from the repository root. Verify the MCP,
-  in-engine DefTest suites and generated native bundle with
-  `node tools/defold/verify-mcp.mjs --tests --run`. The upstream MCP `defold_run`
-  uses a stock engine and cannot load this project's native extensions. Use the
-  generated native bundle and Automation Bridge for runtime input/state/capture.
-  Always stop the processes you launch. The desktop and browser playtest scripts
-  in `tools/defold/` exercise actual input, combat and save/reload.
-- Use the project skills in
-  [`.agents/skills/rebirth-defold-development`](.agents/skills/rebirth-defold-development/SKILL.md)
-  and [`.agents/skills/rebirth-defold-verify`](.agents/skills/rebirth-defold-verify/SKILL.md)
-  for development and completion checks.
-- Keep build output, `.internal/` (including `editor.token`), and personal saves
-  out of version control. Save and load characters through the Defold profile
-  service.
+- Follow the [target layout and milestones](docs/web-migration-plan.md). Put
+  deterministic gameplay in `src/game/`, the `@pixi/react` scene in
+  `src/render/`, and HeroUI components in `src/ui/`. Use Miniplex for ECS,
+  Zustand for UI state, and Dexie for versioned per-character saves. Players
+  create fresh characters in the game.
+- Use Exa to research official documentation and upstream sources, then
+  review the [dependency guide](docs/web-dependencies.md) and pin a compatible
+  set in the pnpm lockfile. Use the [ROT.js module assignments](docs/web-migration-plan.md#rotjs-integration),
+  scoped seeded streams, versioned layouts and deterministic command replay.
+  Combat follows the ATB rules above.
+- Keep gameplay, persistence and presentation separate. Resolve each command
+  from committed state, publish after a successful required save, and animate
+  committed outcomes. Share semantic commands across keyboard, pointer and UI.
+- Preserve all art, dialogue and licenses. Keep authored assets under
+  `assets/` and generate web assets from stable IDs. Update gameplay docs,
+  architecture, run commands and evidence as milestones land.
+- Run `pnpm typecheck`, `pnpm test`, and `pnpm build`.
+  Use Vitest for rule parity and fast-check for procedural invariants. Use
+  `agent-browser` with an isolated session against the served build for actual
+  keyboard/pointer input, screenshots, resizing, and save/reload. Check the
+  browser console, stop the processes you launch, and keep personal saves,
+  credentials and build output out of version control.

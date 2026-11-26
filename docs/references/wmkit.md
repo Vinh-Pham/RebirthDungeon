@@ -1,4 +1,4 @@
-> **Historical browser-stack reference; not used by the Defold runtime.** Installation/API examples below belong to the original source, not this project. Use the [Defold library guides](defold/README.md) and [architecture](../architecture.md) for current plans.
+> Historical reference for the earlier multiwindow design. See [current window behavior](../wmkit.md) and the [dependency guide](../web-dependencies.md) for the live integration.
 
 # wmkit window manager reference
 

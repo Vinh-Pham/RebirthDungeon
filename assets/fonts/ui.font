@@ -1,6 +1,0 @@
-font: "/assets/fonts/ui.otf"
-material: "/game/ui/components/text.material"
-size: 16
-antialias: 0
-characters: ""
-all_chars: true

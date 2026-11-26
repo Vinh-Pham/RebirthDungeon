@@ -79,20 +79,4 @@ updates to the external pages do not change installed content.
 
 ## Verification
 
-`luajit tests/run.lua` covers learning, race restrictions, equipment conditions,
-mitigation/critical ordering, counter consumption/expiry, downed target rejection,
-follow-up expiry, stable AoE targets, per-action/per-defeat training, cooldowns,
-broken weapon contributions, frozen stats, failed saves and duplicate retries.
-
-With the project running in Defold:
-
-```sh
-PYTHONPATH=automation-bridge-python python3 tools/check_combat.py
-```
-
-The smoke test creates a disposable `Combat QA ...` character, learns through the
-actual journal UI, and drives normal validated commands through the Automation
-Bridge. It verifies real saved reactions and follow-ups, multi-target damage and
-RNG counts, and checks the editor console. It leaves the test hero in town for inspection.
-`combat` bridge state is published by the session only from committed data; the
-GUI remains message-driven and never imports gameplay modules.
+Run `pnpm test` for the current combat rules and the [web smoke checks](web-tooling.md) for the playable flow.

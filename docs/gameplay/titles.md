@@ -159,7 +159,7 @@ Use versioned Lua definitions under proposed `game/content/titles/` and pure pre
 
 Druid renders the collection and previews through a Monarch panel. Quest/Ink can request a validated award/coupon command; the initiating candidate commits award, consumption, stats and evidence through DefSave. Event announces only after saving. No notification callback independently grants titles. Title selection consumes no RNG; cosmetic effects may use Tweener without changing outcome.
 
-Use Lester for predicates, source removal, no-refill rules, duplicate coupons/claims and failed-write isolation. Engine tests cover save/resume, GUI focus and character switching. See [architecture](../architecture.md), [library integration](../turn-based-rpg-battle-libraries.md), and [verification](../verification.md).
+Use Lester for predicates, source removal, no-refill rules, duplicate coupons/claims and failed-write isolation. Engine tests cover save/resume, GUI focus and character switching. See [architecture](../architecture.md), library integration, and [verification](../verification.md).
 
 ## Research notes
 

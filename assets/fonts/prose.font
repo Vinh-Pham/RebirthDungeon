@@ -1,6 +1,0 @@
-font: "/assets/fonts/prose.otf"
-material: "/game/ui/components/text.material"
-size: 16
-antialias: 1
-characters: ""
-all_chars: true

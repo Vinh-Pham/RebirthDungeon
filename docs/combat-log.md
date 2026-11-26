@@ -1,6 +1,6 @@
 # Combat events and per-battle archives
 
-**Initial combat log implemented 2026-09-20; multi-battle archives remain a later storage milestone.** Milestone 4 uses a bounded active/latest encounter log and latest committed event batch. Milestone 6 adds per-battle archives. Use the [battle contract](turn-based-plan.md), [architecture](architecture.md), and [Druid](references/defold/druid.md) GUI. The current panel browses the active/latest encounter; a completed-archive list is not enabled.
+**Initial combat log implemented 2026-09-20; multi-battle archives remain a later storage milestone.** Milestone 4 uses a bounded active/latest encounter log and latest committed event batch. Milestone 6 adds per-battle archives. Use the [battle contract](turn-based-plan.md), [architecture](architecture.md), and Druid GUI. The current panel browses the active/latest encounter; a completed-archive list is not enabled.
 
 ## Events required by the combat slice
 

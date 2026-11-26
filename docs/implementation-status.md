@@ -1,44 +1,95 @@
-# Defold implementation status
+# Implementation status
 
-Updated 2026-09-20. The first playable slice of [game-plan.md](game-plan.md) is implemented. This status describes source and verified behavior separately; the detailed gameplay documents also contain later expansion requirements.
+## Web implementation
 
-## Implemented
+The Vite application is implemented under `src/`. It includes character
+creation and selection, original layered character art, arrival dialogue,
+Lantern Rest, Spindle Hollow, connected Threshold rooms, keyboard and pointer
+movement, ATB combat, item footprints, equipment, skills/training, quests,
+services, Moon Gates and Dexie character saves. HeroUI supplies the interface,
+and `@pixi/react`, tilemap and viewport supply the world canvas.
 
-- Message-driven UI projections, neutral/scaled HUD, visible keyboard focus, guarded battle/reward actions, character source details and parent-aware Escape. GUI modules do not import game logic.
-- Title, up to 20 character slots, creation, resume, town, dungeon, battle, rewards, treasure and rebirth screens. Druid owns GUI controls; sibling Monarch proxies own screen lifetimes. The persistent root owns session, HUD and audio.
-- Versioned, validated profile candidates with stable operation and claim identities. DefSave writes alternating A/B slots; the session checks a read-back before publishing. A native OS lock prevents concurrent writers. Save failures offer retry of the same candidate or reload. Newer or unrecoverable profiles are preserved; a recovered profile can repair its damaged companion slot.
-- Human, Elf and Giant restrictions; four starter talents; equipment, resource pools, 199 EXP thresholds, level 200 cap, AP, fractional growth, Los Angeles weekly aging and rebirth cooldowns. No duplicated rebirth equipment gifts.
-- Town1's healer, grocer, bank, blacksmith, general shop and Alby gate, with an authored square, stream/bridge, roads, houses and outskirts. Thirty carried slots plus equipped items, 60 bank slots, stacks, buying/selling, exact-quantity item/gold transfers, healing, equipping and repairs. Inventory has a paged Druid list, message-based rule previews, item details/disabled reasons, keyboard selection and confirmed discard outside battle/rewards. Whole bank moves preserve instance IDs and durability.
-- Normalized keyboard movement, native A* click routes, shortest reachable NPC approaches with automatic service opening, map destinations, physics service triggers, kinematic player collision and static walls derived from shared occupancy. Panels, suspension and focus loss stop controls; world position checkpoints persist.
-- Eight connected rooms: entrance, three required encounters, boss, two optional rooms and a treasure chamber beyond the boss. The required-room gate, supplies, enemy groups, boss adds and treasure are persisted.
-- Starter skill journal with category tabs, F-rank details, exact costs, requirements, source notes and guarded battle use. Stable bounded training objectives and frozen run rank maps; rules-version-1 aggregate training migrates without resetting progress. Full F–1 advancement/acquisition remains deferred.
-- Fixed-Speed turns with saved tie order, turn-start recovery, fractional Attack cost, one optional item, starter skills, Defense, poison/armor break, cooldowns, limited enemy policy, weapon wear, training and bounded ordered events. Battle log, damage previews and committed visual feedback are presentation only.
-- Structured combat log with a 100-event active/latest encounter, whole-operation trimming, actual/calculated damage, retained terminal batches, expandable bounded details, stable reading anchors and read-only menu access. Newer log formats are preserved; legacy active histories migrate as partial. The measured 20 × 1,000-event archive candidate exceeds the current save budget and remains deferred.
-- Exact-quantity purchase and restoration previews with authoritative disabled reasons. Six authored NPC Ink stories, version-one continuation compatibility, explicit restart, and atomic tagged healing/bread choices. Candidate-bound Quest onboarding and versioned Ink dialogue replay. Experience, reward selection, overflow rejection, key-funded chest openings and goddess return are transactions. The boss grants one run-specific key, each of five chests opens once per key, and the statue returns to the town gate.
-- CC0 Kenney placeholder sprites; original placeholder audio; volume settings, reduced motion and HUD text scaling. All 11 planned libraries are integrated at exact revisions.
+Lantern Rest and Spindle Hollow load from
+[towns.ldtk](../assets/maps/towns.ldtk). The importer reads terrain and
+service markers, and existing characters pick up town edits on load or
+arrival. Water, Grass, Bush, and Dirt Path can be painted in either town and use
+original terrain art. See [editing towns in LDtk](web-tooling.md#editing-towns-in-ldtk).
 
-## Source map
+The Threshold has one continuous floor with six compact rooms linked by
+straight corridors. Each corridor gate disappears automatically when you
+defeat the monsters in the preceding room. Walk through the opening to
+continue on the same map. The full floor fits inside the viewport, with
+unseen areas hidden and explored areas dimmed by fog of war.
 
-| Path | Responsibility |
-| --- | --- |
-| `main/` | Persistent bootstrap, audio and Monarch registration |
-| `game/runtime/session.lua` | Sole committed-state owner and save-before-publish boundary |
-| `game/domain/` | Pure rule modules, command routing and validation |
-| `game/content/` | Versioned authored/source-adapted content |
-| `game/services/` | Save, RNG, pathfinding, Quest and Ink adapters |
-| `game/presentation/` | Pure compact/full combat-log formatting and bounded selectors |
-| `game/ui/` | Druid presentation and input controller |
-| `game/world/`, `screens/` | World movement/collision and proxy resources |
-| `native/session_lock/` | Desktop process writer guard |
-| `tests/` | Lester, native fixtures, fresh-process restart checks and GUI journey |
-| `tools/` | Pinned builds and optional Ink authoring |
+Clear the rooms and collect the Signal Cache in room six to reach Spindle
+Hollow. From there, enter the Threshold in room six and walk the cleared
+route back to Lantern Rest through the amber door in room one.
 
-The first implementation keeps related rules in cohesive modules rather than creating every proposed future subdirectory. Panels are drawn in the persistent GUI. All blocking panel, confirmation, service and dialogue lifetimes use sibling Monarch collection-factory popups that pause the underlying proxy; bootstrap simulation is gated separately. Panel changes clear transient controls without nesting town screens.
+Elian at the Lantern Rest school teaches **Windmill** at **Rank F** for free.
+Choose **Study Skills**, learn Windmill, and assign it from the Skills window.
+At Rank F, the spinning attack hits every living enemy in the current
+encounter at 170% base melee damage and costs 2 stamina total.
+[Mabinogi World Wiki](https://wiki.mabinogiworld.com/view/Windmill)
 
-## Deferred by the plan
+The map fills the space between the HUD controls within the viewport. The
+square minimap sits above character status on wide screens and beside it on
+narrow screens. It tracks the player and respects dungeon fog of war.
+Save & Exit is available in Settings.
+The Log above the panel buttons shows recent messages. Expand opens a
+scrollable window with all retained messages.
+Exploration and combat share a bar with ten skill slots (1–0) and four tonic
+quick slots (F1–F4). Skill slots start empty. Open Skills and drag an active
+skill icon to a slot, or select the icon and then the slot. Combat Mastery
+assigns Normal Attack. Move or swap slots by dragging them, and select an
+occupied slot in Skills to clear it. Assignments are saved per character.
+During combat, the player's ATB gauge appears beneath their sprite. Skill
+tooltips show damage and stamina costs, and the bar highlights the queued
+skill. Tonic quick slots use the assignments from Inventory. Visible enemies
+show their name, intent, HP and ATB on the map and can be selected there.
+The Loot dialog shows item stacks with their counts. All stacks start
+selected, and players can take selected stacks or take everything.
 
-Milestone 6: full F–1 advancement UI, broader verified skill trees and acquisition, footprint inventory, extended quests/RP, titles, enchants and per-battle archives. Critical Hit/counter/Mana Shield and other non-starter rules are not advertised as available content. Talent and Pets panels state their current limits.
+The inventory shows gold in movable stacks with quantity overlays. Bag cells
+are square, and the four tonic assignments share a horizontal row. The
+equipment grid shows accessories, headgear, both hands, armor, and shoes.
+Pick up gear in the bag to equip it and activate an occupied equipment slot
+to return its item to the bag. Equipped gloves have a separate unequip action.
 
-Multiplayer, cloud synchronization, web delivery, old browser-save import, additional locations and final art are outside this release. The save format does not import browser data. The explicit ASCII name policy and bounded Los Angeles timezone adapter are documented in the README and content provenance.
+Dialogs use wmkit for title-bar dragging and keyboard movement. Each dialog
+remembers its position until the page reloads. See [game windows](wmkit.md).
 
-See [verification](verification.md) for measured checks, desktop targets and remaining manual/distribution work. A source feature is not evidence of cross-platform acceptance.
+Original art, fonts and Ink stories are packed for the web build. The game
+runs silently, with WAV originals kept in the source assets. ROT modules
+provide procedural maps, paths, visibility, lighting,
+name generation and speed/action scheduling. Miniplex, Zustand projections
+and GSAP presentation are integrated.
+
+The model journey checks automatic gate opening, retained exploration, and
+reload during a run. It clears all six rooms, collects the Signal Cache,
+reaches Spindle Hollow, and walks the cleared route back to Lantern Rest.
+It also covers quest rewards and Moon Gate travel. A separate test wins the
+first encounter with new-character stats. See [browser saves](web-saves.md).
+
+The production browser smoke used shortcuts to open character creation and
+inventory, played Ilex's arrival, registered the Moon Gate, moved a gold stack
+by keyboard and drag, and verified the gate and inventory after reload. The
+layout was checked at desktop width and 390 px. Separate Chromium checks
+confirmed Escape cancellation and dismissal, punctuation rebinding, multi-cell
+drag placement, rejection of overlaps and out-of-bounds drops, and ATB command
+replacement.
+
+A production browser check used a seeded character to verify that the
+first gate blocked pointer movement and disappeared after keyboard combat.
+It checked corridor traversal on the same canvas, fog and position after
+reload, and viewport fit at 390 px.
+
+The LDtk browser check created a character, refreshed a stale town save,
+walked in Lantern Rest, took a registered Moon Gate to Spindle Hollow and
+opened its gate dialog. It verified reload and viewport fit at 390 px.
+An isolated browser run with all three new terrain types painted verified
+their artwork, movement rules, and reload.
+The production map comparison checked every terrain cell in both towns
+against the LDtk export. Browser movement crossed an unpainted cell and
+stopped at a painted wall.
+
+See [web tooling](web-tooling.md) for the current verification commands.

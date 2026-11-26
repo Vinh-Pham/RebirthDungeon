@@ -1,6 +1,6 @@
 # Fixed-Speed turn-based battle contract
 
-**Planned Defold implementation.** This is the detailed combat contract referenced by the [game plan](game-plan.md). All rules use pure Lua domain commands, the shared [transaction boundary](architecture.md), and the [selected Defold libraries](turn-based-rpg-battle-libraries.md). No dice, held faces, rerolls, combination multipliers, paid passes or resource reservations belong to this target. Browser-save conversion is deferred.
+**Planned Defold implementation.** This is the detailed combat contract referenced by the [game plan](game-plan.md). All rules use pure Lua domain commands, the shared [transaction boundary](architecture.md), and the selected Defold libraries. No dice, held faces, rerolls, combination multipliers, paid passes or resource reservations belong to this target. Browser-save conversion is deferred.
 
 ## Turn order and saved state
 

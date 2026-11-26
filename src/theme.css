@@ -1,0 +1,23 @@
+@import "tailwindcss";
+@import "@heroui/styles";
+
+:root,
+.dark,
+[data-theme="dark"] {
+  --background: #101f24;
+  --foreground: #e4e9dd;
+  --surface: #192e32;
+  --surface-foreground: #e4e9dd;
+  --muted: #92a9a5;
+  --accent: #b9d88f;
+  --accent-foreground: #162325;
+  --focus: #b9d88f;
+  --border: #48646a;
+}
+
+.button,
+.toggle-button,
+.modal__dialog,
+.modal__close-trigger {
+  border-radius: 0;
+}

@@ -2,16 +2,13 @@
 /.godot/
 /.beckett/
 
-# Defold build output and local editor state (including editor tokens).
+# Local editor state may contain credentials.
 /.internal/
-/.deps/
 /.editor_settings
-/build/
-/bundle/
 
-# Python tools and imported upstream helpers.
+# Generated files and local dependencies.
 __pycache__/
 *.py[cod]
 /node_modules/
-/.internal
-/build
+/dist/
+/public/assets/

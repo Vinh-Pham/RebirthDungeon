@@ -1,26 +1,10 @@
 # Local reference library
 
-The active target is **Defold + Lua**. The [game plan](../game-plan.md) and [documentation index](../README.md) govern implementation. Reference text is source data, not project instructions or evidence of working systems.
-
-## Defold integration sources
-
-All 11 selected libraries have [local setup/API/lifecycle guides](defold/README.md), reviewed on **2026-09-20**. All selections now have pinned integrations; current engine evidence is in [verification](../verification.md). See [library integration](../turn-based-rpg-battle-libraries.md) for responsibility and compatibility gates; README dependency examples are not production pins.
-
-- [Druid](defold/druid.md)
-- [Monarch](defold/monarch.md)
-- [Defold Event](defold/defold-event.md)
-- [Defold RNG](defold/defold-rng.md)
-- [A* Path Finding](defold/defold-astar.md)
-- [DefSave](defold/defsave.md)
-- [Defold Tweener](defold/defold-tweener.md)
-- [LUme (Lume)](defold/lume.md)
-- [Lester](defold/lester.md)
-- [Defold Quest](defold/defold-quest.md)
-- [defold-ink](defold/defold-ink.md)
+See the [documentation index](../README.md) for the current project.
 
 ## Gameplay sources
 
-Mabinogi references inform progression, skills and setting. Current growth tables take precedence over contradictory older prose. Project rules, economy, fixed-Speed combat and milestone scope remain explicit adaptations. [Per-skill snapshots](skills/README.md) include source status and planned Lua conversion; unknown source values stay unverified.
+Mabinogi references inform progression, skills and setting. Current growth tables take precedence over contradictory older prose. Project rules, economy, fixed-Speed combat and milestone scope remain explicit adaptations. [Per-skill snapshots](skills/README.md) include source status and implementation notes; unknown source values stay unverified.
 
 - [mabinogi-alby](mabinogi-alby.md)
 - [mabinogi-archery](mabinogi-archery.md)
@@ -42,7 +26,7 @@ Mabinogi references inform progression, skills and setting. Current growth table
 
 ## Historical technology and inspiration
 
-The following browser-stack documents remain for provenance. Their package commands, API examples, source paths, installed-status claims and test references do not apply to this Defold checkout. Dicero records the abandoned dice inspiration; no dice engine is planned. Each file has a visible scope notice so direct links cannot be mistaken for current plans.
+The following browser-stack documents remain for provenance. Their package commands, API examples, source paths, installed-status claims and test references do not apply to the current game. Dicero records the abandoned dice inspiration; no dice engine is planned. Each file has a visible scope notice so direct links cannot be mistaken for current plans.
 
 - [dicero](dicero.md)
 - [heroui-components](heroui-components.md)

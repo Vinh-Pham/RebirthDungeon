@@ -1,6 +1,6 @@
 # Rebirth Dungeon: Quests and dialogue
 
-**Planned Defold system.** Milestone 4 introduces Alby onboarding; milestone 6 ports the broader journal/catalog and RP. [Defold Quest](../references/defold/defold-quest.md) evaluates objectives, [defold-ink](../references/defold/defold-ink.md) runs authored dialogue, Druid renders the journal/choices and Monarch manages panels. The [game plan](../game-plan.md) and [architecture](../architecture.md) govern scope and persistence.
+**Planned Defold system.** Milestone 4 introduces Alby onboarding; milestone 6 ports the broader journal/catalog and RP. Defold Quest evaluates objectives, defold-ink runs authored dialogue, Druid renders the journal/choices and Monarch manages panels. The [game plan](../game-plan.md) and [architecture](../architecture.md) govern scope and persistence.
 
 ## First-loop onboarding
 

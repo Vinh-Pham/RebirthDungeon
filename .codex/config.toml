@@ -8,8 +8,6 @@ args = [
   "aseprite_mcp",
 ]
 
-[mcp_servers.defold]
-command = "/bin/sh"
-args = ["/Users/vinhpham/Projects/rebirth-dungeon/tools/defold/start-mcp.sh"]
-startup_timeout_sec = 30
-tool_timeout_sec = 600
+[mcp_servers.heroui-pro]
+url = "https://mcp.heroui.pro/mcp"
+http_headers = { "x-heroui-personal-token" = "9159c681-dc97-4f06-86cb-764c6c2a2d84" }
