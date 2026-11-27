@@ -104,6 +104,7 @@ const bindings = {
   journal: "q",
   gates: "g",
 };
+const defaultBindings = { ...bindings, log: "l" };
 const reservedKey = (key: string) => /^(?:[0-9]|f[1-4]|arrow(?:up|down|left|right)|escape|tab|enter| )$/.test(key);
 
 function restoreBindings(saved: Record<string, string> = {}) {
@@ -114,12 +115,17 @@ function restoreBindings(saved: Record<string, string> = {}) {
     }),
   );
   // Restoring a now-reserved binding can collide with another customized key.
-  return new Set(Object.values(restored)).size === Object.keys(bindings).length ? restored : { ...bindings };
+  const worldBindings = new Set(Object.values(restored)).size === Object.keys(bindings).length ? restored : bindings;
+  const used = new Set(Object.values(worldBindings));
+  const log = [saved.log?.toLowerCase(), defaultBindings.log, ..."abcdefghijklmnopqrstuvwxyz"].find(
+    (key) => key && !reservedKey(key) && !used.has(key),
+  );
+  return { ...worldBindings, log: log ?? defaultBindings.log };
 }
 const defaultSettings: GameView["settings"] = {
   reducedMotion: false,
   showLogTimestamps: true,
-  bindings,
+  bindings: defaultBindings,
 };
 const emptyDetails = { title: "", body: "", options: [] as ActionOption[] };
 const emptyInventory: GameView["inventory"] = {
@@ -1232,7 +1238,7 @@ export class GameSession {
   private choose = (id: string) => {
     const p = this.profile?.snapshot;
     if (id === "reset-bindings") {
-      this.actions.updateSettings({ bindings });
+      this.actions.updateSettings({ bindings: defaultBindings });
       return;
     }
     if (!p || this.busy) return;

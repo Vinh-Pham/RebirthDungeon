@@ -27,8 +27,8 @@ Ledger Keeper's safe.
 
 Conversations, lessons, shops, and other landmark interactions span the
 bottom of the map canvas. Titles, text, and choices align left. Longer
-menus scroll within the panel. Short mobile viewports hide the log and
-action bar while it is open. The HUD buttons open their own windows.
+menus scroll within the panel. Dialogue temporarily hides the log and,
+on short mobile viewports, the action bar. The HUD buttons open their own windows.
 
 Ten townspeople in varied outfits stroll around Lantern Rest's paths and
 grounds. Players can walk through their tiles. Clicking a townsperson is
@@ -73,17 +73,24 @@ At Rank F, the spinning attack hits every living enemy in the current
 encounter at 170% base melee damage and costs 2 stamina total.
 [Mabinogi World Wiki](https://wiki.mabinogiworld.com/view/Windmill)
 
-The map fills the space between the HUD controls within the viewport. The
-square minimap sits above character status on wide screens and beside it on
-narrow screens. It tracks the player and respects dungeon fog of war. Blue
-squares mark interactable NPCs in Lantern Rest and Spindle Hollow.
+The map fills the space between the HUD controls within the viewport.
+The bottom menu starts with the character's level and a full-width XP
+row with centered progress values. Below it, the HP, MP, and Stamina
+bars show whole-number values aligned left above the game buttons.
+The square minimap overlays the top-right corner of the canvas. It tracks
+the player and respects dungeon fog of war. Blue squares mark interactable
+NPCs in Lantern Rest and Spindle Hollow. The bottom-right Nearby indicator
+appears when a landmark is in reach. Interact with a landmark using its
+map tile or the keyboard binding.
 The game suppresses the browser context menu. Right-drag pans the town map.
 Save & Exit is available in Settings.
-The Log shows recent messages in All, General, Combat, and Character tabs.
+The Log overlays the bottom-left corner of the canvas. Press L by default to show or
+hide it. It shows recent messages in All, General, Combat, and Character tabs.
 Expand opens the full retained history with the same filters. Log options
 toggle local timestamps in both views and remember the choice after reload.
-Exploration and combat share a bar with ten skill slots (1–0) and four tonic
-quick slots (F1–F4). The floating Skills window lists learned skills in All,
+Exploration and combat share a transparent overlay at the top-left of the
+map, with ten skill slots (1–0) and four tonic quick slots (F1–F4).
+The floating Skills window lists learned skills in All,
 Life, Combat, and Magic tabs, with colored icons and training bars. Combat
 icons use original Dungeon-20 pixel art on the shared orange backing.
 Windmill uses a static sword icon with a circular sweep in the Skills window and the HUD.

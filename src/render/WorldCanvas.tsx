@@ -410,7 +410,7 @@ export function WorldCanvas(props: WorldCanvasProps) {
   return (
     <div
       ref={setElement}
-      className="world-canvas"
+      className="world-canvas relative"
       role="group"
       aria-label="World view. Use arrow keys to move or select a destination."
       style={{

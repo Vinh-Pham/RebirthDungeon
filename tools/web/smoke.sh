@@ -12,9 +12,39 @@ assert_world_fits() {
   agent-browser wait --fn '(() => {
     const page = document.scrollingElement;
     const map = document.querySelector(".map-surface");
-    const canvas = map?.querySelector("canvas");
-    const selectors = [".map-surface", ".game-log", ".action-bar", ".game-sidebar", "nav[aria-label=\"Game panels\"]"];
+    const canvas = map?.querySelector(".world-canvas canvas");
+    const minimap = map?.querySelector(".world-minimap");
+    const minimapBounds = minimap?.getBoundingClientRect();
+    const layout = document.querySelector(".game-layout");
+    const actionBar = document.querySelector(".action-bar");
+    const overlay = actionBar?.getBoundingClientRect();
+    const mapBounds = map?.getBoundingClientRect();
+    const log = map?.querySelector(".game-log")?.getBoundingClientRect();
+    const menu = document.querySelector(".game-menu").getBoundingClientRect();
+    const vitals = document.querySelector(".game-vitals");
+    const panels = document.querySelector("nav[aria-label=\"Game panels\"]");
+    const xp = document.querySelector(".menu-xp meter")?.getBoundingClientRect();
+    const level = document.querySelector(".menu-level")?.getBoundingClientRect();
+    const xpReadout = document.querySelector(".menu-xp .vital-value > span")?.getBoundingClientRect();
+    const selectors = [".map-surface", ".world-minimap", ".game-log", ".action-bar", ".game-menu"];
     return canvas && canvas.width === map.clientWidth && canvas.height === map.clientHeight &&
+      map.clientWidth === layout.clientWidth && mapBounds.left === 0 && mapBounds.top === 0 &&
+      Math.abs(mapBounds.bottom - menu.top) < 1 &&
+      log && log.left === mapBounds.left && log.bottom === mapBounds.bottom && log.width < mapBounds.width &&
+      (innerWidth < 760 || Math.abs(log.width - mapBounds.width / 3) < 1) &&
+      overlay && mapBounds && overlay.left === mapBounds.left && overlay.top === mapBounds.top &&
+      minimapBounds && minimapBounds.width === minimapBounds.height && minimapBounds.top === mapBounds.top + 12 &&
+      mapBounds.right - minimapBounds.right === (innerWidth < 360 ? 8 : 12) &&
+      document.elementFromPoint(minimapBounds.right - 1, minimapBounds.top + 1) === canvas &&
+      [...actionBar.querySelectorAll("button")].every(slot => slot.getBoundingClientRect().right <= minimapBounds.left) &&
+      overlay.right <= mapBounds.right && overlay.bottom <= mapBounds.bottom &&
+      getComputedStyle(actionBar).backgroundColor === "rgba(0, 0, 0, 0)" &&
+      document.elementFromPoint(overlay.right - 1, overlay.top + 1) === canvas &&
+      xp && level && xpReadout && panels && level.right <= xp.left &&
+      xp.bottom <= vitals?.getBoundingClientRect().top &&
+      Math.abs(xp.right - panels.getBoundingClientRect().right) < 1 &&
+      Math.abs(xpReadout.left + xpReadout.right - xp.left - xp.right) < 1 &&
+      vitals?.getBoundingClientRect().bottom <= panels?.getBoundingClientRect().top &&
       page.scrollHeight <= innerHeight + 1 && page.scrollWidth <= innerWidth + 1 &&
       selectors.every(selector => {
         const element = document.querySelector(selector);
@@ -26,7 +56,7 @@ assert_world_fits() {
   })()'
 }
 
-agent-browser set viewport 1440 900
+agent-browser set viewport 1600 900
 agent-browser open "$url"
 agent-browser wait --fn 'Array.from(document.querySelectorAll("button")).some(button => button.textContent === "Create Character" && !button.disabled)'
 agent-browser press n
@@ -35,38 +65,56 @@ agent-browser find role textbox fill 'Smoke Signal' --name 'Name*'
 agent-browser find role button click --name 'Enter the Dungeon'
 agent-browser find role button click --name 'Speak with Ilex'
 agent-browser find role button click --name 'Follow the Lanterns'
-agent-browser wait '.map-surface canvas'
+agent-browser wait '.world-canvas canvas'
 agent-browser wait --fn '(() => {
-  const minimap = document.querySelector("[aria-label=\"Minimap of Lantern Rest\"]");
   const map = document.querySelector(".map-surface").getBoundingClientRect();
-  const status = document.querySelector(".status-rail").getBoundingClientRect();
-  const meters = [...document.querySelectorAll(".status-rail meter")];
-  const xp = meters[3];
+  const meters = [...document.querySelectorAll(".game-vitals meter")];
+  const xp = document.querySelector(".menu-xp meter[aria-label=XP]");
   const log = document.querySelector(".game-log").getBoundingClientRect();
-  const bounds = minimap?.getBoundingClientRect();
-  return bounds && bounds.width === bounds.height && bounds.left >= map.right &&
-    bounds.bottom <= status.top && !document.querySelector(".game-header") &&
-    log.top === map.bottom && log.left === map.left && log.width === map.width &&
-    meters.map(meter => meter.getAttribute("aria-label")).join(",") === "HP,Mana,Stamina,XP" &&
-    new Set(meters.map(meter => getComputedStyle(meter).getPropertyValue("--meter-fill"))).size === 4 &&
-    xp.value === 0 && xp.max === 400 && !document.querySelector(".status-rail").textContent.includes(" AP");
+  return !document.querySelector(".status-nearby, .game-sidebar") &&
+    ![...document.querySelectorAll("button")].some(button => button.textContent.trim().startsWith("Interact [")) &&
+    log.bottom === map.bottom && log.left === map.left && Math.abs(log.width - map.width / 3) < 1 &&
+    meters.map(meter => meter.getAttribute("aria-label")).join(",") === "HP,MP,Stamina" &&
+    new Set(meters.map(meter => getComputedStyle(meter).getPropertyValue("--meter-fill"))).size === 3 &&
+    meters.every(meter => {
+      const readout = meter.parentElement.querySelector(".vital-value");
+      const track = meter.getBoundingClientRect();
+      const value = readout?.firstElementChild.getBoundingClientRect();
+      return meter.value === meter.max && readout?.textContent.trim() === `${meter.value} / ${meter.max}` &&
+        value && value.left > track.left && value.left - track.left <= 8 &&
+        value.right <= track.right && value.top >= track.top && value.bottom <= track.bottom;
+    }) &&
+    xp?.value === 0 && xp.max === 400 && xp.getAttribute("aria-valuetext") === "0 / 400" &&
+    document.querySelector(".menu-level").textContent === "Lv. 1";
 })()'
 agent-browser eval 'window.initialMinimap = document.querySelector(".world-minimap").toDataURL(); true'
 assert_world_fits
+agent-browser eval 'window.logToggleCanvasHeight = document.querySelector(".world-canvas canvas").height'
+agent-browser press l
+agent-browser wait --fn '!document.querySelector(".game-log") && !document.querySelector("[role=dialog]") && document.querySelector(".world-canvas canvas").height === window.logToggleCanvasHeight'
+agent-browser press l
+agent-browser wait '.map-surface .game-log'
 agent-browser screenshot "$out/town.png"
 
-# The authored Lantern Rest gate sits at tile (8, 23) in the initial 24px viewport.
-gate_x="$(agent-browser eval 'Math.round(document.querySelector(".map-surface canvas").getBoundingClientRect().left + 204)')"
-gate_y="$(agent-browser eval 'Math.round(document.querySelector(".map-surface canvas").getBoundingClientRect().top + 564)')"
+# The authored Lantern Rest gate sits at tile (48, 5) in the initial 24px viewport.
+gate_x="$(agent-browser eval 'Math.round(document.querySelector(".world-canvas canvas").getBoundingClientRect().left + 1164)')"
+gate_y="$(agent-browser eval 'Math.round(document.querySelector(".world-canvas canvas").getBoundingClientRect().top + 132)')"
 agent-browser mouse move "$gate_x" "$gate_y"
 agent-browser mouse down
 agent-browser mouse up
 agent-browser wait --text 'Register This Moon Gate'
 agent-browser wait --fn 'document.querySelector(".world-minimap").toDataURL() !== window.initialMinimap'
 agent-browser find role button click --name 'Register This Moon Gate'
-agent-browser wait --text 'Lantern Rest Moon Gate registered.'
+agent-browser wait --fn '![...document.querySelectorAll(".world-dialogue button")].some(button => button.textContent === "Register This Moon Gate")'
 agent-browser find role button click --name 'Close [Esc]'
 agent-browser wait --fn '!document.querySelector("[role=dialog]")'
+agent-browser wait --text 'Lantern Rest Moon Gate registered.'
+agent-browser wait --fn '(() => {
+  const nearby = document.querySelector(".map-surface .status-nearby");
+  const map = document.querySelector(".map-surface").getBoundingClientRect();
+  const bounds = nearby?.getBoundingClientRect();
+  return nearby?.textContent.includes("Moon Gate") && bounds.right === map.right - 12 && bounds.bottom === map.bottom - 12;
+})()'
 agent-browser wait --fn 'document.querySelector(".game-log").getBoundingClientRect().bottom <= document.querySelector("nav[aria-label=\"Game panels\"]").getBoundingClientRect().top'
 agent-browser find role button click --name 'Expand Log'
 agent-browser wait --fn 'document.querySelector("[data-wm-window=log] .log-messages").textContent.includes("Lantern Rest Moon Gate registered.")'
@@ -77,7 +125,7 @@ agent-browser wait --fn '!document.querySelector("[role=dialog]")'
 agent-browser set viewport 1280 650
 assert_world_fits
 agent-browser screenshot "$out/short-desktop.png"
-agent-browser set viewport 1440 900
+agent-browser set viewport 1600 900
 assert_world_fits
 
 # Skill assignments start empty, support both drag and keyboard, and swap in place.
@@ -90,6 +138,7 @@ agent-browser wait --fn '(() => {
 })()'
 agent-browser press k
 agent-browser wait '.skills-dialog'
+agent-browser wait --fn 'document.querySelector(".skills-dialog").getBoundingClientRect().top >= document.querySelector(".action-bar").getBoundingClientRect().bottom'
 agent-browser drag '.skills-dialog [data-skill-source="combat_mastery"]' '.action-bar [data-skill-slot="1"]'
 agent-browser wait --fn 'document.querySelector(".action-bar [data-skill-slot=\"1\"]")?.getAttribute("aria-label") === "Skill slot 1, Normal Attack"'
 agent-browser focus '.skills-dialog [data-skill-source="defense"]'
@@ -144,8 +193,12 @@ agent-browser wait --fn 'Array.from(document.querySelectorAll("[role=gridcell]")
 agent-browser screenshot "$out/inventory.png"
 
 agent-browser open "$url"
+agent-browser wait '.world-canvas canvas'
+agent-browser find role button click --name 'Character [C]'
+agent-browser wait '.character-dialog'
 agent-browser wait --text 'Smoke Signal'
-agent-browser wait '.map-surface canvas'
+agent-browser find role button click --name 'Close [Esc]'
+agent-browser wait --fn '!document.querySelector("[role=dialog]")'
 agent-browser wait --fn 'document.querySelector(".action-bar [data-skill-slot=\"1\"]")?.getAttribute("aria-label") === "Skill slot 1, Defend" && document.querySelector(".action-bar [data-skill-slot=\"0\"]")?.getAttribute("aria-label") === "Skill slot 0, Normal Attack"'
 agent-browser wait --fn 'document.querySelector(".action-bar [aria-label=\"F1 Healing Tonic\"] img")?.naturalWidth > 0'
 
@@ -160,11 +213,9 @@ agent-browser find role button click --name 'Close [Esc]'
 agent-browser wait --fn '!document.querySelector("[role=dialog]")'
 agent-browser set viewport 390 844
 agent-browser wait --fn '(() => {
-  const bounds = document.querySelector(".world-minimap").getBoundingClientRect();
   const map = document.querySelector(".map-surface").getBoundingClientRect();
   const log = document.querySelector(".game-log").getBoundingClientRect();
-  return bounds.width === bounds.height && bounds.top >= log.bottom &&
-    log.top === map.bottom && log.left === map.left && log.width === map.width;
+  return log.bottom === map.bottom && log.left === map.left && log.width < map.width;
 })()'
 agent-browser wait --fn '(() => {
   const slots = [...document.querySelectorAll(".action-bar [data-skill-slot]")];
@@ -176,7 +227,7 @@ agent-browser wait --fn '(() => {
 })()'
 assert_world_fits
 agent-browser screenshot "$out/narrow.png"
-agent-browser eval 'JSON.stringify({viewport:innerWidth, pageWidth:document.documentElement.scrollWidth, canvas:document.querySelector("canvas")?.width})'
+agent-browser eval 'JSON.stringify({viewport:innerWidth, pageWidth:document.documentElement.scrollWidth, canvas:document.querySelector(".world-canvas canvas")?.width})'
 agent-browser set viewport 320 568
 assert_world_fits
 agent-browser set viewport 390 844

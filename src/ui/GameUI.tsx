@@ -6,6 +6,7 @@ import { CharacterCreation } from "./CharacterCreation";
 import { CharacterPanel } from "./CharacterPanel";
 import { GameDialog } from "./GameDialog";
 import { GameLog, type LogTab } from "./GameLog";
+import { GameMenu } from "./GameMenu";
 import { WorldDialogue } from "./WorldDialogue";
 import { ActionBar, type SkillSelection } from "./ActionBar";
 import { SkillsPanel } from "./SkillsPanel";
@@ -14,14 +15,32 @@ import { LootPanel } from "./LootPanel";
 import { WorldMinimap } from "../render/WorldMinimap";
 import type { MapView } from "../game/core/session";
 
+const screenClasses = "game-ui min-h-dvh bg-background";
+const welcomeClasses =
+  "welcome mx-auto grid min-h-dvh max-w-[980px] grid-cols-2 items-center gap-20 p-12 max-[800px]:grid-cols-1 max-[800px]:gap-5 max-[800px]:p-7";
+const welcomeTitle = "mt-3 mb-6 text-[clamp(30px,5vw,56px)] leading-tight";
+const welcomeCopy = "font-[SourceCode,monospace] leading-[1.8] text-[#95aaa3]";
+const welcomeActions = "mt-[30px] flex flex-col items-stretch gap-3";
+const dialogActions = "flex flex-wrap gap-2 px-6 py-[18px] max-[800px]:px-3 max-[800px]:py-4";
+const panelCopy = "font-[SourceCode,monospace] leading-[1.7] text-[#becbc4]";
+const settingsRow = "flex items-center justify-between gap-5 py-3.5";
+const panelClasses: Partial<Record<NonNullable<GameView["panel"]>, string>> = {
+  character:
+    "[--window-width:41rem] [--window-heading-gap:10px] px-5! py-4! max-[540px]:p-3! max-[540px]:[&>.window-dialog-body]:[scrollbar-width:thin]",
+  inventory: "[--window-width:44rem] [--window-heading-gap:16px] p-[clamp(16px,3vw,28px)]!",
+  log: "flex flex-col [--window-width:48rem] [--window-heading-gap:12px] [&>.window-dialog-body]:flex [&>.window-dialog-body]:flex-col [&>.window-dialog-body]:overflow-hidden",
+};
+
 export function GameUI({
   view,
   actions,
+  logOpen,
   mapView,
   minimapView,
 }: {
   view: GameView;
   actions: GameActions;
+  logOpen: boolean;
   mapView?: ReactNode;
   minimapView?: MapView;
 }) {
@@ -41,6 +60,11 @@ export function GameUI({
     <Button
       key={option.id}
       variant="secondary"
+      className={
+        view.panel === "service"
+          ? "h-auto min-h-9 max-w-full justify-start py-1.5 text-left whitespace-normal wrap-anywhere"
+          : undefined
+      }
       isDisabled={view.busy || option.disabled}
       onPress={() => action(option.id)}
     >
@@ -48,31 +72,28 @@ export function GameUI({
     </Button>
   ));
   const error = view.error && (
-    <div role="alert" className="error-banner">
+    <div role="alert" className="error-banner bg-[#532d34] px-6 py-3 text-[#ffe1df]">
       {view.error}
     </div>
   );
   if (view.screen === "title")
     return (
-      <main className="game-ui">
+      <main className={screenClasses}>
         {error}
-        <div className="welcome">
+        <div className={welcomeClasses}>
           <section>
-            <div className="muted">Beyond the last light</div>
-            <h1>
+            <div className="text-[#8da4a1]">Beyond the last light</div>
+            <h1 className={welcomeTitle}>
               Rebirth
               <br />
               Dungeon
             </h1>
-            <p>
-              The world above is a memory. Follow the lanterns into the living
-              depths, where forgotten gates still remember your name.
+            <p className={welcomeCopy}>
+              The world above is a memory. Follow the lanterns into the living depths, where forgotten gates still
+              remember your name.
             </p>
-            <div className="welcome-actions">
-              <Button
-                isDisabled={view.busy}
-                onPress={() => actions.navigate("characters")}
-              >
+            <div className={welcomeActions}>
+              <Button isDisabled={view.busy} onPress={() => actions.navigate("characters")}>
                 Continue Your Journey
               </Button>
               <Button
@@ -85,7 +106,7 @@ export function GameUI({
             </div>
           </section>
           <img
-            className="welcome-art"
+            className="welcome-art max-h-[420px] w-full object-contain [image-rendering:pixelated] max-[800px]:row-start-1 max-[800px]:max-h-[200px]"
             src={import.meta.env.BASE_URL + "assets/art/title_gate.png"}
             alt="An ancient Moon Gate in the dungeon"
           />
@@ -94,16 +115,19 @@ export function GameUI({
     );
   if (view.screen === "characters")
     return (
-      <main className="game-ui">
-        <div className="welcome">
+      <main className={screenClasses}>
+        <div className={welcomeClasses}>
           <section>
-            <h1>Your Travelers</h1>
-            <div className="character-list">
+            <h1 className={welcomeTitle}>Your Travelers</h1>
+            <div className="character-list grid gap-3">
               {view.characters.map((character) => (
-                <div className="character-row" key={character.id}>
+                <div
+                  className="character-row flex items-center justify-between gap-5 bg-[#152a2c] p-4"
+                  key={character.id}
+                >
                   <div>
                     <strong>{character.name}</strong>
-                    <p>{character.detail}</p>
+                    <p className={welcomeCopy}>{character.detail}</p>
                   </div>
                   <Button onPress={() => actions.load(character.id)}>
                     Enter
@@ -117,11 +141,9 @@ export function GameUI({
                 </div>
               ))}
             </div>
-            {!view.characters.length && <p>No travelers have arrived yet.</p>}
-            <div className="welcome-actions">
-              <Button onPress={() => actions.navigate("creation")}>
-                Create Character
-              </Button>
+            {!view.characters.length && <p className={welcomeCopy}>No travelers have arrived yet.</p>}
+            <div className={welcomeActions}>
+              <Button onPress={() => actions.navigate("creation")}>Create Character</Button>
               <Button variant="ghost" onPress={() => actions.navigate("title")}>
                 Back
               </Button>
@@ -136,8 +158,8 @@ export function GameUI({
             positions={windowPositions.current}
             onClose={() => setDeleteId(undefined)}
           >
-            <p className="panel-copy">This permanently deletes the character and their save.</p>
-            <div className="game-actions">
+            <p className={panelCopy}>This permanently deletes the character and their save.</p>
+            <div className={dialogActions}>
               <Button variant="secondary" onPress={() => setDeleteId(undefined)}>
                 Cancel
               </Button>
@@ -155,23 +177,16 @@ export function GameUI({
         )}
       </main>
     );
-  if (view.screen === "creation")
-    return (
-      <CharacterCreation
-        actions={actions}
-        busy={view.busy}
-        error={view.error}
-      />
-    );
+  if (view.screen === "creation") return <CharacterCreation actions={actions} busy={view.busy} error={view.error} />;
   if (view.screen === "arrival")
     return (
-      <main className="game-ui">
-        <div className="welcome">
+      <main className={screenClasses}>
+        <div className={welcomeClasses}>
           <section>
-            <div className="muted">The lantern keeper</div>
-            <h1>Ilex</h1>
-            <p>{view.arrival.text}</p>
-            <div className="welcome-actions">
+            <div className="text-[#8da4a1]">The lantern keeper</div>
+            <h1 className={welcomeTitle}>Ilex</h1>
+            <p className={welcomeCopy}>{view.arrival.text}</p>
+            <div className={welcomeActions}>
               {view.arrival.options.map((option) => (
                 <Button key={option.id} onPress={() => action(option.id)}>
                   {option.label}
@@ -193,17 +208,29 @@ export function GameUI({
     onShowTimestampsChange: (showLogTimestamps: boolean) => actions.updateSettings({ showLogTimestamps }),
   };
   return (
-    <main className={worldDialogueOpen ? "game-ui game-ui--world game-ui--dialogue" : "game-ui game-ui--world"}>
+    <main
+      className={`${screenClasses} game-ui--world flex h-dvh flex-col [&>.error-banner]:max-h-[20dvh] [&>.error-banner]:overflow-auto [&>.error-banner]:wrap-anywhere`}
+    >
       {!worldDialogueOpen && view.panel !== "inventory" && view.panel !== "loot" && view.panel !== "skills" && error}
-      <div className="game-layout">
-        <div className="world-column">
+      <div className="game-layout grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)]">
+        <div
+          className={`world-column relative grid min-h-0 min-w-0 grid-cols-1 grid-rows-[auto_minmax(0,1fr)] ${minimapView ? "[--minimap-size:clamp(64px,20vw,min(200px,24dvh))]" : ""} ${worldDialogueOpen ? "[@media(max-width:800px)_and_(max-height:700px)]:[&>.action-bar]:hidden" : ""}`}
+        >
           <section
             ref={setMapSurface}
-            className="map-surface"
+            className="map-surface relative col-start-1 row-span-2 row-start-1 min-h-0 overflow-hidden bg-[#152a2c]"
             aria-label="Dungeon map"
             aria-description={`${view.location}, ${view.locationDetail}`}
           >
             {mapView}
+            {minimapView && <WorldMinimap view={minimapView} location={view.location} />}
+            {logOpen && !worldDialogueOpen && <GameLog {...logProps} onExpand={() => actions.panel("log")} />}
+            {view.nearby && !worldDialogueOpen && (
+              <div className={`status-nearby pointer-events-none absolute right-3 bottom-3 z-1 border border-border bg-background/85 px-2 py-1 text-right text-[12px] wrap-anywhere ${logOpen ? "max-w-[calc(66%_-_12px)] max-[760px]:max-w-[calc(32%_-_12px)]" : "max-w-[calc(100%_-_24px)]"}`}>
+                <span className="text-muted">Nearby</span>
+                <p>{view.nearby}</p>
+              </div>
+            )}
             {worldDialogueOpen && mapSurface && (
               <WorldDialogue
                 mapSurface={mapSurface}
@@ -215,7 +242,6 @@ export function GameUI({
               />
             )}
           </section>
-          <GameLog {...logProps} onExpand={() => actions.panel("log")} />
           <ActionBar view={view} actions={actions} editor={skillEditor} />
           {skillEditor && (
             <GameDialog
@@ -223,7 +249,7 @@ export function GameUI({
               title="Skills"
               onClose={() => actions.panel()}
               positions={windowPositions.current}
-              className="skills-dialog"
+              className="skills-dialog pointer-events-auto flex max-h-[calc(100%_-_8px)] flex-col [--window-width:40rem] [--window-gutter:8px] [--window-heading-gap:8px] px-3.5! py-3! max-[540px]:px-2! max-[540px]:py-[7px]! [&>.window-dialog-body]:flex [&>.window-dialog-body]:flex-col [&>.window-dialog-body]:overflow-hidden"
               nonModal
             >
               {error}
@@ -231,71 +257,8 @@ export function GameUI({
             </GameDialog>
           )}
         </div>
-        <aside className="game-sidebar" aria-label="Minimap and character status" tabIndex={0} data-game-scroll>
-          {minimapView && (
-            <WorldMinimap view={minimapView} location={view.location} />
-          )}
-          <div className="status-rail">
-            {player && (
-              <>
-                <div className="status-identity">
-                  <h2>{player.name}</h2>
-                  <span className="muted">Level {player.level}</span>
-                </div>
-                {(
-                  [
-                    ["hp", "HP", player.hp, player.maxHp],
-                    ["mana", "Mana", player.mp, player.maxMp],
-                    ["stamina", "Stamina", player.stamina, player.maxStamina],
-                    ["xp", "XP", player.xpInLevel, player.xpToAdvance],
-                  ] as const
-                ).map(([resource, label, value, max]) => (
-                  <div className={`resource resource-${resource}`} key={resource}>
-                    <div className="resource-label">
-                      <span>
-                        {label}
-                        {resource === "hp" && (player.deadly ? " · Deadly" : player.wounds ? " · Wounded" : "")}
-                      </span>
-                      <span>{resource === "xp" && max === 0 ? "Max level" : `${Math.floor(value)} / ${max}`}</span>
-                    </div>
-                    {max > 0 && <meter aria-label={label} value={Math.max(0, value)} max={max} />}
-                  </div>
-                ))}
-              </>
-            )}
-            <div className="status-nearby">
-              <div>
-                <h3>Nearby</h3>
-                <p className="muted">{view.nearby || "Quiet passage"}</p>
-              </div>
-              <Button variant="secondary" onPress={actions.interact}>
-                Interact [{view.settings.bindings.interact?.toUpperCase()}]
-              </Button>
-            </div>
-          </div>
-        </aside>
       </div>
-      <nav className="game-actions" aria-label="Game panels">
-        {(
-          [
-            "character",
-            "inventory",
-            "skills",
-            "journal",
-            "gates",
-            "settings",
-          ] as const
-        ).map((panel) => (
-          <Button
-            variant="ghost"
-            key={panel}
-            onPress={() => actions.panel(panel)}
-          >
-            {panel[0].toUpperCase() + panel.slice(1)} [
-            {view.settings.bindings[panel]?.toUpperCase() || "Esc"}]
-          </Button>
-        ))}
-      </nav>
+      <GameMenu view={view} actions={actions} />
       {view.panel && view.panel !== "skills" && !worldDialogueOpen && (
         <GameDialog
           key={view.panel}
@@ -303,7 +266,7 @@ export function GameUI({
           title={view.details.title || view.panel}
           onClose={() => actions.panel()}
           positions={windowPositions.current}
-          className={`${view.panel}-dialog`}
+          className={`${view.panel}-dialog ${panelClasses[view.panel] ?? ""}`}
           escapeHandledByGame={view.panel !== "character" && view.panel !== "log"}
         >
           {view.panel === "character" && player && view.characterSheet ? (
@@ -321,38 +284,35 @@ export function GameUI({
           ) : view.panel === "log" ? (
             <GameLog {...logProps} />
           ) : (
-            <p className="panel-copy">{view.details.body}</p>
+            <p className={panelCopy}>{view.details.body}</p>
           )}
           {view.panel === "settings" && (
             <>
-              <h3>Keyboard Bindings</h3>
-              <p className="panel-copy">1–0 activate skill slots. F1–F4 use tonic quick slots.</p>
-              {Object.entries(view.settings.bindings).map(
-                ([command, key]) => (
-                  <label className="option-row" key={command}>
-                    {command}
-                    <input
-                      className="binding-input"
-                      aria-label={"Key for " + command}
-                      value={key}
-                      readOnly
-                      onKeyDown={(event) => {
-                        if (event.key === "Tab" || event.key === "Escape")
-                          return;
-                        event.preventDefault();
-                        event.stopPropagation();
-                        actions.updateSettings({
-                          bindings: {
-                            ...view.settings.bindings,
-                            [command]: event.key,
-                          },
-                        });
-                      }}
-                    />
-                  </label>
-                ),
-              )}
-              <label className="option-row">
+              <h3 className="text-[14px] text-[#b8cd98]">Keyboard Bindings</h3>
+              <p className={panelCopy}>1–0 activate skill slots. F1–F4 use tonic quick slots.</p>
+              {Object.entries(view.settings.bindings).map(([command, key]) => (
+                <label className={settingsRow} key={command}>
+                  {command}
+                  <input
+                    className="binding-input w-[110px] border border-[#49615d] bg-[#11272b] p-2 text-center text-[#d6ddd0]"
+                    aria-label={"Key for " + command}
+                    value={key}
+                    readOnly
+                    onKeyDown={(event) => {
+                      if (event.key === "Tab" || event.key === "Escape") return;
+                      event.preventDefault();
+                      event.stopPropagation();
+                      actions.updateSettings({
+                        bindings: {
+                          ...view.settings.bindings,
+                          [command]: event.key,
+                        },
+                      });
+                    }}
+                  />
+                </label>
+              ))}
+              <label className={settingsRow}>
                 Reduced Motion
                 <input
                   type="checkbox"
@@ -365,7 +325,7 @@ export function GameUI({
                 />
               </label>
               <Button
-                className="settings-exit"
+                className="mt-4"
                 variant="secondary"
                 isDisabled={view.busy}
                 onPress={() => actions.navigate("title")}
@@ -374,7 +334,7 @@ export function GameUI({
               </Button>
             </>
           )}
-          {options.length > 0 && <div className="game-actions">{options}</div>}
+          {options.length > 0 && <div className={dialogActions}>{options}</div>}
         </GameDialog>
       )}
     </main>

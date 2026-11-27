@@ -24,6 +24,7 @@ canvas projections.
 | `src/ui/GameDialog.tsx` | HeroUI overlay lifecycle and wmkit window movement |
 | `src/ui/WorldDialogue.tsx` | HeroUI world interactions anchored to the canvas |
 | `src/ui/GameLog.tsx` | Category tabs, timestamps and retained log display |
+| `src/ui/GameMenu.tsx` | Live vital meters and game panel buttons |
 | `src/ui/InventoryGrid.tsx` | React DnD and keyboard input for grid placement |
 | `src/ui/ActionBar.tsx` | Shared exploration and combat slots with drag-and-drop assignment |
 | `tools/web/pack-assets.mjs` | Reproducible original asset copy, Pixi atlas and hash manifest |
@@ -34,6 +35,9 @@ global RNG state. The LDtk importer translates authored towns into the same
 map representation used by pathfinding and rendering. Renderer objects and
 GSAP timelines stay outside saved profiles. React consumes projections and
 issues semantic commands. Animation completion never grants gameplay rewards.
+
+UI components use Tailwind utilities in their markup. The game stylesheet
+holds font declarations, shared page defaults, and native meter styling.
 
 LDtk resident markers provide spawn positions. The session simulates their
 movement on a separate seeded stream and publishes it to a dedicated canvas

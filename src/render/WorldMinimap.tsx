@@ -66,7 +66,7 @@ export function WorldMinimap({ view, location }: { view: MapView; location: stri
   return (
     <canvas
       ref={canvasRef}
-      className="world-minimap"
+      className="world-minimap pointer-events-none absolute top-3 right-3 z-1 aspect-square h-auto w-[var(--minimap-size)] border border-[#3b5556] bg-background [image-rendering:pixelated] max-[360px]:right-2"
       width={size}
       height={size}
       role="img"

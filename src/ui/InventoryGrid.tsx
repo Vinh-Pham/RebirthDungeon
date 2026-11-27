@@ -10,7 +10,7 @@ const compactCount = new Intl.NumberFormat("en", { notation: "compact" });
 export function InventoryIcon({ item }: { item: InventoryItem }) {
   return item.texture ? (
     <img
-      className="inventory-icon"
+      className="inventory-icon h-8 w-6 object-contain [image-rendering:pixelated]"
       src={`${import.meta.env.BASE_URL}assets/frames/${item.texture}.png`}
       alt=""
       draggable={false}
@@ -74,12 +74,7 @@ function InventoryCell({
     accept: inventoryItem,
     canDrop: ({ id, offsetX, offsetY }) => {
       const moving = inventory.items.find((candidate) => candidate.id === id);
-      return Boolean(
-        !disabled &&
-          moving &&
-          !moving.equipped &&
-          canPlace(inventory, moving, x - offsetX, y - offsetY),
-      );
+      return Boolean(!disabled && moving && !moving.equipped && canPlace(inventory, moving, x - offsetX, y - offsetY));
     },
     drop: ({ id, offsetX, offsetY }) => moveItem(id, x - offsetX, y - offsetY),
     collect: (monitor) => ({
@@ -94,7 +89,7 @@ function InventoryCell({
     [drag, drop, movable],
   );
   const anchor = item && item.x === x && item.y === y;
-  const label = item && (item.name + (item.amount ? " × " + item.amount : ""));
+  const label = item && item.name + (item.amount ? " × " + item.amount : "");
   return (
     <button
       ref={connect}
@@ -103,7 +98,7 @@ function InventoryCell({
       aria-rowindex={y + 1}
       aria-colindex={x + 1}
       tabIndex={focused ? 0 : -1}
-      className="inventory-cell"
+      className="inventory-cell relative grid aspect-square min-w-0 place-items-center border border-[#3b5556] bg-[#11272b] p-0 text-[#e0e9d9] data-[movable=true]:cursor-grab data-[dragging=true]:opacity-55 data-[picked=true]:bg-[#3b523d] data-[picked=true]:shadow-[inset_0_0_0_2px_#d3d991] data-[drop-target=true]:bg-[#3b523d] data-[drop-target=true]:shadow-[inset_0_0_0_2px_#d3d991] focus-visible:z-1 focus-visible:outline-2 focus-visible:outline-[#66c4ce] focus-visible:outline-offset-1 [&_.inventory-icon]:absolute [&_.inventory-icon]:inset-0 [&_.inventory-icon]:m-auto [&_.inventory-icon]:h-[76%] [&_.inventory-icon]:w-[72%]"
       data-movable={movable}
       data-picked={picked}
       data-dragging={dragging}
@@ -118,7 +113,10 @@ function InventoryCell({
         <>
           <InventoryIcon item={item} />
           {item.amount !== undefined && item.amount > 1 && (
-            <span className="inventory-quantity" aria-hidden="true">
+            <span
+              className="inventory-quantity pointer-events-none absolute right-px bottom-px rounded-[2px] bg-[#101f24e8] px-0.5 py-px text-[clamp(8px,1.6vw,11px)] leading-none whitespace-nowrap text-[#e0e9d9]"
+              aria-hidden="true"
+            >
               × {compactCount.format(item.amount)}
             </span>
           )}
@@ -158,7 +156,7 @@ export function InventoryGrid({
         aria-describedby="inventory-help"
         aria-rowcount={inventory.height}
         aria-colcount={inventory.width}
-        className="item-grid"
+        className="item-grid grid gap-1"
         style={{
           gridTemplateColumns: `repeat(${inventory.width}, minmax(0, 1fr))`,
         }}
@@ -171,22 +169,12 @@ export function InventoryGrid({
           }
           let next = cursor;
           if (event.key === "ArrowLeft")
-            next = Math.max(
-              Math.floor(cursor / inventory.width) * inventory.width,
-              cursor - 1,
-            );
+            next = Math.max(Math.floor(cursor / inventory.width) * inventory.width, cursor - 1);
           else if (event.key === "ArrowRight")
-            next = Math.min(
-              (Math.floor(cursor / inventory.width) + 1) * inventory.width - 1,
-              cursor + 1,
-            );
-          else if (event.key === "ArrowUp")
-            next = Math.max(0, cursor - inventory.width);
+            next = Math.min((Math.floor(cursor / inventory.width) + 1) * inventory.width - 1, cursor + 1);
+          else if (event.key === "ArrowUp") next = Math.max(0, cursor - inventory.width);
           else if (event.key === "ArrowDown")
-            next = Math.min(
-              inventory.width * inventory.height - 1,
-              cursor + inventory.width,
-            );
+            next = Math.min(inventory.width * inventory.height - 1, cursor + inventory.width);
           else return;
           event.preventDefault();
           event.stopPropagation();
@@ -194,14 +182,12 @@ export function InventoryGrid({
           const row = Math.floor(next / inventory.width) + 1;
           const column = (next % inventory.width) + 1;
           event.currentTarget
-            .querySelector<HTMLButtonElement>(
-              `[aria-rowindex="${row}"][aria-colindex="${column}"]`,
-            )
+            .querySelector<HTMLButtonElement>(`[aria-rowindex="${row}"][aria-colindex="${column}"]`)
             ?.focus();
         }}
       >
         {Array.from({ length: inventory.height }, (_, row) => (
-          <div role="row" className="inventory-row" key={row}>
+          <div role="row" className="inventory-row contents" key={row}>
             {Array.from({ length: inventory.width }, (_, column) => {
               const index = row * inventory.width + column;
               const item = inventory.items.find(
@@ -231,13 +217,11 @@ export function InventoryGrid({
           </div>
         ))}
       </div>
-      <p className="muted" id="inventory-help">
-        {picked
-          ? "Enter places the item. Esc cancels."
-          : "Drag items or use the arrow keys and Enter."}
+      <p className="text-[#8da4a1] mt-2 mb-0 text-xs" id="inventory-help">
+        {picked ? "Enter places the item. Esc cancels." : "Drag items or use the arrow keys and Enter."}
       </p>
       {selectedItem && (
-        <div className="inventory-selection">
+        <div className="inventory-selection mt-2 flex flex-wrap gap-2">
           {selectedItem.equipmentSlot && (
             <Button
               size="sm"
@@ -259,4 +243,3 @@ export function InventoryGrid({
     </>
   );
 }
-

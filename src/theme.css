@@ -15,9 +15,11 @@
   --border: #48646a;
 }
 
-.button,
-.toggle-button,
-.modal__dialog,
-.modal__close-trigger {
-  border-radius: 0;
+@layer components {
+  .button,
+  .toggle-button,
+  .modal__dialog,
+  .modal__close-trigger {
+    border-radius: 0;
+  }
 }

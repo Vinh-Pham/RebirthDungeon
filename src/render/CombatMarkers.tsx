@@ -72,10 +72,13 @@ export function CombatMarkers({
   }, [actor, enemies, viewport, tileSize]);
 
   return (
-    <div className="combat-markers">
-      <div className="combat-marker player-marker" ref={player}>
+    <div className="combat-markers pointer-events-none absolute inset-0">
+      <div
+        className="combat-marker player-marker absolute top-0 left-0 -translate-x-1/2 grid gap-[2px] w-12 p-[2px] border border-[#576069] bg-[#101f24] [&[hidden]]:hidden"
+        ref={player}
+      >
         <meter
-          className="combat-atb"
+          className="combat-atb appearance-none block w-full h-[5px] bg-[#344a5a] [--meter-fill:#5bbfc5]"
           aria-label="Time"
           aria-description={encounter.queued ? `Queued action: ${encounter.queued}` : undefined}
           value={encounter.gauge}
@@ -88,18 +91,28 @@ export function CombatMarkers({
           return (
             <button
               type="button"
-              className="combat-marker enemy-marker"
+              className="combat-marker enemy-marker group pointer-events-auto absolute top-0 left-0 -translate-x-1/2 grid gap-[2px] w-12 p-[2px] border border-[#576069] bg-[#101f24] [&[hidden]]:hidden aria-pressed:border-[#f2ec8b] aria-pressed:z-1"
               key={enemy.id}
               aria-label={`Target ${enemy.name}. ${enemy.hp} of ${enemy.maxHp} HP. ATB ${readiness}%. Preparing ${enemy.intent}.`}
               aria-pressed={encounter.target === enemy.id}
               onClick={() => onTarget(enemy.id)}
             >
-              <span className="enemy-marker-name">
+              <span className="enemy-marker-name absolute left-1/2 bottom-[calc(100%+var(--enemy-sprite-height)+3px)] -translate-x-1/2 w-max px-1 py-[2px] border border-[#344a5a] bg-[#101f24] text-[#d6dad3] font-[Departure,monospace] text-[10px] leading-[1.15] text-center group-aria-pressed:text-[#f2ec8b] group-aria-pressed:border-[#f2ec8b]">
                 {enemy.name}
-                <span className="enemy-marker-intent">{enemy.intent}</span>
+                <span className="enemy-marker-intent block mt-[2px] text-[#a9b2a2] text-[9px]">{enemy.intent}</span>
               </span>
-              <meter className="enemy-hp" aria-hidden="true" value={enemy.hp} max={enemy.maxHp} />
-              <meter className="combat-atb" aria-hidden="true" value={enemy.gauge} max={1} />
+              <meter
+                className="enemy-hp appearance-none block w-full h-[5px] bg-[#344a5a] [--meter-fill:#e56869]"
+                aria-hidden="true"
+                value={enemy.hp}
+                max={enemy.maxHp}
+              />
+              <meter
+                className="combat-atb appearance-none block w-full h-[5px] bg-[#344a5a] [--meter-fill:#5bbfc5]"
+                aria-hidden="true"
+                value={enemy.gauge}
+                max={1}
+              />
             </button>
           );
         })}

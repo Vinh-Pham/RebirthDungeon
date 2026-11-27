@@ -50,7 +50,6 @@ function ActionIcon({
   shortcut = true,
   icon,
   empty = false,
-  active = true,
   highlighted,
   keyshortcuts,
   ...button
@@ -74,26 +73,42 @@ function ActionIcon({
   return (
     <Tooltip delay={300}>
       <Button
-        className="action-icon"
+        className="action-icon relative bg-black/35 size-11 p-0 data-[movable=true]:cursor-grab data-[movable=true]:opacity-100 data-[drop-target=true]:shadow-[inset_0_0_0_2px_var(--accent)] [&[data-skill-category]]:bg-[var(--skill-icon-background)] data-[skill-category=combat]:[--skill-icon-background:#a3512a] data-[skill-category=magic]:[--skill-icon-background:#2e609f] data-[skill-category=life]:[--skill-icon-background:#957521] [&[data-skill-category][aria-pressed=true]]:shadow-[inset_0_0_0_2px_var(--accent)]"
         variant={highlighted ? "primary" : empty ? "outline" : "secondary"}
         isIconOnly
         aria-label={label}
         aria-keyshortcuts={keyshortcuts ?? (shortcut ? hotkey : undefined)}
-        aria-disabled={!active || undefined}
         {...button}
       >
-        {icon ? <img src={`${assetBase}${icon}`} alt="" draggable={false} /> : null}
-        {hotkey && <kbd aria-hidden="true">{hotkey}</kbd>}
+        {icon ? (
+          <img
+            className="h-7 w-6 object-contain [image-rendering:pixelated]"
+            src={`${assetBase}${icon}`}
+            alt=""
+            draggable={false}
+          />
+        ) : null}
+        {hotkey && (
+          <kbd
+            className="absolute right-0.5 bottom-0.5 min-w-[13px] bg-[#101f24] px-0.5 py-px text-center font-[Departure,monospace] text-[10px] leading-none text-[#d6ddd0]"
+            aria-hidden="true"
+          >
+            {hotkey}
+          </kbd>
+        )}
       </Button>
-      <Tooltip.Content className="action-tooltip" placement="top">
+      <Tooltip.Content
+        className="action-tooltip w-max max-w-[min(17rem,calc(100vw-32px))] px-3 py-2.5 font-[Departure,monospace] text-xs leading-[1.4] [overflow-wrap:anywhere]"
+        placement="top"
+      >
         <strong>{label}</strong>
-        <p>{description}</p>
+        <p className="mt-1.5 mb-0">{description}</p>
         {stats.length > 0 && (
-          <dl>
+          <dl className="mt-1.5 mb-0">
             {stats.map(([name, value]) => (
-              <div key={name}>
+              <div className="flex justify-between gap-3" key={name}>
                 <dt>{name}</dt>
-                <dd>{value}</dd>
+                <dd className="m-0 text-right">{value}</dd>
               </div>
             ))}
           </dl>
@@ -224,7 +239,11 @@ function SkillSlot({
 
 function SkillSlots({ view, actions, editor }: { view: GameView; actions: GameActions; editor?: SlotEditor }) {
   return (
-    <div className="skill-slots" role="group" aria-label="Skill slots">
+    <div
+      className="skill-slots grid grid-cols-[repeat(10,44px)] gap-1 max-[570px]:grid-cols-[repeat(5,44px)] @max-[476px]:grid-cols-[repeat(5,44px)] max-[360px]:grid-cols-[repeat(5,38px)]!"
+      role="group"
+      aria-label="Skill slots"
+    >
       {skillSlotKeys.map((key, index) => (
         <SkillSlot key={key} index={index} view={view} actions={actions} editor={editor} />
       ))}
@@ -262,8 +281,16 @@ export function SkillSource({
 
   if (!command)
     return (
-      <span className="skill-passive-icon" data-skill-category={skill.category}>
-        <img src={`${import.meta.env.BASE_URL}assets/${icon}`} alt="" draggable={false} />
+      <span
+        className="skill-passive-icon grid place-items-center data-[skill-category=combat]:bg-[#a3512a] data-[skill-category=magic]:bg-[#2e609f] data-[skill-category=life]:bg-[#957521]"
+        data-skill-category={skill.category}
+      >
+        <img
+          className="h-7 w-6 object-contain [image-rendering:pixelated]"
+          src={`${import.meta.env.BASE_URL}assets/${icon}`}
+          alt=""
+          draggable={false}
+        />
       </span>
     );
   const [name] = commands[command];
@@ -297,9 +324,9 @@ export function ActionBar({ view, actions, editor }: { view: GameView; actions: 
   ];
 
   return (
-    <div className="action-bar">
+    <div className="action-bar @container pointer-events-none z-2 col-start-1 row-start-1 flex flex-wrap gap-x-4 gap-y-2.5 py-2.5 pr-[calc(var(--minimap-size,0px)_+_16px)] pl-3 max-[360px]:gap-y-1.5 max-[360px]:py-2 max-[360px]:pr-[calc(var(--minimap-size,0px)_+_12px)] [&_.action-icon]:pointer-events-auto [&_.action-icon[data-skill-category]_img]:h-9 [&_.action-icon[data-skill-category]_img]:w-[30px] max-[360px]:[&_.action-icon]:size-[38px]">
       <SkillSlots view={view} actions={actions} editor={editor} />
-      <div className="tonic-quick-slots" role="group" aria-label="Tonic quick slots">
+      <div className="tonic-quick-slots flex flex-wrap gap-1" role="group" aria-label="Tonic quick slots">
         {quickSlots.map((assigned, index) => {
           const hotkey = `F${index + 1}`;
           const active = assigned && canHeal;

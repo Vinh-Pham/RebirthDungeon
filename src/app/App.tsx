@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { useStore } from "zustand";
@@ -27,7 +27,7 @@ function WorldMap({
 }) {
   const townResidents = useStore(game.store, (state) => state.townResidents);
   return (
-    <Suspense fallback={<p className="muted">Loading the map…</p>}>
+    <Suspense fallback={<p className="text-[#8da4a1]">Loading the map…</p>}>
       <WorldCanvas
         map={map.map}
         townResidents={townResidents}
@@ -49,7 +49,9 @@ function WorldMap({
 export function App() {
   const view = useStore(game.store, (state) => state.view);
   const map = useStore(game.store, (state) => state.mapView);
-  useGameHotkeys(game, view);
+  const [logOpen, setLogOpen] = useState(true);
+  const toggleLog = useCallback(() => setLogOpen((open) => !open), []);
+  useGameHotkeys(game, view, toggleLog);
 
   useEffect(() => {
     initialization ??= game.initialize();
@@ -93,6 +95,7 @@ export function App() {
       <GameUI
         view={view}
         actions={game.actions}
+        logOpen={logOpen}
         minimapView={map}
         mapView={
           map && (

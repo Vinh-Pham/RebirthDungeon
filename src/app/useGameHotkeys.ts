@@ -21,7 +21,7 @@ function ignoreShortcut(event: KeyboardEvent) {
   );
 }
 
-export function useGameHotkeys(game: GameSession, view: GameView) {
+export function useGameHotkeys(game: GameSession, view: GameView, toggleLog: () => void) {
   const { actions } = game;
   useHotkeys("n", () => actions.navigate("creation"), {
     enabled: view.screen === "title" && !view.busy,
@@ -59,6 +59,12 @@ export function useGameHotkeys(game: GameSession, view: GameView) {
     "*",
     (event) => {
       const key = event.key.toLowerCase();
+      if (key === view.settings.bindings.log) {
+        event.preventDefault();
+        if (!event.repeat) toggleLog();
+        return;
+      }
+      if (view.panel) return;
       const skillSlot = skillSlotKeys.findIndex((slotKey) => slotKey === key);
       if (skillSlot !== -1) {
         event.preventDefault();
@@ -101,7 +107,7 @@ export function useGameHotkeys(game: GameSession, view: GameView) {
       }
     },
     {
-      enabled: view.screen === "world" && !view.panel,
+      enabled: view.screen === "world" && (!view.panel || view.panel === "skills"),
       ignoreEventWhen: ignoreShortcut,
     },
   );

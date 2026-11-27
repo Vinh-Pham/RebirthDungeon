@@ -103,10 +103,10 @@ function WindowTitleBar({
   }, [id, title]);
 
   return (
-    <header className="panel-heading">
+    <header className="panel-heading mb-[var(--window-heading-gap,24px)] flex shrink-0 items-center justify-between gap-5">
       <div
         ref={handleRef}
-        className="window-titlebar"
+        className="window-titlebar flex min-w-0 flex-1 cursor-grab touch-none items-center self-stretch select-none focus-visible:outline-2 focus-visible:outline-[#66c4ce] focus-visible:outline-offset-2 [[data-wm-dragging]_&]:cursor-grabbing"
         data-wm-drag=""
         role="group"
         aria-label="Move window"
@@ -120,11 +120,11 @@ function WindowTitleBar({
         }}
       >
         {nonModal ? (
-          <h2 id={titleId} data-wm-title="">
+          <h2 className="m-0 text-xl wrap-anywhere" id={titleId} data-wm-title="">
             {title}
           </h2>
         ) : (
-          <Modal.Heading id={titleId} data-wm-title="">
+          <Modal.Heading className="m-0 text-xl wrap-anywhere" id={titleId} data-wm-title="">
             {title}
           </Modal.Heading>
         )}
@@ -138,6 +138,10 @@ function WindowTitleBar({
     </header>
   );
 }
+
+const dialogClasses =
+  "game-panel window-dialog m-0 h-auto! w-[min(var(--window-width,32rem),calc(100%_-_var(--window-gutter,32px)))]! max-w-none max-h-[calc(100%_-_var(--window-gutter,32px))] overflow-hidden bg-[#1b3034] p-7 text-[#d6ddd0] shadow-[0_24px_100px_#0008] font-[Departure,monospace] max-[800px]:p-5 [&_.button]:shrink-0";
+const bodyClasses = "window-dialog-body -m-1 min-h-0 overflow-auto overscroll-contain p-1";
 
 export function GameDialog({
   id,
@@ -168,16 +172,16 @@ export function GameDialog({
 
   if (nonModal)
     return (
-      <div className="window-desktop non-modal-desktop">
+      <div className="window-desktop non-modal-desktop pointer-events-none absolute inset-0 z-4 [grid-area:2/1/3/2]">
         <section
           ref={frameRef}
           role="dialog"
           aria-label={title}
           tabIndex={-1}
-          className={`game-panel window-dialog ${className}`}
+          className={`${dialogClasses} ${className}`}
         >
           <WindowTitleBar id={id} title={title} onClose={onClose} positions={positions} nonModal />
-          <div className="window-dialog-body">{children}</div>
+          <div className={bodyClasses}>{children}</div>
         </section>
       </div>
     );
@@ -190,10 +194,14 @@ export function GameDialog({
         if (!open) onClose();
       }}
     >
-      <Modal.Container className="window-desktop" size="lg" scroll="inside">
-        <Modal.Dialog className={`game-panel window-dialog ${className}`} aria-label={title}>
+      <Modal.Container
+        className="window-desktop relative h-[var(--visual-viewport-height,100dvh)] min-h-0 w-full! flex-none p-0! animate-none!"
+        size="lg"
+        scroll="inside"
+      >
+        <Modal.Dialog className={`${dialogClasses} ${className}`} aria-label={title}>
           <WindowTitleBar id={id} title={title} onClose={onClose} positions={positions} />
-          <div className="window-dialog-body">{children}</div>
+          <div className={bodyClasses}>{children}</div>
         </Modal.Dialog>
       </Modal.Container>
     </Modal.Backdrop>
