@@ -25,6 +25,11 @@ alcove, chapel, treatment bays, and bank partitions distinguish the services on
 the map. Players can inspect furnishings such as Nera's patrol board and the
 Ledger Keeper's safe.
 
+Conversations, lessons, shops, and other landmark interactions span the
+bottom of the map canvas. Titles, text, and choices align left. Longer
+menus scroll within the panel. Short mobile viewports hide the log and
+action bar while it is open. The HUD buttons open their own windows.
+
 Ten townspeople in varied outfits stroll around Lantern Rest's paths and
 grounds. Players can walk through their tiles. Clicking a townsperson is
 treated as clicking the ground, and there is no dialogue or combat.
@@ -72,9 +77,11 @@ The map fills the space between the HUD controls within the viewport. The
 square minimap sits above character status on wide screens and beside it on
 narrow screens. It tracks the player and respects dungeon fog of war. Blue
 squares mark interactable NPCs in Lantern Rest and Spindle Hollow.
+The game suppresses the browser context menu. Right-drag pans the town map.
 Save & Exit is available in Settings.
-The Log above the panel buttons shows recent messages. Expand opens a
-scrollable window with all retained messages.
+The Log shows recent messages in All, General, Combat, and Character tabs.
+Expand opens the full retained history with the same filters. Log options
+toggle local timestamps in both views and remember the choice after reload.
 Exploration and combat share a bar with ten skill slots (1–0) and four tonic
 quick slots (F1–F4). The floating Skills window lists learned skills in All,
 Life, Combat, and Magic tabs, with colored icons and training bars. Combat
@@ -99,8 +106,8 @@ equipment grid shows accessories, headgear, both hands, armor, and shoes.
 Pick up gear in the bag to equip it and activate an occupied equipment slot
 to return its item to the bag. Equipped gloves have a separate unequip action.
 
-Dialogs use wmkit for title-bar dragging and keyboard movement. Each dialog
-remembers its position until the page reloads. See [game windows](wmkit.md).
+Floating windows use wmkit for title-bar dragging and keyboard movement.
+Each window remembers its position until the page reloads. See [game windows](wmkit.md).
 
 Original art, fonts and Ink stories are packed for the web build. The game
 runs silently, with WAV originals kept in the source assets. ROT modules

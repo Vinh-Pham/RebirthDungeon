@@ -64,22 +64,29 @@ export function App() {
       previous = 0;
       game.pause();
     }
+    function suppressContextMenu(event: Event) {
+      event.preventDefault();
+    }
     frame = requestAnimationFrame(tick);
     window.addEventListener("blur", pause);
     document.addEventListener("visibilitychange", pause);
+    document.addEventListener("contextmenu", suppressContextMenu, true);
     return () => {
       cancelAnimationFrame(frame);
       window.removeEventListener("blur", pause);
       document.removeEventListener("visibilitychange", pause);
+      document.removeEventListener("contextmenu", suppressContextMenu, true);
     };
   }, []);
 
-  const lastLine = view.log.at(-1);
-  const combatCue = lastLine?.includes("cleared. +")
-    ? { id: `${view.log.length}:${lastLine}`, outcome: "victory" as const }
-    : /deals .*damage|for .*damage/.test(lastLine ?? "")
-      ? { id: `${view.log.length}:${lastLine}`, outcome: "hit" as const }
-      : undefined;
+  const lastEntry = view.log.findLast((entry) => entry.category !== "character");
+  const lastLine = lastEntry?.message;
+  const combatCue =
+    lastEntry && lastLine?.startsWith("Chamber ") && lastLine.includes(" cleared.")
+      ? { id: String(lastEntry.id), outcome: "victory" as const }
+      : lastEntry && /deals .*damage|for .*damage/.test(lastEntry.message)
+        ? { id: String(lastEntry.id), outcome: "hit" as const }
+        : undefined;
 
   return (
     <DndProvider backend={HTML5Backend}>

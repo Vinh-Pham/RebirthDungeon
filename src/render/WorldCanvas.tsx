@@ -159,6 +159,7 @@ function Scene({
     if (continuous) fitFloor();
     else viewport.moveCenter(player.x * CELL, player.y * CELL);
     viewport.on("clicked", (event) => {
+      if ("button" in event.event && event.event.button === 2) return;
       const point = {
         x: Math.floor(event.world.x / CELL),
         y: Math.floor(event.world.y / CELL),

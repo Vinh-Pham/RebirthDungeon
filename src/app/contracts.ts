@@ -1,5 +1,6 @@
 import type { EquipmentSlot } from "../game/systems/inventory";
 import type { CombatActionDetails } from "../game/systems/combat";
+import type { LogEntry } from "../game/core/profile";
 
 export type Screen = "title" | "characters" | "creation" | "arrival" | "world";
 export type Panel =
@@ -88,7 +89,7 @@ export interface GameView {
   location: string;
   locationDetail: string;
   nearby?: string;
-  log: string[];
+  log: LogEntry[];
   arrival: { text: string; options: ActionOption[] };
   encounter?: {
     gauge: number;
@@ -133,6 +134,7 @@ export interface GameView {
   }[];
   settings: {
     reducedMotion: boolean;
+    showLogTimestamps: boolean;
     bindings: Record<string, string>;
   };
 }

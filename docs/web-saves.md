@@ -12,6 +12,11 @@ the prior snapshot available. Reloading the same browser origin resumes the
 active character and their skill bar assignments. Saves created before skill
 slots were added load with ten empty slots.
 
+The latest 100 log entries are saved per character with their category and
+event time. Older messages still appear under General and All without a
+timestamp. The timestamp display preference is shared across characters in
+the same browser.
+
 The first load after the XP curve update converts a character's XP to the new
 thresholds. Saves keep their level up to 200, their earned AP, and the same
 fractional progress within their level, rounded down to a whole XP point.

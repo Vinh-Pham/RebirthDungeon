@@ -5,6 +5,8 @@ import "./game.css";
 import { CharacterCreation } from "./CharacterCreation";
 import { CharacterPanel } from "./CharacterPanel";
 import { GameDialog } from "./GameDialog";
+import { GameLog, type LogTab } from "./GameLog";
+import { WorldDialogue } from "./WorldDialogue";
 import { ActionBar, type SkillSelection } from "./ActionBar";
 import { SkillsPanel } from "./SkillsPanel";
 import { InventoryPanel } from "./InventoryPanel";
@@ -26,6 +28,8 @@ export function GameUI({
   const windowPositions = useRef(new Map<string, Point>());
   const [deleteId, setDeleteId] = useState<string>();
   const [selectedSkill, selectSkill] = useState<SkillSelection>();
+  const [logCategory, setLogCategory] = useState<LogTab>("all");
+  const [mapSurface, setMapSurface] = useState<HTMLElement | null>(null);
   const skillsOpen = view.screen === "world" && view.panel === "skills";
   useEffect(() => {
     if (!skillsOpen) selectSkill(undefined);
@@ -180,45 +184,38 @@ export function GameUI({
       </main>
     );
   const player = view.player;
+  const worldDialogueOpen = view.panel === "service";
+  const logProps = {
+    entries: view.log,
+    category: logCategory,
+    onCategoryChange: setLogCategory,
+    showTimestamps: view.settings.showLogTimestamps,
+    onShowTimestampsChange: (showLogTimestamps: boolean) => actions.updateSettings({ showLogTimestamps }),
+  };
   return (
-    <main className="game-ui game-ui--world">
-      {view.panel !== "inventory" && view.panel !== "loot" && view.panel !== "skills" && error}
+    <main className={worldDialogueOpen ? "game-ui game-ui--world game-ui--dialogue" : "game-ui game-ui--world"}>
+      {!worldDialogueOpen && view.panel !== "inventory" && view.panel !== "loot" && view.panel !== "skills" && error}
       <div className="game-layout">
         <div className="world-column">
           <section
+            ref={setMapSurface}
             className="map-surface"
             aria-label="Dungeon map"
             aria-description={`${view.location}, ${view.locationDetail}`}
           >
             {mapView}
+            {worldDialogueOpen && mapSurface && (
+              <WorldDialogue
+                mapSurface={mapSurface}
+                title={view.details.title}
+                text={view.details.body}
+                options={options}
+                error={error}
+                onClose={() => actions.panel()}
+              />
+            )}
           </section>
-          <section className="game-log" aria-labelledby="game-log-heading">
-            <div className="game-log-heading">
-              <h2 id="game-log-heading">Log</h2>
-              <Button
-                size="sm"
-                variant="ghost"
-                aria-label="Expand Log"
-                aria-haspopup="dialog"
-                onPress={() => actions.panel("log")}
-              >
-                Expand
-              </Button>
-            </div>
-            <div
-              className="log-messages"
-              role="log"
-              aria-labelledby="game-log-heading"
-              tabIndex={0}
-              data-game-scroll
-            >
-              <div className="game-log-entries">
-                {view.log.slice(-8).map((line, i) => (
-                  <p key={i}>{line}</p>
-                ))}
-              </div>
-            </div>
-          </section>
+          <GameLog {...logProps} onExpand={() => actions.panel("log")} />
           <ActionBar view={view} actions={actions} editor={skillEditor} />
           {skillEditor && (
             <GameDialog
@@ -299,7 +296,7 @@ export function GameUI({
           </Button>
         ))}
       </nav>
-      {view.panel && view.panel !== "skills" && (
+      {view.panel && view.panel !== "skills" && !worldDialogueOpen && (
         <GameDialog
           key={view.panel}
           id={view.panel}
@@ -307,7 +304,7 @@ export function GameUI({
           onClose={() => actions.panel()}
           positions={windowPositions.current}
           className={`${view.panel}-dialog`}
-          escapeHandledByGame={view.panel !== "character"}
+          escapeHandledByGame={view.panel !== "character" && view.panel !== "log"}
         >
           {view.panel === "character" && player && view.characterSheet ? (
             <CharacterPanel player={player} sheet={view.characterSheet} />
@@ -322,11 +319,7 @@ export function GameUI({
               <LootPanel items={view.loot} busy={view.busy} takeLoot={actions.takeLoot} />
             </>
           ) : view.panel === "log" ? (
-            <div className="log-messages">
-              {view.log.length ? view.log.map((line, i) => (
-                <p key={i}>{line}</p>
-              )) : <p className="muted">No messages yet.</p>}
-            </div>
+            <GameLog {...logProps} />
           ) : (
             <p className="panel-copy">{view.details.body}</p>
           )}

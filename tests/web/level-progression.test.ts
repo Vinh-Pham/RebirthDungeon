@@ -1,7 +1,7 @@
 import "fake-indexeddb/auto";
 import { expect, it, vi } from "vitest";
 import { maxExperience, maxLevel } from "../../src/game/content/level-experience";
-import { arrive, maxHealth, newProfile, type Profile } from "../../src/game/core/profile";
+import { arrive, maxHealth, newProfile, type Profile, type SavedProfile } from "../../src/game/core/profile";
 import { GameSession } from "../../src/game/core/session";
 import { GameDatabase, SaveService } from "../../src/game/persistence";
 
@@ -14,6 +14,7 @@ it.each([
     initialProgress: [200, 400],
     finalLevel: 2,
     finalXp: 600,
+    earnedXp: 400,
     finalProgress: [200, 700],
   },
   {
@@ -24,9 +25,11 @@ it.each([
     initialProgress: [6_824_950, 6_825_000],
     finalLevel: maxLevel,
     finalXp: maxExperience,
+    earnedXp: 50,
     finalProgress: [0, 0],
   },
 ])("commits quest XP and one AP at level-up for $name", async (scenario) => {
+  const now = Date.UTC(2026, 10, 26, 12);
   const profile = newProfile(
     {
       name: "Signal Keeper",
@@ -43,6 +46,7 @@ it.each([
       face: 0,
     },
     42,
+    now,
   );
   profile.xpCurveVersion = scenario.version;
   profile.level = scenario.level;
@@ -60,14 +64,21 @@ it.each([
   const saves = new SaveService<Profile>(db);
   const id = "keeper";
   try {
-    const original = await saves.save({ id, name: profile.form.name, snapshot: profile }, 0, true);
-    let session = new GameSession(saves);
+    const original = await new SaveService<SavedProfile>(db).save(
+      { id, name: profile.form.name, snapshot: { ...profile, log: ["You reach Spindle Hollow."] } },
+      0,
+      true,
+    );
+    let session = new GameSession(saves, () => now);
     const progress = () => {
       const player = session.store.getState().view.player!;
       return [player.xpInLevel, player.xpToAdvance];
     };
     await session.initialize();
     expect(progress()).toEqual(scenario.initialProgress);
+    expect(session.store.getState().view.log).toEqual([
+      { id: 1, message: "You reach Spindle Hollow.", category: "general" },
+    ]);
     expect((await saves.load(id))!.revision).toBe(original.revision + (scenario.version === undefined ? 1 : 0));
     session.actions.interact();
     expect(session.store.getState().view.details.options).toEqual(
@@ -90,10 +101,16 @@ it.each([
       quest: 3,
       gold: profile.gold + 32,
     });
-    expect(session.store.getState().view.log).toContain(`You reached level ${scenario.finalLevel}. +1 AP.`);
-    session = new GameSession(saves);
+    expect(session.store.getState().view.log).toEqual([
+      { id: 1, message: "You reach Spindle Hollow.", category: "general" },
+      { id: 2, message: "Quest complete. You receive 32 gold.", category: "general", timestamp: now },
+      { id: 3, message: `You gain ${scenario.earnedXp} XP.`, category: "character", timestamp: now },
+      { id: 4, message: `You reached level ${scenario.finalLevel}. +1 AP.`, category: "character", timestamp: now },
+    ]);
+    session = new GameSession(saves, () => now + 60_000);
     await session.initialize();
     expect(progress()).toEqual(scenario.finalProgress);
+    expect(session.store.getState().view.log).toEqual(completed.snapshot.log);
     expect((await saves.load(id))!.revision).toBe(completed.revision);
   } finally {
     await db.delete();

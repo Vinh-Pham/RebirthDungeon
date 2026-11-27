@@ -76,8 +76,10 @@ import {
   thresholdCleared,
   validForm,
   validateProfile,
+  type LogCategory,
   type Material,
   type Profile,
+  type SavedProfile,
   type Town,
 } from "./profile";
 import {
@@ -116,6 +118,7 @@ function restoreBindings(saved: Record<string, string> = {}) {
 }
 const defaultSettings: GameView["settings"] = {
   reducedMotion: false,
+  showLogTimestamps: true,
   bindings,
 };
 const emptyDetails = { title: "", body: "", options: [] as ActionOption[] };
@@ -191,9 +194,6 @@ function inventoryView(profile: Profile): GameView["inventory"] {
   };
 }
 
-const append = (p: Profile, ...lines: string[]) => {
-  p.log = [...p.log, ...lines].slice(-100);
-};
 const gateOptions = (p: Profile) =>
   p.gates.filter((town) => town !== p.location).map((town) => option(`travel:${town}`, `Travel to ${townNames[town]}`));
 
@@ -275,6 +275,7 @@ export class GameSession {
       this.records = records.filter((entry) => validateProfile(entry.snapshot));
       this.settings = {
         reducedMotion: settings.reducedMotion ?? defaultSettings.reducedMotion,
+        showLogTimestamps: settings.showLogTimestamps ?? defaultSettings.showLogTimestamps,
         bindings: restoreBindings(settings.bindings),
       };
       const record = this.records.find((entry) => entry.id === active);
@@ -324,8 +325,25 @@ export class GameSession {
     this.mapView = undefined;
   }
 
-  private async openCharacter(record: SaveRecord<Profile>, select = false) {
-    const { snapshot, id, name, revision } = record;
+  private appendLog(p: Profile, category: LogCategory, ...messages: string[]) {
+    if (!messages.length) return;
+    const timestamp = this.now();
+    const previousId = p.log.at(-1)?.id ?? 0;
+    p.log = [
+      ...p.log,
+      ...messages.map((message, index) => ({ id: previousId + index + 1, message, category, timestamp })),
+    ].slice(-100);
+  }
+
+  private async openCharacter(record: SaveRecord<SavedProfile>, select = false) {
+    const { id, name, revision } = record;
+    const snapshot: Profile = {
+      ...record.snapshot,
+      log: record.snapshot.log.map((entry, index) =>
+        typeof entry === "string" ? { id: index + 1, message: entry, category: "general" } : entry,
+      ),
+    };
+    let normalized: SaveRecord<Profile> = { ...record, snapshot };
     const { location } = snapshot;
     let updated: Profile | undefined;
     if (snapshot.xpCurveVersion === undefined) {
@@ -342,7 +360,7 @@ export class GameSession {
       if (weeks > 0) {
         const ap = 5 * (Math.min(25, updated.age) - Math.min(25, previousAge));
         updated.ap += ap;
-        append(updated, `You are now age ${updated.age}.${ap ? ` +${ap} AP.` : ""}`);
+        this.appendLog(updated, "character", `You are now age ${updated.age}.${ap ? ` +${ap} AP.` : ""}`);
       }
     }
     const maximum = this.battleStats(updated ?? snapshot);
@@ -376,9 +394,9 @@ export class GameSession {
     }
     if (updated) {
       this.syncVitals(updated);
-      record = await this.saves.save({ id, name, snapshot: updated }, revision, select);
+      normalized = await this.saves.save({ id, name, snapshot: updated }, revision, select);
     } else if (select) await this.saves.setSetting("active", id);
-    this.adopt(record, true);
+    this.adopt(normalized, true);
   }
 
   private async commit(profile: Profile) {
@@ -672,11 +690,10 @@ export class GameSession {
   }
 
   private openService(place: Landmark) {
-    this.openPanel("service");
     this.service = place;
     this.serviceMode = "options";
     this.dialogueView = undefined;
-    this.publish();
+    this.openPanel("service");
     const story = serviceStory[place.id as ServiceId];
     if (!story) return;
     void this.perform(async () => {
@@ -729,7 +746,7 @@ export class GameSession {
     const door = map.doors?.find((value) => range(value, destination) === 0);
     if (door) {
       if (this.passageBlocked(p, door.target)) {
-        append(p, "The passage remains sealed. Finish the chamber encounters.");
+        this.appendLog(p, "general", "The passage remains sealed. Finish the chamber encounters.");
         this.route = [];
         return;
       }
@@ -737,8 +754,9 @@ export class GameSession {
       p.links = [...new Set([...p.links, link(current, door.target)])];
       arrive(p, "threshold", door.target, door.arrival);
       this.route = [];
-      append(
+      this.appendLog(
         p,
+        "general",
         door.target === (p.thresholdVersion === 2 ? THRESHOLD_ROOM_COUNT : 9)
           ? "You enter the signal vault."
           : `You enter chamber ${door.target}.`,
@@ -784,7 +802,11 @@ export class GameSession {
     p.battle = encounter.snapshot();
     this.route = [];
     this.routeTarget = undefined;
-    append(p, `${enemies.map((enemy) => enemy.name).join(", ")} ${enemies.length === 1 ? "engages" : "engage"} you.`);
+    this.appendLog(
+      p,
+      "combat",
+      `${enemies.map((enemy) => enemy.name).join(", ")} ${enemies.length === 1 ? "engages" : "engage"} you.`,
+    );
   }
 
   private battleStats(p: Profile) {
@@ -901,17 +923,17 @@ export class GameSession {
     };
   }
 
-  private gainXp(p: Profile, xp: number, message: string) {
+  private gainXp(p: Profile, xp: number) {
     const earned = Math.min(xp, maxExperience - p.xp);
     p.xp += earned;
-    append(p, earned > 0 ? `${message} +${earned} XP.` : message);
+    if (earned > 0) this.appendLog(p, "character", `You gain ${earned} XP.`);
     const level = levelForXp(p.xp);
     if (level <= p.level) return;
     const gained = level - p.level;
     p.ap += gained;
     p.level = level;
     this.restoreVitals(p);
-    append(p, `You reached level ${level}. +${gained} AP.`);
+    this.appendLog(p, "character", `You reached level ${level}. +${gained} AP.`);
   }
 
   private finishBattle(p: Profile, battle: Combat) {
@@ -934,7 +956,7 @@ export class GameSession {
       p.pending = {};
       this.resetThreshold(p);
       this.arriveAtTownLandmark(p, p.origin, "dungeon");
-      append(p, "You wake in the settlement. The Threshold has shifted into a new run.");
+      this.appendLog(p, "combat", "You wake in the settlement. The Threshold has shifted into a new run.");
       return;
     }
     if (p.cleared.includes(p.room)) return;
@@ -956,7 +978,8 @@ export class GameSession {
       if (cobweb) p.pending.cobweb = (p.pending.cobweb ?? 0) + cobweb;
       if (roll(3) === 0) p.pending.gold = (p.pending.gold ?? 0) + roll(6) + 1;
     }
-    this.gainXp(p, xp, `Chamber ${p.room} cleared.`);
+    this.appendLog(p, "combat", `Chamber ${p.room} cleared.`);
+    this.gainXp(p, xp);
   }
 
   private finishWolfBattle(p: Profile, battle: Combat) {
@@ -966,7 +989,7 @@ export class GameSession {
     if (!battle.won) {
       this.restoreVitals(p);
       p.position = p.map.entry;
-      append(p, "You wake back at the settlement entrance.");
+      this.appendLog(p, "combat", "You wake back at the settlement entrance.");
       return;
     }
     p.map.enemies = p.map.enemies.filter((other) => other.id !== enemy.id);
@@ -977,7 +1000,8 @@ export class GameSession {
     } = wolves[enemy.sprite];
     const gold = min + (((battle.seed * 16807) % 2147483647) % (max - min + 1));
     p.pending.gold = (p.pending.gold ?? 0) + gold;
-    this.gainXp(p, experience, `You defeat the ${enemy.name}.`);
+    this.appendLog(p, "combat", `You defeat the ${enemy.name}.`);
+    this.gainXp(p, experience);
   }
 
   travelTo = (target: Point) => {
@@ -1096,7 +1120,7 @@ export class GameSession {
         this.update(
           (p) => {
             if (recovered?.mp !== undefined) p.mp = recovered.mp;
-            append(p, ...events.map((event) => event.message));
+            this.appendLog(p, "combat", ...events.map((event) => event.message));
             const training = events.flatMap((event) => event.training);
             if (training.length) p.skills = recordTraining(p.skills, training);
             for (const item of p.inventory.items) {
@@ -1164,7 +1188,7 @@ export class GameSession {
       this.update((candidate) => {
         if (range(door, candidate.position) === 0) {
           if (this.passageBlocked(candidate, door.target)) {
-            append(candidate, "The passage is still sealed.");
+            this.appendLog(candidate, "general", "The passage is still sealed.");
           } else {
             candidate.links = [...new Set([...candidate.links, link(candidate.room, door.target)])];
             arrive(candidate, "threshold", door.target, door.arrival);
@@ -1183,8 +1207,11 @@ export class GameSession {
       if (battle) {
         p.hp = battle.useTonic();
         p.battle = battle.snapshot();
-      } else p.hp = Math.min(healableLife(p), p.hp + tonicHealing);
-      append(p, "You drink a Healing Tonic. Your Time gauge is unchanged.");
+        this.appendLog(p, "combat", "You drink a Healing Tonic. Your Time gauge is unchanged.");
+      } else {
+        p.hp = Math.min(healableLife(p), p.hp + tonicHealing);
+        this.appendLog(p, "general", "You drink a Healing Tonic.");
+      }
     });
   }
 
@@ -1198,7 +1225,7 @@ export class GameSession {
     this.update((p) => {
       if (!battle.queue(command)) throw new Error("This action is unavailable.");
       p.battle = battle.snapshot();
-      append(p, `${itemName(command)} queued.`);
+      this.appendLog(p, "combat", `${itemName(command)} queued.`);
     });
   }
 
@@ -1220,7 +1247,7 @@ export class GameSession {
         const candidate = structuredClone(p);
         candidate.arrivalText = dialogue.lines.join("\n");
         candidate.dialogue = saveDialogue(story);
-        append(candidate, ...dialogue.lines);
+        this.appendLog(candidate, "general", ...dialogue.lines);
         await this.commit(candidate);
       });
       return;
@@ -1230,7 +1257,7 @@ export class GameSession {
         const candidate = structuredClone(p);
         arrive(candidate, "lantern_rest");
         delete candidate.dialogue;
-        append(candidate, "You enter Lantern Rest.");
+        this.appendLog(candidate, "general", "You enter Lantern Rest.");
         await this.commit(candidate);
         this.screen = "world";
       });
@@ -1252,7 +1279,7 @@ export class GameSession {
         const nextView = chooseDialogue(dialogue, Number(id.slice(4)));
         const candidate = structuredClone(p);
         candidate.dialogue = saveDialogue(dialogue);
-        append(candidate, ...nextView.lines);
+        this.appendLog(candidate, "general", ...nextView.lines);
         await this.commit(candidate);
         this.dialogueView = nextView;
       });
@@ -1290,13 +1317,13 @@ export class GameSession {
           p.position = { x: portal.x + 1, y: portal.y };
           rememberThresholdVisibility(p);
         }
-        append(p, "You descend into the Threshold.");
+        this.appendLog(p, "general", "You descend into the Threshold.");
         return;
       }
       case "quest-accept":
         if (p.quest === 0) {
           p.quest = 1;
-          append(p, "Quest accepted: Carry the Signal.");
+          this.appendLog(p, "general", "Quest accepted: Carry the Signal.");
         }
         return;
       case "quest-reward":
@@ -1304,20 +1331,21 @@ export class GameSession {
           p.quest = 3;
           const { gold, xp } = signalQuestReward;
           p.gold += gold;
-          this.gainXp(p, xp, `Quest complete. You receive ${gold} gold.`);
+          this.appendLog(p, "general", `Quest complete. You receive ${gold} gold.`);
+          this.gainXp(p, xp);
         }
         return;
       case "gate-register":
         if ((p.location === "lantern_rest" || p.location === "spindle_hollow") && !p.gates.includes(p.location)) {
           p.gates.push(p.location);
-          append(p, `${townNames[p.location]} Moon Gate registered.`);
+          this.appendLog(p, "general", `${townNames[p.location]} Moon Gate registered.`);
         }
         return;
       case "travel": {
         const town = arg as Town;
         if (!p.gates.includes(town)) throw new Error("That gate has not been registered.");
         this.arriveAtTownLandmark(p, town, "gate");
-        append(p, `The Moon Gate carries you to ${townNames[town]}.`);
+        this.appendLog(p, "general", `The Moon Gate carries you to ${townNames[town]}.`);
         return;
       }
       case "starter-sword":
@@ -1325,7 +1353,7 @@ export class GameSession {
         const item = action === "starter-sword" ? starterItems.sword : starterItems.armor;
         if (!addItem(p.inventory, item)) throw new Error("No room for this item, or you already own it.");
         equipItem(p.inventory, item.id);
-        append(p, `You received and equipped ${item.name}.`);
+        this.appendLog(p, "general", `You received and equipped ${item.name}.`);
         return;
       }
       case "take-sword":
@@ -1334,8 +1362,9 @@ export class GameSession {
         if (!item || (action === "take-sword" ? !addItem(p.inventory, item) : !removeItem(p.inventory, item.id))) {
           throw new Error("This weapon cannot be changed right now.");
         }
-        append(
+        this.appendLog(
           p,
+          "general",
           action === "take-sword" ? `${item.name} packed into your satchel.` : `${item.name} returned to the rack.`,
         );
         return;
@@ -1376,30 +1405,30 @@ export class GameSession {
         };
         if (!addItem(p.inventory, entry)) throw new Error("Your bag has no suitable space.");
         p.gold -= item.price;
-        append(p, `You bought ${item.name}.`);
+        this.appendLog(p, "general", `You bought ${item.name}.`);
         return;
       }
       case "buy-tonic":
         if (p.gold < 8) throw new Error("You need 8 gold.");
         p.gold -= 8;
         p.tonics++;
-        append(p, "You bought a Healing Tonic.");
+        this.appendLog(p, "general", "You bought a Healing Tonic.");
         return;
       case "buy-pouch":
         if (!addPouch(p, arg as keyof typeof pouches)) throw new Error("This pouch requires more room or gold.");
-        append(p, "You bought a gold pouch.");
+        this.appendLog(p, "general", "You bought a gold pouch.");
         return;
       case "pouch":
         if (p.gold < 18 || p.inventory.height >= 12) throw new Error("Bag expansion is unavailable.");
         p.gold -= 18;
         p.inventory.height++;
-        append(p, "Your bag has another row of space.");
+        this.appendLog(p, "general", "Your bag has another row of space.");
         return;
       case "heal":
         p.hp = maxLife(p);
         p.wounds = 0;
         p.deadly = false;
-        append(p, "You rest until your strength returns.");
+        this.appendLog(p, "general", "You rest until your strength returns.");
         return;
       case "repair": {
         const maximum = (item: Profile["inventory"]["items"][number]) =>
@@ -1408,14 +1437,14 @@ export class GameSession {
           (item) => item.durability !== undefined && item.durability < maximum(item),
         );
         if (!worn.length) {
-          append(p, "Your equipment is in good repair.");
+          this.appendLog(p, "general", "Your equipment is in good repair.");
           return;
         }
         const cost = worn.reduce((sum, item) => sum + Math.ceil((maximum(item) - item.durability!) / 100) * 2, 0);
         if (p.gold < cost) throw new Error(`Repairs cost ${cost} gold.`);
         p.gold -= cost;
         for (const item of worn) item.durability = maximum(item);
-        append(p, "The blacksmith repairs your equipment.");
+        this.appendLog(p, "general", "The blacksmith repairs your equipment.");
         return;
       }
       case "deposit":
@@ -1438,7 +1467,7 @@ export class GameSession {
         p.bank = result.bankGold;
         p.hp = result.health;
         p.materials = result.materials as Profile["materials"];
-        append(p, action === "craft" ? `${itemName(arg)} complete.` : "Gold transferred.");
+        this.appendLog(p, "general", action === "craft" ? `${itemName(arg)} complete.` : "Gold transferred.");
         return;
       }
       case "harvest": {
@@ -1459,7 +1488,11 @@ export class GameSession {
         const amount =
           roll < stats.huge_lucky_gather ? 20 : roll < stats.huge_lucky_gather + stats.lucky_gather ? 2 : 1;
         p.materials.firewood += amount;
-        append(p, amount === 1 ? "You collect a piece of firewood." : `Lucky gather! You collect ${amount} firewood.`);
+        this.appendLog(
+          p,
+          "general",
+          amount === 1 ? "You collect a piece of firewood." : `Lucky gather! You collect ${amount} firewood.`,
+        );
         return;
       }
       case "practice": {
@@ -1468,7 +1501,7 @@ export class GameSession {
         );
         if (!sword) throw new Error("Equip a usable weapon before practicing.");
         if (p.skills.combat_mastery?.rank === "novice") p.skills = recordTraining(p.skills, ["attack"]);
-        append(p, `${sword.name} strikes the practice post.`);
+        this.appendLog(p, "character", `${sword.name} strikes the practice post.`);
         return;
       }
       case "learn": {
@@ -1487,7 +1520,7 @@ export class GameSession {
         )
           return;
         p.skills[arg] = { rank: windmill ? "F" : skill.ranks[0].rank, training: {} };
-        append(p, `You learn ${skill.name}${windmill ? " at rank F" : ""}.`);
+        this.appendLog(p, "character", `You learn ${skill.name}${windmill ? " at rank F" : ""}.`);
         return;
       }
       case "advance": {
@@ -1496,7 +1529,7 @@ export class GameSession {
         if (!next) throw new Error("More training or AP is required.");
         p.skills[arg] = next.skill;
         p.ap = next.ap;
-        append(p, `${skillCatalog[arg].name} advances to ${next.skill.rank}.`);
+        this.appendLog(p, "character", `${skillCatalog[arg].name} advances to ${next.skill.rank}.`);
         return;
       }
       case "slot": {
@@ -1519,7 +1552,7 @@ export class GameSession {
         if (!chest) return;
         p.treasure = true;
         p.pending = Object.fromEntries(Object.entries(chest)) as Profile["pending"];
-        append(p, "The Signal Cache opens. Only one chest may be claimed per run.");
+        this.appendLog(p, "general", "The Signal Cache opens. Only one chest may be claimed per run.");
         return;
       }
       case "retreat": {
@@ -1534,7 +1567,7 @@ export class GameSession {
         )
           return;
         this.arriveAtTownLandmark(p, p.thresholdVersion ? "lantern_rest" : p.origin, "dungeon");
-        append(p, "You return through the entrance passage.");
+        this.appendLog(p, "general", "You return through the entrance passage.");
         return;
       }
       case "complete": {
@@ -1554,7 +1587,7 @@ export class GameSession {
             if (p.quest === 1) p.quest = 2;
           }
           this.arriveAtTownLandmark(p, "spindle_hollow", "dungeon");
-          append(p, "You reach Spindle Hollow.");
+          this.appendLog(p, "general", "You reach Spindle Hollow.");
           return;
         }
         if (!p.treasure || Object.keys(p.pending).length)
@@ -1562,7 +1595,7 @@ export class GameSession {
         p.completions++;
         if (p.quest === 1) p.quest = 2;
         arrive(p, p.origin === "lantern_rest" ? "spindle_hollow" : "lantern_rest");
-        append(p, `You reach ${townNames[p.location as Town]}.`);
+        this.appendLog(p, "general", `You reach ${townNames[p.location as Town]}.`);
         return;
       }
     }
@@ -1689,7 +1722,7 @@ export class GameSession {
             else if (Object.hasOwn(p.materials, id)) p.materials[id as Material] += quantity;
             delete p.pending[id];
           }
-          append(p, "You take the loot.");
+          this.appendLog(p, "general", "You take the loot.");
         },
         () => {
           if (this.panel === "loot" && !Object.keys(this.profile?.snapshot.pending ?? {}).length)

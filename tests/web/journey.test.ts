@@ -250,6 +250,12 @@ it("wins the first encounter with a new character and takes its loot", async () 
     expect(view().player!.hp).toBeGreaterThan(0);
     const before = (await saves.load("novice"))!.snapshot;
     expect(before.cleared).toEqual([1]);
+    expect(before.log).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ category: "combat", message: "Chamber 1 cleared.", timestamp: expect.any(Number) }),
+        expect.objectContaining({ category: "character", message: expect.stringMatching(/^You gain \d+ XP\.$/) }),
+      ]),
+    );
     session.actions.takeLoot();
     await idle();
     const after = (await saves.load("novice"))!.snapshot;

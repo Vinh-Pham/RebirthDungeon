@@ -23,6 +23,14 @@ import {
 } from "../world/world";
 import { createLegacyDungeon } from "../world/legacy-threshold";
 
+export type LogCategory = "general" | "combat" | "character";
+export interface LogEntry {
+  id: number;
+  message: string;
+  category: LogCategory;
+  timestamp?: number;
+}
+
 export type Town = "lantern_rest" | "spindle_hollow";
 export type Location = "arrival" | Town | "threshold";
 export const townNames = {
@@ -72,13 +80,15 @@ export interface Profile {
   pending: Record<string, number>;
   skills: Record<string, RankedSkill>;
   harvests: Record<string, { count: number; at: number; gathers?: number }>;
-  log: string[];
+  log: LogEntry[];
   battle?: Battle;
   wolfOpponent?: string;
   wolfRespawns?: Record<string, number>;
   dialogue?: SavedDialogue;
   arrivalText?: string;
 }
+
+export type SavedProfile = Omit<Profile, "log"> & { log: LogEntry[] | string[] };
 
 const materials: Profile["materials"] = {
   fish: 0,
@@ -433,7 +443,18 @@ function validMap(value: unknown): value is WorldMap {
   );
 }
 
-export function validateProfile(value: unknown): value is Profile {
+function validLogEntry(entry: unknown) {
+  if (!record(entry)) return false;
+  const { category, timestamp } = entry;
+  return (
+    Number.isSafeInteger(entry.id) &&
+    typeof entry.message === "string" &&
+    (category === "general" || category === "combat" || category === "character") &&
+    (timestamp === undefined || (typeof timestamp === "number" && finite(new Date(timestamp).getTime())))
+  );
+}
+
+export function validateProfile(value: unknown): value is SavedProfile {
   if (
     !record(value) ||
     value.version !== 1 ||
@@ -451,7 +472,7 @@ export function validateProfile(value: unknown): value is Profile {
     !value.gates.every(isTown) ||
     !record(value.inventory) ||
     !Array.isArray(value.log) ||
-    !value.log.every((line) => typeof line === "string")
+    !(value.log.every((entry) => typeof entry === "string") || value.log.every(validLogEntry))
   )
     return false;
   const roomCount = value.thresholdVersion ? THRESHOLD_ROOM_COUNT : 9;

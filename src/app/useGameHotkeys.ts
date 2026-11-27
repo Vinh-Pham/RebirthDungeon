@@ -16,7 +16,8 @@ function ignoreShortcut(event: KeyboardEvent) {
     event.isComposing ||
     event.metaKey ||
     event.ctrlKey ||
-    event.altKey
+    event.altKey ||
+    (event.target instanceof Element && Boolean(event.target.closest("[data-log-options]")))
   );
 }
 
@@ -44,7 +45,7 @@ export function useGameHotkeys(game: GameSession, view: GameView) {
       actions.panel(view.panel ? undefined : "settings");
     },
     {
-      enabled: view.screen === "world" && view.panel !== "character",
+      enabled: view.screen === "world" && view.panel !== "character" && view.panel !== "log",
       enableOnFormTags: Boolean(view.panel),
       enableOnContentEditable: Boolean(view.panel),
       ignoreModifiers: true,
@@ -76,8 +77,8 @@ export function useGameHotkeys(game: GameSession, view: GameView) {
       if (direction) {
         if (
           key.startsWith("arrow") &&
-          event.target instanceof HTMLElement &&
-          event.target.hasAttribute("data-game-scroll")
+          event.target instanceof Element &&
+          event.target.closest('[data-game-scroll], [role="tablist"]')
         ) return;
         event.preventDefault();
         game.step(...direction, event.repeat);

@@ -22,6 +22,8 @@ canvas projections.
 | `src/render/WorldCanvas.tsx` | `@pixi/react` application, tilemap, viewport and GSAP movement |
 | `src/ui/` | HeroUI title, creation, HUD, panels and controls |
 | `src/ui/GameDialog.tsx` | HeroUI overlay lifecycle and wmkit window movement |
+| `src/ui/WorldDialogue.tsx` | HeroUI world interactions anchored to the canvas |
+| `src/ui/GameLog.tsx` | Category tabs, timestamps and retained log display |
 | `src/ui/InventoryGrid.tsx` | React DnD and keyboard input for grid placement |
 | `src/ui/ActionBar.tsx` | Shared exploration and combat slots with drag-and-drop assignment |
 | `tools/web/pack-assets.mjs` | Reproducible original asset copy, Pixi atlas and hash manifest |
