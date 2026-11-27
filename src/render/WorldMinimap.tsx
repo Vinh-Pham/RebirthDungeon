@@ -17,24 +17,28 @@ const terrainColors: Record<number, string> = {
 export function WorldMinimap({ view, location }: { view: MapView; location: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { map, position, visible, explored } = view;
-  const size = (Math.max(map.width, map.height) + 4) * cellSize;
+  const size = map.height * cellSize;
 
   useEffect(() => {
     const ctx = canvasRef.current?.getContext("2d");
     if (!ctx) return;
     const known = explored && new Set(explored);
-    const offsetX = (size - map.width * cellSize) / 2;
-    const offsetY = (size - map.height * cellSize) / 2;
+    const mapWidth = map.width * cellSize;
+    const playerCenterX = (position.x + 0.5) * cellSize;
+    const offsetX =
+      mapWidth <= size ? (size - mapWidth) / 2 : -Math.max(0, Math.min(mapWidth - size, playerCenterX - size / 2));
+    const startX = Math.max(0, Math.floor(-offsetX / cellSize));
+    const endX = Math.min(map.width, Math.ceil((size - offsetX) / cellSize));
 
     ctx.clearRect(0, 0, size, size);
     for (let y = 0; y < map.height; y++) {
-      for (let x = 0; x < map.width; x++) {
+      for (let x = startX; x < endX; x++) {
         const cell = key(x, y);
         const inSight = visible ? visible.has(cell) : !known;
         if (!inSight && !known?.has(cell)) continue;
         const kind = map.tiles[y * map.width + x];
         ctx.fillStyle = inSight ? (terrainColors[kind] ?? "#407080") : kind === 1 ? "#344a5a" : "#28353e";
-        ctx.fillRect(offsetX + x * cellSize, offsetY + y * cellSize, cellSize, cellSize);
+        ctx.fillRect(offsetX + x * cellSize, y * cellSize, cellSize, cellSize);
       }
     }
     const closedGates = (map.gates ?? []).filter(({ x, y }) => map.tiles[y * map.width + x] === CLOSED_DUNGEON_GATE);
@@ -47,16 +51,16 @@ export function WorldMinimap({ view, location }: { view: MapView; location: stri
         continue;
       }
       ctx.fillStyle = "id" in marker && marker.id !== "gate" ? "#b0a987" : "#5bbfc5";
-      ctx.fillRect(offsetX + marker.x * cellSize, offsetY + marker.y * cellSize, cellSize, cellSize);
+      ctx.fillRect(offsetX + marker.x * cellSize, marker.y * cellSize, cellSize, cellSize);
     }
     const npcInset = (cellSize - npcMarkerSize) / 2;
     ctx.fillStyle = npcMarkerColor;
     for (const { x, y } of npcMarkers) {
-      ctx.fillRect(offsetX + x * cellSize + npcInset, offsetY + y * cellSize + npcInset, npcMarkerSize, npcMarkerSize);
+      ctx.fillRect(offsetX + x * cellSize + npcInset, y * cellSize + npcInset, npcMarkerSize, npcMarkerSize);
     }
 
     const x = offsetX + position.x * cellSize;
-    const y = offsetY + position.y * cellSize;
+    const y = position.y * cellSize;
     ctx.fillStyle = "#28353e";
     ctx.fillRect(x - 2, y - 2, cellSize + 4, cellSize + 4);
     ctx.fillStyle = "#f2ec8b";
@@ -66,7 +70,7 @@ export function WorldMinimap({ view, location }: { view: MapView; location: stri
   return (
     <canvas
       ref={canvasRef}
-      className="world-minimap pointer-events-none absolute top-3 right-3 z-1 aspect-square h-auto w-[var(--minimap-size)] border border-[#3b5556] bg-background [image-rendering:pixelated] max-[360px]:right-2"
+      className="world-minimap pointer-events-none absolute top-3 right-3 z-1 aspect-square h-auto w-[var(--minimap-size)] border border-[#3b5556] bg-black/35 [image-rendering:pixelated] max-[360px]:right-2"
       width={size}
       height={size}
       role="img"

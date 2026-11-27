@@ -49,6 +49,7 @@ export interface WorldCanvasProps {
   onTarget: (id: string) => void;
 }
 const CELL = 24;
+const startingZoom = 1.125;
 
 function terrainTexture(kind: number): Texture {
   const canvas = document.createElement("canvas");
@@ -157,7 +158,10 @@ function Scene({
       viewport.moveCenter((map.width * CELL) / 2, (map.height * CELL) / 2);
     };
     if (continuous) fitFloor();
-    else viewport.moveCenter(player.x * CELL, player.y * CELL);
+    else {
+      viewport.setZoom(startingZoom, false);
+      viewport.moveCenter(player.x * CELL, player.y * CELL);
+    }
     viewport.on("clicked", (event) => {
       if ("button" in event.event && event.event.button === 2) return;
       const point = {

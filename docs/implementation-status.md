@@ -74,11 +74,13 @@ encounter at 170% base melee damage and costs 2 stamina total.
 [Mabinogi World Wiki](https://wiki.mabinogiworld.com/view/Windmill)
 
 The map fills the space between the HUD controls within the viewport.
+The town camera starts at 112.5% zoom.
 The bottom menu starts with the character's level and a full-width XP
 row with centered progress values. Below it, the HP, MP, and Stamina
 bars show whole-number values aligned left above the game buttons.
-The square minimap overlays the top-right corner of the canvas. It tracks
-the player and respects dungeon fog of war. Blue squares mark interactable
+The square minimap overlays the top-right corner of the canvas. It shows
+the current map's full height and pans sideways with the character on
+wider maps. It respects dungeon fog of war. Blue squares mark interactable
 NPCs in Lantern Rest and Spindle Hollow. The bottom-right Nearby indicator
 appears when a landmark is in reach. Interact with a landmark using its
 map tile or the keyboard binding.

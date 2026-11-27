@@ -87,7 +87,20 @@ agent-browser wait --fn '(() => {
     xp?.value === 0 && xp.max === 400 && xp.getAttribute("aria-valuetext") === "0 / 400" &&
     document.querySelector(".menu-level").textContent === "Lv. 1";
 })()'
-agent-browser eval 'window.initialMinimap = document.querySelector(".world-minimap").toDataURL(); true'
+# Lantern Rest fills the minimap's height with 52 tiles, starting at (3, 12).
+agent-browser eval '
+  window.minimapPixel = (x, y) => {
+    const map = document.querySelector(".world-minimap");
+    return map.getContext("2d").getImageData(x, y, 1, 1).data;
+  };
+  true'
+agent-browser wait --fn '(() => {
+  const map = document.querySelector(".world-minimap");
+  return map.width === 208 && map.height === 208 &&
+    window.minimapPixel(0, 0)[3] === 255 &&
+    window.minimapPixel(207, 207)[3] === 255 &&
+    window.minimapPixel(3 * 4 + 2, 12 * 4 + 2).join(",") === "242,236,139,255";
+})()'
 assert_world_fits
 agent-browser eval 'window.logToggleCanvasHeight = document.querySelector(".world-canvas canvas").height'
 agent-browser press l
@@ -96,14 +109,19 @@ agent-browser press l
 agent-browser wait '.map-surface .game-log'
 agent-browser screenshot "$out/town.png"
 
-# The authored Lantern Rest gate sits at tile (48, 5) in the initial 24px viewport.
-gate_x="$(agent-browser eval 'Math.round(document.querySelector(".world-canvas canvas").getBoundingClientRect().left + 1164)')"
-gate_y="$(agent-browser eval 'Math.round(document.querySelector(".world-canvas canvas").getBoundingClientRect().top + 132)')"
+# The authored Lantern Rest gate sits at tile (48, 5) in the initial 27px viewport.
+gate_x="$(agent-browser eval 'Math.round(document.querySelector(".world-canvas canvas").getBoundingClientRect().left + 48.5 * 27)')"
+gate_y="$(agent-browser eval 'Math.round(document.querySelector(".world-canvas canvas").getBoundingClientRect().top + 5.5 * 27)')"
 agent-browser mouse move "$gate_x" "$gate_y"
 agent-browser mouse down
 agent-browser mouse up
 agent-browser wait --text 'Register This Moon Gate'
-agent-browser wait --fn 'document.querySelector(".world-minimap").toDataURL() !== window.initialMinimap'
+agent-browser wait --fn '(() => {
+  const map = document.querySelector(".world-minimap");
+  const isPlayer = (x, y) => window.minimapPixel(x, y).join(",") === "242,236,139,255";
+  return !isPlayer(3 * 4 + 2, 12 * 4 + 2) &&
+    [4, 5, 6].some(y => isPlayer(map.width / 2, y * 4 + 2));
+})()'
 agent-browser find role button click --name 'Register This Moon Gate'
 agent-browser wait --fn '![...document.querySelectorAll(".world-dialogue button")].some(button => button.textContent === "Register This Moon Gate")'
 agent-browser find role button click --name 'Close [Esc]'
