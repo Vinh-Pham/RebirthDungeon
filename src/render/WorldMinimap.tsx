@@ -53,6 +53,15 @@ export function WorldMinimap({ view, location }: { view: MapView; location: stri
       ctx.fillStyle = "id" in marker && marker.id !== "gate" ? "#b0a987" : "#5bbfc5";
       ctx.fillRect(offsetX + marker.x * cellSize, marker.y * cellSize, cellSize, cellSize);
     }
+    ctx.fillStyle = "#576069";
+    for (const tree of map.largeTrees ?? []) {
+      const cells: string[] = [];
+      for (let dy = 0; dy < tree.height; dy++) {
+        for (let dx = 0; dx < tree.width; dx++) cells.push(key(tree.x + dx, tree.y + dy));
+      }
+      if (visible && !cells.some((cell) => visible.has(cell) || known?.has(cell))) continue;
+      ctx.fillRect(offsetX + tree.x * cellSize, tree.y * cellSize, tree.width * cellSize, tree.height * cellSize);
+    }
     const npcInset = (cellSize - npcMarkerSize) / 2;
     ctx.fillStyle = npcMarkerColor;
     for (const { x, y } of npcMarkers) {

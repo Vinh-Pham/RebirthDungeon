@@ -1,5 +1,5 @@
 import projectSource from "../../../assets/maps/towns.ldtk?raw";
-import type { Landmark, WorldMap } from "./world";
+import type { Landmark, LargeTree, LargeTreeKind, WorldMap } from "./world";
 
 type RecordValue = Record<string, unknown>;
 
@@ -157,8 +157,60 @@ export function importLdtkTowns(source: string): Map<string, WorldMap> {
         );
         return { id: residentId, x, y };
       });
+    const largeTreeKinds: Record<string, LargeTreeKind> = {
+      pine: "town_tree_pine",
+      canopy: "town_tree_canopy",
+      crystal: "town_tree_crystal",
+      apple: "town_tree_apple",
+    };
+    const largeTrees: LargeTree[] = markers
+      .filter((place) => place.id.startsWith("large_tree_"))
+      .map(({ id: treeId, x, y }) => {
+        const match = /^large_tree_(pine|canopy|crystal|apple)_[a-zA-Z0-9_]+$/.exec(treeId);
+        requireValue(match, `${id} has an invalid large tree "${treeId}".`);
+        requireValue(x + 1 < width && y + 1 < height, `${id} large tree "${treeId}" exceeds map bounds.`);
+        for (let dy = 0; dy < 2; dy++) {
+          for (let dx = 0; dx < 2; dx++) {
+            const cellX = x + dx;
+            const cellY = y + dy;
+            requireValue(
+              [0, 1, 3, 6, 8].includes(terrainCells[cellY * width + cellX]),
+              `${id} large tree "${treeId}" needs 2x2 exterior ground.`,
+            );
+            requireValue(
+              starts[0].x !== cellX || starts[0].y !== cellY,
+              `${id} large tree "${treeId}" overlaps PlayerStart.`,
+            );
+            requireValue(
+              !markers.some((place) => place.id !== treeId && place.x === cellX && place.y === cellY),
+              `${id} large tree "${treeId}" overlaps another entity.`,
+            );
+          }
+        }
+        return {
+          id: treeId,
+          kind: largeTreeKinds[match[1]],
+          x,
+          y,
+          width: 2,
+          height: 2,
+        };
+      });
+    for (let i = 0; i < largeTrees.length; i++) {
+      for (let j = i + 1; j < largeTrees.length; j++) {
+        const a = largeTrees[i];
+        const b = largeTrees[j];
+        requireValue(
+          a.x + a.width <= b.x || b.x + b.width <= a.x || a.y + a.height <= b.y || b.y + b.height <= a.y,
+          `${id} large trees "${a.id}" and "${b.id}" overlap.`,
+        );
+      }
+    }
     const landmarks = markers.filter(
-      (place) => !place.id.startsWith("wolf_spawn_") && !place.id.startsWith("town_resident_"),
+      (place) =>
+        !place.id.startsWith("wolf_spawn_") &&
+        !place.id.startsWith("town_resident_") &&
+        !place.id.startsWith("large_tree_"),
     );
     const dungeon = landmarks.find((place) => place.id === "dungeon");
     requireValue(dungeon, `${id} needs a dungeon Landmark.`);
@@ -169,7 +221,9 @@ export function importLdtkTowns(source: string): Map<string, WorldMap> {
     const tiles = terrain.intGridCsv.map((value: number) => (value <= 4 ? Math.max(0, value - 1) : value));
     const { x, y } = starts[0];
     requireValue(
-      ![1, 5, 7].includes(tiles[y * width + x]) && !landmarks.some((place) => place.x === x && place.y === y),
+      ![1, 5, 7].includes(tiles[y * width + x]) &&
+        !landmarks.some((place) => place.x === x && place.y === y) &&
+        !largeTrees.some((tree) => x >= tree.x && x < tree.x + tree.width && y >= tree.y && y < tree.y + tree.height),
       `${id} PlayerStart must occupy free walkable ground.`,
     );
     const map: WorldMap = {
@@ -179,6 +233,7 @@ export function importLdtkTowns(source: string): Map<string, WorldMap> {
       tiles,
       landmarks,
       enemies: [],
+      ...(largeTrees.length ? { largeTrees } : {}),
       ...(wolfSpawns.length ? { wolfSpawns } : {}),
       ...(residentSpawns.length ? { residentSpawns } : {}),
       entry: { x, y },

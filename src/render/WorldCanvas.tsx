@@ -31,6 +31,7 @@ export interface RenderMap {
   height: number;
   tiles: number[];
   landmarks?: Array<MapPoint & { id?: string; name?: string }>;
+  largeTrees?: Array<MapPoint & { id?: string; kind: string; width: number; height: number }>;
   doors?: MapPoint[];
   enemies?: Array<MapPoint & { id?: string; sprite?: string; alive?: boolean; room?: number }>;
 }
@@ -295,6 +296,28 @@ function Scene({
       const npc = townNpcSprite(map.id, id ?? "");
       const frame = id?.startsWith("chest-") ? "gold_pouch_small" : (npc ?? ids[id ?? ""] ?? "town_atlas_1");
       art(frame, landmark.x, landmark.y);
+    }
+    for (const tree of map.largeTrees ?? []) {
+      const cells: string[] = [];
+      for (let dy = 0; dy < tree.height; dy++) {
+        for (let dx = 0; dx < tree.width; dx++) cells.push(`${tree.x + dx},${tree.y + dy}`);
+      }
+      if (known && !cells.some((cell) => known.has(cell) || seen?.has(cell))) continue;
+      const texture = sheet?.textures[tree.kind];
+      if (!texture) continue;
+      const sprite = new Sprite(texture);
+      const light = lighting?.get(`${tree.x},${tree.y}`);
+      if (light) {
+        sprite.tint =
+          (Math.min(255, light[0] ?? 255) << 16) |
+          (Math.min(255, light[1] ?? 255) << 8) |
+          Math.min(255, light[2] ?? 255);
+      }
+      if (seen && !cells.some((cell) => seen.has(cell))) sprite.alpha = 0.25;
+      sprite.position.set(tree.x * CELL, tree.y * CELL);
+      sprite.width = tree.width * CELL;
+      sprite.height = tree.height * CELL;
+      layer.addChild(sprite);
     }
     for (const door of map.doors ?? []) {
       const key = `${door.x},${door.y}`;

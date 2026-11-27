@@ -5,7 +5,7 @@ import { importLdtkTowns } from "../../src/game/world/ldtk-town";
 import { GameSession } from "../../src/game/core/session";
 import { arrive, newProfile, type Profile } from "../../src/game/core/profile";
 import { GameDatabase, SaveService } from "../../src/game/persistence";
-import { createTown, walkable } from "../../src/game/world/world";
+import { createTown, occupied, walkable } from "../../src/game/world/world";
 
 const project = () => JSON.parse(source);
 const terrain = (level: ReturnType<typeof project>["levels"][number]) =>
@@ -85,6 +85,77 @@ describe("LDtk towns", () => {
     expect(() => importLdtkTowns(JSON.stringify(invalidTerrain))).toThrow(/Terrain must use values/);
     expect(() => importLdtkTowns("{")).toThrow(/valid JSON/);
   });
+
+  it("imports 2x2 large trees of all three kinds, marks their footprints occupied, and rejects invalid placements", () => {
+    const lantern = createTown("lantern_rest");
+    const trees = lantern.largeTrees ?? [];
+    expect(trees.length).toBeGreaterThanOrEqual(3);
+    expect(new Set(trees.map((tree) => tree.kind))).toEqual(
+      new Set(["town_tree_pine", "town_tree_canopy", "town_tree_crystal", "town_tree_apple"]),
+    );
+    for (const tree of trees) {
+      expect([tree.width, tree.height]).toEqual([2, 2]);
+      expect(lantern.landmarks.some((place) => place.id === tree.id)).toBe(false);
+      if (tree.id.includes("_border_")) expect(tree.kind).toBe("town_tree_pine");
+      for (let dy = 0; dy < 2; dy++) {
+        for (let dx = 0; dx < 2; dx++) {
+          expect(occupied(lantern, { x: tree.x + dx, y: tree.y + dy })).toBe(true);
+        }
+      }
+    }
+
+    const wallOverlap = project();
+    const firstTree = entities(wallOverlap.levels[0]).find((entity: { fieldInstances: { __identifier: string; __value: string }[] }) =>
+      entity.fieldInstances.some((field) => field.__identifier === "ServiceId" && field.__value.startsWith("large_tree_")),
+    );
+    firstTree.__grid = [5, 5];
+    firstTree.px = [120, 120];
+    expect(() => importLdtkTowns(JSON.stringify(wallOverlap))).toThrow(/2x2 exterior ground/);
+
+    const treeOverlap = project();
+    const twoTrees = entities(treeOverlap.levels[0]).filter((entity: { fieldInstances: { __identifier: string; __value: string }[] }) =>
+      entity.fieldInstances.some((field) => field.__identifier === "ServiceId" && field.__value.startsWith("large_tree_")),
+    );
+    twoTrees[1].__grid = [twoTrees[0].__grid[0] + 1, twoTrees[0].__grid[1]];
+    twoTrees[1].px = [twoTrees[1].__grid[0] * 24, twoTrees[1].__grid[1] * 24];
+    expect(() => importLdtkTowns(JSON.stringify(treeOverlap))).toThrow(/overlap/);
+
+    for (let x = 0; x < lantern.width; x++) {
+      for (const y of [0, lantern.height - 1]) {
+        expect(lantern.tiles[y * lantern.width + x]).not.toBe(1);
+        expect(walkable(lantern, x, y)).toBe(false);
+        expect(occupied(lantern, { x, y })).toBe(true);
+      }
+    }
+    for (let y = 0; y < lantern.height; y++) {
+      for (const x of [0, lantern.width - 1]) {
+        expect(lantern.tiles[y * lantern.width + x]).not.toBe(1);
+        expect(walkable(lantern, x, y)).toBe(false);
+        expect(occupied(lantern, { x, y })).toBe(true);
+      }
+    }
+  });
+
+  it("blocks the player character when stepping into a 2x2 large tree", async () => {
+    const profile = makeProfile();
+    arrive(profile, "lantern_rest");
+    const tree = profile.map!.largeTrees![0];
+    profile.position = { x: tree.x, y: tree.y + tree.height };
+    const db = new GameDatabase(`ldtk-tree-block-${crypto.randomUUID()}`);
+    const saves = new SaveService<Profile>(db);
+    try {
+      await saves.save({ id: "tree-block", name: profile.form.name, snapshot: profile }, 0, true);
+      const session = new GameSession(saves);
+      await session.initialize();
+      const start = session.store.getState().mapView!.position;
+      expect(start).toEqual({ x: tree.x, y: tree.y + tree.height });
+      session.step(0, -1);
+      await vi.waitFor(() => expect(session.store.getState().view.busy).toBe(false), { interval: 1 });
+      expect(session.store.getState().mapView!.position).toEqual(start);
+    } finally {
+      await db.delete();
+    }
+  });
 });
 
 const makeProfile = () =>
@@ -113,6 +184,7 @@ it("refreshes an old active town durably without changing progression or a saved
   arrive(profile, "lantern_rest");
   profile.map!.generator = "rot-web-v1";
   profile.map!.tiles[0] = 0;
+  delete profile.map!.largeTrees;
   profile.position = { x: 0, y: 0 };
   profile.layouts.lantern_rest = structuredClone(profile.map!);
   profile.quest = 2;

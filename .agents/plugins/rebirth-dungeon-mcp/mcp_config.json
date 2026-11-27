@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "aseprite": {
+      "command": "/Users/vinhpham/Projects/aseprite-mcp/.venv/bin/python",
+      "args": ["-m", "aseprite_mcp"],
+      "env": {
+        "PYTHONPATH": "/Users/vinhpham/Projects/aseprite-mcp"
+      }
+    },
+    "heroui-pro": {
+      "url": "https://mcp.heroui.pro/mcp",
+      "headers": {
+        "x-heroui-personal-token": "9159c681-dc97-4f06-86cb-764c6c2a2d84"
+      }
+    },
+    "ldtk": {
+      "command": "python",
+      "args": ["-m", "ldtk_mcp"]
+    }
+  }
+}

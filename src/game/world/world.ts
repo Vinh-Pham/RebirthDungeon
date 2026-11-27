@@ -26,6 +26,13 @@ export interface WolfSpawn extends Point {
   id: string;
   kind: WolfKind;
 }
+export type LargeTreeKind = "town_tree_pine" | "town_tree_canopy" | "town_tree_crystal" | "town_tree_apple";
+export interface LargeTree extends Point {
+  id: string;
+  kind: LargeTreeKind;
+  width: number;
+  height: number;
+}
 export interface TownResident extends Point {
   id: string;
 }
@@ -40,6 +47,7 @@ export interface WorldMap {
   tiles: number[];
   landmarks: Landmark[];
   enemies: MapEnemy[];
+  largeTrees?: LargeTree[];
   wolfSpawns?: WolfSpawn[];
   residentSpawns?: TownResident[];
   entry: Point;
@@ -69,7 +77,10 @@ export const walkable = (map: WorldMap, x: number, y: number) =>
   map.tiles[y * map.width + x] !== 1 &&
   map.tiles[y * map.width + x] !== CLOSED_DUNGEON_GATE &&
   map.tiles[y * map.width + x] !== WATER &&
-  map.tiles[y * map.width + x] !== BUSH;
+  map.tiles[y * map.width + x] !== BUSH &&
+  !(map.largeTrees ?? []).some(
+    (tree) => x >= tree.x && x < tree.x + tree.width && y >= tree.y && y < tree.y + tree.height,
+  );
 function scoped<T>(seed: number, run: () => T): T {
   const state = ROT.RNG.getState();
   const previousSeed = ROT.RNG.getSeed();
@@ -253,6 +264,9 @@ export function occupied(map: WorldMap, point: Point): boolean {
   return (
     !walkable(map, point.x, point.y) ||
     map.landmarks.some((item) => item.x === point.x && item.y === point.y) ||
+    (map.largeTrees ?? []).some(
+      (tree) => point.x >= tree.x && point.x < tree.x + tree.width && point.y >= tree.y && point.y < tree.y + tree.height,
+    ) ||
     map.enemies.some((item) => item.x === point.x && item.y === point.y)
   );
 }
