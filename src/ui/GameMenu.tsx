@@ -3,8 +3,7 @@ import type { GameActions, GameView } from "../app/contracts";
 
 const meterClasses = "col-start-1 row-start-1 block h-full w-full appearance-none bg-[#28353e]";
 const meterReadout =
-  "vital-value z-1 col-start-1 row-start-1 flex min-h-3.5 items-center px-[5px] text-white [text-shadow:0_1px_#101f24,0_-1px_#101f24,1px_0_#101f24,-1px_0_#101f24]";
-const meterText = "text-surface-foreground text-[11px] leading-[1.15] tabular-nums";
+  "vital-value z-1 col-start-1 row-start-1 flex min-h-2.5 items-center px-[5px] text-[10px]/none text-white tabular-nums [text-shadow:0_1px_#101f24,0_-1px_#101f24,1px_0_#101f24,-1px_0_#101f24]";
 
 export function GameMenu({ view, actions }: { view: GameView; actions: GameActions }) {
   const player = view.player;
@@ -15,8 +14,10 @@ export function GameMenu({ view, actions }: { view: GameView; actions: GameActio
   return (
     <footer className="game-menu flex-none border-t border-border bg-surface px-1 max-[800px]:px-3 max-[360px]:py-1">
       {player && (
-        <div className={`menu-xp mb-1 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 ${meterText}`}>
-          <span className="menu-level whitespace-nowrap">Lv. {player.level}</span>
+        <div className="menu-xp mb-1 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2">
+          <span className="menu-level text-surface-foreground text-[11px]/none whitespace-nowrap tabular-nums">
+            Lv. {player.level}
+          </span>
           <div className="vital-bar grid min-w-0">
             <meter
               className={`${meterClasses} [--meter-fill:#79ccec]`}
@@ -32,11 +33,7 @@ export function GameMenu({ view, actions }: { view: GameView; actions: GameActio
         </div>
       )}
       {player && (
-        <div
-          className={`game-vitals grid max-w-[22rem] gap-0.5 ${meterText}`}
-          role="group"
-          aria-label="Character vitals"
-        >
+        <div className="game-vitals grid max-w-[22rem] gap-0.5" role="group" aria-label="Character vitals">
           {(
             [
               ["HP", player.hp, player.maxHp, "[--meter-fill:#e56869]", injury],

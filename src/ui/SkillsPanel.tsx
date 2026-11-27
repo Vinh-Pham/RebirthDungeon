@@ -76,13 +76,13 @@ export function SkillsPanel({ view, actions, editor }: { view: GameView; actions
                         </div>
                         <ProgressBar
                           size="sm"
-                          className="skill-training grid w-full grid-cols-[minmax(0,1fr)_auto] gap-x-1 gap-y-[3px] text-xs text-[#acc3bd] max-[540px]:text-[11px]"
+                          className="skill-training grid w-full grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-1 gap-y-[3px] text-xs text-[#acc3bd] max-[540px]:text-[11px]"
                           aria-label={`${skill.label} training`}
                           value={skill.training}
                         >
                           <span>Training</span>
-                          <ProgressBar.Output className="text-[inherit] text-[#d6ddd0]" />
-                          <ProgressBar.Track className="col-span-full h-[5px] rounded-none bg-[#34494e]">
+                          <ProgressBar.Output className="text-[11px] text-[#d6ddd0] tabular-nums max-[540px]:text-[10px]" />
+                          <ProgressBar.Track className="col-span-full h-[3px] rounded-none bg-[#34494e]">
                             <ProgressBar.Fill className="rounded-none bg-[#a8ca75]" />
                           </ProgressBar.Track>
                         </ProgressBar>

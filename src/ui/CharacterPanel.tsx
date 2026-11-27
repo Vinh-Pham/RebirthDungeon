@@ -30,8 +30,8 @@ function CharacterBar({ label, tone, value, max, text = rangeText(value, max) }:
       valueLabel={text}
     >
       <Label className="text-inherit! text-[length:inherit]! leading-[inherit]!">{label}</Label>
-      <ProgressBar.Output className="text-inherit! text-[length:inherit]! leading-[inherit]! text-right whitespace-nowrap" />
-      <ProgressBar.Track className="col-span-full h-1.5! rounded-none! bg-[#30454c]!">
+      <ProgressBar.Output className="text-inherit! text-xs! leading-[inherit]! text-right whitespace-nowrap max-[540px]:text-[10px]!" />
+      <ProgressBar.Track className="col-span-full h-[3px]! rounded-none! bg-[#30454c]!">
         <ProgressBar.Fill className="rounded-none! bg-[var(--character-bar-fill)]!" />
       </ProgressBar.Track>
     </ProgressBar>

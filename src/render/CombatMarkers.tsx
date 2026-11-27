@@ -78,7 +78,7 @@ export function CombatMarkers({
         ref={player}
       >
         <meter
-          className="combat-atb appearance-none block w-full h-[5px] bg-[#344a5a] [--meter-fill:#5bbfc5]"
+          className="combat-atb appearance-none block w-full h-[3px] bg-[#344a5a] [--meter-fill:#5bbfc5]"
           aria-label="Time"
           aria-description={encounter.queued ? `Queued action: ${encounter.queued}` : undefined}
           value={encounter.gauge}
@@ -102,13 +102,13 @@ export function CombatMarkers({
                 <span className="enemy-marker-intent block mt-[2px] text-[#a9b2a2] text-[9px]">{enemy.intent}</span>
               </span>
               <meter
-                className="enemy-hp appearance-none block w-full h-[5px] bg-[#344a5a] [--meter-fill:#e56869]"
+                className="enemy-hp appearance-none block w-full h-[3px] bg-[#344a5a] [--meter-fill:#e56869]"
                 aria-hidden="true"
                 value={enemy.hp}
                 max={enemy.maxHp}
               />
               <meter
-                className="combat-atb appearance-none block w-full h-[5px] bg-[#344a5a] [--meter-fill:#5bbfc5]"
+                className="combat-atb appearance-none block w-full h-[3px] bg-[#344a5a] [--meter-fill:#5bbfc5]"
                 aria-hidden="true"
                 value={enemy.gauge}
                 max={1}
