@@ -48,6 +48,7 @@ export interface WorldCanvasProps {
   encounter?: GameView["encounter"];
   onTravel: (point: MapPoint) => void;
   onTarget: (id: string) => void;
+  onAttackEnemy: (id: string) => void;
 }
 const CELL = 24;
 const startingZoom = 1.125;
@@ -73,6 +74,19 @@ function terrainTexture(kind: number): Texture {
   return texture;
 }
 
+function findEnemyAtCell(
+  point: MapPoint,
+  encounter: WorldCanvasProps["encounter"],
+  visible: ReadonlySet<string> | undefined,
+  mapEnemies: WorldCanvasProps["map"]["enemies"] | undefined,
+) {
+  if (visible && !visible.has(`${point.x},${point.y}`)) return undefined;
+  if (encounter) {
+    return encounter.enemies.find(({ position }) => position.x === point.x && position.y === point.y)?.id;
+  }
+  return mapEnemies?.find((enemy) => enemy.alive !== false && enemy.x === point.x && enemy.y === point.y)?.id;
+}
+
 function Scene({
   map,
   townResidents,
@@ -86,6 +100,7 @@ function Scene({
   encounter,
   onTravel,
   onTarget,
+  onAttackEnemy,
   onViewport,
   actor,
   resizeTarget,
@@ -101,8 +116,9 @@ function Scene({
   const residentLayer = useRef<Container | null>(null);
   const residentSprites = useRef<Map<string, Sprite>>(null);
   const textures = useRef<Texture[] | null>(null);
-  const input = useRef({ onTravel, onTarget, encounter, visible });
-  input.current = { onTravel, onTarget, encounter, visible };
+  const pointerPosition = useRef<{ x: number; y: number } | null>(null);
+  const input = useRef({ onTravel, onTarget, onAttackEnemy, encounter, visible, mapEnemies: map.enemies });
+  input.current = { onTravel, onTarget, onAttackEnemy, encounter, visible, mapEnemies: map.enemies };
   const livingEnemyIds = encounter?.enemies.map(({ id }) => id).join(",");
   const enemyRoom = encounter?.enemyRoom;
   const enemyId = encounter?.enemyId;
@@ -163,19 +179,37 @@ function Scene({
       viewport.setZoom(startingZoom, false);
       viewport.moveCenter(player.x * CELL, player.y * CELL);
     }
+    const findVisibleEnemyAt = (point: MapPoint) =>
+      findEnemyAtCell(point, input.current.encounter, input.current.visible, input.current.mapEnemies);
+    const updateHoverCursor = (clientX: number, clientY: number) => {
+      const rect = resizeTarget.getBoundingClientRect();
+      const world = viewport.toWorld(clientX - rect.left, clientY - rect.top);
+      const point = { x: Math.floor(world.x / CELL), y: Math.floor(world.y / CELL) };
+      resizeTarget.dataset.enemyHover = findVisibleEnemyAt(point) ? "true" : "false";
+    };
+    const onPointerMove = (event: PointerEvent) => {
+      pointerPosition.current = { x: event.clientX, y: event.clientY };
+      updateHoverCursor(event.clientX, event.clientY);
+    };
+    const clearHover = () => {
+      pointerPosition.current = null;
+      resizeTarget.dataset.enemyHover = "false";
+    };
+    resizeTarget.addEventListener("pointermove", onPointerMove);
+    resizeTarget.addEventListener("pointerleave", clearHover);
     viewport.on("clicked", (event) => {
       if ("button" in event.event && event.event.button === 2) return;
       const point = {
         x: Math.floor(event.world.x / CELL),
         y: Math.floor(event.world.y / CELL),
       };
-      const { encounter, visible, onTarget, onTravel } = input.current;
-      if (!encounter) {
-        onTravel(point);
+      const { onAttackEnemy: attackEnemy, onTravel: travel } = input.current;
+      const enemyId = findVisibleEnemyAt(point);
+      if (enemyId) {
+        attackEnemy(enemyId);
         return;
       }
-      const enemy = encounter.enemies.find(({ position }) => position.x === point.x && position.y === point.y);
-      if (enemy && (!visible || visible.has(`${point.x},${point.y}`))) onTarget(enemy.id);
+      if (!input.current.encounter) travel(point);
     });
     const resize = () => {
       const center = viewport.center;
@@ -202,6 +236,10 @@ function Scene({
     });
     observer.observe(resizeTarget);
     return () => {
+      resizeTarget.removeEventListener("pointermove", onPointerMove);
+      resizeTarget.removeEventListener("pointerleave", clearHover);
+      pointerPosition.current = null;
+      delete resizeTarget.dataset.enemyHover;
       observer.disconnect();
       gsap.killTweensOf(figure.position);
       for (const sprite of sprites.values()) gsap.killTweensOf(sprite.position);
@@ -214,6 +252,15 @@ function Scene({
       camera.current = null;
     };
   }, [actor, app, isInitialised, map.width, map.height, onViewport, resizeTarget, continuous]);
+  useEffect(() => {
+    const pointer = pointerPosition.current;
+    const viewport = camera.current;
+    if (!pointer || !viewport || viewport.destroyed) return;
+    const rect = resizeTarget.getBoundingClientRect();
+    const world = viewport.toWorld(pointer.x - rect.left, pointer.y - rect.top);
+    const point = { x: Math.floor(world.x / CELL), y: Math.floor(world.y / CELL) };
+    resizeTarget.dataset.enemyHover = findEnemyAtCell(point, encounter, visible, map.enemies) ? "true" : "false";
+  }, [map.enemies, encounter, visible, resizeTarget]);
   useEffect(() => {
     const layer = terrain.current;
     if (!layer) return;
@@ -462,11 +509,10 @@ export function WorldCanvas(props: WorldCanvasProps) {
       {viewport && props.encounter && (
         <CombatMarkers
           encounter={props.encounter}
-          actor={actor}
           visible={props.visible}
           viewport={viewport}
           tileSize={CELL}
-          onTarget={props.onTarget}
+          onAttackEnemy={props.onAttackEnemy}
         />
       )}
     </div>

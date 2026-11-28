@@ -6,7 +6,7 @@ import { isWolfKind } from "../content/enemies";
 import { ageInterval } from "../content/character-aging";
 import { startingAp } from "../content/character-growth";
 import { levelForXp, maxExperience, maxLevel, xpForLevel } from "../content/level-experience";
-import { Combat } from "../systems/combat";
+import { Combat, type SkillCooldowns } from "../systems/combat";
 import { canPlace, type Inventory, type InventoryItem } from "../systems/inventory";
 import { skillCommands, type RankedSkill } from "../content/skills";
 import {
@@ -40,6 +40,10 @@ export const townNames = {
 export type Battle = ReturnType<Combat["snapshot"]>;
 export const emptySkillSlots = () => skillSlotKeys.map(() => null);
 export type Material = "fish" | "grain" | "flour" | "fiber" | "thread" | "cloth" | "cobweb" | "firewood" | "bread";
+export interface SmashQuest {
+  status: "active" | "completed";
+  grayWolvesDefeated: number;
+}
 export interface Profile {
   version: 1;
   form: CharacterForm;
@@ -58,7 +62,6 @@ export interface Profile {
   treasure: boolean;
   completions: number;
   gates: Town[];
-  quest: number;
   level: number;
   xp: number;
   xpCurveVersion?: 1;
@@ -79,9 +82,11 @@ export interface Profile {
   materials: Record<Material, number>;
   pending: Record<string, number>;
   skills: Record<string, RankedSkill>;
+  quests?: { smash?: SmashQuest };
   harvests: Record<string, { count: number; at: number; gathers?: number }>;
   log: LogEntry[];
   battle?: Battle;
+  skillCooldowns?: SkillCooldowns;
   wolfOpponent?: string;
   wolfRespawns?: Record<string, number>;
   dialogue?: SavedDialogue;
@@ -243,7 +248,6 @@ export function newProfile(form: CharacterForm, seed: number, now = Date.now()):
     treasure: false,
     completions: 0,
     gates: [],
-    quest: 0,
     level: 1,
     xp: 0,
     xpCurveVersion: 1,
@@ -275,6 +279,8 @@ export function restoreCombat(snapshot: Battle) {
     snapshot.seed,
   );
   Object.assign(combat, structuredClone(snapshot));
+  combat.cooldowns ??= {};
+  combat.loadedSkill ??= null;
   return combat;
 }
 
@@ -478,9 +484,10 @@ export function validateProfile(value: unknown): value is SavedProfile {
   const roomCount = value.thresholdVersion ? THRESHOLD_ROOM_COUNT : 9;
   const encounterCount = value.thresholdVersion ? roomCount : roomCount - 1;
   if (
-    !["seed", "room", "run", "level", "xp", "ap", "gold", "bank", "tonics", "quest", "completions"].every((key) =>
+    !["seed", "room", "run", "level", "xp", "ap", "gold", "bank", "tonics", "completions"].every((key) =>
       uint(value[key]),
     ) ||
+    (value.quest !== undefined && !uint(value.quest)) ||
     !finite(value.hp) ||
     (value.hp < 0 && value.deadly !== true) ||
     (value.deadly !== undefined && typeof value.deadly !== "boolean") ||
@@ -509,7 +516,19 @@ export function validateProfile(value: unknown): value is SavedProfile {
     !record(value.pending) ||
     !record(value.harvests) ||
     (value.wolfRespawns !== undefined &&
-      (!record(value.wolfRespawns) || !Object.values(value.wolfRespawns).every(uint)))
+      (!record(value.wolfRespawns) || !Object.values(value.wolfRespawns).every(uint))) ||
+    (value.skillCooldowns !== undefined &&
+      (!record(value.skillCooldowns) ||
+        !Object.entries(value.skillCooldowns).every(
+          ([key, seconds]) =>
+            ["attack", "defend", "smash", "counterattack", "windmill"].includes(key) && nonnegative(seconds),
+        ))) ||
+    (value.quests !== undefined &&
+      (!record(value.quests) ||
+        (value.quests.smash !== undefined &&
+          (!record(value.quests.smash) ||
+            (value.quests.smash.status !== "active" && value.quests.smash.status !== "completed") ||
+            !uint(value.quests.smash.grayWolvesDefeated)))))
   )
     return false;
   const inv = value.inventory;
@@ -541,7 +560,8 @@ export function validateProfile(value: unknown): value is SavedProfile {
         item.quantity > 0 &&
         "stackLimit" in item &&
         uint(item.stackLimit) &&
-        item.quantity <= item.stackLimit,
+        item.quantity <= item.stackLimit &&
+        (item.handSlot === undefined || item.handSlot === "main_hand" || item.handSlot === "off_hand"),
     )
   )
     return false;
@@ -549,7 +569,6 @@ export function validateProfile(value: unknown): value is SavedProfile {
     value.room === 0 ||
     Number(value.room) > roomCount ||
     value.level === 0 ||
-    Number(value.quest) > 3 ||
     value.quickSlots.length !== 4 ||
     !value.quickSlots.every((slot) => slot === "" || slot === "tonic") ||
     !value.links.every((link) => typeof link === "string" && /^[1-9]:[1-9]$/.test(link)) ||
@@ -612,10 +631,10 @@ function validBattle(value: unknown): boolean {
     (value.playerDeadly === undefined || typeof value.playerDeadly === "boolean") &&
     (value.playerWounds === undefined || nonnegative(value.playerWounds)) &&
     nonnegative(value.stamina) &&
-    nonnegative(value.playerGauge) &&
+    (value.playerGauge === undefined || nonnegative(value.playerGauge)) &&
     typeof value.player.name === "string" &&
     nonnegative(value.player.health) &&
-    (value.queuedAction === null || actions.includes(String(value.queuedAction))) &&
+    (value.queuedAction === undefined || value.queuedAction === null || actions.includes(String(value.queuedAction))) &&
     value.enemies.every(
       (enemy) =>
         record(enemy) &&

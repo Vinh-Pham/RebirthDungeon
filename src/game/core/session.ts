@@ -29,7 +29,16 @@ import {
 } from "../content/ink";
 import { rankData, rankUp, recordTraining, skillCatalog, skillCommands } from "../content/skills";
 import { SaveService, type SaveRecord } from "../persistence";
-import { Combat, tonicHealing } from "../systems/combat";
+import {
+  Combat,
+  skillCooldownSeconds,
+  skillStaminaCost,
+  tonicHealing,
+  type CombatAction,
+  type CombatEvent,
+  type LoadableSkill,
+  type SkillCooldowns,
+} from "../systems/combat";
 import { craft, transferGold } from "../systems/economy";
 import {
   addItem,
@@ -37,6 +46,7 @@ import {
   equipmentSlot,
   moveItem,
   removeItem,
+  type EquipOptions,
   type InventoryItem as StoredInventoryItem,
 } from "../systems/inventory";
 import {
@@ -84,11 +94,15 @@ import {
 } from "./profile";
 import {
   describeService,
+  isOneHandedSword,
+  isShieldItem,
+  isSwordItem,
+  isTwoHandedWeapon,
+  itemArmorClass,
   option,
   serviceOptions,
   serviceStory,
   shopItems,
-  signalQuestReward,
   type ServiceId,
 } from "./services";
 
@@ -105,6 +119,18 @@ const bindings = {
   gates: "g",
 };
 const defaultBindings = { ...bindings, log: "l" };
+const schoolTeachableSkills = ["windmill", "counterattack"] as const;
+type SchoolTeachableSkill = (typeof schoolTeachableSkills)[number];
+
+function equipOptionsFor(item: StoredInventoryItem, targetSlot?: "main_hand" | "off_hand"): EquipOptions {
+  return {
+    targetSlot,
+    canOffHand: isOneHandedSword(item),
+    twoHanded: isTwoHandedWeapon(item),
+    isOneHandedSword,
+    isTwoHanded: isTwoHandedWeapon,
+  };
+}
 const reservedKey = (key: string) => /^(?:[0-9]|f[1-4]|arrow(?:up|down|left|right)|escape|tab|enter| )$/.test(key);
 
 function restoreBindings(saved: Record<string, string> = {}) {
@@ -137,6 +163,15 @@ const emptyInventory: GameView["inventory"] = {
   quickSlots: [],
 };
 const range = (a: Point, b: Point) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+function activeCooldowns(source: SkillCooldowns): SkillCooldowns {
+  const result: SkillCooldowns = {};
+  for (const [action, remaining] of Object.entries(source) as [CombatAction, number | undefined][]) {
+    if (remaining !== undefined && Number.isFinite(remaining) && remaining > 1e-10) {
+      result[action] = remaining;
+    }
+  }
+  return result;
+}
 const maxLife = (p: Profile) => maxHealth(p.form, p.level, p.skills, p.age);
 const healableLife = (p: Profile) => Math.max(0, maxLife(p) - (p.wounds ?? 0));
 const stepInterval = (p: Profile) => 0.1 / movementSpeed(p.form.race);
@@ -186,6 +221,7 @@ function inventoryView(profile: Profile): GameView["inventory"] {
       amount: pouchKind(item.id) ? item.quantity - 1 : item.quantity,
       texture: inventoryFrame(item),
       equipmentSlot: slot,
+      canOffHand: isOneHandedSword(item),
     };
     if (!item.equipped) items.push(projected);
     else if (slot) equipment[slot] = projected;
@@ -236,6 +272,8 @@ export class GameSession {
       inventory: emptyInventory,
       skillSlots: Array(10).fill(null),
       skills: [],
+      skillCooldowns: {},
+      availableSkills: [],
       settings: defaultSettings,
     },
   }));
@@ -247,6 +285,9 @@ export class GameSession {
   private serviceMode: "options" | "shop" | "study" = "options";
   private dialogueView?: DialogueView;
   private combat?: Combat;
+  private loadedSkill: LoadableSkill | null = null;
+  private skillCooldowns: SkillCooldowns = {};
+  private pendingAttackEnemyId?: string;
   private route: Point[] = [];
   private routeTarget?: Landmark | MapEnemy;
   private movementTime = 0;
@@ -258,7 +299,6 @@ export class GameSession {
   private residentTime = 0;
   private residentStep = 0;
   private townResidents = noTownResidents;
-  private hudTime = 0;
   private mapView?: MapView;
   private indexedMap?: WorldMap;
   private entities?: ReturnType<typeof createEntities>;
@@ -300,6 +340,8 @@ export class GameSession {
       this.error = error instanceof Error ? error.message : String(error);
       this.route = [];
       this.combat = this.profile?.snapshot.battle ? restoreCombat(this.profile.snapshot.battle) : undefined;
+      this.loadedSkill = this.combat?.loadedSkill ?? null;
+      if (this.combat) this.skillCooldowns = activeCooldowns(this.combat.cooldowns);
     } finally {
       this.busy = false;
       this.publish();
@@ -325,8 +367,18 @@ export class GameSession {
       this.wildlifeStep = 0;
       this.recoveryElapsed = 0;
       this.recoveryCredit = { hp: 0, mp: 0, stamina: 0 };
+      this.pendingAttackEnemyId = undefined;
+      this.route = [];
+      this.routeTarget = undefined;
     }
     this.combat = record.snapshot.battle ? restoreCombat(record.snapshot.battle) : undefined;
+    if (this.combat) {
+      this.loadedSkill = this.combat.loadedSkill ?? null;
+      this.skillCooldowns = activeCooldowns(this.combat.cooldowns);
+    } else if (reopen) {
+      this.loadedSkill = null;
+      this.skillCooldowns = activeCooldowns(record.snapshot.skillCooldowns ?? {});
+    }
     this.records = [...this.records.filter((entry) => entry.id !== record.id), record];
     this.mapView = undefined;
   }
@@ -409,6 +461,9 @@ export class GameSession {
     if (!this.profile) return;
     if (!syncStacks(profile)) throw new Error("Your satchel has no room for all of these items.");
     this.syncVitals(profile);
+    const cooldowns = activeCooldowns(profile.battle ? profile.battle.cooldowns : this.skillCooldowns);
+    if (Object.keys(cooldowns).length) profile.skillCooldowns = cooldowns;
+    else delete profile.skillCooldowns;
     if (profile.map?.wolfSpawns && !profile.battle)
       profile.map.enemies = spawnTownWolves(profile.map, profile.position, profile.wolfRespawns ?? {}, this.now());
     const record = await this.saves.save(
@@ -457,18 +512,25 @@ export class GameSession {
         };
       case "skills":
         return { ...emptyDetails, title: "Skills" };
-      case "journal":
+      case "journal": {
+        const smashQuest = p.quests?.smash;
+        if (smashQuest?.status === "active") {
+          const defeated = Math.min(5, smashQuest.grayWolvesDefeated);
+          return {
+            title: "Journal",
+            body:
+              defeated >= 5
+                ? `Smash Trial (${defeated}/5 Gray Wolves) — Return to the School to learn Smash.`
+                : `Smash Trial (${defeated}/5 Gray Wolves) — Defeat 5 Gray Wolves in Lantern Rest.`,
+            options: [],
+          };
+        }
         return {
           title: "Journal",
-          body:
-            [
-              "Find Warden Nera in Lantern Rest to learn why the lower passages have gone quiet.",
-              "Carry the signal through the Threshold to Spindle Hollow.",
-              "Speak with the Watchkeeper in Spindle Hollow to report your journey.",
-              "The passage stands open. The settlements can reach each other again.",
-            ][p.quest] ?? "",
+          body: "No active quests.",
           options: [],
         };
+      }
       case "gates":
         return {
           title: "Moon Gates",
@@ -517,18 +579,36 @@ export class GameSession {
               option(`buy:${item.id}`, `${item.name} · ${item.price} Gold`, p.gold < item.price),
             ),
           };
-        if (this.serviceMode === "study")
+        if (this.serviceMode === "study") {
+          const smashQuest = p.quests?.smash;
+          const options: ActionOption[] = schoolTeachableSkills
+            .filter((id) => !p.skills[id] || p.skills[id].rank === "novice")
+            .map((id) => option(`learn:${id}`, `Learn ${skillCatalog[id].name} · Rank F`));
+          if (!p.skills.smash) {
+            if (!smashQuest) {
+              options.push(option("quest:smash-accept", "Smash Trial: Defeat 5 Gray Wolves"));
+            } else if (smashQuest.status === "active") {
+              const count = Math.min(5, smashQuest.grayWolvesDefeated);
+              options.push(
+                count >= 5
+                  ? option("quest:smash-claim", "Complete Smash Trial · Learn Smash")
+                  : option("quest:smash-claim", `Learn Smash · Gray Wolves (${count}/5)`, true),
+              );
+            }
+          }
+          const body = !options.length
+            ? "You have completed every lesson Elian offers here."
+            : smashQuest?.status === "active"
+              ? smashQuest.grayWolvesDefeated >= 5
+                ? "You have defeated 5 Gray Wolves. Complete the Smash Trial to learn Smash."
+                : `Smash Trial: Defeat ${smashQuest.grayWolvesDefeated}/5 Gray Wolves in Lantern Rest.`
+              : "Choose a lesson or trial to unlock a new skill.";
           return {
             title: "School",
-            body: "Choose a lesson to unlock a new skill.",
-            options: Object.values(skillCatalog)
-              .filter(
-                (skill) => !p.skills[skill.id] || (skill.id === "windmill" && p.skills.windmill.rank === "novice"),
-              )
-              .map((skill) =>
-                option(`learn:${skill.id}`, `Learn ${skill.name}${skill.id === "windmill" ? " · Rank F" : ""}`),
-              ),
+            body,
+            options,
           };
+        }
         const options = serviceOptions(place, p);
         if (place.id === "gate") options.push(...gateOptions(p));
         if (this.dialogueView)
@@ -613,7 +693,6 @@ export class GameSession {
         },
         encounter: battle?.active
           ? {
-              gauge: battle.playerGauge,
               enemyRoom: p?.thresholdVersion === 3 ? p.room : undefined,
               enemyId: p?.wolfOpponent,
               actionDetails: battle.actionDetails,
@@ -623,7 +702,7 @@ export class GameSession {
                     ? Boolean(p?.tonics && battle.health < battle.player.health - battle.playerWounds)
                     : battle.canQueue(command),
               ),
-              queued: battle.queuedAction ?? undefined,
+              queued: battle.loadedSkill ?? undefined,
               target: String(battle.target),
               enemies: battle.enemies.flatMap((enemy, index) => {
                 const position = participants[index];
@@ -631,10 +710,10 @@ export class GameSession {
                 return [
                   {
                     id: String(index),
+                    mapEnemyId: position.id,
                     name: enemy.stats.name,
                     hp: enemy.health,
                     maxHp: enemy.stats.health,
-                    gauge: enemy.gauge,
                     intent: itemName(enemy.intent),
                     position: { x: position.x, y: position.y },
                   },
@@ -642,6 +721,11 @@ export class GameSession {
               }),
             }
           : undefined,
+        loadedSkill: (battle?.active ? battle.loadedSkill : this.loadedSkill) ?? undefined,
+        skillCooldowns: { ...(battle?.active ? battle.cooldowns : this.skillCooldowns) },
+        availableSkills: (["attack", "defend", "smash", "counterattack", "windmill"] as const).filter((command) =>
+          battle?.active ? battle.canQueue(command) : p ? this.canActivateOutOfCombat(p, command, stats) : false,
+        ),
         details: this.details(p),
         characterSheet: p && stats && this.panel === "character" ? this.characterSheet(p, stats) : undefined,
         loot:
@@ -675,6 +759,14 @@ export class GameSession {
                   training: max ? Math.min(100, Math.floor((points / max) * 100)) : 0,
                   canAdvance: !!rankUp(id, progress, p.ap),
                   command: skillCommands[id],
+                  cooldown: skillCommands[id]
+                    ? skillCooldownSeconds(
+                        skillCommands[id],
+                        stats?.skill_effects,
+                        stats?.weapon_type,
+                        stats?.race,
+                      )
+                    : undefined,
                 },
               ];
             })
@@ -768,11 +860,13 @@ export class GameSession {
           : `You enter chamber ${door.target}.`,
       );
     } else if (occupied(map, destination)) {
-      const enemy = map.enemies.find((item) => range(item, destination) === 0);
-      if (p.location === "threshold" && enemy) this.beginCombat(p, enemy.room);
-      else if (enemy && isWolfKind(enemy.sprite)) {
-        p.wolfOpponent = enemy.id;
-        this.startBattle(p, [enemy]);
+      if (!this.combat?.active) {
+        const enemy = map.enemies.find((item) => range(item, destination) === 0);
+        if (p.location === "threshold" && enemy) this.beginCombat(p, enemy.room);
+        else if (enemy && isWolfKind(enemy.sprite)) {
+          p.wolfOpponent = enemy.id;
+          this.startBattle(p, [enemy]);
+        }
       }
       this.route = [];
     } else {
@@ -782,7 +876,9 @@ export class GameSession {
       if (room !== undefined) p.room = room;
       if (p.location === "threshold" && map.enemies.length && (!continuous || room !== undefined)) {
         map.enemies = advanceWorldActors(map, destination, room);
-        if (roomEnemies(p).some((enemy) => range(destination, enemy) <= 1)) this.beginCombat(p);
+        if (!this.combat?.active && roomEnemies(p).some((enemy) => range(destination, enemy) <= 1)) {
+          this.beginCombat(p);
+        }
       }
     }
     rememberThresholdVisibility(p);
@@ -805,7 +901,17 @@ export class GameSession {
     encounter.stamina = p.stamina ?? encounter.stamina;
     encounter.playerWounds = p.wounds ?? 0;
     encounter.playerDeadly = p.deadly ?? false;
+    encounter.cooldowns = activeCooldowns(this.skillCooldowns);
+    if (this.loadedSkill) {
+      if (encounter.canLoad(this.loadedSkill)) {
+        encounter.loadSkill(this.loadedSkill);
+        encounter.events = [];
+      } else {
+        this.loadedSkill = null;
+      }
+    }
     p.battle = encounter.snapshot();
+    this.combat = encounter;
     this.route = [];
     this.routeTarget = undefined;
     this.appendLog(
@@ -817,18 +923,21 @@ export class GameSession {
 
   private battleStats(p: Profile) {
     const equipped = p.inventory.items.filter((item) => item.equipped && (item.durability ?? 1) > 0);
-    const weapon = equipped.find((item) => item.slot === "main_hand");
-    const armor = equipped.find((item) => item.slot === "armor");
+    const weapon = equipped.find((item) => equipmentSlot(item) === "main_hand");
+    const offhand = equipped.find((item) => equipmentSlot(item) === "off_hand");
+    const armor = equipped.find((item) => equipmentSlot(item) === "armor");
     const shopGear = equipped.flatMap((item) => shopItems.find((definition) => definition.id === item.id) ?? []);
     const definition =
       swords.find((item) => item.id === weapon?.id) ?? shopItems.find((item) => item.id === weapon?.id);
+    const armorClass = armor ? itemArmorClass(armor) : undefined;
     const riveted = armor?.id === "riveted_jack";
-    const armorClass = riveted ? "light" : shopGear.find((item) => item.id === armor?.id)?.armor_class;
     const defense = shopGear.reduce((sum, item) => sum + (item.defense ?? 0), riveted ? 2 : 0);
+    const dualWield = Boolean(weapon && offhand && isSwordItem(weapon) && isSwordItem(offhand));
     return deriveStats(p.form, p.level, p.skills, definition, defense, {
       age: p.age,
-      armor: armorClass === "light" || armorClass === "heavy" ? armorClass : undefined,
-      shield: shopGear.some((item) => item.equipment_type === "shield"),
+      armor: armorClass,
+      shield: equipped.some((item) => isShieldItem(item)),
+      dualWield,
       protection: shopGear.reduce((sum, item) => sum + (item.protection ?? 0), 0),
       magicDefense: shopGear.reduce((sum, item) => sum + (item.magic_defense ?? 0), 0),
       magicProtection: shopGear.reduce((sum, item) => sum + (item.magic_protection ?? 0), 0),
@@ -942,16 +1051,158 @@ export class GameSession {
     this.appendLog(p, "character", `You reached level ${level}. +${gained} AP.`);
   }
 
+  private canActivateOutOfCombat(
+    p: Profile,
+    command: CombatAction,
+    stats = this.battleStats(p),
+  ) {
+    if ((this.skillCooldowns[command] ?? 0) > 1e-10) return false;
+    const required = (
+      {
+        defend: "defense",
+        smash: "smash",
+        counterattack: "counterattack",
+        windmill: "windmill",
+      } as Partial<Record<CombatAction, string>>
+    )[command];
+    if (required && !Object.hasOwn(p.skills, required)) return false;
+    const currentStamina = p.stamina ?? stats.stamina;
+    const cost = skillStaminaCost(
+      command,
+      stats.skill_effects,
+      currentStamina <= 0 && stats.unarmed_min !== undefined,
+    );
+    return currentStamina >= cost;
+  }
+
+  private findEnemyInMap(p: Profile, enemyId: string): MapEnemy | undefined {
+    const map = p.map;
+    if (!map) return undefined;
+    const direct = map.enemies.find((enemy) => enemy.id === enemyId);
+    if (direct) return direct;
+    if (this.combat && /^\d+$/.test(enemyId)) {
+      return encounterEnemies(p)[Number(enemyId)];
+    }
+    return undefined;
+  }
+
+  private navigateToEnemy(p: Profile, target: MapEnemy) {
+    const map = p.map;
+    if (!map) return false;
+    const choices = [
+      { x: target.x + 1, y: target.y },
+      { x: target.x - 1, y: target.y },
+      { x: target.x, y: target.y + 1 },
+      { x: target.x, y: target.y - 1 },
+    ];
+    let shortest: Point[] | undefined;
+    for (const point of choices) {
+      if (!walkable(map, point.x, point.y)) continue;
+      if (range(p.position, point) === 0) {
+        shortest = [];
+        break;
+      }
+      if (occupied(map, point)) continue;
+      const path = findPath(map, p.position, point);
+      if (path.length && (!shortest || path.length < shortest.length)) shortest = path;
+    }
+    this.route = shortest ?? [];
+    this.routeTarget = shortest ? target : undefined;
+    return shortest !== undefined;
+  }
+
+  private unlockSkill(p: Profile, id: string, rank?: string, message?: string) {
+    const skill = skillCatalog[id];
+    if (!skill || p.skills[id]) return false;
+    p.skills[id] = { rank: rank ?? skill.ranks[0].rank, training: {} };
+    this.appendLog(p, "character", message ?? `You unlock ${skill.name}.`);
+    return true;
+  }
+
+  private unlockEquipmentMasteries(p: Profile) {
+    const equipped = p.inventory.items.filter((item) => item.equipped);
+    const armor = equipped.find((item) => equipmentSlot(item) === "armor");
+    const armorClass = armor ? itemArmorClass(armor) : undefined;
+    if (armorClass === "light") this.unlockSkill(p, "light_armor_mastery");
+    else if (armorClass === "heavy") this.unlockSkill(p, "heavy_armor_mastery");
+    if (equipped.some((item) => isShieldItem(item))) this.unlockSkill(p, "shield_mastery");
+    const mainHand = equipped.find((item) => equipmentSlot(item) === "main_hand");
+    const offHand = equipped.find((item) => equipmentSlot(item) === "off_hand");
+    if ((mainHand && isSwordItem(mainHand)) || (offHand && isSwordItem(offHand))) {
+      this.unlockSkill(p, "sword_mastery");
+    }
+    if (mainHand && offHand && isSwordItem(mainHand) && isSwordItem(offHand)) {
+      this.unlockSkill(p, "dual_wield_mastery");
+    }
+  }
+
+  private applyBattleEvents(
+    p: Profile,
+    battle: Combat,
+    events: CombatEvent[],
+    recovered?: Partial<Pick<Profile, "hp" | "mp" | "stamina">>,
+  ) {
+    if (recovered?.mp !== undefined) p.mp = recovered.mp;
+    this.appendLog(p, "combat", ...events.map((event) => event.message));
+    const training = events.flatMap((event) => event.training);
+    if (training.length) p.skills = recordTraining(p.skills, training);
+    if (
+      !p.skills.critical_hit &&
+      events.some((event) => event.actor === "player" && event.training.includes("score_a_critical_hit"))
+    ) {
+      this.unlockSkill(p, "critical_hit", skillCatalog.critical_hit.ranks[0].rank, "You unlock Critical Hit.");
+    }
+    for (const item of p.inventory.items) {
+      if (!item.equipped || item.durability === undefined) continue;
+      const slot = equipmentSlot(item);
+      const isWeapon = slot === "main_hand" || (slot === "off_hand" && isSwordItem(item));
+      const wear = events.reduce(
+        (sum, event) => sum + (isWeapon ? event.weaponWear : event.armorHit ? 25 : 0),
+        0,
+      );
+      item.durability = Math.max(0, item.durability - wear);
+    }
+    this.skillCooldowns = { ...battle.cooldowns };
+    this.loadedSkill = battle.loadedSkill;
+    this.finishBattle(p, battle);
+  }
+
+  private engageAndAttack(p: Profile, mapEnemy: MapEnemy, explicitAction?: CombatAction) {
+    let battle = this.combat;
+    if (!battle?.active) {
+      if (isWolfKind(mapEnemy.sprite)) {
+        p.wolfOpponent = mapEnemy.id;
+        this.startBattle(p, [mapEnemy]);
+      } else {
+        const room = mapEnemy.room ?? p.room;
+        p.room = room;
+        const enemies = roomEnemies(p, room);
+        if (!enemies.length) return;
+        this.startBattle(p, enemies);
+      }
+      battle = this.combat;
+    }
+    if (!battle?.active) return;
+    const participants = encounterEnemies(p);
+    const index = participants.findIndex((entry) => entry.id === mapEnemy.id);
+    const targetIndex = index >= 0 ? index : battle.target;
+    const events = battle.executeAttack(targetIndex, explicitAction);
+    this.applyBattleEvents(p, battle, events);
+  }
+
   private finishBattle(p: Profile, battle: Combat) {
     p.hp = battle.health;
     p.stamina = battle.stamina;
     p.wounds = battle.playerWounds;
     p.deadly = battle.playerDeadly;
+    this.skillCooldowns = { ...battle.cooldowns };
+    this.loadedSkill = battle.loadedSkill;
     if (battle.active) {
       battle.player = this.battleStats(p);
       p.battle = battle.snapshot();
       return;
     }
+    this.pendingAttackEnemyId = undefined;
     delete p.battle;
     if (p.wolfOpponent) {
       this.finishWolfBattle(p, battle);
@@ -1007,15 +1258,35 @@ export class GameSession {
     const gold = min + (((battle.seed * 16807) % 2147483647) % (max - min + 1));
     p.pending.gold = (p.pending.gold ?? 0) + gold;
     this.appendLog(p, "combat", `You defeat the ${enemy.name}.`);
+    if (
+      enemy.sprite === "gray_wolf" &&
+      p.quests?.smash?.status === "active" &&
+      p.quests.smash.grayWolvesDefeated < 5
+    ) {
+      p.quests.smash.grayWolvesDefeated = Math.min(5, p.quests.smash.grayWolvesDefeated + 1);
+      const defeated = p.quests.smash.grayWolvesDefeated;
+      this.appendLog(
+        p,
+        "general",
+        defeated >= 5
+          ? "Smash Trial complete (5/5 Gray Wolves). Return to the School to learn Smash."
+          : `Smash Trial: Defeated ${defeated}/5 Gray Wolves.`,
+      );
+    }
     this.gainXp(p, experience);
   }
 
   travelTo = (target: Point) => {
     const p = this.profile?.snapshot;
     if (!p?.map || this.panel || this.combat || this.busy || !walkable(p.map, target.x, target.y)) return;
+    this.pendingAttackEnemyId = undefined;
     const map = p.map;
     const landmark = map.landmarks.find((place) => range(place, target) === 0);
-    const enemy = map.wolfSpawns && map.enemies.find((actor) => range(actor, target) === 0);
+    const enemy = map.enemies.find((actor) => range(actor, target) === 0);
+    if (enemy) {
+      this.actions.attackEnemy(enemy.id);
+      return;
+    }
     const choices = landmark
       ? [
           { x: target.x + 1, y: target.y },
@@ -1035,7 +1306,7 @@ export class GameSession {
       if (path.length && (!shortest || path.length < shortest.length)) shortest = path;
     }
     this.route = shortest ?? [];
-    this.routeTarget = shortest ? (landmark ?? enemy) : undefined;
+    this.routeTarget = shortest ? landmark : undefined;
     if (shortest?.length === 0 && landmark) this.interact();
   };
 
@@ -1043,6 +1314,7 @@ export class GameSession {
     const p = this.profile?.snapshot;
     this.route = [];
     this.routeTarget = undefined;
+    this.pendingAttackEnemyId = undefined;
     if (!p || this.screen !== "world" || this.panel || this.combat || this.busy) return;
     if (repeat && this.keyMovementTime < stepInterval(p)) return;
     this.keyMovementTime = 0;
@@ -1108,6 +1380,20 @@ export class GameSession {
     return changed ? recovered : undefined;
   }
 
+  private tickCooldowns(dt: number) {
+    let secondChanged = false;
+    for (const [action, remaining] of Object.entries(this.skillCooldowns) as [CombatAction, number | undefined][]) {
+      if (remaining === undefined) continue;
+      const prevSec = Math.ceil(remaining);
+      const next = Math.max(0, remaining - dt);
+      const nextSec = next <= 1e-10 ? 0 : Math.ceil(next);
+      if (next <= 1e-10) delete this.skillCooldowns[action];
+      else this.skillCooldowns[action] = next;
+      if (prevSec !== nextSec) secondChanged = true;
+    }
+    return secondChanged;
+  }
+
   tick = (dt: number) => {
     if (!this.profile || this.busy || this.screen !== "world" || !Number.isFinite(dt) || dt <= 0) return;
     const p = this.profile.snapshot;
@@ -1121,67 +1407,165 @@ export class GameSession {
         if (battle.health > 0) battle.playerDeadly = false;
       }
       if (recovered?.stamina !== undefined) battle.stamina = recovered.stamina;
+      const prevSecs = Object.fromEntries(
+        Object.entries(battle.cooldowns).map(([k, v]) => [k, v ? Math.ceil(v) : 0]),
+      );
       const events = battle.advance(dt);
-      if (events.length || !battle.active || recovered) {
+      const secondChanged = (Object.keys({ ...prevSecs, ...battle.cooldowns }) as CombatAction[]).some((k) => {
+        const prev = prevSecs[k] ?? 0;
+        const curr = battle.cooldowns[k] ? Math.ceil(battle.cooldowns[k]!) : 0;
+        return prev !== curr;
+      });
+      this.skillCooldowns = { ...battle.cooldowns };
+      this.loadedSkill = battle.loadedSkill;
+
+      let steppedToTarget = false;
+      let nextStep: Point | undefined;
+      if (!this.panel && this.pendingAttackEnemyId) {
+        const target = this.findEnemyInMap(p, this.pendingAttackEnemyId);
+        if (!target) {
+          this.pendingAttackEnemyId = undefined;
+          this.route = [];
+          this.routeTarget = undefined;
+        } else if (range(p.position, target) <= 1) {
+          this.pendingAttackEnemyId = undefined;
+          this.route = [];
+          this.routeTarget = undefined;
+          steppedToTarget = true;
+        } else {
+          this.movementTime += dt;
+          if (this.movementTime >= stepInterval(p)) {
+            this.movementTime = 0;
+            const next = this.route[0];
+            if (!next || (p.map && occupied(p.map, next))) this.navigateToEnemy(p, target);
+            nextStep = this.route.shift();
+          }
+        }
+      }
+
+      if (events.length || !battle.active || recovered || nextStep || steppedToTarget) {
         this.update(
-          (p) => {
-            if (recovered?.mp !== undefined) p.mp = recovered.mp;
-            this.appendLog(p, "combat", ...events.map((event) => event.message));
-            const training = events.flatMap((event) => event.training);
-            if (training.length) p.skills = recordTraining(p.skills, training);
-            for (const item of p.inventory.items) {
-              if (!item.equipped || item.durability === undefined) continue;
-              const wear = events.reduce(
-                (sum, event) => sum + (item.slot === "main_hand" ? event.weaponWear : event.armorHit ? 25 : 0),
-                0,
-              );
-              item.durability = Math.max(0, item.durability - wear);
+          (candidate) => {
+            if (nextStep) this.moveCandidate(candidate, nextStep);
+            if (events.length || !battle.active || recovered) {
+              this.applyBattleEvents(candidate, battle, events, recovered);
+            } else if (nextStep && battle.active) {
+              candidate.battle = battle.snapshot();
             }
-            this.finishBattle(p, battle);
+            if (this.pendingAttackEnemyId && battle.active) {
+              const target = this.findEnemyInMap(candidate, this.pendingAttackEnemyId);
+              if (target && range(candidate.position, target) <= 1) {
+                this.pendingAttackEnemyId = undefined;
+                this.route = [];
+                this.routeTarget = undefined;
+                const participants = encounterEnemies(candidate);
+                const idx = participants.findIndex((entry) => entry.id === target.id);
+                const strikeEvents = battle.executeAttack(idx >= 0 ? idx : battle.target);
+                this.applyBattleEvents(candidate, battle, strikeEvents);
+              }
+            } else if (steppedToTarget && battle.active) {
+              const strikeEvents = battle.executeAttack(battle.target);
+              this.applyBattleEvents(candidate, battle, strikeEvents);
+            }
           },
           () => {
             if (battle.won && Object.keys(this.profile?.snapshot.pending ?? {}).length) this.openPanel("loot");
           },
         );
-      } else if ((this.hudTime += dt) >= 0.08) {
-        this.hudTime = 0;
+      } else if (secondChanged) {
         this.publish();
       }
-    } else if (recovered) {
-      this.update((p) => Object.assign(p, recovered));
-    } else if (
-      !this.panel &&
-      !this.tickWildlife(this.profile.snapshot, dt) &&
-      (this.route.length || this.routeTarget)
-    ) {
-      this.movementTime += dt;
-      if (this.movementTime < stepInterval(p)) return;
-      this.movementTime = 0;
-      const target = this.routeTarget;
-      if (target && "speed" in target) {
-        const map = this.profile.snapshot.map;
-        const current = map?.enemies.find((enemy) => enemy.id === target.id);
-        if (!map || !current) {
-          this.route = [];
-          this.routeTarget = undefined;
-          return;
+      return;
+    }
+
+    const cooldownChanged = this.tickCooldowns(dt);
+    let dispatchedUpdate = false;
+    if (recovered) {
+      dispatchedUpdate = true;
+      this.update((candidate) => Object.assign(candidate, recovered));
+    } else if (!this.panel) {
+      if (this.tickWildlife(this.profile.snapshot, dt)) {
+        dispatchedUpdate = true;
+      } else if (this.route.length || this.routeTarget) {
+        this.movementTime += dt;
+        if (this.movementTime >= stepInterval(p)) {
+          this.movementTime = 0;
+          const target = this.routeTarget;
+          let abortRoute = false;
+          if (target && "speed" in target) {
+            const map = this.profile.snapshot.map;
+            const current = map?.enemies.find((enemy) => enemy.id === target.id);
+            if (!map || !current) {
+              this.route = [];
+              this.routeTarget = undefined;
+              this.pendingAttackEnemyId = undefined;
+              abortRoute = true;
+            } else {
+              const next = this.route[0];
+              if (range(current, target) !== 0 || (next && range(next, current) !== 0 && occupied(map, next)))
+                this.navigateToEnemy(this.profile.snapshot, current);
+            }
+          }
+          if (!abortRoute) {
+            const next = this.route.shift();
+            if (next) {
+              const targetId = this.pendingAttackEnemyId;
+              dispatchedUpdate = true;
+              this.update(
+                (candidate) => {
+                  this.moveCandidate(candidate, next);
+                  if (targetId) {
+                    const targetEnemy = this.findEnemyInMap(candidate, targetId);
+                    if (targetEnemy && range(candidate.position, targetEnemy) <= 1) {
+                      this.pendingAttackEnemyId = undefined;
+                      this.route = [];
+                      this.routeTarget = undefined;
+                      this.engageAndAttack(candidate, targetEnemy);
+                    }
+                  }
+                },
+                () => {
+                  if (this.combat?.won && Object.keys(this.profile?.snapshot.pending ?? {}).length)
+                    this.openPanel("loot");
+                },
+              );
+            } else {
+              this.routeTarget = undefined;
+              if (this.pendingAttackEnemyId) {
+                const targetId = this.pendingAttackEnemyId;
+                const targetEnemy = this.findEnemyInMap(p, targetId);
+                this.pendingAttackEnemyId = undefined;
+                if (targetEnemy && range(p.position, targetEnemy) <= 1) {
+                  dispatchedUpdate = true;
+                  this.update(
+                    (candidate) => this.engageAndAttack(candidate, targetEnemy),
+                    () => {
+                      if (this.combat?.won && Object.keys(this.profile?.snapshot.pending ?? {}).length)
+                        this.openPanel("loot");
+                    },
+                  );
+                }
+              } else if (target && !("speed" in target) && range(target, this.profile.snapshot.position) <= 1) {
+                dispatchedUpdate = true;
+                this.interact();
+              }
+            }
+          }
         }
-        const next = this.route[0];
-        if (range(current, target) !== 0 || (next && range(next, current) !== 0 && occupied(map, next)))
-          this.travelTo(current);
       }
-      const next = this.route.shift();
-      if (next) this.update((p) => this.moveCandidate(p, next));
-      else {
-        this.routeTarget = undefined;
-        if (target && !("speed" in target) && range(target, this.profile.snapshot.position) <= 1) this.interact();
-      }
+    }
+    if (cooldownChanged && !dispatchedUpdate) {
+      this.publish();
     }
   };
 
   private interact = () => {
     const p = this.profile?.snapshot;
-    if (!p || !p.map || this.busy || this.combat) return;
+    if (!p || !p.map || this.busy) return;
+    if (this.combat?.active) {
+      if (!this.panel) this.actions.attackEnemy(String(this.combat.target));
+      return;
+    }
     if (Object.keys(p.pending).length) {
       this.openPanel("loot");
       return;
@@ -1213,7 +1597,7 @@ export class GameSession {
       if (battle) {
         p.hp = battle.useTonic();
         p.battle = battle.snapshot();
-        this.appendLog(p, "combat", "You drink a Healing Tonic. Your Time gauge is unchanged.");
+        this.appendLog(p, "combat", "You drink a Healing Tonic.");
       } else {
         p.hp = Math.min(healableLife(p), p.hp + tonicHealing);
         this.appendLog(p, "general", "You drink a Healing Tonic.");
@@ -1226,13 +1610,58 @@ export class GameSession {
       this.useTonic();
       return;
     }
+    const p = this.profile?.snapshot;
+    if (!p || this.busy) return;
     const battle = this.combat;
-    if (!battle?.active) return;
-    this.update((p) => {
-      if (!battle.queue(command)) throw new Error("This action is unavailable.");
-      p.battle = battle.snapshot();
-      this.appendLog(p, "combat", `${itemName(command)} queued.`);
-    });
+    if (!battle?.active) {
+      if (!this.canActivateOutOfCombat(p, command)) throw new Error("This action is unavailable.");
+      if (command === "attack") {
+        this.loadedSkill = null;
+        this.publish();
+        return;
+      }
+      if (command === "windmill") {
+        const adjacent = p.map?.enemies.find((enemy) => range(p.position, enemy) <= 1);
+        if (adjacent) {
+          this.update(
+            (candidate) => this.engageAndAttack(candidate, adjacent, "windmill"),
+            () => {
+              if (this.combat?.won && Object.keys(this.profile?.snapshot.pending ?? {}).length) this.openPanel("loot");
+            },
+          );
+          return;
+        }
+      }
+      this.loadedSkill = this.loadedSkill === command ? null : command;
+      this.publish();
+      return;
+    }
+    if (command === "defend" || command === "counterattack") {
+      this.update((candidate) => {
+        if (!battle.loadSkill(command)) throw new Error("This action is unavailable.");
+        this.loadedSkill = battle.loadedSkill;
+        this.applyBattleEvents(candidate, battle, battle.events);
+      });
+      return;
+    }
+    if (command === "smash") {
+      this.update((candidate) => {
+        if (!battle.loadSkill("smash")) throw new Error("This action is unavailable.");
+        this.loadedSkill = battle.loadedSkill;
+        candidate.battle = battle.snapshot();
+      });
+      return;
+    }
+    this.update(
+      (candidate) => {
+        if (!battle.canQueue(command)) throw new Error("This action is unavailable.");
+        battle.executeAttack(battle.target, command);
+        this.applyBattleEvents(candidate, battle, battle.events);
+      },
+      () => {
+        if (battle.won && Object.keys(this.profile?.snapshot.pending ?? {}).length) this.openPanel("loot");
+      },
+    );
   }
 
   private choose = (id: string) => {
@@ -1326,21 +1755,6 @@ export class GameSession {
         this.appendLog(p, "general", "You descend into the Threshold.");
         return;
       }
-      case "quest-accept":
-        if (p.quest === 0) {
-          p.quest = 1;
-          this.appendLog(p, "general", "Quest accepted: Carry the Signal.");
-        }
-        return;
-      case "quest-reward":
-        if (p.quest === 2) {
-          p.quest = 3;
-          const { gold, xp } = signalQuestReward;
-          p.gold += gold;
-          this.appendLog(p, "general", `Quest complete. You receive ${gold} gold.`);
-          this.gainXp(p, xp);
-        }
-        return;
       case "gate-register":
         if ((p.location === "lantern_rest" || p.location === "spindle_hollow") && !p.gates.includes(p.location)) {
           p.gates.push(p.location);
@@ -1358,8 +1772,9 @@ export class GameSession {
       case "starter-armor": {
         const item = action === "starter-sword" ? starterItems.sword : starterItems.armor;
         if (!addItem(p.inventory, item)) throw new Error("No room for this item, or you already own it.");
-        equipItem(p.inventory, item.id);
+        equipItem(p.inventory, item.id, equipOptionsFor(item));
         this.appendLog(p, "general", `You received and equipped ${item.name}.`);
+        this.unlockEquipmentMasteries(p);
         return;
       }
       case "take-sword":
@@ -1387,11 +1802,26 @@ export class GameSession {
               ...item,
               equipped: false,
               accessorySlot: undefined,
+              handSlot: undefined,
             })
           )
             throw new Error("Make room in your bag first.");
           p.inventory = inventory;
-        } else if (!equipItem(p.inventory, item.id)) throw new Error("This item cannot be equipped.");
+        } else if (!equipItem(p.inventory, item.id, equipOptionsFor(item))) {
+          throw new Error("This item cannot be equipped.");
+        } else {
+          this.unlockEquipmentMasteries(p);
+        }
+        return;
+      }
+      case "equip-offhand": {
+        if (this.combat) throw new Error("Change equipment between encounters.");
+        const item = p.inventory.items.find((value) => value.id === arg);
+        if (!item || !isOneHandedSword(item)) throw new Error("Only one-handed swords can be equipped in the off hand.");
+        if (!equipItem(p.inventory, item.id, equipOptionsFor(item, "off_hand"))) {
+          throw new Error("This item cannot be equipped.");
+        }
+        this.unlockEquipmentMasteries(p);
         return;
       }
       case "buy": {
@@ -1503,7 +1933,7 @@ export class GameSession {
       }
       case "practice": {
         const sword = p.inventory.items.find(
-          (item) => item.equipped && item.slot === "main_hand" && (item.durability ?? 1) > 0,
+          (item) => item.equipped && equipmentSlot(item) === "main_hand" && (item.durability ?? 1) > 0,
         );
         if (!sword) throw new Error("Equip a usable weapon before practicing.");
         if (p.skills.combat_mastery?.rank === "novice") p.skills = recordTraining(p.skills, ["attack"]);
@@ -1511,22 +1941,50 @@ export class GameSession {
         return;
       }
       case "learn": {
+        if (!schoolTeachableSkills.includes(arg as SchoolTeachableSkill)) return;
         const skill = skillCatalog[arg];
         if (!skill) return;
         const progress = p.skills[arg];
-        const windmill = arg === "windmill";
-        if (progress && (!windmill || progress.rank !== "novice")) return;
+        if (progress && progress.rank !== "novice") return;
         if (
-          windmill &&
-          (this.panel !== "service" ||
-            this.service?.id !== "school" ||
-            this.serviceMode !== "study" ||
-            range(p.position, this.service) > 1 ||
-            this.combat)
+          this.panel !== "service" ||
+          this.service?.id !== "school" ||
+          this.serviceMode !== "study" ||
+          range(p.position, this.service) > 1 ||
+          this.combat
         )
           return;
-        p.skills[arg] = { rank: windmill ? "F" : skill.ranks[0].rank, training: {} };
-        this.appendLog(p, "character", `You learn ${skill.name}${windmill ? " at rank F" : ""}.`);
+        p.skills[arg] = { rank: "F", training: {} };
+        this.appendLog(p, "character", `You learn ${skill.name} at rank F.`);
+        return;
+      }
+      case "quest": {
+        if (
+          this.panel !== "service" ||
+          this.service?.id !== "school" ||
+          range(p.position, this.service) > 1 ||
+          this.combat
+        )
+          return;
+        if (arg === "smash-accept" && !p.skills.smash && !p.quests?.smash) {
+          (p.quests ??= {}).smash = { status: "active", grayWolvesDefeated: 0 };
+          this.appendLog(
+            p,
+            "general",
+            "Quest accepted: Smash Trial — Defeat 5 Gray Wolves and return to the School.",
+          );
+          return;
+        }
+        if (
+          arg === "smash-claim" &&
+          !p.skills.smash &&
+          p.quests?.smash?.status === "active" &&
+          p.quests.smash.grayWolvesDefeated >= 5
+        ) {
+          p.quests.smash.status = "completed";
+          p.skills.smash = { rank: "F", training: {} };
+          this.appendLog(p, "character", "You complete the Smash Trial and learn Smash at rank F.");
+        }
         return;
       }
       case "advance": {
@@ -1588,10 +2046,7 @@ export class GameSession {
             !canLeaveForSpindleHollow(p)
           )
             return;
-          if (p.origin === "lantern_rest") {
-            if (!p.completions) p.completions++;
-            if (p.quest === 1) p.quest = 2;
-          }
+          if (p.origin === "lantern_rest" && !p.completions) p.completions++;
           this.arriveAtTownLandmark(p, "spindle_hollow", "dungeon");
           this.appendLog(p, "general", "You reach Spindle Hollow.");
           return;
@@ -1599,7 +2054,6 @@ export class GameSession {
         if (!p.treasure || Object.keys(p.pending).length)
           throw new Error("Collect or leave the treasure before exiting.");
         p.completions++;
-        if (p.quest === 1) p.quest = 2;
         arrive(p, p.origin === "lantern_rest" ? "spindle_hollow" : "lantern_rest");
         this.appendLog(p, "general", `You reach ${townNames[p.location as Town]}.`);
         return;
@@ -1698,10 +2152,15 @@ export class GameSession {
       });
     },
     useSkillSlot: (index) => {
-      const skill = this.profile?.snapshot.skillSlots?.[index];
+      const p = this.profile?.snapshot;
+      const skill = p?.skillSlots?.[index];
       const command = skill ? skillCommands[skill] : undefined;
-      if (this.busy || this.screen !== "world" || this.panel || !command || !this.combat?.canQueue(command))
+      if (!p || this.busy || this.screen !== "world" || this.panel || !command) return false;
+      if (this.combat?.active) {
+        if (!this.combat.canQueue(command)) return false;
+      } else if (!this.canActivateOutOfCombat(p, command)) {
         return false;
+      }
       this.queueCombat(command);
       return true;
     },
@@ -1711,6 +2170,34 @@ export class GameSession {
         this.combat.target = index;
         this.publish();
       }
+    },
+    attackEnemy: (enemyId) => {
+      const p = this.profile?.snapshot;
+      if (!p?.map || this.busy || this.panel) return;
+      const mapEnemy = this.findEnemyInMap(p, enemyId);
+      if (!mapEnemy) return;
+      if (this.combat?.active) {
+        const index = encounterEnemies(p).findIndex((entry) => entry.id === mapEnemy.id);
+        if (index >= 0) this.combat.target = index;
+      }
+      if (range(p.position, mapEnemy) <= 1) {
+        this.route = [];
+        this.routeTarget = undefined;
+        this.pendingAttackEnemyId = undefined;
+        this.update(
+          (candidate) => {
+            const target = this.findEnemyInMap(candidate, mapEnemy.id);
+            if (target) this.engageAndAttack(candidate, target);
+          },
+          () => {
+            if (this.combat?.won && Object.keys(this.profile?.snapshot.pending ?? {}).length) this.openPanel("loot");
+          },
+        );
+        return;
+      }
+      this.pendingAttackEnemyId = mapEnemy.id;
+      this.navigateToEnemy(p, mapEnemy);
+      this.publish();
     },
     choose: this.choose,
     takeLoot: (ids) => {

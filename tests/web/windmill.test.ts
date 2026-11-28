@@ -78,12 +78,12 @@ it("Windmill hits every living enemy with one stamina cost", () => {
     ],
   );
   battle.enemies[2].health = 0;
-  expect(battle.queue("windmill")).toBe(true);
-  const events = battle.advance(2.5);
+  const events = battle.executeAttack(0, "windmill");
   expect(battle.enemies[0].health).toBeLessThan(100);
   expect(battle.enemies[1].health).toBeLessThan(100);
   expect(battle.enemies[2].health).toBe(0);
   expect(battle.stamina).toBe(28);
+  expect(battle.cooldownRemaining("windmill")).toBe(4);
   expect(events.find((event) => event.action === "windmill")?.message).toMatch(
     /^Windmill hits 2 enemies for \d+ damage\.$/,
   );

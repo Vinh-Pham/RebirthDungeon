@@ -40,7 +40,6 @@ it("lets Windmill ignore protection for the shared critical roll", () => {
     enemy.intent = "counterattack";
   });
   battle.queue("windmill");
-  battle.advance(2.5);
   expect(battle.events.some((event) => event.training.includes("score_a_critical_hit"))).toBe(true);
   expect(battle.enemies[1].health).toBe(850);
 });
@@ -63,7 +62,6 @@ it("uses maximum damage as the critical bonus before skill multiplication", () =
   );
   battle.enemies[0].intent = "defend";
   battle.queue("smash");
-  battle.advance(2.5);
   expect(battle.events.some((event) => event.training.includes("score_a_critical_hit"))).toBe(true);
   expect(battle.enemies[0].health).toBeLessThanOrEqual(960);
 });
@@ -99,7 +97,6 @@ it("allows an exhausted normal attack with unarmed damage and no weapon wear", (
   );
   battle.enemies[0].intent = "counterattack";
   expect(battle.queue("attack")).toBe(true);
-  battle.advance(2.5);
   expect(battle.enemies[0].health).toBe(995);
   expect(battle.events[0].weaponWear).toBe(0);
 });

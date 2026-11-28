@@ -111,11 +111,13 @@ it("populates a legacy town, roams on grass, and retains an independent wolf res
       session.tick(0.11);
       await idle();
     }
-    expect(session.store.getState().view.encounter?.enemies).toMatchObject([{ name: "White Wolf", hp: 160 }]);
+    const encounterHp = session.store.getState().view.encounter?.enemies[0]?.hp;
+    expect(encounterHp).toBeDefined();
+    expect(encounterHp!).toBeLessThan(160);
     expect((await state()).wolfOpponent).toBe(white.id);
     session = new GameSession(saves, () => now);
     await session.initialize();
-    expect(session.store.getState().view.encounter?.enemies).toMatchObject([{ name: "White Wolf", hp: 160 }]);
+    expect(session.store.getState().view.encounter?.enemies).toMatchObject([{ name: "White Wolf", hp: encounterHp }]);
   } finally {
     await db.delete();
   }

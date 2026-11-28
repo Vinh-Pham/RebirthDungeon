@@ -187,7 +187,6 @@ it("refreshes an old active town durably without changing progression or a saved
   delete profile.map!.largeTrees;
   profile.position = { x: 0, y: 0 };
   profile.layouts.lantern_rest = structuredClone(profile.map!);
-  profile.quest = 2;
   profile.gold = 321;
   const db = new GameDatabase(`ldtk-resume-${crypto.randomUUID()}`);
   const saves = new SaveService<Profile>(db);
@@ -204,7 +203,7 @@ it("refreshes an old active town durably without changing progression or a saved
     expect(enemies.map((enemy) => enemy.id)).toEqual(town.wolfSpawns?.map((spawn) => spawn.id));
     expect(migrated.snapshot.position).toEqual(town.entry);
     expect(migrated.snapshot.layouts["threshold-preserved"]).toEqual(profile.layouts["threshold-preserved"]);
-    expect([migrated.snapshot.quest, migrated.snapshot.gold]).toEqual([2, 321]);
+    expect(migrated.snapshot.gold).toBe(321);
     const resumed = new GameSession(saves);
     await resumed.initialize();
     expect((await saves.load("town"))!.revision).toBe(migrated.revision);

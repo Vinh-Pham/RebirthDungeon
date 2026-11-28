@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
 import fc from "fast-check";
 import { levelForXp, maxExperience, maxLevel, xpForLevel, xpProgress } from "../../src/game/content/level-experience";
-import { Combat } from "../../src/game/systems/combat";
+import { Combat, skillCooldownSeconds } from "../../src/game/systems/combat";
+import { deriveStats } from "../../src/game/core/stats";
 import {
   canPlace,
   equipItem,
@@ -36,22 +37,25 @@ describe("ported gameplay rules", () => {
       expect(levelForXp(threshold)).toBe(level);
     }
   });
-  it("latest queued action replaces the previous command", () => {
+  it("executes back-to-back attacks immediately without an ATB delay and replaces loaded skills", () => {
     const battle = new Combat(player, [enemy]);
     battle.queue("attack");
-    battle.queue("defend");
-    battle.advance(2.5);
-    expect(battle.enemies[0].health).toBe(100);
+    expect(battle.enemies[0].health).toBe(95);
+    battle.queue("attack");
+    expect(battle.enemies[0].health).toBe(90);
+    battle.loadSkill("smash");
+    expect(battle.loadedSkill).toBe("smash");
+    battle.loadSkill("defend");
+    expect(battle.loadedSkill).toBe("defend");
     expect(battle.guarded).toBe(true);
   });
-  it("tonics preserve readiness", () => {
+  it("tonics restore HP without clearing a loaded skill", () => {
     const battle = new Combat(player, [enemy]);
     battle.health = 40;
-    battle.advance(1);
-    const gauge = battle.playerGauge;
+    battle.loadSkill("smash");
     battle.useTonic();
     expect(battle.health).toBe(70);
-    expect(battle.playerGauge).toBe(gauge);
+    expect(battle.loadedSkill).toBe("smash");
   });
   it("reports ranked action costs and damage before mitigation", () => {
     const battle = new Combat(
@@ -71,6 +75,7 @@ describe("ported gameplay rules", () => {
     expect(battle.actionDetails.find(({ action }) => action === "smash")).toEqual({
       action: "smash",
       stamina: 7,
+      cooldown: 3,
       damage: { min: 18, max: 18 },
     });
   });
@@ -79,7 +84,6 @@ describe("ported gameplay rules", () => {
     battle.enemies[0].intent = "smash";
     battle.enemies[0].gauge = 0.3;
     battle.queue("attack");
-    battle.advance(2.5);
     expect(battle.enemies[0].intent).toBe("defend");
     expect(battle.enemies[0].gauge).toBe(0);
   });
@@ -190,5 +194,170 @@ describe("ported gameplay rules", () => {
     expect(Object.keys(skillCatalog)).toHaveLength(11);
     for (const skill of Object.values(skillCatalog))
       expect(skill.ranks.length).toBeGreaterThan(1);
+  });
+  it("enforces Smash 3s cooldown on use", () => {
+    const battle = new Combat(
+      {
+        ...player,
+        learned_skills: ["smash"],
+        skill_effects: { smash: { rank: "F", damage_pct: 180, cooldown_s: 3 } },
+      },
+      [enemy],
+    );
+    expect(battle.executeAttack(0, "smash")).toHaveLength(1);
+    expect(battle.cooldownRemaining("smash")).toBe(3);
+    expect(battle.canLoad("smash")).toBe(false);
+    battle.advance(1);
+    expect(battle.cooldownRemaining("smash")).toBe(2);
+    battle.advance(1);
+    expect(battle.cooldownRemaining("smash")).toBe(1);
+    battle.advance(1);
+    expect(battle.cooldownRemaining("smash")).toBe(0);
+    expect(battle.canLoad("smash")).toBe(true);
+  });
+  it("starts Defense 7s cooldown only when blocking an attack, not on cancel or guard break", () => {
+    const blocked = new Combat(player, [enemy]);
+    blocked.enemies[0].intent = "attack";
+    blocked.enemies[0].gauge = 0.99;
+    expect(blocked.loadSkill("defend")).toBe(true);
+    expect(blocked.cooldownRemaining("defend")).toBe(0);
+    blocked.advance(0.1);
+    expect(blocked.guarded).toBe(false);
+    expect(Math.ceil(blocked.cooldownRemaining("defend"))).toBe(7);
+    expect(blocked.cooldownRemaining("defend")).toBeGreaterThan(6.9);
+    expect(blocked.canLoad("defend")).toBe(false);
+
+    const canceled = new Combat(player, [enemy]);
+    expect(canceled.loadSkill("defend")).toBe(true);
+    canceled.unloadSkill();
+    expect(canceled.loadedSkill).toBeNull();
+    expect(canceled.guarded).toBe(false);
+    expect(canceled.cooldownRemaining("defend")).toBe(0);
+
+    const broken = new Combat(player, [enemy]);
+    broken.enemies[0].intent = "smash";
+    broken.enemies[0].gauge = 0.99;
+    broken.loadSkill("defend");
+    broken.advance(0.1);
+    expect(broken.cooldownRemaining("defend")).toBe(0);
+  });
+  it("starts Counterattack cooldown only after countering (7s normal, 4s knuckles)", () => {
+    const sword = new Combat(
+      { ...player, learned_skills: ["counterattack"] },
+      [enemy],
+    );
+    sword.enemies[0].intent = "attack";
+    sword.enemies[0].gauge = 0.99;
+    expect(sword.loadSkill("counterattack")).toBe(true);
+    expect(sword.cooldownRemaining("counterattack")).toBe(0);
+    sword.advance(0.1);
+    expect(Math.ceil(sword.cooldownRemaining("counterattack"))).toBe(7);
+    expect(sword.cooldownRemaining("counterattack")).toBeGreaterThan(6.9);
+
+    const knuckle = new Combat(
+      { ...player, weapon_type: "knuckle", learned_skills: ["counterattack"] },
+      [enemy],
+    );
+    knuckle.enemies[0].intent = "attack";
+    knuckle.enemies[0].gauge = 0.99;
+    knuckle.loadSkill("counterattack");
+    knuckle.advance(0.1);
+    expect(Math.ceil(knuckle.cooldownRemaining("counterattack"))).toBe(4);
+    expect(knuckle.cooldownRemaining("counterattack")).toBeGreaterThan(3.9);
+  });
+  it("uses current skill rank and race/weapon cooldown times from the skill tables", () => {
+    const form = {
+      name: "Rank Checker",
+      race: 0,
+      gender: 0,
+      age: 17,
+      talent: 0,
+      body: 1,
+      skin: 1,
+      hair: 0,
+      hairColor: 0,
+      eyes: 0,
+      eyeColor: 0,
+      face: 0,
+    };
+    const skillsFor = (windmillRank: string) => ({
+      smash: { rank: "F", training: {} },
+      defense: { rank: "1", training: {} },
+      counterattack: { rank: "1", training: {} },
+      windmill: { rank: windmillRank, training: {} },
+    });
+    const humanF = new Combat(deriveStats({ ...form, race: 0 }, 1, skillsFor("F")), [enemy]);
+    expect(humanF.cooldownDuration("smash")).toBe(3);
+    expect(humanF.cooldownDuration("defend")).toBe(7);
+    expect(humanF.cooldownDuration("counterattack")).toBe(7);
+    expect(humanF.cooldownDuration("windmill")).toBe(4);
+
+    const human9 = new Combat(deriveStats({ ...form, race: 0 }, 1, skillsFor("9")), [enemy]);
+    expect(human9.cooldownDuration("windmill")).toBe(3.5);
+
+    const elfF = new Combat(deriveStats({ ...form, race: 1 }, 1, skillsFor("F")), [enemy]);
+    const elf9 = new Combat(deriveStats({ ...form, race: 1 }, 1, skillsFor("9")), [enemy]);
+    expect(elfF.cooldownDuration("windmill")).toBe(4.5);
+    expect(elf9.cooldownDuration("windmill")).toBe(4);
+
+    const giantF = new Combat(deriveStats({ ...form, race: 2 }, 1, skillsFor("F")), [enemy]);
+    const giant9 = new Combat(deriveStats({ ...form, race: 2 }, 1, skillsFor("9")), [enemy]);
+    expect(giantF.cooldownDuration("windmill")).toBe(3.5);
+    expect(giant9.cooldownDuration("windmill")).toBe(3);
+
+    const knuckle = new Combat(
+      deriveStats(form, 1, skillsFor("1"), { weapon_type: "knuckle", damage_min: 5, damage_max: 10 }),
+      [enemy],
+    );
+    expect(knuckle.cooldownDuration("counterattack")).toBe(4);
+  });
+  it("falls back to positive cooldowns when skill effect fields are missing or invalid", () => {
+    expect(skillCooldownSeconds("smash", { smash: { cooldown_time_sec: 0 } })).toBe(3);
+    expect(skillCooldownSeconds("smash", { smash: { cooldown_time_sec: "invalid" } })).toBe(3);
+    expect(skillCooldownSeconds("defend", { defense: { cooldown_time_sec: -2 } })).toBe(7);
+    expect(skillCooldownSeconds("counterattack", { counterattack: { cooldown_time_sec: 0 } })).toBe(7);
+    expect(skillCooldownSeconds("windmill", { windmill: { cooldown_time_sec_human: 0 } })).toBe(4);
+  });
+  it("enforces Smash 3s cooldown on Defend-break, enemy kill, and Normal Attack interruption", () => {
+    const interrupted = new Combat({ ...player, learned_skills: ["smash"] }, [{ ...enemy }]);
+    interrupted.enemies[0].intent = "attack";
+    expect(interrupted.loadSkill("smash")).toBe(true);
+    const interruptEvents = interrupted.executeAttack(0);
+    expect(interruptEvents[0]?.message).toBe("Normal Attack interrupts your Smash.");
+    expect(interrupted.cooldownRemaining("smash")).toBe(3);
+    expect(interrupted.loadedSkill).toBeNull();
+    expect(interrupted.canLoad("smash")).toBe(false);
+    expect(interrupted.canQueue("smash")).toBe(false);
+    expect(interrupted.loadSkill("smash")).toBe(false);
+    expect(interrupted.executeAttack(0, "smash")).toEqual([]);
+
+    const lethal = new Combat({ ...player, damage_min: 120, damage_max: 120, learned_skills: ["smash"] }, [
+      { ...enemy, health: 20 },
+      { ...enemy, health: 100 },
+    ]);
+    lethal.enemies[0].intent = "defend";
+    expect(lethal.executeAttack(0, "smash")).toHaveLength(1);
+    expect(lethal.cooldownRemaining("smash")).toBe(3);
+    expect(lethal.target).toBe(1);
+    expect(lethal.canLoad("smash")).toBe(false);
+    lethal.advance(3);
+    expect(lethal.canLoad("smash")).toBe(true);
+  });
+  it("advances target and starts cooldown when Counterattack defeats an enemy in a multi-enemy battle", () => {
+    const battle = new Combat(
+      { ...player, damage_min: 80, damage_max: 80, learned_skills: ["counterattack"] },
+      [
+        { name: "First", health: 10, damage_min: 8, damage_max: 8 },
+        { name: "Second", health: 100, damage_min: 8, damage_max: 8 },
+      ],
+    );
+    battle.enemies[0].intent = "attack";
+    battle.enemies[0].gauge = 0.99;
+    expect(battle.loadSkill("counterattack")).toBe(true);
+    battle.advance(0.1);
+    expect(battle.enemies[0].health).toBe(0);
+    expect(battle.target).toBe(1);
+    expect(Math.ceil(battle.cooldownRemaining("counterattack"))).toBe(7);
+    expect(battle.canLoad("counterattack")).toBe(false);
   });
 });

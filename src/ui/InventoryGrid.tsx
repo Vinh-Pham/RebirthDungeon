@@ -130,11 +130,13 @@ export function InventoryGrid({
   inventory,
   moveItem,
   equipItem,
+  equipOffhand,
   disabled,
 }: {
   inventory: GameView["inventory"];
   moveItem: GameActions["moveItem"];
   equipItem: (id: string) => void;
+  equipOffhand: (id: string) => void;
   disabled: boolean;
 }) {
   const [picked, setPicked] = useState<string>();
@@ -235,6 +237,21 @@ export function InventoryGrid({
               Equip {selectedItem.name}
             </Button>
           )}
+          {selectedItem.canOffHand &&
+            Boolean(inventory.equipment.main_hand) &&
+            Boolean(inventory.equipment.off_hand) && (
+              <Button
+                size="sm"
+                variant="secondary"
+                isDisabled={disabled}
+                onPress={() => {
+                  clearPick();
+                  equipOffhand(selectedItem.id);
+                }}
+              >
+                Equip Offhand
+              </Button>
+            )}
           <Button size="sm" variant="ghost" onPress={clearPick}>
             Cancel Move
           </Button>

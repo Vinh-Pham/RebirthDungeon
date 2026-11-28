@@ -2,10 +2,10 @@ import { useCallback, type ComponentProps } from "react";
 import { Button, Tooltip } from "@heroui/react";
 import { useDrag, useDrop } from "react-dnd";
 import { skillSlotKeys, type CombatCommand, type GameActions, type GameView } from "../app/contracts";
-import { tonicHealing } from "../game/systems/combat";
+import { skillCooldownSeconds, tonicHealing } from "../game/systems/combat";
 
 const tonicIcon = "items/consumables/hp-30-potion.png";
-const tonicDescription = "Restores HP immediately and leaves your Time gauge intact.";
+const tonicDescription = "Restores HP immediately without interrupting loaded skills.";
 
 const commands = {
   attack: ["Normal Attack", "Strikes one enemy and interrupts Smash.", "frames/skill_attack.png"],
@@ -51,6 +51,8 @@ function ActionIcon({
   icon,
   empty = false,
   highlighted,
+  cooldownSeconds,
+  disabled,
   keyshortcuts,
   ...button
 }: {
@@ -63,34 +65,47 @@ function ActionIcon({
   empty?: boolean;
   active?: boolean;
   highlighted?: boolean;
+  cooldownSeconds?: number;
+  disabled?: boolean;
   keyshortcuts?: string;
 } & Pick<ComponentProps<typeof Button>, "ref" | "onPress" | "onKeyDown" | "aria-label" | "aria-pressed"> &
   Partial<
     Record<"data-skill-slot" | "data-skill-source" | "data-skill-category", string> &
-      Record<"data-movable" | "data-drop-target", boolean>
+      Record<"data-movable" | "data-drop-target" | "data-cooling-down", boolean>
   >) {
   const assetBase = `${import.meta.env.BASE_URL}assets/`;
+  const onCooldown = Boolean(cooldownSeconds && cooldownSeconds > 0);
   return (
     <Tooltip delay={300}>
       <Button
-        className="action-icon relative bg-black/35 size-11 p-0 data-[movable=true]:cursor-grab data-[movable=true]:opacity-100 data-[drop-target=true]:shadow-[inset_0_0_0_2px_var(--accent)] [&[data-skill-category]]:bg-[var(--skill-icon-background)] data-[skill-category=combat]:[--skill-icon-background:#a3512a] data-[skill-category=magic]:[--skill-icon-background:#2e609f] data-[skill-category=life]:[--skill-icon-background:#957521] [&[data-skill-category][aria-pressed=true]]:shadow-[inset_0_0_0_2px_var(--accent)]"
+        className="action-icon relative bg-black/35 size-11 p-0 disabled:cursor-not-allowed data-[movable=true]:cursor-grab data-[movable=true]:opacity-100 data-[cooling-down=true]:cursor-not-allowed data-[cooling-down=true]:opacity-100 data-[drop-target=true]:shadow-[inset_0_0_0_2px_var(--accent)] [&[data-skill-category]]:bg-[var(--skill-icon-background)] data-[skill-category=combat]:[--skill-icon-background:#a3512a] data-[skill-category=magic]:[--skill-icon-background:#2e609f] data-[skill-category=life]:[--skill-icon-background:#957521] [&[data-skill-category][aria-pressed=true]]:shadow-[inset_0_0_0_2px_var(--accent)]"
         variant={highlighted ? "primary" : empty ? "outline" : "secondary"}
         isIconOnly
+        isDisabled={disabled}
         aria-label={label}
         aria-keyshortcuts={keyshortcuts ?? (shortcut ? hotkey : undefined)}
         {...button}
       >
         {icon ? (
           <img
-            className="h-7 w-6 object-contain [image-rendering:pixelated]"
+            className={`h-7 w-6 object-contain [image-rendering:pixelated]${onCooldown ? " opacity-35 grayscale" : ""}`}
             src={`${assetBase}${icon}`}
             alt=""
             draggable={false}
           />
         ) : null}
+        {onCooldown ? (
+          <span
+            className="skill-cooldown-overlay pointer-events-none absolute inset-0 z-10 grid place-items-center bg-[#0c171b]/80 font-[Departure,monospace] text-base font-bold text-[#f2ec8b] [text-shadow:0_1px_2px_#000]"
+            data-cooldown-seconds={cooldownSeconds}
+            aria-hidden="true"
+          >
+            {cooldownSeconds}
+          </span>
+        ) : null}
         {hotkey && (
           <kbd
-            className="absolute right-0.5 bottom-0.5 min-w-[13px] bg-[#101f24] px-0.5 py-px text-center font-[Departure,monospace] text-[10px] leading-none text-[#d6ddd0]"
+            className={`absolute right-0.5 bottom-0.5 z-20 min-w-[13px] bg-[#101f24] px-0.5 py-px text-center font-[Departure,monospace] text-[10px] leading-none text-[#d6ddd0]${onCooldown ? " opacity-60" : ""}`}
             aria-hidden="true"
           >
             {hotkey}
@@ -143,7 +158,21 @@ function SkillSlot({
   const skill = view.skills.find((entry) => entry.id === view.skillSlots[index]);
   const command = skill?.command;
   const hotkey = skillSlotKeys[index];
-  const movable = !!command;
+  const [name, description, icon] = command
+    ? commands[command]
+    : [
+        "Empty",
+        editor ? "Drop a skill here or choose this slot after selecting a skill." : "Open Skills to assign a skill.",
+      ];
+  const label = command && skill ? `${name} (${skillRankLabel(skill.rank)})` : name;
+  const detail = encounter?.actionDetails.find(({ action }) => action === command);
+  const cooldown = command ? (view.skillCooldowns[command] ?? 0) : 0;
+  const cooldownSeconds = cooldown > 1e-10 ? Math.ceil(cooldown) : 0;
+  const coolingDown = !editor && cooldownSeconds > 0;
+  const selected = editor?.selected && "slot" in editor.selected && editor.selected.slot === index;
+  const available = !!editor || !command || (!cooldownSeconds && view.availableSkills.includes(command));
+  const disabled = !editor && Boolean(command) && !available;
+  const movable = Boolean(command && (editor || !disabled));
   const [{ isOver }, drop] = useDrop<SkillSelection, void, { isOver: boolean }>({
     accept: dragType,
     canDrop: (source) => !busy && ("skillId" in source || source.slot !== index),
@@ -169,17 +198,20 @@ function SkillSlot({
     [drag, drop, movable],
   );
 
-  const [name, description, icon] = command
-    ? commands[command]
-    : [
-        "Empty",
-        editor ? "Drop a skill here or choose this slot after selecting a skill." : "Open Skills to assign a skill.",
-      ];
-  const label = command && skill ? `${name} (${skillRankLabel(skill.rank)})` : name;
-  const detail = encounter?.actionDetails.find(({ action }) => action === command);
+  const baseCooldown = command ? (detail?.cooldown ?? skill?.cooldown ?? skillCooldownSeconds(command)) : 0;
   const stats: Stat[] = [];
   if (detail) {
     stats.push(["Stamina cost", detail.stamina]);
+    if (baseCooldown > 0) {
+      stats.push([
+        "Cooldown",
+        command === "defend"
+          ? `${baseCooldown}s (after block)`
+          : command === "counterattack"
+            ? `${baseCooldown}s (after counter)`
+            : `${baseCooldown}s`,
+      ]);
+    }
     if (detail.damage) {
       const { min, max } = detail.damage;
       stats.push(["Base damage", min === max ? min : `${min}–${max}`]);
@@ -189,11 +221,12 @@ function SkillSlot({
       stats.push(["Base damage", `${enemy}% enemy attack + ${self}% weapon damage`]);
     }
     if (detail.staminaRecovered) stats.push(["Stamina restored", detail.staminaRecovered]);
+  } else if (baseCooldown > 0) {
+    stats.push(["Cooldown", `${baseCooldown}s`]);
   }
+  if (cooldownSeconds > 0) stats.push(["Cooling down", `${cooldownSeconds}s`]);
 
-  const queued = command && encounter ? encounter.queued === command : undefined;
-  const selected = editor?.selected && "slot" in editor.selected && editor.selected.slot === index;
-  const available = !!editor || !command || !!encounter?.available.includes(command);
+  const loaded = Boolean(command && command !== "attack" && view.loadedSkill === command);
   const press = () => {
     if (!editor) {
       if (command) actions.useSkillSlot(index);
@@ -210,7 +243,7 @@ function SkillSlot({
     <ActionIcon
       ref={connect}
       label={label}
-      aria-label={`Skill slot ${hotkey}, ${name}`}
+      aria-label={`Skill slot ${hotkey}, ${name}${loaded ? ", loaded" : ""}${cooldownSeconds > 0 ? `, cooling down ${cooldownSeconds}s` : ""}`}
       description={description}
       stats={stats}
       hotkey={hotkey}
@@ -218,11 +251,14 @@ function SkillSlot({
       icon={icon}
       empty={!command}
       active={available}
-      highlighted={editor ? selected : queued}
-      aria-pressed={editor && command ? !!selected : queued}
+      disabled={disabled}
+      cooldownSeconds={editor ? undefined : cooldownSeconds}
+      highlighted={editor ? selected : loaded}
+      aria-pressed={editor && command ? !!selected : loaded}
       data-skill-slot={hotkey}
       data-skill-category={skill?.category}
-      data-movable={movable}
+      data-movable={movable || undefined}
+      data-cooling-down={coolingDown || undefined}
       data-drop-target={isOver}
       onPress={available && !busy ? press : undefined}
       keyshortcuts={editor && command ? "Delete Backspace" : undefined}

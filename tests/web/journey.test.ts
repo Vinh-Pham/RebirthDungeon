@@ -10,7 +10,7 @@ import type { Point } from "../../src/app/contracts";
 import { mapKey } from "../../src/game/core/profile";
 import { walkable } from "../../src/game/world/world";
 
-it("crosses the six-room Threshold in both directions with quest, gates and durable reload", async () => {
+it("crosses the six-room Threshold in both directions with gates and durable reload", async () => {
   vi.stubGlobal("fetch", async (url: string) => {
     const source = url.replace("/assets/", "assets/").replace(/\.json$/, ".ink");
     const compiled = new Compiler(await readFile(source, "utf8")).Compile().ToJson();
@@ -94,11 +94,24 @@ it("crosses the six-room Threshold in both directions with quest, gates and dura
     expect(landmark).toBeDefined();
     await travel(landmark, true);
   };
+  const engage = async (enemyId: string) => {
+    session.actions.navigate("world");
+    session.actions.attackEnemy(enemyId);
+    for (let step = 0; step < 600 && !view().encounter; step++) {
+      if (!session.store.getState().mapView?.map.enemies.some((enemy) => enemy.id === enemyId)) break;
+      session.tick(0.11);
+      await idle();
+    }
+    await settleCombat();
+  };
   try {
     await session.initialize();
     await idle();
     await visit("warden");
-    await choose("quest-accept");
+    expect(view().details.options).toEqual([]);
+    session.actions.panel("journal");
+    expect(view().details.body).toBe("No active quests.");
+    session.actions.panel();
     await visit("gate");
     await choose("gate-register");
     await visit("dungeon");
@@ -113,8 +126,7 @@ it("crosses the six-room Threshold in both directions with quest, gates and dura
       const map = session.store.getState().mapView!.map;
       const enemy = map.enemies.find((enemy) => enemy.room === room)!;
       expect(enemy).toBeDefined();
-      await travel(enemy);
-      await settleCombat();
+      await engage(enemy.id);
       const cleared = await state();
       expect(cleared.room).toBe(room);
       expect(cleared.cleared).toContain(room);
@@ -159,7 +171,7 @@ it("crosses the six-room Threshold in both directions with quest, gates and dura
     await choose("complete");
     expect((await state()).location).toBe("spindle_hollow");
     await visit("warden");
-    await choose("quest-reward");
+    expect(view().details.options).toEqual([]);
     await visit("gate");
     await choose("gate-register");
     const completed = await state();
@@ -193,7 +205,6 @@ it("crosses the six-room Threshold in both directions with quest, gates and dura
     const reloaded = new GameSession(saves);
     await reloaded.initialize();
     expect(reloaded.store.getState().view.screen).toBe("world");
-    expect((await state()).quest).toBe(3);
     expect((await state()).gates).toEqual(["lantern_rest", "spindle_hollow"]);
   } finally {
     db.close();
@@ -220,7 +231,7 @@ it("wins the first encounter with a new character and takes its loot", async () 
       eyeColor: 0,
       face: 0,
     },
-    411,
+    413,
   );
   arrive(profile, "threshold");
   // Start at the room's central approach without changing any character stats.

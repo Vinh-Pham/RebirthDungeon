@@ -2,6 +2,7 @@ import { pouches } from "./stacks";
 import { canLeaveForSpindleHollow, starterItems, thresholdCleared } from "./profile";
 import type { ActionOption } from "../../app/contracts";
 import blacksmith from "../content/data/blacksmith_shop.json";
+import swords from "../content/data/swords.json";
 import type { Landmark } from "../world/world";
 import type { Profile } from "./profile";
 
@@ -30,6 +31,53 @@ interface ShopItem {
   weapon_type?: string;
 }
 export const shopItems = blacksmith.categories.flatMap<ShopItem>((category) => category.items);
+
+export function itemWeaponDefinition(item: { id: string }) {
+  const sword = swords.find((entry) => entry.id === item.id);
+  if (sword) {
+    return {
+      weapon_type: "sword",
+      hands: sword.hands ?? 1,
+      damage_min: sword.damage_min,
+      damage_max: sword.damage_max,
+    };
+  }
+  const shop = shopItems.find((entry) => entry.id === item.id);
+  if (shop && (shop.weapon_type || shop.slot === "main_hand")) {
+    return {
+      weapon_type: shop.weapon_type,
+      hands: shop.hands ?? 1,
+      damage_min: shop.damage_min,
+      damage_max: shop.damage_max,
+      balance: shop.balance,
+      critical: shop.critical,
+    };
+  }
+  return undefined;
+}
+
+export function isSwordItem(item: { id: string }) {
+  return itemWeaponDefinition(item)?.weapon_type === "sword";
+}
+
+export function isOneHandedSword(item: { id: string }) {
+  const def = itemWeaponDefinition(item);
+  return def?.weapon_type === "sword" && (def.hands ?? 1) === 1;
+}
+
+export function isTwoHandedWeapon(item: { id: string }) {
+  return (itemWeaponDefinition(item)?.hands ?? 1) === 2;
+}
+
+export function itemArmorClass(item: { id: string }): "light" | "heavy" | undefined {
+  if (item.id === "riveted_jack") return "light";
+  const armorClass = shopItems.find((entry) => entry.id === item.id)?.armor_class;
+  return armorClass === "light" || armorClass === "heavy" ? armorClass : undefined;
+}
+
+export function isShieldItem(item: { id: string }) {
+  return shopItems.find((entry) => entry.id === item.id)?.equipment_type === "shield";
+}
 export const serviceStory = {
   bank: "bank",
   blacksmith: "blacksmith",
@@ -39,10 +87,9 @@ export const serviceStory = {
   general_shop: "shop",
 } as const;
 export type ServiceId = keyof typeof serviceStory;
-export const signalQuestReward = { gold: 32, xp: 400 } as const;
 
 export const descriptions: Record<string, string> = {
-  warden: "Carry our signal through the Threshold. The Watchkeeper waits in Spindle Hollow.",
+  warden: "The Threshold connects Lantern Rest and Spindle Hollow. Keep your lantern lit on the lower road.",
   blacksmith: "A good blade and sound armor will bring you back to town.",
   school: "Study the principles, train through action, then spend AP to advance your rank.",
   magic_school:
@@ -113,11 +160,6 @@ const actionOptions: Record<string, ActionOption[]> = {
 
 export function serviceOptions(place: Landmark, p: Profile): ActionOption[] {
   switch (place.id) {
-    case "warden":
-      if (p.location === "lantern_rest" && p.quest === 0) return [option("quest-accept", "Accept Passage Quest")];
-      if (p.location === "spindle_hollow" && p.quest === 2)
-        return [option("quest-reward", `Complete Quest · ${signalQuestReward.gold} Gold · ${signalQuestReward.xp} XP`)];
-      return [];
     case "blacksmith":
       return [
         option("shop", "Browse Equipment"),

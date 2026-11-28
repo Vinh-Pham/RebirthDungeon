@@ -24,6 +24,7 @@ export function InventoryPanel({ view, actions }: { view: GameView; actions: Gam
             inventory={inventory}
             moveItem={actions.moveItem}
             equipItem={toggleEquipment}
+            equipOffhand={(id) => actions.choose(`equip-offhand:${id}`)}
             disabled={equipmentLocked}
           />
           {view.details.body && (

@@ -51,6 +51,7 @@ export interface InventoryItem {
   texture?: string;
   equipped?: boolean;
   equipmentSlot?: EquipmentSlot;
+  canOffHand?: boolean;
 }
 export interface CharacterStatGroup {
   title: string;
@@ -92,7 +93,6 @@ export interface GameView {
   log: LogEntry[];
   arrival: { text: string; options: ActionOption[] };
   encounter?: {
-    gauge: number;
     enemyRoom?: number;
     enemyId?: string;
     actionDetails: CombatActionDetails[];
@@ -101,14 +101,17 @@ export interface GameView {
     target?: string;
     enemies: {
       id: string;
+      mapEnemyId?: string;
       name: string;
       hp: number;
       maxHp: number;
       intent: string;
-      gauge: number;
       position: Point;
     }[];
   };
+  loadedSkill?: Exclude<CombatCommand, "attack" | "tonic">;
+  skillCooldowns: Partial<Record<Exclude<CombatCommand, "tonic">, number>>;
+  availableSkills: Exclude<CombatCommand, "tonic">[];
   panel?: Panel;
   characterSheet?: CharacterSheet;
   details: { title: string; body: string; options: ActionOption[] };
@@ -131,6 +134,7 @@ export interface GameView {
     description: string;
     canAdvance: boolean;
     command?: Exclude<CombatCommand, "tonic">;
+    cooldown?: number;
   }[];
   settings: {
     reducedMotion: boolean;
@@ -150,6 +154,7 @@ export interface GameActions {
   moveSkillSlot: (from: number, to: number) => void;
   useSkillSlot: (index: number) => boolean;
   target: (id: string) => void;
+  attackEnemy: (id: string) => void;
   choose: (id: string) => void;
   takeLoot: (ids?: readonly string[]) => void;
   moveItem: (id: string, x: number, y: number) => void;

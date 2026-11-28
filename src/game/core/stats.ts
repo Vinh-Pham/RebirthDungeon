@@ -176,7 +176,7 @@ export function deriveStats(
       Math.max(0, (stats.will - 10) / 10 + (stats.luck - 10) / 5 + (weapon?.critical ?? (weapon ? 0 : 10))),
     ),
     critical_cap: 30,
-    critical_enabled: Boolean(rankData("critical_hit", skills.critical_hit?.rank ?? "")),
+    critical_enabled: true,
     deadly_enabled: true,
     unarmed_min: Math.floor(str / 3 + mastery("additional_min_damage_human_total")),
     unarmed_max: Math.floor(8 + str / 2.5 + mastery("additional_max_damage_human_total")),
@@ -193,6 +193,9 @@ export function deriveStats(
     weapon_type: weapon ? kind : undefined,
     weapon_hands: weapon?.hands,
     light_armor_equipped: gear.armor === "light",
+    heavy_armor_equipped: gear.armor === "heavy",
+    shield_equipped: Boolean(gear.shield),
+    dual_wielding: Boolean(gear.dualWield),
     learned_skills: Object.keys(skills),
     skill_effects: effects,
   };

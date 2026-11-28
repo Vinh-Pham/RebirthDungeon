@@ -41,6 +41,7 @@ function WorldMap({
         reducedMotion={reducedMotion}
         onTravel={game.travelTo}
         onTarget={game.actions.target}
+        onAttackEnemy={game.actions.attackEnemy}
       />
     </Suspense>
   );

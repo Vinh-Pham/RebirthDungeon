@@ -82,7 +82,6 @@ it("reenters a completed legacy route from Spindle Hollow with no repeated rewar
   profile.completions = 1;
   profile.cleared = [1, 2, 3, 4, 5, 6, 7, 8];
   profile.treasure = true;
-  profile.quest = 3;
   arrive(profile, "spindle_hollow");
   const door = profile.map!.landmarks.find((place) => place.id === "dungeon")!;
   profile.position = { x: door.x - 1, y: door.y };
@@ -107,7 +106,6 @@ it("reenters a completed legacy route from Spindle Hollow with no repeated rewar
     expect(saved.cleared).toEqual([1, 2, 3, 4, 5, 6]);
     expect(saved.treasure).toBe(true);
     expect(saved.completions).toBe(1);
-    expect(saved.quest).toBe(profile.quest);
     expect(saved.gold).toBe(profile.gold);
     expect(saved.xp).toBe(profile.xp);
     expect(saved.tonics).toBe(profile.tonics);
